@@ -102,7 +102,7 @@ export interface BookFileInput {
   file_path: string;
 }
 
-export interface Book {
+export interface BookSummary {
   id: string;
   title: string;
   description: string | null;
@@ -117,11 +117,14 @@ export interface Book {
   language: string | null;
   num_pages: number | null;
   cover_image_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Book extends BookSummary {
   authors: Author[];
   series: BookSeriesEntry[];
   files: BookFile[];
-  created_at: string;
-  updated_at: string;
 }
 
 export interface BookInput {

@@ -84,7 +84,7 @@ func TestListBooks_Handler(t *testing.T) {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 	}
 
-	var dtos []bookDTO
+	var dtos []bookSummaryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
