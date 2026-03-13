@@ -45,7 +45,9 @@
   <nav class="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
     <!-- Home group -->
     <div>
-      <p class="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+      <p
+        class="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500"
+      >
         Home
       </p>
       <div class="space-y-1">
@@ -75,7 +77,9 @@
     <!-- Libraries group -->
     <div>
       <div class="flex items-center justify-between px-3 mb-1">
-        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <p
+          class="text-xs font-semibold uppercase tracking-wider text-slate-500"
+        >
           Libraries
         </p>
         <button
@@ -115,6 +119,9 @@
       </div>
     </div>
   </nav>
+  <div class="px-5 py-2 border-t border-slate-700">
+    <p class="text-xs text-slate-500 text-center">v0.0.1</p>
+  </div>
 
   <div class="px-3 py-4 border-t border-slate-700">
     <button
