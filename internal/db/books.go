@@ -183,7 +183,17 @@ func (d *DB) GetBookAuthors(bookID string) ([]Author, error) {
 }
 
 // SetBookAuthors replaces all author associations for a book.
+// Duplicate author IDs are silently deduplicated.
 func (d *DB) SetBookAuthors(bookID string, authorIDs []string) error {
+	seen := make(map[string]struct{}, len(authorIDs))
+	unique := make([]string, 0, len(authorIDs))
+	for _, id := range authorIDs {
+		if _, ok := seen[id]; !ok {
+			seen[id] = struct{}{}
+			unique = append(unique, id)
+		}
+	}
+
 	ctx := context.Background()
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
@@ -195,7 +205,7 @@ func (d *DB) SetBookAuthors(bookID string, authorIDs []string) error {
 		return err
 	}
 
-	for _, authorID := range authorIDs {
+	for _, authorID := range unique {
 		if _, err := tx.ExecContext(ctx, `INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`, bookID, authorID); err != nil {
 			return err
 		}
@@ -234,7 +244,17 @@ type BookSeriesInput struct {
 }
 
 // SetBookSeries replaces all series associations for a book.
+// Duplicate series IDs are silently deduplicated (last position wins).
 func (d *DB) SetBookSeries(bookID string, entries []BookSeriesInput) error {
+	seen := make(map[string]struct{}, len(entries))
+	unique := make([]BookSeriesInput, 0, len(entries))
+	for i := len(entries) - 1; i >= 0; i-- {
+		if _, ok := seen[entries[i].SeriesID]; !ok {
+			seen[entries[i].SeriesID] = struct{}{}
+			unique = append(unique, entries[i])
+		}
+	}
+
 	ctx := context.Background()
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
@@ -246,7 +266,7 @@ func (d *DB) SetBookSeries(bookID string, entries []BookSeriesInput) error {
 		return err
 	}
 
-	for _, entry := range entries {
+	for _, entry := range unique {
 		if _, err := tx.ExecContext(ctx, `INSERT INTO book_series (book_id, series_id, position) VALUES ($1, $2, $3)`, bookID, entry.SeriesID, entry.Position); err != nil {
 			return err
 		}
