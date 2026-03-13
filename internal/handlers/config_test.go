@@ -10,8 +10,8 @@ import (
 )
 
 // setupConfigHandler creates a ConfigHandler with a test DB, an admin user, and
-// a regular user. The IsTMDBConfigured and IsOIDCConfigured callbacks default
-// to always returning false; tests can override them.
+// a regular user. The IsOIDCConfigured callback defaults to always returning
+// false; tests can override it.
 func setupConfigHandler(t *testing.T) (*ConfigHandler, string, string) {
 	t.Helper()
 	d := newTestDB(t)
@@ -27,7 +27,6 @@ func setupConfigHandler(t *testing.T) (*ConfigHandler, string, string) {
 
 	h := &ConfigHandler{
 		DB:               d,
-		IsTMDBConfigured: func() bool { return false },
 		IsOIDCConfigured: func() bool { return false },
 	}
 	return h, admin.ID, regular.ID
@@ -50,9 +49,6 @@ func TestHandleConfigStatus_Success(t *testing.T) {
 	var resp configStatusResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.TMDBConfigured {
-		t.Error("expected TMDBConfigured=false")
 	}
 	if resp.OIDCConfigured {
 		t.Error("expected OIDCConfigured=false")
@@ -85,7 +81,6 @@ func TestHandleConfigStatus_RegularUser(t *testing.T) {
 
 func TestHandleConfigStatus_WhenConfigured(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
-	h.IsTMDBConfigured = func() bool { return true }
 	h.IsOIDCConfigured = func() bool { return true }
 
 	r := httptest.NewRequest(http.MethodGet, "/api/config/status", nil)
@@ -97,9 +92,6 @@ func TestHandleConfigStatus_WhenConfigured(t *testing.T) {
 	var resp configStatusResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("unmarshal: %v", err)
-	}
-	if !resp.TMDBConfigured {
-		t.Error("expected TMDBConfigured=true")
 	}
 	if !resp.OIDCConfigured {
 		t.Error("expected OIDCConfigured=true")
@@ -117,66 +109,6 @@ func TestHandleConfigStatus_MethodNotAllowed(t *testing.T) {
 
 	if w.Code != http.StatusMethodNotAllowed {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
-}
-
-// --- HandleSetTMDBKey ---
-
-func TestHandleSetTMDBKey_MethodNotAllowed(t *testing.T) {
-	h, adminID, _ := setupConfigHandler(t)
-
-	r := httptest.NewRequest(http.MethodGet, "/api/config/tmdb-api-key", nil)
-	r = withUserID(r, adminID)
-	w := httptest.NewRecorder()
-
-	h.HandleSetTMDBKey(w, r)
-
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
-}
-
-func TestHandleSetTMDBKey_NonAdminForbidden(t *testing.T) {
-	h, _, regularID := setupConfigHandler(t)
-
-	body := `{"api_key":"somekey"}`
-	r := httptest.NewRequest(http.MethodPut, "/api/config/tmdb-api-key", bytes.NewBufferString(body))
-	r = withUserID(r, regularID)
-	w := httptest.NewRecorder()
-
-	h.HandleSetTMDBKey(w, r)
-
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
-	}
-}
-
-func TestHandleSetTMDBKey_EmptyKeyRejected(t *testing.T) {
-	h, adminID, _ := setupConfigHandler(t)
-
-	body := `{"api_key":""}`
-	r := httptest.NewRequest(http.MethodPut, "/api/config/tmdb-api-key", bytes.NewBufferString(body))
-	r = withUserID(r, adminID)
-	w := httptest.NewRecorder()
-
-	h.HandleSetTMDBKey(w, r)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
-}
-
-func TestHandleSetTMDBKey_InvalidJSON(t *testing.T) {
-	h, adminID, _ := setupConfigHandler(t)
-
-	r := httptest.NewRequest(http.MethodPut, "/api/config/tmdb-api-key", bytes.NewBufferString("not json"))
-	r = withUserID(r, adminID)
-	w := httptest.NewRecorder()
-
-	h.HandleSetTMDBKey(w, r)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 

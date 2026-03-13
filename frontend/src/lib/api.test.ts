@@ -12,26 +12,12 @@ import {
   createArrService,
   updateArrService,
   deleteArrService,
-  searchMovies,
-  listMovies,
-  likeMovie,
-  unlikeMovie,
-  getMovieProviders,
-  searchTvSeries,
-  listTvSeries,
-  likeTvSeries,
-  unlikeTvSeries,
-  getTvSeriesProviders,
   getConfigStatus,
-  setTmdbApiKey,
   getOidcConfig,
   setOidcConfig,
   createOidcLinkNonce,
   listUsers,
   setUserAdmin,
-  listWatchProviders,
-  getUserWatchProviders,
-  setUserWatchProviders,
 } from "./api";
 
 const TOKEN_KEY = "biblioteka_token";
@@ -332,116 +318,6 @@ describe("Arr Services API", () => {
   });
 });
 
-describe("Movies API", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
-  });
-
-  it("searchMovies encodes query param", async () => {
-    mockFetchResponse([]);
-    await searchMovies("the matrix & more");
-
-    const [url] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/movies/search?q=the%20matrix%20%26%20more");
-  });
-
-  it("listMovies calls GET /api/movies", async () => {
-    mockFetchResponse([{ id: "1", title: "Inception" }]);
-    const result = await listMovies();
-    expect(result).toEqual([{ id: "1", title: "Inception" }]);
-  });
-
-  it("likeMovie sends POST with movie data", async () => {
-    const movie = { tmdb_id: 550, title: "Fight Club" };
-    mockFetchResponse({ ...movie, id: "1", status: "liked" });
-
-    await likeMovie(movie);
-
-    const [url, options] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/movies/550/like");
-    expect(options.method).toBe("POST");
-  });
-
-  it("unlikeMovie sends DELETE", async () => {
-    const resp = {
-      ok: true,
-      status: 204,
-      headers: new Headers(),
-      json: vi.fn(),
-      text: vi.fn(),
-    } as unknown as Response;
-    (fetchMock).mockResolvedValue(resp);
-
-    await unlikeMovie(550);
-
-    const [url, options] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/movies/550/like");
-    expect(options.method).toBe("DELETE");
-  });
-
-  it("getMovieProviders calls correct endpoint", async () => {
-    mockFetchResponse({ tmdb_id: 550, stream: [], rent: [], buy: [] });
-    const result = await getMovieProviders(550);
-    expect(result.tmdb_id).toBe(550);
-  });
-});
-
-describe("TV Series API", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
-  });
-
-  it("searchTvSeries encodes query param", async () => {
-    mockFetchResponse([]);
-    await searchTvSeries("breaking bad");
-
-    const [url] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/tv-series/search?q=breaking%20bad");
-  });
-
-  it("listTvSeries calls GET /api/tv-series", async () => {
-    mockFetchResponse([{ id: "1", title: "Breaking Bad" }]);
-    const result = await listTvSeries();
-    expect(result).toEqual([{ id: "1", title: "Breaking Bad" }]);
-  });
-
-  it("likeTvSeries sends POST with series data", async () => {
-    const series = { tmdb_id: 1396, title: "Breaking Bad" };
-    mockFetchResponse({ ...series, id: "1", status: "liked" });
-
-    await likeTvSeries(series);
-
-    const [url, options] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/tv-series/1396/like");
-    expect(options.method).toBe("POST");
-  });
-
-  it("unlikeTvSeries sends DELETE", async () => {
-    const resp = {
-      ok: true,
-      status: 204,
-      headers: new Headers(),
-      json: vi.fn(),
-      text: vi.fn(),
-    } as unknown as Response;
-    (fetchMock).mockResolvedValue(resp);
-
-    await unlikeTvSeries(1396);
-
-    const [url, options] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/tv-series/1396/like");
-    expect(options.method).toBe("DELETE");
-  });
-
-  it("getTvSeriesProviders calls correct endpoint", async () => {
-    mockFetchResponse({ tmdb_id: 1396, stream: [], buy: [] });
-    const result = await getTvSeriesProviders(1396);
-    expect(result.tmdb_id).toBe(1396);
-  });
-});
-
 describe("Config API", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -449,20 +325,10 @@ describe("Config API", () => {
   });
 
   it("getConfigStatus calls GET /api/config/status", async () => {
-    mockFetchResponse({ tmdb_configured: true, oidc_configured: false, is_admin: true });
+    mockFetchResponse({ oidc_configured: false, is_admin: true });
     const result = await getConfigStatus();
-    expect(result.tmdb_configured).toBe(true);
+    expect(result.oidc_configured).toBe(false);
     expect(result.is_admin).toBe(true);
-  });
-
-  it("setTmdbApiKey sends PUT with api_key", async () => {
-    mockFetchResponse({ message: "ok" });
-    await setTmdbApiKey("my-tmdb-key");
-
-    const [url, options] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/config/tmdb-api-key");
-    expect(options.method).toBe("PUT");
-    expect(JSON.parse(options.body)).toEqual({ api_key: "my-tmdb-key" });
   });
 
   it("getOidcConfig calls GET /api/config/oidc", async () => {
@@ -509,34 +375,5 @@ describe("Admin API", () => {
     expect(url).toBe("/api/admin/users/user-1");
     expect(options.method).toBe("PUT");
     expect(JSON.parse(options.body)).toEqual({ is_admin: true });
-  });
-});
-
-describe("Watch Providers API", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
-  });
-
-  it("listWatchProviders calls GET /api/watch-providers", async () => {
-    mockFetchResponse([{ provider_id: 1, provider_name: "Netflix" }]);
-    const result = await listWatchProviders();
-    expect(result).toHaveLength(1);
-  });
-
-  it("getUserWatchProviders calls GET /api/user/watch-providers", async () => {
-    mockFetchResponse([]);
-    const result = await getUserWatchProviders();
-    expect(result).toEqual([]);
-  });
-
-  it("setUserWatchProviders sends PUT with provider_ids", async () => {
-    mockFetchResponse([{ provider_id: 1 }]);
-    await setUserWatchProviders([1, 2, 3]);
-
-    const [url, options] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/user/watch-providers");
-    expect(options.method).toBe("PUT");
-    expect(JSON.parse(options.body)).toEqual({ provider_ids: [1, 2, 3] });
   });
 });

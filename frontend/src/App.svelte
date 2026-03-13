@@ -2,26 +2,15 @@
   import { onMount } from "svelte";
   import { user, authLoading, initAuth } from "./stores/auth";
   import { currentView, navigate } from "./stores/router";
-  // import { getConfigStatus } from "./lib/api";
   import Auth from "./components/Auth.svelte";
-  import Libraries from "./components/Libraries.svelte";
+  import Dashboard from "./components/Dashboard.svelte";
+  import Books from "./components/Books.svelte";
+  import MyLibrary from "./components/MyLibrary.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import Settings from "./components/Settings.svelte";
 
   onMount(async () => {
     await initAuth();
-
-    // If the admin user is logged in and TMDB isn't configured, redirect to settings
-    if ($user) {
-      try {
-        // const status = await getConfigStatus();
-        // if (status.is_admin && !status.tmdb_configured) {
-        //   navigate("settings");
-        // }
-      } catch {
-        // ignore - config check is best-effort
-      }
-    }
   });
 </script>
 
@@ -44,10 +33,12 @@
 
     <main class="ml-64 p-8">
       <div class="max-w-6xl mx-auto">
-        {#if $currentView === "libraries"}
-          <Libraries />
-        {:else if $currentView === "settings"}
-          <Settings />
+        {#if $currentView === "dashboard"}
+          <Dashboard />
+        {:else if $currentView === "books"}
+          <Books />
+        {:else if $currentView === "my-library"}
+          <MyLibrary />
         {:else if $currentView === "settings"}
           <Settings />
         {/if}

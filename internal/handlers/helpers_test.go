@@ -76,12 +76,12 @@ func TestExtractPathID(t *testing.T) {
 		wantID string
 		wantOK bool
 	}{
-		{"valid ID", "/api/movies/123", "/api/movies/", "123", true},
-		{"trailing slash", "/api/movies/123/", "/api/movies/", "123", true},
-		{"empty ID", "/api/movies/", "/api/movies/", "", false},
-		{"sub-path", "/api/movies/123/details", "/api/movies/", "", false},
-		{"alphanumeric ID", "/api/movies/abc-123", "/api/movies/", "abc-123", true},
-		{"UUID-like ID", "/api/movies/550e8400-e29b-41d4-a716-446655440000", "/api/movies/", "550e8400-e29b-41d4-a716-446655440000", true},
+		{"valid ID", "/api/items/123", "/api/items/", "123", true},
+		{"trailing slash", "/api/items/123/", "/api/items/", "123", true},
+		{"empty ID", "/api/items/", "/api/items/", "", false},
+		{"sub-path", "/api/items/123/details", "/api/items/", "", false},
+		{"alphanumeric ID", "/api/items/abc-123", "/api/items/", "abc-123", true},
+		{"UUID-like ID", "/api/items/550e8400-e29b-41d4-a716-446655440000", "/api/items/", "550e8400-e29b-41d4-a716-446655440000", true},
 	}
 
 	for _, tt := range tests {

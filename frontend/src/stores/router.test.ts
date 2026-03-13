@@ -12,20 +12,20 @@ describe("router store", () => {
     setHash("");
   });
 
-  it("defaults to 'movies' when hash is empty", () => {
-    expect(get(currentView)).toBe("movies");
+  it("defaults to 'dashboard' when hash is empty", () => {
+    expect(get(currentView)).toBe("dashboard");
     expect(get(subPath)).toBe("");
   });
 
-  it("parses 'tvshows' from hash", () => {
-    setHash("#tvshows");
-    expect(get(currentView)).toBe("tvshows");
+  it("parses 'books' from hash", () => {
+    setHash("#books");
+    expect(get(currentView)).toBe("books");
     expect(get(subPath)).toBe("");
   });
 
-  it("parses 'services' from hash", () => {
-    setHash("#services");
-    expect(get(currentView)).toBe("services");
+  it("parses 'my-library' from hash", () => {
+    setHash("#my-library");
+    expect(get(currentView)).toBe("my-library");
   });
 
   it("parses 'settings' from hash", () => {
@@ -33,15 +33,15 @@ describe("router store", () => {
     expect(get(currentView)).toBe("settings");
   });
 
-  it("defaults invalid hash segment to 'movies'", () => {
+  it("defaults invalid hash segment to 'dashboard'", () => {
     setHash("#invalid-page");
-    expect(get(currentView)).toBe("movies");
+    expect(get(currentView)).toBe("dashboard");
   });
 
   it("extracts subPath from hash", () => {
-    setHash("#movies/browse");
-    expect(get(currentView)).toBe("movies");
-    expect(get(subPath)).toBe("browse");
+    setHash("#settings/account");
+    expect(get(currentView)).toBe("settings");
+    expect(get(subPath)).toBe("account");
   });
 
   it("handles multi-segment subPath", () => {
@@ -50,12 +50,12 @@ describe("router store", () => {
   });
 
   it("navigate sets window.location.hash", () => {
-    navigate("tvshows");
-    expect(window.location.hash).toBe("#tvshows");
+    navigate("books");
+    expect(window.location.hash).toBe("#books");
   });
 
   it("responds to hashchange events", () => {
-    setHash("#movies");
+    setHash("#dashboard");
 
     window.location.hash = "#settings";
     window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -64,7 +64,7 @@ describe("router store", () => {
   });
 
   it("handles hash with leading slash", () => {
-    setHash("#/tvshows");
-    expect(get(currentView)).toBe("tvshows");
+    setHash("#/books");
+    expect(get(currentView)).toBe("books");
   });
 });

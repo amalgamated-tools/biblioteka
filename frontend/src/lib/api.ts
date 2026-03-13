@@ -1,4 +1,4 @@
-import type { User, ArrService, ArrServiceInput, Movie, MovieSearchResult, MovieProviders, TvSeries, TvSeriesSearchResult, TvSeriesProviders, StreamingProvider } from "../types";
+import type { User, ArrService, ArrServiceInput } from "../types";
 
 const TOKEN_KEY = "biblioteka_token";
 
@@ -151,76 +151,15 @@ export async function deleteArrService(id: string): Promise<void> {
   await request<void>("DELETE", `/api/arr-services/${id}`);
 }
 
-// Movies
-
-export async function searchMovies(query: string): Promise<MovieSearchResult[]> {
-  return request<MovieSearchResult[]>("GET", `/api/movies/search?q=${encodeURIComponent(query)}`);
-}
-
-export async function listMovies(): Promise<Movie[]> {
-  return request<Movie[]>("GET", "/api/movies");
-}
-
-export async function likeMovie(movie: {
-  tmdb_id: number;
-  title: string;
-  overview?: string;
-  year?: number;
-  poster_url?: string;
-}): Promise<Movie> {
-  return request<Movie>("POST", `/api/movies/${movie.tmdb_id}/like`, movie);
-}
-
-export async function unlikeMovie(tmdbId: number): Promise<void> {
-  await request<void>("DELETE", `/api/movies/${tmdbId}/like`);
-}
-
-export async function getMovieProviders(tmdbId: number): Promise<MovieProviders> {
-  return request<MovieProviders>("GET", `/api/movies/${tmdbId}/providers`);
-}
-
-// TV Series
-
-export async function searchTvSeries(query: string): Promise<TvSeriesSearchResult[]> {
-  return request<TvSeriesSearchResult[]>("GET", `/api/tv-series/search?q=${encodeURIComponent(query)}`);
-}
-
-export async function listTvSeries(): Promise<TvSeries[]> {
-  return request<TvSeries[]>("GET", "/api/tv-series");
-}
-
-export async function likeTvSeries(series: {
-  tmdb_id: number;
-  title: string;
-  overview?: string;
-  year?: number;
-  poster_url?: string;
-}): Promise<TvSeries> {
-  return request<TvSeries>("POST", `/api/tv-series/${series.tmdb_id}/like`, series);
-}
-
-export async function unlikeTvSeries(tmdbId: number): Promise<void> {
-  await request<void>("DELETE", `/api/tv-series/${tmdbId}/like`);
-}
-
-export async function getTvSeriesProviders(tmdbId: number): Promise<TvSeriesProviders> {
-  return request<TvSeriesProviders>("GET", `/api/tv-series/${tmdbId}/providers`);
-}
-
 // Config
 
 export interface ConfigStatus {
-  tmdb_configured: boolean;
   oidc_configured: boolean;
   is_admin: boolean;
 }
 
 export async function getConfigStatus(): Promise<ConfigStatus> {
   return request<ConfigStatus>("GET", "/api/config/status");
-}
-
-export async function setTmdbApiKey(apiKey: string): Promise<{ message: string }> {
-  return request<{ message: string }>("PUT", "/api/config/tmdb-api-key", { api_key: apiKey });
 }
 
 // OIDC Config
@@ -269,18 +208,4 @@ export async function listUsers(): Promise<AdminUser[]> {
 
 export async function setUserAdmin(userId: string, isAdmin: boolean): Promise<{ message: string }> {
   return request<{ message: string }>("PUT", `/api/admin/users/${userId}`, { is_admin: isAdmin });
-}
-
-// Watch Providers
-
-export async function listWatchProviders(): Promise<StreamingProvider[]> {
-  return request<StreamingProvider[]>("GET", "/api/watch-providers");
-}
-
-export async function getUserWatchProviders(): Promise<StreamingProvider[]> {
-  return request<StreamingProvider[]>("GET", "/api/user/watch-providers");
-}
-
-export async function setUserWatchProviders(providerIds: number[]): Promise<StreamingProvider[]> {
-  return request<StreamingProvider[]>("PUT", "/api/user/watch-providers", { provider_ids: providerIds });
 }
