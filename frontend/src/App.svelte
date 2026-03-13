@@ -2,12 +2,10 @@
   import { onMount } from "svelte";
   import { user, authLoading, initAuth } from "./stores/auth";
   import { currentView, navigate } from "./stores/router";
-  import { getConfigStatus } from "./lib/api";
+  // import { getConfigStatus } from "./lib/api";
   import Auth from "./components/Auth.svelte";
+  import Libraries from "./components/Libraries.svelte";
   import Sidebar from "./components/Sidebar.svelte";
-  import Movies from "./components/Movies.svelte";
-  import TvShows from "./components/TvShows.svelte";
-  import Services from "./components/Services.svelte";
   import Settings from "./components/Settings.svelte";
 
   onMount(async () => {
@@ -16,10 +14,10 @@
     // If the admin user is logged in and TMDB isn't configured, redirect to settings
     if ($user) {
       try {
-        const status = await getConfigStatus();
-        if (status.is_admin && !status.tmdb_configured) {
-          navigate("settings");
-        }
+        // const status = await getConfigStatus();
+        // if (status.is_admin && !status.tmdb_configured) {
+        //   navigate("settings");
+        // }
       } catch {
         // ignore - config check is best-effort
       }
@@ -42,19 +40,14 @@
   <Auth />
 {:else}
   <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
-    <Sidebar
-      currentView={$currentView}
-      onNavigate={(view) => navigate(view)}
-    />
+    <Sidebar currentView={$currentView} onNavigate={(view) => navigate(view)} />
 
     <main class="ml-64 p-8">
       <div class="max-w-6xl mx-auto">
-        {#if $currentView === "movies"}
-          <Movies />
-        {:else if $currentView === "tvshows"}
-          <TvShows />
-        {:else if $currentView === "services"}
-          <Services />
+        {#if $currentView === "libraries"}
+          <Libraries />
+        {:else if $currentView === "settings"}
+          <Settings />
         {:else if $currentView === "settings"}
           <Settings />
         {/if}

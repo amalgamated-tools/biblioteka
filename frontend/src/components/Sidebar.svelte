@@ -1,14 +1,7 @@
 <script lang="ts">
   import { user, signOut } from "../stores/auth";
   import type { AppView } from "../stores/router";
-  import {
-    Film,
-    Tv,
-    Server,
-    Settings,
-    LogOut,
-    MonitorPlay,
-  } from "lucide-svelte";
+  import { Library, Settings, LogOut, BookCheck } from "lucide-svelte";
 
   interface Props {
     currentView: AppView;
@@ -23,10 +16,8 @@
     }
   }
 
-  const navItems: { view: AppView; label: string; icon: typeof Film }[] = [
-    { view: "movies", label: "Movies", icon: Film },
-    { view: "tvshows", label: "TV Shows", icon: Tv },
-    { view: "services", label: "Services", icon: Server },
+  const navItems: { view: AppView; label: string; icon: typeof Library }[] = [
+    { view: "libraries", label: "Libraries", icon: Library },
     { view: "settings", label: "Settings", icon: Settings },
   ];
 </script>
@@ -39,7 +30,7 @@
       <div
         class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center"
       >
-        <MonitorPlay class="w-6 h-6 text-white" />
+        <BookCheck class="w-6 h-6 text-white" />
       </div>
       <div>
         <h1 class="text-lg font-bold">biblioteka</h1>

@@ -20,16 +20,16 @@ export function navigate(path: string): void {
   window.location.hash = `#${path}`;
 }
 
-export type AppView = "movies" | "tvshows" | "services" | "settings";
+export type AppView = "libraries" | "settings";
 
-/** Top-level view derived from hash: "movies", "tvshows", "services", "settings" */
+/** Top-level view derived from hash: "libraries", "settings" */
 export const currentView = derived(hash, ($hash): AppView => {
   const segment = $hash.split("/")[0];
-  const valid: AppView[] = ["movies", "tvshows", "services", "settings"];
-  return valid.includes(segment as AppView) ? (segment as AppView) : "movies";
+  const valid: AppView[] = ["libraries", "settings"];
+  return valid.includes(segment as AppView) ? (segment as AppView) : "libraries";
 });
 
-/** Sub-path after the top-level segment, e.g. "browse" from "movies/browse" */
+/** Sub-path after the top-level segment, e.g. "browse" from "libraries/browse" */
 export const subPath = derived(hash, ($hash) => {
   const parts = $hash.split("/");
   return parts.length > 1 ? parts.slice(1).join("/") : "";
