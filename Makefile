@@ -23,7 +23,7 @@ run: build
 	./biblioteka
 
 # Run frontend and backend dev servers via goreman
-dev: redis-check
+dev: redis-check frontend/node_modules
 	goreman -f Procfile.dev start
 
 redis-check:
