@@ -2,15 +2,24 @@
   import { onMount } from "svelte";
   import { user, authLoading, initAuth } from "./stores/auth";
   import { currentView, navigate } from "./stores/router";
+  import { libraries } from "./stores/libraries";
   import Auth from "./components/Auth.svelte";
   import Dashboard from "./components/Dashboard.svelte";
   import Books from "./components/Books.svelte";
   import MyLibrary from "./components/MyLibrary.svelte";
+  import Libraries from "./components/Libraries.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import Settings from "./components/Settings.svelte";
 
   onMount(async () => {
     await initAuth();
+  });
+
+  // Redirect away from books view when no libraries exist
+  $effect(() => {
+    if ($currentView === "books" && $libraries.length === 0) {
+      navigate("dashboard");
+    }
   });
 </script>
 
@@ -39,6 +48,8 @@
           <Books />
         {:else if $currentView === "my-library"}
           <MyLibrary />
+        {:else if $currentView === "libraries"}
+          <Libraries />
         {:else if $currentView === "settings"}
           <Settings />
         {/if}

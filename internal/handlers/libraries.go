@@ -1,0 +1,234 @@
+package handlers
+
+import (
+	"database/sql"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"slices"
+
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/db"
+)
+
+// LibraryHandler holds dependencies for library endpoints.
+type LibraryHandler struct {
+	DB *db.DB
+}
+
+type libraryRequest struct {
+	Name             string   `json:"name"`
+	Paths            []string `json:"paths"`
+	OrganizationType string   `json:"organization_type"`
+	Monitored        bool     `json:"monitored"`
+}
+
+type libraryDTO struct {
+	ID               string       `json:"id"`
+	UserID           string       `json:"user_id"`
+	Name             string       `json:"name"`
+	Paths            []string     `json:"paths"`
+	OrganizationType string       `json:"organization_type"`
+	Monitored        bool         `json:"monitored"`
+	CreatedAt        db.Timestamp `json:"created_at"`
+	UpdatedAt        db.Timestamp `json:"updated_at"`
+}
+
+func toLibraryDTO(lib *db.Library) libraryDTO {
+	var paths []string
+	if err := json.Unmarshal([]byte(lib.Paths), &paths); err != nil {
+		paths = []string{}
+	}
+	return libraryDTO{
+		ID:               lib.ID,
+		UserID:           lib.UserID,
+		Name:             lib.Name,
+		Paths:            paths,
+		OrganizationType: lib.OrganizationType,
+		Monitored:        lib.Monitored,
+		CreatedAt:        lib.CreatedAt,
+		UpdatedAt:        lib.UpdatedAt,
+	}
+}
+
+// HandleLibraries handles GET /api/libraries and POST /api/libraries.
+func (h *LibraryHandler) HandleLibraries(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		h.listLibraries(w, r)
+	case http.MethodPost:
+		h.createLibrary(w, r)
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+// HandleLibrary handles GET/PUT/DELETE /api/libraries/{id}.
+func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
+	id, ok := extractPathID(r.URL.Path, "/api/libraries/")
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid library ID")
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		h.getLibrary(w, r, id)
+	case http.MethodPut:
+		h.updateLibrary(w, r, id)
+	case http.MethodDelete:
+		h.deleteLibrary(w, r, id)
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
+	userID := auth.UserIDFromContext(r.Context())
+
+	libraries, err := h.DB.ListLibraries(userID)
+	if err != nil {
+		slog.Error("failed to list libraries", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to list libraries")
+		return
+	}
+
+	dtos := make([]libraryDTO, 0, len(libraries))
+	for i := range libraries {
+		dtos = append(dtos, toLibraryDTO(&libraries[i]))
+	}
+
+	writeJSON(w, http.StatusOK, dtos)
+}
+
+func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
+	userID := auth.UserIDFromContext(r.Context())
+
+	var req libraryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	if len(req.Paths) == 0 {
+		writeError(w, http.StatusBadRequest, "at least one path is required")
+		return
+	}
+	if slices.Contains(req.Paths, "") {
+		writeError(w, http.StatusBadRequest, "paths must not be empty strings")
+		return
+	}
+
+	if req.OrganizationType == "" {
+		req.OrganizationType = "book_per_folder"
+	}
+
+	pathsJSON, err := json.Marshal(req.Paths)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to encode paths")
+		return
+	}
+
+	lib, err := h.DB.CreateLibrary(userID, req.Name, string(pathsJSON), req.OrganizationType, req.Monitored)
+	if err != nil {
+		if err == db.ErrLibraryNameExists {
+			writeError(w, http.StatusConflict, "a library with that name already exists")
+			return
+		}
+		slog.Error("failed to create library", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to create library")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, toLibraryDTO(lib))
+}
+
+func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id string) {
+	userID := auth.UserIDFromContext(r.Context())
+
+	lib, err := h.DB.GetLibrary(userID, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			writeError(w, http.StatusNotFound, "library not found")
+			return
+		}
+		slog.Error("failed to get library", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to get library")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toLibraryDTO(lib))
+}
+
+func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, id string) {
+	userID := auth.UserIDFromContext(r.Context())
+
+	var req libraryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	if len(req.Paths) == 0 {
+		writeError(w, http.StatusBadRequest, "at least one path is required")
+		return
+	}
+	if slices.Contains(req.Paths, "") {
+		writeError(w, http.StatusBadRequest, "paths must not be empty strings")
+		return
+	}
+
+	if req.OrganizationType == "" {
+		req.OrganizationType = "book_per_folder"
+	}
+
+	pathsJSON, err := json.Marshal(req.Paths)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to encode paths")
+		return
+	}
+
+	lib, err := h.DB.UpdateLibrary(userID, id, req.Name, string(pathsJSON), req.OrganizationType, req.Monitored)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			writeError(w, http.StatusNotFound, "library not found")
+			return
+		}
+		if err == db.ErrLibraryNameExists {
+			writeError(w, http.StatusConflict, "a library with that name already exists")
+			return
+		}
+		slog.Error("failed to update library", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to update library")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toLibraryDTO(lib))
+}
+
+func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, id string) {
+	userID := auth.UserIDFromContext(r.Context())
+
+	err := h.DB.DeleteLibrary(userID, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			writeError(w, http.StatusNotFound, "library not found")
+			return
+		}
+		slog.Error("failed to delete library", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to delete library")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

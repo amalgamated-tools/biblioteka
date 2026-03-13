@@ -20,12 +20,12 @@ export function navigate(path: string): void {
   window.location.hash = `#${path}`;
 }
 
-export type AppView = "dashboard" | "books" | "my-library" | "settings";
+export type AppView = "dashboard" | "books" | "my-library" | "libraries" | "settings";
 
 /** Top-level view derived from hash */
 export const currentView = derived(hash, ($hash): AppView => {
   const segment = $hash.split("/")[0];
-  const valid: AppView[] = ["dashboard", "books", "my-library", "settings"];
+  const valid: AppView[] = ["dashboard", "books", "my-library", "libraries", "settings"];
   return valid.includes(segment as AppView) ? (segment as AppView) : "dashboard";
 });
 

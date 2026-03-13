@@ -23,3 +23,21 @@ export interface ArrServiceInput {
   url: string;
   api_key: string;
 }
+
+export interface Library {
+  id: string;
+  user_id: string;
+  name: string;
+  paths: string[];
+  organization_type: string;
+  monitored: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LibraryInput {
+  name: string;
+  paths: string[];
+  organization_type: string;
+  monitored: boolean;
+}

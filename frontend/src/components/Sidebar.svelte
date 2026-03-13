@@ -1,14 +1,17 @@
 <script lang="ts">
   import { user, signOut } from "../stores/auth";
   import type { AppView } from "../stores/router";
+  import { navigate } from "../stores/router";
+  import { libraries, librariesLoaded, loadLibraries } from "../stores/libraries";
   import {
     LayoutDashboard,
     BookOpen,
     Library,
     Plus,
-    Settings,
+    Settings as SettingsIcon,
     LogOut,
     BookCheck,
+    Settings2,
   } from "lucide-svelte";
 
   interface Props {
@@ -17,6 +20,12 @@
   }
 
   let { currentView, onNavigate }: Props = $props();
+
+  $effect(() => {
+    if ($user && !$librariesLoaded) {
+      loadLibraries();
+    }
+  });
 
   async function handleLogout() {
     if (confirm("Are you sure you want to logout?")) {
@@ -61,16 +70,18 @@
           <LayoutDashboard class="w-5 h-5" />
           Dashboard
         </button>
-        <button
-          onclick={() => onNavigate("books")}
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
-          'books'
-            ? 'bg-blue-600 text-white'
-            : 'text-slate-300 hover:bg-slate-800 hover:text-white'}"
-        >
-          <BookOpen class="w-5 h-5" />
-          All Books
-        </button>
+        {#if $libraries.length > 0}
+          <button
+            onclick={() => onNavigate("books")}
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
+            'books'
+              ? 'bg-blue-600 text-white'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'}"
+          >
+            <BookOpen class="w-5 h-5" />
+            All Books
+          </button>
+        {/if}
       </div>
     </div>
 
@@ -83,6 +94,7 @@
           Libraries
         </p>
         <button
+          onclick={() => navigate("libraries/new")}
           class="text-slate-500 hover:text-slate-300 transition-colors"
           title="Create library"
         >
@@ -90,16 +102,21 @@
         </button>
       </div>
       <div class="space-y-1">
-        <button
-          onclick={() => onNavigate("my-library")}
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
-          'my-library'
-            ? 'bg-blue-600 text-white'
-            : 'text-slate-300 hover:bg-slate-800 hover:text-white'}"
-        >
-          <Library class="w-5 h-5" />
-          My Library
-        </button>
+        {#each $libraries as lib (lib.id)}
+          <div
+            class="group w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-sm transition-colors text-slate-300 hover:bg-slate-800 hover:text-white"
+          >
+            <Library class="w-4 h-4 flex-shrink-0" />
+            <span class="truncate flex-1">{lib.name}</span>
+            <button
+              onclick={() => navigate(`libraries/edit/${lib.id}`)}
+              class="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-slate-300 transition-all"
+              title="Edit library"
+            >
+              <Settings2 class="w-3.5 h-3.5" />
+            </button>
+          </div>
+        {/each}
       </div>
     </div>
 
@@ -113,7 +130,7 @@
             ? 'bg-blue-600 text-white'
             : 'text-slate-300 hover:bg-slate-800 hover:text-white'}"
         >
-          <Settings class="w-5 h-5" />
+          <SettingsIcon class="w-5 h-5" />
           Settings
         </button>
       </div>
