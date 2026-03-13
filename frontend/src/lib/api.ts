@@ -1,4 +1,20 @@
-import type { User, ArrService, ArrServiceInput, Library, LibraryInput } from "../types";
+import type {
+  User,
+  ArrService,
+  ArrServiceInput,
+  Library,
+  LibraryInput,
+  Author,
+  AuthorInput,
+  Series,
+  SeriesInput,
+  Book,
+  BookSummary,
+  BookInput,
+  BookSeriesEntry,
+  BookFile,
+  BookFileInput,
+} from "../types";
 
 const TOKEN_KEY = "biblioteka_token";
 
@@ -226,4 +242,111 @@ export async function updateLibrary(id: string, input: LibraryInput): Promise<Li
 
 export async function deleteLibrary(id: string): Promise<void> {
   await request<void>("DELETE", `/api/libraries/${id}`);
+}
+
+// Authors
+
+export async function listAuthors(): Promise<Author[]> {
+  return request<Author[]>("GET", "/api/authors");
+}
+
+export async function getAuthor(id: string): Promise<Author> {
+  return request<Author>("GET", `/api/authors/${id}`);
+}
+
+export async function createAuthor(input: AuthorInput): Promise<Author> {
+  return request<Author>("POST", "/api/authors", input);
+}
+
+export async function updateAuthor(id: string, input: AuthorInput): Promise<Author> {
+  return request<Author>("PUT", `/api/authors/${id}`, input);
+}
+
+export async function deleteAuthor(id: string): Promise<void> {
+  await request<void>("DELETE", `/api/authors/${id}`);
+}
+
+// Series
+
+export async function listSeries(): Promise<Series[]> {
+  return request<Series[]>("GET", "/api/series");
+}
+
+export async function getSeries(id: string): Promise<Series> {
+  return request<Series>("GET", `/api/series/${id}`);
+}
+
+export async function createSeries(input: SeriesInput): Promise<Series> {
+  return request<Series>("POST", "/api/series", input);
+}
+
+export async function updateSeries(id: string, input: SeriesInput): Promise<Series> {
+  return request<Series>("PUT", `/api/series/${id}`, input);
+}
+
+export async function deleteSeries(id: string): Promise<void> {
+  await request<void>("DELETE", `/api/series/${id}`);
+}
+
+// Books
+
+export async function listBooks(): Promise<BookSummary[]> {
+  return request<BookSummary[]>("GET", "/api/books");
+}
+
+export async function getBook(id: string): Promise<Book> {
+  return request<Book>("GET", `/api/books/${id}`);
+}
+
+export async function createBook(input: BookInput): Promise<Book> {
+  return request<Book>("POST", "/api/books", input);
+}
+
+export async function updateBook(id: string, input: BookInput): Promise<Book> {
+  return request<Book>("PUT", `/api/books/${id}`, input);
+}
+
+export async function deleteBook(id: string): Promise<void> {
+  await request<void>("DELETE", `/api/books/${id}`);
+}
+
+// Book Authors
+
+export async function getBookAuthors(bookId: string): Promise<Author[]> {
+  return request<Author[]>("GET", `/api/books/${bookId}/authors`);
+}
+
+export async function setBookAuthors(bookId: string, authorIds: string[]): Promise<Author[]> {
+  return request<Author[]>("PUT", `/api/books/${bookId}/authors`, { author_ids: authorIds });
+}
+
+// Book Series
+
+export async function getBookSeries(bookId: string): Promise<BookSeriesEntry[]> {
+  return request<BookSeriesEntry[]>("GET", `/api/books/${bookId}/series`);
+}
+
+export async function setBookSeries(
+  bookId: string,
+  entries: { series_id: string; position?: number }[],
+): Promise<BookSeriesEntry[]> {
+  return request<BookSeriesEntry[]>("PUT", `/api/books/${bookId}/series`, { entries });
+}
+
+// Book Files
+
+export async function listBookFiles(bookId: string): Promise<BookFile[]> {
+  return request<BookFile[]>("GET", `/api/books/${bookId}/files`);
+}
+
+export async function createBookFile(bookId: string, input: BookFileInput): Promise<BookFile> {
+  return request<BookFile>("POST", `/api/books/${bookId}/files`, input);
+}
+
+export async function getBookFile(id: string): Promise<BookFile> {
+  return request<BookFile>("GET", `/api/book-files/${id}`);
+}
+
+export async function deleteBookFile(id: string): Promise<void> {
+  await request<void>("DELETE", `/api/book-files/${id}`);
 }
