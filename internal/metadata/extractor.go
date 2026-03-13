@@ -107,8 +107,8 @@ func (e *Extractor) extractExif(path string) (*BookMetadata, error) {
 
 // findISBN searches the Identifier field for a valid ISBN pattern
 func findISBN(book *epub.Rootfile) string {
-	// goreader puts the <dc:identifier> content here
-	id := book.Identifier
+	// In goreader v2, Identifier is a struct with Content and Scheme fields
+	id := book.Identifier.Content
 
 	// Strip common prefixes like "urn:isbn:" or "isbn:"
 	id = strings.ToLower(id)
@@ -117,7 +117,6 @@ func findISBN(book *epub.Rootfile) string {
 	id = strings.TrimSpace(id)
 
 	// A basic ISBN check: typically 10 or 13 digits (ignoring dashes)
-	// For a real MVP, you might want to use a regex or a dedicated ISBN validator
 	cleanID := strings.ReplaceAll(id, "-", "")
 	if len(cleanID) == 10 || len(cleanID) == 13 {
 		return cleanID
