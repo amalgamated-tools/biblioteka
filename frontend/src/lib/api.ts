@@ -9,6 +9,7 @@ import type {
   Series,
   SeriesInput,
   Book,
+  BookSummary,
   BookInput,
   BookSeriesEntry,
   BookFile,
@@ -289,8 +290,8 @@ export async function deleteSeries(id: string): Promise<void> {
 
 // Books
 
-export async function listBooks(): Promise<Book[]> {
-  return request<Book[]>("GET", "/api/books");
+export async function listBooks(): Promise<BookSummary[]> {
+  return request<BookSummary[]>("GET", "/api/books");
 }
 
 export async function getBook(id: string): Promise<Book> {

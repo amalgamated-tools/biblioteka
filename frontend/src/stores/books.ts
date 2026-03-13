@@ -1,8 +1,8 @@
 import { writable } from "svelte/store";
-import type { Book, BookInput } from "../types";
+import type { BookSummary, Book, BookInput } from "../types";
 import * as api from "../lib/api";
 
-export const books = writable<Book[]>([]);
+export const books = writable<BookSummary[]>([]);
 export const booksLoading = writable(false);
 export const booksLoaded = writable(false);
 

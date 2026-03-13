@@ -61,6 +61,50 @@ func toBookFileDTO(bf *db.BookFile) bookFileDTO {
 	}
 }
 
+// bookSummaryDTO contains core book fields without related entities.
+// Used in list endpoints to avoid N+1 queries.
+type bookSummaryDTO struct {
+	ID              string       `json:"id"`
+	Title           string       `json:"title"`
+	Description     *string      `json:"description"`
+	ASIN            *string      `json:"asin"`
+	ISBN10          *string      `json:"isbn10"`
+	ISBN13          *string      `json:"isbn13"`
+	GoodreadsID     *string      `json:"goodreads_id"`
+	HardcoverID     *string      `json:"hardcover_id"`
+	GoogleBooksID   *string      `json:"google_books_id"`
+	PublicationDate *string      `json:"publication_date"`
+	Publisher       *string      `json:"publisher"`
+	Language        *string      `json:"language"`
+	NumPages        *int         `json:"num_pages"`
+	CoverImageURL   *string      `json:"cover_image_url"`
+	CreatedAt       db.Timestamp `json:"created_at"`
+	UpdatedAt       db.Timestamp `json:"updated_at"`
+}
+
+func toBookSummaryDTO(b *db.Book) bookSummaryDTO {
+	return bookSummaryDTO{
+		ID:              b.ID,
+		Title:           b.Title,
+		Description:     b.Description,
+		ASIN:            b.ASIN,
+		ISBN10:          b.ISBN10,
+		ISBN13:          b.ISBN13,
+		GoodreadsID:     b.GoodreadsID,
+		HardcoverID:     b.HardcoverID,
+		GoogleBooksID:   b.GoogleBooksID,
+		PublicationDate: b.PublicationDate,
+		Publisher:       b.Publisher,
+		Language:        b.Language,
+		NumPages:        b.NumPages,
+		CoverImageURL:   b.CoverImageURL,
+		CreatedAt:       b.CreatedAt,
+		UpdatedAt:       b.UpdatedAt,
+	}
+}
+
+// bookDTO contains full book details including related entities.
+// Used in single-book endpoints (GET/POST/PUT by ID).
 type bookDTO struct {
 	ID              string               `json:"id"`
 	Title           string               `json:"title"`
@@ -83,7 +127,7 @@ type bookDTO struct {
 	UpdatedAt       db.Timestamp         `json:"updated_at"`
 }
 
-func (h *BookHandler) toBookDTO(b *db.Book) bookDTO {
+func (h *BookHandler) toBookDTO(b *db.Book) (bookDTO, error) {
 	dto := bookDTO{
 		ID:              b.ID,
 		Title:           b.Title,
@@ -106,28 +150,34 @@ func (h *BookHandler) toBookDTO(b *db.Book) bookDTO {
 		UpdatedAt:       b.UpdatedAt,
 	}
 
-	if authors, err := h.DB.GetBookAuthors(b.ID); err == nil {
-		for i := range authors {
-			dto.Authors = append(dto.Authors, toAuthorDTO(&authors[i]))
-		}
+	authors, err := h.DB.GetBookAuthors(b.ID)
+	if err != nil {
+		return bookDTO{}, err
+	}
+	for i := range authors {
+		dto.Authors = append(dto.Authors, toAuthorDTO(&authors[i]))
 	}
 
-	if entries, err := h.DB.GetBookSeries(b.ID); err == nil {
-		for _, e := range entries {
-			dto.Series = append(dto.Series, bookSeriesEntryDTO{
-				Series:   toSeriesDTO(&e.Series),
-				Position: e.Position,
-			})
-		}
+	entries, err := h.DB.GetBookSeries(b.ID)
+	if err != nil {
+		return bookDTO{}, err
+	}
+	for _, e := range entries {
+		dto.Series = append(dto.Series, bookSeriesEntryDTO{
+			Series:   toSeriesDTO(&e.Series),
+			Position: e.Position,
+		})
 	}
 
-	if files, err := h.DB.ListBookFiles(b.ID); err == nil {
-		for i := range files {
-			dto.Files = append(dto.Files, toBookFileDTO(&files[i]))
-		}
+	files, err := h.DB.ListBookFiles(b.ID)
+	if err != nil {
+		return bookDTO{}, err
+	}
+	for i := range files {
+		dto.Files = append(dto.Files, toBookFileDTO(&files[i]))
 	}
 
-	return dto
+	return dto, nil
 }
 
 // HandleBooks handles GET /api/books and POST /api/books.
@@ -185,9 +235,9 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
-	dtos := make([]bookDTO, 0, len(books))
+	dtos := make([]bookSummaryDTO, 0, len(books))
 	for i := range books {
-		dtos = append(dtos, h.toBookDTO(&books[i]))
+		dtos = append(dtos, toBookSummaryDTO(&books[i]))
 	}
 
 	writeJSON(w, http.StatusOK, dtos)
@@ -212,7 +262,13 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, h.toBookDTO(b))
+	dto, err := h.toBookDTO(b)
+	if err != nil {
+		slog.Error("failed to build book DTO", "book_id", b.ID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to create book")
+		return
+	}
+	writeJSON(w, http.StatusCreated, dto)
 }
 
 func (h *BookHandler) getBook(w http.ResponseWriter, _ *http.Request, id string) {
@@ -227,7 +283,13 @@ func (h *BookHandler) getBook(w http.ResponseWriter, _ *http.Request, id string)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.toBookDTO(b))
+	dto, err := h.toBookDTO(b)
+	if err != nil {
+		slog.Error("failed to build book DTO", "book_id", b.ID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to get book")
+		return
+	}
+	writeJSON(w, http.StatusOK, dto)
 }
 
 func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id string) {
@@ -253,9 +315,14 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.toBookDTO(b))
+	dto, err := h.toBookDTO(b)
+	if err != nil {
+		slog.Error("failed to build book DTO", "book_id", b.ID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to update book")
+		return
+	}
+	writeJSON(w, http.StatusOK, dto)
 }
-
 func (h *BookHandler) deleteBook(w http.ResponseWriter, _ *http.Request, id string) {
 	err := h.DB.DeleteBook(id)
 	if err != nil {
