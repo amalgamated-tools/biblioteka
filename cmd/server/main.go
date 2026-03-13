@@ -19,7 +19,7 @@ var version = "dev"
 
 func main() {
 	otel.SetupLogger()
-	slog.Info("fichemos", slog.String("version", version))
+	slog.Info("biblioteka", slog.String("version", version))
 	cancelCtx, cancelAll := context.WithCancel(context.Background())
 
 	if err := realMain(cancelCtx); err != nil {
