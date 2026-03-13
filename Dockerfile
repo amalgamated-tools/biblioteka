@@ -19,7 +19,7 @@ RUN go build -ldflags "-X main.version=${VERSION}" -o fichemos ./cmd/server
 
 # Stage 3: Final image
 FROM alpine:3.21
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata exiftool
 WORKDIR /app
 
 COPY --from=backend /app/fichemos .
