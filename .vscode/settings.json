@@ -1,0 +1,7 @@
+{
+  "go.lintTool": "golangci-lint",
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/.go_mod_cache": true
+  }
+}

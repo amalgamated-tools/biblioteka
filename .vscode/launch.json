@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Server",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "cmd/server/main.go",
+            "envFile": "${workspaceFolder}/.env",
+            "showLog": true
+        },
+    ]
+}

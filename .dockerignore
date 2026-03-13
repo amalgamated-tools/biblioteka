@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+frontend/node_modules
+
+# Build artifacts
+biblioteka
+internal/server/dist
+tmp
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Git
+.git
+.github
+
+# IDE / OS
+.vscode
+.idea
+.DS_Store
+*.sw?
+
+# Env files
+.env
+*.local
+
+# Docker
+docker-compose*.yml
+Dockerfile

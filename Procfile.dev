@@ -1,0 +1,2 @@
+web: PORT=8080 air -c .air.toml
+frontend: cd frontend && pnpm run dev --host

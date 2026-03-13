@@ -1,0 +1,42 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+
+# Frontend build output
+internal/server/dist
+!internal/server/dist/.gitkeep
+dist-ssr
+
+# Local env files
+*.local
+.env
+
+# Go binary
+biblioteka
+
+# Air temp directory
+tmp/
+
+# SQLite database
+biblioteka.db*
+
+# IDE
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+data/
