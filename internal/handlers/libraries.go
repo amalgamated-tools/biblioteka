@@ -9,7 +9,6 @@ import (
 	"os"
 	"slices"
 
-	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 )
 
@@ -27,7 +26,6 @@ type libraryRequest struct {
 
 type libraryDTO struct {
 	ID               string       `json:"id"`
-	UserID           string       `json:"user_id"`
 	Name             string       `json:"name"`
 	Paths            []string     `json:"paths"`
 	OrganizationType string       `json:"organization_type"`
@@ -43,7 +41,6 @@ func toLibraryDTO(lib *db.Library) libraryDTO {
 	}
 	return libraryDTO{
 		ID:               lib.ID,
-		UserID:           lib.UserID,
 		Name:             lib.Name,
 		Paths:            paths,
 		OrganizationType: lib.OrganizationType,
@@ -86,9 +83,7 @@ func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
-	userID := auth.UserIDFromContext(r.Context())
-
-	libraries, err := h.DB.ListLibraries(userID)
+	libraries, err := h.DB.ListLibraries()
 	if err != nil {
 		slog.Error("failed to list libraries", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list libraries")
@@ -104,8 +99,6 @@ func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
-	userID := auth.UserIDFromContext(r.Context())
-
 	var req libraryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -141,7 +134,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lib, err := h.DB.CreateLibrary(userID, req.Name, string(pathsJSON), req.OrganizationType, req.Monitored)
+	lib, err := h.DB.CreateLibrary(req.Name, string(pathsJSON), req.OrganizationType, req.Monitored)
 	if err != nil {
 		if err == db.ErrLibraryNameExists {
 			writeError(w, http.StatusConflict, "a library with that name already exists")
@@ -156,9 +149,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id string) {
-	userID := auth.UserIDFromContext(r.Context())
-
-	lib, err := h.DB.GetLibrary(userID, id)
+	lib, err := h.DB.GetLibrary(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "library not found")
@@ -173,8 +164,6 @@ func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id s
 }
 
 func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, id string) {
-	userID := auth.UserIDFromContext(r.Context())
-
 	var req libraryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -210,7 +199,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
-	lib, err := h.DB.UpdateLibrary(userID, id, req.Name, string(pathsJSON), req.OrganizationType, req.Monitored)
+	lib, err := h.DB.UpdateLibrary(id, req.Name, string(pathsJSON), req.OrganizationType, req.Monitored)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "library not found")
@@ -229,9 +218,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 }
 
 func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, id string) {
-	userID := auth.UserIDFromContext(r.Context())
-
-	err := h.DB.DeleteLibrary(userID, id)
+	err := h.DB.DeleteLibrary(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "library not found")
