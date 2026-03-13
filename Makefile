@@ -13,14 +13,14 @@ frontend: frontend/node_modules
 
 # Build the Go binary (requires frontend build first)
 backend: frontend
-	go build -o fichemos ./cmd/server
+	go build -o biblioteka ./cmd/server
 
 # Build everything
 build: backend
 
 # Run the Go server (production mode)
 run: build
-	./fichemos
+	./biblioteka
 
 # Run frontend and backend dev servers via goreman
 dev: redis-check
@@ -39,6 +39,6 @@ redis-check:
 
 # Clean build artifacts
 clean:
-	rm -rf internal/server/dist tmp fichemos
+	rm -rf internal/server/dist tmp biblioteka db/biblioteka.db*
 	mkdir -p internal/server/dist
 	touch internal/server/dist/.gitkeep
