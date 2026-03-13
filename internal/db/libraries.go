@@ -6,13 +6,12 @@ import (
 	"strings"
 )
 
-// ErrLibraryNameExists is returned when a library with the given name already exists for the user.
+// ErrLibraryNameExists is returned when a library with the given name already exists.
 var ErrLibraryNameExists = errors.New("library name already exists")
 
 // Library represents a row in the libraries table.
 type Library struct {
 	ID               string    `json:"id"`
-	UserID           string    `json:"user_id"`
 	Name             string    `json:"name"`
 	Paths            string    `json:"paths"`
 	OrganizationType string    `json:"organization_type"`
@@ -21,24 +20,24 @@ type Library struct {
 	UpdatedAt        Timestamp `json:"updated_at"`
 }
 
-const libraryColumns = `id, user_id, name, paths, organization_type, monitored, created_at, updated_at`
+const libraryColumns = `id, name, paths, organization_type, monitored, created_at, updated_at`
 
 // scanLibrary scans a library row into a Library struct.
 func scanLibrary(row interface{ Scan(...any) error }) (*Library, error) {
 	var lib Library
-	err := row.Scan(&lib.ID, &lib.UserID, &lib.Name, &lib.Paths, &lib.OrganizationType, &lib.Monitored, &lib.CreatedAt, &lib.UpdatedAt)
+	err := row.Scan(&lib.ID, &lib.Name, &lib.Paths, &lib.OrganizationType, &lib.Monitored, &lib.CreatedAt, &lib.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 	return &lib, nil
 }
 
-// CreateLibrary inserts a new library for the given user and returns it.
-// Returns ErrLibraryNameExists if the user already has a library with that name.
-func (d *DB) CreateLibrary(userID, name, paths, organizationType string, monitored bool) (*Library, error) {
+// CreateLibrary inserts a new library and returns it.
+// Returns ErrLibraryNameExists if a library with that name already exists.
+func (d *DB) CreateLibrary(name, paths, organizationType string, monitored bool) (*Library, error) {
 	lib, err := scanLibrary(d.QueryRow(
-		`INSERT INTO libraries (user_id, name, paths, organization_type, monitored) VALUES ($1, $2, $3, $4, $5) RETURNING `+libraryColumns,
-		userID, name, paths, organizationType, monitored,
+		`INSERT INTO libraries (name, paths, organization_type, monitored) VALUES ($1, $2, $3, $4) RETURNING `+libraryColumns,
+		name, paths, organizationType, monitored,
 	))
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -49,23 +48,22 @@ func (d *DB) CreateLibrary(userID, name, paths, organizationType string, monitor
 	return lib, nil
 }
 
-// GetLibrary returns a library by ID for the given user, or sql.ErrNoRows if not found.
-func (d *DB) GetLibrary(userID, id string) (*Library, error) {
+// GetLibrary returns a library by ID, or sql.ErrNoRows if not found.
+func (d *DB) GetLibrary(id string) (*Library, error) {
 	return scanLibrary(d.QueryRow(
-		`SELECT `+libraryColumns+` FROM libraries WHERE id = $1 AND user_id = $2`,
-		id, userID,
+		`SELECT `+libraryColumns+` FROM libraries WHERE id = $1`,
+		id,
 	))
 }
 
-// ListLibraries returns all libraries for the given user ordered by creation time.
-func (d *DB) ListLibraries(userID string) ([]Library, error) {
+// ListLibraries returns all libraries ordered by creation time.
+func (d *DB) ListLibraries() ([]Library, error) {
 	orderBy := "ORDER BY created_at ASC, rowid ASC"
 	if d.Dialect == DialectPostgres {
 		orderBy = "ORDER BY created_at ASC, id ASC"
 	}
 	rows, err := d.Query(
-		`SELECT `+libraryColumns+` FROM libraries WHERE user_id = $1 `+orderBy,
-		userID,
+		`SELECT ` + libraryColumns + ` FROM libraries ` + orderBy,
 	)
 	if err != nil {
 		return nil, err
@@ -84,12 +82,12 @@ func (d *DB) ListLibraries(userID string) ([]Library, error) {
 }
 
 // UpdateLibrary updates a library's fields and returns the updated library.
-// Returns sql.ErrNoRows if the library doesn't exist for the given user.
+// Returns sql.ErrNoRows if the library doesn't exist.
 // Returns ErrLibraryNameExists if the new name conflicts with another library.
-func (d *DB) UpdateLibrary(userID, id, name, paths, organizationType string, monitored bool) (*Library, error) {
+func (d *DB) UpdateLibrary(id, name, paths, organizationType string, monitored bool) (*Library, error) {
 	lib, err := scanLibrary(d.QueryRow(
-		`UPDATE libraries SET name = $1, paths = $2, organization_type = $3, monitored = $4, updated_at = `+d.now()+` WHERE id = $5 AND user_id = $6 RETURNING `+libraryColumns,
-		name, paths, organizationType, monitored, id, userID,
+		`UPDATE libraries SET name = $1, paths = $2, organization_type = $3, monitored = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+libraryColumns,
+		name, paths, organizationType, monitored, id,
 	))
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -100,10 +98,10 @@ func (d *DB) UpdateLibrary(userID, id, name, paths, organizationType string, mon
 	return lib, nil
 }
 
-// DeleteLibrary removes a library by ID for the given user.
-// Returns sql.ErrNoRows if the library doesn't exist for the given user.
-func (d *DB) DeleteLibrary(userID, id string) error {
-	res, err := d.Exec(`DELETE FROM libraries WHERE id = $1 AND user_id = $2`, id, userID)
+// DeleteLibrary removes a library by ID.
+// Returns sql.ErrNoRows if the library doesn't exist.
+func (d *DB) DeleteLibrary(id string) error {
+	res, err := d.Exec(`DELETE FROM libraries WHERE id = $1`, id)
 	if err != nil {
 		return err
 	}
