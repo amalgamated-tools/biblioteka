@@ -3,8 +3,10 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"slices"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -124,6 +126,11 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := validatePaths(req.Paths); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	if req.OrganizationType == "" {
 		req.OrganizationType = "book_per_folder"
 	}
@@ -188,6 +195,11 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
+	if err := validatePaths(req.Paths); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	if req.OrganizationType == "" {
 		req.OrganizationType = "book_per_folder"
 	}
@@ -231,4 +243,17 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func validatePaths(paths []string) error {
+	for _, p := range paths {
+		info, err := os.Stat(p)
+		if err != nil {
+			return fmt.Errorf("folder not found: %s", p)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("path is not a folder: %s", p)
+		}
+	}
+	return nil
 }
