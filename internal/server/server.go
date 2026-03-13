@@ -58,12 +58,16 @@ type Server struct {
 
 	Worker *worker.Worker
 
-	oidcHandler    *handlers.OIDCHandler
-	authHandler    *handlers.AuthHandler
-	configHandler  *handlers.ConfigHandler
-	adminHandler   *handlers.AdminHandler
-	libraryHandler *handlers.LibraryHandler
-	requireAuth    func(http.Handler) http.Handler
+	oidcHandler     *handlers.OIDCHandler
+	authHandler     *handlers.AuthHandler
+	configHandler   *handlers.ConfigHandler
+	adminHandler    *handlers.AdminHandler
+	libraryHandler  *handlers.LibraryHandler
+	authorHandler   *handlers.AuthorHandler
+	seriesHandler   *handlers.SeriesHandler
+	bookHandler     *handlers.BookHandler
+	bookFileHandler *handlers.BookFileHandler
+	requireAuth     func(http.Handler) http.Handler
 	authLimiter   *auth.RateLimiter
 	mux           *http.ServeMux
 	httpServer    *http.Server
@@ -121,6 +125,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT}
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}
 	s.libraryHandler = &handlers.LibraryHandler{DB: s.DB}
+	s.authorHandler = &handlers.AuthorHandler{DB: s.DB}
+	s.seriesHandler = &handlers.SeriesHandler{DB: s.DB}
+	s.bookHandler = &handlers.BookHandler{DB: s.DB}
+	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
@@ -295,6 +303,21 @@ func (s *Server) setupRoutes() {
 	// Protected library routes
 	s.mux.Handle("/api/libraries", s.requireAuth(http.HandlerFunc(s.libraryHandler.HandleLibraries)))
 	s.mux.Handle("/api/libraries/", s.requireAuth(http.HandlerFunc(s.libraryHandler.HandleLibrary)))
+
+	// Protected author routes
+	s.mux.Handle("/api/authors", s.requireAuth(http.HandlerFunc(s.authorHandler.HandleAuthors)))
+	s.mux.Handle("/api/authors/", s.requireAuth(http.HandlerFunc(s.authorHandler.HandleAuthor)))
+
+	// Protected series routes
+	s.mux.Handle("/api/series", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeriesList)))
+	s.mux.Handle("/api/series/", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeries)))
+
+	// Protected book routes
+	s.mux.Handle("/api/books", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBooks)))
+	s.mux.Handle("/api/books/", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBookRoutes)))
+
+	// Protected book file routes
+	s.mux.Handle("/api/book-files/", s.requireAuth(http.HandlerFunc(s.bookFileHandler.HandleBookFile)))
 
 	// Health check
 	s.mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
