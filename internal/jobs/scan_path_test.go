@@ -1,0 +1,140 @@
+package jobs
+
+import (
+	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"sync"
+	"testing"
+)
+
+// mockEnqueuer records all enqueued jobs for test assertions.
+type mockEnqueuer struct {
+	mu   sync.Mutex
+	jobs []enqueuedJob
+}
+
+type enqueuedJob struct {
+	Name    string
+	Payload ProcessFilePayload
+}
+
+func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any) (string, error) {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	var p ProcessFilePayload
+	if err := json.Unmarshal(data, &p); err != nil {
+		return "", err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.jobs = append(m.jobs, enqueuedJob{Name: name, Payload: p})
+	return "mock-id", nil
+}
+
+func TestScanPathHandler(t *testing.T) {
+	mock := &mockEnqueuer{}
+
+	// Create temp directory with test files
+	dir := t.TempDir()
+
+	testFiles := map[string]bool{
+		"My Book.epub":      true,
+		"Another Book.mobi": true,
+		"Third Book.pdf":    true,
+		"Kindle Book.azw3":  true,
+		"not-a-book.txt":    false,
+		"image.jpg":         false,
+		"UPPERCASE.EPUB":    true,
+		"MixedCase.Mobi":    true,
+	}
+
+	for name := range testFiles {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("test content"), 0644); err != nil {
+			t.Fatalf("write file %s: %v", name, err)
+		}
+	}
+
+	// Create a subdirectory with another book
+	subdir := filepath.Join(dir, "subdir")
+	if err := os.MkdirAll(subdir, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(subdir, "Nested.pdf"), []byte("nested content"), 0644); err != nil {
+		t.Fatalf("write nested file: %v", err)
+	}
+
+	// Run the handler
+	handler := NewScanPathHandler(mock)
+	payload, err := json.Marshal(ScanPathPayload{Path: dir})
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	if err := handler(context.Background(), payload); err != nil {
+		t.Fatalf("handler: %v", err)
+	}
+
+	// 6 matching files: My Book.epub, Another Book.mobi, Third Book.pdf, Kindle Book.azw3, UPPERCASE.EPUB, MixedCase.Mobi
+	// Plus 1 nested: Nested.pdf = 7 total
+	if got := len(mock.jobs); got != 7 {
+		t.Errorf("expected 7 enqueued jobs, got %d", got)
+		for _, j := range mock.jobs {
+			t.Logf("  job: %s %s", j.Name, j.Payload.FileName)
+		}
+	}
+
+	// Verify all enqueued jobs target the process:file job
+	for _, j := range mock.jobs {
+		if j.Name != JobProcessFile {
+			t.Errorf("expected job name %q, got %q", JobProcessFile, j.Name)
+		}
+		if j.Payload.Path == "" {
+			t.Error("enqueued job has empty path")
+		}
+		if j.Payload.FileType == "" {
+			t.Error("enqueued job has empty file type")
+		}
+	}
+}
+
+func TestScanPathHandler_EmptyPath(t *testing.T) {
+	mock := &mockEnqueuer{}
+	handler := NewScanPathHandler(mock)
+
+	payload, _ := json.Marshal(ScanPathPayload{Path: ""})
+	err := handler(context.Background(), payload)
+	if err == nil {
+		t.Fatal("expected error for empty path")
+	}
+}
+
+func TestScanPathHandler_NonexistentPath(t *testing.T) {
+	mock := &mockEnqueuer{}
+	handler := NewScanPathHandler(mock)
+
+	payload, _ := json.Marshal(ScanPathPayload{Path: "/nonexistent/path/that/does/not/exist"})
+	err := handler(context.Background(), payload)
+	if err == nil {
+		t.Fatal("expected error for nonexistent path")
+	}
+}
+
+func TestScanPathHandler_EmptyDirectory(t *testing.T) {
+	mock := &mockEnqueuer{}
+	handler := NewScanPathHandler(mock)
+
+	dir := t.TempDir()
+	payload, _ := json.Marshal(ScanPathPayload{Path: dir})
+
+	if err := handler(context.Background(), payload); err != nil {
+		t.Fatalf("handler: %v", err)
+	}
+
+	if len(mock.jobs) != 0 {
+		t.Errorf("expected 0 enqueued jobs, got %d", len(mock.jobs))
+	}
+}
