@@ -58,11 +58,12 @@ type Server struct {
 
 	Worker *worker.Worker
 
-	oidcHandler   *handlers.OIDCHandler
-	authHandler   *handlers.AuthHandler
-	configHandler *handlers.ConfigHandler
-	adminHandler  *handlers.AdminHandler
-	requireAuth   func(http.Handler) http.Handler
+	oidcHandler    *handlers.OIDCHandler
+	authHandler    *handlers.AuthHandler
+	configHandler  *handlers.ConfigHandler
+	adminHandler   *handlers.AdminHandler
+	libraryHandler *handlers.LibraryHandler
+	requireAuth    func(http.Handler) http.Handler
 	authLimiter   *auth.RateLimiter
 	mux           *http.ServeMux
 	httpServer    *http.Server
@@ -119,6 +120,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 
 	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT}
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}
+	s.libraryHandler = &handlers.LibraryHandler{DB: s.DB}
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
@@ -289,6 +291,10 @@ func (s *Server) setupRoutes() {
 	// Protected admin routes
 	s.mux.Handle("/api/admin/users", s.requireAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
 	s.mux.Handle("/api/admin/users/", s.requireAuth(http.HandlerFunc(s.adminHandler.HandleSetAdmin)))
+
+	// Protected library routes
+	s.mux.Handle("/api/libraries", s.requireAuth(http.HandlerFunc(s.libraryHandler.HandleLibraries)))
+	s.mux.Handle("/api/libraries/", s.requireAuth(http.HandlerFunc(s.libraryHandler.HandleLibrary)))
 
 	// Health check
 	s.mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {

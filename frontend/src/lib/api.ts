@@ -1,4 +1,4 @@
-import type { User, ArrService, ArrServiceInput } from "../types";
+import type { User, ArrService, ArrServiceInput, Library, LibraryInput } from "../types";
 
 const TOKEN_KEY = "biblioteka_token";
 
@@ -208,4 +208,22 @@ export async function listUsers(): Promise<AdminUser[]> {
 
 export async function setUserAdmin(userId: string, isAdmin: boolean): Promise<{ message: string }> {
   return request<{ message: string }>("PUT", `/api/admin/users/${userId}`, { is_admin: isAdmin });
+}
+
+// Libraries
+
+export async function listLibraries(): Promise<Library[]> {
+  return request<Library[]>("GET", "/api/libraries");
+}
+
+export async function createLibrary(input: LibraryInput): Promise<Library> {
+  return request<Library>("POST", "/api/libraries", input);
+}
+
+export async function updateLibrary(id: string, input: LibraryInput): Promise<Library> {
+  return request<Library>("PUT", `/api/libraries/${id}`, input);
+}
+
+export async function deleteLibrary(id: string): Promise<void> {
+  await request<void>("DELETE", `/api/libraries/${id}`);
 }
