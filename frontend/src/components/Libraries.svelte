@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { get } from "svelte/store";
   import {
     libraries,
     librariesLoaded,
@@ -45,7 +44,7 @@
     return "";
   });
 
-  // React to mode changes
+  // React to mode changes and library data arriving
   $effect(() => {
     if (mode === "create") {
       editingId = null;
@@ -55,8 +54,7 @@
       formError = null;
       showDeleteConfirm = false;
     } else if (mode === "edit" && editId) {
-      const libs = get(libraries);
-      const lib = libs.find((l) => l.id === editId);
+      const lib = $libraries.find((l) => l.id === editId);
       if (lib) {
         editingId = lib.id;
         formName = lib.name;

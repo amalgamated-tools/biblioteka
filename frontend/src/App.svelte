@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { user, authLoading, initAuth } from "./stores/auth";
   import { currentView, navigate } from "./stores/router";
-  import { libraries } from "./stores/libraries";
+  import { libraries, librariesLoaded } from "./stores/libraries";
   import Auth from "./components/Auth.svelte";
   import Dashboard from "./components/Dashboard.svelte";
   import Books from "./components/Books.svelte";
@@ -17,7 +17,7 @@
 
   // Redirect away from books view when no libraries exist
   $effect(() => {
-    if ($currentView === "books" && $libraries.length === 0) {
+    if ($currentView === "books" && $librariesLoaded && $libraries.length === 0) {
       navigate("dashboard");
     }
   });

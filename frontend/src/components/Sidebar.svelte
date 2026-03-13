@@ -103,19 +103,16 @@
       </div>
       <div class="space-y-1">
         {#each $libraries as lib (lib.id)}
-          <div
+          <button
+            onclick={() => navigate(`libraries/edit/${lib.id}`)}
             class="group w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-sm transition-colors text-slate-300 hover:bg-slate-800 hover:text-white"
           >
             <Library class="w-4 h-4 flex-shrink-0" />
-            <span class="truncate flex-1">{lib.name}</span>
-            <button
-              onclick={() => navigate(`libraries/edit/${lib.id}`)}
-              class="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-slate-300 transition-all"
-              title="Edit library"
-            >
-              <Settings2 class="w-3.5 h-3.5" />
-            </button>
-          </div>
+            <span class="truncate flex-1 text-left">{lib.name}</span>
+            <Settings2
+              class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-slate-500 transition-all"
+            />
+          </button>
         {/each}
       </div>
     </div>
