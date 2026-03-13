@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/server"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
@@ -58,6 +59,10 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		return fmt.Errorf("failed to setup worker: %w", err)
 	}
 	defer func() { _ = w.Close() }()
+
+	// Register background jobs
+	w.Register(jobs.JobScanPath, jobs.NewScanPathHandler(w))
+	w.Register(jobs.JobProcessFile, jobs.NewProcessFileHandler(database))
 
 	http, err := server.NewServer(
 		cancelCtx,
