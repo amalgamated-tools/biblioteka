@@ -25,15 +25,6 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	}
 }
 
-// tmdbLogoURL returns a full TMDB image URL by joining a base URL and path.
-// Returns an empty string if path is empty.
-func tmdbLogoURL(base, path string) string {
-	if path == "" {
-		return ""
-	}
-	return base + path
-}
-
 const minPasswordLength = 6
 
 // validatePassword checks that a password meets the minimum length requirement.

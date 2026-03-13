@@ -14,7 +14,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 )
 
-const settingTMDBAPIKey = "tmdb_api_key"
+// const settingTMDBAPIKey = "tmdb_api_key"
 
 const (
 	settingOIDCIssuerURL    = "oidc_issuer_url"

@@ -60,19 +60,19 @@ type Server struct {
 	// tmdbClient *tmdb.Client
 	Worker *worker.Worker
 
-	oidcHandler       *handlers.OIDCHandler
-	authHandler       *handlers.AuthHandler
-	arrServiceHandler *handlers.ArrServiceHandler
-	configHandler     *handlers.ConfigHandler
-	adminHandler      *handlers.AdminHandler
+	oidcHandler *handlers.OIDCHandler
+	authHandler *handlers.AuthHandler
+	// arrServiceHandler *handlers.ArrServiceHandler
+	configHandler *handlers.ConfigHandler
+	adminHandler  *handlers.AdminHandler
 	// movieHandler         *handlers.MovieHandler
 	// tvSeriesHandler      *handlers.TvSeriesHandler
-	watchProviderHandler *handlers.WatchProviderHandler
-	requireAuth          func(http.Handler) http.Handler
-	authLimiter          *auth.RateLimiter
-	mux                  *http.ServeMux
-	httpServer           *http.Server
-	shutdownFuncs        []ShutdownFunc
+	// watchProviderHandler *handlers.WatchProviderHandler
+	requireAuth   func(http.Handler) http.Handler
+	authLimiter   *auth.RateLimiter
+	mux           *http.ServeMux
+	httpServer    *http.Server
+	shutdownFuncs []ShutdownFunc
 }
 
 // NewServer creates a new server instance
@@ -154,11 +154,11 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	secureCookies := os.Getenv("SECURE_COOKIES") != "false"
 
 	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT}
-	s.arrServiceHandler = &handlers.ArrServiceHandler{DB: s.DB}
+	// s.arrServiceHandler = &handlers.ArrServiceHandler{DB: s.DB}
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}
 	// s.movieHandler = &handlers.MovieHandler{DB: s.DB, TmdbClient: s.tmdbClient, Worker: s.Worker}
 	// s.tvSeriesHandler = &handlers.TvSeriesHandler{DB: s.DB, TmdbClient: s.tmdbClient, Worker: s.Worker}
-	s.watchProviderHandler = &handlers.WatchProviderHandler{DB: s.DB}
+	// s.watchProviderHandler = &handlers.WatchProviderHandler{DB: s.DB}
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
 		IsTMDBConfigured: func() bool { return false },
@@ -334,28 +334,10 @@ func (s *Server) setupRoutes() {
 	s.mux.Handle("/api/auth/me", s.requireAuth(http.HandlerFunc(s.authHandler.Me)))
 	s.mux.Handle("/api/auth/password", s.requireAuth(http.HandlerFunc(s.authHandler.ChangePassword)))
 
-	// Protected *arr service routes
-	s.mux.Handle("/api/arr-services", s.requireAuth(http.HandlerFunc(s.arrServiceHandler.HandleArrServices)))
-	s.mux.Handle("/api/arr-services/", s.requireAuth(http.HandlerFunc(s.arrServiceHandler.HandleArrService)))
-
-	// Protected movie routes
-	// s.mux.Handle("/api/movies/search", s.requireAuth(http.HandlerFunc(s.movieHandler.HandleMovieSearch)))
-	// s.mux.Handle("/api/movies", s.requireAuth(http.HandlerFunc(s.movieHandler.HandleMovies)))
-	// s.mux.Handle("/api/movies/", s.requireAuth(http.HandlerFunc(s.movieHandler.HandleMovie)))
-
-	// Protected TV series routes
-	// s.mux.Handle("/api/tv-series/search", s.requireAuth(http.HandlerFunc(s.tvSeriesHandler.HandleTvSeriesSearch)))
-	// s.mux.Handle("/api/tv-series", s.requireAuth(http.HandlerFunc(s.tvSeriesHandler.HandleTvSeriesList)))
-	// s.mux.Handle("/api/tv-series/", s.requireAuth(http.HandlerFunc(s.tvSeriesHandler.HandleTvSeriesResource)))
-
 	// Protected config routes
 	s.mux.Handle("/api/config/status", s.requireAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
 	s.mux.Handle("/api/config/tmdb-api-key", s.requireAuth(http.HandlerFunc(s.configHandler.HandleSetTMDBKey)))
 	s.mux.Handle("/api/config/oidc", s.requireAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
-
-	// Protected watch provider routes
-	s.mux.Handle("/api/watch-providers", s.requireAuth(http.HandlerFunc(s.watchProviderHandler.HandleWatchProviders)))
-	s.mux.Handle("/api/user/watch-providers", s.requireAuth(http.HandlerFunc(s.watchProviderHandler.HandleUserWatchProviders)))
 
 	// Protected admin routes
 	s.mux.Handle("/api/admin/users", s.requireAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
