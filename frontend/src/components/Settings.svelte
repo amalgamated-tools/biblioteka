@@ -1,47 +1,35 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { SvelteSet } from "svelte/reactivity";
   import { user, oidcLinkError } from "../stores/auth";
   import { themePreference, setTheme } from "../stores/theme";
   import {
     changePassword,
     getConfigStatus,
-    setTmdbApiKey,
     getOidcConfig,
     setOidcConfig,
     createOidcLinkNonce,
     listUsers,
     setUserAdmin,
-    listWatchProviders,
-    getUserWatchProviders,
-    setUserWatchProviders,
     type AdminUser,
   } from "../lib/api";
-  import type { StreamingProvider } from "../types";
   import {
     Lock,
     Mail,
     Palette,
-    Key,
     Shield,
     Link,
     Users,
-    MonitorPlay,
   } from "lucide-svelte";
   import { subPath, navigate } from "../stores/router";
 
   type SettingsTab =
     | "account"
     | "preferences"
-    | "streaming"
-    | "tmdb"
     | "oidc"
     | "users";
   const validTabs: SettingsTab[] = [
     "account",
     "preferences",
-    "streaming",
-    "tmdb",
     "oidc",
     "users",
   ];
@@ -58,14 +46,6 @@
   let passwordSuccess = $state(false);
   let passwordLoading = $state(false);
   let compactView = $state(false);
-
-  // TMDB state
-  let tmdbConfigured = $state(false);
-  let tmdbApiKey = $state("");
-  let tmdbError: string | null = $state(null);
-  let tmdbSuccess = $state(false);
-  let tmdbLoading = $state(false);
-  let tmdbStatusLoading = $state(true);
 
   // OIDC state
   let isAdmin = $state(false);
@@ -87,44 +67,6 @@
   let usersLoading = $state(false);
   let usersError: string | null = $state(null);
 
-  // Streaming services state
-  const tmdbLogoBase = "https://image.tmdb.org/t/p/original";
-  let allProviders: StreamingProvider[] = $state([]);
-  let userProviderIds = new SvelteSet<number>();
-  let streamingLoading = $state(false);
-  let streamingSaving = $state(false);
-  let streamingError: string | null = $state(null);
-  let streamingSuccess = $state(false);
-  let streamingSearchQuery = $state("");
-
-  let filteredProviders = $derived(
-    (streamingSearchQuery.trim()
-      ? allProviders.filter((p) =>
-          p.provider_name
-            .toLowerCase()
-            .includes(streamingSearchQuery.toLowerCase()),
-        )
-      : allProviders
-    ).toSorted((a, b) => a.provider_name.localeCompare(b.provider_name)),
-  );
-
-  function replaceUserProviderIds(ids: number[]) {
-    userProviderIds.clear();
-    for (const id of ids) {
-      userProviderIds.add(id);
-    }
-  }
-
-  $effect(() => {
-    if (
-      activeTab === "streaming" &&
-      allProviders.length === 0 &&
-      !streamingLoading
-    ) {
-      loadStreamingProviders();
-    }
-  });
-
   $effect(() => {
     if (
       activeTab === "users" &&
@@ -139,12 +81,8 @@
   onMount(async () => {
     try {
       const status = await getConfigStatus();
-      tmdbConfigured = status.tmdb_configured;
       oidcConfigured = status.oidc_configured;
       isAdmin = status.is_admin;
-      if (!tmdbConfigured && activeTab === "account") {
-        navigate("settings/tmdb");
-      }
       if (status.is_admin && status.oidc_configured) {
         try {
           const config = await getOidcConfig();
@@ -158,7 +96,6 @@
     } catch {
       // ignore - will show as not configured
     } finally {
-      tmdbStatusLoading = false;
       oidcStatusLoading = false;
     }
   });
@@ -219,31 +156,6 @@
     }
   }
 
-  async function handleTmdbKeySave(e: SubmitEvent) {
-    e.preventDefault();
-    tmdbError = null;
-    tmdbSuccess = false;
-
-    if (!tmdbApiKey.trim()) {
-      tmdbError = "API key is required";
-      return;
-    }
-
-    tmdbLoading = true;
-
-    try {
-      await setTmdbApiKey(tmdbApiKey.trim());
-      tmdbSuccess = true;
-      tmdbConfigured = true;
-      tmdbApiKey = "";
-      setTimeout(() => (tmdbSuccess = false), 3000);
-    } catch (err) {
-      tmdbError = err instanceof Error ? err.message : "Failed to save API key";
-    } finally {
-      tmdbLoading = false;
-    }
-  }
-
   const themes = ["light", "dark", "auto"] as const;
 
   async function loadUsers() {
@@ -265,53 +177,6 @@
       userList = [...userList];
     } catch (err) {
       usersError = err instanceof Error ? err.message : "Failed to update user";
-    }
-  }
-
-  async function loadStreamingProviders() {
-    streamingLoading = true;
-    streamingError = null;
-    try {
-      const [all, userSelected] = await Promise.all([
-        listWatchProviders(),
-        getUserWatchProviders(),
-      ]);
-      allProviders = all;
-      replaceUserProviderIds(userSelected.map((p) => p.provider_id));
-    } catch (err) {
-      streamingError =
-        err instanceof Error
-          ? err.message
-          : "Failed to load streaming services";
-    } finally {
-      streamingLoading = false;
-    }
-  }
-
-  function toggleProvider(providerId: number) {
-    if (userProviderIds.has(providerId)) {
-      userProviderIds.delete(providerId);
-    } else {
-      userProviderIds.add(providerId);
-    }
-  }
-
-  async function saveStreamingProviders() {
-    streamingSaving = true;
-    streamingError = null;
-    streamingSuccess = false;
-    try {
-      const result = await setUserWatchProviders([...userProviderIds]);
-      replaceUserProviderIds(result.map((p) => p.provider_id));
-      streamingSuccess = true;
-      setTimeout(() => (streamingSuccess = false), 3000);
-    } catch (err) {
-      streamingError =
-        err instanceof Error
-          ? err.message
-          : "Failed to save streaming services";
-    } finally {
-      streamingSaving = false;
     }
   }
 
@@ -386,20 +251,6 @@
           <Mail class="w-5 h-5" />
           Account
         </button>
-        <button
-          onclick={() => navigate("settings/tmdb")}
-          class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
-          'tmdb'
-            ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}"
-        >
-          <Key class="w-5 h-5" />
-          TMDB
-          {#if !tmdbStatusLoading && !tmdbConfigured}
-            <span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"
-            ></span>
-          {/if}
-        </button>
         {#if isAdmin}
           <button
             onclick={() => navigate("settings/oidc")}
@@ -431,16 +282,6 @@
         >
           <Palette class="w-5 h-5" />
           Preferences
-        </button>
-        <button
-          onclick={() => navigate("settings/streaming")}
-          class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
-          'streaming'
-            ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}"
-        >
-          <MonitorPlay class="w-5 h-5" />
-          Streaming
         </button>
       </nav>
     </aside>
@@ -609,115 +450,6 @@
                 class="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
                 {passwordLoading ? "Updating..." : "Update Password"}
-              </button>
-            </form>
-          </div>
-        </div>
-      {/if}
-
-      {#if activeTab === "tmdb"}
-        <div
-          class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 space-y-6"
-        >
-          <div>
-            <h2
-              class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2"
-            >
-              <Key class="w-5 h-5" />
-              TMDB API Key
-            </h2>
-
-            <div class="mb-4">
-              <div class="flex items-center gap-2 text-sm">
-                <span>Status:</span>
-                {#if tmdbStatusLoading}
-                  <span class="text-slate-500 dark:text-slate-400"
-                    >Checking...</span
-                  >
-                {:else if tmdbConfigured}
-                  <span
-                    class="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2.5 py-1 rounded-full font-medium"
-                  >
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                    Configured
-                  </span>
-                {:else}
-                  <span
-                    class="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-full font-medium"
-                  >
-                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                    Not configured
-                  </span>
-                {/if}
-              </div>
-            </div>
-
-            <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
-              biblioteka uses <a
-                href="https://www.themoviedb.org/"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-blue-600 hover:underline"
-                >The Movie Database (TMDB)</a
-              >
-              to search for movies and TV shows. You can get a free API key by creating
-              an account at
-              <a
-                href="https://www.themoviedb.org/settings/api"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-blue-600 hover:underline"
-                >themoviedb.org/settings/api</a
-              >. <br /><br />
-              <strong>Note:</strong> This is NOT the API Read Access Token.
-            </p>
-
-            <form onsubmit={handleTmdbKeySave} class="space-y-4">
-              <div>
-                <label
-                  for="tmdb-api-key"
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-                >
-                  {tmdbConfigured ? "Update API Key" : "API Key"}
-                </label>
-                <input
-                  id="tmdb-api-key"
-                  type="password"
-                  bind:value={tmdbApiKey}
-                  class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100"
-                  placeholder={tmdbConfigured
-                    ? "Enter new key to update"
-                    : "Enter your TMDB API key"}
-                  disabled={tmdbLoading}
-                />
-              </div>
-
-              {#if tmdbError}
-                <div
-                  class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm"
-                >
-                  {tmdbError}
-                </div>
-              {/if}
-
-              {#if tmdbSuccess}
-                <div
-                  class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg text-sm"
-                >
-                  TMDB API key configured successfully
-                </div>
-              {/if}
-
-              <button
-                type="submit"
-                disabled={tmdbLoading}
-                class="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                {tmdbLoading
-                  ? "Saving..."
-                  : tmdbConfigured
-                    ? "Update API Key"
-                    : "Save API Key"}
               </button>
             </form>
           </div>
@@ -1050,100 +782,6 @@
                 >
               </div>
             </div>
-          </div>
-        </div>
-      {/if}
-
-      {#if activeTab === "streaming"}
-        <div
-          class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 space-y-6"
-        >
-          <div>
-            <h2
-              class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2"
-            >
-              <MonitorPlay class="w-5 h-5" />
-              My Streaming Services
-            </h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
-              Select the streaming services you subscribe to. In your movie and
-              TV collection, icons for services you don't have will appear
-              greyed out.
-            </p>
-
-            {#if streamingLoading}
-              <p class="text-slate-500 dark:text-slate-400">
-                Loading streaming services...
-              </p>
-            {:else}
-              <div class="mb-4">
-                <input
-                  type="text"
-                  bind:value={streamingSearchQuery}
-                  class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100"
-                  placeholder="Filter services..."
-                />
-              </div>
-
-              <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                {userProviderIds.size} service{userProviderIds.size !== 1
-                  ? "s"
-                  : ""} selected
-              </p>
-
-              <div
-                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-96 overflow-y-auto"
-              >
-                {#each filteredProviders as provider (provider.provider_id)}
-                  <button
-                    onclick={() => toggleProvider(provider.provider_id)}
-                    class="flex items-center gap-3 p-3 rounded-lg border transition-all {userProviderIds.has(
-                      provider.provider_id,
-                    )
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400'
-                      : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'}"
-                  >
-                    <img
-                      src="{tmdbLogoBase}{provider.logo_path}"
-                      alt={provider.provider_name}
-                      class="w-8 h-8 rounded flex-shrink-0"
-                      style={userProviderIds.has(provider.provider_id)
-                        ? ""
-                        : "filter: grayscale(1); opacity: 0.5;"}
-                    />
-                    <span
-                      class="text-sm font-medium text-slate-700 dark:text-slate-300 truncate"
-                    >
-                      {provider.provider_name}
-                    </span>
-                  </button>
-                {/each}
-              </div>
-
-              {#if streamingError}
-                <div
-                  class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm mt-4"
-                >
-                  {streamingError}
-                </div>
-              {/if}
-
-              {#if streamingSuccess}
-                <div
-                  class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg text-sm mt-4"
-                >
-                  Streaming preferences saved successfully
-                </div>
-              {/if}
-
-              <button
-                onclick={saveStreamingProviders}
-                disabled={streamingSaving}
-                class="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 mt-4"
-              >
-                {streamingSaving ? "Saving..." : "Save Preferences"}
-              </button>
-            {/if}
           </div>
         </div>
       {/if}

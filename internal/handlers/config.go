@@ -14,8 +14,6 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 )
 
-// const settingTMDBAPIKey = "tmdb_api_key"
-
 const (
 	settingOIDCIssuerURL    = "oidc_issuer_url"
 	settingOIDCClientID     = "oidc_client_id"
@@ -26,20 +24,13 @@ const (
 // ConfigHandler holds dependencies for configuration endpoints.
 type ConfigHandler struct {
 	DB               *db.DB
-	IsTMDBConfigured func() bool
 	IsOIDCConfigured func() bool
-	OnTMDBKeySet     func(key string) error
 	OnOIDCConfigSet  func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error
 }
 
 type configStatusResponse struct {
-	TMDBConfigured bool `json:"tmdb_configured"`
 	OIDCConfigured bool `json:"oidc_configured"`
 	IsAdmin        bool `json:"is_admin"`
-}
-
-type setTMDBKeyRequest struct {
-	APIKey string `json:"api_key"`
 }
 
 // HandleConfigStatus handles GET /api/config/status
@@ -53,78 +44,9 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 	isAdmin, _ := h.DB.IsAdmin(userID)
 
 	writeJSON(w, http.StatusOK, configStatusResponse{
-		TMDBConfigured: h.IsTMDBConfigured(),
 		OIDCConfigured: h.IsOIDCConfigured(),
 		IsAdmin:        isAdmin,
 	})
-}
-
-// HandleSetTMDBKey handles PUT /api/config/tmdb-api-key
-// Only the admin is allowed to change this setting.
-func (h *ConfigHandler) HandleSetTMDBKey(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
-
-	userID := auth.UserIDFromContext(r.Context())
-	isAdmin, err := h.DB.IsAdmin(userID)
-	if err != nil {
-		slog.Error("failed to check admin status", "user_id", userID, "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
-		return
-	}
-	if !isAdmin {
-		writeError(w, http.StatusForbidden, "only the admin user can change this setting")
-		return
-	}
-
-	var req setTMDBKeyRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-
-	apiKey := strings.TrimSpace(req.APIKey)
-	if apiKey == "" {
-		writeError(w, http.StatusBadRequest, "api_key is required")
-		return
-	}
-
-	// // Validate the key by creating a client and calling the TMDB API
-	// client, err := tmdb.NewTMDBClient(apiKey)
-	// if err != nil {
-	// 	writeError(w, http.StatusBadRequest, "invalid TMDB API key")
-	// 	return
-	// }
-
-	// cwr := client.ClientWithResponses()
-	// resp, err := cwr.AuthenticationValidateKeyWithResponse(context.Background())
-	// if err != nil {
-	// 	slog.Error("failed to validate TMDB API key", "error", err)
-	// 	writeError(w, http.StatusBadGateway, "failed to validate API key with TMDB")
-	// 	return
-	// }
-	// if resp.JSON200 == nil || !resp.JSON200.Success {
-	// 	writeError(w, http.StatusBadRequest, "invalid TMDB API key")
-	// 	return
-	// }
-
-	// if err := h.DB.SetSetting(settingTMDBAPIKey, apiKey); err != nil {
-	// 	slog.Error("failed to save TMDB API key", "error", err)
-	// 	writeError(w, http.StatusInternalServerError, "failed to save API key")
-	// 	return
-	// }
-
-	// if h.OnTMDBKeySet != nil {
-	// 	if err := h.OnTMDBKeySet(apiKey); err != nil {
-	// 		slog.Error("failed to apply TMDB API key", "error", err)
-	// 		writeError(w, http.StatusInternalServerError, "key saved but failed to apply")
-	// 		return
-	// 	}
-	// }
-
-	writeJSON(w, http.StatusOK, map[string]string{"message": "TMDB API key configured successfully"})
 }
 
 type oidcConfigResponse struct {

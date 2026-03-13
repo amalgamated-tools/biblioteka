@@ -20,7 +20,6 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 
-	// "github.com/amalgamated-tools/biblioteka/pkg/tmdb"
 	"github.com/justinas/alice"
 	"golang.org/x/sync/errgroup"
 )
@@ -57,17 +56,12 @@ type Server struct {
 	DB  *db.DB
 	JWT *auth.JWTManager
 
-	// tmdbClient *tmdb.Client
 	Worker *worker.Worker
 
-	oidcHandler *handlers.OIDCHandler
-	authHandler *handlers.AuthHandler
-	// arrServiceHandler *handlers.ArrServiceHandler
+	oidcHandler   *handlers.OIDCHandler
+	authHandler   *handlers.AuthHandler
 	configHandler *handlers.ConfigHandler
 	adminHandler  *handlers.AdminHandler
-	// movieHandler         *handlers.MovieHandler
-	// tvSeriesHandler      *handlers.TvSeriesHandler
-	// watchProviderHandler *handlers.WatchProviderHandler
 	requireAuth   func(http.Handler) http.Handler
 	authLimiter   *auth.RateLimiter
 	mux           *http.ServeMux
@@ -120,60 +114,14 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		s.authLimiter = auth.NewRateLimiter(5, 10)
 	}
 
-	// // Try to initialize the TMDB client: env var first, then DB setting
-	// if apiKey := os.Getenv("TMDB_API_KEY"); apiKey != "" {
-	// 	tmdbClient, err := tmdb.NewTMDBClient(apiKey)
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("failed to create TMDB client: %w", err)
-	// 	}
-	// 	s.tmdbClient = tmdbClient
-	// } else if dbKey, err := s.DB.GetSetting("tmdb_api_key"); err == nil && dbKey != "" {
-	// 	tmdbClient, err := tmdb.NewTMDBClient(dbKey)
-	// 	if err != nil {
-	// 		slog.Warn("failed to initialize TMDB client with saved API key", slog.Any("error", err))
-	// 	} else {
-	// 		s.tmdbClient = tmdbClient
-	// 	}
-	// } else {
-	// 	slog.Warn("TMDB_API_KEY not set, movie and TV search will be unavailable until configured in Settings")
-	// }
-
-	// // Seed global watch provider list from TMDB
-	// if s.tmdbClient != nil {
-	// 	go jobs.SeedWatchProviders(ctx, s.DB, s.tmdbClient)
-	// }
-
-	// // Register background jobs (uses getter so it picks up client changes)
-	// getTMDBClient := func() *tmdb.Client { return s.tmdbClient }
-	// if s.Worker != nil {
-	// 	s.Worker.Register(jobs.FetchMovieProviders, jobs.NewFetchProvidersHandler(s.DB, getTMDBClient))
-	// 	s.Worker.Register(jobs.FetchTvSeriesProviders, jobs.NewFetchTvProvidersHandler(s.DB, getTMDBClient))
-	// }
-
 	// Determine cookie security mode: secure by default, can be disabled for local dev
 	secureCookies := os.Getenv("SECURE_COOKIES") != "false"
 
 	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT}
-	// s.arrServiceHandler = &handlers.ArrServiceHandler{DB: s.DB}
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}
-	// s.movieHandler = &handlers.MovieHandler{DB: s.DB, TmdbClient: s.tmdbClient, Worker: s.Worker}
-	// s.tvSeriesHandler = &handlers.TvSeriesHandler{DB: s.DB, TmdbClient: s.tmdbClient, Worker: s.Worker}
-	// s.watchProviderHandler = &handlers.WatchProviderHandler{DB: s.DB}
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
-		IsTMDBConfigured: func() bool { return false },
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
-		OnTMDBKeySet: func(key string) error {
-			// client, err := tmdb.NewTMDBClient(key)
-			// if err != nil {
-			// return err
-			// }
-			// s.tmdbClient = client
-			// s.movieHandler.TmdbClient = client
-			// s.tvSeriesHandler.TmdbClient = client
-			// go jobs.SeedWatchProviders(context.Background(), s.DB, client)
-			return nil
-		},
 		OnOIDCConfigSet: func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error {
 			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, issuerURL, clientID, clientSecret, redirectURI, secureCookies)
 			if err != nil {
@@ -336,7 +284,6 @@ func (s *Server) setupRoutes() {
 
 	// Protected config routes
 	s.mux.Handle("/api/config/status", s.requireAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
-	s.mux.Handle("/api/config/tmdb-api-key", s.requireAuth(http.HandlerFunc(s.configHandler.HandleSetTMDBKey)))
 	s.mux.Handle("/api/config/oidc", s.requireAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
 
 	// Protected admin routes
