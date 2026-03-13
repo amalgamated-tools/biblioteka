@@ -40,3 +40,6 @@ biblioteka.db*
 # OS
 .DS_Store
 data/
+
+# Vendored tools
+vendor/
