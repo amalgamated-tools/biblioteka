@@ -48,3 +48,22 @@ func extractPathID(path, prefix string) (string, bool) {
 	}
 	return id, true
 }
+
+// extractPathSegments extracts a resource ID and optional sub-resource from a URL path.
+// For "/api/books/abc123/authors" with prefix "/api/books/", it returns ("abc123", "authors", true).
+// For "/api/books/abc123" with prefix "/api/books/", it returns ("abc123", "", true).
+func extractPathSegments(path, prefix string) (id, sub string, ok bool) {
+	rest := strings.TrimPrefix(path, prefix)
+	rest = strings.TrimSuffix(rest, "/")
+	if rest == "" {
+		return "", "", false
+	}
+	parts := strings.SplitN(rest, "/", 2)
+	if parts[0] == "" {
+		return "", "", false
+	}
+	if len(parts) == 1 {
+		return parts[0], "", true
+	}
+	return parts[0], parts[1], true
+}
