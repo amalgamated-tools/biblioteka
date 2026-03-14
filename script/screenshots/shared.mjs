@@ -11,11 +11,16 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'demo@veverka.net';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'password123';
 const DEFAULT_TIMEOUT_MS = Number(process.env.SCREENSHOT_TIMEOUT_MS || 5000);
 const NAVIGATION_TIMEOUT_MS = Number(process.env.SCREENSHOT_NAVIGATION_TIMEOUT_MS || 8000);
+export const AUTH_ERROR_TEST_ID = 'auth-error';
 
 const VIEWPORTS = {
     desktop: { width: 1440, height: 900 },
     mobile: { width: 375, height: 812 },
 };
+
+export function getAuthErrorBanner(page) {
+    return page.getByTestId(AUTH_ERROR_TEST_ID);
+}
 
 function setTheme(page, theme) {
     return page.evaluate((value) => {
@@ -68,6 +73,20 @@ async function loginAsDemo(page) {
     await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
 }
 
+async function openSettingsPage(page) {
+    await page.goto(`${BASE_URL}/#settings/account`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor({ state: 'visible' });
+    await page.locator('input#email-display').waitFor({ state: 'visible' });
+}
+
+async function openSettingsTab(page, tabName, headingName) {
+    await page.getByRole('button', { name: tabName, exact: true }).click();
+    await page.getByRole('heading', { name: headingName, exact: true }).waitFor({ state: 'visible' });
+}
+
 async function ensureDemoAccount(page) {
     console.log(`Ensuring demo account exists for ${DEMO_EMAIL}...`);
     await openSignupForm(page);
@@ -77,7 +96,7 @@ async function ensureDemoAccount(page) {
     await page.locator('button[type="submit"]').click();
 
     const logoutButton = page.getByRole('button', { name: 'Logout', exact: true });
-    const errorBanner = page.locator('.bg-red-50, .dark\\:bg-red-900\\/30');
+    const errorBanner = getAuthErrorBanner(page);
 
     await Promise.race([
         logoutButton.waitFor({ state: 'visible' }),
@@ -139,6 +158,27 @@ export async function runVariant({ theme, mobile }) {
         // wait for the logout-button to ensure the dashboard is fully loaded before taking a screenshot
         // await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('dashboard', variantName)) });
+
+        console.log(`Capturing settings (${variantName})...`);
+        await openSettingsPage(page);
+        await setTheme(page, theme);
+        await page.reload({ waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS });
+        await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor({ state: 'visible' });
+        await page.locator('input#email-display').waitFor({ state: 'visible' });
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings', variantName)) });
+
+        console.log(`Capturing settings OIDC (${variantName})...`);
+        await openSettingsTab(page, 'OIDC / SSO', 'OIDC / Single Sign-On');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-oidc', variantName)) });
+
+        console.log(`Capturing settings users (${variantName})...`);
+        await openSettingsTab(page, 'Users', 'User Management');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-users', variantName)) });
+
+        console.log(`Capturing settings preferences (${variantName})...`);
+        await openSettingsTab(page, 'Preferences', 'Display Preferences');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-preferences', variantName)) });
+
         console.log(`Logging out if needed for ${variantName}...`);
         await logoutIfNeeded(page);
 
