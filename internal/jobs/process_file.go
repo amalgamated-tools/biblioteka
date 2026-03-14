@@ -44,6 +44,13 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 			return fmt.Errorf("process file payload: file_type is required")
 		}
 
+		slog.Debug("process:file job received",
+			slog.String("path", p.Path),
+			slog.String("file_name", p.FileName),
+			slog.String("file_type", p.FileType),
+			slog.Int64("file_size", p.FileSize),
+		)
+
 		title := p.FileName
 		if ext := filepath.Ext(p.FileName); ext != "" && strings.EqualFold(ext[1:], p.FileType) {
 			title = strings.TrimSuffix(p.FileName, ext)
