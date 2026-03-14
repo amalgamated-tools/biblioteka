@@ -28,7 +28,8 @@ async function main() {
     // ── 1. Login — light mode ─────────────────────
     console.log('📸 Login (light)...');
     await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle' });
-    await page.waitForSelector('button:has-text("Sign In")');
+    // the button has been updated to id="login-btn"
+    await page.waitForSelector('button#login-btn');
     await setTheme(page, 'light');
     await page.screenshot({ path: path.join(screenshotsDir, 'login-light.png') });
 
@@ -37,24 +38,134 @@ async function main() {
     await setTheme(page, 'dark');
     // reload the page to ensure dark theme is applied to all elements (e.g. the theme toggle button)
     await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForSelector('button:has-text("Sign In")');
+    await page.waitForSelector('button#login-btn');
     await page.screenshot({ path: path.join(screenshotsDir, 'login-dark.png') });
 
-    // ── 22. Mobile — login light ───────────────────
-    console.log('📸 Login mobile (light)...');
-    await page.setViewportSize({ width: 375, height: 812 });
+    // ── 3. Sign up — light mode ───────────────────
+    console.log('📸 Sign up (light)...');
     await setTheme(page, 'light');
-    await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle' });
-    await page.waitForSelector('button:has-text("Sign In")');
-    await page.screenshot({ path: path.join(screenshotsDir, 'login-mobile-light.png') });
+    // reload the page to ensure light theme is applied to all elements (e.g. the theme toggle button)
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
+    await page.waitForSelector('input#name');
+    // wait for the submit button text to update to "Create Account"
+    await page.waitForFunction(() => {
+        const btn = document.querySelector('button[type="submit"]');
+        return btn && btn.textContent.trim() === 'Create Account';
+    });
+    // make sure that the signup-btn is highlight and the login button is not
+    await page.waitForFunction(() => {
+        const signupBtn = document.querySelector('button#signup-btn');
+        const loginBtn = document.querySelector('button#login-btn');
+        return (
+            signupBtn &&
+            loginBtn &&
+            signupBtn.classList.contains('bg-white') &&
+            !loginBtn.classList.contains('bg-white')
+        );
+    });
+    // sleep for a short time to ensure all styles are applied (e.g. the active state of the buttons)
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(screenshotsDir, 'signup-light.png') });
 
-    // ── 23. Mobile — login dark ────────────────────
-    console.log('📸 Login mobile (dark)...');
+    // ── 4. Sign up — dark mode ────────────────────
+    console.log('📸 Sign up (dark)...');
     await setTheme(page, 'dark');
     // reload the page to ensure dark theme is applied to all elements (e.g. the theme toggle button)
     await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForSelector('button:has-text("Sign In")');
+    await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
+    await page.waitForSelector('input#name');
+    // wait for the submit button text to update to "Create Account"
+    await page.waitForFunction(() => {
+        const btn = document.querySelector('button[type="submit"]');
+        return btn && btn.textContent.trim() === 'Create Account';
+    });
+    // make sure that the signup-btn is highlight and the login button is not
+    await page.waitForFunction(() => {
+        const signupBtn = document.querySelector('button#signup-btn');
+        const loginBtn = document.querySelector('button#login-btn');
+        return (
+            signupBtn &&
+            loginBtn &&
+            signupBtn.classList.contains('bg-white') &&
+            !loginBtn.classList.contains('bg-white')
+        );
+    });
+    // sleep for a short time to ensure all styles are applied (e.g. the active state of the buttons)
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(screenshotsDir, 'signup-dark.png') });
+
+    await page.setViewportSize({ width: 375, height: 812 });
+
+    // ── 1. Login — light mode ─────────────────────
+    console.log('📸 Login (light)...');
+    await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle' });
+    // the button has been updated to id="login-btn"
+    await page.waitForSelector('button#login-btn');
+    await setTheme(page, 'light');
+    await page.screenshot({ path: path.join(screenshotsDir, 'login-mobile-light.png') });
+
+    // ── 2. Login — dark mode ──────────────────────
+    console.log('📸 Login (dark)...');
+    await setTheme(page, 'dark');
+    // reload the page to ensure dark theme is applied to all elements (e.g. the theme toggle button)
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('button#login-btn');
     await page.screenshot({ path: path.join(screenshotsDir, 'login-mobile-dark.png') });
+
+    // ── 3. Sign up — light mode ───────────────────
+    console.log('📸 Sign up (light)...');
+    await setTheme(page, 'light');
+    // reload the page to ensure light theme is applied to all elements (e.g. the theme toggle button)
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
+    await page.waitForSelector('input#name');
+    // wait for the submit button text to update to "Create Account"
+    await page.waitForFunction(() => {
+        const btn = document.querySelector('button[type="submit"]');
+        return btn && btn.textContent.trim() === 'Create Account';
+    });
+    // make sure that the signup-btn is highlight and the login button is not
+    await page.waitForFunction(() => {
+        const signupBtn = document.querySelector('button#signup-btn');
+        const loginBtn = document.querySelector('button#login-btn');
+        return (
+            signupBtn &&
+            loginBtn &&
+            signupBtn.classList.contains('bg-white') &&
+            !loginBtn.classList.contains('bg-white')
+        );
+    });
+    // sleep for a short time to ensure all styles are applied (e.g. the active state of the buttons)
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(screenshotsDir, 'signup-mobile-light.png') });
+
+    // ── 4. Sign up — dark mode ────────────────────
+    console.log('📸 Sign up (dark)...');
+    await setTheme(page, 'dark');
+    // reload the page to ensure dark theme is applied to all elements (e.g. the theme toggle button)
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
+    await page.waitForSelector('input#name');
+    // wait for the submit button text to update to "Create Account"
+    await page.waitForFunction(() => {
+        const btn = document.querySelector('button[type="submit"]');
+        return btn && btn.textContent.trim() === 'Create Account';
+    });
+    // make sure that the signup-btn is highlight and the login button is not
+    await page.waitForFunction(() => {
+        const signupBtn = document.querySelector('button#signup-btn');
+        const loginBtn = document.querySelector('button#login-btn');
+        return (
+            signupBtn &&
+            loginBtn &&
+            signupBtn.classList.contains('bg-white') &&
+            !loginBtn.classList.contains('bg-white')
+        );
+    });
+    // sleep for a short time to ensure all styles are applied (e.g. the active state of the buttons)
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(screenshotsDir, 'signup-mobile-dark.png') });
 
     await browser.close();
     console.log('✅ All screenshots saved to screenshots/');
