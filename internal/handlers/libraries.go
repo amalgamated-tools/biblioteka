@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"slices"
-	"sync"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -20,11 +19,7 @@ import (
 type LibraryHandler struct {
 	DB       *db.DB
 	Enqueuer jobs.Enqueuer
-	wg       sync.WaitGroup
 }
-
-// Wait blocks until all outstanding background enqueue goroutines complete.
-func (h *LibraryHandler) Wait() { h.wg.Wait() }
 
 type libraryRequest struct {
 	Name             string   `json:"name"`
@@ -168,21 +163,17 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 	dto := toLibraryDTO(lib)
 
 	if h.Enqueuer != nil && len(dto.Paths) > 0 {
-		h.wg.Add(1)
-		go func() {
-			defer h.wg.Done()
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-			if _, err := h.Enqueuer.Enqueue(ctx, jobs.JobScanLibrary, jobs.ScanLibraryPayload{
-				LibraryID: lib.ID,
-				Paths:     dto.Paths,
-			}); err != nil {
-				slog.Error("failed to enqueue scan:library job",
-					slog.String("library_id", lib.ID),
-					slog.Any("error", err),
-				)
-			}
-		}()
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+		if _, err := h.Enqueuer.Enqueue(ctx, jobs.JobScanLibrary, jobs.ScanLibraryPayload{
+			LibraryID: lib.ID,
+			Paths:     dto.Paths,
+		}); err != nil {
+			slog.ErrorContext(r.Context(), "failed to enqueue scan:library job",
+				slog.String("library_id", lib.ID),
+				slog.Any("error", err),
+			)
+		}
 	}
 
 	writeJSON(w, http.StatusCreated, dto)
