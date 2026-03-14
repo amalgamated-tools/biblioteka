@@ -1,9 +1,9 @@
 import "./index.css";
 import App from "./App.svelte";
 import { mount } from "svelte";
-import { initTheme } from "./stores/theme";
+import { themeStore } from "./stores/theme.svelte";
 
-initTheme();
+themeStore.init();
 
 const app = mount(App, {
   target: document.getElementById("app")!,

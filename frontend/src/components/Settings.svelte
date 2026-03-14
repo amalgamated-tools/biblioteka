@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { user, oidcLinkError } from "../stores/auth";
-  import { themePreference, setTheme } from "../stores/theme";
+  import { authStore } from "../stores/auth.svelte";
+  import { themeStore } from "../stores/theme.svelte";
+  import { routerStore } from "../stores/router.svelte";
   import {
     changePassword,
     getConfigStatus,
@@ -20,7 +21,6 @@
     Link,
     Users,
   } from "lucide-svelte";
-  import { subPath, navigate } from "../stores/router";
 
   type SettingsTab =
     | "account"
@@ -35,8 +35,8 @@
   ];
 
   let activeTab: SettingsTab = $derived(
-    validTabs.includes($subPath as SettingsTab)
-      ? ($subPath as SettingsTab)
+    validTabs.includes(routerStore.subPath as SettingsTab)
+      ? (routerStore.subPath as SettingsTab)
       : "account",
   );
   let currentPassword = $state("");
@@ -63,7 +63,7 @@
   let linkSsoLoading = $state(false);
 
   // User management state
-  let userList: AdminUser[] = $state([]);
+  let userList: AdminUser[] = $state.raw([]);
   let usersLoading = $state(false);
   let usersError: string | null = $state(null);
 
@@ -102,14 +102,13 @@
 
   async function handleLinkSso() {
     linkSsoLoading = true;
-    oidcLinkError.set(null);
+    authStore.oidcLinkError = null;
     try {
       const nonce = await createOidcLinkNonce();
       window.location.href = `/api/auth/oidc/link?nonce=${encodeURIComponent(nonce)}`;
     } catch (err) {
-      oidcLinkError.set(
-        err instanceof Error ? err.message : "Failed to start SSO linking",
-      );
+      authStore.oidcLinkError =
+        err instanceof Error ? err.message : "Failed to start SSO linking";
       linkSsoLoading = false;
     }
   }
@@ -173,8 +172,9 @@
   async function toggleAdmin(u: AdminUser) {
     try {
       await setUserAdmin(u.id, !u.is_admin);
-      u.is_admin = !u.is_admin;
-      userList = [...userList];
+      userList = userList.map((item) =>
+        item.id === u.id ? { ...item, is_admin: !item.is_admin } : item,
+      );
     } catch (err) {
       usersError = err instanceof Error ? err.message : "Failed to update user";
     }
@@ -242,7 +242,7 @@
         class="flex sm:flex-col gap-2 sm:gap-1 overflow-x-auto sm:overflow-x-visible"
       >
         <button
-          onclick={() => navigate("settings/account")}
+          onclick={() => routerStore.navigate("settings/account")}
           class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
           'account'
             ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
@@ -253,7 +253,7 @@
         </button>
         {#if isAdmin}
           <button
-            onclick={() => navigate("settings/oidc")}
+            onclick={() => routerStore.navigate("settings/oidc")}
             class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
             'oidc'
               ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
@@ -263,7 +263,7 @@
             OIDC / SSO
           </button>
           <button
-            onclick={() => navigate("settings/users")}
+            onclick={() => routerStore.navigate("settings/users")}
             class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
             'users'
               ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
@@ -274,7 +274,7 @@
           </button>
         {/if}
         <button
-          onclick={() => navigate("settings/preferences")}
+          onclick={() => routerStore.navigate("settings/preferences")}
           class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
           'preferences'
             ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
@@ -309,7 +309,7 @@
                 <input
                   id="email-display"
                   type="email"
-                  value={$user?.email || ""}
+                  value={authStore.user?.email || ""}
                   disabled
                   class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 cursor-not-allowed"
                 />
@@ -330,7 +330,7 @@
                 <Link class="w-5 h-5" />
                 Single Sign-On
               </h2>
-              {#if $user?.oidc_linked}
+              {#if authStore.user?.oidc_linked}
                 <div class="flex items-center gap-2">
                   <span
                     class="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2.5 py-1 rounded-full text-sm font-medium"
@@ -344,11 +344,11 @@
                   with either your password or SSO.
                 </p>
               {:else}
-                {#if $oidcLinkError}
+                {#if authStore.oidcLinkError}
                   <div
                     class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-4"
                   >
-                    {$oidcLinkError}
+                    {authStore.oidcLinkError}
                   </div>
                 {/if}
                 <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
@@ -669,7 +669,7 @@
                           </span>
                         </td>
                         <td class="py-3">
-                          {#if u.id === $user?.id}
+                          {#if u.id === authStore.user?.id}
                             <span
                               class="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2.5 py-1 rounded-full text-xs font-medium"
                             >
@@ -721,8 +721,8 @@
                 <div id="theme-select" class="flex gap-3">
                   {#each themes as t (t)}
                     <button
-                      onclick={() => setTheme(t)}
-                      class="px-4 py-2 rounded-lg font-medium capitalize transition-all {$themePreference ===
+                      onclick={() => themeStore.set(t)}
+                      class="px-4 py-2 rounded-lg font-medium capitalize transition-all {themeStore.preference ===
                       t
                         ? 'bg-blue-600 text-white'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'}"
