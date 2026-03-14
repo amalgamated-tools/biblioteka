@@ -45,6 +45,8 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			return fmt.Errorf("scan path payload: path is required")
 		}
 
+		slog.Debug("scan:path job received", slog.String("path", p.Path))
+
 		if _, err := os.Stat(p.Path); err != nil {
 			return fmt.Errorf("scan path %s: %w", p.Path, err)
 		}
@@ -63,12 +65,14 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			}
 
 			if d.IsDir() {
+				slog.Debug("scan:path skipping directory", slog.String("path", path))
 				return nil
 			}
 
 			ext := strings.ToLower(filepath.Ext(path))
 			fileType, ok := supportedExtensions[ext]
 			if !ok {
+				slog.Debug("scan:path skipping unsupported file", slog.String("path", path), slog.String("ext", ext))
 				return nil
 			}
 

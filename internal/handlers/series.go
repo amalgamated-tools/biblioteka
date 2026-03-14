@@ -76,12 +76,15 @@ func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *SeriesHandler) listSeries(w http.ResponseWriter, _ *http.Request) {
+	slog.Debug("listing series")
 	list, err := h.DB.ListSeries()
 	if err != nil {
 		slog.Error("failed to list series", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list series")
 		return
 	}
+
+	slog.Debug("series listed", slog.Int("count", len(list)))
 
 	dtos := make([]seriesDTO, 0, len(list))
 	for i := range list {
@@ -103,6 +106,8 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.DebugContext(r.Context(), "creating series", slog.String("name", req.Name))
+
 	s, err := h.DB.CreateSeries(req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
 	if err != nil {
 		if err == db.ErrSeriesNameExists {
@@ -114,10 +119,12 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.DebugContext(r.Context(), "series created", slog.String("series_id", s.ID), slog.String("name", s.Name))
 	writeJSON(w, http.StatusCreated, toSeriesDTO(s))
 }
 
 func (h *SeriesHandler) getSeries(w http.ResponseWriter, _ *http.Request, id string) {
+	slog.Debug("fetching series", slog.String("series_id", id))
 	s, err := h.DB.GetSeries(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -144,6 +151,8 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
+	slog.DebugContext(r.Context(), "updating series", slog.String("series_id", id), slog.String("name", req.Name))
+
 	s, err := h.DB.UpdateSeries(id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -163,6 +172,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 }
 
 func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, _ *http.Request, id string) {
+	slog.Debug("deleting series", slog.String("series_id", id))
 	err := h.DB.DeleteSeries(id)
 	if err != nil {
 		if err == sql.ErrNoRows {

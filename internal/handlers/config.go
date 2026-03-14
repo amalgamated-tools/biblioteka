@@ -41,6 +41,7 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
+	slog.DebugContext(r.Context(), "fetching config status", slog.String("user_id", userID))
 	isAdmin, _ := h.DB.IsAdmin(userID)
 
 	writeJSON(w, http.StatusOK, configStatusResponse{
@@ -67,6 +68,7 @@ type setOIDCConfigRequest struct {
 // Only the admin user can view the OIDC configuration.
 func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
+	slog.DebugContext(r.Context(), "fetching OIDC config", slog.String("user_id", userID))
 	isAdmin, err := h.DB.IsAdmin(userID)
 	if err != nil {
 		slog.Error("failed to check admin status", "user_id", userID, "error", err)
@@ -139,6 +141,8 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		}
 		clientSecret = existing
 	}
+
+	slog.DebugContext(r.Context(), "saving OIDC config", slog.String("issuer_url", issuerURL), slog.String("redirect_uri", redirectURI))
 
 	// Validate the OIDC provider by performing discovery
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)

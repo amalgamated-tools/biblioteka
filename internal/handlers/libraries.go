@@ -83,12 +83,15 @@ func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
+	slog.DebugContext(r.Context(), "listing libraries")
 	libraries, err := h.DB.ListLibraries()
 	if err != nil {
 		slog.Error("failed to list libraries", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list libraries")
 		return
 	}
+
+	slog.DebugContext(r.Context(), "libraries listed", slog.Int("count", len(libraries)))
 
 	dtos := make([]libraryDTO, 0, len(libraries))
 	for i := range libraries {
@@ -140,6 +143,8 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.DebugContext(r.Context(), "creating library", slog.String("name", req.Name))
+
 	lib, err := h.DB.CreateLibrary(req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
 		if err == db.ErrLibraryNameExists {
@@ -155,6 +160,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "fetching library", slog.String("library_id", id))
 	lib, err := h.DB.GetLibrary(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -181,6 +187,8 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
+	slog.DebugContext(r.Context(), "updating library", slog.String("library_id", id), slog.String("name", req.Name))
+
 	lib, err := h.DB.UpdateLibrary(id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -200,6 +208,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 }
 
 func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "deleting library", slog.String("library_id", id))
 	err := h.DB.DeleteLibrary(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
