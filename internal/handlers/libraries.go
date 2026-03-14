@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,13 +9,16 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 )
 
 // LibraryHandler holds dependencies for library endpoints.
 type LibraryHandler struct {
-	DB *db.DB
+	DB       *db.DB
+	Enqueuer jobs.Enqueuer
 }
 
 type libraryRequest struct {
@@ -151,7 +155,27 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toLibraryDTO(lib))
+	dto := toLibraryDTO(lib)
+
+	if h.Enqueuer != nil && len(dto.Paths) > 0 {
+		paths := dto.Paths
+		libID := lib.ID
+		enqueuer := h.Enqueuer
+		go func() {
+			for _, p := range paths {
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				jobID, err := enqueuer.Enqueue(ctx, jobs.JobScanPath, jobs.ScanPathPayload{Path: p})
+				cancel()
+				if err != nil {
+					slog.Error("failed to enqueue scan job", "path", p, "error", err)
+				} else {
+					slog.Info("enqueued scan job for new library", "library", libID, "path", p, "job_id", jobID)
+				}
+			}
+		}()
+	}
+
+	writeJSON(w, http.StatusCreated, dto)
 }
 
 func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id string) {
