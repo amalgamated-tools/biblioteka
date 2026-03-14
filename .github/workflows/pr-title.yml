@@ -25,4 +25,5 @@ jobs:
             ci
             perf
             build
+            revert
           requireScope: false
