@@ -60,11 +60,17 @@
       >
         <MonitorPlay class="w-8 h-8 text-white" />
       </div>
-      <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">biblioteka</h1>
-      <p class="text-slate-600 dark:text-slate-400">Manage your media with ease</p>
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+        biblioteka
+      </h1>
+      <p class="text-slate-600 dark:text-slate-400">
+        Manage your ebooks with ease
+      </p>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-slate-900/30 p-8">
+    <div
+      class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-slate-900/30 p-8"
+    >
       {#if oidcEnabled}
         <a
           href="/api/auth/oidc/login"
@@ -75,15 +81,22 @@
 
         <div class="relative mb-6">
           <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-slate-200 dark:border-slate-700"></div>
+            <div
+              class="w-full border-t border-slate-200 dark:border-slate-700"
+            ></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400">or</span>
+            <span
+              class="px-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+              >or</span
+            >
           </div>
         </div>
       {/if}
 
-      <div class="flex gap-2 mb-6 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+      <div
+        class="flex gap-2 mb-6 bg-slate-100 dark:bg-slate-700 rounded-lg p-1"
+      >
         <button
           onclick={() => (isLogin = true)}
           class="flex-1 py-2 px-4 rounded-md font-medium transition-all {isLogin
@@ -168,7 +181,7 @@
           disabled={loading}
           class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Processing..." : isLogin ? "Login" : "Create Account"}
+          {loading ? "Processing..." : isLogin ? "Sign In" : "Create Account"}
         </button>
       </form>
     </div>
