@@ -68,10 +68,10 @@ type Server struct {
 	bookHandler     *handlers.BookHandler
 	bookFileHandler *handlers.BookFileHandler
 	requireAuth     func(http.Handler) http.Handler
-	authLimiter   *auth.RateLimiter
-	mux           *http.ServeMux
-	httpServer    *http.Server
-	shutdownFuncs []ShutdownFunc
+	authLimiter     *auth.RateLimiter
+	mux             *http.ServeMux
+	httpServer      *http.Server
+	shutdownFuncs   []ShutdownFunc
 }
 
 // NewServer creates a new server instance

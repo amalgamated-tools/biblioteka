@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Bootstrap script for development dependencies.
+# Usage: ./script/bootstrap
+
+set -e
+
+echo "==> Bootstrapping development dependencies..."
+
+# exiftool
+if command -v exiftool >/dev/null 2>&1; then
+    echo "exiftool $(exiftool -ver) already installed"
+elif command -v brew >/dev/null 2>&1; then
+    echo "Installing exiftool via Homebrew..."
+    brew install exiftool
+else
+    echo "Error: Homebrew not found. Install exiftool manually:"
+    echo "  https://exiftool.org/install.html"
+    exit 1
+fi
+
+echo "==> Bootstrap complete"

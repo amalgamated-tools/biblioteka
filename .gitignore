@@ -1,42 +1,34 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Dependencies
-node_modules
-
-# Frontend build output
-internal/server/dist
-!internal/server/dist/.gitkeep
-dist-ssr
-
-# Local env files
-*.local
-.env
-
-# Go binary
-biblioteka
-
-# Air temp directory
-tmp/
-
-# SQLite database
-biblioteka.db*
+# Database
+db/biblioteka.db*
+# Binaries
+/bibloteka
+*.exe
 
 # IDE
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.idea/
+.vscode/
+*.swp
 
 # OS
 .DS_Store
+
+# Test coverage
+coverage.out
+
+uploads/
+.env
+
+# Air live reload
+tmp/
+rustfs/
+mail/
 data/
+bibloteka.db
+
+# E2E tests
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
+
+# MkDocs build output
+site/
