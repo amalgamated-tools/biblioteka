@@ -289,11 +289,12 @@ func (s *Server) setupRoutes() {
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)
 
-	// Swagger UI (public)
-	s.mux.Handle("/swagger", http.RedirectHandler("/swagger/", http.StatusMovedPermanently))
-	s.mux.Handle("/swagger/", httpSwagger.Handler(
+	// Swagger UI (public, with restrictive security headers)
+	swaggerHandler := swaggerSecurityHeaders(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
+	s.mux.Handle("/swagger", http.RedirectHandler("/swagger/", http.StatusMovedPermanently))
+	s.mux.Handle("/swagger/", swaggerHandler)
 
 	// Asynq monitoring dashboard (admin only, supports cookie auth for browser access)
 	if s.Worker != nil {
@@ -305,6 +306,24 @@ func (s *Server) setupRoutes() {
 	}
 
 	s.setupFrontend()
+}
+
+// swaggerSecurityHeaders wraps a handler with restrictive CORS and CSP headers
+// to limit cross-origin access to the publicly-available Swagger documentation.
+func swaggerSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+
+		// Reject cross-origin requests outright.
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Vary", "Origin")
+			// No Access-Control-Allow-Origin header → browser blocks the response.
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // oidcRoute returns a handler that forwards to the OIDC handler method if OIDC is configured,
