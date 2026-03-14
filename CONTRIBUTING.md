@@ -134,7 +134,7 @@ The test workflow runs on pushes and pull requests targeting `main` or `develop`
 | `.golangci.yml` | Linter configuration |
 | `.github/workflows/test.yml` | Workflow file itself |
 
-> **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you want CI to run on a docs-only PR, add a trivial whitespace change to one of the paths above, or trigger it manually via **Actions → Test → Run workflow**.
+> **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
 
 ## Submitting a Pull Request
 
