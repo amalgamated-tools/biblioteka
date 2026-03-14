@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"sync"
 	"testing"
 
@@ -157,9 +158,13 @@ func TestScanLibrariesHandler(t *testing.T) {
 
 	// Expect 2 scan:library jobs (lib1 and lib2; lib3 is not monitored)
 	if got := len(enq.jobs); got != 2 {
-		t.Errorf("expected 2 enqueued jobs, got %d", got)
+		t.Fatalf("expected 2 enqueued jobs, got %d", got)
 	}
 
+	wantJobs := map[string][]string{
+		"lib1": {"/books/fiction", "/books/scifi"},
+		"lib2": {"/books/nonfiction"},
+	}
 	for _, j := range enq.jobs {
 		if j.Name != JobScanLibrary {
 			t.Errorf("expected job name %q, got %q", JobScanLibrary, j.Name)
@@ -167,12 +172,15 @@ func TestScanLibrariesHandler(t *testing.T) {
 		var p ScanLibraryPayload
 		if err := json.Unmarshal(j.Payload, &p); err != nil {
 			t.Errorf("unmarshal payload: %v", err)
+			continue
 		}
-		if p.LibraryID == "" {
-			t.Error("enqueued job has empty library_id")
+		wantPaths, ok := wantJobs[p.LibraryID]
+		if !ok {
+			t.Errorf("unexpected library_id %q", p.LibraryID)
+			continue
 		}
-		if len(p.Paths) == 0 {
-			t.Error("enqueued job has empty paths")
+		if !slices.Equal(p.Paths, wantPaths) {
+			t.Errorf("library %q paths = %v, want %v", p.LibraryID, p.Paths, wantPaths)
 		}
 	}
 }
