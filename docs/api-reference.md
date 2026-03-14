@@ -215,7 +215,7 @@ Return the current OIDC configuration. The `client_secret` value is never return
 
 ### `PUT /api/config/oidc` 🔒 **Admin**
 
-Save OIDC provider settings. The server performs OIDC discovery on the `issuer_url` before saving. If `client_secret` is omitted, the existing stored secret is preserved.
+Save OIDC provider settings. The server performs OIDC discovery on the `issuer_url` before saving. If `client_secret` is omitted, the existing stored secret is preserved; however, a `client_secret` **must** be supplied the first time OIDC is configured (when no secret is yet stored).
 
 **Request body:**
 
@@ -223,10 +223,19 @@ Save OIDC provider settings. The server performs OIDC discovery on the `issuer_u
 |-----------------|--------|----------|-------------|
 | `issuer_url`    | string | ✓        | OIDC provider issuer URL |
 | `client_id`     | string | ✓        | OAuth 2.0 client ID |
-| `client_secret` | string |          | OAuth 2.0 client secret (omit to keep existing) |
+| `client_secret` | string | ✓*       | OAuth 2.0 client secret; required on initial setup, omit to keep existing |
 | `redirect_uri`  | string | ✓        | Callback URL registered with the provider |
 
-> **Note:** If the `OIDC_ISSUER_URL` environment variable is set, it takes precedence over these stored settings at runtime.
+\* Required when no `client_secret` is currently stored (initial OIDC setup); may be omitted to preserve an existing secret.
+| `redirect_uri`  | string | ✓        | Callback URL registered with the provider |
+
+**Response body (`200`):**
+
+```json
+{ "message": "OIDC configuration saved successfully" }
+```
+
+> **Note:** If the `OIDC_ISSUER_URL` environment variable is set, it takes precedence over these stored settings at server startup — the server will use the environment variables instead of the saved configuration. When `OIDC_ISSUER_URL` is set at the time of this `PUT` request, the response message will warn about this and instruct you to remove the variable to use the stored settings.
 
 ---
 
@@ -676,9 +685,15 @@ Delete a book file record (does not delete the file from disk). Returns `204 No 
 
 An interactive web UI for monitoring background jobs (powered by [asynqmon](https://github.com/hibiken/asynqmon)).
 
-This dashboard is only available when the server is started with a Redis-backed worker (i.e. `REDIS_URL` is configured). It requires an authenticated session — accessing it without a valid JWT cookie returns `401 Unauthorized`.
+| Property | Value |
+|----------|-------|
+| **URL** | `/asynqmon/` |
+| **Auth** | 🔒 Valid JWT required (same token as API calls) |
+| **Availability** | Route is mounted whenever the background worker subsystem is enabled; a reachable Redis instance is required for the UI to function correctly |
 
-Navigate to `http://<host>:<port>/asynqmon/` in a browser after logging in to view queued, active, completed, and failed jobs.
+This dashboard is only available when the server is started with a Redis-backed worker (i.e. `REDIS_URL` is configured, default: `redis://localhost:6379`). It requires an authenticated session — accessing it without a valid JWT returns `401 Unauthorized`.
+
+Navigate to `http://<host>:<port>/asynqmon/` in a browser after logging in to view queued, active, completed, and failed background jobs (library scans, file processing), and retry or delete individual tasks.
 
 ---
 
@@ -701,17 +716,3 @@ Common HTTP status codes:
 | `405` | Method not allowed |
 | `409` | Conflict — duplicate name or email |
 | `500` | Internal server error |
-
----
-
-## Background Job Monitoring UI
-
-The server mounts the [Asynqmon](https://github.com/hibiken/asynqmon) dashboard at `/asynqmon/`, backed by Redis configured via `REDIS_URL` (default: `redis://localhost:6379`).
-
-| Property | Value |
-|----------|-------|
-| **URL** | `/asynqmon/` |
-| **Auth** | 🔒 Valid JWT required (same token as API calls) |
-| **Availability** | Route is mounted whenever the background worker subsystem is enabled; a reachable Redis instance is required for the UI to function correctly |
-
-The dashboard provides a real-time view of queued, active, completed, and failed background jobs (library scans, file processing), and lets you retry or delete individual tasks.
