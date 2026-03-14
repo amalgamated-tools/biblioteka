@@ -532,10 +532,10 @@ func (h *BookHandler) handleBookSeries(w http.ResponseWriter, r *http.Request, b
 // @Failure     400 {object} errorResponse
 // @Failure     500 {object} errorResponse
 // @Router      /books/{id}/files [get]
-func (h *BookHandler) getBookFiles(w http.ResponseWriter, _ *http.Request, bookID string) {
+func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
 	files, err := h.DB.ListBookFiles(bookID)
 	if err != nil {
-		slog.Error("failed to list book files", "error", err)
+		slog.ErrorContext(r.Context(), "failed to list book files", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list book files")
 		return
 	}
@@ -576,7 +576,7 @@ func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, book
 	}
 	bf, err := h.DB.CreateBookFile(bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
 	if err != nil {
-		slog.Error("failed to create book file", "error", err)
+		slog.ErrorContext(r.Context(), "failed to create book file", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to create book file")
 		return
 	}
