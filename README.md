@@ -9,7 +9,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
 - **Author & series tracking** – browse by author or series, with position numbers within each series
 - **User authentication** – JWT-based login, optional OpenID Connect (OIDC/SSO)
-- **Background processing** – Redis-backed job queue scans paths and processes files asynchronously
+- **Background processing** – Redis-backed job queue scans paths and processes files asynchronously; monitored libraries are re-scanned automatically every 24 hours
 - **Two database backends** – SQLite (zero-config, default) or PostgreSQL
 - **Single binary** – Go backend embeds the Svelte frontend; one executable to deploy
 
@@ -101,6 +101,18 @@ The first account created is automatically granted admin privileges. Admins can:
 
 See [docs/api-reference.md](docs/api-reference.md) for the full API reference.
 
+## Background Jobs
+
+The server runs a Redis-backed job queue (powered by [asynq](https://github.com/hibiken/asynq)) in-process alongside the HTTP server.
+
+| Job | Trigger | Description |
+|---|---|---|
+| `scan:libraries` | Scheduled every 24 h; also triggered manually via the Libraries UI | Iterates every *monitored* library and enqueues a `scan:path` job for each configured path |
+| `scan:path` | Enqueued by `scan:libraries` | Walks a directory tree and enqueues a `process:file` job for every EPUB, MOBI, AZW3, or PDF found |
+| `process:file` | Enqueued by `scan:path` | Creates a book record and attaches a book-file record for the discovered file |
+
+Jobs are deduplicated for 24 hours — re-scanning a path that was already queued within that window is a no-op.
+
 ## Database Migrations
 
 Migrations in `db/migrations/{sqlite,postgres}/` run automatically on startup. No separate migration command is needed.
@@ -172,7 +184,7 @@ internal/
   auth/            JWT, OIDC, rate-limiting, middleware
   db/              Database layer (SQLite/PostgreSQL), migrations, CRUD
   handlers/        HTTP request handlers (books, authors, series, libraries, auth)
-  jobs/            Background job handlers (scan path, process file)
+  jobs/            Background job handlers (scan:path, scan:libraries, process:file)
   metadata/        EPUB/MOBI/PDF metadata extraction
   server/          Route registration, middleware setup, embedded frontend
   worker/          asynq worker setup
@@ -187,7 +199,7 @@ script/            Build and release helper scripts
 
 ## API Reference
 
-The server exposes a REST API under `/api`. See [docs/api.md](docs/api.md) for the full endpoint reference including request/response shapes and authentication requirements.
+The server exposes a REST API under `/api`. See [docs/api-reference.md](docs/api-reference.md) for the full endpoint reference including request/response shapes and authentication requirements.
 
 A health check endpoint is available at `GET /api/health` — it returns `200 OK` with a JSON body like `{"status":"ok"}` and requires no authentication.
 
