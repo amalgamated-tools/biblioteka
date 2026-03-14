@@ -72,6 +72,7 @@ func NewOIDCHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, 
 // @Description Redirects to the OIDC provider's authorization endpoint
 // @Tags        OIDC
 // @Success     302 "Redirect to OIDC provider"
+// @Failure     404 {object} errorResponse "OIDC not configured"
 // @Failure     500 {object} errorResponse
 // @Router      /auth/oidc/login [get]
 func (h *OIDCHandler) Login(w http.ResponseWriter, r *http.Request) {

@@ -287,10 +287,10 @@ func (s *Server) setupRoutes() {
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)
 
-	// Swagger UI
-	s.mux.Handle("/swagger/", httpSwagger.Handler(
+	// Swagger UI (protected)
+	s.mux.Handle("/swagger/", s.requireAuth(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
-	))
+	)))
 
 	// Asynq monitoring dashboard
 	if s.Worker != nil {
@@ -328,7 +328,12 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 // @Router      /auth/oidc/enabled [get]
 func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		if err := json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed"}); err != nil {
+			slog.ErrorContext(r.Context(), "failed to encode OIDC enabled method not allowed response", slog.Any("error", err))
+		}
 		return
 	}
 
@@ -362,6 +367,7 @@ type oidcEnabledResponse struct {
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
 		w.WriteHeader(http.StatusMethodNotAllowed)
 
 		resp := map[string]string{
@@ -369,7 +375,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			slog.Error("failed to encode health method not allowed response", slog.Any("error", err))
+			slog.ErrorContext(r.Context(), "failed to encode health method not allowed response", slog.Any("error", err))
 		}
 		return
 	}
