@@ -23,7 +23,7 @@ Endpoints that require authentication are marked with 🔒. Endpoints that addit
 **Response:** `200 OK`
 
 ```json
-"OK"
+{"status":"ok"}
 ```
 
 ---
@@ -167,7 +167,15 @@ Link an OIDC identity to an existing local account. Expects a `nonce` query para
 
 ### `POST /api/auth/oidc/link-nonce` 🔒
 
-### `GET /api/auth/oidc/link`
+Generate a short-lived, single-use nonce that authorises the OIDC account-linking flow. Pass the returned nonce as the `nonce` query parameter to `GET /api/auth/oidc/link`.
+
+**Response body (`200`):**
+
+```json
+{ "nonce": "<token>" }
+```
+
+---
 
 ## Config
 
@@ -597,6 +605,30 @@ Replace the series entries for a book.
 ### `GET /api/books/{id}/files` 🔒
 
 List all files associated with a book.
+
+---
+
+### `POST /api/books/{id}/files` 🔒
+
+Attach a file record to a book.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file_type` | string | ✓ | Format identifier (e.g. `epub`, `pdf`) |
+| `file_name` | string | ✓ | File name on disk |
+| `file_path` | string | ✓ | Absolute path to the file |
+| `file_size` | integer | | File size in bytes |
+| `file_hash` | string | | Content hash (e.g. `sha256:abc123…`) |
+
+**Response:** `201 Created` with the new book-file object (same shape as `GET /api/book-files/{id}`).
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Missing `file_type`, `file_name`, or `file_path` |
 
 ---
 

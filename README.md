@@ -191,7 +191,3 @@ A health check endpoint is available at `GET /api/health` — it returns `200 OK
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, code conventions, and how to submit a pull request.
-
-## API Reference
-
-See [docs/api.md](docs/api.md) for a complete reference of all HTTP endpoints, request/response shapes, and authentication requirements.
