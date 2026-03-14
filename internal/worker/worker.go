@@ -86,6 +86,11 @@ func (w *Worker) Enqueue(ctx context.Context, name string, payload any) (string,
 	return info.ID, nil
 }
 
+// RedisConnOpt returns the Redis connection option used by this worker.
+func (w *Worker) RedisConnOpt() asynq.RedisConnOpt {
+	return w.redisOpt
+}
+
 // Close shuts down the asynq client connection.
 func (w *Worker) Close() error {
 	return w.client.Close()
