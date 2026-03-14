@@ -30,7 +30,7 @@ run: build
 	./biblioteka
 
 # Run frontend and backend dev servers via goreman
-dev: redis-check frontend/node_modules
+dev: redis-check frontend/node_modules kill-dev
 	goreman -f Procfile.dev start
 
 kill-dev:
