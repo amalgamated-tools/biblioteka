@@ -23,9 +23,9 @@ type ProcessFilePayload struct {
 }
 
 // NewProcessFileHandler returns a worker.Func that creates a book and book_file
-// record for the given file. This is where future metadata extraction (parsing
-// EPUB/MOBI/PDF internals) would be added.
-func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []byte) error {
+// record for the given file and then enqueues a fetch:metadata job to enrich
+// the book with data from external sources.
+func NewProcessFileHandler(database *db.DB, enqueuer Enqueuer) func(ctx context.Context, payload []byte) error {
 	return func(ctx context.Context, payload []byte) error {
 		var p ProcessFilePayload
 		if err := json.Unmarshal(payload, &p); err != nil {
@@ -77,6 +77,13 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 			slog.String("book_id", book.ID),
 			slog.String("path", p.Path),
 		)
+
+		if _, err := enqueuer.Enqueue(ctx, JobFetchMetadata, FetchMetadataPayload{BookID: book.ID}); err != nil {
+			slog.WarnContext(ctx, "failed to enqueue fetch:metadata job",
+				slog.String("book_id", book.ID),
+				slog.Any("error", err),
+			)
+		}
 
 		return nil
 	}

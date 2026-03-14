@@ -71,9 +71,10 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 
 	// Register background jobs
 	w.Register(jobs.JobScanPath, jobs.NewScanPathHandler(w))
-	w.Register(jobs.JobProcessFile, jobs.NewProcessFileHandler(database))
+	w.Register(jobs.JobProcessFile, jobs.NewProcessFileHandler(database, w))
 	w.Register(jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
 	w.Register(jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
+	w.Register(jobs.JobFetchMetadata, jobs.NewFetchMetadataHandler(database, jobs.NewGoodreadsClient(), jobs.NewHardcoverClient()))
 
 	// Schedule periodic jobs
 	if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {

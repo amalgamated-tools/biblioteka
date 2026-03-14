@@ -38,7 +38,8 @@ func newTestDB(t *testing.T) *db.DB {
 
 func TestProcessFileHandler(t *testing.T) {
 	database := newTestDB(t)
-	handler := NewProcessFileHandler(database)
+	mock := &mockEnqueuer{}
+	handler := NewProcessFileHandler(database, mock)
 
 	payload, err := json.Marshal(ProcessFilePayload{
 		Path:     "/books/My Book.epub",
@@ -81,11 +82,20 @@ func TestProcessFileHandler(t *testing.T) {
 	if files[0].FileSize != 1024 {
 		t.Errorf("expected file size 1024, got %d", files[0].FileSize)
 	}
+
+	// A fetch:metadata job should have been enqueued for the created book.
+	if len(mock.jobs) != 1 {
+		t.Fatalf("expected 1 enqueued job, got %d", len(mock.jobs))
+	}
+	if mock.jobs[0].Name != JobFetchMetadata {
+		t.Errorf("expected job name %q, got %q", JobFetchMetadata, mock.jobs[0].Name)
+	}
 }
 
 func TestProcessFileHandler_EmptyPath(t *testing.T) {
 	database := newTestDB(t)
-	handler := NewProcessFileHandler(database)
+	mock := &mockEnqueuer{}
+	handler := NewProcessFileHandler(database, mock)
 
 	payload, _ := json.Marshal(ProcessFilePayload{Path: ""})
 	err := handler(context.Background(), payload)
