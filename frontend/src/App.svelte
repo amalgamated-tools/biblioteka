@@ -25,7 +25,7 @@
     }
   });
 
-  // Close sidebar on navigation (view change)
+  // Close the mobile sidebar whenever the active view changes
   $effect(() => {
     void $currentView;
     sidebarOpen = false;
