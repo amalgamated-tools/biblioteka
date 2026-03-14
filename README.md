@@ -35,10 +35,10 @@ docker compose up -d
 
 The application is available at <http://localhost:8080>.
 
-For PostgreSQL, use the alternate compose file:
+For PostgreSQL, merge both compose files:
 
 ```bash
-docker compose -f docker-compose.postgres.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
 ```
 
 ### Build from Source
@@ -221,6 +221,10 @@ An interactive Swagger UI is served at `/swagger/` and requires a valid JWT. The
 ## Frontend
 
 The UI is a Svelte 5 SPA with hash-based routing. State is managed through reactive `$state` class stores. See [docs/frontend.md](docs/frontend.md) for the architecture overview, store pattern, routing, and a guide to adding new views and stores.
+
+## Deployment
+
+For a production deployment — including TLS termination, reverse proxy setup, and backup strategies — see [docs/deployment.md](docs/deployment.md).
 
 ## Contributing
 

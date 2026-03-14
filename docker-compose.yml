@@ -9,7 +9,6 @@ services:
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - SECURE_COOKIES=${SECURE_COOKIES:-false}
-      - TMDB_API_KEY=${TMDB_API_KEY:-}
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-}
       - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
       - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
