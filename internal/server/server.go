@@ -346,6 +346,10 @@ func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type healthResponse struct {
+	Status string `json:"status"`
+}
+
 // handleHealth godoc
 // @Summary     Health check
 // @Description Returns server health status

@@ -208,7 +208,14 @@ func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 	case "series":
 		h.handleBookSeries(w, r, id)
 	case "files":
-		h.handleBookFiles(w, r, id)
+		switch r.Method {
+		case http.MethodGet:
+			h.getBookFiles(w, r, id)
+		case http.MethodPost:
+			h.postBookFiles(w, r, id)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		}
 	default:
 		writeError(w, http.StatusNotFound, "not found")
 	}
@@ -525,8 +532,18 @@ func (h *BookHandler) handleBookSeries(w http.ResponseWriter, r *http.Request, b
 // @Failure     400 {object} errorResponse
 // @Failure     500 {object} errorResponse
 // @Router      /books/{id}/files [get]
-func (h *BookHandler) docGetBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
-	h.handleBookFiles(w, r, bookID)
+func (h *BookHandler) getBookFiles(w http.ResponseWriter, _ *http.Request, bookID string) {
+	files, err := h.DB.ListBookFiles(bookID)
+	if err != nil {
+		slog.Error("failed to list book files", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to list book files")
+		return
+	}
+	dtos := make([]bookFileDTO, 0, len(files))
+	for i := range files {
+		dtos = append(dtos, toBookFileDTO(&files[i]))
+	}
+	writeJSON(w, http.StatusOK, dtos)
 }
 
 // postBookFiles godoc
@@ -541,51 +558,27 @@ func (h *BookHandler) docGetBookFiles(w http.ResponseWriter, r *http.Request, bo
 // @Failure     400 {object} errorResponse
 // @Failure     500 {object} errorResponse
 // @Router      /books/{id}/files [post]
-func (h *BookHandler) docPostBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
-	h.handleBookFiles(w, r, bookID)
-}
-
-// handleBookFiles is the internal implementation for book files operations.
-func (h *BookHandler) handleBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
-	switch r.Method {
-	case http.MethodGet:
-		files, err := h.DB.ListBookFiles(bookID)
-		if err != nil {
-			slog.Error("failed to list book files", "error", err)
-			writeError(w, http.StatusInternalServerError, "failed to list book files")
-			return
-		}
-		dtos := make([]bookFileDTO, 0, len(files))
-		for i := range files {
-			dtos = append(dtos, toBookFileDTO(&files[i]))
-		}
-		writeJSON(w, http.StatusOK, dtos)
-
-	case http.MethodPost:
-		var req struct {
-			FileType string  `json:"file_type"`
-			FileName string  `json:"file_name"`
-			FileSize int64   `json:"file_size"`
-			FileHash *string `json:"file_hash"`
-			FilePath string  `json:"file_path"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
-			return
-		}
-		if req.FileType == "" || req.FileName == "" || req.FilePath == "" {
-			writeError(w, http.StatusBadRequest, "file_type, file_name, and file_path are required")
-			return
-		}
-		bf, err := h.DB.CreateBookFile(bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
-		if err != nil {
-			slog.Error("failed to create book file", "error", err)
-			writeError(w, http.StatusInternalServerError, "failed to create book file")
-			return
-		}
-		writeJSON(w, http.StatusCreated, toBookFileDTO(bf))
-
-	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
+	var req struct {
+		FileType string  `json:"file_type"`
+		FileName string  `json:"file_name"`
+		FileSize int64   `json:"file_size"`
+		FileHash *string `json:"file_hash"`
+		FilePath string  `json:"file_path"`
 	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.FileType == "" || req.FileName == "" || req.FilePath == "" {
+		writeError(w, http.StatusBadRequest, "file_type, file_name, and file_path are required")
+		return
+	}
+	bf, err := h.DB.CreateBookFile(bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
+	if err != nil {
+		slog.Error("failed to create book file", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to create book file")
+		return
+	}
+	writeJSON(w, http.StatusCreated, toBookFileDTO(bf))
 }
