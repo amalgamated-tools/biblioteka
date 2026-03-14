@@ -120,6 +120,7 @@ func (h *OIDCHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Tags        OIDC
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Success     200 {object} object{nonce=string}
 // @Failure     500 {object} errorResponse
 // @Router      /auth/oidc/link-nonce [post]

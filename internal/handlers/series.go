@@ -81,6 +81,7 @@ func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
 // @Tags        Series
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Success     200 {array}  seriesDTO
 // @Failure     500 {object} errorResponse
 // @Router      /series [get]
@@ -110,6 +111,7 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       body body     seriesRequest true "Series data"
 // @Success     201  {object} seriesDTO
 // @Failure     400  {object} errorResponse
@@ -151,6 +153,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 // @Tags        Series
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path     string true "Series ID"
 // @Success     200 {object} seriesDTO
 // @Failure     400 {object} errorResponse
@@ -180,6 +183,7 @@ func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id str
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id   path     string        true "Series ID"
 // @Param       body body     seriesRequest true "Series data"
 // @Success     200  {object} seriesDTO
@@ -225,6 +229,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 // @Description Delete a series by ID
 // @Tags        Series
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path     string true "Series ID"
 // @Success     204 "No Content"
 // @Failure     400 {object} errorResponse

@@ -37,6 +37,7 @@ func (h *BookFileHandler) HandleBookFile(w http.ResponseWriter, r *http.Request)
 // @Tags        BookFiles
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path     string true "Book File ID"
 // @Success     200 {object} bookFileDTO
 // @Failure     400 {object} errorResponse
@@ -64,6 +65,7 @@ func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id
 // @Description Delete a book file by ID
 // @Tags        BookFiles
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path     string true "Book File ID"
 // @Success     204 "No Content"
 // @Failure     400 {object} errorResponse

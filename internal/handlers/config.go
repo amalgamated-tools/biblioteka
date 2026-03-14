@@ -39,6 +39,7 @@ type configStatusResponse struct {
 // @Tags        Config
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Success     200 {object} configStatusResponse
 // @Router      /config/status [get]
 func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +78,7 @@ type setOIDCConfigRequest struct {
 // @Tags        Config
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Success     200 {object} oidcConfigResponse
 // @Failure     403 {object} errorResponse
 // @Failure     500 {object} errorResponse
@@ -115,6 +117,7 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       body body     setOIDCConfigRequest true "OIDC configuration"
 // @Success     200  {object} object{message=string}
 // @Failure     400  {object} errorResponse

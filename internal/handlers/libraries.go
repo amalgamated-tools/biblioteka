@@ -97,6 +97,7 @@ func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 // @Tags        Libraries
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Success     200 {array}  libraryDTO
 // @Failure     500 {object} errorResponse
 // @Router      /libraries [get]
@@ -156,6 +157,7 @@ func validateAndPrepareLibrary(w http.ResponseWriter, req *libraryRequest) (path
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       body body     libraryRequest true "Library data"
 // @Success     201  {object} libraryDTO
 // @Failure     400  {object} errorResponse
@@ -218,6 +220,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 // @Tags        Libraries
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path     string true "Library ID"
 // @Success     200 {object} libraryDTO
 // @Failure     400 {object} errorResponse
@@ -247,6 +250,7 @@ func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id s
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id   path     string         true "Library ID"
 // @Param       body body     libraryRequest true "Library data"
 // @Success     200  {object} libraryDTO
@@ -292,6 +296,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 // @Description Delete a library by ID
 // @Tags        Libraries
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path     string true "Library ID"
 // @Success     204 "No Content"
 // @Failure     400 {object} errorResponse

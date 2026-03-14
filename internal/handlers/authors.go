@@ -84,6 +84,7 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 // @Tags        Authors
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Success     200 {array}  authorDTO
 // @Failure     500 {object} errorResponse
 // @Router      /authors [get]
@@ -113,6 +114,7 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       body body     authorRequest true "Author data"
 // @Success     201  {object} authorDTO
 // @Failure     400  {object} errorResponse
@@ -154,6 +156,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 // @Tags        Authors
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path     string true "Author ID"
 // @Success     200 {object} authorDTO
 // @Failure     400 {object} errorResponse
@@ -183,6 +186,7 @@ func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id str
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id   path     string        true "Author ID"
 // @Param       body body     authorRequest true "Author data"
 // @Success     200  {object} authorDTO
@@ -228,6 +232,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 // @Description Delete an author by ID
 // @Tags        Authors
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path     string true "Author ID"
 // @Success     204 "No Content"
 // @Failure     400 {object} errorResponse

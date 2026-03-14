@@ -198,6 +198,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Tags        Auth
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Success     200 {object} userDTO
 // @Failure     404 {object} errorResponse
 // @Failure     500 {object} errorResponse
@@ -232,6 +233,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       body body     changePasswordRequest true "Change password request"
 // @Success     200  {object} object{message=string}
 // @Failure     400  {object} errorResponse

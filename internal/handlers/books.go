@@ -254,6 +254,7 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 // @Tags        Books
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Success     200 {array}  bookSummaryDTO
 // @Failure     500 {object} errorResponse
 // @Router      /books [get]
@@ -283,6 +284,7 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       body body     bookRequest true "Book data"
 // @Success     201  {object} bookDTO
 // @Failure     400  {object} errorResponse
@@ -324,6 +326,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 // @Tags        Books
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path     string true "Book ID"
 // @Success     200 {object} bookDTO
 // @Failure     400 {object} errorResponse
@@ -359,6 +362,7 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id   path     string      true "Book ID"
 // @Param       body body     bookRequest true "Book data"
 // @Success     200  {object} bookDTO
@@ -405,6 +409,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 // @Description Delete a book by ID
 // @Tags        Books
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path     string true "Book ID"
 // @Success     204 "No Content"
 // @Failure     400 {object} errorResponse
@@ -453,6 +458,7 @@ type setBookAuthorsRequest struct {
 // @Tags        Books
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id   path     string true "Book ID"
 // @Success     200  {array}  authorDTO
 // @Failure     400  {object} errorResponse
@@ -469,6 +475,7 @@ func (h *BookHandler) getBookAuthors(w http.ResponseWriter, _ *http.Request, boo
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id   path string                true "Book ID"
 // @Param       body body setBookAuthorsRequest  true "Author IDs"
 // @Success     200  {array}  authorDTO
@@ -518,6 +525,7 @@ type setBookSeriesRequest struct {
 // @Tags        Books
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id   path     string true "Book ID"
 // @Success     200  {array}  bookSeriesEntryDTO
 // @Failure     400  {object} errorResponse
@@ -534,6 +542,7 @@ func (h *BookHandler) getBookSeries(w http.ResponseWriter, _ *http.Request, book
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id   path string                true "Book ID"
 // @Param       body body setBookSeriesRequest   true "Series entries"
 // @Success     200  {array}  bookSeriesEntryDTO
@@ -560,6 +569,7 @@ func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, book
 // @Tags        Books
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id  path string true "Book ID"
 // @Success     200 {array}  bookFileDTO
 // @Failure     400 {object} errorResponse
@@ -595,6 +605,7 @@ type createBookFileRequest struct {
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id   path string              true "Book ID"
 // @Param       body body createBookFileRequest true "Book file data"
 // @Success     201 {object} bookFileDTO

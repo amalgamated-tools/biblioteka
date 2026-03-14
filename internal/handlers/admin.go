@@ -34,6 +34,7 @@ type setAdminRequest struct {
 // @Tags        Admin
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Success     200 {array}  adminUserDTO
 // @Failure     403 {object} errorResponse
 // @Failure     500 {object} errorResponse
@@ -87,6 +88,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
+// @Failure     401 {object} errorResponse
 // @Param       id   path     string          true "User ID"
 // @Param       body body     setAdminRequest true "Set admin request"
 // @Success     200  {object} object{message=string}
