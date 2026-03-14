@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -19,7 +20,11 @@ import (
 type LibraryHandler struct {
 	DB       *db.DB
 	Enqueuer jobs.Enqueuer
+	wg       sync.WaitGroup
 }
+
+// Wait blocks until all outstanding background enqueue goroutines complete.
+func (h *LibraryHandler) Wait() { h.wg.Wait() }
 
 type libraryRequest struct {
 	Name             string   `json:"name"`
@@ -161,7 +166,9 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		paths := dto.Paths
 		libID := lib.ID
 		enqueuer := h.Enqueuer
+		h.wg.Add(1)
 		go func() {
+			defer h.wg.Done()
 			for _, p := range paths {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				jobID, err := enqueuer.Enqueue(ctx, jobs.JobScanPath, jobs.ScanPathPayload{Path: p})
