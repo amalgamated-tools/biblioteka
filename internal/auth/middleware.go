@@ -29,8 +29,8 @@ func jsonError(w http.ResponseWriter, status int, message string) {
 func extractToken(r *http.Request) (string, string) {
 	if header := r.Header.Get("Authorization"); header != "" {
 		header = strings.TrimSpace(header)
-		if strings.HasPrefix(header, "Bearer ") {
-			token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+		if after, ok := strings.CutPrefix(header, "Bearer "); ok {
+			token := strings.TrimSpace(after)
 			if token != "" {
 				return token, ""
 			}
