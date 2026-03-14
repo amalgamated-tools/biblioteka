@@ -1,0 +1,1839 @@
+basePath: /api
+definitions:
+  github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput:
+    properties:
+      position:
+        type: number
+      series_id:
+        type: string
+    type: object
+  github_com_amalgamated-tools_biblioteka_internal_db.Timestamp:
+    properties:
+      time.Time:
+        type: string
+    type: object
+  internal_handlers.adminUserDTO:
+    properties:
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      email:
+        type: string
+      id:
+        type: string
+      is_admin:
+        type: boolean
+      name:
+        type: string
+      oidc_linked:
+        type: boolean
+    type: object
+  internal_handlers.authResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/internal_handlers.userDTO'
+    type: object
+  internal_handlers.authorDTO:
+    properties:
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      goodreads_id:
+        type: string
+      google_books_id:
+        type: string
+      hardcover_id:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+    type: object
+  internal_handlers.authorRequest:
+    properties:
+      goodreads_id:
+        type: string
+      google_books_id:
+        type: string
+      hardcover_id:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_handlers.bookDTO:
+    properties:
+      asin:
+        type: string
+      authors:
+        items:
+          $ref: '#/definitions/internal_handlers.authorDTO'
+        type: array
+      cover_image_url:
+        type: string
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      description:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/internal_handlers.bookFileDTO'
+        type: array
+      goodreads_id:
+        type: string
+      google_books_id:
+        type: string
+      hardcover_id:
+        type: string
+      id:
+        type: string
+      isbn10:
+        type: string
+      isbn13:
+        type: string
+      language:
+        type: string
+      num_pages:
+        type: integer
+      publication_date:
+        type: string
+      publisher:
+        type: string
+      series:
+        items:
+          $ref: '#/definitions/internal_handlers.bookSeriesEntryDTO'
+        type: array
+      title:
+        type: string
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+    type: object
+  internal_handlers.bookFileDTO:
+    properties:
+      book_id:
+        type: string
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      file_hash:
+        type: string
+      file_name:
+        type: string
+      file_path:
+        type: string
+      file_size:
+        type: integer
+      file_type:
+        type: string
+      id:
+        type: string
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+    type: object
+  internal_handlers.bookRequest:
+    properties:
+      asin:
+        type: string
+      cover_image_url:
+        type: string
+      description:
+        type: string
+      goodreads_id:
+        type: string
+      google_books_id:
+        type: string
+      hardcover_id:
+        type: string
+      isbn10:
+        type: string
+      isbn13:
+        type: string
+      language:
+        type: string
+      num_pages:
+        type: integer
+      publication_date:
+        type: string
+      publisher:
+        type: string
+      title:
+        type: string
+    type: object
+  internal_handlers.bookSeriesEntryDTO:
+    properties:
+      position:
+        type: number
+      series:
+        $ref: '#/definitions/internal_handlers.seriesDTO'
+    type: object
+  internal_handlers.bookSummaryDTO:
+    properties:
+      asin:
+        type: string
+      cover_image_url:
+        type: string
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      description:
+        type: string
+      goodreads_id:
+        type: string
+      google_books_id:
+        type: string
+      hardcover_id:
+        type: string
+      id:
+        type: string
+      isbn10:
+        type: string
+      isbn13:
+        type: string
+      language:
+        type: string
+      num_pages:
+        type: integer
+      publication_date:
+        type: string
+      publisher:
+        type: string
+      title:
+        type: string
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+    type: object
+  internal_handlers.changePasswordRequest:
+    properties:
+      currentPassword:
+        type: string
+      newPassword:
+        type: string
+    type: object
+  internal_handlers.configStatusResponse:
+    properties:
+      is_admin:
+        type: boolean
+      oidc_configured:
+        type: boolean
+    type: object
+  internal_handlers.createBookFileRequest:
+    properties:
+      file_hash:
+        type: string
+      file_name:
+        type: string
+      file_path:
+        type: string
+      file_size:
+        type: integer
+      file_type:
+        type: string
+    type: object
+  internal_handlers.errorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  internal_handlers.libraryDTO:
+    properties:
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      id:
+        type: string
+      monitored:
+        type: boolean
+      name:
+        type: string
+      organization_type:
+        type: string
+      paths:
+        items:
+          type: string
+        type: array
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+    type: object
+  internal_handlers.libraryRequest:
+    properties:
+      monitored:
+        type: boolean
+      name:
+        type: string
+      organization_type:
+        type: string
+      paths:
+        items:
+          type: string
+        type: array
+    type: object
+  internal_handlers.loginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  internal_handlers.oidcConfigResponse:
+    properties:
+      client_id:
+        type: string
+      client_secret_set:
+        type: boolean
+      issuer_url:
+        type: string
+      redirect_uri:
+        type: string
+    type: object
+  internal_handlers.seriesDTO:
+    properties:
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      goodreads_id:
+        type: string
+      google_books_id:
+        type: string
+      hardcover_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+    type: object
+  internal_handlers.seriesRequest:
+    properties:
+      goodreads_id:
+        type: string
+      google_books_id:
+        type: string
+      hardcover_id:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_handlers.setAdminRequest:
+    properties:
+      is_admin:
+        type: boolean
+    type: object
+  internal_handlers.setBookAuthorsRequest:
+    properties:
+      author_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  internal_handlers.setBookSeriesRequest:
+    properties:
+      entries:
+        items:
+          $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput'
+        type: array
+    type: object
+  internal_handlers.setOIDCConfigRequest:
+    properties:
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      issuer_url:
+        type: string
+      redirect_uri:
+        type: string
+    type: object
+  internal_handlers.signupRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  internal_handlers.userDTO:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      is_admin:
+        type: boolean
+      oidc_linked:
+        type: boolean
+    type: object
+  internal_server.healthResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  internal_server.oidcEnabledResponse:
+    properties:
+      enabled:
+        type: boolean
+    type: object
+info:
+  contact: {}
+  description: Personal library management API
+  title: Biblioteka API
+  version: "1.0"
+paths:
+  /admin/users:
+    get:
+      description: Returns a list of all users (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.adminUserDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all users
+      tags:
+      - Admin
+  /admin/users/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Change a user's admin status (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Set admin request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.setAdminRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set user admin status
+      tags:
+      - Admin
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with email and password
+      parameters:
+      - description: Login request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.authResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      summary: Log in
+      tags:
+      - Auth
+  /auth/me:
+    get:
+      description: Returns the authenticated user's profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.userDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user
+      tags:
+      - Auth
+  /auth/oidc/callback:
+    get:
+      description: Handles the OIDC provider's redirect after authentication
+      parameters:
+      - description: OIDC state parameter
+        in: query
+        name: state
+        required: true
+        type: string
+      - description: Authorization code
+        in: query
+        name: code
+        required: true
+        type: string
+      responses:
+        "302":
+          description: Redirect to frontend with token
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      summary: OIDC callback
+      tags:
+      - OIDC
+  /auth/oidc/enabled:
+    get:
+      description: Returns whether OIDC authentication is configured on this server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.oidcEnabledResponse'
+      summary: Check if OIDC is enabled
+      tags:
+      - System
+  /auth/oidc/link:
+    get:
+      description: Redirects to OIDC provider to link account (requires nonce)
+      parameters:
+      - description: Link nonce from CreateLinkNonce
+        in: query
+        name: nonce
+        required: true
+        type: string
+      responses:
+        "302":
+          description: Redirect to OIDC provider
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      summary: Link OIDC account
+      tags:
+      - OIDC
+  /auth/oidc/link-nonce:
+    post:
+      description: Generate a short-lived nonce for linking an OIDC account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              nonce:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create OIDC link nonce
+      tags:
+      - OIDC
+  /auth/oidc/login:
+    get:
+      description: Redirects to the OIDC provider's authorization endpoint
+      responses:
+        "302":
+          description: Redirect to OIDC provider
+        "404":
+          description: OIDC not configured
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      summary: OIDC login
+      tags:
+      - OIDC
+  /auth/password:
+    put:
+      consumes:
+      - application/json
+      description: Change the authenticated user's password
+      parameters:
+      - description: Change password request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.changePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change password
+      tags:
+      - Auth
+  /auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with name, email, and password
+      parameters:
+      - description: Signup request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.signupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.authResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      summary: Sign up a new user
+      tags:
+      - Auth
+  /authors:
+    get:
+      description: Returns all authors
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.authorDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List authors
+      tags:
+      - Authors
+    post:
+      consumes:
+      - application/json
+      description: Create a new author
+      parameters:
+      - description: Author data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.authorRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.authorDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an author
+      tags:
+      - Authors
+  /authors/{id}:
+    delete:
+      description: Delete an author by ID
+      parameters:
+      - description: Author ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an author
+      tags:
+      - Authors
+    get:
+      description: Returns a single author by ID
+      parameters:
+      - description: Author ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.authorDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get an author
+      tags:
+      - Authors
+    put:
+      consumes:
+      - application/json
+      description: Update an existing author
+      parameters:
+      - description: Author ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Author data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.authorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.authorDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an author
+      tags:
+      - Authors
+  /book-files/{id}:
+    delete:
+      description: Delete a book file by ID
+      parameters:
+      - description: Book File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a book file
+      tags:
+      - BookFiles
+    get:
+      description: Returns a single book file by ID
+      parameters:
+      - description: Book File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.bookFileDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a book file
+      tags:
+      - BookFiles
+  /books:
+    get:
+      description: Returns all books (summary without relations)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.bookSummaryDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List books
+      tags:
+      - Books
+    post:
+      consumes:
+      - application/json
+      description: Create a new book
+      parameters:
+      - description: Book data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.bookRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.bookDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a book
+      tags:
+      - Books
+  /books/{id}:
+    delete:
+      description: Delete a book by ID
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a book
+      tags:
+      - Books
+    get:
+      description: Returns a single book with authors, series, and files
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.bookDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a book
+      tags:
+      - Books
+    put:
+      consumes:
+      - application/json
+      description: Update an existing book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Book data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.bookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.bookDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a book
+      tags:
+      - Books
+  /books/{id}/authors:
+    get:
+      description: Get the list of authors for a book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.authorDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List book authors
+      tags:
+      - Books
+    put:
+      consumes:
+      - application/json
+      description: Replace the list of authors for a book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Author IDs
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.setBookAuthorsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.authorDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set book authors
+      tags:
+      - Books
+  /books/{id}/files:
+    get:
+      description: List files for a book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.bookFileDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List book files
+      tags:
+      - Books
+    post:
+      consumes:
+      - application/json
+      description: Add a new file for a book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Book file data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.createBookFileRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.bookFileDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a book file
+      tags:
+      - Books
+  /books/{id}/series:
+    get:
+      description: Get the list of series for a book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.bookSeriesEntryDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List book series
+      tags:
+      - Books
+    put:
+      consumes:
+      - application/json
+      description: Replace the list of series for a book
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Series entries
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.setBookSeriesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.bookSeriesEntryDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set book series
+      tags:
+      - Books
+  /config/oidc:
+    get:
+      description: Returns current OIDC configuration (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.oidcConfigResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get OIDC configuration
+      tags:
+      - Config
+    put:
+      consumes:
+      - application/json
+      description: Update OIDC configuration with validation (admin only)
+      parameters:
+      - description: OIDC configuration
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.setOIDCConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set OIDC configuration
+      tags:
+      - Config
+  /config/status:
+    get:
+      description: Returns OIDC configuration status and admin status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.configStatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get configuration status
+      tags:
+      - Config
+  /health:
+    get:
+      description: Returns server health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.healthResponse'
+      summary: Health check
+      tags:
+      - System
+  /libraries:
+    get:
+      description: Returns all libraries
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.libraryDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List libraries
+      tags:
+      - Libraries
+    post:
+      consumes:
+      - application/json
+      description: Create a new library and enqueue scan jobs
+      parameters:
+      - description: Library data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.libraryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.libraryDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a library
+      tags:
+      - Libraries
+  /libraries/{id}:
+    delete:
+      description: Delete a library by ID
+      parameters:
+      - description: Library ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a library
+      tags:
+      - Libraries
+    get:
+      description: Returns a single library by ID
+      parameters:
+      - description: Library ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.libraryDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a library
+      tags:
+      - Libraries
+    put:
+      consumes:
+      - application/json
+      description: Update an existing library
+      parameters:
+      - description: Library ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Library data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.libraryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.libraryDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a library
+      tags:
+      - Libraries
+  /series:
+    get:
+      description: Returns all series
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.seriesDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List series
+      tags:
+      - Series
+    post:
+      consumes:
+      - application/json
+      description: Create a new series
+      parameters:
+      - description: Series data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.seriesRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.seriesDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a series
+      tags:
+      - Series
+  /series/{id}:
+    delete:
+      description: Delete a series by ID
+      parameters:
+      - description: Series ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a series
+      tags:
+      - Series
+    get:
+      description: Returns a single series by ID
+      parameters:
+      - description: Series ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.seriesDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a series
+      tags:
+      - Series
+    put:
+      consumes:
+      - application/json
+      description: Update an existing series
+      parameters:
+      - description: Series ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Series data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.seriesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.seriesDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a series
+      tags:
+      - Series
+securityDefinitions:
+  BearerAuth:
+    description: Enter "Bearer {token}"
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

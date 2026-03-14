@@ -16,11 +16,16 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	}
 }
 
+// errorResponse represents a JSON error returned by the API.
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
 // writeError sends a JSON error response.
 func writeError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(map[string]string{"error": message}); err != nil {
+	if err := json.NewEncoder(w).Encode(errorResponse{Error: message}); err != nil {
 		slog.Error("failed to encode JSON error response", "error", err)
 	}
 }

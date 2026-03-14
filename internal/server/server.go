@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -20,8 +21,11 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 
+	_ "github.com/amalgamated-tools/biblioteka/docs"
+
 	"github.com/hibiken/asynqmon"
 	"github.com/justinas/alice"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -239,18 +243,7 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
 
 	// OIDC auth routes — always registered, check handler at request time
-	s.mux.HandleFunc("/api/auth/oidc/enabled", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		if s.oidcHandler != nil {
-			_, _ = fmt.Fprint(w, `{"enabled":true}`)
-		} else {
-			_, _ = fmt.Fprint(w, `{"enabled":false}`)
-		}
-	})
+	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
 	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Login)))
 	s.mux.HandleFunc("/api/auth/oidc/callback", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Callback)))
 	s.mux.HandleFunc("/api/auth/oidc/link", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Link)))
@@ -288,11 +281,13 @@ func (s *Server) setupRoutes() {
 	s.mux.Handle("/api/book-files/", s.requireAuth(http.HandlerFunc(s.bookFileHandler.HandleBookFile)))
 
 	// Health check
-	s.mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprint(w, `{"status":"ok"}`)
-	})
+	s.mux.HandleFunc("/api/health", s.handleHealth)
+
+	// Swagger UI (protected)
+	s.mux.Handle("/swagger", s.requireAuth(http.RedirectHandler("/swagger/", http.StatusMovedPermanently)))
+	s.mux.Handle("/swagger/", s.requireAuth(httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	)))
 
 	// Asynq monitoring dashboard
 	if s.Worker != nil {
@@ -318,6 +313,79 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 			return
 		}
 		fn(handler, w, r)
+	}
+}
+
+// handleOIDCEnabled godoc
+// @Summary     Check if OIDC is enabled
+// @Description Returns whether OIDC authentication is configured on this server
+// @Tags        System
+// @Produce     json
+// @Success     200 {object} oidcEnabledResponse
+// @Router      /auth/oidc/enabled [get]
+func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		if err := json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed"}); err != nil {
+			slog.ErrorContext(r.Context(), "failed to encode OIDC enabled method not allowed response", slog.Any("error", err))
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	resp := oidcEnabledResponse{
+		Enabled: s.oidcHandler != nil,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.ErrorContext(r.Context(), "failed to encode OIDC enabled response", slog.Any("error", err))
+	}
+}
+
+type healthResponse struct {
+	Status string `json:"status"`
+}
+
+type oidcEnabledResponse struct {
+	Enabled bool `json:"enabled"`
+}
+
+// handleHealth godoc
+// @Summary     Health check
+// @Description Returns server health status
+// @Tags        System
+// @Produce     json
+// @Success     200 {object} healthResponse
+// @Router      /health [get]
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		resp := map[string]string{
+			"error": "method not allowed",
+		}
+
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			slog.ErrorContext(r.Context(), "failed to encode health method not allowed response", slog.Any("error", err))
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	resp := healthResponse{
+		Status: "ok",
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.ErrorContext(r.Context(), "failed to encode health response", slog.Any("error", err))
 	}
 }
 

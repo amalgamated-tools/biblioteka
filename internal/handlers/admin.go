@@ -28,7 +28,17 @@ type setAdminRequest struct {
 	IsAdmin bool `json:"is_admin"`
 }
 
-// HandleListUsers handles GET /api/admin/users
+// HandleListUsers godoc
+// @Summary     List all users
+// @Description Returns a list of all users (admin only)
+// @Tags        Admin
+// @Produce     json
+// @Security    BearerAuth
+// @Failure     401 {object} errorResponse
+// @Success     200 {array}  adminUserDTO
+// @Failure     403 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /admin/users [get]
 func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -71,7 +81,22 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dtos)
 }
 
-// HandleSetAdmin handles PUT /api/admin/users/{id}
+// HandleSetAdmin godoc
+// @Summary     Set user admin status
+// @Description Change a user's admin status (admin only)
+// @Tags        Admin
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Failure     401 {object} errorResponse
+// @Param       id   path     string          true "User ID"
+// @Param       body body     setAdminRequest true "Set admin request"
+// @Success     200  {object} object{message=string}
+// @Failure     400  {object} errorResponse
+// @Failure     403  {object} errorResponse
+// @Failure     404  {object} errorResponse
+// @Failure     500  {object} errorResponse
+// @Router      /admin/users/{id} [put]
 func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
