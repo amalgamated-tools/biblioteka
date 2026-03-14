@@ -31,8 +31,8 @@ func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token := extractToken(r)
 			if token == "" {
-				slog.InfoContext(r.Context(), "missing authorization header")
-				jsonError(w, http.StatusUnauthorized, "missing authorization header")
+				slog.InfoContext(r.Context(), "authentication required")
+				jsonError(w, http.StatusUnauthorized, "authentication required")
 				return
 			}
 
@@ -86,8 +86,8 @@ func extractToken(r *http.Request) string {
 	return ""
 }
 
-// AdminMiddleware returns an HTTP middleware that validates a JWT (from header
-// or cookie) and verifies the user is an admin before allowing the request.
+// adminCacheEntry caches the result of an admin check along with its
+// expiration time to avoid repeated calls to the underlying AdminChecker.
 type adminCacheEntry struct {
 	isAdmin   bool
 	expiresAt time.Time

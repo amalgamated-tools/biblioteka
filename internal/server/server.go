@@ -246,7 +246,7 @@ func (s *Server) setupRoutes() {
 	// Public auth routes (rate-limited)
 	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Limit(s.authHandler.Signup))
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
-	s.mux.HandleFunc("/api/auth/logout", s.authHandler.Logout)
+	s.mux.HandleFunc("/api/auth/logout", s.authLimiter.Limit(s.authHandler.Logout))
 
 	// OIDC auth routes — always registered, check handler at request time
 	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
@@ -316,7 +316,8 @@ func swaggerSecurityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
 
-		// Reject cross-origin requests outright.
+		// For requests with an Origin header, do not enable CORS; browsers will block
+		// cross-origin access because no Access-Control-Allow-Origin header is sent.
 		if origin := r.Header.Get("Origin"); origin != "" {
 			w.Header().Set("Vary", "Origin")
 			// No Access-Control-Allow-Origin header → browser blocks the response.
