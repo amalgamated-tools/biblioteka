@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { BookCheck } from "lucide-svelte";
-  import { signIn, signUp } from "../stores/auth";
+  import { authStore } from "../stores/auth.svelte";
+  import { getOidcEnabled } from "../lib/api";
 
   let isLogin = $state(true);
   let email = $state("");
@@ -13,9 +14,7 @@
 
   onMount(async () => {
     try {
-      const res = await fetch("/api/auth/oidc/enabled");
-      const data = await res.json();
-      oidcEnabled = data.enabled === true;
+      oidcEnabled = await getOidcEnabled();
     } catch {
       // OIDC not available
     }
@@ -39,8 +38,8 @@
     }
 
     const result = isLogin
-      ? await signIn(email, password)
-      : await signUp(name, email, password);
+      ? await authStore.signIn(email, password)
+      : await authStore.signUp(name, email, password);
 
     if (result.error) {
       error = result.error.message;
