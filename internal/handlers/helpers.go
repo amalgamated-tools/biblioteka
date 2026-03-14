@@ -7,11 +7,6 @@ import (
 	"strings"
 )
 
-// errorResponse is used by swagger to document error responses.
-type errorResponse struct {
-	Error string `json:"error" example:"error message"`
-}
-
 // writeJSON sends a JSON response with the given status code.
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")

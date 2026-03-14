@@ -318,14 +318,6 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 	}
 }
 
-type oidcEnabledResponse struct {
-	Enabled bool `json:"enabled"`
-}
-
-type healthResponse struct {
-	Status string `json:"status" example:"ok"`
-}
-
 // handleOIDCEnabled godoc
 // @Summary     Check if OIDC is enabled
 // @Description Returns whether OIDC authentication is configured on this server
