@@ -49,7 +49,7 @@ func TestRequestIDHandler_UsesExistingID(t *testing.T) {
 }
 
 func TestGetRequestID_NilContext(t *testing.T) {
-	id := GetRequestID(t.Context()) //nolint:staticcheck
+	id := GetRequestID(nil) //nolint:staticcheck
 	if id != "" {
 		t.Errorf("GetRequestID(nil) = %q, want empty string", id)
 	}
