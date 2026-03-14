@@ -15,7 +15,7 @@
   },
   "packageManager": "pnpm@10.32.1",
   "dependencies": {
-    "lucide-svelte": "^0.344.0",
+    "lucide-svelte": "^0.577.0",
     "svelte": "^5.53.12"
   },
   "devDependencies": {
