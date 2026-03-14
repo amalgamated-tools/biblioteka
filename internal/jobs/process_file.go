@@ -55,7 +55,7 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 			slog.String("path", p.Path),
 		)
 
-		book, err := database.CreateBook(title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := database.CreateBook(title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			return fmt.Errorf("create book for %s: %w", p.Path, err)
 		}
