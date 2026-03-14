@@ -63,9 +63,10 @@ Stores are plain class instances — no special `$` prefix import is needed for 
 
 ```svelte
 <script lang="ts">
+  import { onMount } from "svelte";
   import { libraryStore } from "../stores/libraries.svelte";
 
-  $effect(() => {
+  onMount(() => {
     libraryStore.load();
   });
 </script>
@@ -91,12 +92,10 @@ Client-side routing uses the browser's URL hash (`#`). No router library is need
 **Navigating programmatically:**
 
 ```ts
-| Member | Type/Return | Description |
-|----------|------|-------------|
-| `hash` | `string` | Raw hash value (e.g. `"settings/account"`) |
-| `currentView` | `AppView` | Top-level view segment (`"dashboard"` \| `"books"` \| `"my-library"` \| `"libraries"` \| `"settings"`) |
-| `subPath` | `string` | Sub-path after the first segment (e.g. `"account"`) |
-| `navigate(path)` | `→ void` | Sets the hash and updates the store |
+import { routerStore } from "../stores/router.svelte";
+
+routerStore.navigate("settings/account");
+```
 
 ## API client
 
