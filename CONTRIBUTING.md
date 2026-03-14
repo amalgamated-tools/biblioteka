@@ -124,7 +124,7 @@ Name files with a timestamp prefix: `YYYYMMDDHHMMSS_description.sql`. Migrations
 
 ## Continuous Integration
 
-The test workflow runs on pushes and pull requests targeting `main` or `develop`, but only when the following paths are modified:
+The test workflow (`.github/workflows/test.yml`) runs on pushes and pull requests targeting `main` or `develop`, but only when the following paths are modified:
 
 | Path pattern | What it covers |
 |---|---|
@@ -135,6 +135,29 @@ The test workflow runs on pushes and pull requests targeting `main` or `develop`
 | `go.mod`, `go.sum` | Go module changes |
 | `.golangci.yml` | Linter configuration |
 | `.github/workflows/test.yml` | Workflow file itself |
+
+### Job structure
+
+The workflow runs four jobs. `frontend-build` and `frontend-checks` start in parallel at the beginning of every run:
+
+```
+frontend-build ──┬──► go-tests
+                 │
+frontend-checks ─┤
+                 │
+                 └──► frontend-all (gate)
+```
+
+| Job | Depends on | What it does |
+|---|---|---|
+| `frontend-build` | — | Installs pnpm deps (cached), runs `pnpm run build`, uploads the `dist` artifact |
+| `frontend-checks` | — | Installs pnpm deps (cached), runs TypeScript check, Prettier format check, and frontend unit tests |
+| `go-tests` | `frontend-build` | Downloads `dist`, runs golangci-lint, `go test -v ./...`, and Go format check |
+| `frontend-all` | `frontend-build` + `frontend-checks` | Gate job — fails the run if either frontend job failed |
+
+Because `frontend-checks` and `go-tests` run in parallel, total CI time is roughly `max(frontend-checks, go-tests)` rather than their sum.
+
+Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: 'pnpm'`, keyed on `frontend/pnpm-lock.yaml`) to avoid re-downloading the dependency tree on every run.
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
 
