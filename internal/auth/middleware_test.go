@@ -137,10 +137,10 @@ func assertJSONError(t *testing.T, body []byte, wantMsg string) {
 
 func TestExtractToken(t *testing.T) {
 	tests := []struct {
-		name       string
-		header     string // Authorization header value ("" = not set)
-		cookie     string // cookie value ("" = no cookie)
-		wantToken  string
+		name      string
+		header    string // Authorization header value ("" = not set)
+		cookie    string // cookie value ("" = no cookie)
+		wantToken string
 	}{
 		{
 			name:      "no header no cookie",
