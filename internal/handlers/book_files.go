@@ -31,8 +31,8 @@ func (h *BookFileHandler) HandleBookFile(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (h *BookFileHandler) getBookFile(w http.ResponseWriter, _ *http.Request, id string) {
-	slog.Debug("fetching book file", slog.String("book_file_id", id))
+func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "fetching book file", slog.String("book_file_id", id))
 	bf, err := h.DB.GetBookFile(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -47,8 +47,8 @@ func (h *BookFileHandler) getBookFile(w http.ResponseWriter, _ *http.Request, id
 	writeJSON(w, http.StatusOK, toBookFileDTO(bf))
 }
 
-func (h *BookFileHandler) deleteBookFile(w http.ResponseWriter, _ *http.Request, id string) {
-	slog.Debug("deleting book file", slog.String("book_file_id", id))
+func (h *BookFileHandler) deleteBookFile(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "deleting book file", slog.String("book_file_id", id))
 	err := h.DB.DeleteBookFile(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
