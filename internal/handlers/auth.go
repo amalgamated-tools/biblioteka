@@ -237,7 +237,6 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 // @Param       body body     changePasswordRequest true "Change password request"
 // @Success     200  {object} object{message=string}
 // @Failure     400  {object} errorResponse
-// @Failure     401  {object} errorResponse
 // @Failure     500  {object} errorResponse
 // @Router      /auth/password [put]
 func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {

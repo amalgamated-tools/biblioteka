@@ -288,6 +288,7 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/api/health", s.handleHealth)
 
 	// Swagger UI (protected)
+	s.mux.Handle("/swagger", s.requireAuth(http.RedirectHandler("/swagger/", http.StatusMovedPermanently)))
 	s.mux.Handle("/swagger/", s.requireAuth(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	)))
