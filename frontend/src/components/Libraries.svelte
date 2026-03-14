@@ -1,14 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import {
-    libraries,
-    librariesLoaded,
-    loadLibraries,
-    addLibrary,
-    editLibrary,
-    removeLibrary,
-  } from "../stores/libraries";
-  import { subPath, navigate } from "../stores/router";
+  import { libraryStore } from "../stores/libraries.svelte";
+  import { routerStore } from "../stores/router.svelte";
   import {
     Plus,
     FolderOpen,
@@ -23,7 +16,10 @@
   // Form state
   let editingId: string | null = $state(null);
   let formName = $state("");
-  let formPaths: string[] = $state([""]);
+  let nextPathId = 0;
+  let formPaths: { id: number; value: string }[] = $state([
+    { id: nextPathId++, value: "" },
+  ]);
   let formMonitored = $state(false);
   let formError: string | null = $state(null);
 
@@ -32,14 +28,14 @@
 
   // Determine mode from subPath: "new", "edit/{id}", or empty
   let mode: "create" | "edit" | "empty" = $derived.by(() => {
-    const sp = $subPath;
+    const sp = routerStore.subPath;
     if (sp === "new") return "create";
     if (sp.startsWith("edit/")) return "edit";
     return "empty";
   });
 
   let editId: string = $derived.by(() => {
-    const sp = $subPath;
+    const sp = routerStore.subPath;
     if (sp.startsWith("edit/")) return sp.slice(5);
     return "";
   });
@@ -49,16 +45,19 @@
     if (mode === "create") {
       editingId = null;
       formName = "";
-      formPaths = [""];
+      formPaths = [{ id: nextPathId++, value: "" }];
       formMonitored = false;
       formError = null;
       showDeleteConfirm = false;
     } else if (mode === "edit" && editId) {
-      const lib = $libraries.find((l) => l.id === editId);
+      const lib = libraryStore.libraries.find((l) => l.id === editId);
       if (lib) {
         editingId = lib.id;
         formName = lib.name;
-        formPaths = lib.paths.length > 0 ? [...lib.paths] : [""];
+        formPaths =
+          lib.paths.length > 0
+            ? lib.paths.map((p) => ({ id: nextPathId++, value: p }))
+            : [{ id: nextPathId++, value: "" }];
         formMonitored = lib.monitored;
         formError = null;
         showDeleteConfirm = false;
@@ -67,9 +66,9 @@
   });
 
   onMount(async () => {
-    if (!$librariesLoaded) {
+    if (!libraryStore.loaded) {
       try {
-        await loadLibraries();
+        await libraryStore.load();
       } catch (e) {
         error = e instanceof Error ? e.message : "Failed to load libraries";
       }
@@ -87,7 +86,7 @@
     }
 
     const paths = formPaths
-      .map((p) => p.trim())
+      .map((entry) => entry.value.trim())
       .filter((p) => p.length > 0);
 
     if (paths.length === 0) {
@@ -105,11 +104,11 @@
       };
 
       if (editingId) {
-        await editLibrary(editingId, input);
+        await libraryStore.edit(editingId, input);
       } else {
-        await addLibrary(input);
+        await libraryStore.add(input);
       }
-      navigate("libraries");
+      routerStore.navigate("libraries");
     } catch (e) {
       formError = e instanceof Error ? e.message : "Failed to save library";
     } finally {
@@ -120,8 +119,8 @@
   async function handleDelete() {
     if (!editingId) return;
     try {
-      await removeLibrary(editingId);
-      navigate("libraries");
+      await libraryStore.remove(editingId);
+      routerStore.navigate("libraries");
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to delete library";
     }
@@ -146,7 +145,7 @@
           {mode === "edit" ? "Edit Library" : "Create Library"}
         </h2>
         <button
-          onclick={() => navigate("libraries")}
+          onclick={() => routerStore.navigate("libraries")}
           class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
         >
           <X class="w-5 h-5" />
@@ -184,17 +183,16 @@
             >Folders</span
           >
           <div class="space-y-2">
-            {#each formPaths as path, i (i)}
+            {#each formPaths as entry, i (entry.id)}
               <div class="flex items-center gap-2">
                 <FolderOpen
                   class="w-4 h-4 text-slate-400 flex-shrink-0"
                 />
                 <input
                   type="text"
-                  value={path}
+                  value={entry.value}
                   oninput={(e) => {
-                    formPaths[i] = e.currentTarget.value;
-                    formPaths = formPaths;
+                    formPaths[i] = { ...formPaths[i], value: e.currentTarget.value };
                   }}
                   placeholder="/path/to/books"
                   class="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100 font-mono text-sm"
@@ -219,7 +217,7 @@
           <button
             type="button"
             onclick={() => {
-              formPaths = [...formPaths, ""];
+              formPaths = [...formPaths, { id: nextPathId++, value: "" }];
             }}
             class="mt-2 inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
             disabled={saving}
@@ -270,7 +268,7 @@
             </button>
             <button
               type="button"
-              onclick={() => navigate("libraries")}
+              onclick={() => routerStore.navigate("libraries")}
               disabled={saving}
               class="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium"
             >
@@ -318,9 +316,9 @@
       <LibraryIcon
         class="w-16 h-16 text-slate-300 dark:text-slate-600 mb-6"
       />
-      {#if $libraries.length === 0}
+      {#if libraryStore.libraries.length === 0}
         <button
-          onclick={() => navigate("libraries/new")}
+          onclick={() => routerStore.navigate("libraries/new")}
           class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
         >
           <Plus class="w-5 h-5" />
