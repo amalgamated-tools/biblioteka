@@ -1,5 +1,8 @@
 .PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt
 
+# Tooling commands
+SWAG_CMD = go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0
+
 # Build everything: frontend then Go binary
 all: build
 
@@ -93,8 +96,8 @@ clean:
 
 # Generate Swagger/OpenAPI documentation
 swagger:
-	swag init -g cmd/server/main.go -o docs --parseDependency --parseInternal
+	$(SWAG_CMD) init -g cmd/server/main.go -o docs --parseDependency --parseInternal
 
 # Format swagger annotations
 swagger-fmt:
-	swag fmt
+	$(SWAG_CMD) fmt

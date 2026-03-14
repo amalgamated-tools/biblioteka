@@ -514,20 +514,38 @@ func (h *BookHandler) handleBookSeries(w http.ResponseWriter, r *http.Request, b
 	}
 }
 
-// handleBookFiles godoc
-// @Summary     Get or add book files
-// @Description List files for a book, or add a new file
+// getBookFiles godoc
+// @Summary     List book files
+// @Description List files for a book
+// @Tags        Books
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id  path string true "Book ID"
+// @Success     200 {array}  bookFileDTO
+// @Failure     400 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /books/{id}/files [get]
+func (h *BookHandler) docGetBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
+	h.handleBookFiles(w, r, bookID)
+}
+
+// postBookFiles godoc
+// @Summary     Add a book file
+// @Description Add a new file for a book
 // @Tags        Books
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
-// @Param       id   path     string true "Book ID"
-// @Success     200  {array}  bookFileDTO
-// @Success     201  {object} bookFileDTO
-// @Failure     400  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /books/{id}/files [get]
+// @Param       id  path string true "Book ID"
+// @Success     201 {object} bookFileDTO
+// @Failure     400 {object} errorResponse
+// @Failure     500 {object} errorResponse
 // @Router      /books/{id}/files [post]
+func (h *BookHandler) docPostBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
+	h.handleBookFiles(w, r, bookID)
+}
+
+// handleBookFiles is the internal implementation for book files operations.
 func (h *BookHandler) handleBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
 	switch r.Method {
 	case http.MethodGet:

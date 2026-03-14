@@ -20,8 +20,7 @@ var version = "dev"
 // @title         Biblioteka API
 // @version       1.0
 // @description   Personal library management API
-// @host          localhost:8080
-// @BasePath      /api
+// @host          
 // @securityDefinitions.apikey BearerAuth
 // @in                         header
 // @name                       Authorization

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -286,10 +287,10 @@ func (s *Server) setupRoutes() {
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)
 
-	// Swagger UI
-	s.mux.Handle("/swagger/", httpSwagger.Handler(
+	// Swagger UI (protected)
+	s.mux.Handle("/swagger/", s.requireAuth(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
-	))
+	)))
 
 	// Asynq monitoring dashboard
 	if s.Worker != nil {
@@ -330,11 +331,18 @@ func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if s.oidcHandler != nil {
-		_, _ = fmt.Fprint(w, `{"enabled":true}`)
-	} else {
-		_, _ = fmt.Fprint(w, `{"enabled":false}`)
+	w.WriteHeader(http.StatusOK)
+
+	resp := struct {
+		Enabled bool `json:"enabled"`
+	}{
+		Enabled: s.oidcHandler != nil,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode OIDC enabled response", slog.Any("error", err))
 	}
 }
 
@@ -348,7 +356,14 @@ func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, _ = fmt.Fprint(w, `{"status":"ok"}`)
+
+	resp := healthResponse{
+		Status: "ok",
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode health response", slog.Any("error", err))
+	}
 }
 
 func (s *Server) setupFrontend() {
