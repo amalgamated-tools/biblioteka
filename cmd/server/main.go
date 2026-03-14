@@ -69,10 +69,10 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	defer func() { _ = w.Close() }()
 
 	// Register background jobs
-	w.Register(jobs.JobScanPath, jobs.NewScanPathHandler(w))
-	w.Register(jobs.JobProcessFile, jobs.NewProcessFileHandler(database))
-	w.Register(jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
-	w.Register(jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
+	w.Register(cancelCtx, jobs.JobScanPath, jobs.NewScanPathHandler(w))
+	w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database))
+	w.Register(cancelCtx, jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
+	w.Register(cancelCtx, jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
 
 	// Schedule periodic jobs
 	if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {

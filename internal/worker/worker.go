@@ -48,8 +48,8 @@ func New(redisURL string) (*Worker, error) {
 }
 
 // Register a named job handler. Must be called before Start.
-func (w *Worker) Register(name string, fn Func) {
-	slog.Debug("registering job handler", slog.String("job", name))
+func (w *Worker) Register(ctx context.Context, name string, fn Func) {
+	slog.DebugContext(ctx, "registering job handler", slog.String("job", name))
 	w.mux.HandleFunc(name, func(ctx context.Context, task *asynq.Task) error {
 		return fn(ctx, task.Payload())
 	})
@@ -87,7 +87,7 @@ func (w *Worker) Start(ctx context.Context) {
 	}
 
 	if err := w.scheduler.Start(); err != nil {
-		slog.Error("Failed to start asynq scheduler", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to start asynq scheduler", slog.Any("error", err))
 		srv.Shutdown()
 		return
 	}

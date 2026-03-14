@@ -126,7 +126,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		slog.Error("failed to hash password during signup", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to hash password during signup", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to hash password")
 		return
 	}
@@ -137,7 +137,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, "email already registered")
 			return
 		}
-		slog.Error("failed to create user", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create user", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to create user")
 		return
 	}
@@ -146,7 +146,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
-		slog.Error("failed to create token for user", slog.Any("user_id", user.ID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create token for user", slog.Any("user_id", user.ID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to create token")
 		return
 	}

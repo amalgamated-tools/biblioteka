@@ -191,7 +191,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 func (s *Server) Run(ctx context.Context) error {
 	newctx, span := otel.StartTracer(ctx, "server.Run")
 	defer span.End()
-	slog.Debug("Running server", slog.String("address", s.Address))
+	slog.DebugContext(newctx, "Running server", slog.String("address", s.Address))
 	ctx, cancel := context.WithCancel(newctx)
 
 	chain := alice.New(
@@ -211,7 +211,7 @@ func (s *Server) Run(ctx context.Context) error {
 	go func() {
 		err := s.httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			slog.Error("HTTP server error", slog.Any("error", err))
+			slog.ErrorContext(newctx, "HTTP server error", slog.Any("error", err))
 			s.shutdownFuncs = append(s.shutdownFuncs, func(_ context.Context) error {
 				return err
 			})
