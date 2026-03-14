@@ -162,10 +162,10 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		libID := lib.ID
 		enqueuer := h.Enqueuer
 		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
 			for _, p := range paths {
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				jobID, err := enqueuer.Enqueue(ctx, jobs.JobScanPath, jobs.ScanPathPayload{Path: p})
+				cancel()
 				if err != nil {
 					slog.Error("failed to enqueue scan job", "path", p, "error", err)
 				} else {
