@@ -227,8 +227,8 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 }
 
-func (h *BookHandler) listBooks(w http.ResponseWriter, _ *http.Request) {
-	slog.Debug("listing books")
+func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
+	slog.DebugContext(r.Context(), "listing books")
 	books, err := h.DB.ListBooks()
 	if err != nil {
 		slog.Error("failed to list books", "error", err)
@@ -236,7 +236,7 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
-	slog.Debug("books listed", slog.Int("count", len(books)))
+	slog.DebugContext(r.Context(), "books listed", slog.Int("count", len(books)))
 
 	dtos := make([]bookSummaryDTO, 0, len(books))
 	for i := range books {
@@ -276,8 +276,8 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, dto)
 }
 
-func (h *BookHandler) getBook(w http.ResponseWriter, _ *http.Request, id string) {
-	slog.Debug("fetching book", slog.String("book_id", id))
+func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "fetching book", slog.String("book_id", id))
 	b, err := h.DB.GetBook(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -331,8 +331,8 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 	writeJSON(w, http.StatusOK, dto)
 }
-func (h *BookHandler) deleteBook(w http.ResponseWriter, _ *http.Request, id string) {
-	slog.Debug("deleting book", slog.String("book_id", id))
+func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "deleting book", slog.String("book_id", id))
 	err := h.DB.DeleteBook(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
