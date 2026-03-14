@@ -256,8 +256,8 @@
             onclick={() => navigate("settings/oidc")}
             class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
             'oidc'
-              ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
-              : 'text-slate-600 hover:bg-slate-100'}"
+              ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+              : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}"
           >
             <Shield class="w-5 h-5" />
             OIDC / SSO
@@ -266,8 +266,8 @@
             onclick={() => navigate("settings/users")}
             class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
             'users'
-              ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
-              : 'text-slate-600 hover:bg-slate-100'}"
+              ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+              : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}"
           >
             <Users class="w-5 h-5" />
             Users
@@ -630,7 +630,7 @@
               <p class="text-slate-500 dark:text-slate-400">Loading users...</p>
             {:else if usersError}
               <div
-                class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"
+                class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm"
               >
                 {usersError}
               </div>
