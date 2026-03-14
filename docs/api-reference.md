@@ -366,6 +366,26 @@ Delete a library. Returns `204 No Content`.
 
 ---
 
+### `GET /api/libraries/{id}/books` 🔒
+
+List all books belonging to a specific library. Returns summary objects (no nested authors, series, or files).
+
+**Path parameters:**
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| `id`      | string | Library ID  |
+
+**Response body (`200`):** Array of book summary objects (same shape as [`GET /api/books`](#get-apibooks)).
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `404` | Library not found |
+
+---
+
 ## Authors
 
 ### `GET /api/authors` 🔒
