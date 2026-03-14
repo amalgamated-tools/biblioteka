@@ -27,7 +27,7 @@
 
   let { currentView, onNavigate, open, onClose }: Props = $props();
 
-  function handleNav(view: AppView) {
+  function handleViewNavigate(view: AppView) {
     onNavigate(view);
     onClose();
   }
@@ -87,7 +87,7 @@
       </p>
       <div class="space-y-1">
         <button
-          onclick={() => handleNav("dashboard")}
+          onclick={() => handleViewNavigate("dashboard")}
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
           'dashboard'
             ? 'bg-blue-600 text-white'
@@ -98,7 +98,7 @@
         </button>
         {#if $libraries.length > 0}
           <button
-            onclick={() => handleNav("books")}
+            onclick={() => handleViewNavigate("books")}
             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
             'books'
               ? 'bg-blue-600 text-white'
@@ -147,7 +147,7 @@
     <div>
       <div class="space-y-1">
         <button
-          onclick={() => handleNav("settings")}
+          onclick={() => handleViewNavigate("settings")}
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
           'settings'
             ? 'bg-blue-600 text-white'
