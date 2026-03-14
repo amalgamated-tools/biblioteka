@@ -3,7 +3,7 @@ tmp_dir = "tmp"
 
 [build]
 bin = "./tmp/biblioteka"
-cmd = "go build -o ./tmp/biblioteka ./cmd/biblioteka"
+cmd = "go build -o ./tmp/biblioteka ./cmd/server"
 delay = 1000
 exclude_dir = [
   "assets",

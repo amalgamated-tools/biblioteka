@@ -1,5 +1,6 @@
 # Database
 db/biblioteka.db*
+
 # Binaries
 /bibloteka
 *.exe
@@ -14,21 +15,13 @@ db/biblioteka.db*
 
 # Test coverage
 coverage.out
+node_modules/
 
-uploads/
 .env
 
 # Air live reload
 tmp/
-rustfs/
-mail/
 data/
 bibloteka.db
-
-# E2E tests
-e2e/node_modules/
-e2e/test-results/
-e2e/playwright-report/
-
-# MkDocs build output
-site/
+!internal/server/dist/.gitkeep
+internal/server/dist

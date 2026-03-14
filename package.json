@@ -1,0 +1,9 @@
+{
+  "name": "biblioteka-tools",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.17.0",
+  "devDependencies": {
+    "@playwright/test": "^1.54.2"
+  }
+}
