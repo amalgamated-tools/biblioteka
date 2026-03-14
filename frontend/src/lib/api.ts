@@ -227,6 +227,10 @@ export async function deleteLibrary(id: string): Promise<void> {
   await request<void>("DELETE", `/api/libraries/${id}`);
 }
 
+export async function listLibraryBooks(libraryId: string): Promise<BookSummary[]> {
+  return request<BookSummary[]>("GET", `/api/libraries/${libraryId}/books`);
+}
+
 // Authors
 
 export async function listAuthors(): Promise<Author[]> {

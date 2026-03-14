@@ -125,16 +125,24 @@
       </div>
       <div class="space-y-0.5">
         {#each libraryStore.libraries as lib (lib.id)}
-          <button
-            onclick={() => handleSidebarNavigate(`libraries/edit/${lib.id}`)}
+          <div
             class="group w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-sm transition-all text-ink-300 hover:bg-ink-800/70 hover:text-white"
           >
-            <Library class="w-4 h-4 flex-shrink-0 text-ink-500 group-hover:text-accent-400 transition-colors" />
-            <span class="truncate flex-1 text-left">{lib.name}</span>
-            <Settings2
-              class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-ink-500 transition-all"
-            />
-          </button>
+            <button
+              onclick={() => handleSidebarNavigate(`libraries/${lib.id}`)}
+              class="flex items-center gap-3 flex-1 min-w-0"
+            >
+              <Library class="w-4 h-4 flex-shrink-0 text-ink-500 group-hover:text-accent-400 transition-colors" />
+              <span class="truncate flex-1 text-left">{lib.name}</span>
+            </button>
+            <button
+              onclick={() => handleSidebarNavigate(`libraries/edit/${lib.id}`)}
+              class="opacity-0 group-hover:opacity-100 text-ink-500 hover:text-accent-400 transition-all p-0.5 flex-shrink-0"
+              title="Library settings"
+            >
+              <Settings2 class="w-3.5 h-3.5" />
+            </button>
+          </div>
         {/each}
       </div>
     </div>

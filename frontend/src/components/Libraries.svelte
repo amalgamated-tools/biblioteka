@@ -2,12 +2,16 @@
   import { onMount } from "svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { routerStore } from "../stores/router.svelte";
+  import * as api from "../lib/api";
+  import type { BookSummary } from "../types";
   import {
     Plus,
     FolderOpen,
     Trash2,
     X,
     Library as LibraryIcon,
+    BookOpen,
+    Settings2,
   } from "lucide-svelte";
 
   let error: string | null = $state(null);
@@ -26,11 +30,16 @@
   // Delete confirmation
   let showDeleteConfirm = $state(false);
 
-  // Determine mode from subPath: "new", "edit/{id}", or empty
-  let mode: "create" | "edit" | "empty" = $derived.by(() => {
+  // Library view state
+  let viewBooks: BookSummary[] = $state([]);
+  let viewLoading = $state(false);
+
+  // Determine mode from subPath: "new", "edit/{id}", "{id}" (view), or empty
+  let mode: "create" | "edit" | "view" | "empty" = $derived.by(() => {
     const sp = routerStore.subPath;
     if (sp === "new") return "create";
     if (sp.startsWith("edit/")) return "edit";
+    if (sp !== "") return "view";
     return "empty";
   });
 
@@ -38,6 +47,17 @@
     const sp = routerStore.subPath;
     if (sp.startsWith("edit/")) return sp.slice(5);
     return "";
+  });
+
+  let viewId: string = $derived.by(() => {
+    const sp = routerStore.subPath;
+    if (sp === "new" || sp.startsWith("edit/") || sp === "") return "";
+    return sp;
+  });
+
+  let viewLibrary = $derived.by(() => {
+    if (!viewId) return null;
+    return libraryStore.libraries.find((l) => l.id === viewId) ?? null;
   });
 
   // React to mode changes and library data arriving
@@ -62,8 +82,23 @@
         formError = null;
         showDeleteConfirm = false;
       }
+    } else if (mode === "view" && viewId) {
+      loadLibraryBooks(viewId);
     }
   });
+
+  async function loadLibraryBooks(libraryId: string) {
+    viewLoading = true;
+    error = null;
+    try {
+      viewBooks = await api.listLibraryBooks(libraryId);
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Failed to load books";
+      viewBooks = [];
+    } finally {
+      viewLoading = false;
+    }
+  }
 
   onMount(async () => {
     if (!libraryStore.loaded) {
@@ -105,10 +140,11 @@
 
       if (editingId) {
         await libraryStore.edit(editingId, input);
+        routerStore.navigate(`libraries/${editingId}`);
       } else {
-        await libraryStore.add(input);
+        const lib = await libraryStore.add(input);
+        routerStore.navigate(`libraries/${lib.id}`);
       }
-      routerStore.navigate("libraries");
     } catch (e) {
       formError = e instanceof Error ? e.message : "Failed to save library";
     } finally {
@@ -136,7 +172,73 @@
     </div>
   {/if}
 
-  {#if mode === "create" || mode === "edit"}
+  {#if mode === "view"}
+    <div class="animate-fade-in">
+      <div class="flex items-center gap-3 mb-8">
+        <div class="w-10 h-10 bg-accent-100 dark:bg-accent-800/20 rounded-xl flex items-center justify-center">
+          <LibraryIcon class="w-5 h-5 text-accent-600 dark:text-accent-400" />
+        </div>
+        <h1 class="text-3xl font-display font-bold text-ink-900 dark:text-cream-100">
+          {viewLibrary?.name ?? "Library"}
+        </h1>
+        <button
+          onclick={() => routerStore.navigate(`libraries/edit/${viewId}`)}
+          class="ml-auto text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
+          title="Library settings"
+        >
+          <Settings2 class="w-5 h-5" />
+        </button>
+      </div>
+
+      {#if viewLoading}
+        <div class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800">
+          <div class="text-center py-8">
+            <p class="text-ink-400 dark:text-ink-400">Loading books...</p>
+          </div>
+        </div>
+      {:else if viewBooks.length === 0}
+        <div class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800">
+          <div class="text-center py-8">
+            <BookOpen class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4" />
+            <p class="text-ink-400 dark:text-ink-400 text-lg">No books yet.</p>
+            <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
+              Books will appear here once they are scanned from your library folders.
+            </p>
+          </div>
+        </div>
+      {:else}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {#each viewBooks as book (book.id)}
+            <div
+              class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden hover:shadow-md transition-shadow"
+            >
+              {#if book.cover_image_url}
+                <div class="aspect-[2/3] bg-ink-100 dark:bg-ink-800">
+                  <img
+                    src={book.cover_image_url}
+                    alt={book.title}
+                    class="w-full h-full object-cover"
+                  />
+                </div>
+              {:else}
+                <div class="aspect-[2/3] bg-ink-100 dark:bg-ink-800 flex items-center justify-center">
+                  <BookOpen class="w-10 h-10 text-ink-300 dark:text-ink-600" />
+                </div>
+              {/if}
+              <div class="p-3">
+                <h3 class="font-medium text-sm text-ink-900 dark:text-cream-100 truncate" title={book.title}>
+                  {book.title}
+                </h3>
+                {#if book.publisher}
+                  <p class="text-xs text-ink-400 dark:text-ink-500 truncate mt-0.5">{book.publisher}</p>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {:else if mode === "create" || mode === "edit"}
     <div
       class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6 animate-fade-in"
     >
@@ -145,7 +247,13 @@
           {mode === "edit" ? "Edit Library" : "Create Library"}
         </h2>
         <button
-          onclick={() => routerStore.navigate("libraries")}
+          onclick={() => {
+            if (mode === "edit" && editId) {
+              routerStore.navigate(`libraries/${editId}`);
+            } else {
+              routerStore.navigate("libraries");
+            }
+          }}
           class="text-ink-300 hover:text-ink-500 dark:hover:text-ink-200 transition-colors"
         >
           <X class="w-5 h-5" />
@@ -268,7 +376,13 @@
             </button>
             <button
               type="button"
-              onclick={() => routerStore.navigate("libraries")}
+              onclick={() => {
+                if (mode === "edit" && editId) {
+                  routerStore.navigate(`libraries/${editId}`);
+                } else {
+                  routerStore.navigate("libraries");
+                }
+              }}
               disabled={saving}
               class="px-5 py-2.5 border border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-300 rounded-xl hover:bg-ink-50 dark:hover:bg-ink-800 transition-all text-sm font-medium"
             >
