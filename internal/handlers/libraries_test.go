@@ -2,13 +2,48 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+
+	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 )
+
+// mockEnqueuer records all enqueued jobs for test assertions.
+type mockEnqueuer struct {
+	mu   sync.Mutex
+	jobs []enqueued
+	err  error // if set, Enqueue returns this error
+}
+
+type enqueued struct {
+	Name    string
+	Payload jobs.ScanPathPayload
+}
+
+func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any) (string, error) {
+	if m.err != nil {
+		return "", m.err
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	var p jobs.ScanPathPayload
+	if err := json.Unmarshal(data, &p); err != nil {
+		return "", err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.jobs = append(m.jobs, enqueued{Name: name, Payload: p})
+	return "mock-job-id", nil
+}
 
 func setupLibraryHandler(t *testing.T) (*LibraryHandler, string) {
 	t.Helper()
@@ -130,6 +165,113 @@ func TestCreateLibrary_MixedValidAndInvalidPaths(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}
+
+func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
+	h, userID := setupLibraryHandler(t)
+	mock := &mockEnqueuer{}
+	h.Enqueuer = mock
+
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{
+		Name:  "Books",
+		Paths: []string{dir},
+	})
+
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleLibraries(w, r)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+	}
+
+	if len(mock.jobs) != 1 {
+		t.Fatalf("enqueued jobs = %d, want 1", len(mock.jobs))
+	}
+	if mock.jobs[0].Name != jobs.JobScanPath {
+		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanPath)
+	}
+	if mock.jobs[0].Payload.Path != dir {
+		t.Errorf("job path = %q, want %q", mock.jobs[0].Payload.Path, dir)
+	}
+}
+
+func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
+	h, userID := setupLibraryHandler(t)
+	mock := &mockEnqueuer{}
+	h.Enqueuer = mock
+
+	dir1 := t.TempDir()
+	dir2 := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{
+		Name:  "Books",
+		Paths: []string{dir1, dir2},
+	})
+
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleLibraries(w, r)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+	}
+
+	if len(mock.jobs) != 2 {
+		t.Fatalf("enqueued jobs = %d, want 2", len(mock.jobs))
+	}
+	for i, dir := range []string{dir1, dir2} {
+		if mock.jobs[i].Payload.Path != dir {
+			t.Errorf("job[%d] path = %q, want %q", i, mock.jobs[i].Payload.Path, dir)
+		}
+	}
+}
+
+func TestCreateLibrary_EnqueueErrorDoesNotFailRequest(t *testing.T) {
+	h, userID := setupLibraryHandler(t)
+	mock := &mockEnqueuer{err: fmt.Errorf("redis unavailable")}
+	h.Enqueuer = mock
+
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{
+		Name:  "Books",
+		Paths: []string{dir},
+	})
+
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleLibraries(w, r)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+	}
+}
+
+func TestCreateLibrary_NilEnqueuerDoesNotPanic(t *testing.T) {
+	h, userID := setupLibraryHandler(t)
+	// h.Enqueuer is nil by default from setupLibraryHandler
+
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{
+		Name:  "Books",
+		Paths: []string{dir},
+	})
+
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleLibraries(w, r)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 }
 
