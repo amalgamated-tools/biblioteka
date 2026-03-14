@@ -246,7 +246,16 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
-	mock.wg.Wait()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		mock.wg.Wait()
+	}()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timeout waiting for enqueue jobs")
+	}
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
