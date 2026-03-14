@@ -89,6 +89,8 @@ pnpm run lint     # ESLint
 pnpm run format   # Prettier
 ```
 
+See [docs/frontend.md](docs/frontend.md) for the frontend architecture overview, including the Svelte 5 `$state` class-based store pattern, hash-based routing, and guidance on adding new stores and views.
+
 ## Code Conventions
 
 - **No new dependencies** without a discussion issue first. The project values minimal dependencies.
