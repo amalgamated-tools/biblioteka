@@ -118,6 +118,21 @@ Never call `fetch` directly from components or stores — always go through `api
 
 All shared interfaces are in `frontend/src/types.ts`. Add new types there; do not inline them in component or store files.
 
+### Planned-feature stubs
+
+`types.ts` and `api.ts` contain a set of interfaces and functions for a planned media-management tool integration:
+
+| Symbol | File | Description |
+|--------|------|-------------|
+| `ArrService` | `types.ts` | Interface for a configured Arr service (Radarr, Sonarr, Prowlarr, or Seerr) |
+| `ArrServiceInput` | `types.ts` | Create/update payload for an Arr service |
+| `listArrServices` | `lib/api.ts` | `GET /api/arr-services` |
+| `createArrService` | `lib/api.ts` | `POST /api/arr-services` |
+| `updateArrService` | `lib/api.ts` | `PUT /api/arr-services/{id}` |
+| `deleteArrService` | `lib/api.ts` | `DELETE /api/arr-services/{id}` |
+
+> **Note:** The corresponding `/api/arr-services` backend endpoints are **not yet implemented**. These symbols are stubs reserved for a future feature. Do not call these API functions in production code until the backend routes exist.
+
 ## Adding a new store
 
 1. Create `frontend/src/stores/<name>.svelte.ts`.
