@@ -47,9 +47,9 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 
 	userID := auth.UserIDFromContext(r.Context())
 	slog.DebugContext(r.Context(), "admin listing users", slog.String("caller_id", userID))
-	isAdmin, err := h.DB.IsAdmin(userID)
+	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.Error("failed to check admin status", "error", err)
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
@@ -60,7 +60,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := h.DB.ListUsers()
 	if err != nil {
-		slog.Error("failed to list users", "error", err)
+		slog.ErrorContext(r.Context(), "failed to list users", slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to list users")
 		return
 	}
@@ -105,9 +105,9 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 
 	callerID := auth.UserIDFromContext(r.Context())
 	slog.DebugContext(r.Context(), "setting admin status", slog.String("caller_id", callerID))
-	isAdmin, err := h.DB.IsAdmin(callerID)
+	isAdmin, err := h.DB.IsAdmin(r.Context(), callerID)
 	if err != nil {
-		slog.Error("failed to check admin status", "error", err)
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}

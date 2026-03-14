@@ -414,6 +414,123 @@ func TestChangePassword_MethodNotAllowed(t *testing.T) {
 	}
 }
 
+// --- Set-Cookie header assertions ---
+
+// assertAuthCookie checks that the response contains a Set-Cookie header for
+// the auth cookie with the expected attributes.
+func assertAuthCookie(t *testing.T, w *httptest.ResponseRecorder, wantValue bool) {
+	t.Helper()
+	cookies := w.Result().Cookies()
+	var found *http.Cookie
+	for _, c := range cookies {
+		if c.Name == auth.TokenCookieName() {
+			found = c
+			break
+		}
+	}
+	if found == nil {
+		t.Fatal("expected Set-Cookie header for auth cookie, but none found")
+	}
+	if wantValue && found.Value == "" {
+		t.Error("expected non-empty cookie value")
+	}
+	if found.HttpOnly != true {
+		t.Error("expected HttpOnly to be true")
+	}
+	if found.SameSite != http.SameSiteStrictMode {
+		t.Errorf("SameSite = %v, want StrictMode", found.SameSite)
+	}
+	if found.Path != "/" {
+		t.Errorf("Path = %q, want %q", found.Path, "/")
+	}
+}
+
+func TestSignup_SetsCookie(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	body := `{"name":"CookieUser","email":"cookie@example.com","password":"secret123"}`
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	h.Signup(w, r)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+	}
+	assertAuthCookie(t, w, true)
+}
+
+func TestLogin_SetsCookie(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	// Create user first
+	signupBody := `{"name":"CookieLogin","email":"cookielogin@example.com","password":"secret123"}`
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
+	w := httptest.NewRecorder()
+	h.Signup(w, r)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("signup failed: %s", w.Body.String())
+	}
+
+	loginBody := `{"email":"cookielogin@example.com","password":"secret123"}`
+	r2 := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
+	w2 := httptest.NewRecorder()
+	h.Login(w2, r2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+	}
+	assertAuthCookie(t, w2, true)
+}
+
+func TestLogout_ClearsCookie(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+	r.Header.Set("Origin", "http://"+r.Host)
+	w := httptest.NewRecorder()
+	h.Logout(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	cookies := w.Result().Cookies()
+	var found *http.Cookie
+	for _, c := range cookies {
+		if c.Name == auth.TokenCookieName() {
+			found = c
+			break
+		}
+	}
+	if found == nil {
+		t.Fatal("expected Set-Cookie header for auth cookie on logout, but none found")
+	}
+	if found.MaxAge != -1 {
+		t.Errorf("MaxAge = %d, want -1 (cookie deletion)", found.MaxAge)
+	}
+	if found.Value != "" {
+		t.Errorf("cookie value = %q, want empty", found.Value)
+	}
+}
+
+func TestLogout_MethodNotAllowed(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	r := httptest.NewRequest(http.MethodGet, "/api/auth/logout", nil)
+	w := httptest.NewRecorder()
+	h.Logout(w, r)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+	}
+}
+
 func TestMe_EmptyUserID(t *testing.T) {
 	d := newTestDB(t)
 	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
