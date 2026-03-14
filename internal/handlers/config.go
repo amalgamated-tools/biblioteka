@@ -44,7 +44,7 @@ type configStatusResponse struct {
 // @Router      /config/status [get]
 func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
@@ -52,7 +52,7 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 	slog.DebugContext(r.Context(), "fetching config status", slog.String("user_id", userID))
 	isAdmin, _ := h.DB.IsAdmin(r.Context(), userID)
 
-	writeJSON(w, http.StatusOK, configStatusResponse{
+	writeJSON(r.Context(), w, http.StatusOK, configStatusResponse{
 		OIDCConfigured: h.IsOIDCConfigured(),
 		IsAdmin:        isAdmin,
 	})
@@ -89,11 +89,11 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String("user_id", userID), slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
 	if !isAdmin {
-		writeError(w, http.StatusForbidden, "only the admin user can view this setting")
+		writeError(r.Context(), w, http.StatusForbidden, "only the admin user can view this setting")
 		return
 	}
 
@@ -102,7 +102,7 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	secret, secretErr := h.DB.GetSetting(r.Context(), settingOIDCClientSecret)
 	redirectURI, _ := h.DB.GetSetting(r.Context(), settingOIDCRedirectURI)
 
-	writeJSON(w, http.StatusOK, oidcConfigResponse{
+	writeJSON(r.Context(), w, http.StatusOK, oidcConfigResponse{
 		IssuerURL:       issuerURL,
 		ClientID:        clientID,
 		ClientSecretSet: secretErr == nil && secret != "",
@@ -129,17 +129,17 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String("user_id", userID), slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
 	if !isAdmin {
-		writeError(w, http.StatusForbidden, "only the admin user can change this setting")
+		writeError(r.Context(), w, http.StatusForbidden, "only the admin user can change this setting")
 		return
 	}
 
 	var req setOIDCConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -149,15 +149,15 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	redirectURI := strings.TrimSpace(req.RedirectURI)
 
 	if issuerURL == "" {
-		writeError(w, http.StatusBadRequest, "issuer_url is required")
+		writeError(r.Context(), w, http.StatusBadRequest, "issuer_url is required")
 		return
 	}
 	if clientID == "" {
-		writeError(w, http.StatusBadRequest, "client_id is required")
+		writeError(r.Context(), w, http.StatusBadRequest, "client_id is required")
 		return
 	}
 	if redirectURI == "" {
-		writeError(w, http.StatusBadRequest, "redirect_uri is required")
+		writeError(r.Context(), w, http.StatusBadRequest, "redirect_uri is required")
 		return
 	}
 
@@ -165,7 +165,7 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	if clientSecret == "" {
 		existing, err := h.DB.GetSetting(r.Context(), settingOIDCClientSecret)
 		if err != nil || existing == "" {
-			writeError(w, http.StatusBadRequest, "client_secret is required")
+			writeError(r.Context(), w, http.StatusBadRequest, "client_secret is required")
 			return
 		}
 		clientSecret = existing
@@ -177,8 +177,8 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 	if _, err := oidc.NewProvider(ctx, issuerURL); err != nil {
-		slog.Error("OIDC provider discovery failed", "issuer_url", issuerURL, "error", err)
-		writeError(w, http.StatusBadRequest, "failed to discover OIDC provider at the given issuer URL")
+		slog.ErrorContext(ctx, "OIDC provider discovery failed", "issuer_url", issuerURL, "error", err)
+		writeError(r.Context(), w, http.StatusBadRequest, "failed to discover OIDC provider at the given issuer URL")
 		return
 	}
 
@@ -190,8 +190,8 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		settingOIDCRedirectURI:  redirectURI,
 	} {
 		if err := h.DB.SetSetting(r.Context(), k, v); err != nil {
-			slog.Error("failed to save OIDC setting", "key", k, "error", err)
-			writeError(w, http.StatusInternalServerError, "failed to save OIDC configuration")
+			slog.ErrorContext(ctx, "failed to save OIDC setting", "key", k, "error", err)
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to save OIDC configuration")
 			return
 		}
 	}
@@ -199,8 +199,8 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	// Apply the new configuration
 	if h.OnOIDCConfigSet != nil {
 		if err := h.OnOIDCConfigSet(r.Context(), issuerURL, clientID, clientSecret, redirectURI); err != nil {
-			slog.Error("failed to apply OIDC configuration", "error", err)
-			writeError(w, http.StatusInternalServerError, "settings saved but failed to apply OIDC configuration")
+			slog.ErrorContext(ctx, "failed to apply OIDC configuration", "error", err)
+			writeError(r.Context(), w, http.StatusInternalServerError, "settings saved but failed to apply OIDC configuration")
 			return
 		}
 	}
@@ -209,7 +209,7 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	if os.Getenv("OIDC_ISSUER_URL") != "" {
 		msg = "OIDC settings saved. Note: the OIDC_ISSUER_URL environment variable is set and will take precedence. Remove OIDC_ISSUER_URL from the environment to use these settings."
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"message": msg})
+	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": msg})
 }
 
 // HandleOIDCConfig dispatches GET and PUT requests for /api/config/oidc.
@@ -220,6 +220,6 @@ func (h *ConfigHandler) HandleOIDCConfig(w http.ResponseWriter, r *http.Request)
 	case http.MethodPut:
 		h.HandleSetOIDCConfig(w, r)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }

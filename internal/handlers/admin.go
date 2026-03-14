@@ -41,7 +41,7 @@ type setAdminRequest struct {
 // @Router      /admin/users [get]
 func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
@@ -50,18 +50,18 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
 	if !isAdmin {
-		writeError(w, http.StatusForbidden, "admin access required")
+		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
 		return
 	}
 
 	users, err := h.DB.ListUsers(r.Context())
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to list users", slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to list users")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list users")
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	writeJSON(w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, dtos)
 }
 
 // HandleSetAdmin godoc
@@ -99,7 +99,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 // @Router      /admin/users/{id} [put]
 func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
@@ -108,42 +108,42 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 	isAdmin, err := h.DB.IsAdmin(r.Context(), callerID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
 	if !isAdmin {
-		writeError(w, http.StatusForbidden, "admin access required")
+		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
 		return
 	}
 
 	targetID, ok := extractPathID(r.URL.Path, "/api/admin/users/")
 	if !ok {
-		writeError(w, http.StatusBadRequest, "invalid user ID")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid user ID")
 		return
 	}
 
 	if targetID == callerID {
-		writeError(w, http.StatusBadRequest, "cannot change your own admin status")
+		writeError(r.Context(), w, http.StatusBadRequest, "cannot change your own admin status")
 		return
 	}
 
 	var req setAdminRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if err := h.DB.SetAdmin(r.Context(), targetID, req.IsAdmin); err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "user not found")
+			writeError(r.Context(), w, http.StatusNotFound, "user not found")
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to set admin status", slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to update admin status")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update admin status")
 		return
 	}
 
 	slog.DebugContext(r.Context(), "admin status updated", slog.String("target_id", targetID), slog.Bool("is_admin", req.IsAdmin))
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "admin status updated"})
+	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "admin status updated"})
 }

@@ -110,7 +110,7 @@ Always commit the updated spec files alongside the handler changes that prompted
 - **No new dependencies** without a discussion issue first. The project values minimal dependencies.
 - **Standard library routing**: Routes are registered on `http.ServeMux` in `internal/server/server.go`. No router framework.
 - **Handler structure**: Each domain has a handler struct (e.g., `BookHandler`) holding a `*db.DB` and other dependencies. Handlers live in `internal/handlers/`.
-- **JSON responses**: Use `writeJSON(w, status, data)` and `writeError(w, status, message)` from `internal/handlers/helpers.go`.
+- **JSON responses**: Use `writeJSON(r.Context(), w, status, data)` and `writeError(r.Context(), w, status, message)` from `internal/handlers/helpers.go`.
 - **Path parameters**: Extract resource IDs with `extractPathID(path, prefix)` from `internal/handlers/helpers.go` — there is no router with named params. Example: `id, ok := extractPathID(r.URL.Path, "/api/books/")`.
 - **Admin-only endpoints**: Use the handler's `requireAdmin(w, r) bool` method to protect admin endpoints. Return early if it returns `false` — the method already writes the error response:
   ```go

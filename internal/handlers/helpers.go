@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -8,11 +9,11 @@ import (
 )
 
 // writeJSON sends a JSON response with the given status code.
-func writeJSON(w http.ResponseWriter, status int, data any) {
+func writeJSON(ctx context.Context, w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		slog.Error("failed to encode JSON response", "error", err)
+		slog.ErrorContext(ctx, "failed to encode JSON response", slog.Any("error", err))
 	}
 }
 
@@ -22,11 +23,11 @@ type errorResponse struct {
 }
 
 // writeError sends a JSON error response.
-func writeError(w http.ResponseWriter, status int, message string) {
+func writeError(ctx context.Context, w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(errorResponse{Error: message}); err != nil {
-		slog.Error("failed to encode JSON error response", "error", err)
+		slog.ErrorContext(ctx, "failed to encode JSON error response", slog.Any("error", err))
 	}
 }
 

@@ -189,7 +189,7 @@ func (h *BookHandler) HandleBooks(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		h.createBook(w, r)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
@@ -197,7 +197,7 @@ func (h *BookHandler) HandleBooks(w http.ResponseWriter, r *http.Request) {
 func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 	id, sub, ok := extractPathSegments(r.URL.Path, "/api/books/")
 	if !ok {
-		writeError(w, http.StatusBadRequest, "invalid book ID")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid book ID")
 		return
 	}
 
@@ -211,7 +211,7 @@ func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 		case http.MethodPut:
 			h.putBookAuthors(w, r, id)
 		default:
-			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		}
 	case "series":
 		switch r.Method {
@@ -220,7 +220,7 @@ func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 		case http.MethodPut:
 			h.putBookSeries(w, r, id)
 		default:
-			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		}
 	case "files":
 		switch r.Method {
@@ -229,10 +229,10 @@ func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 		case http.MethodPost:
 			h.postBookFiles(w, r, id)
 		default:
-			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		}
 	default:
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}
 }
 
@@ -245,7 +245,7 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 	case http.MethodDelete:
 		h.deleteBook(w, r, id)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
@@ -263,8 +263,8 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing books")
 	books, err := h.DB.ListBooks(r.Context())
 	if err != nil {
-		slog.Error("failed to list books", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to list books")
+		slog.ErrorContext(r.Context(), "failed to list books", slog.Any("error", err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list books")
 		return
 	}
 
@@ -275,7 +275,7 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 		dtos = append(dtos, toBookSummaryDTO(&books[i]))
 	}
 
-	writeJSON(w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, dtos)
 }
 
 // createBook godoc
@@ -294,12 +294,12 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	var req bookRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.Title == "" {
-		writeError(w, http.StatusBadRequest, "title is required")
+		writeError(r.Context(), w, http.StatusBadRequest, "title is required")
 		return
 	}
 
@@ -307,18 +307,18 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	b, err := h.DB.CreateBook(r.Context(), req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
 	if err != nil {
-		slog.Error("failed to create book", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to create book")
+		slog.ErrorContext(r.Context(), "failed to create book", slog.Any("error", err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book")
 		return
 	}
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.Error("failed to build book DTO", "book_id", b.ID, "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to create book")
+		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any("error", err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book")
 		return
 	}
-	writeJSON(w, http.StatusCreated, dto)
+	writeJSON(r.Context(), w, http.StatusCreated, dto)
 }
 
 // getBook godoc
@@ -339,21 +339,21 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 	b, err := h.DB.GetBook(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "book not found")
+			writeError(r.Context(), w, http.StatusNotFound, "book not found")
 			return
 		}
-		slog.Error("failed to get book", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to get book")
+		slog.ErrorContext(r.Context(), "failed to get book", slog.Any("error", err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get book")
 		return
 	}
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.Error("failed to build book DTO", "book_id", b.ID, "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to get book")
+		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any("error", err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get book")
 		return
 	}
-	writeJSON(w, http.StatusOK, dto)
+	writeJSON(r.Context(), w, http.StatusOK, dto)
 }
 
 // updateBook godoc
@@ -374,12 +374,12 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id string) {
 	var req bookRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.Title == "" {
-		writeError(w, http.StatusBadRequest, "title is required")
+		writeError(r.Context(), w, http.StatusBadRequest, "title is required")
 		return
 	}
 
@@ -388,21 +388,21 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 	b, err := h.DB.UpdateBook(r.Context(), id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "book not found")
+			writeError(r.Context(), w, http.StatusNotFound, "book not found")
 			return
 		}
-		slog.Error("failed to update book", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to update book")
+		slog.ErrorContext(r.Context(), "failed to update book", slog.Any("error", err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book")
 		return
 	}
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.Error("failed to build book DTO", "book_id", b.ID, "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to update book")
+		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any("error", err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book")
 		return
 	}
-	writeJSON(w, http.StatusOK, dto)
+	writeJSON(r.Context(), w, http.StatusOK, dto)
 }
 
 // deleteBook godoc
@@ -422,11 +422,11 @@ func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id stri
 	err := h.DB.DeleteBook(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "book not found")
+			writeError(r.Context(), w, http.StatusNotFound, "book not found")
 			return
 		}
-		slog.Error("failed to delete book", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to delete book")
+		slog.ErrorContext(r.Context(), "failed to delete book", slog.Any("error", err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete book")
 		return
 	}
 
@@ -434,18 +434,18 @@ func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id stri
 }
 
 // respondBookAuthors fetches and writes the author list for a book as JSON.
-func (h *BookHandler) respondBookAuthors(w http.ResponseWriter, ctx context.Context, bookID string) {
+func (h *BookHandler) respondBookAuthors(ctx context.Context, w http.ResponseWriter, bookID string) {
 	authors, err := h.DB.GetBookAuthors(ctx, bookID)
 	if err != nil {
-		slog.Error("failed to get book authors", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to get book authors")
+		slog.ErrorContext(ctx, "failed to get book authors", "error", err)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to get book authors")
 		return
 	}
 	dtos := make([]authorDTO, 0, len(authors))
 	for i := range authors {
 		dtos = append(dtos, toAuthorDTO(&authors[i]))
 	}
-	writeJSON(w, http.StatusOK, dtos)
+	writeJSON(ctx, w, http.StatusOK, dtos)
 }
 
 // setBookAuthorsRequest is the request body for setting book authors.
@@ -466,7 +466,7 @@ type setBookAuthorsRequest struct {
 // @Failure     500  {object} errorResponse
 // @Router      /books/{id}/authors [get]
 func (h *BookHandler) getBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
-	h.respondBookAuthors(w, r.Context(), bookID)
+	h.respondBookAuthors(r.Context(), w, bookID)
 }
 
 // putBookAuthors godoc
@@ -486,23 +486,23 @@ func (h *BookHandler) getBookAuthors(w http.ResponseWriter, r *http.Request, boo
 func (h *BookHandler) putBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
 	var req setBookAuthorsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if err := h.DB.SetBookAuthors(r.Context(), bookID, req.AuthorIDs); err != nil {
-		slog.Error("failed to set book authors", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to set book authors")
+		slog.ErrorContext(r.Context(), "failed to set book authors", slog.Any("error", err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to set book authors")
 		return
 	}
-	h.respondBookAuthors(w, r.Context(), bookID)
+	h.respondBookAuthors(r.Context(), w, bookID)
 }
 
 // respondBookSeries fetches and writes the series list for a book as JSON.
-func (h *BookHandler) respondBookSeries(w http.ResponseWriter, ctx context.Context, bookID string) {
+func (h *BookHandler) respondBookSeries(ctx context.Context, w http.ResponseWriter, bookID string) {
 	entries, err := h.DB.GetBookSeries(ctx, bookID)
 	if err != nil {
-		slog.Error("failed to get book series", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to get book series")
+		slog.ErrorContext(ctx, "failed to get book series", slog.Any("error", err))
+		writeError(ctx, w, http.StatusInternalServerError, "failed to get book series")
 		return
 	}
 	dtos := make([]bookSeriesEntryDTO, 0, len(entries))
@@ -512,7 +512,7 @@ func (h *BookHandler) respondBookSeries(w http.ResponseWriter, ctx context.Conte
 			Position: e.Position,
 		})
 	}
-	writeJSON(w, http.StatusOK, dtos)
+	writeJSON(ctx, w, http.StatusOK, dtos)
 }
 
 // setBookSeriesRequest is the request body for setting book series.
@@ -533,7 +533,7 @@ type setBookSeriesRequest struct {
 // @Failure     500  {object} errorResponse
 // @Router      /books/{id}/series [get]
 func (h *BookHandler) getBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
-	h.respondBookSeries(w, r.Context(), bookID)
+	h.respondBookSeries(r.Context(), w, bookID)
 }
 
 // putBookSeries godoc
@@ -553,15 +553,15 @@ func (h *BookHandler) getBookSeries(w http.ResponseWriter, r *http.Request, book
 func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
 	var req setBookSeriesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if err := h.DB.SetBookSeries(r.Context(), bookID, req.Entries); err != nil {
-		slog.Error("failed to set book series", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to set book series")
+		slog.ErrorContext(r.Context(), "failed to set book series", slog.Any("error", err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to set book series")
 		return
 	}
-	h.respondBookSeries(w, r.Context(), bookID)
+	h.respondBookSeries(r.Context(), w, bookID)
 }
 
 // getBookFiles godoc
@@ -580,14 +580,14 @@ func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookI
 	files, err := h.DB.ListBookFiles(r.Context(), bookID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to list book files", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to list book files")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list book files")
 		return
 	}
 	dtos := make([]bookFileDTO, 0, len(files))
 	for i := range files {
 		dtos = append(dtos, toBookFileDTO(&files[i]))
 	}
-	writeJSON(w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, dtos)
 }
 
 // createBookFileRequest is the request body for creating a book file.
@@ -616,18 +616,18 @@ type createBookFileRequest struct {
 func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
 	var req createBookFileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if req.FileType == "" || req.FileName == "" || req.FilePath == "" {
-		writeError(w, http.StatusBadRequest, "file_type, file_name, and file_path are required")
+		writeError(r.Context(), w, http.StatusBadRequest, "file_type, file_name, and file_path are required")
 		return
 	}
 	bf, err := h.DB.CreateBookFile(r.Context(), bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create book file", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to create book file")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book file")
 		return
 	}
-	writeJSON(w, http.StatusCreated, toBookFileDTO(bf))
+	writeJSON(r.Context(), w, http.StatusCreated, toBookFileDTO(bf))
 }

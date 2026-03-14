@@ -28,7 +28,7 @@ func SendBoot(ctx context.Context, version string) {
 	// Telemetry is opt-in meaning it is disabled by default unless explicitly enabled
 	envTelemetryEnabled, ok := os.LookupEnv("TELEMETRY_ENABLED")
 	if ok {
-		slog.DebugContext(ctx, "Telemetry environment variable found", slog.String("TELEMETRY_ENABLED", envTelemetryEnabled))
+		slog.DebugContext(ctx, "Telemetry environment variable found", slog.String("telemetry_enabled", envTelemetryEnabled))
 
 		if !strings.EqualFold(envTelemetryEnabled, "true") {
 			slog.InfoContext(ctx, "Telemetry is disabled via TELEMETRY_ENABLED environment variable")

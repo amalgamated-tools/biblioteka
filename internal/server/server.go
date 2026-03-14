@@ -184,7 +184,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		}
 	}
 
-	s.setupRoutes()
+	s.setupRoutes(ctx)
 	return s, nil
 }
 
@@ -242,7 +242,7 @@ func (s *Server) shutdown(ctx context.Context) error {
 	return shutdownGroup.Wait()
 }
 
-func (s *Server) setupRoutes() {
+func (s *Server) setupRoutes(ctx context.Context) {
 	// Public auth routes (rate-limited)
 	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Limit(s.authHandler.Signup))
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
@@ -305,7 +305,7 @@ func (s *Server) setupRoutes() {
 		s.mux.Handle(mon.RootPath()+"/", s.requireAdmin(mon))
 	}
 
-	s.setupFrontend()
+	s.setupFrontend(ctx)
 }
 
 // swaggerSecurityHeaders wraps a handler with restrictive CORS and CSP headers
@@ -421,11 +421,11 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) setupFrontend() {
+func (s *Server) setupFrontend(ctx context.Context) {
 	// Serve the embedded frontend SPA
 	frontendFS, err := fs.Sub(embeddedFiles, "dist")
 	if err != nil {
-		slog.Error("failed to setup frontend filesystem", slog.Any("error", err))
+		slog.ErrorContext(ctx, "failed to setup frontend filesystem", slog.Any("error", err))
 		panic(fmt.Sprintf("failed to setup frontend filesystem: %v", err))
 	}
 
