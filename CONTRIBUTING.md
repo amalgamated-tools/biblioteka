@@ -89,6 +89,8 @@ pnpm run lint     # ESLint
 pnpm run format   # Prettier
 ```
 
+See [docs/frontend.md](docs/frontend.md) for the frontend architecture overview, including the Svelte 5 `$state` class-based store pattern, hash-based routing, and guidance on adding new stores and views.
+
 ## Code Conventions
 
 - **No new dependencies** without a discussion issue first. The project values minimal dependencies.
@@ -119,6 +121,22 @@ DROP TABLE ...;
 ```
 
 Name files with a timestamp prefix: `YYYYMMDDHHMMSS_description.sql`. Migrations run automatically on startup — no separate command needed.
+
+## Continuous Integration
+
+The test workflow runs on pushes and pull requests targeting `main` or `develop`, but only when the following paths are modified:
+
+| Path pattern | What it covers |
+|---|---|
+| `cmd/**` | Server and CLI entry points |
+| `internal/**` | All backend packages |
+| `frontend/**` | Svelte SPA and its tests |
+| `db/**` | Migrations and schema |
+| `go.mod`, `go.sum` | Go module changes |
+| `.golangci.yml` | Linter configuration |
+| `.github/workflows/test.yml` | Workflow file itself |
+
+> **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
 
 ## Submitting a Pull Request
 
