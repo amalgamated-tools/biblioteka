@@ -15,8 +15,9 @@ import (
 
 // AuthHandler holds dependencies for auth endpoints.
 type AuthHandler struct {
-	DB  *db.DB
-	JWT *auth.JWTManager
+	DB            *db.DB
+	JWT           *auth.JWTManager
+	SecureCookies bool
 }
 
 type signupRequest struct {
@@ -53,6 +54,33 @@ func redactEmail(email string) string {
 		return "***"
 	}
 	return email[:1] + "***" + email[at:]
+}
+
+// setAuthCookie sets an HttpOnly cookie with the JWT token for browser-based
+// access to server-rendered UIs (e.g. asynqmon).
+func setAuthCookie(w http.ResponseWriter, token string, secure bool) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     auth.TokenCookieName(),
+		Value:    token,
+		Path:     "/",
+		MaxAge:   86400, // 24h, matches JWT TTL
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Secure:   secure,
+	})
+}
+
+// clearAuthCookie removes the auth cookie by setting MaxAge to -1.
+func clearAuthCookie(w http.ResponseWriter, secure bool) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     auth.TokenCookieName(),
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Secure:   secure,
+	})
 }
 
 // Signup godoc
@@ -120,6 +148,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setAuthCookie(w, token, h.SecureCookies)
 	writeJSON(w, http.StatusCreated, authResponse{
 		Token: token,
 		User:  userDTO{ID: user.ID, Email: user.Email, IsAdmin: user.IsAdmin},
@@ -186,6 +215,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "login successful", slog.String("user_id", user.ID), slog.String("email", user.Email))
 
+	setAuthCookie(w, token, h.SecureCookies)
 	writeJSON(w, http.StatusOK, authResponse{
 		Token: token,
 		User:  userDTO{ID: user.ID, Email: user.Email, IsAdmin: user.IsAdmin},
@@ -295,4 +325,22 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "password changed", slog.String("user_id", userID))
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "password updated"})
+}
+
+// Logout godoc
+// @Summary     Log out
+// @Description Clears the authentication cookie
+// @Tags        Auth
+// @Produce     json
+// @Success     200 {object} object{message=string}
+// @Failure     405 {object} errorResponse
+// @Router      /auth/logout [post]
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	clearAuthCookie(w, h.SecureCookies)
+	writeJSON(w, http.StatusOK, map[string]string{"message": "logged out"})
 }

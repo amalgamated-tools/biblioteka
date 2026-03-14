@@ -439,7 +439,8 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "OIDC login successful", slog.String("user_id", user.ID))
 
-	// Redirect to frontend with token
+	// Set auth cookie for browser-based access, then redirect to frontend
+	setAuthCookie(w, token, h.SecureCookies)
 	http.Redirect(w, r, "/?token="+token, http.StatusFound)
 }
 

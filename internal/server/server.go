@@ -73,6 +73,7 @@ type Server struct {
 	bookHandler     *handlers.BookHandler
 	bookFileHandler *handlers.BookFileHandler
 	requireAuth     func(http.Handler) http.Handler
+	requireAdmin    func(http.Handler) http.Handler
 	authLimiter     *auth.RateLimiter
 	mux             *http.ServeMux
 	httpServer      *http.Server
@@ -120,6 +121,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		s.requireAuth = auth.Middleware(s.JWT)
 	}
 
+	if s.requireAdmin == nil {
+		s.requireAdmin = auth.AdminMiddleware(s.JWT, s.DB)
+	}
+
 	if s.authLimiter == nil {
 		s.authLimiter = auth.NewRateLimiter(5, 10)
 	}
@@ -127,7 +132,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	// Determine cookie security mode: secure by default, can be disabled for local dev
 	secureCookies := os.Getenv("SECURE_COOKIES") != "false"
 
-	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT}
+	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT, SecureCookies: secureCookies}
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}
 	s.libraryHandler = &handlers.LibraryHandler{DB: s.DB}
 	if s.Worker != nil {
@@ -241,6 +246,7 @@ func (s *Server) setupRoutes() {
 	// Public auth routes (rate-limited)
 	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Limit(s.authHandler.Signup))
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
+	s.mux.HandleFunc("/api/auth/logout", s.authHandler.Logout)
 
 	// OIDC auth routes — always registered, check handler at request time
 	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
@@ -283,19 +289,19 @@ func (s *Server) setupRoutes() {
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)
 
-	// Swagger UI (protected)
-	s.mux.Handle("/swagger", s.requireAuth(http.RedirectHandler("/swagger/", http.StatusMovedPermanently)))
-	s.mux.Handle("/swagger/", s.requireAuth(httpSwagger.Handler(
+	// Swagger UI (public)
+	s.mux.Handle("/swagger", http.RedirectHandler("/swagger/", http.StatusMovedPermanently))
+	s.mux.Handle("/swagger/", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
-	)))
+	))
 
-	// Asynq monitoring dashboard
+	// Asynq monitoring dashboard (admin only, supports cookie auth for browser access)
 	if s.Worker != nil {
 		mon := asynqmon.New(asynqmon.Options{
 			RootPath:     "/asynqmon",
 			RedisConnOpt: s.Worker.RedisConnOpt(),
 		})
-		s.mux.Handle(mon.RootPath()+"/", s.requireAuth(mon))
+		s.mux.Handle(mon.RootPath()+"/", s.requireAdmin(mon))
 	}
 
 	s.setupFrontend()
