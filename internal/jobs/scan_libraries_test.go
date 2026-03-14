@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"sync"
 	"testing"
 
@@ -46,6 +47,85 @@ func (m *genericMockEnqueuer) Enqueue(_ context.Context, name string, payload an
 	return "mock-id", nil
 }
 
+func TestScanLibraryHandler(t *testing.T) {
+	enq := &genericMockEnqueuer{}
+	handler := NewScanLibraryHandler(enq)
+
+	payload, _ := json.Marshal(ScanLibraryPayload{
+		LibraryID: "lib1",
+		Paths:     []string{"/books/fiction", "/books/scifi"},
+	})
+	if err := handler(context.Background(), payload); err != nil {
+		t.Fatalf("handler: %v", err)
+	}
+
+	if got := len(enq.jobs); got != 2 {
+		t.Fatalf("expected 2 enqueued jobs, got %d", got)
+	}
+	for i, want := range []string{"/books/fiction", "/books/scifi"} {
+		if enq.jobs[i].Name != JobScanPath {
+			t.Errorf("job[%d] name = %q, want %q", i, enq.jobs[i].Name, JobScanPath)
+		}
+		var p ScanPathPayload
+		if err := json.Unmarshal(enq.jobs[i].Payload, &p); err != nil {
+			t.Fatalf("unmarshal job[%d]: %v", i, err)
+		}
+		if p.Path != want {
+			t.Errorf("job[%d] path = %q, want %q", i, p.Path, want)
+		}
+	}
+}
+
+func TestScanLibraryHandler_EmptyPaths(t *testing.T) {
+	enq := &genericMockEnqueuer{}
+	handler := NewScanLibraryHandler(enq)
+
+	payload, _ := json.Marshal(ScanLibraryPayload{LibraryID: "lib1"})
+	if err := handler(context.Background(), payload); err != nil {
+		t.Fatalf("handler: %v", err)
+	}
+
+	if len(enq.jobs) != 0 {
+		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
+	}
+}
+
+func TestScanLibraryHandler_EnqueueError(t *testing.T) {
+	enq := &genericMockEnqueuer{err: errors.New("redis unavailable")}
+	handler := NewScanLibraryHandler(enq)
+
+	payload, _ := json.Marshal(ScanLibraryPayload{
+		LibraryID: "lib1",
+		Paths:     []string{"/books/fiction", "/books/scifi"},
+	})
+	if err := handler(context.Background(), payload); err != nil {
+		t.Fatalf("handler should not fail on enqueue errors: %v", err)
+	}
+
+	if len(enq.jobs) != 0 {
+		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
+	}
+}
+
+func TestScanLibraryHandler_MissingLibraryID(t *testing.T) {
+	enq := &genericMockEnqueuer{}
+	handler := NewScanLibraryHandler(enq)
+
+	payload, _ := json.Marshal(ScanLibraryPayload{Paths: []string{"/books/fiction"}})
+	if err := handler(context.Background(), payload); err == nil {
+		t.Fatal("expected error when library_id is missing")
+	}
+}
+
+func TestScanLibraryHandler_InvalidPayload(t *testing.T) {
+	enq := &genericMockEnqueuer{}
+	handler := NewScanLibraryHandler(enq)
+
+	if err := handler(context.Background(), []byte("not json")); err == nil {
+		t.Fatal("expected error for invalid payload")
+	}
+}
+
 func TestScanLibrariesHandler(t *testing.T) {
 	enq := &genericMockEnqueuer{}
 	lister := &mockLibraryLister{
@@ -76,21 +156,31 @@ func TestScanLibrariesHandler(t *testing.T) {
 		t.Fatalf("handler: %v", err)
 	}
 
-	// Expect 3 scan:path jobs (2 from lib1, 1 from lib2; lib3 is not monitored)
-	if got := len(enq.jobs); got != 3 {
-		t.Errorf("expected 3 enqueued jobs, got %d", got)
+	// Expect 2 scan:library jobs (lib1 and lib2; lib3 is not monitored)
+	if got := len(enq.jobs); got != 2 {
+		t.Fatalf("expected 2 enqueued jobs, got %d", got)
 	}
 
+	wantJobs := map[string][]string{
+		"lib1": {"/books/fiction", "/books/scifi"},
+		"lib2": {"/books/nonfiction"},
+	}
 	for _, j := range enq.jobs {
-		if j.Name != JobScanPath {
-			t.Errorf("expected job name %q, got %q", JobScanPath, j.Name)
+		if j.Name != JobScanLibrary {
+			t.Errorf("expected job name %q, got %q", JobScanLibrary, j.Name)
 		}
-		var p ScanPathPayload
+		var p ScanLibraryPayload
 		if err := json.Unmarshal(j.Payload, &p); err != nil {
 			t.Errorf("unmarshal payload: %v", err)
+			continue
 		}
-		if p.Path == "" {
-			t.Error("enqueued job has empty path")
+		wantPaths, ok := wantJobs[p.LibraryID]
+		if !ok {
+			t.Errorf("unexpected library_id %q", p.LibraryID)
+			continue
+		}
+		if !slices.Equal(p.Paths, wantPaths) {
+			t.Errorf("library %q paths = %v, want %v", p.LibraryID, p.Paths, wantPaths)
 		}
 	}
 }

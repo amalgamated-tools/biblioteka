@@ -63,6 +63,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	// Register background jobs
 	w.Register(jobs.JobScanPath, jobs.NewScanPathHandler(w))
 	w.Register(jobs.JobProcessFile, jobs.NewProcessFileHandler(database))
+	w.Register(jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
 	w.Register(jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
 
 	// Schedule periodic jobs
