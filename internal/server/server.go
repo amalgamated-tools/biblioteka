@@ -304,7 +304,7 @@ func (s *Server) setupRoutes() {
 			RootPath:     "/asynqmon",
 			RedisConnOpt: s.Worker.RedisConnOpt(),
 		})
-		s.mux.Handle(mon.RootPath()+"/", mon)
+		s.mux.Handle(mon.RootPath()+"/", s.requireAuth(mon))
 	}
 
 	s.setupFrontend()
