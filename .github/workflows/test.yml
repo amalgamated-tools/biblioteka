@@ -101,6 +101,19 @@ jobs:
       - name: Run frontend tests
         working-directory: ./frontend
         run: pnpm run test
+        
+  frontend-all:
+    needs: [frontend-build, frontend-checks]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all frontend jobs passed
+        run: |
+          if [[ "${{ needs.frontend-build.result }}" != "success" || "${{ needs.frontend-checks.result }}" != "success" ]]; then
+            echo "One or more frontend jobs failed"
+            exit 1
+          fi
+
 
   go-tests:
     needs: frontend-build
