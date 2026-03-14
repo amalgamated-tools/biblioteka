@@ -99,11 +99,11 @@ The OpenAPI spec (`docs/swagger.json`, `docs/swagger.yaml`, `docs/docs.go`) is g
 # Regenerate docs/swagger.json, docs/swagger.yaml, and docs/docs.go
 make swagger
 
-# Reformat swag annotations in handler files (run before committing annotation edits)
+# Reformat swag annotations in handler files (run after editing annotations and before committing)
 make swagger-fmt
 ```
 
-Always commit the updated spec files alongside the handler changes that prompted them. The interactive Swagger UI at `/swagger/` and the raw spec at `/swagger/doc.json` are both served from these generated files.
+Always commit the updated spec files alongside the handler changes that prompted them. At runtime, the interactive Swagger UI at `/swagger/` is served via the `http-swagger` UI assets, while the raw spec at `/swagger/doc.json` is generated from `docs/docs.go`; the `docs/swagger.json` and `docs/swagger.yaml` files are primarily for committing to the repository and for client/tooling consumption, and are not served directly by the backend.
 
 ## Code Conventions
 
