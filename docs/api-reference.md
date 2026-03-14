@@ -273,7 +273,7 @@ Grant or revoke admin privileges for a user. Admins cannot change their own admi
 
 ## Libraries
 
-Libraries represent collections of books at one or more file-system paths. Scanning a library triggers a background job to index books found at those paths.
+Libraries represent collections of books at one or more file-system paths. Creating a library automatically enqueues a background job to scan each configured path and index the books found there.
 
 ### `GET /api/libraries` 🔒
 
@@ -297,6 +297,8 @@ Create a library.
 | `monitored`         | boolean  |          | Whether to auto-import new files |
 
 **Responses:** `201 Created` with the new library object, or `409 Conflict` if the name is taken.
+
+> **Note:** On successful creation, the server asynchronously enqueues one scan job per configured path. Updating (`PUT`) a library does **not** trigger an automatic re-scan.
 
 **Library object:**
 
@@ -665,6 +667,18 @@ Get a single book file by ID.
 ### `DELETE /api/book-files/{id}` 🔒
 
 Delete a book file record (does not delete the file from disk). Returns `204 No Content`.
+
+---
+
+## Monitoring Dashboard
+
+### `GET /asynqmon/` 🔒
+
+An interactive web UI for monitoring background jobs (powered by [asynqmon](https://github.com/hibiken/asynqmon)).
+
+This dashboard is only available when the server is started with a Redis-backed worker (i.e. `REDIS_URL` is configured). It requires an authenticated session — accessing it without a valid JWT cookie returns `401 Unauthorized`.
+
+Navigate to `http://<host>:<port>/asynqmon/` in a browser after logging in to view queued, active, completed, and failed jobs.
 
 ---
 
