@@ -163,20 +163,17 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 	dto := toLibraryDTO(lib)
 
 	if h.Enqueuer != nil && len(dto.Paths) > 0 {
-		paths := dto.Paths
-		libID := lib.ID
-		enqueuer := h.Enqueuer
 		h.wg.Add(1)
 		go func() {
 			defer h.wg.Done()
-			for _, p := range paths {
+			for _, p := range dto.Paths {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-				jobID, err := enqueuer.Enqueue(ctx, jobs.JobScanPath, jobs.ScanPathPayload{Path: p})
+				jobID, err := h.Enqueuer.Enqueue(ctx, jobs.JobScanPath, jobs.ScanPathPayload{Path: p})
 				cancel()
 				if err != nil {
 					slog.Error("failed to enqueue scan job", "path", p, "error", err)
 				} else {
-					slog.Info("enqueued scan job for new library", "library", libID, "path", p, "job_id", jobID)
+					slog.Info("enqueued scan job for new library", "library", lib.ID, "path", p, "job_id", jobID)
 				}
 			}
 		}()
