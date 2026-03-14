@@ -3,9 +3,20 @@ import * as api from "../lib/api";
 
 class LibraryStore {
   libraries: Library[] = $state.raw([]);
+  loading = $state(false);
+  loaded = $state(false);
+
   async load(): Promise<void> {
     if (this.loading || this.loaded) return;
     this.loading = true;
+    try {
+      const data = await api.listLibraries();
+      this.libraries = data;
+      this.loaded = true;
+    } catch {
+      // Silently fail — individual pages can handle errors
+    } finally {
+      this.loading = false;
     }
   }
 
