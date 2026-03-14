@@ -46,6 +46,7 @@ class RouterStore {
   /** Navigate by setting the hash */
   navigate(path: string): void {
     window.location.hash = `#${path}`;
+    this.hash = path.replace(/^#\/?/, "");
   }
 }
 
