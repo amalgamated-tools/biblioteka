@@ -343,14 +343,14 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 			writeError(w, http.StatusNotFound, "library not found")
 			return
 		}
-		slog.Error("failed to get library", "error", err)
+		slog.ErrorContext(r.Context(), "failed to get library", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to get library")
 		return
 	}
 
 	books, err := h.DB.ListBooksByLibrary(id)
 	if err != nil {
-		slog.Error("failed to list library books", "error", err)
+		slog.ErrorContext(r.Context(), "failed to list library books", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list library books")
 		return
 	}

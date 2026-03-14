@@ -91,12 +91,19 @@
     viewLoading = true;
     error = null;
     try {
-      viewBooks = await api.listLibraryBooks(libraryId);
+      const books = await api.listLibraryBooks(libraryId);
+      if (viewId === libraryId) {
+        viewBooks = books;
+      }
     } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to load books";
-      viewBooks = [];
+      if (viewId === libraryId) {
+        error = e instanceof Error ? e.message : "Failed to load books";
+        viewBooks = [];
+      }
     } finally {
-      viewLoading = false;
+      if (viewId === libraryId) {
+        viewLoading = false;
+      }
     }
   }
 
@@ -185,6 +192,7 @@
           onclick={() => routerStore.navigate(`libraries/edit/${viewId}`)}
           class="ml-auto text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
           title="Library settings"
+          aria-label="Library settings"
         >
           <Settings2 class="w-5 h-5" />
         </button>
