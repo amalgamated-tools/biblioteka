@@ -8,6 +8,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/hibiken/asynq v0.26.0
+	github.com/hibiken/asynqmon v0.7.2
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/justinas/alice v1.2.0
 	go.opentelemetry.io/otel v1.42.0
@@ -28,6 +29,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gohugoio/hugo v0.149.1 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
