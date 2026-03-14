@@ -433,7 +433,7 @@ Update an author (full update).
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Validation error (missing name) |
+| `400` | Invalid request (malformed JSON or missing name) |
 | `404` | Author not found |
 | `409` | An author with that name already exists |
 
