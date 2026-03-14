@@ -32,9 +32,7 @@
   });
 
   async function handleLogout() {
-    if (confirm("Are you sure you want to logout?")) {
-      await signOut();
-    }
+    await signOut();
   }
 </script>
 
