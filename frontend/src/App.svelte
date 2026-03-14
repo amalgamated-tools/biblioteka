@@ -48,7 +48,7 @@
           <span class="text-white font-display text-2xl font-bold">B</span>
         </div>
       </div>
-      <p class="text-ink-400 dark:text-ink-400 font-body text-sm tracking-wide">Loading your library…</p>
+      <p class="text-ink-400 dark:text-ink-300 font-body text-sm tracking-wide">Loading your library…</p>
     </div>
   </div>
 {:else if !$user}
