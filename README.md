@@ -81,7 +81,7 @@ Copy `.env.sample` to `.env` and adjust as needed:
 | `DATABASE_URL` | *(empty – SQLite)* | PostgreSQL connection string |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
 | `JWT_SECRET` | — | **Required in production** – random secret for signing tokens |
-| `SECURE_COOKIES` | `false` | Set `true` behind HTTPS |
+| `SECURE_COOKIES` | `true` | Marks session cookies as `Secure`. Set to `false` for local HTTP development (the provided `.env.sample` defaults to `false`) |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `LOG_FORMAT` | `json` | `json` or `text` |
 | `OIDC_ISSUER_URL` | *(empty)* | OIDC provider issuer URL |
@@ -91,6 +91,15 @@ Copy `.env.sample` to `.env` and adjust as needed:
 | `TELEMETRY_ENABLED` | `false` | Send anonymous usage telemetry on first startup (opt-in, disabled by default) |
 | `TELEMETRY_ENDPOINT` | *(internal default)* | Override the anonymous telemetry collection endpoint |
 | `POSTGRES_PASSWORD` | — | PostgreSQL password; used by the `docker-compose.postgres.yml` Docker Compose file |
+
+## Admin
+
+The first account created is automatically granted admin privileges. Admins can:
+
+- **Manage users** — list all accounts and grant or revoke admin status via `GET /api/admin/users` and `PUT /api/admin/users/{id}`.
+- **Configure OIDC at runtime** — read and update the OIDC provider settings via `GET /api/config/oidc` and `PUT /api/config/oidc` without a server restart. Environment variable values (`OIDC_ISSUER_URL`, etc.) take precedence over database-stored settings.
+
+See [docs/api.md](docs/api.md) for the full API reference.
 
 ## Database Migrations
 
@@ -176,3 +185,7 @@ script/            Build and release helper scripts
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, code conventions, and how to submit a pull request.
+
+## API Reference
+
+See [docs/api.md](docs/api.md) for a complete reference of all HTTP endpoints, request/response shapes, and authentication requirements.
