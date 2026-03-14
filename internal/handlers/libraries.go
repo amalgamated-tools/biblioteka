@@ -100,7 +100,7 @@ func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 
 // validateAndPrepareLibrary validates the library request fields and encodes paths to JSON.
 // It writes the appropriate error response and returns ("", false) on failure.
-func (h *LibraryHandler) validateAndPrepareLibrary(w http.ResponseWriter, req *libraryRequest) (pathsJSON string, ok bool) {
+func validateAndPrepareLibrary(w http.ResponseWriter, req *libraryRequest) (pathsJSON string, ok bool) {
 	if req.Name == "" {
 		writeError(w, http.StatusBadRequest, "name is required")
 		return "", false
@@ -135,7 +135,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pathsJSON, ok := h.validateAndPrepareLibrary(w, &req)
+	pathsJSON, ok := validateAndPrepareLibrary(w, &req)
 	if !ok {
 		return
 	}
@@ -176,7 +176,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
-	pathsJSON, ok := h.validateAndPrepareLibrary(w, &req)
+	pathsJSON, ok := validateAndPrepareLibrary(w, &req)
 	if !ok {
 		return
 	}
