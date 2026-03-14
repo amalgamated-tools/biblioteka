@@ -1,4 +1,4 @@
-.PHONY: all build frontend backend clean dev redis-check screenshots
+.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev
 
 # Build everything: frontend then Go binary
 all: build

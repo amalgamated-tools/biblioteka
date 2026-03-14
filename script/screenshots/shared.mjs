@@ -73,6 +73,20 @@ async function loginAsDemo(page) {
     await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
 }
 
+async function openSettingsPage(page) {
+    await page.goto(`${BASE_URL}/#settings/account`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor({ state: 'visible' });
+    await page.locator('input#email-display').waitFor({ state: 'visible' });
+}
+
+async function openSettingsTab(page, tabName, headingName) {
+    await page.getByRole('button', { name: tabName, exact: true }).click();
+    await page.getByRole('heading', { name: headingName, exact: true }).waitFor({ state: 'visible' });
+}
+
 async function ensureDemoAccount(page) {
     console.log(`Ensuring demo account exists for ${DEMO_EMAIL}...`);
     await openSignupForm(page);
@@ -144,6 +158,27 @@ export async function runVariant({ theme, mobile }) {
         // wait for the logout-button to ensure the dashboard is fully loaded before taking a screenshot
         // await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('dashboard', variantName)) });
+
+        console.log(`Capturing settings (${variantName})...`);
+        await openSettingsPage(page);
+        await setTheme(page, theme);
+        await page.reload({ waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS });
+        await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor({ state: 'visible' });
+        await page.locator('input#email-display').waitFor({ state: 'visible' });
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings', variantName)) });
+
+        console.log(`Capturing settings OIDC (${variantName})...`);
+        await openSettingsTab(page, 'OIDC / SSO', 'OIDC / Single Sign-On');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-oidc', variantName)) });
+
+        console.log(`Capturing settings users (${variantName})...`);
+        await openSettingsTab(page, 'Users', 'User Management');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-users', variantName)) });
+
+        console.log(`Capturing settings preferences (${variantName})...`);
+        await openSettingsTab(page, 'Preferences', 'Display Preferences');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-preferences', variantName)) });
+
         console.log(`Logging out if needed for ${variantName}...`);
         await logoutIfNeeded(page);
 
