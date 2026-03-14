@@ -351,7 +351,7 @@ Update a library. All fields are replaced (full update).
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Validation error (missing name, invalid or non-existent path) |
+| `400` | Invalid request (malformed JSON or validation error such as missing name, invalid/non-existent/empty paths) |
 | `404` | Library not found |
 | `409` | A library with that name already exists |
 
@@ -429,9 +429,11 @@ Update an author (full update).
 **Response body (`200`):** Updated author object.
 
 **Errors:**
+**Errors:**
 
 | Status | Meaning |
 |--------|---------|
+| `400` | Validation error (missing name) |
 | `404` | Author not found |
 | `409` | An author with that name already exists |
 
@@ -507,9 +509,11 @@ Update a series (full update).
 **Response body (`200`):** Updated series object.
 
 **Errors:**
+**Errors:**
 
 | Status | Meaning |
 |--------|---------|
+| `400` | Validation error (missing name) |
 | `404` | Series not found |
 | `409` | A series with that name already exists |
 
