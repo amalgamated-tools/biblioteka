@@ -90,6 +90,7 @@
   });
 
   async function loadLibraryBooks(libraryId: string) {
+    viewBooks = [];
     viewLoading = true;
     error = null;
     try {
