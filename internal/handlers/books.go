@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -322,6 +323,12 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book")
 		return
 	}
+
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+
 	writeJSON(r.Context(), w, http.StatusCreated, dto)
 }
 
@@ -415,6 +422,12 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book")
 		return
 	}
+
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionBookUpdated, "book", b.ID, map[string]any{"title": b.Title}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+
 	writeJSON(r.Context(), w, http.StatusOK, dto)
 }
 
@@ -432,8 +445,19 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 // @Router      /books/{id} [delete]
 func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting book", slog.String(otelkeys.BookID, id))
-	err := h.DB.DeleteBook(r.Context(), id)
+
+	book, err := h.DB.GetBook(r.Context(), id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			writeError(r.Context(), w, http.StatusNotFound, "book not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to get book", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete book")
+		return
+	}
+
+	if err := h.DB.DeleteBook(r.Context(), id); err != nil {
 		if err == sql.ErrNoRows {
 			writeError(r.Context(), w, http.StatusNotFound, "book not found")
 			return
@@ -441,6 +465,11 @@ func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id stri
 		slog.ErrorContext(r.Context(), "failed to delete book", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete book")
 		return
+	}
+
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionBookDeleted, "book", id, map[string]any{"title": book.Title}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
 	w.WriteHeader(http.StatusNoContent)
@@ -642,5 +671,11 @@ func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, book
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book file")
 		return
 	}
+
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionBookFileCreated, "book_file", bf.ID, map[string]any{"book_id": bookID, "file_name": bf.FileName, "file_type": bf.FileType}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any("error", err))
+	}
+
 	writeJSON(r.Context(), w, http.StatusCreated, toBookFileDTO(bf))
 }

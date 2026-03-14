@@ -149,5 +149,9 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 		slog.Bool(otelkeys.IsAdmin, req.IsAdmin),
 	)
 
+	if err := h.DB.CreateAuditLog(r.Context(), callerID, db.AuditActionAdminUpdated, "user", targetID, map[string]any{"is_admin": req.IsAdmin}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any("error", err))
+	}
+
 	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "admin status updated"})
 }

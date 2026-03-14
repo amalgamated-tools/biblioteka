@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -147,10 +148,13 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "author created",
-		slog.String(otelkeys.AuthorID, a.ID),
-		slog.String(otelkeys.Name, a.Name),
-	)
+	slog.DebugContext(r.Context(), "author created", slog.String(otelkeys.AuthorID, a.ID), slog.String(otelkeys.Name, a.Name))
+
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionAuthorCreated, "author", a.ID, map[string]any{"name": a.Name}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+
 	writeJSON(r.Context(), w, http.StatusCreated, toAuthorDTO(a))
 }
 
@@ -231,6 +235,11 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionAuthorUpdated, "author", a.ID, map[string]any{"name": a.Name}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any("error", err))
+	}
+
 	writeJSON(r.Context(), w, http.StatusOK, toAuthorDTO(a))
 }
 
@@ -248,8 +257,19 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 // @Router      /authors/{id} [delete]
 func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting author", slog.String(otelkeys.AuthorID, id))
-	err := h.DB.DeleteAuthor(r.Context(), id)
+
+	author, err := h.DB.GetAuthor(r.Context(), id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			writeError(r.Context(), w, http.StatusNotFound, "author not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to get author", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete author")
+		return
+	}
+
+	if err := h.DB.DeleteAuthor(r.Context(), id); err != nil {
 		if err == sql.ErrNoRows {
 			writeError(r.Context(), w, http.StatusNotFound, "author not found")
 			return
@@ -257,6 +277,11 @@ func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id 
 		slog.ErrorContext(r.Context(), "failed to delete author", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete author")
 		return
+	}
+
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionAuthorDeleted, "author", id, map[string]any{"name": author.Name}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
 	w.WriteHeader(http.StatusNoContent)
