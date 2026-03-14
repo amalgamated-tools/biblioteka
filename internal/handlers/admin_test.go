@@ -16,11 +16,11 @@ func setupAdminHandler(t *testing.T) (*AdminHandler, string, string) {
 	d := newTestDB(t)
 	h := &AdminHandler{DB: d}
 
-	admin, err := d.CreateUser("Admin", "admin@example.com", "password1")
+	admin, err := d.CreateUser(context.Background(), "Admin", "admin@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create admin: %v", err)
 	}
-	regular, err := d.CreateUser("Regular", "regular@example.com", "password1")
+	regular, err := d.CreateUser(context.Background(), "Regular", "regular@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create regular user: %v", err)
 	}
@@ -119,16 +119,16 @@ func TestHandleListUsers_OIDCLinkedField(t *testing.T) {
 	d := newTestDB(t)
 	h := &AdminHandler{DB: d}
 
-	local, err := d.CreateUser("Local User", "local@example.com", "password1")
+	local, err := d.CreateUser(context.Background(), "Local User", "local@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create local user: %v", err)
 	}
-	oidcUser, err := d.CreateOIDCUser("OIDC User", "oidc@example.com", "oidc-subject-123")
+	oidcUser, err := d.CreateOIDCUser(context.Background(), "OIDC User", "oidc@example.com", "oidc-subject-123")
 	if err != nil {
 		t.Fatalf("create OIDC user: %v", err)
 	}
 	// First user is auto-admin; promote the local user so we can query.
-	_ = d.SetAdmin(local.ID, true)
+	_ = d.SetAdmin(context.Background(), local.ID, true)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/admin/users", nil)
 	r = withUserID(r, local.ID)
@@ -188,7 +188,7 @@ func TestHandleSetAdmin_AdminDemotesUser(t *testing.T) {
 	h, adminID, regularID := setupAdminHandler(t)
 
 	// Promote first
-	_ = h.DB.SetAdmin(regularID, true)
+	_ = h.DB.SetAdmin(context.Background(), regularID, true)
 
 	body := `{"is_admin":false}`
 	r := httptest.NewRequest(http.MethodPut, "/api/admin/users/"+regularID, bytes.NewBufferString(body))

@@ -62,12 +62,12 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 			slog.String("path", p.Path),
 		)
 
-		book, err := database.CreateBook(title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := database.CreateBook(ctx, title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			return fmt.Errorf("create book for %s: %w", p.Path, err)
 		}
 
-		_, err = database.CreateBookFile(book.ID, p.FileType, p.FileName, p.FileSize, nil, p.Path)
+		_, err = database.CreateBookFile(ctx, book.ID, p.FileType, p.FileName, p.FileSize, nil, p.Path)
 		if err != nil {
 			return fmt.Errorf("create book file for %s: %w", p.Path, err)
 		}

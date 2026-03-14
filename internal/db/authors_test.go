@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 )
@@ -10,7 +11,7 @@ func strPtr(s string) *string { return &s }
 func TestCreateAuthor(t *testing.T) {
 	d := newTestDB(t)
 
-	a, err := d.CreateAuthor("Stephen King", strPtr("123"), nil, nil, strPtr("http://example.com/king.jpg"))
+	a, err := d.CreateAuthor(context.Background(), "Stephen King", strPtr("123"), nil, nil, strPtr("http://example.com/king.jpg"))
 	if err != nil {
 		t.Fatalf("CreateAuthor() error: %v", err)
 	}
@@ -34,12 +35,12 @@ func TestCreateAuthor(t *testing.T) {
 func TestCreateAuthor_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateAuthor("Stephen King", nil, nil, nil, nil)
+	_, err := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("first CreateAuthor() error: %v", err)
 	}
 
-	_, err = d.CreateAuthor("Stephen King", nil, nil, nil, nil)
+	_, err = d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
 	if err != ErrAuthorNameExists {
 		t.Errorf("expected ErrAuthorNameExists, got %v", err)
 	}
@@ -48,9 +49,9 @@ func TestCreateAuthor_DuplicateName(t *testing.T) {
 func TestGetAuthor(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateAuthor("Stephen King", nil, nil, nil, nil)
+	created, _ := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
 
-	found, err := d.GetAuthor(created.ID)
+	found, err := d.GetAuthor(context.Background(), created.ID)
 	if err != nil {
 		t.Fatalf("GetAuthor() error: %v", err)
 	}
@@ -65,7 +66,7 @@ func TestGetAuthor(t *testing.T) {
 func TestGetAuthor_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.GetAuthor("nonexistent-id")
+	_, err := d.GetAuthor(context.Background(), "nonexistent-id")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
@@ -74,10 +75,10 @@ func TestGetAuthor_NotFound(t *testing.T) {
 func TestListAuthors(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateAuthor("Brandon Sanderson", nil, nil, nil, nil)
-	_, _ = d.CreateAuthor("Stephen King", nil, nil, nil, nil)
+	_, _ = d.CreateAuthor(context.Background(), "Brandon Sanderson", nil, nil, nil, nil)
+	_, _ = d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
 
-	authors, err := d.ListAuthors()
+	authors, err := d.ListAuthors(context.Background())
 	if err != nil {
 		t.Fatalf("ListAuthors() error: %v", err)
 	}
@@ -92,9 +93,9 @@ func TestListAuthors(t *testing.T) {
 func TestUpdateAuthor(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateAuthor("S. King", nil, nil, nil, nil)
+	created, _ := d.CreateAuthor(context.Background(), "S. King", nil, nil, nil, nil)
 
-	updated, err := d.UpdateAuthor(created.ID, "Stephen King", strPtr("456"), nil, nil, nil)
+	updated, err := d.UpdateAuthor(context.Background(), created.ID, "Stephen King", strPtr("456"), nil, nil, nil)
 	if err != nil {
 		t.Fatalf("UpdateAuthor() error: %v", err)
 	}
@@ -109,10 +110,10 @@ func TestUpdateAuthor(t *testing.T) {
 func TestUpdateAuthor_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateAuthor("Stephen King", nil, nil, nil, nil)
-	a2, _ := d.CreateAuthor("S. King", nil, nil, nil, nil)
+	_, _ = d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a2, _ := d.CreateAuthor(context.Background(), "S. King", nil, nil, nil, nil)
 
-	_, err := d.UpdateAuthor(a2.ID, "Stephen King", nil, nil, nil, nil)
+	_, err := d.UpdateAuthor(context.Background(), a2.ID, "Stephen King", nil, nil, nil, nil)
 	if err != ErrAuthorNameExists {
 		t.Errorf("expected ErrAuthorNameExists, got %v", err)
 	}
@@ -121,14 +122,14 @@ func TestUpdateAuthor_DuplicateName(t *testing.T) {
 func TestDeleteAuthor(t *testing.T) {
 	d := newTestDB(t)
 
-	a, _ := d.CreateAuthor("Stephen King", nil, nil, nil, nil)
+	a, _ := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
 
-	err := d.DeleteAuthor(a.ID)
+	err := d.DeleteAuthor(context.Background(), a.ID)
 	if err != nil {
 		t.Fatalf("DeleteAuthor() error: %v", err)
 	}
 
-	_, err = d.GetAuthor(a.ID)
+	_, err = d.GetAuthor(context.Background(), a.ID)
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
 	}
@@ -137,7 +138,7 @@ func TestDeleteAuthor(t *testing.T) {
 func TestDeleteAuthor_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	err := d.DeleteAuthor("nonexistent-id")
+	err := d.DeleteAuthor(context.Background(), "nonexistent-id")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}

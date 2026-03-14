@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log/slog"
@@ -127,7 +128,7 @@ type bookDTO struct {
 	UpdatedAt       db.Timestamp         `json:"updated_at"`
 }
 
-func (h *BookHandler) toBookDTO(b *db.Book) (bookDTO, error) {
+func (h *BookHandler) toBookDTO(ctx context.Context, b *db.Book) (bookDTO, error) {
 	dto := bookDTO{
 		ID:              b.ID,
 		Title:           b.Title,
@@ -150,7 +151,7 @@ func (h *BookHandler) toBookDTO(b *db.Book) (bookDTO, error) {
 		UpdatedAt:       b.UpdatedAt,
 	}
 
-	authors, err := h.DB.GetBookAuthors(b.ID)
+	authors, err := h.DB.GetBookAuthors(ctx, b.ID)
 	if err != nil {
 		return bookDTO{}, err
 	}
@@ -158,7 +159,7 @@ func (h *BookHandler) toBookDTO(b *db.Book) (bookDTO, error) {
 		dto.Authors = append(dto.Authors, toAuthorDTO(&authors[i]))
 	}
 
-	entries, err := h.DB.GetBookSeries(b.ID)
+	entries, err := h.DB.GetBookSeries(ctx, b.ID)
 	if err != nil {
 		return bookDTO{}, err
 	}
@@ -169,7 +170,7 @@ func (h *BookHandler) toBookDTO(b *db.Book) (bookDTO, error) {
 		})
 	}
 
-	files, err := h.DB.ListBookFiles(b.ID)
+	files, err := h.DB.ListBookFiles(ctx, b.ID)
 	if err != nil {
 		return bookDTO{}, err
 	}
@@ -260,7 +261,7 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 // @Router      /books [get]
 func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing books")
-	books, err := h.DB.ListBooks()
+	books, err := h.DB.ListBooks(r.Context())
 	if err != nil {
 		slog.Error("failed to list books", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list books")
@@ -304,14 +305,14 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "creating book", slog.String("title", req.Title))
 
-	b, err := h.DB.CreateBook(req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
+	b, err := h.DB.CreateBook(r.Context(), req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
 	if err != nil {
 		slog.Error("failed to create book", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to create book")
 		return
 	}
 
-	dto, err := h.toBookDTO(b)
+	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
 		slog.Error("failed to build book DTO", "book_id", b.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to create book")
@@ -335,7 +336,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 // @Router      /books/{id} [get]
 func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching book", slog.String("book_id", id))
-	b, err := h.DB.GetBook(id)
+	b, err := h.DB.GetBook(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "book not found")
@@ -346,7 +347,7 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 		return
 	}
 
-	dto, err := h.toBookDTO(b)
+	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
 		slog.Error("failed to build book DTO", "book_id", b.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to get book")
@@ -384,7 +385,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 
 	slog.DebugContext(r.Context(), "updating book", slog.String("book_id", id), slog.String("title", req.Title))
 
-	b, err := h.DB.UpdateBook(id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
+	b, err := h.DB.UpdateBook(r.Context(), id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "book not found")
@@ -395,7 +396,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		return
 	}
 
-	dto, err := h.toBookDTO(b)
+	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
 		slog.Error("failed to build book DTO", "book_id", b.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to update book")
@@ -418,7 +419,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 // @Router      /books/{id} [delete]
 func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting book", slog.String("book_id", id))
-	err := h.DB.DeleteBook(id)
+	err := h.DB.DeleteBook(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "book not found")
@@ -433,8 +434,8 @@ func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id stri
 }
 
 // respondBookAuthors fetches and writes the author list for a book as JSON.
-func (h *BookHandler) respondBookAuthors(w http.ResponseWriter, bookID string) {
-	authors, err := h.DB.GetBookAuthors(bookID)
+func (h *BookHandler) respondBookAuthors(w http.ResponseWriter, ctx context.Context, bookID string) {
+	authors, err := h.DB.GetBookAuthors(ctx, bookID)
 	if err != nil {
 		slog.Error("failed to get book authors", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to get book authors")
@@ -464,8 +465,8 @@ type setBookAuthorsRequest struct {
 // @Failure     400  {object} errorResponse
 // @Failure     500  {object} errorResponse
 // @Router      /books/{id}/authors [get]
-func (h *BookHandler) getBookAuthors(w http.ResponseWriter, _ *http.Request, bookID string) {
-	h.respondBookAuthors(w, bookID)
+func (h *BookHandler) getBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
+	h.respondBookAuthors(w, r.Context(), bookID)
 }
 
 // putBookAuthors godoc
@@ -488,17 +489,17 @@ func (h *BookHandler) putBookAuthors(w http.ResponseWriter, r *http.Request, boo
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if err := h.DB.SetBookAuthors(bookID, req.AuthorIDs); err != nil {
+	if err := h.DB.SetBookAuthors(r.Context(), bookID, req.AuthorIDs); err != nil {
 		slog.Error("failed to set book authors", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to set book authors")
 		return
 	}
-	h.respondBookAuthors(w, bookID)
+	h.respondBookAuthors(w, r.Context(), bookID)
 }
 
 // respondBookSeries fetches and writes the series list for a book as JSON.
-func (h *BookHandler) respondBookSeries(w http.ResponseWriter, bookID string) {
-	entries, err := h.DB.GetBookSeries(bookID)
+func (h *BookHandler) respondBookSeries(w http.ResponseWriter, ctx context.Context, bookID string) {
+	entries, err := h.DB.GetBookSeries(ctx, bookID)
 	if err != nil {
 		slog.Error("failed to get book series", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to get book series")
@@ -531,8 +532,8 @@ type setBookSeriesRequest struct {
 // @Failure     400  {object} errorResponse
 // @Failure     500  {object} errorResponse
 // @Router      /books/{id}/series [get]
-func (h *BookHandler) getBookSeries(w http.ResponseWriter, _ *http.Request, bookID string) {
-	h.respondBookSeries(w, bookID)
+func (h *BookHandler) getBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
+	h.respondBookSeries(w, r.Context(), bookID)
 }
 
 // putBookSeries godoc
@@ -555,12 +556,12 @@ func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, book
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if err := h.DB.SetBookSeries(bookID, req.Entries); err != nil {
+	if err := h.DB.SetBookSeries(r.Context(), bookID, req.Entries); err != nil {
 		slog.Error("failed to set book series", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to set book series")
 		return
 	}
-	h.respondBookSeries(w, bookID)
+	h.respondBookSeries(w, r.Context(), bookID)
 }
 
 // getBookFiles godoc
@@ -576,7 +577,7 @@ func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, book
 // @Failure     500 {object} errorResponse
 // @Router      /books/{id}/files [get]
 func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
-	files, err := h.DB.ListBookFiles(bookID)
+	files, err := h.DB.ListBookFiles(r.Context(), bookID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to list book files", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list book files")
@@ -622,7 +623,7 @@ func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, book
 		writeError(w, http.StatusBadRequest, "file_type, file_name, and file_path are required")
 		return
 	}
-	bf, err := h.DB.CreateBookFile(bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
+	bf, err := h.DB.CreateBookFile(r.Context(), bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create book file", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to create book file")

@@ -87,7 +87,7 @@ func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
 // @Router      /series [get]
 func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing series")
-	list, err := h.DB.ListSeries()
+	list, err := h.DB.ListSeries(r.Context())
 	if err != nil {
 		slog.Error("failed to list series", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list series")
@@ -132,7 +132,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "creating series", slog.String("name", req.Name))
 
-	s, err := h.DB.CreateSeries(req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
+	s, err := h.DB.CreateSeries(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
 	if err != nil {
 		if err == db.ErrSeriesNameExists {
 			writeError(w, http.StatusConflict, "a series with that name already exists")
@@ -162,7 +162,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 // @Router      /series/{id} [get]
 func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching series", slog.String("series_id", id))
-	s, err := h.DB.GetSeries(id)
+	s, err := h.DB.GetSeries(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "series not found")
@@ -206,7 +206,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 
 	slog.DebugContext(r.Context(), "updating series", slog.String("series_id", id), slog.String("name", req.Name))
 
-	s, err := h.DB.UpdateSeries(id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
+	s, err := h.DB.UpdateSeries(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "series not found")
@@ -238,7 +238,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 // @Router      /series/{id} [delete]
 func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting series", slog.String("series_id", id))
-	err := h.DB.DeleteSeries(id)
+	err := h.DB.DeleteSeries(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "series not found")

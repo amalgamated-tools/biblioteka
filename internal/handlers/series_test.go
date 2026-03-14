@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -12,7 +13,7 @@ func setupSeriesHandler(t *testing.T) (*SeriesHandler, string) {
 	t.Helper()
 	d := newTestDB(t)
 	h := &SeriesHandler{DB: d}
-	user, err := d.CreateUser("Test User", "test@example.com", "password1")
+	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -79,8 +80,8 @@ func TestCreateSeries_Duplicate(t *testing.T) {
 func TestListSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	h.DB.CreateSeries("Discworld", nil, nil, nil)
-	h.DB.CreateSeries("The Dark Tower", nil, nil, nil)
+	h.DB.CreateSeries(context.Background(), "Discworld", nil, nil, nil)
+	h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/series", nil)
 	r = withUserID(r, userID)
@@ -104,7 +105,7 @@ func TestListSeries_Handler(t *testing.T) {
 func TestGetSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	s, _ := h.DB.CreateSeries("The Dark Tower", nil, nil, nil)
+	s, _ := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/series/"+s.ID, nil)
 	r = withUserID(r, userID)
@@ -134,7 +135,7 @@ func TestGetSeries_NotFound(t *testing.T) {
 func TestDeleteSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	s, _ := h.DB.CreateSeries("The Dark Tower", nil, nil, nil)
+	s, _ := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/series/"+s.ID, nil)
 	r = withUserID(r, userID)

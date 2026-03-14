@@ -131,7 +131,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.DB.CreateUser(req.Name, req.Email, string(hash))
+	user, err := h.DB.CreateUser(r.Context(), req.Name, req.Email, string(hash))
 	if err != nil {
 		if errors.Is(err, db.ErrEmailExists) {
 			writeError(w, http.StatusConflict, "email already registered")
@@ -190,7 +190,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "login attempt", slog.String("email", req.Email))
 
-	user, err := h.DB.GetUserByEmail(req.Email)
+	user, err := h.DB.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
 		slog.DebugContext(r.Context(), "login failed: user not found", slog.String("email", req.Email))
 		writeError(w, http.StatusUnauthorized, "invalid email or password")
@@ -245,7 +245,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	slog.DebugContext(r.Context(), "fetching current user", slog.String("user_id", userID))
 
-	user, err := h.DB.GetUserByID(userID)
+	user, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "user not found")
@@ -295,7 +295,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	user, err := h.DB.GetUserByID(userID)
+	user, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
 		slog.Error("failed to get user for password change", slog.Any("user_id", userID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to get user")
@@ -319,7 +319,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.DB.UpdatePassword(userID, string(hash)); err != nil {
+	if err := h.DB.UpdatePassword(r.Context(), userID, string(hash)); err != nil {
 		slog.Error("failed to update password", slog.Any("user_id", userID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to update password")
 		return

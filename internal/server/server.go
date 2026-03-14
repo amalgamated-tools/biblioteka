@@ -169,10 +169,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		}
 		s.oidcHandler = oidcHandler
 		slog.InfoContext(ctx, "OIDC authentication enabled", slog.String("issuer", issuer))
-	} else if dbIssuer, err := s.DB.GetSetting("oidc_issuer_url"); err == nil && dbIssuer != "" {
-		dbClientID, _ := s.DB.GetSetting("oidc_client_id")
-		dbClientSecret, _ := s.DB.GetSetting("oidc_client_secret")
-		dbRedirectURI, _ := s.DB.GetSetting("oidc_redirect_uri")
+	} else if dbIssuer, err := s.DB.GetSetting(ctx, "oidc_issuer_url"); err == nil && dbIssuer != "" {
+		dbClientID, _ := s.DB.GetSetting(ctx, "oidc_client_id")
+		dbClientSecret, _ := s.DB.GetSetting(ctx, "oidc_client_secret")
+		dbRedirectURI, _ := s.DB.GetSetting(ctx, "oidc_redirect_uri")
 		if dbClientID != "" && dbClientSecret != "" && dbRedirectURI != "" {
 			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, dbIssuer, dbClientID, dbClientSecret, dbRedirectURI, secureCookies)
 			if err != nil {

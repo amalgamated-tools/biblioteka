@@ -23,7 +23,7 @@ type ScanLibraryPayload struct {
 
 // LibraryLister is the subset of db.DB needed to list libraries.
 type LibraryLister interface {
-	ListLibraries() ([]db.Library, error)
+	ListLibraries(ctx context.Context) ([]db.Library, error)
 }
 
 // NewScanLibraryHandler returns a worker.Func that enqueues a scan:path job
@@ -74,7 +74,7 @@ func NewScanLibrariesHandler(lister LibraryLister, enqueuer Enqueuer) func(ctx c
 	return func(ctx context.Context, payload []byte) error {
 		slog.InfoContext(ctx, "starting scheduled libraries scan")
 
-		libraries, err := lister.ListLibraries()
+		libraries, err := lister.ListLibraries(ctx)
 		if err != nil {
 			return fmt.Errorf("list libraries: %w", err)
 		}

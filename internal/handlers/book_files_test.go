@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +12,7 @@ func setupBookFileHandler(t *testing.T) (*BookFileHandler, string) {
 	t.Helper()
 	d := newTestDB(t)
 	h := &BookFileHandler{DB: d}
-	user, err := d.CreateUser("Test User", "test@example.com", "password1")
+	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -21,8 +22,8 @@ func setupBookFileHandler(t *testing.T) (*BookFileHandler, string) {
 func TestGetBookFile_Handler(t *testing.T) {
 	h, userID := setupBookFileHandler(t)
 
-	book, _ := h.DB.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	bf, _ := h.DB.CreateBookFile(book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	book, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	bf, _ := h.DB.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/book-files/"+bf.ID, nil)
 	r = withUserID(r, userID)
@@ -60,8 +61,8 @@ func TestGetBookFile_NotFound(t *testing.T) {
 func TestDeleteBookFile_Handler(t *testing.T) {
 	h, userID := setupBookFileHandler(t)
 
-	book, _ := h.DB.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	bf, _ := h.DB.CreateBookFile(book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	book, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	bf, _ := h.DB.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/book-files/"+bf.ID, nil)
 	r = withUserID(r, userID)

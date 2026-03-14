@@ -97,10 +97,10 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	issuerURL, _ := h.DB.GetSetting(settingOIDCIssuerURL)
-	clientID, _ := h.DB.GetSetting(settingOIDCClientID)
-	secret, secretErr := h.DB.GetSetting(settingOIDCClientSecret)
-	redirectURI, _ := h.DB.GetSetting(settingOIDCRedirectURI)
+	issuerURL, _ := h.DB.GetSetting(r.Context(), settingOIDCIssuerURL)
+	clientID, _ := h.DB.GetSetting(r.Context(), settingOIDCClientID)
+	secret, secretErr := h.DB.GetSetting(r.Context(), settingOIDCClientSecret)
+	redirectURI, _ := h.DB.GetSetting(r.Context(), settingOIDCRedirectURI)
 
 	writeJSON(w, http.StatusOK, oidcConfigResponse{
 		IssuerURL:       issuerURL,
@@ -163,7 +163,7 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 
 	// If client secret is empty, try to preserve the existing one
 	if clientSecret == "" {
-		existing, err := h.DB.GetSetting(settingOIDCClientSecret)
+		existing, err := h.DB.GetSetting(r.Context(), settingOIDCClientSecret)
 		if err != nil || existing == "" {
 			writeError(w, http.StatusBadRequest, "client_secret is required")
 			return
@@ -189,7 +189,7 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		settingOIDCClientSecret: clientSecret,
 		settingOIDCRedirectURI:  redirectURI,
 	} {
-		if err := h.DB.SetSetting(k, v); err != nil {
+		if err := h.DB.SetSetting(r.Context(), k, v); err != nil {
 			slog.Error("failed to save OIDC setting", "key", k, "error", err)
 			writeError(w, http.StatusInternalServerError, "failed to save OIDC configuration")
 			return

@@ -207,7 +207,7 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "initiating OIDC link flow", slog.String("user_id", userID))
 
 	// Fail fast if the user already has an OIDC subject linked
-	existingUser, err := h.DB.GetUserByID(userID)
+	existingUser, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
 		slog.Error("failed to get user for OIDC link", "error", err)
 		writeError(w, http.StatusBadRequest, "user not found")
@@ -396,7 +396,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Handle link flow: attach OIDC subject to an existing authenticated user
 	if linkUserID != "" {
 		slog.DebugContext(r.Context(), "OIDC link flow: linking account", slog.String("user_id", linkUserID), slog.String("subject", claims.Sub))
-		user, err := h.DB.GetUserByID(linkUserID)
+		user, err := h.DB.GetUserByID(r.Context(), linkUserID)
 		if err != nil {
 			slog.Error("failed to get user for OIDC link", "error", err)
 			http.Redirect(w, r, "/?oidc_link_error="+url.QueryEscape("User not found"), http.StatusFound)
@@ -407,11 +407,11 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Check if this OIDC subject is already linked to a different user
-		if existing, err := h.DB.GetUserByOIDCSubject(claims.Sub); err == nil && existing.ID != linkUserID {
+		if existing, err := h.DB.GetUserByOIDCSubject(r.Context(), claims.Sub); err == nil && existing.ID != linkUserID {
 			http.Redirect(w, r, "/?oidc_link_error="+url.QueryEscape("This SSO identity is already linked to another account"), http.StatusFound)
 			return
 		}
-		if err := h.DB.LinkOIDCSubject(linkUserID, claims.Sub); err != nil {
+		if err := h.DB.LinkOIDCSubject(r.Context(), linkUserID, claims.Sub); err != nil {
 			slog.Error("failed to link OIDC subject to user", "user_id", linkUserID, "error", err)
 			http.Redirect(w, r, "/?oidc_link_error="+url.QueryEscape("Failed to link account"), http.StatusFound)
 			return
@@ -451,7 +451,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name string) (*db.User, error) {
 	// First, try by OIDC subject
 	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by subject", slog.String("subject", subject))
-	user, err := h.DB.GetUserByOIDCSubject(subject)
+	user, err := h.DB.GetUserByOIDCSubject(ctx, subject)
 	if err == nil {
 		slog.DebugContext(ctx, "OIDC findOrCreateUser: found existing user by subject", slog.String("user_id", user.ID))
 		return user, nil
@@ -462,10 +462,10 @@ func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name
 
 	// Try by email — link the OIDC subject to an existing account
 	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by email", slog.String("email", email))
-	user, err = h.DB.GetUserByEmail(email)
+	user, err = h.DB.GetUserByEmail(ctx, email)
 	if err == nil {
 		slog.DebugContext(ctx, "OIDC findOrCreateUser: linking subject to existing user", slog.String("user_id", user.ID))
-		if err := h.DB.LinkOIDCSubject(user.ID, subject); err != nil {
+		if err := h.DB.LinkOIDCSubject(ctx, user.ID, subject); err != nil {
 			return nil, err
 		}
 		return user, nil
@@ -477,7 +477,7 @@ func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name
 	// Create a new OIDC user. If this fails due to a race with a concurrent
 	// login, retry the lookups to find the user the other request created/linked.
 	slog.DebugContext(ctx, "OIDC findOrCreateUser: creating new user", slog.String("email", email))
-	user, err = h.DB.CreateOIDCUser(name, email, subject)
+	user, err = h.DB.CreateOIDCUser(ctx, name, email, subject)
 	if err == nil {
 		slog.DebugContext(ctx, "OIDC findOrCreateUser: new user created", slog.String("user_id", user.ID))
 		return user, nil
@@ -485,11 +485,11 @@ func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name
 
 	// Another goroutine may have created or linked this user concurrently.
 	// Re-run lookups before propagating the error.
-	if u, lookupErr := h.DB.GetUserByOIDCSubject(subject); lookupErr == nil {
+	if u, lookupErr := h.DB.GetUserByOIDCSubject(ctx, subject); lookupErr == nil {
 		return u, nil
 	}
-	if u, lookupErr := h.DB.GetUserByEmail(email); lookupErr == nil {
-		if linkErr := h.DB.LinkOIDCSubject(u.ID, subject); linkErr != nil {
+	if u, lookupErr := h.DB.GetUserByEmail(ctx, email); lookupErr == nil {
+		if linkErr := h.DB.LinkOIDCSubject(ctx, u.ID, subject); linkErr != nil {
 			return nil, linkErr
 		}
 		return u, nil

@@ -110,7 +110,7 @@ func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 // @Router      /libraries [get]
 func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing libraries")
-	libraries, err := h.DB.ListLibraries()
+	libraries, err := h.DB.ListLibraries(r.Context())
 	if err != nil {
 		slog.Error("failed to list libraries", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list libraries")
@@ -185,7 +185,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "creating library", slog.String("name", req.Name))
 
-	lib, err := h.DB.CreateLibrary(req.Name, pathsJSON, req.OrganizationType, req.Monitored)
+	lib, err := h.DB.CreateLibrary(r.Context(), req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
 		if err == db.ErrLibraryNameExists {
 			writeError(w, http.StatusConflict, "a library with that name already exists")
@@ -230,7 +230,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 // @Router      /libraries/{id} [get]
 func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching library", slog.String("library_id", id))
-	lib, err := h.DB.GetLibrary(id)
+	lib, err := h.DB.GetLibrary(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "library not found")
@@ -274,7 +274,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 
 	slog.DebugContext(r.Context(), "updating library", slog.String("library_id", id), slog.String("name", req.Name))
 
-	lib, err := h.DB.UpdateLibrary(id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
+	lib, err := h.DB.UpdateLibrary(r.Context(), id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "library not found")
@@ -306,7 +306,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 // @Router      /libraries/{id} [delete]
 func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting library", slog.String("library_id", id))
-	err := h.DB.DeleteLibrary(id)
+	err := h.DB.DeleteLibrary(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "library not found")
@@ -336,7 +336,7 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "listing library books", slog.String("library_id", id))
 
-	books, err := h.DB.ListBooksByLibrary(id)
+	books, err := h.DB.ListBooksByLibrary(r.Context(), id)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to list library books", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list library books")
@@ -345,7 +345,7 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 
 	// If no books found, check whether the library actually exists.
 	if len(books) == 0 {
-		_, err := h.DB.GetLibrary(id)
+		_, err := h.DB.GetLibrary(r.Context(), id)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				writeError(w, http.StatusNotFound, "library not found")

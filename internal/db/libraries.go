@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log/slog"
@@ -35,9 +36,9 @@ func scanLibrary(row interface{ Scan(...any) error }) (*Library, error) {
 
 // CreateLibrary inserts a new library and returns it.
 // Returns ErrLibraryNameExists if a library with that name already exists.
-func (d *DB) CreateLibrary(name, paths, organizationType string, monitored bool) (*Library, error) {
-	slog.Debug("db: creating library", slog.String("name", name))
-	lib, err := scanLibrary(d.QueryRow(
+func (d *DB) CreateLibrary(ctx context.Context, name, paths, organizationType string, monitored bool) (*Library, error) {
+	slog.DebugContext(ctx, "db: creating library", slog.String("name", name))
+	lib, err := scanLibrary(d.QueryRowContext(ctx,
 		`INSERT INTO libraries (name, paths, organization_type, monitored) VALUES ($1, $2, $3, $4) RETURNING `+libraryColumns,
 		name, paths, organizationType, monitored,
 	))
@@ -51,23 +52,23 @@ func (d *DB) CreateLibrary(name, paths, organizationType string, monitored bool)
 }
 
 // GetLibrary returns a library by ID, or sql.ErrNoRows if not found.
-func (d *DB) GetLibrary(id string) (*Library, error) {
-	slog.Debug("db: fetching library", slog.String("id", id))
-	return scanLibrary(d.QueryRow(
+func (d *DB) GetLibrary(ctx context.Context, id string) (*Library, error) {
+	slog.DebugContext(ctx, "db: fetching library", slog.String("id", id))
+	return scanLibrary(d.QueryRowContext(ctx,
 		`SELECT `+libraryColumns+` FROM libraries WHERE id = $1`,
 		id,
 	))
 }
 
 // ListLibraries returns all libraries ordered by creation time.
-func (d *DB) ListLibraries() ([]Library, error) {
-	slog.Debug("db: listing libraries")
+func (d *DB) ListLibraries(ctx context.Context) ([]Library, error) {
+	slog.DebugContext(ctx, "db: listing libraries")
 	orderBy := "ORDER BY created_at ASC, rowid ASC"
 	if d.Dialect == DialectPostgres {
 		orderBy = "ORDER BY created_at ASC, id ASC"
 	}
-	rows, err := d.Query(
-		`SELECT ` + libraryColumns + ` FROM libraries ` + orderBy,
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+libraryColumns+` FROM libraries `+orderBy,
 	)
 	if err != nil {
 		return nil, err
@@ -88,9 +89,9 @@ func (d *DB) ListLibraries() ([]Library, error) {
 // UpdateLibrary updates a library's fields and returns the updated library.
 // Returns sql.ErrNoRows if the library doesn't exist.
 // Returns ErrLibraryNameExists if the new name conflicts with another library.
-func (d *DB) UpdateLibrary(id, name, paths, organizationType string, monitored bool) (*Library, error) {
-	slog.Debug("db: updating library", slog.String("id", id), slog.String("name", name))
-	lib, err := scanLibrary(d.QueryRow(
+func (d *DB) UpdateLibrary(ctx context.Context, id, name, paths, organizationType string, monitored bool) (*Library, error) {
+	slog.DebugContext(ctx, "db: updating library", slog.String("id", id), slog.String("name", name))
+	lib, err := scanLibrary(d.QueryRowContext(ctx,
 		`UPDATE libraries SET name = $1, paths = $2, organization_type = $3, monitored = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+libraryColumns,
 		name, paths, organizationType, monitored, id,
 	))
@@ -105,9 +106,9 @@ func (d *DB) UpdateLibrary(id, name, paths, organizationType string, monitored b
 
 // DeleteLibrary removes a library by ID.
 // Returns sql.ErrNoRows if the library doesn't exist.
-func (d *DB) DeleteLibrary(id string) error {
-	slog.Debug("db: deleting library", slog.String("id", id))
-	res, err := d.Exec(`DELETE FROM libraries WHERE id = $1`, id)
+func (d *DB) DeleteLibrary(ctx context.Context, id string) error {
+	slog.DebugContext(ctx, "db: deleting library", slog.String("id", id))
+	res, err := d.ExecContext(ctx, `DELETE FROM libraries WHERE id = $1`, id)
 	if err != nil {
 		return err
 	}

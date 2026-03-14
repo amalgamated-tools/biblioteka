@@ -58,7 +58,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := h.DB.ListUsers()
+	users, err := h.DB.ListUsers(r.Context())
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to list users", slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to list users")
@@ -133,7 +133,7 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.DB.SetAdmin(targetID, req.IsAdmin); err != nil {
+	if err := h.DB.SetAdmin(r.Context(), targetID, req.IsAdmin); err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "user not found")
 			return

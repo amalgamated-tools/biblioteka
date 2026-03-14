@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -12,7 +13,7 @@ func setupAuthorHandler(t *testing.T) (*AuthorHandler, string) {
 	t.Helper()
 	d := newTestDB(t)
 	h := &AuthorHandler{DB: d}
-	user, err := d.CreateUser("Test User", "test@example.com", "password1")
+	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -79,8 +80,8 @@ func TestCreateAuthor_Duplicate(t *testing.T) {
 func TestListAuthors_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	h.DB.CreateAuthor("Stephen King", nil, nil, nil, nil)
-	h.DB.CreateAuthor("Brandon Sanderson", nil, nil, nil, nil)
+	h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	h.DB.CreateAuthor(context.Background(), "Brandon Sanderson", nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors", nil)
 	r = withUserID(r, userID)
@@ -104,7 +105,7 @@ func TestListAuthors_Handler(t *testing.T) {
 func TestGetAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, _ := h.DB.CreateAuthor("Stephen King", nil, nil, nil, nil)
+	a, _ := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID, nil)
 	r = withUserID(r, userID)
@@ -134,7 +135,7 @@ func TestGetAuthor_NotFound(t *testing.T) {
 func TestDeleteAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, _ := h.DB.CreateAuthor("Stephen King", nil, nil, nil, nil)
+	a, _ := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/authors/"+a.ID, nil)
 	r = withUserID(r, userID)

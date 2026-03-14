@@ -90,7 +90,7 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 // @Router      /authors [get]
 func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing authors")
-	authors, err := h.DB.ListAuthors()
+	authors, err := h.DB.ListAuthors(r.Context())
 	if err != nil {
 		slog.Error("failed to list authors", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list authors")
@@ -135,7 +135,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "creating author", slog.String("name", req.Name))
 
-	a, err := h.DB.CreateAuthor(req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
+	a, err := h.DB.CreateAuthor(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
 		if err == db.ErrAuthorNameExists {
 			writeError(w, http.StatusConflict, "an author with that name already exists")
@@ -165,7 +165,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 // @Router      /authors/{id} [get]
 func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching author", slog.String("author_id", id))
-	a, err := h.DB.GetAuthor(id)
+	a, err := h.DB.GetAuthor(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "author not found")
@@ -209,7 +209,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 
 	slog.DebugContext(r.Context(), "updating author", slog.String("author_id", id), slog.String("name", req.Name))
 
-	a, err := h.DB.UpdateAuthor(id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
+	a, err := h.DB.UpdateAuthor(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "author not found")
@@ -241,7 +241,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 // @Router      /authors/{id} [delete]
 func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting author", slog.String("author_id", id))
-	err := h.DB.DeleteAuthor(id)
+	err := h.DB.DeleteAuthor(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "author not found")
