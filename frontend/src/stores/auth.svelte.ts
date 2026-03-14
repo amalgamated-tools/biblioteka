@@ -29,7 +29,14 @@ class AuthStore {
         const u = await api.getMe();
         this.user = u;
       } catch {
+        // Token is present but invalid. Clear it and retry using only cookie-based auth.
         api.clearToken();
+        try {
+          const u = await api.getMe();
+          this.user = u;
+        } catch {
+          // Not authenticated via cookie either; stay logged out.
+        }
       }
     } else {
       // No localStorage token — try cookie-based auth (e.g. after OIDC redirect)

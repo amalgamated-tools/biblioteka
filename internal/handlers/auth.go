@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -356,10 +357,10 @@ func sameOrigin(r *http.Request) bool {
 	origin := r.Header.Get("Origin")
 	if origin != "" {
 		u, err := url.Parse(origin)
-		if err != nil {
+		if err != nil || u.Host == "" {
 			return false
 		}
-		return strings.EqualFold(u.Host, r.Host)
+		return matchRequestOrigin(u, r)
 	}
 
 	referer := r.Header.Get("Referer")
@@ -368,9 +369,52 @@ func sameOrigin(r *http.Request) bool {
 	}
 
 	u, err := url.Parse(referer)
-	if err != nil {
+	if err != nil || u.Host == "" {
 		return false
 	}
 
-	return strings.EqualFold(u.Host, r.Host)
+	return matchRequestOrigin(u, r)
+}
+
+func matchRequestOrigin(u *url.URL, r *http.Request) bool {
+	var urlDefaultPort string
+	switch strings.ToLower(u.Scheme) {
+	case "http":
+		urlDefaultPort = "80"
+	case "https":
+		urlDefaultPort = "443"
+	default:
+		urlDefaultPort = ""
+	}
+
+	reqDefaultPort := "80"
+	if r.TLS != nil {
+		reqDefaultPort = "443"
+	}
+
+	originHost, originPort := parseHostPort(u.Host, urlDefaultPort)
+	reqHost, reqPort := parseHostPort(r.Host, reqDefaultPort)
+
+	if !strings.EqualFold(originHost, reqHost) {
+		return false
+	}
+
+	// If either side has no port after normalization, treat them as non-matching.
+	if originPort == "" || reqPort == "" {
+		return false
+	}
+
+	return originPort == reqPort
+}
+
+func parseHostPort(hostport, defaultPort string) (string, string) {
+	host, port, err := net.SplitHostPort(hostport)
+	if err != nil {
+		// Likely no port present; fall back to the provided default port.
+		return hostport, defaultPort
+	}
+	if port == "" {
+		port = defaultPort
+	}
+	return host, port
 }
