@@ -285,6 +285,97 @@ func TestCreateLibrary_NilEnqueuerDoesNotPanic(t *testing.T) {
 	}
 }
 
+func TestListLibraryBooks_Success(t *testing.T) {
+	h, userID := setupLibraryHandler(t)
+
+	// Create a library.
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{Name: "Fiction", Paths: []string{dir}})
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+	h.HandleLibraries(w, r)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
+	}
+	var lib libraryDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
+		t.Fatalf("unmarshal library: %v", err)
+	}
+
+	// Create a book and link it to the library.
+	book, err := h.DB.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	if err := h.DB.AddBookToLibrary(lib.ID, book.ID); err != nil {
+		t.Fatalf("add book to library: %v", err)
+	}
+
+	// List books for the library.
+	r2 := httptest.NewRequest(http.MethodGet, "/api/libraries/"+lib.ID+"/books", nil)
+	r2 = withUserID(r2, userID)
+	w2 := httptest.NewRecorder()
+	h.HandleLibrary(w2, r2)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+	}
+
+	var books []bookSummaryDTO
+	if err := json.Unmarshal(w2.Body.Bytes(), &books); err != nil {
+		t.Fatalf("unmarshal books: %v", err)
+	}
+	if len(books) != 1 {
+		t.Fatalf("books count = %d, want 1", len(books))
+	}
+	if books[0].Title != "The Gunslinger" {
+		t.Errorf("title = %q, want %q", books[0].Title, "The Gunslinger")
+	}
+}
+
+func TestListLibraryBooks_NotFound(t *testing.T) {
+	h, userID := setupLibraryHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/libraries/nonexistent-id/books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+	h.HandleLibrary(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
+	}
+}
+
+func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
+	h, userID := setupLibraryHandler(t)
+
+	// Create a library first.
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{Name: "Fiction", Paths: []string{dir}})
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+	h.HandleLibraries(w, r)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
+	}
+	var lib libraryDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
+		t.Fatalf("unmarshal library: %v", err)
+	}
+
+	// POST to /books sub-resource should be method not allowed.
+	r2 := httptest.NewRequest(http.MethodPost, "/api/libraries/"+lib.ID+"/books", nil)
+	r2 = withUserID(r2, userID)
+	w2 := httptest.NewRecorder()
+	h.HandleLibrary(w2, r2)
+
+	if w2.Code != http.StatusMethodNotAllowed {
+		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusMethodNotAllowed, w2.Body.String())
+	}
+}
+
 func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 	h, userID := setupLibraryHandler(t)
 
