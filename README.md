@@ -9,7 +9,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
 - **Author & series tracking** – browse by author or series, with position numbers within each series
 - **User authentication** – JWT-based login, optional OpenID Connect (OIDC/SSO)
-- **Background processing** – Redis-backed job queue scans paths and processes files asynchronously
+- **Background processing** – Redis-backed job queue scans paths and processes files asynchronously; includes a built-in [Asynqmon](https://github.com/hibiken/asynqmon) monitoring UI at `/asynqmon/`
 - **Two database backends** – SQLite (zero-config, default) or PostgreSQL
 - **Single binary** – Go backend embeds the Svelte frontend; one executable to deploy
 
@@ -98,6 +98,16 @@ The first account created is automatically granted admin privileges. Admins can:
 
 - **Manage users** — list all accounts and grant or revoke admin status via `GET /api/admin/users` and `PUT /api/admin/users/{id}`.
 - **Configure OIDC at runtime** — read and update the OIDC provider settings via `GET /api/config/oidc` and `PUT /api/config/oidc` without a server restart. Environment variable values (`OIDC_ISSUER_URL`, etc.) take precedence over database-stored settings.
+
+## Background Job Monitoring
+
+When Redis is configured, Biblioteka embeds the [Asynqmon](https://github.com/hibiken/asynqmon) web UI for monitoring and managing background jobs.
+
+- **URL:** `http://localhost:8080/asynqmon/`
+- **Authentication:** Any valid JWT token (same credentials as the main application login)
+- **Availability:** Only mounted when `REDIS_URL` is configured and the worker is active
+
+The dashboard shows queued, active, completed, and failed jobs, and lets you retry or delete individual tasks.
 
 See [docs/api-reference.md](docs/api-reference.md) for the full API reference.
 
