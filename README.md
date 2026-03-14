@@ -73,11 +73,11 @@ The Go API runs on `http://localhost:8080`; Vite proxies `/api` requests to it.
 
 ## Configuration
 
-Copy `.env.sample` to `.env` and adjust as needed:
+Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be set via the `--port` flag when running the binary directly (e.g., `./biblioteka --port 9090`).
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `8080` | HTTP listen port |
+| `PORT` | `8080` | HTTP listen port (overrides `--port` flag) |
 | `DATABASE_URL` | *(empty – SQLite)* | PostgreSQL connection string |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
 | `JWT_SECRET` | — | **Required in production** – random secret for signing tokens |
@@ -172,6 +172,12 @@ db/
   schema.sql       Reference schema
 script/            Build and release helper scripts
 ```
+
+## API Reference
+
+The server exposes a REST API under `/api`. See [docs/api-reference.md](docs/api-reference.md) for the full endpoint reference including request/response shapes and authentication requirements.
+
+A health check endpoint is available at `GET /api/health` — it returns `200 OK` with the body `"OK"` and requires no authentication.
 
 ## Contributing
 
