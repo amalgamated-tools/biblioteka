@@ -104,3 +104,9 @@ swagger-fmt:
 
 lint:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run ./...
+
+fmt:
+	go fmt ./...
+
+test:
+	go test -v ./...
