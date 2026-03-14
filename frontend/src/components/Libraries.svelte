@@ -68,6 +68,7 @@
       formPaths = [{ id: nextPathId++, value: "" }];
       formMonitored = false;
       formError = null;
+      error = null;
       showDeleteConfirm = false;
     } else if (mode === "edit" && editId) {
       const lib = libraryStore.libraries.find((l) => l.id === editId);
@@ -80,6 +81,7 @@
             : [{ id: nextPathId++, value: "" }];
         formMonitored = lib.monitored;
         formError = null;
+        error = null;
         showDeleteConfirm = false;
       }
     } else if (mode === "view" && viewId) {
@@ -204,6 +206,8 @@
             <p class="text-ink-400 dark:text-ink-400">Loading books...</p>
           </div>
         </div>
+      {:else if error}
+        <!-- error banner at the top of the page already shows the message -->
       {:else if viewBooks.length === 0}
         <div class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800">
           <div class="text-center py-8">
