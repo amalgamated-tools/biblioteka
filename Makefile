@@ -50,6 +50,7 @@ screenshots: node_modules
 			exit 1; \
 		fi; \
 		sleep 1; \
+	done; \
 	node script/take-screenshots.mjs; \
 	RESULT=$$?; \
 	kill $$DEV_PID 2>/dev/null; \
