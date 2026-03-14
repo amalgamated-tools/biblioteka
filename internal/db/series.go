@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"log/slog"
 )
 
 var ErrSeriesNameExists = errors.New("series name already exists")
@@ -29,6 +30,7 @@ func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
 }
 
 func (d *DB) CreateSeries(name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
+	slog.Debug("db: creating series", slog.String("name", name))
 	s, err := scanSeries(d.QueryRow(
 		`INSERT INTO series (name, goodreads_id, hardcover_id, google_books_id) VALUES ($1, $2, $3, $4) RETURNING `+seriesColumns,
 		name, goodreadsID, hardcoverID, googleBooksID,
@@ -43,6 +45,7 @@ func (d *DB) CreateSeries(name string, goodreadsID, hardcoverID, googleBooksID *
 }
 
 func (d *DB) GetSeries(id string) (*Series, error) {
+	slog.Debug("db: fetching series", slog.String("id", id))
 	return scanSeries(d.QueryRow(
 		`SELECT `+seriesColumns+` FROM series WHERE id = $1`,
 		id,
@@ -50,6 +53,7 @@ func (d *DB) GetSeries(id string) (*Series, error) {
 }
 
 func (d *DB) ListSeries() ([]Series, error) {
+	slog.Debug("db: listing series")
 	orderBy := "ORDER BY name ASC, rowid ASC"
 	if d.Dialect == DialectPostgres {
 		orderBy = "ORDER BY name ASC, id ASC"
@@ -74,6 +78,7 @@ func (d *DB) ListSeries() ([]Series, error) {
 }
 
 func (d *DB) UpdateSeries(id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
+	slog.Debug("db: updating series", slog.String("id", id), slog.String("name", name))
 	s, err := scanSeries(d.QueryRow(
 		`UPDATE series SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+seriesColumns,
 		name, goodreadsID, hardcoverID, googleBooksID, id,
@@ -88,6 +93,7 @@ func (d *DB) UpdateSeries(id, name string, goodreadsID, hardcoverID, googleBooks
 }
 
 func (d *DB) DeleteSeries(id string) error {
+	slog.Debug("db: deleting series", slog.String("id", id))
 	res, err := d.Exec(`DELETE FROM series WHERE id = $1`, id)
 	if err != nil {
 		return err

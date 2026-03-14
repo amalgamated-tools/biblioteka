@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"log/slog"
 )
 
 // ErrEmailExists is returned when a user with the given email already exists.
@@ -39,6 +40,7 @@ const userColumns = `id, name, email, password_hash, oidc_subject, is_admin, cre
 // Returns ErrEmailExists if the email is already registered.
 // The first user created is automatically promoted to admin.
 func (d *DB) CreateUser(name, email, passwordHash string) (*User, error) {
+	slog.Debug("db: creating user", slog.String("email", email))
 	var exists bool
 	if err := d.QueryRow(`SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = LOWER($1))`, email).Scan(&exists); err != nil {
 		return nil, err
@@ -64,6 +66,7 @@ func (d *DB) CreateUser(name, email, passwordHash string) (*User, error) {
 // Returns ErrEmailExists if the email is already registered.
 // The first user created is automatically promoted to admin.
 func (d *DB) CreateOIDCUser(name, email, oidcSubject string) (*User, error) {
+	slog.Debug("db: creating OIDC user", slog.String("email", email))
 	var exists bool
 	if err := d.QueryRow(`SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = LOWER($1))`, email).Scan(&exists); err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (d *DB) CreateOIDCUser(name, email, oidcSubject string) (*User, error) {
 
 // GetUserByEmail returns a user by email, or sql.ErrNoRows if not found.
 func (d *DB) GetUserByEmail(email string) (*User, error) {
+	slog.Debug("db: fetching user by email", slog.String("email", email))
 	return scanUser(d.QueryRow(
 		`SELECT `+userColumns+` FROM users WHERE LOWER(email) = LOWER($1)`,
 		email,
@@ -94,6 +98,7 @@ func (d *DB) GetUserByEmail(email string) (*User, error) {
 
 // GetUserByID returns a user by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetUserByID(id string) (*User, error) {
+	slog.Debug("db: fetching user by ID", slog.String("id", id))
 	return scanUser(d.QueryRow(
 		`SELECT `+userColumns+` FROM users WHERE id = $1`,
 		id,
@@ -102,6 +107,7 @@ func (d *DB) GetUserByID(id string) (*User, error) {
 
 // GetUserByOIDCSubject returns a user by OIDC subject, or sql.ErrNoRows if not found.
 func (d *DB) GetUserByOIDCSubject(subject string) (*User, error) {
+	slog.Debug("db: fetching user by OIDC subject")
 	return scanUser(d.QueryRow(
 		`SELECT `+userColumns+` FROM users WHERE oidc_subject = $1`,
 		subject,
@@ -110,6 +116,7 @@ func (d *DB) GetUserByOIDCSubject(subject string) (*User, error) {
 
 // LinkOIDCSubject sets the OIDC subject on an existing user.
 func (d *DB) LinkOIDCSubject(userID, oidcSubject string) error {
+	slog.Debug("db: linking OIDC subject", slog.String("user_id", userID))
 	res, err := d.Exec(`UPDATE users SET oidc_subject = $1 WHERE id = $2`, oidcSubject, userID)
 	if err != nil {
 		return err
@@ -123,6 +130,7 @@ func (d *DB) LinkOIDCSubject(userID, oidcSubject string) error {
 
 // UpdatePassword updates a user's password hash.
 func (d *DB) UpdatePassword(userID, newPasswordHash string) error {
+	slog.Debug("db: updating password", slog.String("user_id", userID))
 	res, err := d.Exec(`UPDATE users SET password_hash = $1 WHERE id = $2`, newPasswordHash, userID)
 	if err != nil {
 		return err
@@ -146,6 +154,7 @@ func (d *DB) IsAdmin(userID string) (bool, error) {
 
 // SetAdmin sets the is_admin flag on a user. Returns sql.ErrNoRows if user doesn't exist.
 func (d *DB) SetAdmin(userID string, isAdmin bool) error {
+	slog.Debug("db: setting admin status", slog.String("user_id", userID), slog.Bool("is_admin", isAdmin))
 	res, err := d.Exec(`UPDATE users SET is_admin = $1 WHERE id = $2`, isAdmin, userID)
 	if err != nil {
 		return err
@@ -159,6 +168,7 @@ func (d *DB) SetAdmin(userID string, isAdmin bool) error {
 
 // ListUsers returns all users ordered by creation time.
 func (d *DB) ListUsers() ([]User, error) {
+	slog.Debug("db: listing users")
 	orderBy := "ORDER BY created_at ASC, rowid ASC"
 	if d.Dialect == DialectPostgres {
 		orderBy = "ORDER BY created_at ASC, id ASC"
