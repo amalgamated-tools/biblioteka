@@ -36,7 +36,7 @@ func TestCreateAndValidateToken(t *testing.T) {
 	}
 
 	userID := "user-123"
-	token, err := jm.CreateToken(userID)
+	token, err := jm.CreateToken(t.Context(), userID)
 	if err != nil {
 		t.Fatalf("CreateToken() error: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestCreateAndValidateToken(t *testing.T) {
 		t.Fatal("CreateToken() returned empty token")
 	}
 
-	claims, err := jm.ValidateToken(token)
+	claims, err := jm.ValidateToken(t.Context(), token)
 	if err != nil {
 		t.Fatalf("ValidateToken() error: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestValidateToken_InvalidToken(t *testing.T) {
 		t.Fatalf("NewJWTManager() error: %v", err)
 	}
 
-	_, err = jm.ValidateToken("not-a-valid-token")
+	_, err = jm.ValidateToken(t.Context(), "not-a-valid-token")
 	if !errors.Is(err, ErrInvalidToken) {
 		t.Errorf("ValidateToken() with invalid token: got %v, want ErrInvalidToken", err)
 	}
@@ -72,12 +72,12 @@ func TestValidateToken_ExpiredToken(t *testing.T) {
 		t.Fatalf("NewJWTManager() error: %v", err)
 	}
 
-	token, err := jm.CreateToken("user-123")
+	token, err := jm.CreateToken(t.Context(), "user-123")
 	if err != nil {
 		t.Fatalf("CreateToken() error: %v", err)
 	}
 
-	_, err = jm.ValidateToken(token)
+	_, err = jm.ValidateToken(t.Context(), token)
 	if !errors.Is(err, ErrExpiredToken) {
 		t.Errorf("ValidateToken() with expired token: got %v, want ErrExpiredToken", err)
 	}
@@ -87,12 +87,12 @@ func TestValidateToken_WrongSecret(t *testing.T) {
 	jm1, _ := NewJWTManager("secret1", time.Hour)
 	jm2, _ := NewJWTManager("secret2", time.Hour)
 
-	token, err := jm1.CreateToken("user-123")
+	token, err := jm1.CreateToken(t.Context(), "user-123")
 	if err != nil {
 		t.Fatalf("CreateToken() error: %v", err)
 	}
 
-	_, err = jm2.ValidateToken(token)
+	_, err = jm2.ValidateToken(t.Context(), token)
 	if !errors.Is(err, ErrInvalidToken) {
 		t.Errorf("ValidateToken() with wrong secret: got %v, want ErrInvalidToken", err)
 	}
@@ -100,7 +100,7 @@ func TestValidateToken_WrongSecret(t *testing.T) {
 
 func TestValidateToken_Empty(t *testing.T) {
 	jm, _ := NewJWTManager("testsecret", time.Hour)
-	_, err := jm.ValidateToken("")
+	_, err := jm.ValidateToken(t.Context(), "")
 	if !errors.Is(err, ErrInvalidToken) {
 		t.Errorf("ValidateToken() with empty token: got %v, want ErrInvalidToken", err)
 	}

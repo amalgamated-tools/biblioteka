@@ -39,7 +39,11 @@ db/migrations/
 
 ### Logging
 - Always use `log/slog` for structured logging.
+- **Always use context-aware variants**: `slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`, 
+  `slog.WarnContext(ctx, ...)`, `slog.DebugContext(ctx, ...)`. The non-context versions 
+  (`slog.Info`, `slog.Error`, etc.) are **forbidden by the `sloglint` linter**.
 - `log.Print*`, `log.Fatal*`, and `log.Panic*` are **forbidden** by the linter (`golangci-lint` / `forbidigo`).
+- Pass `r.Context()` in HTTP handlers or propagate `context.Context` through function signatures.
 
 ### Error handling
 - Check every error explicitly with `if err != nil`.

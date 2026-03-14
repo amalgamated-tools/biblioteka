@@ -84,7 +84,7 @@ func TestMiddleware_ValidToken(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	mw := Middleware(jm)
 
-	token, _ := jm.CreateToken("user-abc")
+	token, _ := jm.CreateToken(t.Context(), "user-abc")
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -215,7 +215,7 @@ func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	mw := Middleware(jm)
 
-	token, _ := jm.CreateToken("cookie-user")
+	token, _ := jm.CreateToken(t.Context(), "cookie-user")
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -262,8 +262,8 @@ func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	mw := Middleware(jm)
 
-	headerToken, _ := jm.CreateToken("header-user")
-	cookieToken, _ := jm.CreateToken("cookie-user")
+	headerToken, _ := jm.CreateToken(t.Context(), "header-user")
+	cookieToken, _ := jm.CreateToken(t.Context(), "cookie-user")
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -348,7 +348,7 @@ func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
 	mw := AdminMiddleware(jm, checker)
 
-	token, _ := jm.CreateToken("regular-user")
+	token, _ := jm.CreateToken(t.Context(), "regular-user")
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -374,7 +374,7 @@ func TestAdminMiddleware_AdminUser(t *testing.T) {
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
 	mw := AdminMiddleware(jm, checker)
 
-	token, _ := jm.CreateToken("admin-user")
+	token, _ := jm.CreateToken(t.Context(), "admin-user")
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -399,7 +399,7 @@ func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
 	mw := AdminMiddleware(jm, checker)
 
-	token, _ := jm.CreateToken("admin-user")
+	token, _ := jm.CreateToken(t.Context(), "admin-user")
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -424,7 +424,7 @@ func TestAdminMiddleware_CheckerError(t *testing.T) {
 	checker := &mockAdminChecker{err: errors.New("db down")}
 	mw := AdminMiddleware(jm, checker)
 
-	token, _ := jm.CreateToken("some-user")
+	token, _ := jm.CreateToken(t.Context(), "some-user")
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

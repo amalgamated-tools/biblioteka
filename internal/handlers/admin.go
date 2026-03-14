@@ -138,7 +138,7 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "user not found")
 			return
 		}
-		slog.Error("failed to set admin status", "error", err)
+		slog.ErrorContext(r.Context(), "failed to set admin status", slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to update admin status")
 		return
 	}

@@ -63,7 +63,7 @@ func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := jwt.ValidateToken(token)
+			claims, err := jwt.ValidateToken(r.Context(), token)
 			if err != nil {
 				slog.InfoContext(r.Context(), "invalid or expired token", slog.Any("error", err))
 				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
@@ -175,7 +175,7 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) h
 				return
 			}
 
-			claims, err := jwt.ValidateToken(token)
+			claims, err := jwt.ValidateToken(r.Context(), token)
 			if err != nil {
 				slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any("error", err))
 				jsonError(w, http.StatusUnauthorized, "invalid or expired token")

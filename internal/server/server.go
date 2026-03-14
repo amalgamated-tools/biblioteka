@@ -168,7 +168,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 			return nil, fmt.Errorf("failed to initialize OIDC provider: %w", err)
 		}
 		s.oidcHandler = oidcHandler
-		slog.Info("OIDC authentication enabled", slog.String("issuer", issuer))
+		slog.InfoContext(ctx, "OIDC authentication enabled", slog.String("issuer", issuer))
 	} else if dbIssuer, err := s.DB.GetSetting("oidc_issuer_url"); err == nil && dbIssuer != "" {
 		dbClientID, _ := s.DB.GetSetting("oidc_client_id")
 		dbClientSecret, _ := s.DB.GetSetting("oidc_client_secret")
@@ -176,10 +176,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		if dbClientID != "" && dbClientSecret != "" && dbRedirectURI != "" {
 			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, dbIssuer, dbClientID, dbClientSecret, dbRedirectURI, secureCookies)
 			if err != nil {
-				slog.Warn("failed to initialize OIDC from saved settings", slog.Any("error", err))
+				slog.WarnContext(ctx, "failed to initialize OIDC from saved settings", slog.Any("error", err))
 			} else {
 				s.oidcHandler = oidcHandler
-				slog.Info("OIDC authentication enabled from saved settings", slog.String("issuer", dbIssuer))
+				slog.InfoContext(ctx, "OIDC authentication enabled from saved settings", slog.String("issuer", dbIssuer))
 			}
 		}
 	}

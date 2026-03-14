@@ -27,10 +27,9 @@ var version = "dev"
 // @description                Enter "Bearer {token}"
 
 func main() {
-	otel.SetupLogger()
-	slog.Info("biblioteka", slog.String("version", version))
 	cancelCtx, cancelAll := context.WithCancel(context.Background())
-
+	otel.SetupLogger(cancelCtx)
+	slog.InfoContext(cancelCtx, "biblioteka", slog.String("version", version))
 	if err := realMain(cancelCtx); err != nil {
 		slog.ErrorContext(cancelCtx, "error occurred", slog.Any("error", err))
 		cancelAll()

@@ -144,7 +144,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "user created via signup", slog.String("user_id", user.ID))
 
-	token, err := h.JWT.CreateToken(user.ID)
+	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
 		slog.Error("failed to create token for user", slog.Any("user_id", user.ID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to create token")
@@ -209,7 +209,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.JWT.CreateToken(user.ID)
+	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
 		slog.Error("failed to create token for user", slog.Any("user_id", user.ID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to create token")

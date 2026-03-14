@@ -430,7 +430,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Issue a biblioteka JWT
-	token, err := h.JWT.CreateToken(user.ID)
+	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create token for OIDC user", slog.String("user_id", user.ID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to create session")

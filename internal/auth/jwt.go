@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -45,8 +46,8 @@ func NewJWTManager(secret string, ttl time.Duration) (*JWTManager, error) {
 }
 
 // CreateToken generates a signed JWT for the given user ID.
-func (j *JWTManager) CreateToken(userID string) (string, error) {
-	slog.Debug("creating JWT token", slog.String("user_id", userID))
+func (j *JWTManager) CreateToken(ctx context.Context, userID string) (string, error) {
+	slog.DebugContext(ctx, "creating JWT token", slog.String("user_id", userID))
 	now := time.Now()
 	claims := Claims{
 		UserID: userID,
@@ -62,13 +63,13 @@ func (j *JWTManager) CreateToken(userID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("sign JWT: %w", err)
 	}
-	slog.Debug("JWT token created", slog.String("user_id", userID), slog.Time("expires_at", now.Add(j.ttl)))
+	slog.DebugContext(ctx, "JWT token created", slog.String("user_id", userID), slog.Time("expires_at", now.Add(j.ttl)))
 	return signed, nil
 }
 
 // ValidateToken parses and validates a JWT, returning the claims if valid.
-func (j *JWTManager) ValidateToken(tokenString string) (*Claims, error) {
-	slog.Debug("validating JWT token")
+func (j *JWTManager) ValidateToken(ctx context.Context, tokenString string) (*Claims, error) {
+	slog.DebugContext(ctx, "validating JWT token")
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
@@ -77,19 +78,19 @@ func (j *JWTManager) ValidateToken(tokenString string) (*Claims, error) {
 	})
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			slog.Debug("JWT token expired")
+			slog.DebugContext(ctx, "JWT token expired")
 			return nil, ErrExpiredToken
 		}
-		slog.Debug("JWT token invalid", slog.String("error", err.Error()))
+		slog.DebugContext(ctx, "JWT token invalid", slog.String("error", err.Error()))
 		return nil, ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		slog.Debug("JWT token claims invalid")
+		slog.DebugContext(ctx, "JWT token claims invalid")
 		return nil, ErrInvalidToken
 	}
 
-	slog.Debug("JWT token validated", slog.String("user_id", claims.UserID))
+	slog.DebugContext(ctx, "JWT token validated", slog.String("user_id", claims.UserID))
 	return claims, nil
 }
