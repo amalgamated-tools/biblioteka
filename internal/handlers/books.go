@@ -204,9 +204,23 @@ func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 	case "":
 		h.handleBook(w, r, id)
 	case "authors":
-		h.handleBookAuthors(w, r, id)
+		switch r.Method {
+		case http.MethodGet:
+			h.getBookAuthors(w, r, id)
+		case http.MethodPut:
+			h.putBookAuthors(w, r, id)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		}
 	case "series":
-		h.handleBookSeries(w, r, id)
+		switch r.Method {
+		case http.MethodGet:
+			h.getBookSeries(w, r, id)
+		case http.MethodPut:
+			h.putBookSeries(w, r, id)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		}
 	case "files":
 		switch r.Method {
 		case http.MethodGet:
@@ -427,11 +441,15 @@ func (h *BookHandler) respondBookAuthors(w http.ResponseWriter, bookID string) {
 	writeJSON(w, http.StatusOK, dtos)
 }
 
-// handleBookAuthors godoc
-// @Summary     Get or set book authors
-// @Description Get the list of authors for a book, or replace them
+// setBookAuthorsRequest is the request body for setting book authors.
+type setBookAuthorsRequest struct {
+	AuthorIDs []string `json:"author_ids"`
+}
+
+// getBookAuthors godoc
+// @Summary     List book authors
+// @Description Get the list of authors for a book
 // @Tags        Books
-// @Accept      json
 // @Produce     json
 // @Security    BearerAuth
 // @Param       id   path     string true "Book ID"
@@ -439,30 +457,35 @@ func (h *BookHandler) respondBookAuthors(w http.ResponseWriter, bookID string) {
 // @Failure     400  {object} errorResponse
 // @Failure     500  {object} errorResponse
 // @Router      /books/{id}/authors [get]
+func (h *BookHandler) getBookAuthors(w http.ResponseWriter, _ *http.Request, bookID string) {
+	h.respondBookAuthors(w, bookID)
+}
+
+// putBookAuthors godoc
+// @Summary     Set book authors
+// @Description Replace the list of authors for a book
+// @Tags        Books
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id   path string                true "Book ID"
+// @Param       body body setBookAuthorsRequest  true "Author IDs"
+// @Success     200  {array}  authorDTO
+// @Failure     400  {object} errorResponse
+// @Failure     500  {object} errorResponse
 // @Router      /books/{id}/authors [put]
-func (h *BookHandler) handleBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
-	switch r.Method {
-	case http.MethodGet:
-		h.respondBookAuthors(w, bookID)
-
-	case http.MethodPut:
-		var req struct {
-			AuthorIDs []string `json:"author_ids"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
-			return
-		}
-		if err := h.DB.SetBookAuthors(bookID, req.AuthorIDs); err != nil {
-			slog.Error("failed to set book authors", "error", err)
-			writeError(w, http.StatusInternalServerError, "failed to set book authors")
-			return
-		}
-		h.respondBookAuthors(w, bookID)
-
-	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+func (h *BookHandler) putBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
+	var req setBookAuthorsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
 	}
+	if err := h.DB.SetBookAuthors(bookID, req.AuthorIDs); err != nil {
+		slog.Error("failed to set book authors", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to set book authors")
+		return
+	}
+	h.respondBookAuthors(w, bookID)
 }
 
 // respondBookSeries fetches and writes the series list for a book as JSON.
@@ -483,11 +506,15 @@ func (h *BookHandler) respondBookSeries(w http.ResponseWriter, bookID string) {
 	writeJSON(w, http.StatusOK, dtos)
 }
 
-// handleBookSeries godoc
-// @Summary     Get or set book series
-// @Description Get the list of series for a book, or replace them
+// setBookSeriesRequest is the request body for setting book series.
+type setBookSeriesRequest struct {
+	Entries []db.BookSeriesInput `json:"entries"`
+}
+
+// getBookSeries godoc
+// @Summary     List book series
+// @Description Get the list of series for a book
 // @Tags        Books
-// @Accept      json
 // @Produce     json
 // @Security    BearerAuth
 // @Param       id   path     string true "Book ID"
@@ -495,30 +522,35 @@ func (h *BookHandler) respondBookSeries(w http.ResponseWriter, bookID string) {
 // @Failure     400  {object} errorResponse
 // @Failure     500  {object} errorResponse
 // @Router      /books/{id}/series [get]
+func (h *BookHandler) getBookSeries(w http.ResponseWriter, _ *http.Request, bookID string) {
+	h.respondBookSeries(w, bookID)
+}
+
+// putBookSeries godoc
+// @Summary     Set book series
+// @Description Replace the list of series for a book
+// @Tags        Books
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id   path string                true "Book ID"
+// @Param       body body setBookSeriesRequest   true "Series entries"
+// @Success     200  {array}  bookSeriesEntryDTO
+// @Failure     400  {object} errorResponse
+// @Failure     500  {object} errorResponse
 // @Router      /books/{id}/series [put]
-func (h *BookHandler) handleBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
-	switch r.Method {
-	case http.MethodGet:
-		h.respondBookSeries(w, bookID)
-
-	case http.MethodPut:
-		var req struct {
-			Entries []db.BookSeriesInput `json:"entries"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
-			return
-		}
-		if err := h.DB.SetBookSeries(bookID, req.Entries); err != nil {
-			slog.Error("failed to set book series", "error", err)
-			writeError(w, http.StatusInternalServerError, "failed to set book series")
-			return
-		}
-		h.respondBookSeries(w, bookID)
-
-	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
+	var req setBookSeriesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
 	}
+	if err := h.DB.SetBookSeries(bookID, req.Entries); err != nil {
+		slog.Error("failed to set book series", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to set book series")
+		return
+	}
+	h.respondBookSeries(w, bookID)
 }
 
 // getBookFiles godoc
@@ -546,6 +578,15 @@ func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookI
 	writeJSON(w, http.StatusOK, dtos)
 }
 
+// createBookFileRequest is the request body for creating a book file.
+type createBookFileRequest struct {
+	FileType string  `json:"file_type"`
+	FileName string  `json:"file_name"`
+	FileSize int64   `json:"file_size"`
+	FileHash *string `json:"file_hash"`
+	FilePath string  `json:"file_path"`
+}
+
 // postBookFiles godoc
 // @Summary     Add a book file
 // @Description Add a new file for a book
@@ -553,19 +594,14 @@ func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookI
 // @Accept      json
 // @Produce     json
 // @Security    BearerAuth
-// @Param       id  path string true "Book ID"
+// @Param       id   path string              true "Book ID"
+// @Param       body body createBookFileRequest true "Book file data"
 // @Success     201 {object} bookFileDTO
 // @Failure     400 {object} errorResponse
 // @Failure     500 {object} errorResponse
 // @Router      /books/{id}/files [post]
 func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
-	var req struct {
-		FileType string  `json:"file_type"`
-		FileName string  `json:"file_name"`
-		FileSize int64   `json:"file_size"`
-		FileHash *string `json:"file_hash"`
-		FilePath string  `json:"file_path"`
-	}
+	var req createBookFileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return

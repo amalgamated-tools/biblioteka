@@ -1,4 +1,11 @@
 definitions:
+  github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput:
+    properties:
+      position:
+        type: number
+      series_id:
+        type: string
+    type: object
   github_com_amalgamated-tools_biblioteka_internal_db.Timestamp:
     properties:
       time.Time:
@@ -211,6 +218,19 @@ definitions:
       oidc_configured:
         type: boolean
     type: object
+  internal_handlers.createBookFileRequest:
+    properties:
+      file_hash:
+        type: string
+      file_name:
+        type: string
+      file_path:
+        type: string
+      file_size:
+        type: integer
+      file_type:
+        type: string
+    type: object
   internal_handlers.errorResponse:
     properties:
       error:
@@ -298,6 +318,20 @@ definitions:
     properties:
       is_admin:
         type: boolean
+    type: object
+  internal_handlers.setBookAuthorsRequest:
+    properties:
+      author_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  internal_handlers.setBookSeriesRequest:
+    properties:
+      entries:
+        items:
+          $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput'
+        type: array
     type: object
   internal_handlers.setOIDCConfigRequest:
     properties:
@@ -1037,9 +1071,7 @@ paths:
       - Books
   /books/{id}/authors:
     get:
-      consumes:
-      - application/json
-      description: Get the list of authors for a book, or replace them
+      description: Get the list of authors for a book
       parameters:
       - description: Book ID
         in: path
@@ -1065,19 +1097,25 @@ paths:
             $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: Get or set book authors
+      summary: List book authors
       tags:
       - Books
     put:
       consumes:
       - application/json
-      description: Get the list of authors for a book, or replace them
+      description: Replace the list of authors for a book
       parameters:
       - description: Book ID
         in: path
         name: id
         required: true
         type: string
+      - description: Author IDs
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.setBookAuthorsRequest'
       produces:
       - application/json
       responses:
@@ -1097,7 +1135,7 @@ paths:
             $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: Get or set book authors
+      summary: Set book authors
       tags:
       - Books
   /books/{id}/files:
@@ -1141,6 +1179,12 @@ paths:
         name: id
         required: true
         type: string
+      - description: Book file data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.createBookFileRequest'
       produces:
       - application/json
       responses:
@@ -1163,9 +1207,7 @@ paths:
       - Books
   /books/{id}/series:
     get:
-      consumes:
-      - application/json
-      description: Get the list of series for a book, or replace them
+      description: Get the list of series for a book
       parameters:
       - description: Book ID
         in: path
@@ -1191,19 +1233,25 @@ paths:
             $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: Get or set book series
+      summary: List book series
       tags:
       - Books
     put:
       consumes:
       - application/json
-      description: Get the list of series for a book, or replace them
+      description: Replace the list of series for a book
       parameters:
       - description: Book ID
         in: path
         name: id
         required: true
         type: string
+      - description: Series entries
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.setBookSeriesRequest'
       produces:
       - application/json
       responses:
@@ -1223,7 +1271,7 @@ paths:
             $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: Get or set book series
+      summary: Set book series
       tags:
       - Books
   /config/oidc:

@@ -1102,17 +1102,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get the list of authors for a book, or replace them",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Get the list of authors for a book",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Books"
                 ],
-                "summary": "Get or set book authors",
+                "summary": "List book authors",
                 "parameters": [
                     {
                         "type": "string",
@@ -1152,7 +1149,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get the list of authors for a book, or replace them",
+                "description": "Replace the list of authors for a book",
                 "consumes": [
                     "application/json"
                 ],
@@ -1162,7 +1159,7 @@ const docTemplate = `{
                 "tags": [
                     "Books"
                 ],
-                "summary": "Get or set book authors",
+                "summary": "Set book authors",
                 "parameters": [
                     {
                         "type": "string",
@@ -1170,6 +1167,15 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Author IDs",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.setBookAuthorsRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -1269,6 +1275,15 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Book file data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.createBookFileRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -1300,17 +1315,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get the list of series for a book, or replace them",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Get the list of series for a book",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Books"
                 ],
-                "summary": "Get or set book series",
+                "summary": "List book series",
                 "parameters": [
                     {
                         "type": "string",
@@ -1350,7 +1362,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get the list of series for a book, or replace them",
+                "description": "Replace the list of series for a book",
                 "consumes": [
                     "application/json"
                 ],
@@ -1360,7 +1372,7 @@ const docTemplate = `{
                 "tags": [
                     "Books"
                 ],
-                "summary": "Get or set book series",
+                "summary": "Set book series",
                 "parameters": [
                     {
                         "type": "string",
@@ -1368,6 +1380,15 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Series entries",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.setBookSeriesRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -2045,6 +2066,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput": {
+            "type": "object",
+            "properties": {
+                "position": {
+                    "type": "number"
+                },
+                "series_id": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_amalgamated-tools_biblioteka_internal_db.Timestamp": {
             "type": "object",
             "properties": {
@@ -2369,6 +2401,26 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_handlers.createBookFileRequest": {
+            "type": "object",
+            "properties": {
+                "file_hash": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "file_path": {
+                    "type": "string"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "file_type": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_handlers.errorResponse": {
             "type": "object",
             "properties": {
@@ -2502,6 +2554,28 @@ const docTemplate = `{
             "properties": {
                 "is_admin": {
                     "type": "boolean"
+                }
+            }
+        },
+        "internal_handlers.setBookAuthorsRequest": {
+            "type": "object",
+            "properties": {
+                "author_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "internal_handlers.setBookSeriesRequest": {
+            "type": "object",
+            "properties": {
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.BookSeriesInput"
+                    }
                 }
             }
         },
