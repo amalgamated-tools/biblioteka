@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/hibiken/asynq"
 )
@@ -25,9 +26,10 @@ type Func func(ctx context.Context, payload []byte) error
 
 // Worker manages background job processing backed by Redis via asynq.
 type Worker struct {
-	client   *asynq.Client
-	mux      *asynq.ServeMux
-	redisOpt asynq.RedisConnOpt
+	client    *asynq.Client
+	mux       *asynq.ServeMux
+	scheduler *asynq.Scheduler
+	redisOpt  asynq.RedisConnOpt
 }
 
 // New creates a Worker that connects to Redis at the given URL.
@@ -38,9 +40,10 @@ func New(redisURL string) (*Worker, error) {
 	}
 
 	return &Worker{
-		client:   asynq.NewClient(opt),
-		mux:      asynq.NewServeMux(),
-		redisOpt: opt,
+		client:    asynq.NewClient(opt),
+		mux:       asynq.NewServeMux(),
+		scheduler: asynq.NewScheduler(opt, nil),
+		redisOpt:  opt,
 	}, nil
 }
 
@@ -52,7 +55,25 @@ func (w *Worker) Register(name string, fn Func) {
 	})
 }
 
-// Start begins processing jobs, blocking until ctx is cancelled.
+// RegisterSchedule schedules a job to run repeatedly according to the given
+// cron specification (e.g. "@every 1h" or "0 * * * *"). It returns an entry
+// ID that can be used to unregister the schedule later. Must be called before
+// Start.
+func (w *Worker) RegisterSchedule(cronspec, jobName string, payload any) (string, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("marshal payload for %s: %w", jobName, err)
+	}
+	task := asynq.NewTask(jobName, body, asynq.MaxRetry(DefaultMaxRetry), asynq.Queue(QueueName))
+	entryID, err := w.scheduler.Register(cronspec, task)
+	if err != nil {
+		return "", fmt.Errorf("register schedule %s %q: %w", jobName, cronspec, err)
+	}
+	return entryID, nil
+}
+
+// Start begins processing jobs and running scheduled tasks, blocking until ctx
+// is cancelled.
 func (w *Worker) Start(ctx context.Context) {
 	slog.DebugContext(ctx, "starting asynq worker", slog.Int("concurrency", DefaultConcurrency))
 	srv := asynq.NewServer(w.redisOpt, asynq.Config{
@@ -65,7 +86,14 @@ func (w *Worker) Start(ctx context.Context) {
 		return
 	}
 
+	if err := w.scheduler.Start(); err != nil {
+		slog.Error("Failed to start asynq scheduler", slog.Any("error", err))
+		srv.Shutdown()
+		return
+	}
+
 	<-ctx.Done()
+	w.scheduler.Shutdown()
 	srv.Shutdown()
 }
 
@@ -77,7 +105,7 @@ func (w *Worker) Enqueue(ctx context.Context, name string, payload any) (string,
 		return "", fmt.Errorf("marshal payload: %w", err)
 	}
 
-	task := asynq.NewTask(name, body, asynq.MaxRetry(DefaultMaxRetry), asynq.Queue(QueueName))
+	task := asynq.NewTask(name, body, asynq.MaxRetry(DefaultMaxRetry), asynq.Queue(QueueName), asynq.Unique(24*time.Hour))
 	info, err := w.client.EnqueueContext(ctx, task)
 	if err != nil {
 		return "", fmt.Errorf("enqueue task %s: %w", name, err)
@@ -91,7 +119,8 @@ func (w *Worker) RedisConnOpt() asynq.RedisConnOpt {
 	return w.redisOpt
 }
 
-// Close shuts down the asynq client connection.
+// Close shuts down the scheduler and the asynq client connection.
 func (w *Worker) Close() error {
+	w.scheduler.Shutdown()
 	return w.client.Close()
 }

@@ -112,6 +112,18 @@ The dashboard shows queued, active, completed, and failed jobs, and lets you ret
 
 See [docs/api-reference.md](docs/api-reference.md) for the full API reference.
 
+## Background Jobs
+
+The server runs a Redis-backed job queue (powered by [asynq](https://github.com/hibiken/asynq)) in-process alongside the HTTP server.
+
+| Job | Trigger | Description |
+|---|---|---|
+| `scan:libraries` | Scheduled every 24 h | Iterates every *monitored* library and enqueues a `scan:path` job for each configured path |
+| `scan:path` | Enqueued by `scan:libraries` | Walks a directory tree and enqueues a `process:file` job for every EPUB, MOBI, AZW3, or PDF found |
+| `process:file` | Enqueued by `scan:path` | Creates a book record and attaches a book-file record for the discovered file |
+
+Jobs are deduplicated for 24 hours — attempting to re-scan a path that was already queued within that window won’t enqueue an additional task (the duplicate enqueue is rejected).
+
 ## Database Migrations
 
 Migrations in `db/migrations/{sqlite,postgres}/` run automatically on startup. No separate migration command is needed.
@@ -183,7 +195,7 @@ internal/
   auth/            JWT, OIDC, rate-limiting, middleware
   db/              Database layer (SQLite/PostgreSQL), migrations, CRUD
   handlers/        HTTP request handlers (books, authors, series, libraries, auth)
-  jobs/            Background job handlers (scan path, process file)
+  jobs/            Background job handlers (scan:path, scan:libraries, process:file)
   metadata/        EPUB/MOBI/PDF metadata extraction
   server/          Route registration, middleware setup, embedded frontend
   worker/          asynq worker setup
@@ -198,9 +210,13 @@ script/            Build and release helper scripts
 
 ## API Reference
 
-The server exposes a REST API under `/api`. See [docs/api.md](docs/api.md) for the full endpoint reference including request/response shapes and authentication requirements.
+The server exposes a REST API under `/api`. See [docs/api-reference.md](docs/api-reference.md) for the full endpoint reference including request/response shapes and authentication requirements.
 
 A health check endpoint is available at `GET /api/health` — it returns `200 OK` with a JSON body like `{"status":"ok"}` and requires no authentication.
+
+## Frontend
+
+The UI is a Svelte 5 SPA with hash-based routing. State is managed through reactive `$state` class stores. See [docs/frontend.md](docs/frontend.md) for the architecture overview, store pattern, routing, and a guide to adding new views and stores.
 
 ## Contributing
 
