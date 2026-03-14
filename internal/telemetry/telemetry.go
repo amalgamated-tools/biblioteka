@@ -24,11 +24,19 @@ type Payload struct {
 	Timestamp   string `json:"timestamp"`
 }
 
+const (
+	EnvTelemetryEnabled      = "TELEMETRY_ENABLED"
+	EnvTelemetryEndpoint     = "TELEMETRY_ENDPOINT"
+	DefaultTelemetryEndpoint = "https://telemetry-worker.amalgamated-tools.workers.dev"
+	TelemetryEnabled         = "telemetry_enabled"
+	Path                     = "path"
+)
+
 func SendBoot(ctx context.Context, version string) {
 	// Telemetry is opt-in meaning it is disabled by default unless explicitly enabled
-	envTelemetryEnabled, ok := os.LookupEnv("TELEMETRY_ENABLED")
+	envTelemetryEnabled, ok := os.LookupEnv(EnvTelemetryEnabled)
 	if ok {
-		slog.DebugContext(ctx, "Telemetry environment variable found", slog.String("telemetry_enabled", envTelemetryEnabled))
+		slog.DebugContext(ctx, "Telemetry environment variable found", slog.String(TelemetryEnabled, envTelemetryEnabled))
 
 		if !strings.EqualFold(envTelemetryEnabled, "true") {
 			slog.InfoContext(ctx, "Telemetry is disabled via TELEMETRY_ENABLED environment variable")
@@ -39,10 +47,10 @@ func SendBoot(ctx context.Context, version string) {
 		return
 	}
 
-	endpoint := os.Getenv("TELEMETRY_ENDPOINT")
+	endpoint := os.Getenv(EnvTelemetryEndpoint)
 	if endpoint == "" {
 		slog.DebugContext(ctx, "Telemetry endpoint not set, using default")
-		endpoint = "https://telemetry-worker.amalgamated-tools.workers.dev"
+		endpoint = DefaultTelemetryEndpoint
 	}
 
 	slog.WarnContext(ctx, "NOTICE: This application collects anonymous telemetry data to help improve the product. To disable telemetry, set the environment variable TELEMETRY_ENABLED=false")
@@ -51,10 +59,10 @@ func SendBoot(ctx context.Context, version string) {
 	// Determine install ID path: prefer mounted /data folder, fall back to ./data
 	if _, err := os.Stat("/data"); err == nil {
 		installIDPath = "/data/install_id"
-		slog.DebugContext(ctx, "Using mounted /data folder for install ID", slog.String("path", installIDPath))
+		slog.DebugContext(ctx, "Using mounted /data folder for install ID", slog.String(Path, installIDPath))
 	} else {
 		installIDPath = "./data/install_id"
-		slog.DebugContext(ctx, "Using local data folder for install ID", slog.String("path", installIDPath))
+		slog.DebugContext(ctx, "Using local data folder for install ID", slog.String(Path, installIDPath))
 	}
 
 	// Only send once per install
