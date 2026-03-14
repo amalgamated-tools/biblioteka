@@ -227,7 +227,6 @@ Save OIDC provider settings. The server performs OIDC discovery on the `issuer_u
 | `redirect_uri`  | string | ✓        | Callback URL registered with the provider |
 
 \* Required when no `client_secret` is currently stored (initial OIDC setup); may be omitted to preserve an existing secret.
-| `redirect_uri`  | string | ✓        | Callback URL registered with the provider |
 
 **Response body (`200`):**
 
