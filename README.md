@@ -46,7 +46,7 @@ docker compose -f docker-compose.postgres.yml up -d
 **Prerequisites:** Go 1.25+, Node.js 22+, pnpm, Redis
 
 ```bash
-git clone https://github.com/amalgamated-tools/biblioteka.git
+git clone https://github.com/akrevev/biblioteka.git
 cd biblioteka
 
 # Build frontend then compile Go binary
@@ -181,6 +181,10 @@ db/
   schema.sql       Reference schema
 script/            Build and release helper scripts
 ```
+
+## API Reference
+
+See [docs/api-reference.md](docs/api-reference.md) for the full list of REST endpoints, request/response shapes, and error codes.
 
 ## Contributing
 

@@ -13,7 +13,7 @@ Thanks for your interest in contributing! This guide covers everything you need 
 
 ```bash
 # Clone the repository
-git clone https://github.com/amalgamated-tools/biblioteka.git
+git clone https://github.com/akrevev/biblioteka.git
 cd biblioteka
 
 # Install frontend dependencies
