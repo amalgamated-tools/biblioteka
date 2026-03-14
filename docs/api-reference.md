@@ -379,29 +379,6 @@ List all books that belong to a specific library.
 | `404` | Library not found |
 | `500` | Unexpected server error |
 
-<details><summary>Prompt To Fix With AI</summary>
-
-`````markdown
-This is a comment left during a code review.
-Path: docs/api-reference.md
-Line: 373-381
-
-Comment:
-**Errors section placed before Response body**
-
-The new section lists **Errors** before the **Response body**, but every other endpoint in the document puts the response body description first and the error table second (e.g., `GET /api/libraries/{id}` at line 333: response body → errors). Keeping this consistent makes the reference easier to scan.
-
-```suggestion
-**Response body (`200`):** JSON array of [book summary objects](#get-apibooks).
-
-**Errors:**
-
-| Status | Meaning |
-|--------|---------|
-| `404` | Library not found |
-| `500` | Unexpected server error |
-
-How can I resolve this? If you propose a fix, please make it concise.
 ---
 
 ## Authors
