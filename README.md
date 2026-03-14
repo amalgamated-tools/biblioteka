@@ -177,7 +177,7 @@ script/            Build and release helper scripts
 
 The server exposes a REST API under `/api`. See [docs/api-reference.md](docs/api-reference.md) for the full endpoint reference including request/response shapes and authentication requirements.
 
-A health check endpoint is available at `GET /api/health` — it returns `200 OK` with the body `"OK"` and requires no authentication.
+A health check endpoint is available at `GET /api/health` — it returns `200 OK` with a JSON body like `{"status":"ok"}` and requires no authentication.
 
 ## Contributing
 
