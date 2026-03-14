@@ -7,6 +7,7 @@ import {
   signup,
   login,
   getMe,
+  getOidcEnabled,
   changePassword,
   listArrServices,
   createArrService,
@@ -248,6 +249,31 @@ describe("Auth API functions", () => {
     const result = await login("b@c.com", "pass");
     expect(result).toEqual(authResp);
     expect(localStorage.getItem(TOKEN_KEY)).toBe("login-token");
+  });
+
+  it("getOidcEnabled returns true when enabled", async () => {
+    mockFetchResponse({ enabled: true });
+
+    const result = await getOidcEnabled();
+    expect(result).toBe(true);
+
+    const [url, options] = (fetchMock).mock.calls[0];
+    expect(url).toBe("/api/auth/oidc/enabled");
+    expect(options.method).toBe("GET");
+  });
+
+  it("getOidcEnabled returns false when disabled", async () => {
+    mockFetchResponse({ enabled: false });
+
+    const result = await getOidcEnabled();
+    expect(result).toBe(false);
+  });
+
+  it("getOidcEnabled returns false for unexpected response", async () => {
+    mockFetchResponse({});
+
+    const result = await getOidcEnabled();
+    expect(result).toBe(false);
   });
 
   it("changePassword sends PUT request", async () => {

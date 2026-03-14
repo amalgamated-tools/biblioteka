@@ -22,7 +22,11 @@ class AuthStore {
       if (linkError) {
         this.oidcLinkError = linkError;
       }
-      window.history.replaceState({}, "", window.location.pathname);
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + "#settings",
+      );
     }
 
     if (api.hasToken()) {
