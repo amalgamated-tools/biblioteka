@@ -2,6 +2,7 @@
 db/biblioteka.db*
 
 # Binaries
+/biblioteka
 /bibloteka
 *.exe
 
