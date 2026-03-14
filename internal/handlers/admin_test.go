@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -174,7 +175,7 @@ func TestHandleSetAdmin_AdminPromotesUser(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
-	isAdmin, err := h.DB.IsAdmin(regularID)
+	isAdmin, err := h.DB.IsAdmin(context.Background(), regularID)
 	if err != nil {
 		t.Fatalf("IsAdmin() error: %v", err)
 	}
@@ -200,7 +201,7 @@ func TestHandleSetAdmin_AdminDemotesUser(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
-	isAdmin, _ := h.DB.IsAdmin(regularID)
+	isAdmin, _ := h.DB.IsAdmin(context.Background(), regularID)
 	if isAdmin {
 		t.Error("user should no longer be admin")
 	}

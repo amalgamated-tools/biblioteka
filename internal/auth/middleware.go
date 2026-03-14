@@ -58,7 +58,7 @@ func UserIDFromContext(ctx context.Context) string {
 
 // AdminChecker is implemented by types that can verify whether a user is an admin.
 type AdminChecker interface {
-	IsAdmin(userID string) (bool, error)
+	IsAdmin(ctx context.Context, userID string) (bool, error)
 }
 
 // tokenCookieName is the name of the HttpOnly cookie used as a fallback for
@@ -113,7 +113,7 @@ func newCachingAdminChecker(delegate AdminChecker, ttl time.Duration) AdminCheck
 	}
 }
 
-func (c *cachingAdminChecker) IsAdmin(userID string) (bool, error) {
+func (c *cachingAdminChecker) IsAdmin(ctx context.Context, userID string) (bool, error) {
 	// Fast path: check cache under read lock.
 	now := time.Now()
 
@@ -126,7 +126,7 @@ func (c *cachingAdminChecker) IsAdmin(userID string) (bool, error) {
 	}
 
 	// Cache miss or expired; consult the underlying checker.
-	isAdmin, err := c.delegate.IsAdmin(userID)
+	isAdmin, err := c.delegate.IsAdmin(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -169,7 +169,7 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) h
 				return
 			}
 
-			isAdmin, err := cachedChecker.IsAdmin(claims.UserID)
+			isAdmin, err := cachedChecker.IsAdmin(r.Context(), claims.UserID)
 			if err != nil {
 				slog.ErrorContext(r.Context(), "admin middleware: failed to check admin status", slog.Any("error", err))
 				jsonError(w, http.StatusInternalServerError, "failed to verify permissions")

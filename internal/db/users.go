@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log/slog"
@@ -143,9 +144,9 @@ func (d *DB) UpdatePassword(userID, newPasswordHash string) error {
 }
 
 // IsAdmin returns true if the given user has the admin role.
-func (d *DB) IsAdmin(userID string) (bool, error) {
+func (d *DB) IsAdmin(ctx context.Context, userID string) (bool, error) {
 	var admin bool
-	err := d.QueryRow(`SELECT is_admin FROM users WHERE id = $1`, userID).Scan(&admin)
+	err := d.QueryRowContext(ctx, `SELECT is_admin FROM users WHERE id = $1`, userID).Scan(&admin)
 	if err != nil {
 		return false, err
 	}
