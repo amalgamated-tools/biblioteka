@@ -441,8 +441,9 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	// Set auth cookie for browser-based access and redirect to the frontend root.
 	// The JWT is provided via the auth cookie only (no token query parameter).
+	// The ?oidc_login=1 marker tells the frontend to attempt cookie-based getMe().
 	setAuthCookie(w, token, h.SecureCookies)
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, "/?oidc_login=1", http.StatusFound)
 }
 
 // findOrCreateUser looks up a user by OIDC subject, then by email, creating if needed.

@@ -377,10 +377,33 @@ func sameOrigin(r *http.Request) bool {
 }
 
 func matchRequestOrigin(u *url.URL, r *http.Request) bool {
-	originHost, _ := parseHostPort(u.Host, "")
-	reqHost, _ := parseHostPort(r.Host, "")
+	// Compare scheme.
+	reqScheme := "http"
+	if r.TLS != nil {
+		reqScheme = "https"
+	}
+	if !strings.EqualFold(u.Scheme, reqScheme) {
+		return false
+	}
 
-	return strings.EqualFold(originHost, reqHost)
+	// Compare host (without port).
+	originHost, originPort := parseHostPort(u.Host, defaultPort(u.Scheme))
+	reqHost, reqPort := parseHostPort(r.Host, defaultPort(reqScheme))
+
+	if !strings.EqualFold(originHost, reqHost) {
+		return false
+	}
+
+	return originPort == reqPort
+}
+
+func defaultPort(scheme string) string {
+	switch strings.ToLower(scheme) {
+	case "https":
+		return "443"
+	default:
+		return "80"
+	}
 }
 
 func parseHostPort(hostport, defaultPort string) (string, string) {

@@ -34,12 +34,12 @@ describe("auth store", () => {
   describe("init", () => {
     it("sets loading to false when no token exists", async () => {
       vi.mocked(api.hasToken).mockReturnValue(false);
-      vi.mocked(api.getMe).mockRejectedValue(new Error("unauthorized"));
 
       await authStore.init();
 
       expect(authStore.loading).toBe(false);
       expect(authStore.user).toBeNull();
+      expect(api.getMe).not.toHaveBeenCalled();
     });
 
     it("fetches user when token exists", async () => {
@@ -74,8 +74,16 @@ describe("auth store", () => {
     });
 
     it("authenticates via cookie after OIDC redirect", async () => {
-      // After OIDC redirect, there's no ?token= param and no localStorage token,
+      // After OIDC redirect, ?oidc_login=1 is present and no localStorage token,
       // but the HttpOnly cookie is set — getMe() succeeds via cookie.
+      Object.defineProperty(window, "location", {
+        value: {
+          search: "?oidc_login=1",
+          pathname: "/",
+          hash: "",
+        },
+        writable: true,
+      });
       vi.mocked(api.hasToken).mockReturnValue(false);
       vi.mocked(api.getMe).mockResolvedValue({
         id: "2",
@@ -93,6 +101,8 @@ describe("auth store", () => {
         oidc_linked: true,
         is_admin: false,
       });
+      // URL marker should be cleaned up
+      expect(window.history.replaceState).toHaveBeenCalledWith({}, "", "/");
     });
 
     it("sets oidcLinkError from URL params", async () => {

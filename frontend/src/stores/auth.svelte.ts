@@ -11,6 +11,7 @@ class AuthStore {
     const params = new URLSearchParams(window.location.search);
     const oidcLinked = params.get("oidc_linked");
     const linkError = params.get("oidc_link_error");
+    const oidcLogin = params.get("oidc_login");
     if (oidcLinked || linkError) {
       if (linkError) {
         this.oidcLinkError = linkError;
@@ -20,6 +21,9 @@ class AuthStore {
         "",
         window.location.pathname + "#settings",
       );
+    } else if (oidcLogin) {
+      // Clean up the OIDC login marker from the URL.
+      window.history.replaceState({}, "", window.location.pathname);
     }
 
     // Try to load the current user. Auth may come from a localStorage token
@@ -38,8 +42,9 @@ class AuthStore {
           // Not authenticated via cookie either; stay logged out.
         }
       }
-    } else {
-      // No localStorage token — try cookie-based auth (e.g. after OIDC redirect)
+    } else if (oidcLogin || oidcLinked) {
+      // No localStorage token but an OIDC redirect marker is present —
+      // try cookie-based auth set during the OIDC callback.
       try {
         const u = await api.getMe();
         this.user = u;
