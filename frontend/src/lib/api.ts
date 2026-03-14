@@ -345,3 +345,7 @@ export async function getBookFile(id: string): Promise<BookFile> {
 export async function deleteBookFile(id: string): Promise<void> {
   await request<void>("DELETE", `/api/book-files/${id}`);
 }
+
+export async function sendBookFile(id: string, email: string): Promise<{ message: string }> {
+  return request<{ message: string }>("POST", `/api/book-files/${id}/send`, { email });
+}
