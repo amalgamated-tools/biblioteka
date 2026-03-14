@@ -88,7 +88,9 @@ Copy `.env.sample` to `.env` and adjust as needed:
 | `OIDC_CLIENT_ID` | *(empty)* | OIDC client ID |
 | `OIDC_CLIENT_SECRET` | *(empty)* | OIDC client secret |
 | `OIDC_REDIRECT_URI` | `http://localhost:8080/api/auth/oidc/callback` | OIDC callback URL |
-| `TELEMETRY_ENABLED` | `false` | Enable OpenTelemetry export |
+| `TELEMETRY_ENABLED` | `false` | Send anonymous usage telemetry on first startup (opt-in, disabled by default) |
+| `TELEMETRY_ENDPOINT` | *(internal default)* | Override the anonymous telemetry collection endpoint |
+| `POSTGRES_PASSWORD` | — | PostgreSQL password; used by the `docker-compose.postgres.yml` Docker Compose file |
 
 ## Database Migrations
 
@@ -120,6 +122,34 @@ cd frontend && pnpm run check
 cd frontend && pnpm run lint
 ```
 
+## CLI Tool
+
+`cmd/cli` is a standalone utility that extracts metadata from a single book file and prints JSON to stdout. It is useful for debugging metadata extraction outside of the server.
+
+```bash
+# Build
+go build -o biblioteka-cli ./cmd/cli
+
+# Usage
+./biblioteka-cli /path/to/book.epub
+./biblioteka-cli /path/to/book.pdf
+```
+
+Example output:
+
+```json
+{
+  "Author": "Jane Austen",
+  "Title": "Pride and Prejudice",
+  "Format": "epub",
+  "ISBN": "978-0-14-143951-8",
+  "Publisher": "Penguin Classics",
+  "IsNative": true
+}
+```
+
+> **Note:** PDF and MOBI/AZW3 metadata extraction requires [ExifTool](https://exiftool.org/) to be installed and available on `PATH`. EPUB extraction has no external dependencies.
+
 ## Project Layout
 
 ```
@@ -134,7 +164,8 @@ internal/
   metadata/        EPUB/MOBI/PDF metadata extraction
   server/          Route registration, middleware setup, embedded frontend
   worker/          asynq worker setup
-  otel/            Logging and tracing
+  otel/            OpenTelemetry tracing and structured logging setup
+  telemetry/       Anonymous usage telemetry (opt-in, disabled by default)
 frontend/          Svelte 5 SPA
 db/
   migrations/      sqlite/ and postgres/ SQL migration files
