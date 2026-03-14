@@ -24,21 +24,15 @@ func jsonError(w http.ResponseWriter, status int, message string) {
 }
 
 // Middleware returns an HTTP middleware that validates the JWT from the
-// Authorization header and injects the user ID into the request context.
+// Authorization header (or cookie fallback) and injects the user ID into
+// the request context.
 func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			header := r.Header.Get("Authorization")
-			if header == "" {
+			token := extractToken(r)
+			if token == "" {
 				slog.InfoContext(r.Context(), "missing authorization header")
 				jsonError(w, http.StatusUnauthorized, "missing authorization header")
-				return
-			}
-
-			token := strings.TrimPrefix(header, "Bearer ")
-			if token == header {
-				slog.InfoContext(r.Context(), "invalid authorization format")
-				jsonError(w, http.StatusUnauthorized, "invalid authorization format")
 				return
 			}
 

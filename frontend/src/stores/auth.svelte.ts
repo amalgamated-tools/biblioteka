@@ -7,15 +7,8 @@ class AuthStore {
   oidcLinkError: string | null = $state(null);
 
   async init(): Promise<void> {
-    // Check for OIDC callback token in URL
-    const params = new URLSearchParams(window.location.search);
-    const oidcToken = params.get("token");
-    if (oidcToken) {
-      api.setToken(oidcToken);
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-
     // Check for OIDC link callback (success or error)
+    const params = new URLSearchParams(window.location.search);
     const oidcLinked = params.get("oidc_linked");
     const linkError = params.get("oidc_link_error");
     if (oidcLinked || linkError) {
@@ -29,12 +22,22 @@ class AuthStore {
       );
     }
 
+    // Try to load the current user. Auth may come from a localStorage token
+    // (normal login/signup) or an HttpOnly cookie (OIDC callback).
     if (api.hasToken()) {
       try {
         const u = await api.getMe();
         this.user = u;
       } catch {
         api.clearToken();
+      }
+    } else {
+      // No localStorage token — try cookie-based auth (e.g. after OIDC redirect)
+      try {
+        const u = await api.getMe();
+        this.user = u;
+      } catch {
+        // Not authenticated via cookie either; stay logged out.
       }
     }
     this.loading = false;
@@ -69,6 +72,7 @@ class AuthStore {
 
   async signOut(): Promise<void> {
     api.clearToken();
+    await api.logout();
     this.user = null;
   }
 }
