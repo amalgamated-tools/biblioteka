@@ -24,7 +24,7 @@ TOTAL=$(echo "$TEST_FILES" | wc -l | tr -d ' ')
 
 echo "Found $TOTAL test files"
 echo ""
-
+TEST_FILES=$(find . -path "./$TEST_PATTERN" | sort)
 COUNT=0
 for TEST_FILE in $TEST_FILES; do
   COUNT=$((COUNT + 1))

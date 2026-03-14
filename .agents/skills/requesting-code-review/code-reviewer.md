@@ -14,7 +14,7 @@ You are reviewing code changes for production readiness.
 {DESCRIPTION}
 
 ## Requirements/Plan
-
+{PLAN_OR_REQUIREMENTS}
 {PLAN_REFERENCE}
 
 ## Git Range to Review

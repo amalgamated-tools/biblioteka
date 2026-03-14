@@ -174,14 +174,14 @@ Use this skill when:
 - class Order {
 -   calculateDiscount(user) {
 -     if (user.membershipLevel === 'gold') {
-+       return this.total * 0.2;
-+     }
-+     if (user.accountAge > 365) {
-+       return this.total * 0.1;
-+     }
-+     return 0;
-+   }
-+ }
+-       return this.total * 0.2;
+-     }
+-     if (user.accountAge > 365) {
+-       return this.total * 0.1;
+-     }
+-     return 0;
+-   }
+- }
 
 # GOOD: Move logic to the object that owns the data
 + class User {
