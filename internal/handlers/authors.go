@@ -78,13 +78,16 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *AuthorHandler) listAuthors(w http.ResponseWriter, _ *http.Request) {
+func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
+	slog.DebugContext(r.Context(), "listing authors")
 	authors, err := h.DB.ListAuthors()
 	if err != nil {
 		slog.Error("failed to list authors", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list authors")
 		return
 	}
+
+	slog.DebugContext(r.Context(), "authors listed", slog.Int("count", len(authors)))
 
 	dtos := make([]authorDTO, 0, len(authors))
 	for i := range authors {
@@ -106,6 +109,8 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.DebugContext(r.Context(), "creating author", slog.String("name", req.Name))
+
 	a, err := h.DB.CreateAuthor(req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
 		if err == db.ErrAuthorNameExists {
@@ -117,10 +122,12 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.DebugContext(r.Context(), "author created", slog.String("author_id", a.ID), slog.String("name", a.Name))
 	writeJSON(w, http.StatusCreated, toAuthorDTO(a))
 }
 
-func (h *AuthorHandler) getAuthor(w http.ResponseWriter, _ *http.Request, id string) {
+func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "fetching author", slog.String("author_id", id))
 	a, err := h.DB.GetAuthor(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -147,6 +154,8 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
+	slog.DebugContext(r.Context(), "updating author", slog.String("author_id", id), slog.String("name", req.Name))
+
 	a, err := h.DB.UpdateAuthor(id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -165,7 +174,8 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 	writeJSON(w, http.StatusOK, toAuthorDTO(a))
 }
 
-func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, _ *http.Request, id string) {
+func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "deleting author", slog.String("author_id", id))
 	err := h.DB.DeleteAuthor(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
