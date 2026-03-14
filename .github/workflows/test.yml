@@ -31,9 +31,41 @@ permissions:
   pull-requests: read
 
 jobs:
-  frontend-tests:
+  frontend-build:
     runs-on: ubuntu-latest
-    name: Frontend Build & Check
+    name: Frontend Build
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm must be set up before setup-node so the node cache can locate the pnpm store
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
+        with:
+          version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        with:
+          node-version: "20"
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: pnpm run build
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: dist
+          path: internal/server/dist
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    name: Frontend Checks
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
@@ -70,17 +102,8 @@ jobs:
         working-directory: ./frontend
         run: pnpm run test
 
-      - name: Build frontend
-        working-directory: ./frontend
-        run: pnpm run build
-
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-        with:
-          name: dist
-          path: internal/server/dist
-
   go-tests:
-    needs: frontend-tests
+    needs: frontend-build
     runs-on: ubuntu-latest
     name: Go Tests
     steps:
