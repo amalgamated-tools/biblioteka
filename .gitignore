@@ -16,6 +16,7 @@ db/biblioteka.db*
 # Test coverage
 coverage.out
 node_modules/
+.pnpm-store/
 
 .env
 
