@@ -2,3 +2,4 @@
 node = 'latest'
 go = 'latest'
 pnpm = 'latest'
+golangci-lint = "v2.11.3"

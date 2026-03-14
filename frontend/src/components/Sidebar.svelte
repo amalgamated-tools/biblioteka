@@ -21,9 +21,21 @@
   interface Props {
     currentView: AppView;
     onNavigate: (view: AppView) => void;
+    open: boolean;
+    onClose: () => void;
   }
 
-  let { currentView, onNavigate }: Props = $props();
+  let { currentView, onNavigate, open, onClose }: Props = $props();
+
+  function handleViewNavigate(view: AppView) {
+    onNavigate(view);
+    onClose();
+  }
+
+  function handleSidebarNavigate(path: string) {
+    navigate(path);
+    onClose();
+  }
 
   $effect(() => {
     if ($user && !$librariesLoaded) {
@@ -36,8 +48,20 @@
   }
 </script>
 
+<!-- Mobile overlay backdrop -->
+{#if open}
+  <button
+    class="fixed inset-0 z-40 bg-black/50 md:hidden"
+    onclick={onClose}
+    aria-label="Close sidebar"
+    tabindex="-1"
+  ></button>
+{/if}
+
 <aside
-  class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col"
+  class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col transition-transform duration-200 ease-in-out {open
+    ? 'translate-x-0'
+    : '-translate-x-full'} md:translate-x-0"
 >
   <div class="px-5 py-5 border-b border-slate-700">
     <div class="flex items-center gap-3">
@@ -63,7 +87,7 @@
       </p>
       <div class="space-y-1">
         <button
-          onclick={() => onNavigate("dashboard")}
+          onclick={() => handleViewNavigate("dashboard")}
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
           'dashboard'
             ? 'bg-blue-600 text-white'
@@ -74,7 +98,7 @@
         </button>
         {#if $libraries.length > 0}
           <button
-            onclick={() => onNavigate("books")}
+            onclick={() => handleViewNavigate("books")}
             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
             'books'
               ? 'bg-blue-600 text-white'
@@ -96,7 +120,7 @@
           Libraries
         </p>
         <button
-          onclick={() => navigate("libraries/new")}
+          onclick={() => handleSidebarNavigate("libraries/new")}
           class="text-slate-500 hover:text-slate-300 transition-colors"
           title="Create library"
         >
@@ -106,7 +130,7 @@
       <div class="space-y-1">
         {#each $libraries as lib (lib.id)}
           <button
-            onclick={() => navigate(`libraries/edit/${lib.id}`)}
+            onclick={() => handleSidebarNavigate(`libraries/edit/${lib.id}`)}
             class="group w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-sm transition-colors text-slate-300 hover:bg-slate-800 hover:text-white"
           >
             <Library class="w-4 h-4 flex-shrink-0" />
@@ -123,7 +147,7 @@
     <div>
       <div class="space-y-1">
         <button
-          onclick={() => onNavigate("settings")}
+          onclick={() => handleViewNavigate("settings")}
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
           'settings'
             ? 'bg-blue-600 text-white'
