@@ -32,6 +32,8 @@ Endpoints that require authentication are marked with 🔒. Endpoints that addit
 
 ## Auth
 
+> **Rate limiting:** The signup, login, and all OIDC auth endpoints (`/api/auth/oidc/login`, `/api/auth/oidc/callback`, `/api/auth/oidc/link`) are protected by a per-IP token-bucket rate limiter (5 requests/second, burst of 10). Exceeding the limit returns `429 Too Many Requests`.
+
 ### `POST /api/auth/signup`
 
 Create a new user account. The first user to sign up automatically becomes an admin.
@@ -51,6 +53,7 @@ Create a new user account. The first user to sign up automatically becomes an ad
 | `201 Created` | Account created; returns token and user object |
 | `400 Bad Request` | Missing or invalid fields |
 | `409 Conflict` | Email already registered |
+| `429 Too Many Requests` | Rate limit exceeded |
 
 **Response body (`201`):**
 
@@ -86,6 +89,7 @@ Authenticate with email and password.
 | `200 OK` | Returns token and user object |
 | `400 Bad Request` | Missing fields |
 | `401 Unauthorized` | Invalid credentials or OIDC-only account |
+| `429 Too Many Requests` | Rate limit exceeded |
 
 **Response body (`200`):** Same shape as signup response above.
 
@@ -744,6 +748,24 @@ Delete a book file record (does not delete the file from disk). Returns `204 No 
 
 ---
 
+## Swagger UI
+
+### `GET /swagger/` 🔒
+
+An interactive OpenAPI browser (powered by [Swagger UI](https://swagger.io/tools/swagger-ui/)) that documents and lets you try every API endpoint in the browser.
+
+| Property | Value |
+|----------|-------|
+| **URL** | `/swagger/` |
+| **Auth** | 🔒 Valid JWT required |
+| **Spec URL** | `/swagger/doc.json` — raw OpenAPI 3.0 JSON |
+
+> Accessing `/swagger` (without trailing slash) redirects to `/swagger/` automatically.
+
+The UI is useful during development for exploring request/response shapes without needing a separate API client.
+
+---
+
 ## Monitoring Dashboard
 
 ### `GET /asynqmon/` 🔒
@@ -780,4 +802,5 @@ Common HTTP status codes:
 | `404` | Not found |
 | `405` | Method not allowed |
 | `409` | Conflict — duplicate name or email |
+| `429` | Too Many Requests — per-IP rate limit exceeded (auth endpoints only) |
 | `500` | Internal server error |

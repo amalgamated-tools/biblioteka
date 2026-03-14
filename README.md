@@ -216,6 +216,8 @@ The server exposes a REST API under `/api`. See [docs/api-reference.md](docs/api
 
 A health check endpoint is available at `GET /api/health` — it returns `200 OK` with a JSON body like `{"status":"ok"}` and requires no authentication.
 
+An interactive Swagger UI is served at `/swagger/` and requires a valid JWT. The raw OpenAPI spec is available at `/swagger/doc.json`.
+
 ## Frontend
 
 The UI is a Svelte 5 SPA with hash-based routing. State is managed through reactive `$state` class stores. See [docs/frontend.md](docs/frontend.md) for the architecture overview, store pattern, routing, and a guide to adding new views and stores.
