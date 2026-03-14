@@ -56,7 +56,7 @@
   <!-- Decorative background elements -->
   <div class="absolute inset-0 overflow-hidden pointer-events-none">
     <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-accent-200/30 dark:bg-accent-800/10 blur-3xl"></div>
-    <div class="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-accent-100/40 dark:bg-accent-900/5 blur-3xl"></div>
+    <div class="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-accent-100/40 dark:bg-accent-800/5 blur-3xl"></div>
   </div>
 
   <div class="w-full max-w-md relative z-10 animate-fade-in-up">
