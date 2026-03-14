@@ -60,9 +60,9 @@ func redactEmail(email string) string {
 // access to server-rendered UIs (e.g. asynqmon).
 func setAuthCookie(w http.ResponseWriter, token string, secure bool) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     auth.TokenCookieName(),
-		Value:    token,
-		Path:     "/",
+		Name:  auth.TokenCookieName(),
+		Value: token,
+		Path:  "/",
 		// MaxAge 0 makes this a session cookie; JWT expiry is enforced by token validation.
 		MaxAge:   0,
 		HttpOnly: true,
