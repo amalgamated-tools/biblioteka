@@ -1,12 +1,8 @@
 <script lang="ts">
-  import { user, signOut } from "../stores/auth";
-  import type { AppView } from "../stores/router";
-  import { navigate } from "../stores/router";
-  import {
-    libraries,
-    librariesLoaded,
-    loadLibraries,
-  } from "../stores/libraries";
+  import { authStore } from "../stores/auth.svelte";
+  import type { AppView } from "../stores/router.svelte";
+  import { routerStore } from "../stores/router.svelte";
+  import { libraryStore } from "../stores/libraries.svelte";
   import {
     LayoutDashboard,
     BookOpen,
@@ -33,18 +29,18 @@
   }
 
   function handleSidebarNavigate(path: string) {
-    navigate(path);
+    routerStore.navigate(path);
     onClose();
   }
 
   $effect(() => {
-    if ($user && !$librariesLoaded) {
-      loadLibraries();
+    if (authStore.user && !libraryStore.loaded) {
+      libraryStore.load();
     }
   });
 
   async function handleLogout() {
-    await signOut();
+    await authStore.signOut();
   }
 </script>
 
@@ -72,7 +68,7 @@
       </div>
       <div>
         <h1 class="text-lg font-bold">biblioteka</h1>
-        <p class="text-xs text-slate-400 truncate">{$user?.email}</p>
+        <p class="text-xs text-slate-400 truncate">{authStore.user?.email}</p>
       </div>
     </div>
   </div>
@@ -96,7 +92,7 @@
           <LayoutDashboard class="w-5 h-5" />
           Dashboard
         </button>
-        {#if $libraries.length > 0}
+        {#if libraryStore.libraries.length > 0}
           <button
             onclick={() => handleViewNavigate("books")}
             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
@@ -128,7 +124,7 @@
         </button>
       </div>
       <div class="space-y-1">
-        {#each $libraries as lib (lib.id)}
+        {#each libraryStore.libraries as lib (lib.id)}
           <button
             onclick={() => handleSidebarNavigate(`libraries/edit/${lib.id}`)}
             class="group w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-sm transition-colors text-slate-300 hover:bg-slate-800 hover:text-white"
