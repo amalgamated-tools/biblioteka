@@ -144,11 +144,15 @@ func (c *cachingAdminChecker) IsAdmin(ctx context.Context, userID string) (bool,
 		return false, err
 	}
 
-	// Store/refresh the cache entry under write lock; sweep expired entries.
+	// Store/refresh the cache entry under write lock; sweep expired entries
+	// only when the cache exceeds a reasonable size threshold.
+	const sweepThreshold = 100
 	c.mu.Lock()
-	for k, v := range c.entries {
-		if now.After(v.expiresAt) {
-			delete(c.entries, k)
+	if len(c.entries) >= sweepThreshold {
+		for k, v := range c.entries {
+			if now.After(v.expiresAt) {
+				delete(c.entries, k)
+			}
 		}
 	}
 	c.entries[userID] = adminCacheEntry{

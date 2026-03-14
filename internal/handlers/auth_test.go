@@ -491,6 +491,7 @@ func TestLogout_ClearsCookie(t *testing.T) {
 	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
 
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+	r.Header.Set("Origin", "http://"+r.Host)
 	w := httptest.NewRecorder()
 	h.Logout(w, r)
 

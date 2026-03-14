@@ -210,34 +210,14 @@ func TestExtractToken(t *testing.T) {
 }
 
 // --- Cookie-based auth tests for Middleware ---
+// Note: Middleware only accepts Bearer header tokens. Cookie fallback is only
+// available via AdminMiddleware (for browser-navigated UIs like asynqmon).
 
-func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
+func TestMiddleware_CookieOnlyIsRejected(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	mw := Middleware(jm)
 
 	token, _ := jm.CreateToken("cookie-user")
-
-	var gotUserID string
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotUserID = UserIDFromContext(r.Context())
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: token})
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "cookie-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "cookie-user")
-	}
-}
-
-func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
-	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -245,7 +225,7 @@ func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 	})
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: "badtoken"})
+	r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: token})
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
@@ -255,7 +235,7 @@ func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
 	}
-	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
+	assertJSONError(t, w.Body.Bytes(), "authentication required")
 }
 
 func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
