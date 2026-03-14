@@ -66,23 +66,35 @@ func (h *LibraryHandler) HandleLibraries(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// HandleLibrary handles GET/PUT/DELETE /api/libraries/{id}.
+// HandleLibrary handles GET/PUT/DELETE /api/libraries/{id} and sub-resources like /api/libraries/{id}/books.
 func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
-	id, ok := extractPathID(r.URL.Path, "/api/libraries/")
+	id, sub, ok := extractPathSegments(r.URL.Path, "/api/libraries/")
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid library ID")
 		return
 	}
 
-	switch r.Method {
-	case http.MethodGet:
-		h.getLibrary(w, r, id)
-	case http.MethodPut:
-		h.updateLibrary(w, r, id)
-	case http.MethodDelete:
-		h.deleteLibrary(w, r, id)
+	switch sub {
+	case "":
+		switch r.Method {
+		case http.MethodGet:
+			h.getLibrary(w, r, id)
+		case http.MethodPut:
+			h.updateLibrary(w, r, id)
+		case http.MethodDelete:
+			h.deleteLibrary(w, r, id)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		}
+	case "books":
+		switch r.Method {
+		case http.MethodGet:
+			h.listLibraryBooks(w, r, id)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		}
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(w, http.StatusNotFound, "not found")
 	}
 }
 
@@ -306,6 +318,53 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// listLibraryBooks godoc
+// @Summary     List books in a library
+// @Description Returns all books belonging to a specific library
+// @Tags        Libraries
+// @Produce     json
+// @Security    BearerAuth
+// @Failure     401 {object} errorResponse
+// @Param       id  path     string true "Library ID"
+// @Success     200 {array}  bookSummaryDTO
+// @Failure     400 {object} errorResponse
+// @Failure     404 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /libraries/{id}/books [get]
+func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "listing library books", slog.String("library_id", id))
+
+	books, err := h.DB.ListBooksByLibrary(id)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to list library books", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to list library books")
+		return
+	}
+
+	// If no books found, check whether the library actually exists.
+	if len(books) == 0 {
+		_, err := h.DB.GetLibrary(id)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				writeError(w, http.StatusNotFound, "library not found")
+				return
+			}
+			slog.ErrorContext(r.Context(), "failed to get library", "error", err)
+			writeError(w, http.StatusInternalServerError, "failed to get library")
+			return
+		}
+	}
+
+	slog.DebugContext(r.Context(), "library books listed", slog.Int("count", len(books)))
+
+	dtos := make([]bookSummaryDTO, 0, len(books))
+	for i := range books {
+		dtos = append(dtos, toBookSummaryDTO(&books[i]))
+	}
+
+	writeJSON(w, http.StatusOK, dtos)
 }
 
 func validatePaths(paths []string) error {
