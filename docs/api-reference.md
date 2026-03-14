@@ -232,7 +232,7 @@ Save OIDC provider settings. The server performs OIDC discovery on the `issuer_u
 { "message": "OIDC configuration saved successfully" }
 ```
 
-> **Note:** If the `OIDC_ISSUER_URL` environment variable is set when the `PUT` request is made, the success response message will instead warn that the environment variable takes precedence and instruct you to remove it to use the stored settings.
+> **Note:** If the `OIDC_ISSUER_URL` environment variable is set, it takes precedence over these stored settings at server startup — the server will use the environment variables instead of the saved configuration. When `OIDC_ISSUER_URL` is set at the time of this `PUT` request, the response message will warn about this and instruct you to remove the variable to use the stored settings.
 
 ---
 
