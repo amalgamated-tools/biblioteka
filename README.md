@@ -187,9 +187,13 @@ script/            Build and release helper scripts
 
 ## API Reference
 
-The server exposes a REST API under `/api`. See [docs/api-reference.md](docs/api-reference.md) for the full endpoint reference including request/response shapes and authentication requirements.
+The server exposes a REST API under `/api`. See [docs/api.md](docs/api.md) for the full endpoint reference including request/response shapes and authentication requirements.
 
 A health check endpoint is available at `GET /api/health` — it returns `200 OK` with a JSON body like `{"status":"ok"}` and requires no authentication.
+
+## Frontend
+
+The UI is a Svelte 5 SPA with hash-based routing. State is managed through reactive `$state` class stores. See [docs/frontend.md](docs/frontend.md) for the architecture overview, store pattern, routing, and a guide to adding new views and stores.
 
 ## Contributing
 
