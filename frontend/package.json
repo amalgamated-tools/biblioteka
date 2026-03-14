@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "packageManager": "pnpm@10.32.1",
   "dependencies": {
     "lucide-svelte": "^0.344.0",
     "svelte": "^5.53.11"
@@ -24,7 +25,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/svelte": "^5.3.1",
     "@tsconfig/svelte": "^5.0.8",
-    "eslint": "^10.0.1",
+    "eslint": "^10.0.3",
     "eslint-plugin-svelte": "^3.15.2",
     "globals": "^17.4.0",
     "jsdom": "^28.1.0",
@@ -33,7 +34,7 @@
     "svelte-check": "^4.4.5",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1",
+    "typescript-eslint": "^8.57.0",
     "vite": "^7.3.1",
     "vitest": "^4.1.0"
   }
