@@ -403,7 +403,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "OIDC login successful", slog.String("user_id", user.ID), slog.String("email", claims.Email))
+	slog.DebugContext(r.Context(), "OIDC login successful", slog.String("user_id", user.ID))
 
 	// Redirect to frontend with token
 	http.Redirect(w, r, "/?token="+token, http.StatusFound)

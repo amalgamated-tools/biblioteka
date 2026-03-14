@@ -126,7 +126,6 @@ func (rl *RateLimiter) Limit(next http.HandlerFunc) http.HandlerFunc {
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": "too many requests, please try again later"})
 			return
 		}
-		slog.DebugContext(r.Context(), "rate limit allowed", slog.String("ip", ip))
 		next(w, r)
 	}
 }

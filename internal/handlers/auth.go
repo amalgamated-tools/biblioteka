@@ -47,6 +47,14 @@ type userDTO struct {
 	IsAdmin    bool   `json:"is_admin"`
 }
 
+func redactEmail(email string) string {
+	at := strings.Index(email, "@")
+	if at <= 1 {
+		return "***"
+	}
+	return email[:1] + "***" + email[at:]
+}
+
 // Signup handles POST /api/auth/signup
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -72,11 +80,11 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "signup request", slog.String("email", req.Email))
+	slog.DebugContext(r.Context(), "signup request", slog.String("email", redactEmail(req.Email)))
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		slog.Error("failed to hash password during signup", slog.Any("email", req.Email), slog.Any("error", err))
+		slog.Error("failed to hash password during signup", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to hash password")
 		return
 	}
@@ -87,12 +95,12 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, "email already registered")
 			return
 		}
-		slog.Error("failed to create user", slog.Any("email", req.Email), slog.Any("error", err))
+		slog.Error("failed to create user", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to create user")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "user created via signup", slog.String("user_id", user.ID), slog.String("email", user.Email))
+	slog.DebugContext(r.Context(), "user created via signup", slog.String("user_id", user.ID))
 
 	token, err := h.JWT.CreateToken(user.ID)
 	if err != nil {
