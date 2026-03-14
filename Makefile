@@ -30,12 +30,17 @@ run: build
 dev: redis-check frontend/node_modules
 	goreman -f Procfile.dev start
 
-# Capture application screenshots via Playwright
-screenshots: node_modules
-	@mkdir -p screenshots
+kill-dev:
 	@echo "Killing any existing servers on ports 5173 and 8080..."
 	@-lsof -ti :5173 | xargs kill -9 2>/dev/null || true
 	@-lsof -ti :8080 | xargs kill -9 2>/dev/null || true
+	@echo "All dev servers killed."
+
+# Capture application screenshots via Playwright
+screenshots: node_modules
+	@mkdir -p screenshots
+	# call kill-dev first to ensure no existing servers are running
+	$(MAKE) kill-dev
 	@echo "Starting dev server in background..."	
 	@goreman -f Procfile.dev start & DEV_PID=$$!; \
 	echo "Waiting for frontend (localhost:5173) and backend (localhost:8080)..."; \

@@ -11,11 +11,16 @@ const DEMO_EMAIL = process.env.DEMO_EMAIL || 'demo@veverka.net';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'password123';
 const DEFAULT_TIMEOUT_MS = Number(process.env.SCREENSHOT_TIMEOUT_MS || 5000);
 const NAVIGATION_TIMEOUT_MS = Number(process.env.SCREENSHOT_NAVIGATION_TIMEOUT_MS || 8000);
+export const AUTH_ERROR_TEST_ID = 'auth-error';
 
 const VIEWPORTS = {
     desktop: { width: 1440, height: 900 },
     mobile: { width: 375, height: 812 },
 };
+
+export function getAuthErrorBanner(page) {
+    return page.getByTestId(AUTH_ERROR_TEST_ID);
+}
 
 function setTheme(page, theme) {
     return page.evaluate((value) => {
@@ -77,7 +82,7 @@ async function ensureDemoAccount(page) {
     await page.locator('button[type="submit"]').click();
 
     const logoutButton = page.getByRole('button', { name: 'Logout', exact: true });
-    const errorBanner = page.locator('.bg-red-50, .dark\\:bg-red-900\\/30');
+    const errorBanner = getAuthErrorBanner(page);
 
     await Promise.race([
         logoutButton.waitFor({ state: 'visible' }),
