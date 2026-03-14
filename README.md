@@ -99,8 +99,6 @@ The first account created is automatically granted admin privileges. Admins can:
 - **Manage users** — list all accounts and grant or revoke admin status via `GET /api/admin/users` and `PUT /api/admin/users/{id}`.
 - **Configure OIDC at runtime** — read and update the OIDC provider settings via `GET /api/config/oidc` and `PUT /api/config/oidc` without a server restart. Environment variable values (`OIDC_ISSUER_URL`, etc.) take precedence over database-stored settings.
 
-See [docs/api.md](docs/api.md) for the full API reference.
-
 ## Database Migrations
 
 Migrations in `db/migrations/{sqlite,postgres}/` run automatically on startup. No separate migration command is needed.
@@ -187,7 +185,7 @@ script/            Build and release helper scripts
 
 ## API Reference
 
-The server exposes a REST API under `/api`. See [docs/api-reference.md](docs/api-reference.md) for the full endpoint reference including request/response shapes and authentication requirements.
+The server exposes a REST API under `/api`. See [docs/api.md](docs/api.md) for the full endpoint reference including request/response shapes, authentication requirements, and conventions.
 
 A health check endpoint is available at `GET /api/health` — it returns `200 OK` with a JSON body like `{"status":"ok"}` and requires no authentication.
 
