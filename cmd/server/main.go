@@ -63,6 +63,13 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	// Register background jobs
 	w.Register(jobs.JobScanPath, jobs.NewScanPathHandler(w))
 	w.Register(jobs.JobProcessFile, jobs.NewProcessFileHandler(database))
+	w.Register(jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
+
+	// Schedule periodic jobs
+	if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
+		slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any("error", err))
+		return fmt.Errorf("failed to schedule scan:libraries job: %w", err)
+	}
 
 	http, err := server.NewServer(
 		cancelCtx,
