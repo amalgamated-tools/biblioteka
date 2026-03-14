@@ -107,11 +107,11 @@ The server runs a Redis-backed job queue (powered by [asynq](https://github.com/
 
 | Job | Trigger | Description |
 |---|---|---|
-| `scan:libraries` | Scheduled every 24 h; also triggered manually via the Libraries UI | Iterates every *monitored* library and enqueues a `scan:path` job for each configured path |
+| `scan:libraries` | Scheduled every 24 h | Iterates every *monitored* library and enqueues a `scan:path` job for each configured path |
 | `scan:path` | Enqueued by `scan:libraries` | Walks a directory tree and enqueues a `process:file` job for every EPUB, MOBI, AZW3, or PDF found |
 | `process:file` | Enqueued by `scan:path` | Creates a book record and attaches a book-file record for the discovered file |
 
-Jobs are deduplicated for 24 hours — re-scanning a path that was already queued within that window is a no-op.
+Jobs are deduplicated for 24 hours — attempting to re-scan a path that was already queued within that window won’t enqueue an additional task (the duplicate enqueue is rejected).
 
 ## Database Migrations
 
