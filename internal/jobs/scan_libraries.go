@@ -95,7 +95,7 @@ func NewScanLibrariesHandler(lister LibraryLister, enqueuer Enqueuer) func(ctx c
 				continue
 			}
 			if len(paths) == 0 {
-				slog.Warn("monitored library has no paths configured; skipping scan",
+				slog.WarnContext(ctx, "monitored library has no paths configured; skipping scan",
 					slog.String("library_id", lib.ID),
 					slog.String("library_name", lib.Name),
 				)
