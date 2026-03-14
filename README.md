@@ -149,13 +149,16 @@ Example output:
 ```json
 {
   "Author": "Jane Austen",
-  "Title": "Pride and Prejudice",
-  "Format": "epub",
-  "ISBN": "978-0-14-143951-8",
-  "Publisher": "Penguin Classics",
-  "IsNative": true
+  "Description": "",
+  "Format": "EPUB",
+  "ISBN": "9780141439518",
+  "IsNative": true,
+  "Publisher": "",
+  "Title": "Pride and Prejudice"
 }
 ```
+
+> **Note:** The `Publisher` and `Description` fields are included in the output but are not currently extracted from EPUB, MOBI, or PDF files; they will be empty strings.
 
 > **Note:** PDF and MOBI/AZW3 metadata extraction requires [ExifTool](https://exiftool.org/) to be installed and available on `PATH`. EPUB extraction has no external dependencies.
 
