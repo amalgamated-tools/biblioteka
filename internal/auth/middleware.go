@@ -27,33 +27,23 @@ func jsonError(w http.ResponseWriter, status int, message string) {
 // then falls back to the "biblioteka_token" cookie. It returns the token and
 // an optional reason describing why no token could be extracted.
 func extractToken(r *http.Request) (string, string) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader != "" {
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			return "", "invalid authorization header"
+	if header := r.Header.Get("Authorization"); header != "" {
+		header = strings.TrimSpace(header)
+		if strings.HasPrefix(header, "Bearer ") {
+			token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+			if token != "" {
+				return token, ""
+			}
 		}
-
-		token := strings.TrimSpace(parts[1])
-		if token == "" {
-			return "", "empty bearer token"
-		}
-
-		return token, ""
+		// Non-Bearer or empty Bearer — fall through to cookie.
 	}
 
 	// Fallback to cookie-based authentication.
-	cookie, err := r.Cookie("biblioteka_token")
-	if err != nil {
-		return "", "missing token"
+	if c, err := r.Cookie(tokenCookieName); err == nil && c.Value != "" {
+		return c.Value, ""
 	}
 
-	token := strings.TrimSpace(cookie.Value)
-	if token == "" {
-		return "", "empty cookie token"
-	}
-
-	return token, ""
+	return "", "missing token"
 }
 
 // Middleware returns an HTTP middleware that validates the JWT from the
@@ -104,27 +94,6 @@ const tokenCookieName = "biblioteka_token"
 
 // TokenCookieName returns the cookie name used for browser-based auth.
 func TokenCookieName() string { return tokenCookieName }
-
-// extractToken reads a JWT from the Authorization header, falling back to the
-// biblioteka_token cookie for browser-navigated requests.
-func extractToken(r *http.Request) string {
-	if header := r.Header.Get("Authorization"); header != "" {
-		header = strings.TrimSpace(header)
-		if header != "" {
-			parts := strings.SplitN(header, " ", 2)
-			if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
-				token := strings.TrimSpace(parts[1])
-				if token != "" {
-					return token
-				}
-			}
-		}
-	}
-	if c, err := r.Cookie(tokenCookieName); err == nil && c.Value != "" {
-		return c.Value
-	}
-	return ""
-}
 
 // adminCacheEntry caches the result of an admin check along with its
 // expiration time to avoid repeated calls to the underlying AdminChecker.
@@ -199,7 +168,7 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) h
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := extractToken(r)
+			token, _ := extractToken(r)
 			if token == "" {
 				slog.InfoContext(r.Context(), "admin middleware: no token found")
 				jsonError(w, http.StatusUnauthorized, "authentication required")
