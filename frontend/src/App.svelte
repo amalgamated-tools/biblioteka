@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { user, authLoading, initAuth } from "./stores/auth";
-  import { currentView, navigate } from "./stores/router";
-  import { libraries, librariesLoaded } from "./stores/libraries";
+  import { authStore } from "./stores/auth.svelte";
+  import { routerStore } from "./stores/router.svelte";
+  import { libraryStore } from "./stores/libraries.svelte";
   import Auth from "./components/Auth.svelte";
   import Dashboard from "./components/Dashboard.svelte";
   import Books from "./components/Books.svelte";
@@ -15,24 +15,24 @@
   let sidebarOpen = $state(false);
 
   onMount(async () => {
-    await initAuth();
+    await authStore.init();
   });
 
   // Redirect away from books view when no libraries exist
   $effect(() => {
-    if ($currentView === "books" && $librariesLoaded && $libraries.length === 0) {
-      navigate("dashboard");
+    if (routerStore.currentView === "books" && libraryStore.loaded && libraryStore.libraries.length === 0) {
+      routerStore.navigate("dashboard");
     }
   });
 
   // Close the mobile sidebar whenever the active view changes
   $effect(() => {
-    void $currentView;
+    void routerStore.currentView;
     sidebarOpen = false;
   });
 </script>
 
-{#if $authLoading}
+{#if authStore.loading}
   <div
     class="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center"
   >
@@ -43,13 +43,13 @@
       <p class="text-slate-600 dark:text-slate-400">Loading...</p>
     </div>
   </div>
-{:else if !$user}
+{:else if !authStore.user}
   <Auth />
 {:else}
   <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
     <Sidebar
-      currentView={$currentView}
-      onNavigate={(view) => navigate(view)}
+      currentView={routerStore.currentView}
+      onNavigate={(view) => routerStore.navigate(view)}
       open={sidebarOpen}
       onClose={() => (sidebarOpen = false)}
     />
@@ -72,15 +72,15 @@
 
     <main class="md:ml-64 p-4 md:p-8">
       <div class="max-w-6xl mx-auto">
-        {#if $currentView === "dashboard"}
+        {#if routerStore.currentView === "dashboard"}
           <Dashboard />
-        {:else if $currentView === "books"}
+        {:else if routerStore.currentView === "books"}
           <Books />
-        {:else if $currentView === "my-library"}
+        {:else if routerStore.currentView === "my-library"}
           <MyLibrary />
-        {:else if $currentView === "libraries"}
+        {:else if routerStore.currentView === "libraries"}
           <Libraries />
-        {:else if $currentView === "settings"}
+        {:else if routerStore.currentView === "settings"}
           <Settings />
         {/if}
       </div>

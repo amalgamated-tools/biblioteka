@@ -134,6 +134,14 @@ export async function getMe(): Promise<User> {
   return request<User>("GET", "/api/auth/me");
 }
 
+export async function getOidcEnabled(): Promise<boolean> {
+  const data = await request<{ enabled: boolean }>(
+    "GET",
+    "/api/auth/oidc/enabled",
+  );
+  return data.enabled === true;
+}
+
 export async function changePassword(
   currentPassword: string,
   newPassword: string,
