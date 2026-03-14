@@ -34,19 +34,27 @@
 
 {#if $authLoading}
   <div
-    class="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center"
+    class="min-h-screen bg-cream-50 dark:bg-ink-950 flex items-center justify-center relative bg-texture"
   >
-    <div class="text-center">
-      <div
-        class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"
-      ></div>
-      <p class="text-slate-600 dark:text-slate-400">Loading...</p>
+    <div class="text-center animate-fade-in">
+      <div class="relative w-16 h-16 mx-auto mb-6">
+        <div
+          class="absolute inset-0 rounded-2xl bg-accent-500/20 dark:bg-accent-500/10"
+          style="animation: spin-slow 3s linear infinite"
+        ></div>
+        <div
+          class="absolute inset-1 rounded-xl bg-accent-600 flex items-center justify-center"
+        >
+          <span class="text-white font-display text-2xl font-bold">B</span>
+        </div>
+      </div>
+      <p class="text-ink-400 dark:text-ink-400 font-body text-sm tracking-wide">Loading your library…</p>
     </div>
   </div>
 {:else if !$user}
   <Auth />
 {:else}
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
+  <div class="min-h-screen bg-cream-50 dark:bg-ink-950 relative bg-texture">
     <Sidebar
       currentView={$currentView}
       onNavigate={(view) => navigate(view)}
@@ -56,22 +64,22 @@
 
     <!-- Mobile header with hamburger -->
     <div
-      class="sticky top-0 z-30 flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 py-3 md:hidden"
+      class="sticky top-0 z-30 flex items-center gap-3 bg-cream-50/90 dark:bg-ink-950/90 backdrop-blur-md border-b border-ink-100 dark:border-ink-800 px-4 py-3 md:hidden"
     >
       <button
         onclick={() => (sidebarOpen = true)}
-        class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+        class="p-1.5 rounded-lg text-ink-500 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
         aria-label="Open menu"
       >
         <Menu class="w-6 h-6" />
       </button>
-      <span class="text-lg font-bold text-slate-900 dark:text-white"
+      <span class="text-lg font-display font-bold text-ink-900 dark:text-cream-100"
         >biblioteka</span
       >
     </div>
 
     <main class="md:ml-64 p-4 md:p-8">
-      <div class="max-w-6xl mx-auto">
+      <div class="max-w-6xl mx-auto animate-fade-in">
         {#if $currentView === "dashboard"}
           <Dashboard />
         {:else if $currentView === "books"}

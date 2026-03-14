@@ -131,7 +131,7 @@
 <div>
   {#if error}
     <div
-      class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-4"
+      class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm mb-4 animate-scale-in"
     >
       {error}
     </div>
@@ -139,15 +139,15 @@
 
   {#if mode === "create" || mode === "edit"}
     <div
-      class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6"
+      class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6 animate-fade-in"
     >
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-xl font-display font-bold text-ink-900 dark:text-cream-100">
           {mode === "edit" ? "Edit Library" : "Create Library"}
         </h2>
         <button
           onclick={() => navigate("libraries")}
-          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+          class="text-ink-300 hover:text-ink-500 dark:hover:text-ink-200 transition-colors"
         >
           <X class="w-5 h-5" />
         </button>
@@ -155,17 +155,17 @@
 
       {#if formError}
         <div
-          class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-4"
+          class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm mb-4 animate-scale-in"
         >
           {formError}
         </div>
       {/if}
 
-      <form onsubmit={handleSubmit} class="space-y-4">
+      <form onsubmit={handleSubmit} class="space-y-5">
         <div>
           <label
             for="lib-name"
-            class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-1.5"
             >Name</label
           >
           <input
@@ -173,21 +173,21 @@
             type="text"
             bind:value={formName}
             placeholder="e.g. Fiction, Audiobooks"
-            class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100"
+            class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
             disabled={saving}
           />
         </div>
 
         <div>
           <span
-            class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-1.5"
             >Folders</span
           >
           <div class="space-y-2">
             {#each formPaths as path, i (i)}
               <div class="flex items-center gap-2">
                 <FolderOpen
-                  class="w-4 h-4 text-slate-400 flex-shrink-0"
+                  class="w-4 h-4 text-ink-300 flex-shrink-0"
                 />
                 <input
                   type="text"
@@ -197,7 +197,7 @@
                     formPaths = formPaths;
                   }}
                   placeholder="/path/to/books"
-                  class="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100 font-mono text-sm"
+                  class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 font-mono text-sm transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
                   disabled={saving}
                 />
                 {#if formPaths.length > 1}
@@ -206,7 +206,7 @@
                     onclick={() => {
                       formPaths = formPaths.filter((_, idx) => idx !== i);
                     }}
-                    class="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                    class="p-2 text-ink-300 hover:text-danger-600 transition-colors"
                     title="Remove folder"
                     disabled={saving}
                   >
@@ -221,7 +221,7 @@
             onclick={() => {
               formPaths = [...formPaths, ""];
             }}
-            class="mt-2 inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+            class="mt-2 inline-flex items-center gap-1.5 text-sm text-accent-600 dark:text-accent-400 hover:text-accent-700 dark:hover:text-accent-300 transition-colors font-medium"
             disabled={saving}
           >
             <Plus class="w-3.5 h-3.5" />
@@ -231,7 +231,7 @@
 
         <div>
           <p
-            class="text-sm text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2"
+            class="text-sm text-ink-400 dark:text-ink-400 mb-2 flex items-center gap-2"
           >
             <FolderOpen class="w-4 h-4" />
             Organization: Book Per Folder
@@ -247,10 +247,10 @@
               disabled={saving}
             />
             <div
-              class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-500 peer-checked:bg-blue-600"
+              class="w-11 h-6 bg-ink-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent-500 dark:bg-ink-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-ink-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-ink-600 peer-checked:bg-accent-600"
             ></div>
           </label>
-          <span class="text-sm text-slate-700 dark:text-slate-300"
+          <span class="text-sm text-ink-600 dark:text-ink-300"
             >Monitor for new content</span
           >
         </div>
@@ -260,7 +260,7 @@
             <button
               type="submit"
               disabled={saving}
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+              class="px-5 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all text-sm font-semibold disabled:opacity-50 shadow-md shadow-accent-600/20 active:scale-[0.98]"
             >
               {saving
                 ? "Saving..."
@@ -272,28 +272,28 @@
               type="button"
               onclick={() => navigate("libraries")}
               disabled={saving}
-              class="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium"
+              class="px-5 py-2.5 border border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-300 rounded-xl hover:bg-ink-50 dark:hover:bg-ink-800 transition-all text-sm font-medium"
             >
               Cancel
             </button>
           </div>
           {#if mode === "edit"}
             {#if showDeleteConfirm}
-              <div class="flex items-center gap-2">
-                <span class="text-sm text-red-600 dark:text-red-400"
+              <div class="flex items-center gap-2 animate-scale-in">
+                <span class="text-sm text-danger-600 dark:text-red-400"
                   >Delete this library?</span
                 >
                 <button
                   type="button"
                   onclick={handleDelete}
-                  class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  class="px-3 py-1.5 text-sm bg-danger-600 text-white rounded-lg hover:bg-danger-700 transition-colors"
                 >
                   Yes
                 </button>
                 <button
                   type="button"
                   onclick={() => (showDeleteConfirm = false)}
-                  class="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  class="px-3 py-1.5 text-sm border border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-300 rounded-lg hover:bg-ink-50 dark:hover:bg-ink-800 transition-colors"
                 >
                   No
                 </button>
@@ -302,7 +302,7 @@
               <button
                 type="button"
                 onclick={() => (showDeleteConfirm = true)}
-                class="inline-flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                class="inline-flex items-center gap-1.5 text-sm text-danger-600 hover:text-danger-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
                 disabled={saving}
               >
                 <Trash2 class="w-4 h-4" />
@@ -314,20 +314,20 @@
       </form>
     </div>
   {:else}
-    <div class="flex flex-col items-center justify-center py-24">
+    <div class="flex flex-col items-center justify-center py-24 animate-fade-in">
       <LibraryIcon
-        class="w-16 h-16 text-slate-300 dark:text-slate-600 mb-6"
+        class="w-16 h-16 text-ink-200 dark:text-ink-700 mb-6"
       />
       {#if $libraries.length === 0}
         <button
           onclick={() => navigate("libraries/new")}
-          class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-600 to-accent-700 text-white rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all text-base font-semibold shadow-md shadow-accent-600/20 hover:shadow-lg hover:shadow-accent-600/30 active:scale-[0.98]"
         >
           <Plus class="w-5 h-5" />
           Add A Library
         </button>
       {:else}
-        <p class="text-slate-500 dark:text-slate-400">
+        <p class="text-ink-400 dark:text-ink-400">
           Select a library from the sidebar or create a new one.
         </p>
       {/if}

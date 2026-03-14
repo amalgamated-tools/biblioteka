@@ -51,30 +51,36 @@
 </script>
 
 <div
-  class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4"
+  class="min-h-screen bg-cream-50 dark:bg-ink-950 flex items-center justify-center p-4 relative bg-texture"
 >
-  <div class="w-full max-w-md">
+  <!-- Decorative background elements -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-accent-200/30 dark:bg-accent-800/10 blur-3xl"></div>
+    <div class="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-accent-100/40 dark:bg-accent-900/5 blur-3xl"></div>
+  </div>
+
+  <div class="w-full max-w-md relative z-10 animate-fade-in-up">
     <div class="text-center mb-8">
       <div
-        class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4"
+        class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl mb-4 shadow-lg shadow-accent-500/20 dark:shadow-accent-500/10"
       >
         <BookCheck class="w-8 h-8 text-white" />
       </div>
-      <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+      <h1 class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mb-2">
         biblioteka
       </h1>
-      <p class="text-slate-600 dark:text-slate-400">
-        Manage your ebooks with ease
+      <p class="text-ink-400 dark:text-ink-400 font-body">
+        Your personal digital library
       </p>
     </div>
 
     <div
-      class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-slate-900/30 p-8"
+      class="bg-white dark:bg-ink-900 rounded-2xl shadow-xl shadow-ink-900/5 dark:shadow-ink-950/50 border border-ink-100 dark:border-ink-800 p-8"
     >
       {#if oidcEnabled}
         <a
           href="/api/auth/oidc/login"
-          class="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-600 dark:hover:bg-slate-500 text-white font-medium py-3 px-4 rounded-lg transition-colors mb-6"
+          class="w-full flex items-center justify-center gap-2 bg-ink-800 hover:bg-ink-900 dark:bg-ink-700 dark:hover:bg-ink-600 text-white font-medium py-3 px-4 rounded-xl transition-all hover:shadow-lg mb-6"
         >
           Login with Single Sign-On
         </a>
@@ -82,12 +88,12 @@
         <div class="relative mb-6">
           <div class="absolute inset-0 flex items-center">
             <div
-              class="w-full border-t border-slate-200 dark:border-slate-700"
+              class="w-full border-t border-ink-100 dark:border-ink-700"
             ></div>
           </div>
           <div class="relative flex justify-center text-sm">
             <span
-              class="px-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+              class="px-3 bg-white dark:bg-ink-900 text-ink-400 dark:text-ink-400"
               >or</span
             >
           </div>
@@ -95,23 +101,23 @@
       {/if}
 
       <div
-        class="flex gap-2 mb-6 bg-slate-100 dark:bg-slate-700 rounded-lg p-1"
+        class="flex gap-1 mb-6 bg-cream-100 dark:bg-ink-800 rounded-xl p-1"
       >
         <button
           id="login-btn"
           onclick={() => (isLogin = true)}
-          class="flex-1 py-2 px-4 rounded-md font-medium transition-all {isLogin
-            ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
-            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
+          class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {isLogin
+            ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
+            : 'text-ink-400 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'}"
         >
           Login
         </button>
         <button
           id="signup-btn"
           onclick={() => (isLogin = false)}
-          class="flex-1 py-2 px-4 rounded-md font-medium transition-all {!isLogin
-            ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
-            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
+          class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {!isLogin
+            ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
+            : 'text-ink-400 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'}"
         >
           Sign Up
         </button>
@@ -122,7 +128,7 @@
           <div>
             <label
               for="name"
-              class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
             >
               Name
             </label>
@@ -131,7 +137,7 @@
               type="text"
               bind:value={name}
               autocomplete="name"
-              class="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
               placeholder="Your name"
               disabled={loading}
             />
@@ -140,7 +146,7 @@
         <div>
           <label
             for="email"
-            class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+            class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
           >
             Email
           </label>
@@ -149,7 +155,7 @@
             type="email"
             bind:value={email}
             autocomplete="email"
-            class="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
             placeholder="you@example.com"
             disabled={loading}
           />
@@ -158,7 +164,7 @@
         <div>
           <label
             for="password"
-            class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+            class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
           >
             Password
           </label>
@@ -167,7 +173,7 @@
             type="password"
             bind:value={password}
             autocomplete={isLogin ? "current-password" : "new-password"}
-            class="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
             placeholder="••••••••"
             disabled={loading}
           />
@@ -175,7 +181,7 @@
 
         {#if error}
           <div
-            class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm"
+            class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
           >
             {error}
           </div>
@@ -184,7 +190,7 @@
         <button
           type="submit"
           disabled={loading}
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-accent-600/20 hover:shadow-lg hover:shadow-accent-600/30 active:scale-[0.98]"
         >
           {loading ? "Processing..." : isLogin ? "Sign In" : "Create Account"}
         </button>

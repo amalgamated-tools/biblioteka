@@ -51,7 +51,7 @@
 <!-- Mobile overlay backdrop -->
 {#if open}
   <button
-    class="fixed inset-0 z-40 bg-black/50 md:hidden"
+    class="fixed inset-0 z-40 bg-ink-900/60 dark:bg-ink-950/70 backdrop-blur-sm md:hidden"
     onclick={onClose}
     aria-label="Close sidebar"
     tabindex="-1"
@@ -59,20 +59,20 @@
 {/if}
 
 <aside
-  class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col transition-transform duration-200 ease-in-out {open
+  class="fixed inset-y-0 left-0 z-50 w-64 bg-ink-950 text-white flex flex-col transition-transform duration-200 ease-in-out {open
     ? 'translate-x-0'
     : '-translate-x-full'} md:translate-x-0"
 >
-  <div class="px-5 py-5 border-b border-slate-700">
+  <div class="px-5 py-5 border-b border-ink-800/60">
     <div class="flex items-center gap-3">
       <div
-        class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center"
+        class="w-10 h-10 bg-gradient-to-br from-accent-500 to-accent-700 rounded-xl flex items-center justify-center shadow-lg shadow-accent-700/20"
       >
-        <BookCheck class="w-6 h-6 text-white" />
+        <BookCheck class="w-5 h-5 text-white" />
       </div>
       <div>
-        <h1 class="text-lg font-bold">biblioteka</h1>
-        <p class="text-xs text-slate-400 truncate">{$user?.email}</p>
+        <h1 class="text-lg font-display font-bold tracking-tight">biblioteka</h1>
+        <p class="text-xs text-ink-400 truncate">{$user?.email}</p>
       </div>
     </div>
   </div>
@@ -81,17 +81,17 @@
     <!-- Home group -->
     <div>
       <p
-        class="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500"
+        class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
       >
         Home
       </p>
-      <div class="space-y-1">
+      <div class="space-y-0.5">
         <button
           onclick={() => handleViewNavigate("dashboard")}
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
           'dashboard'
-            ? 'bg-blue-600 text-white'
-            : 'text-slate-300 hover:bg-slate-800 hover:text-white'}"
+            ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
+            : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
         >
           <LayoutDashboard class="w-5 h-5" />
           Dashboard
@@ -99,10 +99,10 @@
         {#if $libraries.length > 0}
           <button
             onclick={() => handleViewNavigate("books")}
-            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
             'books'
-              ? 'bg-blue-600 text-white'
-              : 'text-slate-300 hover:bg-slate-800 hover:text-white'}"
+              ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
+              : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
           >
             <BookOpen class="w-5 h-5" />
             All Books
@@ -113,30 +113,30 @@
 
     <!-- Libraries group -->
     <div>
-      <div class="flex items-center justify-between px-3 mb-1">
+      <div class="flex items-center justify-between px-3 mb-2">
         <p
-          class="text-xs font-semibold uppercase tracking-wider text-slate-500"
+          class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
         >
           Libraries
         </p>
         <button
           onclick={() => handleSidebarNavigate("libraries/new")}
-          class="text-slate-500 hover:text-slate-300 transition-colors"
+          class="text-ink-500 hover:text-accent-400 transition-colors"
           title="Create library"
         >
           <Plus class="w-4 h-4" />
         </button>
       </div>
-      <div class="space-y-1">
+      <div class="space-y-0.5">
         {#each $libraries as lib (lib.id)}
           <button
             onclick={() => handleSidebarNavigate(`libraries/edit/${lib.id}`)}
-            class="group w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-sm transition-colors text-slate-300 hover:bg-slate-800 hover:text-white"
+            class="group w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-sm transition-all text-ink-300 hover:bg-ink-800/70 hover:text-white"
           >
-            <Library class="w-4 h-4 flex-shrink-0" />
+            <Library class="w-4 h-4 flex-shrink-0 text-ink-500 group-hover:text-accent-400 transition-colors" />
             <span class="truncate flex-1 text-left">{lib.name}</span>
             <Settings2
-              class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-slate-500 transition-all"
+              class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-ink-500 transition-all"
             />
           </button>
         {/each}
@@ -145,13 +145,13 @@
 
     <!-- Settings -->
     <div>
-      <div class="space-y-1">
+      <div class="space-y-0.5">
         <button
           onclick={() => handleViewNavigate("settings")}
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors {currentView ===
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
           'settings'
-            ? 'bg-blue-600 text-white'
-            : 'text-slate-300 hover:bg-slate-800 hover:text-white'}"
+            ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
+            : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
         >
           <SettingsIcon class="w-5 h-5" />
           Settings
@@ -159,15 +159,15 @@
       </div>
     </div>
   </nav>
-  <div class="px-5 py-2 border-t border-slate-700">
-    <p class="text-xs text-slate-500 text-center">v0.0.1</p>
+  <div class="px-5 py-2 border-t border-ink-800/60">
+    <p class="text-[10px] text-ink-600 text-center tracking-wider uppercase">v0.0.1</p>
   </div>
 
-  <div class="px-3 py-4 border-t border-slate-700">
+  <div class="px-3 py-4 border-t border-ink-800/60">
     <button
       id="logout-button"
       onclick={handleLogout}
-      class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+      class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-ink-400 hover:bg-ink-800/70 hover:text-white transition-all"
     >
       <LogOut class="w-5 h-5" />
       Logout
