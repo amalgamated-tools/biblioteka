@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 )
@@ -206,7 +207,7 @@ func TestIsAdmin(t *testing.T) {
 	u1, _ := d.CreateUser("First", "first@example.com", "pw")
 	u2, _ := d.CreateUser("Second", "second@example.com", "pw")
 
-	isAdmin, err := d.IsAdmin(u1.ID)
+	isAdmin, err := d.IsAdmin(context.Background(), u1.ID)
 	if err != nil {
 		t.Fatalf("IsAdmin() error: %v", err)
 	}
@@ -214,7 +215,7 @@ func TestIsAdmin(t *testing.T) {
 		t.Error("first user should be admin")
 	}
 
-	isAdmin2, err := d.IsAdmin(u2.ID)
+	isAdmin2, err := d.IsAdmin(context.Background(), u2.ID)
 	if err != nil {
 		t.Fatalf("IsAdmin() for second user error: %v", err)
 	}
@@ -234,7 +235,7 @@ func TestSetAdmin(t *testing.T) {
 		t.Fatalf("SetAdmin(true) error: %v", err)
 	}
 
-	isAdmin, _ := d.IsAdmin(u2.ID)
+	isAdmin, _ := d.IsAdmin(context.Background(), u2.ID)
 	if !isAdmin {
 		t.Error("second user should be admin after promotion")
 	}
@@ -244,7 +245,7 @@ func TestSetAdmin(t *testing.T) {
 		t.Fatalf("SetAdmin(false) error: %v", err)
 	}
 
-	isAdmin, _ = d.IsAdmin(u2.ID)
+	isAdmin, _ = d.IsAdmin(context.Background(), u2.ID)
 	if isAdmin {
 		t.Error("second user should not be admin after demotion")
 	}

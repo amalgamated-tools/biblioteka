@@ -132,6 +132,14 @@ export async function getMe(): Promise<User> {
   return request<User>("GET", "/api/auth/me");
 }
 
+export async function logout(): Promise<void> {
+  try {
+    await request<{ message: string }>("POST", "/api/auth/logout");
+  } catch {
+    // Best-effort; cookie may already be cleared or expired.
+  }
+}
+
 export async function getOidcEnabled(): Promise<boolean> {
   const data = await request<{ enabled: boolean }>(
     "GET",
