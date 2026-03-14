@@ -213,6 +213,8 @@ script/            Build and release helper scripts
 
 The server exposes a REST API under `/api`. See [docs/api-reference.md](docs/api-reference.md) for the full endpoint reference including request/response shapes and authentication requirements.
 
+An **interactive Swagger UI** is available at `/swagger/` (e.g. `http://localhost:8080/swagger/`). It requires a valid JWT — log in first, then navigate to the UI to browse endpoints and send requests directly from the browser. The raw OpenAPI spec is served at `/swagger/doc.json`.
+
 A health check endpoint is available at `GET /api/health` — it returns `200 OK` with a JSON body like `{"status":"ok"}` and requires no authentication.
 
 ## Frontend

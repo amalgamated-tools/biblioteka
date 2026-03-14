@@ -745,6 +745,26 @@ Delete a book file record (does not delete the file from disk). Returns `204 No 
 
 ---
 
+## Interactive API Documentation (Swagger UI)
+
+### `GET /swagger/` 🔒
+
+An interactive Swagger UI for browsing and trying out the API directly from the browser (powered by [swaggo/http-swagger](https://github.com/swaggo/http-swagger)).
+
+| Property | Value |
+|----------|-------|
+| **URL** | `/swagger/` |
+| **Auth** | 🔒 Valid JWT required (same token as API calls) |
+| **Machine-readable spec** | `/swagger/doc.json` (OpenAPI 2.0 / Swagger JSON) |
+
+The UI is always available — it does not depend on Redis or any external service. It requires an authenticated session; accessing it without a valid JWT returns `401 Unauthorized`.
+
+Navigate to `http://<host>:<port>/swagger/` in a browser after logging in to explore all API endpoints, inspect request/response schemas, and execute requests interactively.
+
+> **Tip:** You can also download the raw OpenAPI spec from `/swagger/doc.json` to import into tools like Postman, Insomnia, or API client generators.
+
+---
+
 ## Monitoring Dashboard
 
 ### `GET /asynqmon/` 🔒
