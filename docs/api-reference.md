@@ -223,7 +223,7 @@ Save OIDC provider settings. The server performs OIDC discovery on the `issuer_u
 |-----------------|--------|----------|-------------|
 | `issuer_url`    | string | ✓        | OIDC provider issuer URL |
 | `client_id`     | string | ✓        | OAuth 2.0 client ID |
-| `client_secret` | string |          | OAuth 2.0 client secret; required on initial setup, omit to keep existing |
+| `client_secret` | string | ✓*       | OAuth 2.0 client secret; required on initial setup, omit to keep existing |
 | `redirect_uri`  | string | ✓        | Callback URL registered with the provider |
 
 **Response body (`200`):**
@@ -232,7 +232,7 @@ Save OIDC provider settings. The server performs OIDC discovery on the `issuer_u
 { "message": "OIDC configuration saved successfully" }
 ```
 
-> **Note:** If the `OIDC_ISSUER_URL` environment variable is set, the response message will warn that the environment variable takes precedence over these stored settings at runtime.
+> **Note:** If the `OIDC_ISSUER_URL` environment variable is set when the `PUT` request is made, the success response message will instead warn that the environment variable takes precedence and instruct you to remove it to use the stored settings.
 
 ---
 
