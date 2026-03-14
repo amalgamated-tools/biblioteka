@@ -1,7 +1,5 @@
 import type {
   User,
-  ArrService,
-  ArrServiceInput,
   Library,
   LibraryInput,
   Author,
@@ -150,29 +148,6 @@ export async function changePassword(
     currentPassword,
     newPassword,
   });
-}
-
-// Arr Services
-
-export async function listArrServices(): Promise<ArrService[]> {
-  return request<ArrService[]>("GET", "/api/arr-services");
-}
-
-export async function createArrService(
-  input: ArrServiceInput,
-): Promise<ArrService> {
-  return request<ArrService>("POST", "/api/arr-services", input);
-}
-
-export async function updateArrService(
-  id: string,
-  input: ArrServiceInput,
-): Promise<ArrService> {
-  return request<ArrService>("PUT", `/api/arr-services/${id}`, input);
-}
-
-export async function deleteArrService(id: string): Promise<void> {
-  await request<void>("DELETE", `/api/arr-services/${id}`);
 }
 
 // Config

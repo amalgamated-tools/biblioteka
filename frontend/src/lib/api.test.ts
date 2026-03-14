@@ -9,10 +9,6 @@ import {
   getMe,
   getOidcEnabled,
   changePassword,
-  listArrServices,
-  createArrService,
-  updateArrService,
-  deleteArrService,
   getConfigStatus,
   getOidcConfig,
   setOidcConfig,
@@ -172,22 +168,6 @@ describe("request (via API functions)", () => {
     }
   });
 
-  it("returns undefined for 204 No Content", async () => {
-    const resp = {
-      ok: true,
-      status: 204,
-      statusText: "No Content",
-      headers: new Headers(),
-      json: vi.fn(),
-      text: vi.fn(),
-    } as unknown as Response;
-    (fetchMock).mockResolvedValue(resp);
-
-    const result = await deleteArrService("123");
-    expect(result).toBeUndefined();
-    expect(resp.json).not.toHaveBeenCalled();
-  });
-
   it("falls back to statusText when no error message in response", async () => {
     expect.assertions(1);
     const resp = {
@@ -289,58 +269,6 @@ describe("Auth API functions", () => {
       currentPassword: "old",
       newPassword: "new",
     });
-  });
-});
-
-describe("Arr Services API", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
-  });
-
-  it("listArrServices calls GET /api/arr-services", async () => {
-    mockFetchResponse([{ id: "1", name: "radarr" }]);
-    const result = await listArrServices();
-    expect(result).toEqual([{ id: "1", name: "radarr" }]);
-  });
-
-  it("createArrService sends POST with input", async () => {
-    const input = { name: "My Radarr", type: "radarr" as const, url: "http://radarr", api_key: "key" };
-    mockFetchResponse({ ...input, id: "1" });
-
-    await createArrService(input);
-
-    const [url, options] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/arr-services");
-    expect(options.method).toBe("POST");
-  });
-
-  it("updateArrService sends PUT with id in path", async () => {
-    const input = { name: "Updated", type: "sonarr" as const, url: "http://sonarr", api_key: "key" };
-    mockFetchResponse({ ...input, id: "42" });
-
-    await updateArrService("42", input);
-
-    const [url, options] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/arr-services/42");
-    expect(options.method).toBe("PUT");
-  });
-
-  it("deleteArrService sends DELETE with id in path", async () => {
-    const resp = {
-      ok: true,
-      status: 204,
-      headers: new Headers(),
-      json: vi.fn(),
-      text: vi.fn(),
-    } as unknown as Response;
-    (fetchMock).mockResolvedValue(resp);
-
-    await deleteArrService("42");
-
-    const [url, options] = (fetchMock).mock.calls[0];
-    expect(url).toBe("/api/arr-services/42");
-    expect(options.method).toBe("DELETE");
   });
 });
 
