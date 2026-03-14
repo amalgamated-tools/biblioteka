@@ -104,8 +104,9 @@ The first account created is automatically granted admin privileges. Admins can:
 When Redis is configured, Biblioteka embeds the [Asynqmon](https://github.com/hibiken/asynqmon) web UI for monitoring and managing background jobs.
 
 - **URL:** `http://localhost:8080/asynqmon/`
-- **Authentication:** Any valid JWT token (same credentials as the main application login)
-- **Availability:** Only mounted when `REDIS_URL` is configured and the worker is active
+- **Authentication:** Requires an `Authorization: Bearer <JWT>` header (same JWTs as the main application/API)
+- **Supplying the token:** Browsers do not send this header automatically. In production you should typically run Biblioteka behind a reverse proxy (nginx, Traefik, Caddy, etc.) that injects the `Authorization` header for trusted admin users, or access `/asynqmon/` via tools that let you set custom headers.
+- **Availability:** Mounted whenever the server is started with Redis/worker support (default `REDIS_URL=redis://localhost:6379`) and requires a reachable Redis instance to function correctly
 
 The dashboard shows queued, active, completed, and failed jobs, and lets you retry or delete individual tasks.
 
