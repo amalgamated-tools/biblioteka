@@ -19,11 +19,11 @@ import (
 // Use wg.Add(n) before triggering n Enqueue calls, then wg.Wait() to
 // synchronise with goroutines that call Enqueue asynchronously.
 type mockEnqueuer struct {
-	mu      sync.Mutex
-	wg      sync.WaitGroup
-	useWg   bool // set to true when wg.Add has been called
-	jobs    []enqueued
-	err     error // if set, Enqueue returns this error
+	mu    sync.Mutex
+	wg    sync.WaitGroup
+	useWg bool // set to true when wg.Add has been called
+	jobs  []enqueued
+	err   error // if set, Enqueue returns this error
 }
 
 type enqueued struct {
