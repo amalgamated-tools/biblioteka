@@ -65,20 +65,20 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			}
 
 			if d.IsDir() {
-				slog.Debug("scan:path skipping directory", slog.String("path", path))
+				slog.DebugContext(ctx, "scan:path skipping directory", slog.String("path", path))
 				return nil
 			}
 
 			ext := strings.ToLower(filepath.Ext(path))
 			fileType, ok := supportedExtensions[ext]
 			if !ok {
-				slog.Debug("scan:path skipping unsupported file", slog.String("path", path), slog.String("ext", ext))
+				slog.DebugContext(ctx, "scan:path skipping unsupported file", slog.String("path", path), slog.String("ext", ext))
 				return nil
 			}
 
 			info, err := d.Info()
 			if err != nil {
-				slog.Warn("error reading file info", slog.String("path", path), slog.Any("error", err))
+				slog.WarnContext(ctx, "error reading file info", slog.String("path", path), slog.Any("error", err))
 				return nil
 			}
 
@@ -94,12 +94,12 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 				FileSize: info.Size(),
 			})
 			if err != nil {
-				slog.Warn("error enqueuing process:file job", slog.String("path", absPath), slog.Any("error", err))
+				slog.WarnContext(ctx, "error enqueuing process:file job", slog.String("path", absPath), slog.Any("error", err))
 				return nil
 			}
 
 			found++
-			slog.Info("enqueued file for processing",
+			slog.InfoContext(ctx, "enqueued file for processing",
 				slog.String("type", fileType),
 				slog.String("path", absPath),
 			)
