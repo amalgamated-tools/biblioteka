@@ -120,6 +120,22 @@ DROP TABLE ...;
 
 Name files with a timestamp prefix: `YYYYMMDDHHMMSS_description.sql`. Migrations run automatically on startup — no separate command needed.
 
+## Continuous Integration
+
+The test workflow runs on pushes and pull requests targeting `main` or `develop`, but only when the following paths are modified:
+
+| Path pattern | What it covers |
+|---|---|
+| `cmd/**` | Server and CLI entry points |
+| `internal/**` | All backend packages |
+| `frontend/**` | Svelte SPA and its tests |
+| `db/**` | Migrations and schema |
+| `go.mod`, `go.sum` | Go module changes |
+| `.golangci.yml` | Linter configuration |
+| `.github/workflows/test.yml` | Workflow file itself |
+
+> **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you want CI to run on a docs-only PR, add a trivial whitespace change to one of the paths above, or trigger it manually via **Actions → Test → Run workflow**.
+
 ## Submitting a Pull Request
 
 1. Fork the repository and create a feature branch from `main`.
