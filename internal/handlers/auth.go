@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -342,6 +343,34 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !sameOrigin(r) {
+		writeError(w, http.StatusForbidden, "invalid logout request origin")
+		return
+	}
+
 	clearAuthCookie(w, h.SecureCookies)
 	writeJSON(w, http.StatusOK, map[string]string{"message": "logged out"})
+}
+
+func sameOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin != "" {
+		u, err := url.Parse(origin)
+		if err != nil {
+			return false
+		}
+		return strings.EqualFold(u.Host, r.Host)
+	}
+
+	referer := r.Header.Get("Referer")
+	if referer == "" {
+		return false
+	}
+
+	u, err := url.Parse(referer)
+	if err != nil {
+		return false
+	}
+
+	return strings.EqualFold(u.Host, r.Host)
 }

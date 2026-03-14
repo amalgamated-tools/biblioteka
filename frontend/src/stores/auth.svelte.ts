@@ -71,9 +71,14 @@ class AuthStore {
   }
 
   async signOut(): Promise<void> {
-    api.clearToken();
-    await api.logout();
+    // Clear local auth state immediately so UI updates are instantaneous.
     this.user = null;
+    api.clearToken();
+    try {
+      await api.logout();
+    } catch {
+      // Ignore logout failures; local sign-out has already completed.
+    }
   }
 }
 

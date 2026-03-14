@@ -246,7 +246,7 @@ func (s *Server) setupRoutes() {
 	// Public auth routes (rate-limited)
 	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Limit(s.authHandler.Signup))
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
-	s.mux.HandleFunc("/api/auth/logout", s.authLimiter.Limit(s.authHandler.Logout))
+	s.mux.Handle("/api/auth/logout", s.requireAuth(http.HandlerFunc(s.authLimiter.Limit(s.authHandler.Logout))))
 
 	// OIDC auth routes — always registered, check handler at request time
 	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
