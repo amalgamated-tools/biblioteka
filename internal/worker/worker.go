@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/hibiken/asynq"
 )
@@ -101,7 +102,7 @@ func (w *Worker) Enqueue(ctx context.Context, name string, payload any) (string,
 		return "", fmt.Errorf("marshal payload: %w", err)
 	}
 
-	task := asynq.NewTask(name, body, asynq.MaxRetry(DefaultMaxRetry), asynq.Queue(QueueName))
+	task := asynq.NewTask(name, body, asynq.MaxRetry(DefaultMaxRetry), asynq.Queue(QueueName), asynq.Unique(24*time.Hour))
 	info, err := w.client.EnqueueContext(ctx, task)
 	if err != nil {
 		return "", fmt.Errorf("enqueue task %s: %w", name, err)
@@ -109,7 +110,8 @@ func (w *Worker) Enqueue(ctx context.Context, name string, payload any) (string,
 	return info.ID, nil
 }
 
-// Close shuts down the asynq client connection.
+// Close shuts down the scheduler and the asynq client connection.
 func (w *Worker) Close() error {
+	w.scheduler.Shutdown()
 	return w.client.Close()
 }
