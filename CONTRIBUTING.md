@@ -1,4 +1,4 @@
-# Contributing to Fichemos
+# Contributing to biblioteka
 
 Thanks for your interest in contributing! This guide covers everything you need to get started.
 
@@ -14,7 +14,7 @@ Thanks for your interest in contributing! This guide covers everything you need 
 ```bash
 # Clone the repository
 git clone https://github.com/amalgamated-tools/biblioteka.git
-cd fichemos
+cd biblioteka
 
 # Install frontend dependencies
 cd frontend && pnpm install && cd ..
