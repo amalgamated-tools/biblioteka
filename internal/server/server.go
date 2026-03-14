@@ -20,6 +20,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 
+	"github.com/hibiken/asynqmon"
 	"github.com/justinas/alice"
 	"golang.org/x/sync/errgroup"
 )
@@ -296,6 +297,16 @@ func (s *Server) setupRoutes() {
 		w.WriteHeader(http.StatusOK)
 		_, _ = fmt.Fprint(w, `{"status":"ok"}`)
 	})
+
+	// Asynq monitoring dashboard
+	if s.Worker != nil {
+		mon := asynqmon.New(asynqmon.Options{
+			RootPath:     "/asynqmon",
+			RedisConnOpt: s.Worker.RedisConnOpt(),
+		})
+		s.mux.Handle(mon.RootPath()+"/", s.requireAuth(mon))
+	}
+
 	s.setupFrontend()
 }
 
