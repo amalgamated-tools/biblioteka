@@ -338,21 +338,26 @@ func (h *BookHandler) deleteBook(w http.ResponseWriter, _ *http.Request, id stri
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// respondBookAuthors fetches and writes the author list for a book as JSON.
+func (h *BookHandler) respondBookAuthors(w http.ResponseWriter, bookID string) {
+	authors, err := h.DB.GetBookAuthors(bookID)
+	if err != nil {
+		slog.Error("failed to get book authors", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to get book authors")
+		return
+	}
+	dtos := make([]authorDTO, 0, len(authors))
+	for i := range authors {
+		dtos = append(dtos, toAuthorDTO(&authors[i]))
+	}
+	writeJSON(w, http.StatusOK, dtos)
+}
+
 // handleBookAuthors handles GET/PUT /api/books/{id}/authors.
 func (h *BookHandler) handleBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
 	switch r.Method {
 	case http.MethodGet:
-		authors, err := h.DB.GetBookAuthors(bookID)
-		if err != nil {
-			slog.Error("failed to get book authors", "error", err)
-			writeError(w, http.StatusInternalServerError, "failed to get book authors")
-			return
-		}
-		dtos := make([]authorDTO, 0, len(authors))
-		for i := range authors {
-			dtos = append(dtos, toAuthorDTO(&authors[i]))
-		}
-		writeJSON(w, http.StatusOK, dtos)
+		h.respondBookAuthors(w, bookID)
 
 	case http.MethodPut:
 		var req struct {
@@ -367,41 +372,36 @@ func (h *BookHandler) handleBookAuthors(w http.ResponseWriter, r *http.Request, 
 			writeError(w, http.StatusInternalServerError, "failed to set book authors")
 			return
 		}
-		authors, err := h.DB.GetBookAuthors(bookID)
-		if err != nil {
-			slog.Error("failed to get book authors", "error", err)
-			writeError(w, http.StatusInternalServerError, "failed to get book authors")
-			return
-		}
-		dtos := make([]authorDTO, 0, len(authors))
-		for i := range authors {
-			dtos = append(dtos, toAuthorDTO(&authors[i]))
-		}
-		writeJSON(w, http.StatusOK, dtos)
+		h.respondBookAuthors(w, bookID)
 
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
+// respondBookSeries fetches and writes the series list for a book as JSON.
+func (h *BookHandler) respondBookSeries(w http.ResponseWriter, bookID string) {
+	entries, err := h.DB.GetBookSeries(bookID)
+	if err != nil {
+		slog.Error("failed to get book series", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to get book series")
+		return
+	}
+	dtos := make([]bookSeriesEntryDTO, 0, len(entries))
+	for _, e := range entries {
+		dtos = append(dtos, bookSeriesEntryDTO{
+			Series:   toSeriesDTO(&e.Series),
+			Position: e.Position,
+		})
+	}
+	writeJSON(w, http.StatusOK, dtos)
+}
+
 // handleBookSeries handles GET/PUT /api/books/{id}/series.
 func (h *BookHandler) handleBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
 	switch r.Method {
 	case http.MethodGet:
-		entries, err := h.DB.GetBookSeries(bookID)
-		if err != nil {
-			slog.Error("failed to get book series", "error", err)
-			writeError(w, http.StatusInternalServerError, "failed to get book series")
-			return
-		}
-		dtos := make([]bookSeriesEntryDTO, 0, len(entries))
-		for _, e := range entries {
-			dtos = append(dtos, bookSeriesEntryDTO{
-				Series:   toSeriesDTO(&e.Series),
-				Position: e.Position,
-			})
-		}
-		writeJSON(w, http.StatusOK, dtos)
+		h.respondBookSeries(w, bookID)
 
 	case http.MethodPut:
 		var req struct {
@@ -416,20 +416,7 @@ func (h *BookHandler) handleBookSeries(w http.ResponseWriter, r *http.Request, b
 			writeError(w, http.StatusInternalServerError, "failed to set book series")
 			return
 		}
-		entries, err := h.DB.GetBookSeries(bookID)
-		if err != nil {
-			slog.Error("failed to get book series", "error", err)
-			writeError(w, http.StatusInternalServerError, "failed to get book series")
-			return
-		}
-		dtos := make([]bookSeriesEntryDTO, 0, len(entries))
-		for _, e := range entries {
-			dtos = append(dtos, bookSeriesEntryDTO{
-				Series:   toSeriesDTO(&e.Series),
-				Position: e.Position,
-			})
-		}
-		writeJSON(w, http.StatusOK, dtos)
+		h.respondBookSeries(w, bookID)
 
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")

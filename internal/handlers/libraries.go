@@ -98,6 +98,36 @@ func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dtos)
 }
 
+// validateAndPrepareLibrary validates the library request fields and encodes paths to JSON.
+// It writes the appropriate error response and returns ("", false) on failure.
+func validateAndPrepareLibrary(w http.ResponseWriter, req *libraryRequest) (pathsJSON string, ok bool) {
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
+		return "", false
+	}
+	if len(req.Paths) == 0 {
+		writeError(w, http.StatusBadRequest, "at least one path is required")
+		return "", false
+	}
+	if slices.Contains(req.Paths, "") {
+		writeError(w, http.StatusBadRequest, "paths must not be empty strings")
+		return "", false
+	}
+	if err := validatePaths(req.Paths); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return "", false
+	}
+	if req.OrganizationType == "" {
+		req.OrganizationType = "book_per_folder"
+	}
+	data, err := json.Marshal(req.Paths)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to encode paths")
+		return "", false
+	}
+	return string(data), true
+}
+
 func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 	var req libraryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -105,36 +135,12 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
+	pathsJSON, ok := validateAndPrepareLibrary(w, &req)
+	if !ok {
 		return
 	}
 
-	if len(req.Paths) == 0 {
-		writeError(w, http.StatusBadRequest, "at least one path is required")
-		return
-	}
-	if slices.Contains(req.Paths, "") {
-		writeError(w, http.StatusBadRequest, "paths must not be empty strings")
-		return
-	}
-
-	if err := validatePaths(req.Paths); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	if req.OrganizationType == "" {
-		req.OrganizationType = "book_per_folder"
-	}
-
-	pathsJSON, err := json.Marshal(req.Paths)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to encode paths")
-		return
-	}
-
-	lib, err := h.DB.CreateLibrary(req.Name, string(pathsJSON), req.OrganizationType, req.Monitored)
+	lib, err := h.DB.CreateLibrary(req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
 		if err == db.ErrLibraryNameExists {
 			writeError(w, http.StatusConflict, "a library with that name already exists")
@@ -170,36 +176,12 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
-	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
+	pathsJSON, ok := validateAndPrepareLibrary(w, &req)
+	if !ok {
 		return
 	}
 
-	if len(req.Paths) == 0 {
-		writeError(w, http.StatusBadRequest, "at least one path is required")
-		return
-	}
-	if slices.Contains(req.Paths, "") {
-		writeError(w, http.StatusBadRequest, "paths must not be empty strings")
-		return
-	}
-
-	if err := validatePaths(req.Paths); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	if req.OrganizationType == "" {
-		req.OrganizationType = "book_per_folder"
-	}
-
-	pathsJSON, err := json.Marshal(req.Paths)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to encode paths")
-		return
-	}
-
-	lib, err := h.DB.UpdateLibrary(id, req.Name, string(pathsJSON), req.OrganizationType, req.Monitored)
+	lib, err := h.DB.UpdateLibrary(id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(w, http.StatusNotFound, "library not found")
