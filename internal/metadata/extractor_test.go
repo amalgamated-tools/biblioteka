@@ -99,10 +99,11 @@ func makeTestPDF(t *testing.T, path, title, author string) {
 		t.Fatalf("write pdf: %v", err)
 	}
 
-	// Use exiftool to write proper metadata into the PDF
+	// Use exiftool to write proper metadata into the PDF. If exiftool is not
+	// available in the environment, skip the test rather than failing.
 	et, err := exiftool.NewExiftool()
 	if err != nil {
-		t.Fatalf("create exiftool for pdf setup: %v", err)
+		t.Skipf("skipping PDF metadata test: exiftool not available: %v", err)
 	}
 	defer et.Close()
 

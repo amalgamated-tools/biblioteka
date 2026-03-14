@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -35,7 +36,18 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 			return fmt.Errorf("process file payload: path is required")
 		}
 
-		title := strings.TrimSuffix(p.FileName, "."+p.FileType)
+		if p.FileName == "" {
+			return fmt.Errorf("process file payload: file_name is required")
+		}
+
+		if p.FileType == "" {
+			return fmt.Errorf("process file payload: file_type is required")
+		}
+
+		title := p.FileName
+		if ext := filepath.Ext(p.FileName); ext != "" && strings.EqualFold(ext[1:], p.FileType) {
+			title = strings.TrimSuffix(p.FileName, ext)
+		}
 
 		slog.Info("processing file",
 			slog.String("title", title),
@@ -43,7 +55,7 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 			slog.String("path", p.Path),
 		)
 
-		book, err := database.CreateBook(title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := database.CreateBook(title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			return fmt.Errorf("create book for %s: %w", p.Path, err)
 		}

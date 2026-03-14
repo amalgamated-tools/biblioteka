@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Bootstrap script for development dependencies.
-# Usage: ./scripts/bootstrap.sh
+# Usage: ./script/bootstrap
 
 set -e
 
