@@ -78,6 +78,16 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// listAuthors godoc
+// @Summary     List authors
+// @Description Returns all authors
+// @Tags        Authors
+// @Produce     json
+// @Security    BearerAuth
+// @Failure     401 {object} errorResponse
+// @Success     200 {array}  authorDTO
+// @Failure     500 {object} errorResponse
+// @Router      /authors [get]
 func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing authors")
 	authors, err := h.DB.ListAuthors()
@@ -97,6 +107,20 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dtos)
 }
 
+// createAuthor godoc
+// @Summary     Create an author
+// @Description Create a new author
+// @Tags        Authors
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Failure     401 {object} errorResponse
+// @Param       body body     authorRequest true "Author data"
+// @Success     201  {object} authorDTO
+// @Failure     400  {object} errorResponse
+// @Failure     409  {object} errorResponse
+// @Failure     500  {object} errorResponse
+// @Router      /authors [post]
 func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 	var req authorRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -126,6 +150,19 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, toAuthorDTO(a))
 }
 
+// getAuthor godoc
+// @Summary     Get an author
+// @Description Returns a single author by ID
+// @Tags        Authors
+// @Produce     json
+// @Security    BearerAuth
+// @Failure     401 {object} errorResponse
+// @Param       id  path     string true "Author ID"
+// @Success     200 {object} authorDTO
+// @Failure     400 {object} errorResponse
+// @Failure     404 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /authors/{id} [get]
 func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching author", slog.String("author_id", id))
 	a, err := h.DB.GetAuthor(id)
@@ -142,6 +179,22 @@ func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id str
 	writeJSON(w, http.StatusOK, toAuthorDTO(a))
 }
 
+// updateAuthor godoc
+// @Summary     Update an author
+// @Description Update an existing author
+// @Tags        Authors
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Failure     401 {object} errorResponse
+// @Param       id   path     string        true "Author ID"
+// @Param       body body     authorRequest true "Author data"
+// @Success     200  {object} authorDTO
+// @Failure     400  {object} errorResponse
+// @Failure     404  {object} errorResponse
+// @Failure     409  {object} errorResponse
+// @Failure     500  {object} errorResponse
+// @Router      /authors/{id} [put]
 func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id string) {
 	var req authorRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -174,6 +227,18 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 	writeJSON(w, http.StatusOK, toAuthorDTO(a))
 }
 
+// deleteAuthor godoc
+// @Summary     Delete an author
+// @Description Delete an author by ID
+// @Tags        Authors
+// @Security    BearerAuth
+// @Failure     401 {object} errorResponse
+// @Param       id  path     string true "Author ID"
+// @Success     204 "No Content"
+// @Failure     400 {object} errorResponse
+// @Failure     404 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /authors/{id} [delete]
 func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting author", slog.String("author_id", id))
 	err := h.DB.DeleteAuthor(id)
