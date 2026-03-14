@@ -63,7 +63,7 @@ Before going live, verify each item:
 - [ ] **Redis persistence** — configure Redis with at least `appendonly yes` if background job durability matters to you.
 - [ ] **PostgreSQL backups** — if using PostgreSQL, schedule regular `pg_dump` backups of the `biblioteka` database.
 - [ ] **SQLite backups** — if using SQLite, back up the Docker volume (`biblioteka-data`) or the `*.db` file.
-- [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to opt out of anonymous telemetry.
+- [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to keep anonymous telemetry disabled (default). Set to `true` to enable it.
 
 ## Environment Variables
 
@@ -120,7 +120,7 @@ The SQLite database is stored in a Docker named volume (`biblioteka-data`). To b
 
 ```bash
 # Copy the database file from the running container
-docker compose exec biblioteka sqlite3 /data/biblioteka.db ".backup /data/biblioteka.db.bak"
+docker compose cp biblioteka:/data/biblioteka.db ./biblioteka.db.bak
 docker compose cp biblioteka:/data/biblioteka.db.bak ./biblioteka.db.bak
 ```
 
@@ -135,7 +135,7 @@ docker compose start biblioteka
 ### PostgreSQL
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.postgres.yml exec postgres \
+docker compose -f docker-compose.yml -f docker-compose.postgres.yml exec -T postgres \
   pg_dump -U biblioteka biblioteka | gzip > biblioteka-$(date +%Y%m%d).sql.gz
 ```
 
