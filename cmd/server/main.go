@@ -49,7 +49,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 			return fmt.Errorf("invalid PORT value: %w", err)
 		}
 	}
-	database, err := db.SetupDatabase()
+	database, err := db.SetupDatabase(cancelCtx)
 	if err != nil {
 		slog.ErrorContext(cancelCtx, "failed to setup database", slog.Any("error", err))
 		return fmt.Errorf("failed to setup database: %w", err)

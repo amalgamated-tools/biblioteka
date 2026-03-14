@@ -17,32 +17,32 @@ var (
 	_, b, _, _ = runtime.Caller(0)
 )
 
-func SetupDatabase() (*DB, error) {
-	slog.Debug("Setting up database")
+func SetupDatabase(ctx context.Context) (*DB, error) {
+	slog.DebugContext(ctx, "Setting up database")
 
 	if databaseURL := os.Getenv("DATABASE_URL"); isPostgresURL(databaseURL) {
-		return setupPostgres(databaseURL)
+		return setupPostgres(ctx, databaseURL)
 	}
-	return setupSQLite()
+	return setupSQLite(ctx)
 }
 
 func isPostgresURL(url string) bool {
 	return strings.HasPrefix(url, "postgres://") || strings.HasPrefix(url, "postgresql://")
 }
 
-func setupPostgres(databaseURL string) (*DB, error) {
-	slog.Debug("Opening PostgreSQL database")
+func setupPostgres(ctx context.Context, databaseURL string) (*DB, error) {
+	slog.DebugContext(ctx, "Opening PostgreSQL database")
 	sqlDB, err := sql.Open("pgx", databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open postgres database: %w", err)
 	}
 
-	if err := sqlDB.Ping(); err != nil {
+	if err := sqlDB.PingContext(ctx); err != nil {
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to ping postgres database: %w", err)
 	}
 
-	slog.Debug("PostgreSQL connection established")
+	slog.DebugContext(ctx, "PostgreSQL connection established")
 
 	d := &DB{DB: sqlDB, Dialect: DialectPostgres}
 
@@ -51,44 +51,44 @@ func setupPostgres(databaseURL string) (*DB, error) {
 		return nil, fmt.Errorf("failed to run migrations on postgres: %w", err)
 	}
 
-	slog.Info("PostgreSQL database setup complete")
+	slog.InfoContext(ctx, "PostgreSQL database setup complete")
 	return d, nil
 }
 
-func setupSQLite() (*DB, error) {
+func setupSQLite(ctx context.Context) (*DB, error) {
 	// Determine database path: prefer mounted /data folder, fall back to ./db
 	var dbFilePath string
 	if _, err := os.Stat("/data"); err == nil {
 		dbFilePath = "/data/biblioteka.db"
-		slog.Debug("Using mounted /data folder", slog.String("path", dbFilePath))
+		slog.DebugContext(ctx, "Using mounted /data folder", slog.String("path", dbFilePath))
 	} else {
 		dbFilePath = filepath.Join(getProjectRoot(), "db", "biblioteka.db")
-		slog.Debug("Using local db folder", slog.String("path", dbFilePath))
+		slog.DebugContext(ctx, "Using local db folder", slog.String("path", dbFilePath))
 	}
 
 	// Ensure parent directory exists
 	dbDir := filepath.Dir(dbFilePath)
 	if err := os.MkdirAll(dbDir, 0755); err != nil {
-		slog.Error("Failed to create database directory", slog.String("path", dbDir), slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to create database directory", slog.String("path", dbDir), slog.Any("error", err))
 		return nil, fmt.Errorf("failed to create database directory %s: %w", dbDir, err)
 	}
 
 	// Open database with modernc.org/sqlite pure Go driver
-	slog.Debug("Opening database", slog.String("path", dbFilePath))
+	slog.DebugContext(ctx, "Opening database", slog.String("path", dbFilePath))
 	sqlDB, err := sql.Open("sqlite", dbFilePath)
 	if err != nil {
-		slog.Error("Failed to open database", slog.String("path", dbFilePath), slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to open database", slog.String("path", dbFilePath), slog.Any("error", err))
 		return nil, fmt.Errorf("failed to open database at %s: %w", dbFilePath, err)
 	}
 
 	// Verify connection
-	if err := sqlDB.Ping(); err != nil {
-		slog.Error("Failed to ping database", slog.String("path", dbFilePath), slog.Any("error", err))
+	if err := sqlDB.PingContext(ctx); err != nil {
+		slog.ErrorContext(ctx, "Failed to ping database", slog.String("path", dbFilePath), slog.Any("error", err))
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to ping database at %s: %w", dbFilePath, err)
 	}
 
-	slog.Debug("Database connection established", slog.String("path", dbFilePath))
+	slog.DebugContext(ctx, "Database connection established", slog.String("path", dbFilePath))
 
 	// Set PRAGMAs for better performance and integrity
 	if _, err := sqlDB.Exec(`
@@ -96,23 +96,23 @@ func setupSQLite() (*DB, error) {
 		PRAGMA synchronous = NORMAL;
 		PRAGMA foreign_keys = ON;
 	`); err != nil {
-		slog.Error("Failed to set PRAGMAs", slog.String("path", dbFilePath), slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to set PRAGMAs", slog.String("path", dbFilePath), slog.Any("error", err))
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to set PRAGMAs on database at %s: %w", dbFilePath, err)
 	}
 
-	slog.Debug("PRAGMAs set successfully", slog.String("path", dbFilePath))
+	slog.DebugContext(ctx, "PRAGMAs set successfully", slog.String("path", dbFilePath))
 
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
 
 	// Run migrations
 	if err := runMigrations(d); err != nil {
-		slog.Error("Failed to run migrations", slog.String("path", dbFilePath), slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to run migrations", slog.String("path", dbFilePath), slog.Any("error", err))
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to run migrations on database at %s: %w", dbFilePath, err)
 	}
 
-	slog.Info("Database setup complete", slog.String("path", dbFilePath))
+	slog.InfoContext(ctx, "Database setup complete", slog.String("path", dbFilePath))
 	return d, nil
 }
 
@@ -176,7 +176,7 @@ func runMigrations(d *DB) error {
 		}
 
 		if applied > 0 {
-			slog.Debug("Migration already applied", slog.String("version", version))
+			slog.DebugContext(ctx, "Migration already applied", slog.String("version", version))
 			continue
 		}
 
@@ -226,7 +226,7 @@ func runMigrations(d *DB) error {
 		if err := tx.Commit(); err != nil {
 			return fmt.Errorf("failed to commit migration %s: %w", filename, err)
 		}
-		slog.Info("Migration applied", slog.String("version", version))
+		slog.InfoContext(ctx, "Migration applied", slog.String("version", version))
 	}
 
 	return nil

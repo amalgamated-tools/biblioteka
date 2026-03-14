@@ -94,7 +94,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.Address = net.JoinHostPort("0.0.0.0", strconv.Itoa(s.port))
 
 	if s.DB == nil {
-		database, err := db.SetupDatabase()
+		database, err := db.SetupDatabase(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open database: %w", err)
 		}
