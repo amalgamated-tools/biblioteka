@@ -31,10 +31,23 @@ dev: redis-check frontend/node_modules
 	goreman -f Procfile.dev start
 
 kill-dev:
-	@echo "Killing any existing servers on ports 5173 and 8080..."
-	@-lsof -ti :5173 | xargs kill -9 2>/dev/null || true
-	@-lsof -ti :8080 | xargs kill -9 2>/dev/null || true
-	@echo "All dev servers killed."
+	@echo "Stopping any existing servers on ports 5173 and 8080..."
+	@for port in 5173 8080; do \
+		pids=$$(lsof -ti :$$port); \
+		if [ -n "$$pids" ]; then \
+			echo "Sending SIGTERM to processes on port $$port: $$pids"; \
+			kill $$pids 2>/dev/null || true; \
+		fi; \
+	done
+	@sleep 2
+	@for port in 5173 8080; do \
+		pids=$$(lsof -ti :$$port); \
+		if [ -n "$$pids" ]; then \
+			echo "Sending SIGKILL to remaining processes on port $$port: $$pids"; \
+			kill -9 $$pids 2>/dev/null || true; \
+		fi; \
+	done
+	@echo "Dev ports 5173 and 8080 are now free."
 
 # Capture application screenshots via Playwright
 screenshots: node_modules
