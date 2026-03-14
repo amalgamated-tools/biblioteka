@@ -1,11 +1,11 @@
 <script lang="ts">
   import { LayoutDashboard, Library, Plus, ArrowRight } from "lucide-svelte";
-  import { libraries, librariesLoaded, loadLibraries } from "../stores/libraries";
-  import { navigate } from "../stores/router";
+  import { libraryStore } from "../stores/libraries.svelte";
+  import { routerStore } from "../stores/router.svelte";
 
   $effect(() => {
-    if (!$librariesLoaded) {
-      loadLibraries();
+    if (!libraryStore.loaded) {
+      libraryStore.load();
     }
   });
 </script>
@@ -18,7 +18,7 @@
     <h1 class="text-3xl font-display font-bold text-ink-900 dark:text-cream-100">Dashboard</h1>
   </div>
 
-  {#if $librariesLoaded && $libraries.length === 0}
+  {#if libraryStore.loaded && libraryStore.libraries.length === 0}
     <div class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in-up">
       <div class="flex items-start gap-5">
         <div class="w-14 h-14 bg-gradient-to-br from-accent-100 to-accent-200 dark:from-accent-800/30 dark:to-accent-700/20 rounded-2xl flex items-center justify-center flex-shrink-0">
@@ -30,7 +30,7 @@
             To begin managing your books, add a library by pointing it to one or more folders on your system. Biblioteka will organize the books it finds using the Book Per Folder layout.
           </p>
           <button
-            onclick={() => navigate("libraries/new")}
+            onclick={() => routerStore.navigate("libraries/new")}
             class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all text-sm font-semibold shadow-md shadow-accent-600/20 hover:shadow-lg hover:shadow-accent-600/30 active:scale-[0.98]"
           >
             <Plus class="w-4 h-4" />
@@ -48,7 +48,7 @@
       </div>
       <div class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all">
         <p class="text-sm font-medium text-ink-400 dark:text-ink-400">Libraries</p>
-        <p class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mt-2">{$libraries.length}</p>
+        <p class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mt-2">{libraryStore.libraries.length}</p>
       </div>
       <div class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all">
         <p class="text-sm font-medium text-ink-400 dark:text-ink-400">Currently Reading</p>

@@ -125,6 +125,13 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT}
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}
 	s.libraryHandler = &handlers.LibraryHandler{DB: s.DB}
+	if s.Worker != nil {
+		s.libraryHandler.Enqueuer = s.Worker
+	}
+	s.shutdownFuncs = append(s.shutdownFuncs, func(_ context.Context) error {
+		s.libraryHandler.Wait()
+		return nil
+	})
 	s.authorHandler = &handlers.AuthorHandler{DB: s.DB}
 	s.seriesHandler = &handlers.SeriesHandler{DB: s.DB}
 	s.bookHandler = &handlers.BookHandler{DB: s.DB}
