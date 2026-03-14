@@ -388,7 +388,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Find or create user (normal login flow)
-	user, err := h.findOrCreateUser(claims.Sub, claims.Email, claims.Name)
+	user, err := h.findOrCreateUser(r.Context(), claims.Sub, claims.Email, claims.Name)
 	if err != nil {
 		slog.Error("failed to find or create OIDC user", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to process user")
@@ -411,12 +411,12 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 // findOrCreateUser looks up a user by OIDC subject, then by email, creating if needed.
 // It handles races between concurrent logins by retrying lookups if CreateOIDCUser fails.
-func (h *OIDCHandler) findOrCreateUser(subject, email, name string) (*db.User, error) {
+func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name string) (*db.User, error) {
 	// First, try by OIDC subject
-	slog.Debug("OIDC findOrCreateUser: looking up by subject", slog.String("subject", subject))
+	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by subject", slog.String("subject", subject))
 	user, err := h.DB.GetUserByOIDCSubject(subject)
 	if err == nil {
-		slog.Debug("OIDC findOrCreateUser: found existing user by subject", slog.String("user_id", user.ID))
+		slog.DebugContext(ctx, "OIDC findOrCreateUser: found existing user by subject", slog.String("user_id", user.ID))
 		return user, nil
 	}
 	if err != sql.ErrNoRows {
@@ -424,10 +424,10 @@ func (h *OIDCHandler) findOrCreateUser(subject, email, name string) (*db.User, e
 	}
 
 	// Try by email — link the OIDC subject to an existing account
-	slog.Debug("OIDC findOrCreateUser: looking up by email", slog.String("email", email))
+	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by email", slog.String("email", email))
 	user, err = h.DB.GetUserByEmail(email)
 	if err == nil {
-		slog.Debug("OIDC findOrCreateUser: linking subject to existing user", slog.String("user_id", user.ID))
+		slog.DebugContext(ctx, "OIDC findOrCreateUser: linking subject to existing user", slog.String("user_id", user.ID))
 		if err := h.DB.LinkOIDCSubject(user.ID, subject); err != nil {
 			return nil, err
 		}
@@ -439,10 +439,10 @@ func (h *OIDCHandler) findOrCreateUser(subject, email, name string) (*db.User, e
 
 	// Create a new OIDC user. If this fails due to a race with a concurrent
 	// login, retry the lookups to find the user the other request created/linked.
-	slog.Debug("OIDC findOrCreateUser: creating new user", slog.String("email", email))
+	slog.DebugContext(ctx, "OIDC findOrCreateUser: creating new user", slog.String("email", email))
 	user, err = h.DB.CreateOIDCUser(name, email, subject)
 	if err == nil {
-		slog.Debug("OIDC findOrCreateUser: new user created", slog.String("user_id", user.ID))
+		slog.DebugContext(ctx, "OIDC findOrCreateUser: new user created", slog.String("user_id", user.ID))
 		return user, nil
 	}
 
