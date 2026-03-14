@@ -1,5 +1,9 @@
 # API Reference
 
+> **This file has been superseded.** The canonical API reference is now maintained in **[`docs/api.md`](api.md)**. Please refer to that document for up-to-date endpoint descriptions, request/response shapes, and authentication details.
+
+---
+
 All endpoints are under the base path `/api`. JSON is used for all request and response bodies. Timestamps are returned as ISO 8601 strings (e.g., `"2026-03-14T02:00:00Z"`).
 
 ## Authentication
