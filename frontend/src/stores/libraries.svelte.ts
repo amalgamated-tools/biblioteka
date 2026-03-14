@@ -12,8 +12,6 @@ class LibraryStore {
       const data = await api.listLibraries();
       this.libraries = data;
       this.loaded = true;
-    } catch {
-      // Silently fail — individual pages can handle errors
     } finally {
       this.loading = false;
     }
