@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 )
@@ -198,7 +199,19 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
-	mock.wg.Wait()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		mock.wg.Wait()
+	}()
+
+	select {
+	case <-done:
+		// proceed
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timeout waiting for enqueue jobs")
+	}
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
