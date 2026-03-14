@@ -743,7 +743,7 @@
                   <input
                     type="checkbox"
                     bind:checked={compactView}
-                    class="w-4 h-4 rounded border-ink-300 text-accent-600 focus:ring-2 focus:ring-accent-500"
+                    class="w-4 h-4 rounded border-ink-300 text-accent-600 outline-none focus:ring-2 focus:ring-accent-500"
                   />
                   <div>
                     <span
