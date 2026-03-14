@@ -437,7 +437,7 @@ func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id stri
 func (h *BookHandler) respondBookAuthors(ctx context.Context, w http.ResponseWriter, bookID string) {
 	authors, err := h.DB.GetBookAuthors(ctx, bookID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get book authors", "error", err)
+		slog.ErrorContext(ctx, "failed to get book authors", slog.Any("error", err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to get book authors")
 		return
 	}
@@ -579,7 +579,7 @@ func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, book
 func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
 	files, err := h.DB.ListBookFiles(r.Context(), bookID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list book files", "error", err)
+		slog.ErrorContext(r.Context(), "failed to list book files", slog.Any("error", err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list book files")
 		return
 	}
@@ -625,7 +625,7 @@ func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, book
 	}
 	bf, err := h.DB.CreateBookFile(r.Context(), bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create book file", "error", err)
+		slog.ErrorContext(r.Context(), "failed to create book file", slog.Any("error", err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book file")
 		return
 	}

@@ -28,8 +28,6 @@ const (
 	EnvTelemetryEnabled      = "TELEMETRY_ENABLED"
 	EnvTelemetryEndpoint     = "TELEMETRY_ENDPOINT"
 	DefaultTelemetryEndpoint = "https://telemetry-worker.amalgamated-tools.workers.dev"
-	TelemetryEnabled         = "telemetry_enabled"
-	Path                     = "path"
 )
 
 func SendBoot(ctx context.Context, version string) {
@@ -88,7 +86,7 @@ func SendBoot(ctx context.Context, version string) {
 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(body))
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to create telemetry request", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to create telemetry request", slog.Any(Error, err))
 		return
 	}
 
@@ -99,12 +97,12 @@ func SendBoot(ctx context.Context, version string) {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to send telemetry request", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to send telemetry request", slog.Any(Error, err))
 		return
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			slog.ErrorContext(ctx, "Failed to close telemetry response body", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Failed to close telemetry response body", slog.Any(Error, err))
 		}
 	}()
 
