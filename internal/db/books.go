@@ -88,7 +88,10 @@ func (d *DB) ListBooks() ([]Book, error) {
 // ListBooksByLibrary returns all books in a specific library.
 func (d *DB) ListBooksByLibrary(libraryID string) ([]Book, error) {
 	slog.Debug("db: listing books by library", slog.String("library_id", libraryID))
-	orderBy := "ORDER BY b.title ASC"
+	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY b.title ASC, b.id ASC"
+	}
 	rows, err := d.Query(
 		`SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13, b.goodreads_id, b.hardcover_id, b.google_books_id, b.publication_date, b.publisher, b.language, b.num_pages, b.cover_image_url, b.created_at, b.updated_at FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy,
 		libraryID,

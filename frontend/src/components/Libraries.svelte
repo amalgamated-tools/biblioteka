@@ -69,6 +69,8 @@
       formMonitored = false;
       formError = null;
       error = null;
+      viewLoading = false;
+      viewBooks = [];
       showDeleteConfirm = false;
     } else if (mode === "edit" && editId) {
       const lib = libraryStore.libraries.find((l) => l.id === editId);
@@ -82,6 +84,8 @@
         formMonitored = lib.monitored;
         formError = null;
         error = null;
+        viewLoading = false;
+        viewBooks = [];
         showDeleteConfirm = false;
       }
     } else if (mode === "view" && viewId) {

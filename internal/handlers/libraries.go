@@ -336,23 +336,25 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "listing library books", slog.String("library_id", id))
 
-	// Verify library exists
-	_, err := h.DB.GetLibrary(id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "library not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get library", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to get library")
-		return
-	}
-
 	books, err := h.DB.ListBooksByLibrary(id)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to list library books", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list library books")
 		return
+	}
+
+	// If no books found, check whether the library actually exists.
+	if len(books) == 0 {
+		_, err := h.DB.GetLibrary(id)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				writeError(w, http.StatusNotFound, "library not found")
+				return
+			}
+			slog.ErrorContext(r.Context(), "failed to get library", "error", err)
+			writeError(w, http.StatusInternalServerError, "failed to get library")
+			return
+		}
 	}
 
 	slog.DebugContext(r.Context(), "library books listed", slog.Int("count", len(books)))
