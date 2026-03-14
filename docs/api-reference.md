@@ -691,3 +691,17 @@ Common HTTP status codes:
 | `405` | Method not allowed |
 | `409` | Conflict — duplicate name or email |
 | `500` | Internal server error |
+
+---
+
+## Background Job Monitoring UI
+
+When `REDIS_URL` is configured, the server mounts the [Asynqmon](https://github.com/hibiken/asynqmon) dashboard at `/asynqmon/`.
+
+| Property | Value |
+|----------|-------|
+| **URL** | `/asynqmon/` |
+| **Auth** | 🔒 Valid JWT required (same token as API calls) |
+| **Availability** | Only present when a Redis-backed worker is running |
+
+The dashboard provides a real-time view of queued, active, completed, and failed background jobs (library scans, file processing), and lets you retry or delete individual tasks.
