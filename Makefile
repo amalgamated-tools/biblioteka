@@ -1,4 +1,4 @@
-.PHONY: all build frontend backend clean dev redis-check screenshots
+.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev
 
 # Build everything: frontend then Go binary
 all: build
@@ -30,12 +30,30 @@ run: build
 dev: redis-check frontend/node_modules
 	goreman -f Procfile.dev start
 
+kill-dev:
+	@echo "Stopping any existing servers on ports 5173 and 8080..."
+	@for port in 5173 8080; do \
+		pids=$$(lsof -ti :$$port); \
+		if [ -n "$$pids" ]; then \
+			echo "Sending SIGTERM to processes on port $$port: $$pids"; \
+			kill $$pids 2>/dev/null || true; \
+		fi; \
+	done
+	@sleep 2
+	@for port in 5173 8080; do \
+		pids=$$(lsof -ti :$$port); \
+		if [ -n "$$pids" ]; then \
+			echo "Sending SIGKILL to remaining processes on port $$port: $$pids"; \
+			kill -9 $$pids 2>/dev/null || true; \
+		fi; \
+	done
+	@echo "Dev ports 5173 and 8080 are now free."
+
 # Capture application screenshots via Playwright
 screenshots: node_modules
 	@mkdir -p screenshots
-	@echo "Killing any existing servers on ports 5173 and 8080..."
-	@-lsof -ti :5173 | xargs kill -9 2>/dev/null || true
-	@-lsof -ti :8080 | xargs kill -9 2>/dev/null || true
+	# call kill-dev first to ensure no existing servers are running
+	$(MAKE) kill-dev
 	@echo "Starting dev server in background..."	
 	@goreman -f Procfile.dev start & DEV_PID=$$!; \
 	echo "Waiting for frontend (localhost:5173) and backend (localhost:8080)..."; \
