@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
@@ -155,15 +157,22 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 
 	dto := toLibraryDTO(lib)
 
-	if h.Enqueuer != nil {
-		for _, p := range dto.Paths {
-			jobID, err := h.Enqueuer.Enqueue(r.Context(), jobs.JobScanPath, jobs.ScanPathPayload{Path: p})
-			if err != nil {
-				slog.Error("failed to enqueue scan job", "path", p, "error", err)
-			} else {
-				slog.Info("enqueued scan job for new library", "library", lib.ID, "path", p, "job_id", jobID)
+	if h.Enqueuer != nil && len(dto.Paths) > 0 {
+		paths := dto.Paths
+		libID := lib.ID
+		enqueuer := h.Enqueuer
+		go func() {
+			ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+			defer cancel()
+			for _, p := range paths {
+				jobID, err := enqueuer.Enqueue(ctx, jobs.JobScanPath, jobs.ScanPathPayload{Path: p})
+				if err != nil {
+					slog.Error("failed to enqueue scan job", "path", p, "error", err)
+				} else {
+					slog.Info("enqueued scan job for new library", "library", libID, "path", p, "job_id", jobID)
+				}
 			}
-		}
+		}()
 	}
 
 	writeJSON(w, http.StatusCreated, dto)
