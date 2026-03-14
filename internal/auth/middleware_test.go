@@ -133,6 +133,82 @@ func assertJSONError(t *testing.T, body []byte, wantMsg string) {
 	}
 }
 
+// --- extractToken unit tests ---
+
+func TestExtractToken(t *testing.T) {
+	tests := []struct {
+		name       string
+		header     string // Authorization header value ("" = not set)
+		cookie     string // cookie value ("" = no cookie)
+		wantToken  string
+	}{
+		{
+			name:      "no header no cookie",
+			wantToken: "",
+		},
+		{
+			name:      "Bearer header only",
+			header:    "Bearer validtoken",
+			wantToken: "validtoken",
+		},
+		{
+			name:      "cookie only",
+			cookie:    "cookietoken",
+			wantToken: "cookietoken",
+		},
+		{
+			name:      "both present, header takes precedence",
+			header:    "Bearer headertoken",
+			cookie:    "cookietoken",
+			wantToken: "headertoken",
+		},
+		{
+			name:      "non-Bearer header with valid cookie falls back to cookie",
+			header:    "Basic sometoken",
+			cookie:    "cookietoken",
+			wantToken: "cookietoken",
+		},
+		{
+			name:      "non-Bearer header without cookie",
+			header:    "Basic sometoken",
+			wantToken: "",
+		},
+		{
+			name:      "Bearer with empty token falls back to cookie",
+			header:    "Bearer ",
+			cookie:    "cookietoken",
+			wantToken: "cookietoken",
+		},
+		{
+			name:      "Bearer with whitespace-only token falls back to cookie",
+			header:    "Bearer   ",
+			cookie:    "cookietoken",
+			wantToken: "cookietoken",
+		},
+		{
+			name:      "empty cookie value ignored",
+			cookie:    "",
+			wantToken: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			if tt.header != "" {
+				r.Header.Set("Authorization", tt.header)
+			}
+			if tt.cookie != "" {
+				r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: tt.cookie})
+			}
+			got := extractToken(r)
+			if got != tt.wantToken {
+				t.Errorf("extractToken() = %q, want %q", got, tt.wantToken)
+			}
+		})
+	}
+}
+
 // --- Cookie-based auth tests for Middleware ---
 
 func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
