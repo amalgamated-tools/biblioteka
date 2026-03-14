@@ -50,7 +50,7 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 
 	userID := auth.UserIDFromContext(r.Context())
 	slog.DebugContext(r.Context(), "fetching config status", slog.String("user_id", userID))
-	isAdmin, _ := h.DB.IsAdmin(userID)
+	isAdmin, _ := h.DB.IsAdmin(r.Context(), userID)
 
 	writeJSON(w, http.StatusOK, configStatusResponse{
 		OIDCConfigured: h.IsOIDCConfigured(),
@@ -86,9 +86,9 @@ type setOIDCConfigRequest struct {
 func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	slog.DebugContext(r.Context(), "fetching OIDC config", slog.String("user_id", userID))
-	isAdmin, err := h.DB.IsAdmin(userID)
+	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.Error("failed to check admin status", "user_id", userID, "error", err)
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String("user_id", userID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
@@ -126,9 +126,9 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 // @Router      /config/oidc [put]
 func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
-	isAdmin, err := h.DB.IsAdmin(userID)
+	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.Error("failed to check admin status", "user_id", userID, "error", err)
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String("user_id", userID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}

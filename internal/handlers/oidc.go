@@ -424,7 +424,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Find or create user (normal login flow)
 	user, err := h.findOrCreateUser(r.Context(), claims.Sub, claims.Email, claims.Name)
 	if err != nil {
-		slog.Error("failed to find or create OIDC user", "error", err)
+		slog.ErrorContext(r.Context(), "failed to find or create OIDC user", slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to process user")
 		return
 	}
@@ -432,15 +432,18 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Issue a biblioteka JWT
 	token, err := h.JWT.CreateToken(user.ID)
 	if err != nil {
-		slog.Error("failed to create token for OIDC user", "user_id", user.ID, "error", err)
+		slog.ErrorContext(r.Context(), "failed to create token for OIDC user", slog.String("user_id", user.ID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to create session")
 		return
 	}
 
 	slog.DebugContext(r.Context(), "OIDC login successful", slog.String("user_id", user.ID))
 
-	// Redirect to frontend with token
-	http.Redirect(w, r, "/?token="+token, http.StatusFound)
+	// Set auth cookie for browser-based access and redirect to the frontend root.
+	// The JWT is provided via the auth cookie only (no token query parameter).
+	// The ?oidc_login=1 marker tells the frontend to attempt cookie-based getMe().
+	setAuthCookie(w, token, h.SecureCookies)
+	http.Redirect(w, r, "/?oidc_login=1", http.StatusFound)
 }
 
 // findOrCreateUser looks up a user by OIDC subject, then by email, creating if needed.
