@@ -91,6 +91,20 @@ pnpm run format   # Prettier
 
 See [docs/frontend.md](docs/frontend.md) for the frontend architecture overview, including the Svelte 5 `$state` class-based store pattern, hash-based routing, and guidance on adding new stores and views.
 
+### Updating the OpenAPI Specification
+
+The OpenAPI spec (`docs/swagger.json`, `docs/swagger.yaml`, `docs/docs.go`) is generated from [swag](https://github.com/swaggo/swag) annotations on the handler functions. Regenerate it whenever you add, remove, or change an API endpoint:
+
+```bash
+# Regenerate docs/swagger.json, docs/swagger.yaml, and docs/docs.go
+make swagger
+
+# Reformat swag annotations in handler files (run after editing annotations and before committing)
+make swagger-fmt
+```
+
+Always commit the updated spec files alongside the handler changes that prompted them. At runtime, the interactive Swagger UI at `/swagger/` is served via the `http-swagger` UI assets, while the raw spec at `/swagger/doc.json` is generated from `docs/docs.go`; the `docs/swagger.json` and `docs/swagger.yaml` files are primarily for committing to the repository and for client/tooling consumption, and are not served directly by the backend.
+
 ## Code Conventions
 
 - **No new dependencies** without a discussion issue first. The project values minimal dependencies.
