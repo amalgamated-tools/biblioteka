@@ -324,12 +324,20 @@ Create a new library.
 {
   "name": "Fiction",
   "paths": ["/books/fiction", "/books/sci-fi"],
-  "organization_type": "author",
+  "organization_type": "book_per_folder",
   "monitored": true
 }
 ```
 
+`name` and at least one entry in `paths` are required. Each path must point to an existing directory on the server filesystem. `organization_type` defaults to `"book_per_folder"` when omitted.
+
 **Response `201 Created`** — Library object.
+
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `400` | Missing name or paths; a path is empty or does not exist as a directory on the server |
+| `409` | A library with that name already exists |
 
 ---
 
@@ -338,6 +346,11 @@ Create a new library.
 Get a single library by ID.
 
 **Response `200 OK`** — Library object.
+
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Library not found |
 
 ---
 
@@ -349,6 +362,13 @@ Update a library.
 
 **Response `200 OK`** — Updated library object.
 
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `400` | Missing name or paths; a path is empty or does not exist as a directory on the server |
+| `404` | Library not found |
+| `409` | A library with that name already exists |
+
 ---
 
 ### `DELETE /api/libraries/{id}` 🔑
@@ -356,6 +376,11 @@ Update a library.
 Delete a library.
 
 **Response `204 No Content`**
+
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Library not found |
 
 ---
 
@@ -406,6 +431,13 @@ Create an author.
 
 Get a single author by ID.
 
+**Response `200 OK`** — Author object.
+
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Author not found |
+
 ---
 
 ### `PUT /api/authors/{id}` 🔑
@@ -416,6 +448,11 @@ Update an author.
 
 **Response `200 OK`** — Updated author object.
 
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Author not found |
+
 ---
 
 ### `DELETE /api/authors/{id}` 🔑
@@ -423,6 +460,11 @@ Update an author.
 Delete an author.
 
 **Response `204 No Content`**
+
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Author not found |
 
 ---
 
@@ -471,6 +513,13 @@ Create a series.
 
 Get a single series by ID.
 
+**Response `200 OK`** — Series object.
+
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Series not found |
+
 ---
 
 ### `PUT /api/series/{id}` 🔑
@@ -481,6 +530,11 @@ Update a series.
 
 **Response `200 OK`** — Updated series object.
 
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Series not found |
+
 ---
 
 ### `DELETE /api/series/{id}` 🔑
@@ -488,6 +542,11 @@ Update a series.
 Delete a series.
 
 **Response `204 No Content`**
+
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Series not found |
 
 ---
 
@@ -558,6 +617,11 @@ Get a single book with its associated authors, series entries, and files.
 
 **Response `200 OK`** — Full book object.
 
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Book not found |
+
 ---
 
 ### `PUT /api/books/{id}` 🔑
@@ -568,6 +632,12 @@ Update a book.
 
 **Response `200 OK`** — Updated full book object.
 
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `400` | Missing `title` |
+| `404` | Book not found |
+
 ---
 
 ### `DELETE /api/books/{id}` 🔑
@@ -575,6 +645,11 @@ Update a book.
 Delete a book and its associated book-file records.
 
 **Response `204 No Content`**
+
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Book not found |
 
 ---
 
@@ -682,6 +757,11 @@ Get a single book-file record by its own ID.
 }
 ```
 
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Book file not found |
+
 ---
 
 ### `DELETE /api/book-files/{id}` 🔑
@@ -689,6 +769,11 @@ Get a single book-file record by its own ID.
 Delete a book-file record by its own ID.
 
 **Response `204 No Content`**
+
+**Errors**
+| Status | Meaning |
+|--------|---------|
+| `404` | Book file not found |
 
 ---
 
