@@ -432,7 +432,6 @@ Update an author (full update).
 **Response body (`200`):** Updated author object.
 
 **Errors:**
-**Errors:**
 
 | Status | Meaning |
 |--------|---------|
@@ -511,7 +510,6 @@ Update a series (full update).
 
 **Response body (`200`):** Updated series object.
 
-**Errors:**
 **Errors:**
 
 | Status | Meaning |
