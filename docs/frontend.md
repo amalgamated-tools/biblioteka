@@ -19,7 +19,7 @@ frontend/src/
 
 ## Reactive stores
 
-All global state is managed through **Svelte 5 reactive class stores** in `frontend/src/stores/`. Each store is a class whose properties are declared with `$state` (or `$state.raw` for large arrays), and a singleton instance is exported for use throughout the application.
+All global state is managed through **Svelte 5 reactive class stores** in `frontend/src/stores/`. Each store is a class whose properties are declared with `$state` (or `$state.raw` for array collections), and a singleton instance is exported for use throughout the application.
 
 ### Pattern
 
