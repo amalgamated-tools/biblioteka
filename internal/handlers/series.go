@@ -75,8 +75,8 @@ func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *SeriesHandler) listSeries(w http.ResponseWriter, _ *http.Request) {
-	slog.Debug("listing series")
+func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
+	slog.DebugContext(r.Context(), "listing series")
 	list, err := h.DB.ListSeries()
 	if err != nil {
 		slog.Error("failed to list series", "error", err)
@@ -84,7 +84,7 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
-	slog.Debug("series listed", slog.Int("count", len(list)))
+	slog.DebugContext(r.Context(), "series listed", slog.Int("count", len(list)))
 
 	dtos := make([]seriesDTO, 0, len(list))
 	for i := range list {
@@ -123,8 +123,8 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, toSeriesDTO(s))
 }
 
-func (h *SeriesHandler) getSeries(w http.ResponseWriter, _ *http.Request, id string) {
-	slog.Debug("fetching series", slog.String("series_id", id))
+func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "fetching series", slog.String("series_id", id))
 	s, err := h.DB.GetSeries(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -171,8 +171,8 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 	writeJSON(w, http.StatusOK, toSeriesDTO(s))
 }
 
-func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, _ *http.Request, id string) {
-	slog.Debug("deleting series", slog.String("series_id", id))
+func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "deleting series", slog.String("series_id", id))
 	err := h.DB.DeleteSeries(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
