@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 var (
@@ -69,7 +71,7 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 	// Ensure parent directory exists
 	dbDir := filepath.Dir(dbFilePath)
 	if err := os.MkdirAll(dbDir, 0755); err != nil {
-		slog.ErrorContext(ctx, "Failed to create database directory", slog.String("path", dbDir), slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to create database directory", slog.String("path", dbDir), slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("failed to create database directory %s: %w", dbDir, err)
 	}
 
@@ -77,13 +79,13 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 	slog.DebugContext(ctx, "Opening database", slog.String("path", dbFilePath))
 	sqlDB, err := sql.Open("sqlite", dbFilePath)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to open database", slog.String("path", dbFilePath), slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to open database", slog.String("path", dbFilePath), slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("failed to open database at %s: %w", dbFilePath, err)
 	}
 
 	// Verify connection
 	if err := sqlDB.PingContext(ctx); err != nil {
-		slog.ErrorContext(ctx, "Failed to ping database", slog.String("path", dbFilePath), slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to ping database", slog.String("path", dbFilePath), slog.Any(otelkeys.Error, err))
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to ping database at %s: %w", dbFilePath, err)
 	}
@@ -96,7 +98,7 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 		PRAGMA synchronous = NORMAL;
 		PRAGMA foreign_keys = ON;
 	`); err != nil {
-		slog.ErrorContext(ctx, "Failed to set PRAGMAs", slog.String("path", dbFilePath), slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to set PRAGMAs", slog.String("path", dbFilePath), slog.Any(otelkeys.Error, err))
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to set PRAGMAs on database at %s: %w", dbFilePath, err)
 	}
@@ -107,7 +109,7 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 
 	// Run migrations
 	if err := runMigrations(d); err != nil {
-		slog.ErrorContext(ctx, "Failed to run migrations", slog.String("path", dbFilePath), slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to run migrations", slog.String("path", dbFilePath), slog.Any(otelkeys.Error, err))
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to run migrations on database at %s: %w", dbFilePath, err)
 	}

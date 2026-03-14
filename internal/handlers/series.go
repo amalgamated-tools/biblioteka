@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // SeriesHandler holds dependencies for series endpoints.
@@ -89,7 +90,7 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing series")
 	list, err := h.DB.ListSeries(r.Context())
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list series", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to list series", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list series")
 		return
 	}
@@ -138,7 +139,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusConflict, "a series with that name already exists")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to create series", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create series", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create series")
 		return
 	}
@@ -168,7 +169,7 @@ func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id str
 			writeError(r.Context(), w, http.StatusNotFound, "series not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to get series", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to get series", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get series")
 		return
 	}
@@ -216,7 +217,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 			writeError(r.Context(), w, http.StatusConflict, "a series with that name already exists")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to update series", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to update series", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update series")
 		return
 	}
@@ -244,7 +245,7 @@ func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id 
 			writeError(r.Context(), w, http.StatusNotFound, "series not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to delete series", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to delete series", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete series")
 		return
 	}

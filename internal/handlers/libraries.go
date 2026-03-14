@@ -13,6 +13,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // LibraryHandler holds dependencies for library endpoints.
@@ -112,7 +113,7 @@ func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing libraries")
 	libraries, err := h.DB.ListLibraries(r.Context())
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list libraries", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to list libraries", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list libraries")
 		return
 	}
@@ -191,7 +192,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusConflict, "a library with that name already exists")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to create library", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create library", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create library")
 		return
 	}
@@ -207,7 +208,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		}); err != nil {
 			slog.ErrorContext(r.Context(), "failed to enqueue scan:library job",
 				slog.String("library_id", lib.ID),
-				slog.Any("error", err),
+				slog.Any(otelkeys.Error, err),
 			)
 		}
 	}
@@ -236,7 +237,7 @@ func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id s
 			writeError(r.Context(), w, http.StatusNotFound, "library not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to get library", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to get library", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get library")
 		return
 	}
@@ -312,7 +313,7 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 			writeError(r.Context(), w, http.StatusNotFound, "library not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to delete library", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to delete library", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete library")
 		return
 	}

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 type contextKey string
@@ -65,7 +67,7 @@ func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 
 			claims, err := jwt.ValidateToken(r.Context(), token)
 			if err != nil {
-				slog.InfoContext(r.Context(), "invalid or expired token", slog.Any("error", err))
+				slog.InfoContext(r.Context(), "invalid or expired token", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 				return
 			}
@@ -177,14 +179,14 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) h
 
 			claims, err := jwt.ValidateToken(r.Context(), token)
 			if err != nil {
-				slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any("error", err))
+				slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 				return
 			}
 
 			isAdmin, err := cachedChecker.IsAdmin(r.Context(), claims.UserID)
 			if err != nil {
-				slog.ErrorContext(r.Context(), "admin middleware: failed to check admin status", slog.Any("error", err))
+				slog.ErrorContext(r.Context(), "admin middleware: failed to check admin status", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusInternalServerError, "failed to verify permissions")
 				return
 			}

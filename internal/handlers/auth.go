@@ -12,6 +12,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -126,7 +127,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to hash password during signup", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to hash password during signup", slog.String("email", redactEmail(req.Email)), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to hash password")
 		return
 	}
@@ -137,7 +138,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusConflict, "email already registered")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to create user", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create user", slog.String("email", redactEmail(req.Email)), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create user")
 		return
 	}
@@ -146,7 +147,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create token for user", slog.Any("user_id", user.ID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create token for user", slog.Any("user_id", user.ID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create token")
 		return
 	}
@@ -211,7 +212,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create token for user", slog.Any("user_id", user.ID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create token for user", slog.Any("user_id", user.ID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create token")
 		return
 	}
@@ -251,7 +252,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusNotFound, "user not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to get user", slog.Any("user_id", userID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to get user", slog.Any("user_id", userID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get user")
 		return
 	}
@@ -297,7 +298,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	user, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to get user for password change", slog.Any("user_id", userID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to get user for password change", slog.Any("user_id", userID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get user")
 		return
 	}
@@ -314,13 +315,13 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to hash new password", slog.Any("user_id", userID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to hash new password", slog.Any("user_id", userID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to hash password")
 		return
 	}
 
 	if err := h.DB.UpdatePassword(r.Context(), userID, string(hash)); err != nil {
-		slog.ErrorContext(r.Context(), "failed to update password", slog.Any("user_id", userID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to update password", slog.Any("user_id", userID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update password")
 		return
 	}

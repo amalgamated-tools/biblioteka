@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // writeJSON sends a JSON response with the given status code.
@@ -13,7 +15,7 @@ func writeJSON(ctx context.Context, w http.ResponseWriter, status int, data any)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		slog.ErrorContext(ctx, "failed to encode JSON response", slog.Any("error", err))
+		slog.ErrorContext(ctx, "failed to encode JSON response", slog.Any(otelkeys.Error, err))
 	}
 }
 
@@ -27,7 +29,7 @@ func writeError(ctx context.Context, w http.ResponseWriter, status int, message 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(errorResponse{Error: message}); err != nil {
-		slog.ErrorContext(ctx, "failed to encode JSON error response", slog.Any("error", err))
+		slog.ErrorContext(ctx, "failed to encode JSON error response", slog.Any(otelkeys.Error, err))
 	}
 }
 

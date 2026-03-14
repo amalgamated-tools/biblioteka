@@ -10,6 +10,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/server"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 	"golang.org/x/sync/errgroup"
@@ -31,7 +32,7 @@ func main() {
 	otel.SetupLogger(cancelCtx)
 	slog.InfoContext(cancelCtx, "biblioteka", slog.String("version", version))
 	if err := realMain(cancelCtx); err != nil {
-		slog.ErrorContext(cancelCtx, "error occurred", slog.Any("error", err))
+		slog.ErrorContext(cancelCtx, "error occurred", slog.Any(otelkeys.Error, err))
 		cancelAll()
 	}
 }
@@ -45,13 +46,13 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	if p := os.Getenv("PORT"); p != "" {
 		_, err := fmt.Sscanf(p, "%d", port)
 		if err != nil {
-			slog.ErrorContext(cancelCtx, "invalid PORT value", slog.Any("error", err))
+			slog.ErrorContext(cancelCtx, "invalid PORT value", slog.Any(otelkeys.Error, err))
 			return fmt.Errorf("invalid PORT value: %w", err)
 		}
 	}
 	database, err := db.SetupDatabase(cancelCtx)
 	if err != nil {
-		slog.ErrorContext(cancelCtx, "failed to setup database", slog.Any("error", err))
+		slog.ErrorContext(cancelCtx, "failed to setup database", slog.Any(otelkeys.Error, err))
 		return fmt.Errorf("failed to setup database: %w", err)
 	}
 	defer func() { _ = database.Close() }()
@@ -63,7 +64,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	}
 	w, err := worker.New(redisURL)
 	if err != nil {
-		slog.ErrorContext(cancelCtx, "failed to setup worker", slog.Any("error", err))
+		slog.ErrorContext(cancelCtx, "failed to setup worker", slog.Any(otelkeys.Error, err))
 		return fmt.Errorf("failed to setup worker: %w", err)
 	}
 	defer func() { _ = w.Close() }()
@@ -76,7 +77,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 
 	// Schedule periodic jobs
 	if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
-		slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any("error", err))
+		slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any(otelkeys.Error, err))
 		return fmt.Errorf("failed to schedule scan:libraries job: %w", err)
 	}
 
@@ -87,7 +88,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		server.WithWorker(w),
 	)
 	if err != nil {
-		slog.ErrorContext(cancelCtx, "failed to create server", slog.Any("error", err))
+		slog.ErrorContext(cancelCtx, "failed to create server", slog.Any(otelkeys.Error, err))
 		return fmt.Errorf("failed to create server: %w", err)
 	}
 

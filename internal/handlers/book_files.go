@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // BookFileHandler holds dependencies for book file endpoints.
@@ -52,7 +53,7 @@ func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id
 			writeError(r.Context(), w, http.StatusNotFound, "book file not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to get book file", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to get book file", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get book file")
 		return
 	}
@@ -80,7 +81,7 @@ func (h *BookFileHandler) deleteBookFile(w http.ResponseWriter, r *http.Request,
 			writeError(r.Context(), w, http.StatusNotFound, "book file not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to delete book file", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to delete book file", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete book file")
 		return
 	}

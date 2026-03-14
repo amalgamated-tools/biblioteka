@@ -13,6 +13,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
@@ -85,7 +86,7 @@ func (h *OIDCHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	state, err := generateState()
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to generate OIDC state", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to generate OIDC state", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to initiate login")
 		return
 	}
@@ -135,7 +136,7 @@ func (h *OIDCHandler) CreateLinkNonce(w http.ResponseWriter, r *http.Request) {
 
 	nonce, err := generateState() // reuse the same 32-byte random generator
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to generate link nonce", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to generate link nonce", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate nonce")
 		return
 	}
@@ -209,7 +210,7 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 	// Fail fast if the user already has an OIDC subject linked
 	existingUser, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to get user for OIDC link", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to get user for OIDC link", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusBadRequest, "user not found")
 		return
 	}
@@ -220,7 +221,7 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 
 	state, err := generateState()
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to generate OIDC state", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to generate OIDC state", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to initiate linking")
 		return
 	}
@@ -332,7 +333,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	oauth2Token, err := h.Config.Exchange(r.Context(), code, oauth2.VerifierOption(verifierCookie.Value))
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to exchange OIDC code", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to exchange OIDC code", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusUnauthorized, "failed to exchange authorization code")
 		return
 	}
@@ -349,7 +350,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	verifier := h.Provider.Verifier(&oidc.Config{ClientID: h.Config.ClientID})
 	idToken, err := verifier.Verify(r.Context(), rawIDToken)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to verify OIDC id_token", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to verify OIDC id_token", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusUnauthorized, "invalid id_token")
 		return
 	}
@@ -361,7 +362,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		Name  string `json:"name"`
 	}
 	if err := idToken.Claims(&claims); err != nil {
-		slog.ErrorContext(r.Context(), "failed to parse OIDC claims", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to parse OIDC claims", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to parse user info")
 		return
 	}
@@ -398,7 +399,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		slog.DebugContext(r.Context(), "OIDC link flow: linking account", slog.String("user_id", linkUserID), slog.String("subject", claims.Sub))
 		user, err := h.DB.GetUserByID(r.Context(), linkUserID)
 		if err != nil {
-			slog.ErrorContext(r.Context(), "failed to get user for OIDC link", slog.Any("error", err))
+			slog.ErrorContext(r.Context(), "failed to get user for OIDC link", slog.Any(otelkeys.Error, err))
 			http.Redirect(w, r, "/?oidc_link_error="+url.QueryEscape("User not found"), http.StatusFound)
 			return
 		}
@@ -412,7 +413,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := h.DB.LinkOIDCSubject(r.Context(), linkUserID, claims.Sub); err != nil {
-			slog.ErrorContext(r.Context(), "failed to link OIDC subject to user", slog.String("user_id", linkUserID), slog.Any("error", err))
+			slog.ErrorContext(r.Context(), "failed to link OIDC subject to user", slog.String("user_id", linkUserID), slog.Any(otelkeys.Error, err))
 			http.Redirect(w, r, "/?oidc_link_error="+url.QueryEscape("Failed to link account"), http.StatusFound)
 			return
 		}
@@ -424,7 +425,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Find or create user (normal login flow)
 	user, err := h.findOrCreateUser(r.Context(), claims.Sub, claims.Email, claims.Name)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to find or create OIDC user", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to find or create OIDC user", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to process user")
 		return
 	}
@@ -432,7 +433,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Issue a biblioteka JWT
 	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create token for OIDC user", slog.String("user_id", user.ID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create token for OIDC user", slog.String("user_id", user.ID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create session")
 		return
 	}

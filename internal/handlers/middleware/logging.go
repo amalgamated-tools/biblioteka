@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
-	"github.com/amalgamated-tools/biblioteka/internal/telemetry"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // statusRecorder wraps http.ResponseWriter to capture the status code.
@@ -61,12 +61,12 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		slog.DebugContext(
 			r.Context(),
 			"Incoming request",
-			slog.String(telemetry.Method, r.Method),
-			slog.String(telemetry.URL, r.URL.String()),
-			slog.String(telemetry.RemoteAddr, r.RemoteAddr),
-			slog.String(telemetry.UserAgent, r.UserAgent()),
-			slog.String(telemetry.RequestID, GetRequestID(r.Context())),
-			slog.String(telemetry.UserID, userID),
+			slog.String(otelkeys.Method, r.Method),
+			slog.String(otelkeys.URL, r.URL.String()),
+			slog.String(otelkeys.RemoteAddr, r.RemoteAddr),
+			slog.String(otelkeys.UserAgent, r.UserAgent()),
+			slog.String(otelkeys.RequestID, GetRequestID(r.Context())),
+			slog.String(otelkeys.UserID, userID),
 		)
 
 		rec := &statusRecorder{ResponseWriter: w, statusCode: http.StatusOK}
@@ -75,12 +75,12 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		slog.DebugContext(
 			r.Context(),
 			"Request completed",
-			slog.String(telemetry.Method, r.Method),
-			slog.String(telemetry.URL, r.URL.String()),
-			slog.Int(telemetry.StatusCode, rec.statusCode),
-			slog.Duration(telemetry.Duration, time.Since(start)),
-			slog.String(telemetry.RequestID, GetRequestID(r.Context())),
-			slog.String(telemetry.UserID, userID),
+			slog.String(otelkeys.Method, r.Method),
+			slog.String(otelkeys.URL, r.URL.String()),
+			slog.Int(otelkeys.StatusCode, rec.statusCode),
+			slog.Duration(otelkeys.Duration, time.Since(start)),
+			slog.String(otelkeys.RequestID, GetRequestID(r.Context())),
+			slog.String(otelkeys.UserID, userID),
 		)
 	}
 

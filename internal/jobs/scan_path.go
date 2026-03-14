@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // JobScanPath is the registered name for the path-scanning job.
@@ -56,7 +58,7 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 		var found int
 		err := filepath.WalkDir(p.Path, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
-				slog.WarnContext(ctx, "error accessing path", slog.String("path", path), slog.Any("error", err))
+				slog.WarnContext(ctx, "error accessing path", slog.String("path", path), slog.Any(otelkeys.Error, err))
 				return nil
 			}
 
@@ -78,7 +80,7 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 
 			info, err := d.Info()
 			if err != nil {
-				slog.WarnContext(ctx, "error reading file info", slog.String("path", path), slog.Any("error", err))
+				slog.WarnContext(ctx, "error reading file info", slog.String("path", path), slog.Any(otelkeys.Error, err))
 				return nil
 			}
 
@@ -94,7 +96,7 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 				FileSize: info.Size(),
 			})
 			if err != nil {
-				slog.WarnContext(ctx, "error enqueuing process:file job", slog.String("path", absPath), slog.Any("error", err))
+				slog.WarnContext(ctx, "error enqueuing process:file job", slog.String("path", absPath), slog.Any(otelkeys.Error, err))
 				return nil
 			}
 

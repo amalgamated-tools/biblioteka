@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // BookHandler holds dependencies for book endpoints.
@@ -263,7 +264,7 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing books")
 	books, err := h.DB.ListBooks(r.Context())
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list books", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to list books", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list books")
 		return
 	}
@@ -307,14 +308,14 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	b, err := h.DB.CreateBook(r.Context(), req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create book", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create book", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book")
 		return
 	}
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book")
 		return
 	}
@@ -342,14 +343,14 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 			writeError(r.Context(), w, http.StatusNotFound, "book not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to get book", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to get book", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get book")
 		return
 	}
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get book")
 		return
 	}
@@ -391,14 +392,14 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 			writeError(r.Context(), w, http.StatusNotFound, "book not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to update book", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to update book", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book")
 		return
 	}
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book")
 		return
 	}
@@ -425,7 +426,7 @@ func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id stri
 			writeError(r.Context(), w, http.StatusNotFound, "book not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to delete book", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to delete book", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete book")
 		return
 	}
@@ -437,7 +438,7 @@ func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id stri
 func (h *BookHandler) respondBookAuthors(ctx context.Context, w http.ResponseWriter, bookID string) {
 	authors, err := h.DB.GetBookAuthors(ctx, bookID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get book authors", slog.Any("error", err))
+		slog.ErrorContext(ctx, "failed to get book authors", slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to get book authors")
 		return
 	}
@@ -490,7 +491,7 @@ func (h *BookHandler) putBookAuthors(w http.ResponseWriter, r *http.Request, boo
 		return
 	}
 	if err := h.DB.SetBookAuthors(r.Context(), bookID, req.AuthorIDs); err != nil {
-		slog.ErrorContext(r.Context(), "failed to set book authors", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to set book authors", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to set book authors")
 		return
 	}
@@ -501,7 +502,7 @@ func (h *BookHandler) putBookAuthors(w http.ResponseWriter, r *http.Request, boo
 func (h *BookHandler) respondBookSeries(ctx context.Context, w http.ResponseWriter, bookID string) {
 	entries, err := h.DB.GetBookSeries(ctx, bookID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get book series", slog.Any("error", err))
+		slog.ErrorContext(ctx, "failed to get book series", slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to get book series")
 		return
 	}
@@ -557,7 +558,7 @@ func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, book
 		return
 	}
 	if err := h.DB.SetBookSeries(r.Context(), bookID, req.Entries); err != nil {
-		slog.ErrorContext(r.Context(), "failed to set book series", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to set book series", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to set book series")
 		return
 	}
@@ -579,7 +580,7 @@ func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, book
 func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
 	files, err := h.DB.ListBookFiles(r.Context(), bookID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list book files", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to list book files", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list book files")
 		return
 	}
@@ -625,7 +626,7 @@ func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, book
 	}
 	bf, err := h.DB.CreateBookFile(r.Context(), bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create book file", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create book file", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book file")
 		return
 	}

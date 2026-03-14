@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // AuthorHandler holds dependencies for author endpoints.
@@ -92,7 +93,7 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing authors")
 	authors, err := h.DB.ListAuthors(r.Context())
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list authors", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to list authors", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list authors")
 		return
 	}
@@ -141,7 +142,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusConflict, "an author with that name already exists")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to create author", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to create author", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create author")
 		return
 	}
@@ -171,7 +172,7 @@ func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id str
 			writeError(r.Context(), w, http.StatusNotFound, "author not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to get author", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to get author", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get author")
 		return
 	}
@@ -219,7 +220,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 			writeError(r.Context(), w, http.StatusConflict, "an author with that name already exists")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to update author", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to update author", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update author")
 		return
 	}
@@ -247,7 +248,7 @@ func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id 
 			writeError(r.Context(), w, http.StatusNotFound, "author not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to delete author", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to delete author", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete author")
 		return
 	}

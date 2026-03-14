@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // JobScanLibraries is the registered name for the scan-all-libraries job.
@@ -48,7 +49,7 @@ func NewScanLibraryHandler(enqueuer Enqueuer) func(ctx context.Context, payload 
 				slog.WarnContext(ctx, "failed to enqueue scan:path job",
 					slog.String("library_id", p.LibraryID),
 					slog.String("path", path),
-					slog.Any("error", err),
+					slog.Any(otelkeys.Error, err),
 				)
 				continue
 			}
@@ -90,7 +91,7 @@ func NewScanLibrariesHandler(lister LibraryLister, enqueuer Enqueuer) func(ctx c
 				slog.WarnContext(ctx, "failed to parse library paths",
 					slog.String("library_id", lib.ID),
 					slog.String("library_name", lib.Name),
-					slog.Any("error", err),
+					slog.Any(otelkeys.Error, err),
 				)
 				continue
 			}
@@ -108,7 +109,7 @@ func NewScanLibrariesHandler(lister LibraryLister, enqueuer Enqueuer) func(ctx c
 			}); err != nil {
 				slog.WarnContext(ctx, "failed to enqueue scan:library job",
 					slog.String("library_id", lib.ID),
-					slog.Any("error", err),
+					slog.Any(otelkeys.Error, err),
 				)
 				continue
 			}

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/hibiken/asynq"
 )
 
@@ -82,12 +83,12 @@ func (w *Worker) Start(ctx context.Context) {
 	})
 
 	if err := srv.Start(w.mux); err != nil {
-		slog.ErrorContext(ctx, "Failed to start asynq server", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to start asynq server", slog.Any(otelkeys.Error, err))
 		return
 	}
 
 	if err := w.scheduler.Start(); err != nil {
-		slog.ErrorContext(ctx, "Failed to start asynq scheduler", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to start asynq scheduler", slog.Any(otelkeys.Error, err))
 		srv.Shutdown()
 		return
 	}

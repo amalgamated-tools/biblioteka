@@ -8,6 +8,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // AdminHandler holds dependencies for admin endpoints.
@@ -49,7 +50,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "admin listing users", slog.String("caller_id", userID))
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
@@ -60,7 +61,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := h.DB.ListUsers(r.Context())
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list users", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to list users", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list users")
 		return
 	}
@@ -107,7 +108,7 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "setting admin status", slog.String("caller_id", callerID))
 	isAdmin, err := h.DB.IsAdmin(r.Context(), callerID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
@@ -138,7 +139,7 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusNotFound, "user not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to set admin status", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to set admin status", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update admin status")
 		return
 	}
