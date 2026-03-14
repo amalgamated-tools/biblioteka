@@ -227,13 +227,16 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 }
 
-func (h *BookHandler) listBooks(w http.ResponseWriter, _ *http.Request) {
+func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
+	slog.DebugContext(r.Context(), "listing books")
 	books, err := h.DB.ListBooks()
 	if err != nil {
 		slog.Error("failed to list books", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list books")
 		return
 	}
+
+	slog.DebugContext(r.Context(), "books listed", slog.Int("count", len(books)))
 
 	dtos := make([]bookSummaryDTO, 0, len(books))
 	for i := range books {
@@ -255,6 +258,8 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.DebugContext(r.Context(), "creating book", slog.String("title", req.Title))
+
 	b, err := h.DB.CreateBook(req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
 	if err != nil {
 		slog.Error("failed to create book", "error", err)
@@ -271,7 +276,8 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, dto)
 }
 
-func (h *BookHandler) getBook(w http.ResponseWriter, _ *http.Request, id string) {
+func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "fetching book", slog.String("book_id", id))
 	b, err := h.DB.GetBook(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -304,6 +310,8 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		return
 	}
 
+	slog.DebugContext(r.Context(), "updating book", slog.String("book_id", id), slog.String("title", req.Title))
+
 	b, err := h.DB.UpdateBook(id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -323,7 +331,8 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 	writeJSON(w, http.StatusOK, dto)
 }
-func (h *BookHandler) deleteBook(w http.ResponseWriter, _ *http.Request, id string) {
+func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id string) {
+	slog.DebugContext(r.Context(), "deleting book", slog.String("book_id", id))
 	err := h.DB.DeleteBook(id)
 	if err != nil {
 		if err == sql.ErrNoRows {

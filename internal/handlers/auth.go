@@ -47,6 +47,14 @@ type userDTO struct {
 	IsAdmin    bool   `json:"is_admin"`
 }
 
+func redactEmail(email string) string {
+	at := strings.Index(email, "@")
+	if at <= 1 {
+		return "***"
+	}
+	return email[:1] + "***" + email[at:]
+}
+
 // Signup handles POST /api/auth/signup
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -72,9 +80,11 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.DebugContext(r.Context(), "signup request", slog.String("email", redactEmail(req.Email)))
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		slog.Error("failed to hash password during signup", slog.Any("email", req.Email), slog.Any("error", err))
+		slog.Error("failed to hash password during signup", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to hash password")
 		return
 	}
@@ -85,10 +95,12 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, "email already registered")
 			return
 		}
-		slog.Error("failed to create user", slog.Any("email", req.Email), slog.Any("error", err))
+		slog.Error("failed to create user", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to create user")
 		return
 	}
+
+	slog.DebugContext(r.Context(), "user created via signup", slog.String("user_id", user.ID))
 
 	token, err := h.JWT.CreateToken(user.ID)
 	if err != nil {
@@ -122,18 +134,23 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.DebugContext(r.Context(), "login attempt", slog.String("email", req.Email))
+
 	user, err := h.DB.GetUserByEmail(req.Email)
 	if err != nil {
+		slog.DebugContext(r.Context(), "login failed: user not found", slog.String("email", req.Email))
 		writeError(w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
 
 	if user.PasswordHash == "" {
+		slog.DebugContext(r.Context(), "login failed: OIDC-only account", slog.String("email", req.Email))
 		writeError(w, http.StatusUnauthorized, "this account uses OIDC login")
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		slog.DebugContext(r.Context(), "login failed: invalid password", slog.String("email", req.Email))
 		writeError(w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
@@ -144,6 +161,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to create token")
 		return
 	}
+
+	slog.DebugContext(r.Context(), "login successful", slog.String("user_id", user.ID), slog.String("email", user.Email))
 
 	writeJSON(w, http.StatusOK, authResponse{
 		Token: token,
@@ -159,6 +178,8 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
+	slog.DebugContext(r.Context(), "fetching current user", slog.String("user_id", userID))
+
 	user, err := h.DB.GetUserByID(userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -226,6 +247,8 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to update password")
 		return
 	}
+
+	slog.DebugContext(r.Context(), "password changed", slog.String("user_id", userID))
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "password updated"})
 }

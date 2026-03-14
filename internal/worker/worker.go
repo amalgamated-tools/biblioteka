@@ -46,6 +46,7 @@ func New(redisURL string) (*Worker, error) {
 
 // Register a named job handler. Must be called before Start.
 func (w *Worker) Register(name string, fn Func) {
+	slog.Debug("registering job handler", slog.String("job", name))
 	w.mux.HandleFunc(name, func(ctx context.Context, task *asynq.Task) error {
 		return fn(ctx, task.Payload())
 	})
@@ -53,13 +54,14 @@ func (w *Worker) Register(name string, fn Func) {
 
 // Start begins processing jobs, blocking until ctx is cancelled.
 func (w *Worker) Start(ctx context.Context) {
+	slog.DebugContext(ctx, "starting asynq worker", slog.Int("concurrency", DefaultConcurrency))
 	srv := asynq.NewServer(w.redisOpt, asynq.Config{
 		Concurrency: DefaultConcurrency,
 		Queues:      map[string]int{QueueName: 1},
 	})
 
 	if err := srv.Start(w.mux); err != nil {
-		slog.Error("Failed to start asynq server", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to start asynq server", slog.Any("error", err))
 		return
 	}
 
@@ -69,6 +71,7 @@ func (w *Worker) Start(ctx context.Context) {
 
 // Enqueue adds a job to the queue with the given name and JSON-serialisable payload.
 func (w *Worker) Enqueue(ctx context.Context, name string, payload any) (string, error) {
+	slog.DebugContext(ctx, "enqueuing job", slog.String("job", name))
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("marshal payload: %w", err)
@@ -79,6 +82,7 @@ func (w *Worker) Enqueue(ctx context.Context, name string, payload any) (string,
 	if err != nil {
 		return "", fmt.Errorf("enqueue task %s: %w", name, err)
 	}
+	slog.DebugContext(ctx, "job enqueued", slog.String("job", name), slog.String("task_id", info.ID))
 	return info.ID, nil
 }
 

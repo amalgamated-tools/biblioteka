@@ -44,12 +44,19 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 			return fmt.Errorf("process file payload: file_type is required")
 		}
 
+		slog.DebugContext(ctx, "process:file job received",
+			slog.String("path", p.Path),
+			slog.String("file_name", p.FileName),
+			slog.String("file_type", p.FileType),
+			slog.Int64("file_size", p.FileSize),
+		)
+
 		title := p.FileName
 		if ext := filepath.Ext(p.FileName); ext != "" && strings.EqualFold(ext[1:], p.FileType) {
 			title = strings.TrimSuffix(p.FileName, ext)
 		}
 
-		slog.Info("processing file",
+		slog.InfoContext(ctx, "processing file",
 			slog.String("title", title),
 			slog.String("type", p.FileType),
 			slog.String("path", p.Path),
@@ -65,7 +72,7 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 			return fmt.Errorf("create book file for %s: %w", p.Path, err)
 		}
 
-		slog.Info("file processed",
+		slog.InfoContext(ctx, "file processed",
 			slog.String("title", title),
 			slog.String("book_id", book.ID),
 			slog.String("path", p.Path),

@@ -47,6 +47,7 @@ func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 				return
 			}
 
+			slog.DebugContext(r.Context(), "authentication successful", slog.String("user_id", claims.UserID))
 			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
