@@ -629,6 +629,8 @@ Attach a file record to a book.
 | Status | Meaning |
 |--------|---------|
 | `400` | Missing `file_type`, `file_name`, or `file_path` |
+| `404` | Book with the given `{id}` not found |
+| `500` | Unexpected server error |
 
 ---
 
