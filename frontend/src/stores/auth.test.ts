@@ -9,6 +9,7 @@ vi.mock("../lib/api", () => ({
   getMe: vi.fn(),
   login: vi.fn(),
   signup: vi.fn(),
+  logout: vi.fn(),
 }));
 
 describe("auth store", () => {
@@ -33,6 +34,7 @@ describe("auth store", () => {
   describe("init", () => {
     it("sets loading to false when no token exists", async () => {
       vi.mocked(api.hasToken).mockReturnValue(false);
+      vi.mocked(api.getMe).mockRejectedValue(new Error("unauthorized"));
 
       await authStore.init();
 
@@ -71,16 +73,10 @@ describe("auth store", () => {
       expect(authStore.loading).toBe(false);
     });
 
-    it("picks up OIDC token from URL params", async () => {
-      Object.defineProperty(window, "location", {
-        value: {
-          search: "?token=oidc-tok",
-          pathname: "/",
-          hash: "",
-        },
-        writable: true,
-      });
-      vi.mocked(api.hasToken).mockReturnValue(true);
+    it("authenticates via cookie after OIDC redirect", async () => {
+      // After OIDC redirect, there's no ?token= param and no localStorage token,
+      // but the HttpOnly cookie is set — getMe() succeeds via cookie.
+      vi.mocked(api.hasToken).mockReturnValue(false);
       vi.mocked(api.getMe).mockResolvedValue({
         id: "2",
         email: "oidc@b.com",
@@ -90,8 +86,13 @@ describe("auth store", () => {
 
       await authStore.init();
 
-      expect(api.setToken).toHaveBeenCalledWith("oidc-tok");
-      expect(window.history.replaceState).toHaveBeenCalled();
+      expect(api.getMe).toHaveBeenCalled();
+      expect(authStore.user).toEqual({
+        id: "2",
+        email: "oidc@b.com",
+        oidc_linked: true,
+        is_admin: false,
+      });
     });
 
     it("sets oidcLinkError from URL params", async () => {
@@ -104,6 +105,7 @@ describe("auth store", () => {
         writable: true,
       });
       vi.mocked(api.hasToken).mockReturnValue(false);
+      vi.mocked(api.getMe).mockRejectedValue(new Error("unauthorized"));
 
       await authStore.init();
 
@@ -120,6 +122,7 @@ describe("auth store", () => {
         writable: true,
       });
       vi.mocked(api.hasToken).mockReturnValue(false);
+      vi.mocked(api.getMe).mockRejectedValue(new Error("unauthorized"));
 
       await authStore.init();
 
@@ -190,11 +193,13 @@ describe("auth store", () => {
 
   describe("signOut", () => {
     it("clears token and user", async () => {
+      vi.mocked(api.logout).mockResolvedValue(undefined);
       authStore.user = { id: "1", email: "a@b.com", oidc_linked: false, is_admin: false };
 
       await authStore.signOut();
 
       expect(api.clearToken).toHaveBeenCalled();
+      expect(api.logout).toHaveBeenCalled();
       expect(authStore.user).toBeNull();
     });
   });
