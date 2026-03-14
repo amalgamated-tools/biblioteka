@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { MonitorPlay } from "lucide-svelte";
+  import { BookCheck } from "lucide-svelte";
   import { signIn, signUp } from "../stores/auth";
 
   let isLogin = $state(true);
@@ -58,7 +58,7 @@
       <div
         class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4"
       >
-        <MonitorPlay class="w-8 h-8 text-white" />
+        <BookCheck class="w-8 h-8 text-white" />
       </div>
       <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
         biblioteka
@@ -130,7 +130,8 @@
               id="name"
               type="text"
               bind:value={name}
-              class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              autocomplete="name"
+              class="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               placeholder="Your name"
               disabled={loading}
             />
@@ -147,7 +148,8 @@
             id="email"
             type="email"
             bind:value={email}
-            class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            autocomplete="email"
+            class="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             placeholder="you@example.com"
             disabled={loading}
           />
@@ -164,7 +166,8 @@
             id="password"
             type="password"
             bind:value={password}
-            class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            autocomplete={isLogin ? "current-password" : "new-password"}
+            class="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             placeholder="••••••••"
             disabled={loading}
           />

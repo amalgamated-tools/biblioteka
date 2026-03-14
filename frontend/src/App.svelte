@@ -10,6 +10,9 @@
   import Libraries from "./components/Libraries.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import Settings from "./components/Settings.svelte";
+  import { Menu } from "lucide-svelte";
+
+  let sidebarOpen = $state(false);
 
   onMount(async () => {
     await initAuth();
@@ -20,6 +23,12 @@
     if ($currentView === "books" && $librariesLoaded && $libraries.length === 0) {
       navigate("dashboard");
     }
+  });
+
+  // Close sidebar on navigation (view change)
+  $effect(() => {
+    void $currentView;
+    sidebarOpen = false;
   });
 </script>
 
@@ -38,9 +47,30 @@
   <Auth />
 {:else}
   <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
-    <Sidebar currentView={$currentView} onNavigate={(view) => navigate(view)} />
+    <Sidebar
+      currentView={$currentView}
+      onNavigate={(view) => navigate(view)}
+      open={sidebarOpen}
+      onClose={() => (sidebarOpen = false)}
+    />
 
-    <main class="ml-64 p-8">
+    <!-- Mobile header with hamburger -->
+    <div
+      class="sticky top-0 z-30 flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 py-3 md:hidden"
+    >
+      <button
+        onclick={() => (sidebarOpen = true)}
+        class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+        aria-label="Open menu"
+      >
+        <Menu class="w-6 h-6" />
+      </button>
+      <span class="text-lg font-bold text-slate-900 dark:text-white"
+        >biblioteka</span
+      >
+    </div>
+
+    <main class="md:ml-64 p-4 md:p-8">
       <div class="max-w-6xl mx-auto">
         {#if $currentView === "dashboard"}
           <Dashboard />
