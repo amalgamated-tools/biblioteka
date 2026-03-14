@@ -305,7 +305,7 @@ List all libraries for the authenticated user.
     "id": "<uuid>",
     "name": "Fiction",
     "paths": ["/books/fiction"],
-    "organization_type": "author",
+    "organization_type": "book_per_folder",
     "monitored": true,
     "created_at": "2026-01-01T00:00:00Z",
     "updated_at": "2026-01-01T00:00:00Z"
@@ -330,6 +330,8 @@ Create a new library.
 ```
 
 `name` and at least one entry in `paths` are required. Each path must point to an existing directory on the server filesystem. `organization_type` defaults to `"book_per_folder"` when omitted.
+
+> **Note:** Creating a library automatically enqueues a background scan job for each path. Files found at those paths are indexed asynchronously.
 
 **Response `201 Created`** — Library object.
 
