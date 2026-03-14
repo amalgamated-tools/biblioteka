@@ -424,7 +424,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Find or create user (normal login flow)
 	user, err := h.findOrCreateUser(r.Context(), claims.Sub, claims.Email, claims.Name)
 	if err != nil {
-		slog.Error("failed to find or create OIDC user", "error", err)
+		slog.ErrorContext(r.Context(), "failed to find or create OIDC user", slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to process user")
 		return
 	}
@@ -432,7 +432,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Issue a biblioteka JWT
 	token, err := h.JWT.CreateToken(user.ID)
 	if err != nil {
-		slog.Error("failed to create token for OIDC user", "user_id", user.ID, "error", err)
+		slog.ErrorContext(r.Context(), "failed to create token for OIDC user", slog.String("user_id", user.ID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to create session")
 		return
 	}

@@ -88,7 +88,7 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	slog.DebugContext(r.Context(), "fetching OIDC config", slog.String("user_id", userID))
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.Error("failed to check admin status", "user_id", userID, "error", err)
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String("user_id", userID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
@@ -128,7 +128,7 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	userID := auth.UserIDFromContext(r.Context())
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.Error("failed to check admin status", "user_id", userID, "error", err)
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String("user_id", userID), slog.Any("error", err))
 		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}

@@ -29,7 +29,7 @@ func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
 	}
-	assertJSONError(t, w.Body.Bytes(), "missing authorization header")
+	assertJSONError(t, w.Body.Bytes(), "authentication required")
 }
 
 func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
@@ -54,7 +54,7 @@ func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 	}
 	// Non-Bearer auth header is treated as "no valid token found" since
 	// extractToken checks header then cookie fallback.
-	assertJSONError(t, w.Body.Bytes(), "missing authorization header")
+	assertJSONError(t, w.Body.Bytes(), "authentication required")
 }
 
 func TestMiddleware_InvalidToken(t *testing.T) {
