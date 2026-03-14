@@ -137,7 +137,7 @@
             </button>
             <button
               onclick={() => handleSidebarNavigate(`libraries/edit/${lib.id}`)}
-              class="opacity-0 group-hover:opacity-100 text-ink-500 hover:text-accent-400 transition-all p-0.5 flex-shrink-0"
+              class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 text-ink-500 hover:text-accent-400 transition-all p-0.5 flex-shrink-0"
               title="Library settings"
               aria-label="Library settings"
             >
