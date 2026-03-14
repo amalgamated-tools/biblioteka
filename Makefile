@@ -38,22 +38,22 @@ screenshots: node_modules
 	@-lsof -ti :8080 | xargs kill -9 2>/dev/null || true
 	@echo "Starting dev server in background..."	
 	@goreman -f Procfile.dev start & DEV_PID=$$!; \
-# 	echo "Waiting for frontend (localhost:5173) and backend (localhost:8080)..."; \
-# 	for i in $$(seq 1 60); do \
-# 		if curl -s -o /dev/null http://localhost:5173 && curl -s -o /dev/null http://localhost:8080/health; then \
-# 			echo "Servers ready."; \
-# 			break; \
-# 		fi; \
-# 		if [ $$i -eq 60 ]; then \
-# 			echo "Timeout waiting for servers"; \
-# 			kill $$DEV_PID 2>/dev/null; \
-# 			exit 1; \
-# 		fi; \
-# 		sleep 1; \
-# 	node script/take-screenshots.mjs; \
-# 	RESULT=$$?; \
-# 	kill $$DEV_PID 2>/dev/null; \
-# 	exit $$RESULT
+	echo "Waiting for frontend (localhost:5173) and backend (localhost:8080)..."; \
+	for i in $$(seq 1 60); do \
+		if curl -s -o /dev/null http://localhost:5173 && curl -s -o /dev/null http://localhost:8080/health; then \
+			echo "Servers ready."; \
+			break; \
+		fi; \
+		if [ $$i -eq 60 ]; then \
+			echo "Timeout waiting for servers"; \
+			kill $$DEV_PID 2>/dev/null; \
+			exit 1; \
+		fi; \
+		sleep 1; \
+	node script/take-screenshots.mjs; \
+	RESULT=$$?; \
+	kill $$DEV_PID 2>/dev/null; \
+	exit $$RESULT
 
 redis-check:
 	@set -e; \
