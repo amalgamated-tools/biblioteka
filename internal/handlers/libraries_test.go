@@ -29,7 +29,7 @@ type mockEnqueuer struct {
 
 type enqueued struct {
 	Name    string
-	Payload jobs.ScanPathPayload
+	Payload json.RawMessage
 }
 
 func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any) (string, error) {
@@ -43,13 +43,9 @@ func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any) (str
 	if err != nil {
 		return "", err
 	}
-	var p jobs.ScanPathPayload
-	if err := json.Unmarshal(data, &p); err != nil {
-		return "", err
-	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.jobs = append(m.jobs, enqueued{Name: name, Payload: p})
+	m.jobs = append(m.jobs, enqueued{Name: name, Payload: json.RawMessage(data)})
 	return "mock-job-id", nil
 }
 
@@ -220,11 +216,15 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 	if len(mock.jobs) != 1 {
 		t.Fatalf("enqueued jobs = %d, want 1", len(mock.jobs))
 	}
-	if mock.jobs[0].Name != jobs.JobScanPath {
-		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanPath)
+	if mock.jobs[0].Name != jobs.JobScanLibrary {
+		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
-	if mock.jobs[0].Payload.Path != dir {
-		t.Errorf("job path = %q, want %q", mock.jobs[0].Payload.Path, dir)
+	var p jobs.ScanLibraryPayload
+	if err := json.Unmarshal(mock.jobs[0].Payload, &p); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if len(p.Paths) != 1 || p.Paths[0] != dir {
+		t.Errorf("job paths = %v, want [%s]", p.Paths, dir)
 	}
 }
 
@@ -232,7 +232,7 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 	h, userID := setupLibraryHandler(t)
 	mock := &mockEnqueuer{}
 	h.Enqueuer = mock
-	mock.expect(2)
+	mock.expect(1)
 
 	dir1 := t.TempDir()
 	dir2 := t.TempDir()
@@ -261,12 +261,22 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
-	if len(mock.jobs) != 2 {
-		t.Fatalf("enqueued jobs = %d, want 2", len(mock.jobs))
+	if len(mock.jobs) != 1 {
+		t.Fatalf("enqueued jobs = %d, want 1", len(mock.jobs))
+	}
+	if mock.jobs[0].Name != jobs.JobScanLibrary {
+		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
+	}
+	var p jobs.ScanLibraryPayload
+	if err := json.Unmarshal(mock.jobs[0].Payload, &p); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if len(p.Paths) != 2 {
+		t.Fatalf("job paths count = %d, want 2", len(p.Paths))
 	}
 	for i, dir := range []string{dir1, dir2} {
-		if mock.jobs[i].Payload.Path != dir {
-			t.Errorf("job[%d] path = %q, want %q", i, mock.jobs[i].Payload.Path, dir)
+		if p.Paths[i] != dir {
+			t.Errorf("job paths[%d] = %q, want %q", i, p.Paths[i], dir)
 		}
 	}
 }
