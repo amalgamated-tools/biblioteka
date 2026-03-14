@@ -27,7 +27,10 @@ type Extractor struct {
 func NewExtractor() (*Extractor, error) {
 	et, err := exiftool.NewExiftool()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create exiftool: %w", err)
+		slog.Warn("exiftool not available; exif-based metadata extraction disabled", "err", err)
+		return &Extractor{
+			et: nil,
+		}, nil
 	}
 	return &Extractor{
 		et: et,
@@ -35,7 +38,9 @@ func NewExtractor() (*Extractor, error) {
 }
 
 func (e *Extractor) Close() {
-	e.et.Close()
+	if e.et != nil {
+		e.et.Close()
+	}
 }
 
 func (e *Extractor) ExtractMetadata(path string) (*BookMetadata, error) {
@@ -46,6 +51,9 @@ func (e *Extractor) ExtractMetadata(path string) (*BookMetadata, error) {
 	}
 
 	// 2. Fallback to ExifTool for MOBI, AZW3, and PDF
+	if e.et == nil {
+		return nil, fmt.Errorf("exif-based metadata extraction requested but exiftool is not available")
+	}
 	return e.extractExif(path)
 }
 
@@ -55,6 +63,10 @@ func (e *Extractor) extractNativeEpub(path string) (*BookMetadata, error) {
 		return nil, err
 	}
 	defer rc.Close()
+
+	if len(rc.Rootfiles) == 0 {
+		return nil, fmt.Errorf("epub file %s contains no rootfiles", path)
+	}
 
 	book := rc.Rootfiles[0]
 	return &BookMetadata{
