@@ -91,12 +91,12 @@ Client-side routing uses the browser's URL hash (`#`). No router library is need
 **Navigating programmatically:**
 
 ```ts
-import { routerStore } from "../stores/router.svelte";
-
-routerStore.navigate("settings/account");
-```
-
-`App.svelte` renders the appropriate page component based on `routerStore.currentView`.
+| Member | Type/Return | Description |
+|----------|------|-------------|
+| `hash` | `string` | Raw hash value (e.g. `"settings/account"`) |
+| `currentView` | `AppView` | Top-level view segment (`"dashboard"` \| `"books"` \| `"my-library"` \| `"libraries"` \| `"settings"`) |
+| `subPath` | `string` | Sub-path after the first segment (e.g. `"account"`) |
+| `navigate(path)` | `→ void` | Sets the hash and updates the store |
 
 ## API client
 
