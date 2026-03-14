@@ -16,10 +16,14 @@ import (
 )
 
 // mockEnqueuer records all enqueued jobs for test assertions.
+// Use wg.Add(n) before triggering n Enqueue calls, then wg.Wait() to
+// synchronise with goroutines that call Enqueue asynchronously.
 type mockEnqueuer struct {
-	mu   sync.Mutex
-	jobs []enqueued
-	err  error // if set, Enqueue returns this error
+	mu      sync.Mutex
+	wg      sync.WaitGroup
+	useWg   bool // set to true when wg.Add has been called
+	jobs    []enqueued
+	err     error // if set, Enqueue returns this error
 }
 
 type enqueued struct {
@@ -28,6 +32,9 @@ type enqueued struct {
 }
 
 func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any) (string, error) {
+	if m.useWg {
+		defer m.wg.Done()
+	}
 	if m.err != nil {
 		return "", m.err
 	}
@@ -43,6 +50,12 @@ func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any) (str
 	defer m.mu.Unlock()
 	m.jobs = append(m.jobs, enqueued{Name: name, Payload: p})
 	return "mock-job-id", nil
+}
+
+// expect sets up the mock to wait for n Enqueue calls.
+func (m *mockEnqueuer) expect(n int) {
+	m.useWg = true
+	m.wg.Add(n)
 }
 
 func setupLibraryHandler(t *testing.T) (*LibraryHandler, string) {
@@ -172,6 +185,7 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 	h, userID := setupLibraryHandler(t)
 	mock := &mockEnqueuer{}
 	h.Enqueuer = mock
+	mock.expect(1)
 
 	dir := t.TempDir()
 	body, _ := json.Marshal(libraryRequest{
@@ -184,6 +198,7 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
+	mock.wg.Wait()
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
@@ -204,6 +219,7 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 	h, userID := setupLibraryHandler(t)
 	mock := &mockEnqueuer{}
 	h.Enqueuer = mock
+	mock.expect(2)
 
 	dir1 := t.TempDir()
 	dir2 := t.TempDir()
@@ -217,6 +233,7 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
+	mock.wg.Wait()
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
@@ -236,6 +253,7 @@ func TestCreateLibrary_EnqueueErrorDoesNotFailRequest(t *testing.T) {
 	h, userID := setupLibraryHandler(t)
 	mock := &mockEnqueuer{err: fmt.Errorf("redis unavailable")}
 	h.Enqueuer = mock
+	mock.expect(1)
 
 	dir := t.TempDir()
 	body, _ := json.Marshal(libraryRequest{
@@ -248,6 +266,7 @@ func TestCreateLibrary_EnqueueErrorDoesNotFailRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
+	mock.wg.Wait()
 
 	if w.Code != http.StatusCreated {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
