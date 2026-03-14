@@ -10,6 +10,7 @@ on:
       - 'db/**'
       - 'go.mod'
       - 'go.sum'
+      - '.golangci.yml'
       - '.github/workflows/test.yml'
   pull_request:
     branches: [main, develop]
@@ -20,6 +21,7 @@ on:
       - 'db/**'
       - 'go.mod'
       - 'go.sum'
+      - '.golangci.yml'
       - '.github/workflows/test.yml'
 
 permissions:
