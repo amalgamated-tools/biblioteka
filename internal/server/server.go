@@ -247,46 +247,10 @@ func (s *Server) setupRoutes() {
 			_, _ = fmt.Fprint(w, `{"enabled":false}`)
 		}
 	})
-	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Limit(func(w http.ResponseWriter, r *http.Request) {
-		handler := s.oidcHandler
-		if handler == nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNotFound)
-			_, _ = fmt.Fprint(w, `{"error":"OIDC not configured"}`)
-			return
-		}
-		handler.Login(w, r)
-	}))
-	s.mux.HandleFunc("/api/auth/oidc/callback", s.authLimiter.Limit(func(w http.ResponseWriter, r *http.Request) {
-		handler := s.oidcHandler
-		if handler == nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNotFound)
-			_, _ = fmt.Fprint(w, `{"error":"OIDC not configured"}`)
-			return
-		}
-		handler.Callback(w, r)
-	}))
-	s.mux.HandleFunc("/api/auth/oidc/link", s.authLimiter.Limit(func(w http.ResponseWriter, r *http.Request) {
-		handler := s.oidcHandler
-		if handler == nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNotFound)
-			_, _ = fmt.Fprint(w, `{"error":"OIDC not configured"}`)
-			return
-		}
-		handler.Link(w, r)
-	}))
-	s.mux.Handle("/api/auth/oidc/link-nonce", s.requireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handler := s.oidcHandler
-		if handler == nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNotFound)
-			_, _ = fmt.Fprint(w, `{"error":"OIDC not configured"}`)
-			return
-		}
-		handler.CreateLinkNonce(w, r)
-	})))
+	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Login)))
+	s.mux.HandleFunc("/api/auth/oidc/callback", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Callback)))
+	s.mux.HandleFunc("/api/auth/oidc/link", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Link)))
+	s.mux.Handle("/api/auth/oidc/link-nonce", s.requireAuth(http.HandlerFunc(s.oidcRoute((*handlers.OIDCHandler).CreateLinkNonce))))
 
 	// Protected auth routes
 	s.mux.Handle("/api/auth/me", s.requireAuth(http.HandlerFunc(s.authHandler.Me)))
@@ -326,6 +290,21 @@ func (s *Server) setupRoutes() {
 		_, _ = fmt.Fprint(w, `{"status":"ok"}`)
 	})
 	s.setupFrontend()
+}
+
+// oidcRoute returns a handler that forwards to the OIDC handler method if OIDC is configured,
+// or responds with a 404 JSON error if it is not.
+func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		handler := s.oidcHandler
+		if handler == nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = fmt.Fprint(w, `{"error":"OIDC not configured"}`)
+			return
+		}
+		fn(handler, w, r)
+	}
 }
 
 func (s *Server) setupFrontend() {
