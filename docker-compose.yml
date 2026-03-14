@@ -1,6 +1,6 @@
 services:
-  fichemos:
-    container_name: fichemos
+  biblioteka:
+    container_name: biblioteka
     build: .
     ports:
       - "8080:8080"
@@ -16,7 +16,7 @@ services:
       - OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI:-}
       - TELEMETRY_ENABLED=${TELEMETRY_ENABLED:-false}
     volumes:
-      - fichemos-data:/data
+      - biblioteka-data:/data
     depends_on:
       redis:
         condition: service_healthy
@@ -37,4 +37,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  fichemos-data:
+  biblioteka-data:

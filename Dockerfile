@@ -15,18 +15,18 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=frontend /app/internal/server/dist/ ./internal/server/dist/
-RUN go build -ldflags "-X main.version=${VERSION}" -o fichemos ./cmd/server
+RUN go build -ldflags "-X main.version=${VERSION}" -o biblioteka ./cmd/server
 
 # Stage 3: Final image
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates tzdata exiftool
 WORKDIR /app
 
-COPY --from=backend /app/fichemos .
+COPY --from=backend /app/biblioteka .
 COPY --from=backend /app/db/migrations/ ./db/migrations/
 
 RUN mkdir -p /data
 
 EXPOSE 8080
 
-CMD ["./fichemos"]
+CMD ["./biblioteka"]
