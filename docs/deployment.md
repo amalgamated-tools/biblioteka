@@ -121,7 +121,6 @@ The SQLite database is stored in a Docker named volume (`biblioteka-data`). To b
 ```bash
 # Copy the database file from the running container
 docker compose cp biblioteka:/data/biblioteka.db ./biblioteka.db.bak
-docker compose cp biblioteka:/data/biblioteka.db.bak ./biblioteka.db.bak
 ```
 
 Or stop the container before copying for a guaranteed consistent snapshot:
