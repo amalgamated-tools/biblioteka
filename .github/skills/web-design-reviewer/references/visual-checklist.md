@@ -1,6 +1,6 @@
 # Visual Inspection Checklist
 
-A checklist for reviewing the Enlace UI.
+A checklist for reviewing the Biblioteka UI.
 
 ---
 
