@@ -227,7 +227,6 @@ Save OIDC provider settings. The server performs OIDC discovery on the `issuer_u
 | `redirect_uri`  | string | ✓        | Callback URL registered with the provider |
 
 \* Required when no `client_secret` is currently stored (initial OIDC setup); may be omitted to preserve an existing secret.
-| `redirect_uri`  | string | ✓        | Callback URL registered with the provider |
 
 **Response body (`200`):**
 
@@ -307,7 +306,7 @@ Create a library.
 
 **Responses:** `201 Created` with the new library object, or `409 Conflict` if the name is taken.
 
-> **Note:** On successful creation, the server asynchronously enqueues one scan job per configured path. Updating (`PUT`) a library does **not** trigger an automatic re-scan.
+> **Note:** On successful creation, the server asynchronously enqueues a `scan:library` job that then fans out a `scan:path` job for each configured path. Updating (`PUT`) a library does **not** trigger an automatic re-scan.
 
 **Library object:**
 
