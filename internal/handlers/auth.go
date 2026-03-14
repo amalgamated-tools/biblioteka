@@ -63,7 +63,8 @@ func setAuthCookie(w http.ResponseWriter, token string, secure bool) {
 		Name:     auth.TokenCookieName(),
 		Value:    token,
 		Path:     "/",
-		MaxAge:   86400, // 24h, matches JWT TTL
+		// MaxAge 0 makes this a session cookie; JWT expiry is enforced by token validation.
+		MaxAge:   0,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 		Secure:   secure,

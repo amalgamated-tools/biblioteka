@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 )
 
 type contextKey string
@@ -88,7 +90,66 @@ func extractToken(r *http.Request) string {
 
 // AdminMiddleware returns an HTTP middleware that validates a JWT (from header
 // or cookie) and verifies the user is an admin before allowing the request.
+type adminCacheEntry struct {
+	isAdmin   bool
+	expiresAt time.Time
+}
+
+type cachingAdminChecker struct {
+	delegate AdminChecker
+	ttl      time.Duration
+
+	mu      sync.RWMutex
+	entries map[string]adminCacheEntry
+}
+
+func newCachingAdminChecker(delegate AdminChecker, ttl time.Duration) AdminChecker {
+	if ttl <= 0 {
+		// Fallback to a small default TTL if an invalid value is provided.
+		ttl = 5 * time.Second
+	}
+	return &cachingAdminChecker{
+		delegate: delegate,
+		ttl:      ttl,
+		entries:  make(map[string]adminCacheEntry),
+	}
+}
+
+func (c *cachingAdminChecker) IsAdmin(userID string) (bool, error) {
+	// Fast path: check cache under read lock.
+	now := time.Now()
+
+	c.mu.RLock()
+	entry, ok := c.entries[userID]
+	c.mu.RUnlock()
+
+	if ok && now.Before(entry.expiresAt) {
+		return entry.isAdmin, nil
+	}
+
+	// Cache miss or expired; consult the underlying checker.
+	isAdmin, err := c.delegate.IsAdmin(userID)
+	if err != nil {
+		return false, err
+	}
+
+	// Store/refresh the cache entry under write lock.
+	c.mu.Lock()
+	c.entries[userID] = adminCacheEntry{
+		isAdmin:   isAdmin,
+		expiresAt: now.Add(c.ttl),
+	}
+	c.mu.Unlock()
+
+	return isAdmin, nil
+}
+
 func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) http.Handler {
+	// Wrap the provided AdminChecker with a short-lived cache to avoid
+	// repeated DB lookups for high-frequency admin endpoints (e.g., /asynqmon/).
+	const adminCacheTTL = 5 * time.Second
+	cachedChecker := newCachingAdminChecker(checker, adminCacheTTL)
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token := extractToken(r)
@@ -105,7 +166,7 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) h
 				return
 			}
 
-			isAdmin, err := checker.IsAdmin(claims.UserID)
+			isAdmin, err := cachedChecker.IsAdmin(claims.UserID)
 			if err != nil {
 				slog.ErrorContext(r.Context(), "admin middleware: failed to check admin status", slog.Any("error", err))
 				jsonError(w, http.StatusInternalServerError, "failed to verify permissions")

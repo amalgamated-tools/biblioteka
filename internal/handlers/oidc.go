@@ -441,7 +441,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	// Set auth cookie for browser-based access, then redirect to frontend
 	setAuthCookie(w, token, h.SecureCookies)
-	http.Redirect(w, r, "/?token="+token, http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // findOrCreateUser looks up a user by OIDC subject, then by email, creating if needed.
