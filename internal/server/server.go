@@ -74,6 +74,7 @@ type Server struct {
 	bookHandler     *handlers.BookHandler
 	bookFileHandler *handlers.BookFileHandler
 	auditLogHandler *handlers.AuditLogHandler
+	opdsHandler     *handlers.OPDSHandler
 	requireAuth     func(http.Handler) http.Handler
 	requireAdmin    func(http.Handler) http.Handler
 	authLimiter     *auth.RateLimiter
@@ -145,6 +146,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.bookHandler = &handlers.BookHandler{DB: s.DB}
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
+	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB, JWT: s.JWT}
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
@@ -291,6 +293,9 @@ func (s *Server) setupRoutes(ctx context.Context) {
 
 	// Protected audit log routes (admin only)
 	s.mux.Handle("/api/audit-logs", s.requireAuth(http.HandlerFunc(s.auditLogHandler.HandleAuditLogs)))
+	// OPDS catalog routes (support JWT Bearer and HTTP Basic Auth)
+	s.mux.Handle("/opds", s.opdsHandler.Middleware(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
+	s.mux.Handle("/opds/", s.opdsHandler.Middleware(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
 
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)

@@ -25,6 +25,15 @@ func jsonError(w http.ResponseWriter, status int, message string) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
+// ExtractToken tries to read a JWT from the Authorization header first,
+// then falls back to the "biblioteka_token" cookie. It returns the token and
+// an optional reason describing why no token could be extracted.
+// This exported form allows non-middleware callers (e.g. OPDS handler) to
+// reuse the same token-extraction logic without going through the full middleware.
+func ExtractToken(r *http.Request) (string, string) {
+	return extractToken(r)
+}
+
 // extractToken tries to read a JWT from the Authorization header first,
 // then falls back to the "biblioteka_token" cookie. It returns the token and
 // an optional reason describing why no token could be extracted.

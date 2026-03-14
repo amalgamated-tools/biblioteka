@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -97,6 +98,86 @@ func (d *DB) ListBooksByLibrary(ctx context.Context, libraryID string) ([]Book, 
 	rows, err := d.QueryContext(ctx,
 		`SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13, b.goodreads_id, b.hardcover_id, b.google_books_id, b.publication_date, b.publisher, b.language, b.num_pages, b.cover_image_url, b.created_at, b.updated_at FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy,
 		libraryID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, *b)
+	}
+	return books, rows.Err()
+}
+
+// ListBooksByAuthor returns all books associated with a specific author.
+func (d *DB) ListBooksByAuthor(authorID string) ([]Book, error) {
+	slog.Debug("db: listing books by author", slog.String("author_id", authorID))
+	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY b.title ASC, b.id ASC"
+	}
+	rows, err := d.Query(
+		`SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13, b.goodreads_id, b.hardcover_id, b.google_books_id, b.publication_date, b.publisher, b.language, b.num_pages, b.cover_image_url, b.created_at, b.updated_at FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1 `+orderBy,
+		authorID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, *b)
+	}
+	return books, rows.Err()
+}
+
+// ListBooksBySeries returns all books associated with a specific series,
+// ordered by their position within the series.
+func (d *DB) ListBooksBySeries(seriesID string) ([]Book, error) {
+	slog.Debug("db: listing books by series", slog.String("series_id", seriesID))
+	rows, err := d.Query(
+		`SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13, b.goodreads_id, b.hardcover_id, b.google_books_id, b.publication_date, b.publisher, b.language, b.num_pages, b.cover_image_url, b.created_at, b.updated_at FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 ORDER BY bs.position ASC NULLS LAST, b.title ASC`,
+		seriesID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, *b)
+	}
+	return books, rows.Err()
+}
+
+// SearchBooks returns all books whose title, description, publisher, or author name
+// contains the given query string (case-insensitive).
+func (d *DB) SearchBooks(query string) ([]Book, error) {
+	slog.Debug("db: searching books", slog.String("query", query))
+	like := "%" + strings.ToLower(query) + "%"
+	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY b.title ASC, b.id ASC"
+	}
+	rows, err := d.Query(
+		`SELECT DISTINCT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13, b.goodreads_id, b.hardcover_id, b.google_books_id, b.publication_date, b.publisher, b.language, b.num_pages, b.cover_image_url, b.created_at, b.updated_at FROM books b LEFT JOIN book_authors ba ON ba.book_id = b.id LEFT JOIN authors a ON a.id = ba.author_id WHERE LOWER(b.title) LIKE $1 OR LOWER(b.description) LIKE $1 OR LOWER(b.publisher) LIKE $1 OR LOWER(a.name) LIKE $1 `+orderBy,
+		like,
 	)
 	if err != nil {
 		return nil, err
