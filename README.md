@@ -119,8 +119,9 @@ The server runs a Redis-backed job queue (powered by [asynq](https://github.com/
 
 | Job | Trigger | Description |
 |---|---|---|
-| `scan:libraries` | Scheduled every 24 h | Iterates every *monitored* library and enqueues a `scan:path` job for each configured path |
-| `scan:path` | Enqueued by `scan:libraries` | Walks a directory tree and enqueues a `process:file` job for every EPUB, MOBI, AZW3, or PDF found |
+| `scan:libraries` | Scheduled every 24 h | Iterates every *monitored* library and enqueues a `scan:library` job for each |
+| `scan:library` | Enqueued by `scan:libraries` or on library creation | Takes a library's configured paths and enqueues a `scan:path` job for each path |
+| `scan:path` | Enqueued by `scan:library` | Walks a directory tree and enqueues a `process:file` job for every EPUB, MOBI, AZW3, or PDF found |
 | `process:file` | Enqueued by `scan:path` | Creates a book record and attaches a book-file record for the discovered file |
 
 Jobs are deduplicated for 24 hours — attempting to re-scan a path that was already queued within that window won’t enqueue an additional task (the duplicate enqueue is rejected).
@@ -196,7 +197,7 @@ internal/
   auth/            JWT, OIDC, rate-limiting, middleware
   db/              Database layer (SQLite/PostgreSQL), migrations, CRUD
   handlers/        HTTP request handlers (books, authors, series, libraries, auth)
-  jobs/            Background job handlers (scan:path, scan:libraries, process:file)
+  jobs/            Background job handlers (scan:libraries, scan:library, scan:path, process:file)
   metadata/        EPUB/MOBI/PDF metadata extraction
   server/          Route registration, middleware setup, embedded frontend
   worker/          asynq worker setup
