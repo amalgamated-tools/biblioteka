@@ -23,7 +23,7 @@ Endpoints that require authentication are marked with 🔒. Endpoints that addit
 **Response:** `200 OK`
 
 ```json
-"OK"
+{"status":"ok"}
 ```
 
 ---
@@ -167,7 +167,17 @@ Link an OIDC identity to an existing local account. Expects a `nonce` query para
 
 ### `POST /api/auth/oidc/link-nonce` 🔒
 
-### `GET /api/auth/oidc/link`
+Generate a short-lived, single-use nonce to begin the OIDC account-linking flow for the authenticated user. The nonce expires after 5 minutes and can only be used once.
+
+**Response body (`200`):**
+
+```json
+{"nonce": "<token>"}
+```
+
+Pass the returned nonce to [`GET /api/auth/oidc/link`](#get-apiauthoidclink) as the `nonce` query parameter.
+
+---
 
 ## Config
 
@@ -597,6 +607,24 @@ Replace the series entries for a book.
 ### `GET /api/books/{id}/files` 🔒
 
 List all files associated with a book.
+
+---
+
+### `POST /api/books/{id}/files` 🔒
+
+Register a new file record for a book.
+
+**Request body:**
+
+| Field       | Type    | Required | Description                        |
+|-------------|---------|----------|------------------------------------|
+| `file_type` | string  | ✓        | Format (e.g., `"epub"`, `"pdf"`)   |
+| `file_name` | string  | ✓        | File name (e.g., `"book.epub"`)    |
+| `file_path` | string  | ✓        | Absolute path to the file on disk  |
+| `file_size` | integer |          | File size in bytes                 |
+| `file_hash` | string  |          | Optional checksum (e.g., `"sha256:abc123..."`) |
+
+**Response:** `201 Created` — book file object.
 
 ---
 
