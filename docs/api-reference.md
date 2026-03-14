@@ -329,6 +329,14 @@ Create a library.
 
 Get a single library by ID.
 
+**Response body (`200`):** Library object (same shape as the object in [`POST /api/libraries`](#post-apilibraries)).
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `404` | Library not found |
+
 ---
 
 ### `PUT /api/libraries/{id}` 🔒
@@ -336,6 +344,16 @@ Get a single library by ID.
 Update a library. All fields are replaced (full update).
 
 **Request body:** Same as `POST /api/libraries`.
+
+**Response body (`200`):** Updated library object.
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Invalid request (malformed JSON or validation error such as missing name, invalid/non-existent/empty paths) |
+| `404` | Library not found |
+| `409` | A library with that name already exists |
 
 ---
 
@@ -350,6 +368,8 @@ Delete a library. Returns `204 No Content`.
 ### `GET /api/authors` 🔒
 
 List all authors.
+
+**Response body (`200`):** Array of author objects (see below).
 
 ---
 
@@ -390,11 +410,32 @@ Create an author.
 
 Get a single author by ID.
 
+**Response body (`200`):** Author object (same shape as the object in [`POST /api/authors`](#post-apiauthors)).
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `404` | Author not found |
+
 ---
 
 ### `PUT /api/authors/{id}` 🔒
 
 Update an author (full update).
+
+**Request body:** Same fields as `POST /api/authors`.
+
+**Response body (`200`):** Updated author object.
+
+**Errors:**
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Invalid request (malformed JSON or missing name) |
+| `404` | Author not found |
+| `409` | An author with that name already exists |
 
 ---
 
@@ -409,6 +450,8 @@ Delete an author. Returns `204 No Content`.
 ### `GET /api/series` 🔒
 
 List all series.
+
+**Response body (`200`):** Array of series objects (see below).
 
 ---
 
@@ -447,11 +490,32 @@ Create a series.
 
 Get a single series by ID.
 
+**Response body (`200`):** Series object (same shape as the object in [`POST /api/series`](#post-apiseries)).
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `404` | Series not found |
+
 ---
 
 ### `PUT /api/series/{id}` 🔒
 
 Update a series (full update).
+
+**Request body:** Same fields as `POST /api/series`.
+
+**Response body (`200`):** Updated series object.
+
+**Errors:**
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Validation error (missing name) |
+| `404` | Series not found |
+| `409` | A series with that name already exists |
 
 ---
 
@@ -466,6 +530,8 @@ Delete a series. Returns `204 No Content`.
 ### `GET /api/books` 🔒
 
 List all books (summary objects — no nested authors, series, or files).
+
+**Response body (`200`):** JSON array of book summary objects.
 
 **Book summary object:**
 
