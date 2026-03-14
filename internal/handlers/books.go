@@ -399,6 +399,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 	writeJSON(w, http.StatusOK, dto)
 }
+
 // deleteBook godoc
 // @Summary     Delete a book
 // @Description Delete a book by ID
