@@ -133,8 +133,13 @@ func (c *cachingAdminChecker) IsAdmin(userID string) (bool, error) {
 		return false, err
 	}
 
-	// Store/refresh the cache entry under write lock.
+	// Store/refresh the cache entry under write lock; sweep expired entries.
 	c.mu.Lock()
+	for k, v := range c.entries {
+		if now.After(v.expiresAt) {
+			delete(c.entries, k)
+		}
+	}
 	c.entries[userID] = adminCacheEntry{
 		isAdmin:   isAdmin,
 		expiresAt: now.Add(c.ttl),
