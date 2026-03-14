@@ -1,4 +1,4 @@
-.PHONY: all build frontend backend clean dev redis-check
+.PHONY: all build frontend backend clean dev redis-check screenshots
 
 # Build everything: frontend then Go binary
 all: build
@@ -6,6 +6,10 @@ all: build
 # Install frontend dependencies
 frontend/node_modules: frontend/package.json
 	cd frontend && pnpm install
+
+# Install root-level tooling dependencies
+node_modules: package.json
+	pnpm install
 
 # Build the frontend into internal/server/dist/
 frontend: frontend/node_modules
@@ -25,6 +29,31 @@ run: build
 # Run frontend and backend dev servers via goreman
 dev: redis-check frontend/node_modules
 	goreman -f Procfile.dev start
+
+# Capture application screenshots via Playwright
+screenshots: node_modules
+	@mkdir -p screenshots
+	@echo "Killing any existing servers on ports 5173 and 8080..."
+	@-lsof -ti :5173 | xargs kill -9 2>/dev/null || true
+	@-lsof -ti :8080 | xargs kill -9 2>/dev/null || true
+	@echo "Starting dev server in background..."	
+	@goreman -f Procfile.dev start & DEV_PID=$$!; \
+# 	echo "Waiting for frontend (localhost:5173) and backend (localhost:8080)..."; \
+# 	for i in $$(seq 1 60); do \
+# 		if curl -s -o /dev/null http://localhost:5173 && curl -s -o /dev/null http://localhost:8080/health; then \
+# 			echo "Servers ready."; \
+# 			break; \
+# 		fi; \
+# 		if [ $$i -eq 60 ]; then \
+# 			echo "Timeout waiting for servers"; \
+# 			kill $$DEV_PID 2>/dev/null; \
+# 			exit 1; \
+# 		fi; \
+# 		sleep 1; \
+# 	node script/take-screenshots.mjs; \
+# 	RESULT=$$?; \
+# 	kill $$DEV_PID 2>/dev/null; \
+# 	exit $$RESULT
 
 redis-check:
 	@set -e; \
