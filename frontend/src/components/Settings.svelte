@@ -228,10 +228,10 @@
 
 <div>
   <div class="mb-6">
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
+    <h1 class="text-2xl font-display font-bold text-ink-900 dark:text-cream-100">
       Settings
     </h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400">
+    <p class="text-sm text-ink-400 dark:text-ink-400">
       Manage your account and preferences
     </p>
   </div>
@@ -243,10 +243,10 @@
       >
         <button
           onclick={() => routerStore.navigate("settings/account")}
-          class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
+          class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
           'account'
-            ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}"
+            ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
+            : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
         >
           <Mail class="w-5 h-5" />
           Account
@@ -254,20 +254,20 @@
         {#if isAdmin}
           <button
             onclick={() => routerStore.navigate("settings/oidc")}
-            class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
+            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
             'oidc'
-              ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-              : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}"
+              ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
+              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
           >
             <Shield class="w-5 h-5" />
             OIDC / SSO
           </button>
           <button
             onclick={() => routerStore.navigate("settings/users")}
-            class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
+            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
             'users'
-              ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-              : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}"
+              ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
+              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
           >
             <Users class="w-5 h-5" />
             Users
@@ -275,10 +275,10 @@
         {/if}
         <button
           onclick={() => routerStore.navigate("settings/preferences")}
-          class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
+          class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
           'preferences'
-            ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}"
+            ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
+            : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
         >
           <Palette class="w-5 h-5" />
           Preferences
@@ -289,20 +289,20 @@
     <section class="flex-1">
       {#if activeTab === "account"}
         <div
-          class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 space-y-6"
+          class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6 space-y-6 animate-fade-in"
         >
           <div>
             <h2
-              class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2"
+              class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
             >
-              <Mail class="w-5 h-5" />
+              <Mail class="w-5 h-5 text-accent-600" />
               Account Information
             </h2>
             <div class="space-y-4">
               <div>
                 <label
                   for="email-display"
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
                 >
                   Email Address
                 </label>
@@ -311,54 +311,54 @@
                   type="email"
                   value={authStore.user?.email || ""}
                   disabled
-                  class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 cursor-not-allowed"
+                  class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl bg-ink-50 dark:bg-ink-800 text-ink-500 dark:text-ink-400 cursor-not-allowed"
                 />
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
                   Contact support to change your email address
                 </p>
               </div>
             </div>
           </div>
 
-          <hr class="border-slate-200 dark:border-slate-700" />
+          <hr class="border-ink-100 dark:border-ink-800" />
 
           {#if oidcConfigured}
             <div>
               <h2
-                class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2"
+                class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
               >
-                <Link class="w-5 h-5" />
+                <Link class="w-5 h-5 text-accent-600" />
                 Single Sign-On
               </h2>
               {#if authStore.user?.oidc_linked}
                 <div class="flex items-center gap-2">
                   <span
-                    class="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2.5 py-1 rounded-full text-sm font-medium"
+                    class="inline-flex items-center gap-1.5 text-success-700 dark:text-green-400 bg-success-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full text-sm font-medium"
                   >
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="w-2 h-2 rounded-full bg-success-600"></span>
                     SSO Connected
                   </span>
                 </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                <p class="text-xs text-ink-400 dark:text-ink-500 mt-2">
                   Your account is linked to your SSO provider. You can log in
                   with either your password or SSO.
                 </p>
               {:else}
                 {#if authStore.oidcLinkError}
                   <div
-                    class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-4"
+                    class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm mb-4"
                   >
                     {authStore.oidcLinkError}
                   </div>
                 {/if}
-                <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
                   Link your account to the SSO provider to enable single sign-on
                   login.
                 </p>
                 <button
                   onclick={handleLinkSso}
                   disabled={linkSsoLoading}
-                  class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
                 >
                   <Link class="w-4 h-4" />
                   {linkSsoLoading ? "Redirecting..." : "Link SSO Account"}
@@ -366,21 +366,21 @@
               {/if}
             </div>
 
-            <hr class="border-slate-200 dark:border-slate-700" />
+            <hr class="border-ink-100 dark:border-ink-800" />
           {/if}
 
           <div>
             <h2
-              class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2"
+              class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
             >
-              <Lock class="w-5 h-5" />
+              <Lock class="w-5 h-5 text-accent-600" />
               Change Password
             </h2>
             <form onsubmit={handlePasswordChange} class="space-y-4">
               <div>
                 <label
                   for="current-password"
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
                 >
                   Current Password
                 </label>
@@ -388,7 +388,7 @@
                   id="current-password"
                   type="password"
                   bind:value={currentPassword}
-                  class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100"
+                  class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder="••••••••"
                   disabled={passwordLoading}
                 />
@@ -397,7 +397,7 @@
               <div>
                 <label
                   for="new-password"
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
                 >
                   New Password
                 </label>
@@ -405,7 +405,7 @@
                   id="new-password"
                   type="password"
                   bind:value={newPassword}
-                  class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100"
+                  class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder="••••••••"
                   disabled={passwordLoading}
                 />
@@ -414,7 +414,7 @@
               <div>
                 <label
                   for="confirm-password"
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
                 >
                   Confirm New Password
                 </label>
@@ -422,7 +422,7 @@
                   id="confirm-password"
                   type="password"
                   bind:value={confirmPassword}
-                  class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100"
+                  class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder="••••••••"
                   disabled={passwordLoading}
                 />
@@ -430,7 +430,7 @@
 
               {#if passwordError}
                 <div
-                  class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm"
+                  class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
                 >
                   {passwordError}
                 </div>
@@ -438,7 +438,7 @@
 
               {#if passwordSuccess}
                 <div
-                  class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg text-sm"
+                  class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
                 >
                   Password updated successfully
                 </div>
@@ -447,7 +447,7 @@
               <button
                 type="submit"
                 disabled={passwordLoading}
-                class="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                class="w-full px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
               >
                 {passwordLoading ? "Updating..." : "Update Password"}
               </button>
@@ -458,42 +458,42 @@
 
       {#if activeTab === "oidc" && isAdmin}
         <div
-          class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 space-y-6"
+          class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6 space-y-6 animate-fade-in"
         >
           <div>
             <h2
-              class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2"
+              class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
             >
-              <Shield class="w-5 h-5" />
+              <Shield class="w-5 h-5 text-accent-600" />
               OIDC / Single Sign-On
             </h2>
 
             <div class="mb-4">
               <div class="flex items-center gap-2 text-sm">
-                <span>Status:</span>
+                <span class="text-ink-500">Status:</span>
                 {#if oidcStatusLoading}
-                  <span class="text-slate-500 dark:text-slate-400"
+                  <span class="text-ink-400 dark:text-ink-500"
                     >Checking...</span
                   >
                 {:else if oidcConfigured}
                   <span
-                    class="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2.5 py-1 rounded-full font-medium"
+                    class="inline-flex items-center gap-1.5 text-success-700 dark:text-green-400 bg-success-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full font-medium"
                   >
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="w-2 h-2 rounded-full bg-success-600"></span>
                     Configured
                   </span>
                 {:else}
                   <span
-                    class="inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-2.5 py-1 rounded-full font-medium"
+                    class="inline-flex items-center gap-1.5 text-ink-600 dark:text-ink-300 bg-ink-50 dark:bg-ink-800 px-2.5 py-1 rounded-full font-medium"
                   >
-                    <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <span class="w-2 h-2 rounded-full bg-ink-300"></span>
                     Not configured
                   </span>
                 {/if}
               </div>
             </div>
 
-            <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+            <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
               Configure an OpenID Connect (OIDC) provider to enable Single
               Sign-On. Users will be able to log in using your identity
               provider.
@@ -503,7 +503,7 @@
               <div>
                 <label
                   for="oidc-issuer-url"
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
                 >
                   Issuer URL
                 </label>
@@ -511,11 +511,11 @@
                   id="oidc-issuer-url"
                   type="url"
                   bind:value={oidcIssuerUrl}
-                  class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100"
+                  class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder="https://auth.example.com"
                   disabled={oidcLoading}
                 />
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
                   The OIDC provider's issuer URL (must support
                   .well-known/openid-configuration)
                 </p>
@@ -524,7 +524,7 @@
               <div>
                 <label
                   for="oidc-client-id"
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
                 >
                   Client ID
                 </label>
@@ -532,7 +532,7 @@
                   id="oidc-client-id"
                   type="text"
                   bind:value={oidcClientId}
-                  class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100"
+                  class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder="your-client-id"
                   disabled={oidcLoading}
                 />
@@ -541,7 +541,7 @@
               <div>
                 <label
                   for="oidc-client-secret"
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
                 >
                   Client Secret
                 </label>
@@ -549,14 +549,14 @@
                   id="oidc-client-secret"
                   type="password"
                   bind:value={oidcClientSecret}
-                  class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100"
+                  class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder={oidcConfigured
                     ? "Enter new secret to update"
                     : "Enter your client secret"}
                   disabled={oidcLoading}
                 />
                 {#if oidcConfigured}
-                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
                     Leave blank to keep the existing secret
                   </p>
                 {/if}
@@ -565,7 +565,7 @@
               <div>
                 <label
                   for="oidc-redirect-uri"
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
                 >
                   Redirect URI
                 </label>
@@ -573,18 +573,18 @@
                   id="oidc-redirect-uri"
                   type="url"
                   bind:value={oidcRedirectUri}
-                  class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:bg-slate-700 dark:text-slate-100"
+                  class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder="http://localhost:8080/api/auth/oidc/callback"
                   disabled={oidcLoading}
                 />
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
                   Must match the redirect URI registered with your OIDC provider
                 </p>
               </div>
 
               {#if oidcError}
                 <div
-                  class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm"
+                  class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
                 >
                   {oidcError}
                 </div>
@@ -592,7 +592,7 @@
 
               {#if oidcSuccess}
                 <div
-                  class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg text-sm"
+                  class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
                 >
                   OIDC configuration saved successfully
                 </div>
@@ -601,7 +601,7 @@
               <button
                 type="submit"
                 disabled={oidcLoading}
-                class="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                class="w-full px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
               >
                 {oidcLoading
                   ? "Saving..."
@@ -616,21 +616,21 @@
 
       {#if activeTab === "users" && isAdmin}
         <div
-          class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 space-y-6"
+          class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6 space-y-6 animate-fade-in"
         >
           <div>
             <h2
-              class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2"
+              class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
             >
-              <Users class="w-5 h-5" />
+              <Users class="w-5 h-5 text-accent-600" />
               User Management
             </h2>
 
             {#if usersLoading}
-              <p class="text-slate-500 dark:text-slate-400">Loading users...</p>
+              <p class="text-ink-400 dark:text-ink-400">Loading users...</p>
             {:else if usersError}
               <div
-                class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm"
+                class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm"
               >
                 {usersError}
               </div>
@@ -639,31 +639,31 @@
                 <table class="w-full text-sm">
                   <thead>
                     <tr
-                      class="text-left text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700"
+                      class="text-left text-ink-400 dark:text-ink-400 border-b border-ink-100 dark:border-ink-800"
                     >
-                      <th class="pb-2 font-medium">Name</th>
-                      <th class="pb-2 font-medium">Email</th>
-                      <th class="pb-2 font-medium">Type</th>
-                      <th class="pb-2 font-medium">Role</th>
-                      <th class="pb-2 font-medium">Joined</th>
+                      <th class="pb-3 font-medium">Name</th>
+                      <th class="pb-3 font-medium">Email</th>
+                      <th class="pb-3 font-medium">Type</th>
+                      <th class="pb-3 font-medium">Role</th>
+                      <th class="pb-3 font-medium">Joined</th>
                     </tr>
                   </thead>
                   <tbody>
                     {#each userList as u (u.id)}
                       <tr
-                        class="border-b border-slate-100 dark:border-slate-700"
+                        class="border-b border-ink-50 dark:border-ink-800 hover:bg-ink-50/50 dark:hover:bg-ink-800/50 transition-colors"
                       >
-                        <td class="py-3 text-slate-900 dark:text-slate-100"
+                        <td class="py-3 text-ink-900 dark:text-cream-100 font-medium"
                           >{u.name}</td
                         >
-                        <td class="py-3 text-slate-600 dark:text-slate-400"
+                        <td class="py-3 text-ink-500 dark:text-ink-400"
                           >{u.email}</td
                         >
                         <td class="py-3">
                           <span
                             class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {u.oidc_linked
-                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                              : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'}"
+                              ? 'bg-accent-50 text-accent-700 dark:bg-accent-800/20 dark:text-accent-400'
+                              : 'bg-ink-50 text-ink-500 dark:bg-ink-800 dark:text-ink-400'}"
                           >
                             {u.oidc_linked ? "OIDC/SSO" : "Local"}
                           </span>
@@ -671,7 +671,7 @@
                         <td class="py-3">
                           {#if u.id === authStore.user?.id}
                             <span
-                              class="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2.5 py-1 rounded-full text-xs font-medium"
+                              class="inline-flex items-center gap-1.5 text-success-700 dark:text-green-400 bg-success-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full text-xs font-medium"
                             >
                               Admin (you)
                             </span>
@@ -679,14 +679,14 @@
                             <button
                               onclick={() => toggleAdmin(u)}
                               class="px-3 py-1 rounded-full text-xs font-medium transition-colors {u.is_admin
-                                ? 'bg-green-50 text-green-700 hover:bg-red-50 hover:text-red-700 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-red-900/30 dark:hover:text-red-400'
-                                : 'bg-slate-100 text-slate-600 hover:bg-green-50 hover:text-green-700 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-green-900/30 dark:hover:text-green-400'}"
+                                ? 'bg-success-50 text-success-700 hover:bg-danger-50 hover:text-danger-700 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-danger-700/10 dark:hover:text-red-400'
+                                : 'bg-ink-50 text-ink-500 hover:bg-success-50 hover:text-success-700 dark:bg-ink-800 dark:text-ink-400 dark:hover:bg-green-900/20 dark:hover:text-green-400'}"
                             >
                               {u.is_admin ? "Admin" : "User"}
                             </button>
                           {/if}
                         </td>
-                        <td class="py-3 text-slate-500 dark:text-slate-400"
+                        <td class="py-3 text-ink-400 dark:text-ink-500"
                           >{new Date(u.created_at).toLocaleDateString()}</td
                         >
                       </tr>
@@ -701,20 +701,20 @@
 
       {#if activeTab === "preferences"}
         <div
-          class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 space-y-6"
+          class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6 space-y-6 animate-fade-in"
         >
           <div>
             <h2
-              class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2"
+              class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
             >
-              <Palette class="w-5 h-5" />
+              <Palette class="w-5 h-5 text-accent-600" />
               Display Preferences
             </h2>
             <div class="space-y-6">
               <div>
                 <label
                   for="theme-select"
-                  class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3"
+                  class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-3"
                 >
                   Theme
                 </label>
@@ -722,36 +722,36 @@
                   {#each themes as t (t)}
                     <button
                       onclick={() => themeStore.set(t)}
-                      class="px-4 py-2 rounded-lg font-medium capitalize transition-all {themeStore.preference ===
+                      class="px-5 py-2.5 rounded-xl font-medium capitalize transition-all {themeStore.preference ===
                       t
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'}"
+                        ? 'bg-accent-600 text-white shadow-md shadow-accent-600/20'
+                        : 'bg-ink-50 text-ink-600 hover:bg-ink-100 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
                     >
                       {t}
                     </button>
                   {/each}
                 </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                <p class="text-xs text-ink-400 dark:text-ink-500 mt-2">
                   Choose how you prefer biblioteka to appear
                 </p>
               </div>
 
-              <hr class="border-slate-200 dark:border-slate-700" />
+              <hr class="border-ink-100 dark:border-ink-800" />
 
               <div>
                 <label class="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     bind:checked={compactView}
-                    class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    class="w-4 h-4 rounded border-ink-300 text-accent-600 outline-none focus:ring-2 focus:ring-accent-500"
                   />
                   <div>
                     <span
-                      class="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                      class="block text-sm font-medium text-ink-600 dark:text-ink-300"
                     >
                       Compact View
                     </span>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                    <span class="text-xs text-ink-400 dark:text-ink-500">
                       Display content in a more compact layout
                     </span>
                   </div>
@@ -760,24 +760,24 @@
             </div>
           </div>
 
-          <hr class="border-slate-200 dark:border-slate-700" />
+          <hr class="border-ink-100 dark:border-ink-800" />
 
           <div>
             <h2
-              class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4"
+              class="text-lg font-display font-bold text-ink-900 dark:text-cream-100 mb-4"
             >
               About
             </h2>
-            <div class="space-y-3 text-sm text-slate-600 dark:text-slate-400">
+            <div class="space-y-3 text-sm text-ink-500 dark:text-ink-400">
               <div class="flex justify-between">
                 <span>App Version</span>
-                <span class="font-medium text-slate-900 dark:text-slate-100"
+                <span class="font-medium text-ink-900 dark:text-cream-100"
                   >1.0.0</span
                 >
               </div>
               <div class="flex justify-between">
                 <span>Last Updated</span>
-                <span class="font-medium text-slate-900 dark:text-slate-100"
+                <span class="font-medium text-ink-900 dark:text-cream-100"
                   >Feb 16, 2026</span
                 >
               </div>
