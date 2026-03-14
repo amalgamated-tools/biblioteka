@@ -91,6 +91,15 @@ func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// listLibraries godoc
+// @Summary     List libraries
+// @Description Returns all libraries
+// @Tags        Libraries
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {array}  libraryDTO
+// @Failure     500 {object} errorResponse
+// @Router      /libraries [get]
 func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing libraries")
 	libraries, err := h.DB.ListLibraries()
@@ -140,6 +149,19 @@ func validateAndPrepareLibrary(w http.ResponseWriter, req *libraryRequest) (path
 	return string(data), true
 }
 
+// createLibrary godoc
+// @Summary     Create a library
+// @Description Create a new library and enqueue scan jobs
+// @Tags        Libraries
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       body body     libraryRequest true "Library data"
+// @Success     201  {object} libraryDTO
+// @Failure     400  {object} errorResponse
+// @Failure     409  {object} errorResponse
+// @Failure     500  {object} errorResponse
+// @Router      /libraries [post]
 func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 	var req libraryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -190,6 +212,18 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, dto)
 }
 
+// getLibrary godoc
+// @Summary     Get a library
+// @Description Returns a single library by ID
+// @Tags        Libraries
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id  path     string true "Library ID"
+// @Success     200 {object} libraryDTO
+// @Failure     400 {object} errorResponse
+// @Failure     404 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /libraries/{id} [get]
 func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching library", slog.String("library_id", id))
 	lib, err := h.DB.GetLibrary(id)
@@ -206,6 +240,21 @@ func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id s
 	writeJSON(w, http.StatusOK, toLibraryDTO(lib))
 }
 
+// updateLibrary godoc
+// @Summary     Update a library
+// @Description Update an existing library
+// @Tags        Libraries
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id   path     string         true "Library ID"
+// @Param       body body     libraryRequest true "Library data"
+// @Success     200  {object} libraryDTO
+// @Failure     400  {object} errorResponse
+// @Failure     404  {object} errorResponse
+// @Failure     409  {object} errorResponse
+// @Failure     500  {object} errorResponse
+// @Router      /libraries/{id} [put]
 func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, id string) {
 	var req libraryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -238,6 +287,17 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 	writeJSON(w, http.StatusOK, toLibraryDTO(lib))
 }
 
+// deleteLibrary godoc
+// @Summary     Delete a library
+// @Description Delete a library by ID
+// @Tags        Libraries
+// @Security    BearerAuth
+// @Param       id  path     string true "Library ID"
+// @Success     204 "No Content"
+// @Failure     400 {object} errorResponse
+// @Failure     404 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /libraries/{id} [delete]
 func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting library", slog.String("library_id", id))
 	err := h.DB.DeleteLibrary(id)

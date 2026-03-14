@@ -17,6 +17,16 @@ import (
 
 var version = "dev"
 
+// @title         Biblioteka API
+// @version       1.0
+// @description   Personal library management API
+// @host          localhost:8080
+// @BasePath      /api
+// @securityDefinitions.apikey BearerAuth
+// @in                         header
+// @name                       Authorization
+// @description                Enter "Bearer {token}"
+
 func main() {
 	otel.SetupLogger()
 	slog.Info("biblioteka", slog.String("version", version))

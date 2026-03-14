@@ -1,4 +1,4 @@
-.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev
+.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt
 
 # Build everything: frontend then Go binary
 all: build
@@ -90,3 +90,11 @@ clean:
 	rm -rf internal/server/dist tmp biblioteka db/biblioteka.db*
 	mkdir -p internal/server/dist
 	touch internal/server/dist/.gitkeep
+
+# Generate Swagger/OpenAPI documentation
+swagger:
+	swag init -g cmd/server/main.go -o docs --parseDependency --parseInternal
+
+# Format swagger annotations
+swagger-fmt:
+	swag fmt

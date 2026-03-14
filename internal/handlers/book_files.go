@@ -31,6 +31,18 @@ func (h *BookFileHandler) HandleBookFile(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// getBookFile godoc
+// @Summary     Get a book file
+// @Description Returns a single book file by ID
+// @Tags        BookFiles
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id  path     string true "Book File ID"
+// @Success     200 {object} bookFileDTO
+// @Failure     400 {object} errorResponse
+// @Failure     404 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /book-files/{id} [get]
 func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching book file", slog.String("book_file_id", id))
 	bf, err := h.DB.GetBookFile(id)
@@ -47,6 +59,17 @@ func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id
 	writeJSON(w, http.StatusOK, toBookFileDTO(bf))
 }
 
+// deleteBookFile godoc
+// @Summary     Delete a book file
+// @Description Delete a book file by ID
+// @Tags        BookFiles
+// @Security    BearerAuth
+// @Param       id  path     string true "Book File ID"
+// @Success     204 "No Content"
+// @Failure     400 {object} errorResponse
+// @Failure     404 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /book-files/{id} [delete]
 func (h *BookFileHandler) deleteBookFile(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting book file", slog.String("book_file_id", id))
 	err := h.DB.DeleteBookFile(id)

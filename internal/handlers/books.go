@@ -227,6 +227,15 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 }
 
+// listBooks godoc
+// @Summary     List books
+// @Description Returns all books (summary without relations)
+// @Tags        Books
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {array}  bookSummaryDTO
+// @Failure     500 {object} errorResponse
+// @Router      /books [get]
 func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing books")
 	books, err := h.DB.ListBooks()
@@ -246,6 +255,18 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dtos)
 }
 
+// createBook godoc
+// @Summary     Create a book
+// @Description Create a new book
+// @Tags        Books
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       body body     bookRequest true "Book data"
+// @Success     201  {object} bookDTO
+// @Failure     400  {object} errorResponse
+// @Failure     500  {object} errorResponse
+// @Router      /books [post]
 func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	var req bookRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -276,6 +297,18 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, dto)
 }
 
+// getBook godoc
+// @Summary     Get a book
+// @Description Returns a single book with authors, series, and files
+// @Tags        Books
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id  path     string true "Book ID"
+// @Success     200 {object} bookDTO
+// @Failure     400 {object} errorResponse
+// @Failure     404 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /books/{id} [get]
 func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching book", slog.String("book_id", id))
 	b, err := h.DB.GetBook(id)
@@ -298,6 +331,20 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 	writeJSON(w, http.StatusOK, dto)
 }
 
+// updateBook godoc
+// @Summary     Update a book
+// @Description Update an existing book
+// @Tags        Books
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id   path     string      true "Book ID"
+// @Param       body body     bookRequest true "Book data"
+// @Success     200  {object} bookDTO
+// @Failure     400  {object} errorResponse
+// @Failure     404  {object} errorResponse
+// @Failure     500  {object} errorResponse
+// @Router      /books/{id} [put]
 func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id string) {
 	var req bookRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -331,6 +378,17 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 	writeJSON(w, http.StatusOK, dto)
 }
+// deleteBook godoc
+// @Summary     Delete a book
+// @Description Delete a book by ID
+// @Tags        Books
+// @Security    BearerAuth
+// @Param       id  path     string true "Book ID"
+// @Success     204 "No Content"
+// @Failure     400 {object} errorResponse
+// @Failure     404 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /books/{id} [delete]
 func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting book", slog.String("book_id", id))
 	err := h.DB.DeleteBook(id)
@@ -362,7 +420,19 @@ func (h *BookHandler) respondBookAuthors(w http.ResponseWriter, bookID string) {
 	writeJSON(w, http.StatusOK, dtos)
 }
 
-// handleBookAuthors handles GET/PUT /api/books/{id}/authors.
+// handleBookAuthors godoc
+// @Summary     Get or set book authors
+// @Description Get the list of authors for a book, or replace them
+// @Tags        Books
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id   path     string true "Book ID"
+// @Success     200  {array}  authorDTO
+// @Failure     400  {object} errorResponse
+// @Failure     500  {object} errorResponse
+// @Router      /books/{id}/authors [get]
+// @Router      /books/{id}/authors [put]
 func (h *BookHandler) handleBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
 	switch r.Method {
 	case http.MethodGet:
@@ -406,7 +476,19 @@ func (h *BookHandler) respondBookSeries(w http.ResponseWriter, bookID string) {
 	writeJSON(w, http.StatusOK, dtos)
 }
 
-// handleBookSeries handles GET/PUT /api/books/{id}/series.
+// handleBookSeries godoc
+// @Summary     Get or set book series
+// @Description Get the list of series for a book, or replace them
+// @Tags        Books
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id   path     string true "Book ID"
+// @Success     200  {array}  bookSeriesEntryDTO
+// @Failure     400  {object} errorResponse
+// @Failure     500  {object} errorResponse
+// @Router      /books/{id}/series [get]
+// @Router      /books/{id}/series [put]
 func (h *BookHandler) handleBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
 	switch r.Method {
 	case http.MethodGet:
@@ -432,7 +514,20 @@ func (h *BookHandler) handleBookSeries(w http.ResponseWriter, r *http.Request, b
 	}
 }
 
-// handleBookFiles handles GET/POST /api/books/{id}/files.
+// handleBookFiles godoc
+// @Summary     Get or add book files
+// @Description List files for a book, or add a new file
+// @Tags        Books
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id   path     string true "Book ID"
+// @Success     200  {array}  bookFileDTO
+// @Success     201  {object} bookFileDTO
+// @Failure     400  {object} errorResponse
+// @Failure     500  {object} errorResponse
+// @Router      /books/{id}/files [get]
+// @Router      /books/{id}/files [post]
 func (h *BookHandler) handleBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
 	switch r.Method {
 	case http.MethodGet:

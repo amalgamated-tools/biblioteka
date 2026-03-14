@@ -20,8 +20,11 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 
+	_ "github.com/amalgamated-tools/biblioteka/docs"
+
 	"github.com/hibiken/asynqmon"
 	"github.com/justinas/alice"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -243,18 +246,7 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
 
 	// OIDC auth routes — always registered, check handler at request time
-	s.mux.HandleFunc("/api/auth/oidc/enabled", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		if s.oidcHandler != nil {
-			_, _ = fmt.Fprint(w, `{"enabled":true}`)
-		} else {
-			_, _ = fmt.Fprint(w, `{"enabled":false}`)
-		}
-	})
+	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
 	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Login)))
 	s.mux.HandleFunc("/api/auth/oidc/callback", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Callback)))
 	s.mux.HandleFunc("/api/auth/oidc/link", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Link)))
@@ -292,11 +284,12 @@ func (s *Server) setupRoutes() {
 	s.mux.Handle("/api/book-files/", s.requireAuth(http.HandlerFunc(s.bookFileHandler.HandleBookFile)))
 
 	// Health check
-	s.mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprint(w, `{"status":"ok"}`)
-	})
+	s.mux.HandleFunc("/api/health", s.handleHealth)
+
+	// Swagger UI
+	s.mux.Handle("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	// Asynq monitoring dashboard
 	if s.Worker != nil {
@@ -323,6 +316,47 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 		}
 		fn(handler, w, r)
 	}
+}
+
+type oidcEnabledResponse struct {
+	Enabled bool `json:"enabled"`
+}
+
+type healthResponse struct {
+	Status string `json:"status" example:"ok"`
+}
+
+// handleOIDCEnabled godoc
+// @Summary     Check if OIDC is enabled
+// @Description Returns whether OIDC authentication is configured on this server
+// @Tags        System
+// @Produce     json
+// @Success     200 {object} oidcEnabledResponse
+// @Router      /auth/oidc/enabled [get]
+func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if s.oidcHandler != nil {
+		_, _ = fmt.Fprint(w, `{"enabled":true}`)
+	} else {
+		_, _ = fmt.Fprint(w, `{"enabled":false}`)
+	}
+}
+
+// handleHealth godoc
+// @Summary     Health check
+// @Description Returns server health status
+// @Tags        System
+// @Produce     json
+// @Success     200 {object} healthResponse
+// @Router      /health [get]
+func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = fmt.Fprint(w, `{"status":"ok"}`)
 }
 
 func (s *Server) setupFrontend() {
