@@ -366,6 +366,21 @@ Delete a library. Returns `204 No Content`.
 
 ---
 
+### `GET /api/libraries/{id}/books` 🔒
+
+List all books that belong to a specific library.
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `404` | Library not found |
+| `500` | Unexpected server error |
+
+**Response body (`200`):** JSON array of [book summary objects](#get-apibooks).
+
+---
+
 ## Authors
 
 ### `GET /api/authors` 🔒
