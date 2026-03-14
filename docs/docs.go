@@ -1204,17 +1204,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "List files for a book, or add a new file",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "List files for a book",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Books"
                 ],
-                "summary": "Get or add book files",
+                "summary": "List book files",
                 "parameters": [
                     {
                         "type": "string",
@@ -1232,12 +1229,6 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/internal_handlers.bookFileDTO"
                             }
-                        }
-                    },
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.bookFileDTO"
                         }
                     },
                     "400": {
@@ -1260,7 +1251,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "List files for a book, or add a new file",
+                "description": "Add a new file for a book",
                 "consumes": [
                     "application/json"
                 ],
@@ -1270,7 +1261,7 @@ const docTemplate = `{
                 "tags": [
                     "Books"
                 ],
-                "summary": "Get or add book files",
+                "summary": "Add a book file",
                 "parameters": [
                     {
                         "type": "string",
@@ -1281,15 +1272,6 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/internal_handlers.bookFileDTO"
-                            }
-                        }
-                    },
                     "201": {
                         "description": "Created",
                         "schema": {
@@ -2391,8 +2373,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
-                    "type": "string",
-                    "example": "error message"
+                    "type": "string"
                 }
             }
         },
@@ -2576,8 +2557,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "status": {
-                    "type": "string",
-                    "example": "ok"
+                    "type": "string"
                 }
             }
         },
@@ -2603,8 +2583,8 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
-	BasePath:         "/api",
+	Host:             "",
+	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "Biblioteka API",
 	Description:      "Personal library management API",

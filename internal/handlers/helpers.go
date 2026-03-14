@@ -16,6 +16,11 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	}
 }
 
+// errorResponse represents a JSON error returned by the API.
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
 // writeError sends a JSON error response.
 func writeError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")

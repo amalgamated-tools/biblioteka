@@ -1,4 +1,3 @@
-basePath: /api
 definitions:
   github_com_amalgamated-tools_biblioteka_internal_db.Timestamp:
     properties:
@@ -215,7 +214,6 @@ definitions:
   internal_handlers.errorResponse:
     properties:
       error:
-        example: error message
         type: string
     type: object
   internal_handlers.libraryDTO:
@@ -335,7 +333,6 @@ definitions:
   internal_server.healthResponse:
     properties:
       status:
-        example: ok
         type: string
     type: object
   internal_server.oidcEnabledResponse:
@@ -343,7 +340,6 @@ definitions:
       enabled:
         type: boolean
     type: object
-host: localhost:8080
 info:
   contact: {}
   description: Personal library management API
@@ -1106,9 +1102,7 @@ paths:
       - Books
   /books/{id}/files:
     get:
-      consumes:
-      - application/json
-      description: List files for a book, or add a new file
+      description: List files for a book
       parameters:
       - description: Book ID
         in: path
@@ -1124,10 +1118,6 @@ paths:
             items:
               $ref: '#/definitions/internal_handlers.bookFileDTO'
             type: array
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/internal_handlers.bookFileDTO'
         "400":
           description: Bad Request
           schema:
@@ -1138,13 +1128,13 @@ paths:
             $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: Get or add book files
+      summary: List book files
       tags:
       - Books
     post:
       consumes:
       - application/json
-      description: List files for a book, or add a new file
+      description: Add a new file for a book
       parameters:
       - description: Book ID
         in: path
@@ -1154,12 +1144,6 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/internal_handlers.bookFileDTO'
-            type: array
         "201":
           description: Created
           schema:
@@ -1174,7 +1158,7 @@ paths:
             $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: Get or add book files
+      summary: Add a book file
       tags:
       - Books
   /books/{id}/series:

@@ -1,7 +1,7 @@
 .PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt
 
 # Tooling commands
-SWAG_CMD = go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0
+SWAG_CMD = go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5
 
 # Build everything: frontend then Go binary
 all: build

@@ -335,9 +335,7 @@ func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	resp := struct {
-		Enabled bool `json:"enabled"`
-	}{
+	resp := oidcEnabledResponse{
 		Enabled: s.oidcHandler != nil,
 	}
 
@@ -348,6 +346,10 @@ func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
 
 type healthResponse struct {
 	Status string `json:"status"`
+}
+
+type oidcEnabledResponse struct {
+	Enabled bool `json:"enabled"`
 }
 
 // handleHealth godoc

@@ -6,8 +6,6 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:8080",
-    "basePath": "/api",
     "paths": {
         "/admin/users": {
             "get": {
@@ -1197,17 +1195,14 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "List files for a book, or add a new file",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "List files for a book",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Books"
                 ],
-                "summary": "Get or add book files",
+                "summary": "List book files",
                 "parameters": [
                     {
                         "type": "string",
@@ -1225,12 +1220,6 @@
                             "items": {
                                 "$ref": "#/definitions/internal_handlers.bookFileDTO"
                             }
-                        }
-                    },
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.bookFileDTO"
                         }
                     },
                     "400": {
@@ -1253,7 +1242,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "List files for a book, or add a new file",
+                "description": "Add a new file for a book",
                 "consumes": [
                     "application/json"
                 ],
@@ -1263,7 +1252,7 @@
                 "tags": [
                     "Books"
                 ],
-                "summary": "Get or add book files",
+                "summary": "Add a book file",
                 "parameters": [
                     {
                         "type": "string",
@@ -1274,15 +1263,6 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/internal_handlers.bookFileDTO"
-                            }
-                        }
-                    },
                     "201": {
                         "description": "Created",
                         "schema": {
@@ -2384,8 +2364,7 @@
             "type": "object",
             "properties": {
                 "error": {
-                    "type": "string",
-                    "example": "error message"
+                    "type": "string"
                 }
             }
         },
@@ -2569,8 +2548,7 @@
             "type": "object",
             "properties": {
                 "status": {
-                    "type": "string",
-                    "example": "ok"
+                    "type": "string"
                 }
             }
         },
