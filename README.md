@@ -9,7 +9,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
 - **Author & series tracking** – browse by author or series, with position numbers within each series
 - **User authentication** – JWT-based login, optional OpenID Connect (OIDC/SSO)
-- **Background processing** – Redis-backed job queue scans paths and processes files asynchronously; monitored libraries are re-scanned automatically every 24 hours
+- **Background processing** – Redis-backed job queue scans paths and processes files asynchronously; includes a built-in [Asynqmon](https://github.com/hibiken/asynqmon) monitoring UI at `/asynqmon/`
 - **Two database backends** – SQLite (zero-config, default) or PostgreSQL
 - **Single binary** – Go backend embeds the Svelte frontend; one executable to deploy
 
@@ -98,6 +98,17 @@ The first account created is automatically granted admin privileges. Admins can:
 
 - **Manage users** — list all accounts and grant or revoke admin status via `GET /api/admin/users` and `PUT /api/admin/users/{id}`.
 - **Configure OIDC at runtime** — read and update the OIDC provider settings via `GET /api/config/oidc` and `PUT /api/config/oidc` without a server restart. Environment variable values (`OIDC_ISSUER_URL`, etc.) take precedence over database-stored settings.
+
+## Background Job Monitoring
+
+When Redis is configured, Biblioteka embeds the [Asynqmon](https://github.com/hibiken/asynqmon) web UI for monitoring and managing background jobs.
+
+- **URL:** `/asynqmon/` (e.g. `http://localhost:8080/asynqmon/` in the default local setup)
+- **Authentication:** Requires an `Authorization: Bearer <JWT>` header (same JWTs as the main application/API)
+- **Supplying the token:** Browsers do not send this header automatically. In production you should typically run Biblioteka behind a reverse proxy (nginx, Traefik, Caddy, etc.) that injects the `Authorization` header for trusted admin users, or access `/asynqmon/` via tools that let you set custom headers.
+- **Availability:** Mounted whenever the server is started with Redis/worker support (default `REDIS_URL=redis://localhost:6379`) and requires a reachable Redis instance to function correctly
+
+The dashboard shows queued, active, completed, and failed jobs, and lets you retry or delete individual tasks.
 
 See [docs/api-reference.md](docs/api-reference.md) for the full API reference.
 
