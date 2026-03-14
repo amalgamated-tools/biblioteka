@@ -72,8 +72,12 @@ func TokenCookieName() string { return tokenCookieName }
 // biblioteka_token cookie for browser-navigated requests.
 func extractToken(r *http.Request) string {
 	if header := r.Header.Get("Authorization"); header != "" {
-		if token := strings.TrimPrefix(header, "Bearer "); token != header {
-			return token
+		header = strings.TrimSpace(header)
+		if strings.HasPrefix(header, "Bearer ") {
+			token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+			if token != "" {
+				return token
+			}
 		}
 	}
 	if c, err := r.Cookie(tokenCookieName); err == nil && c.Value != "" {
