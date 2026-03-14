@@ -60,7 +60,7 @@ func (j *JWTManager) CreateToken(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString(j.secret)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("sign JWT: %w", err)
 	}
 	slog.Debug("JWT token created", slog.String("user_id", userID), slog.Time("expires_at", now.Add(j.ttl)))
 	return signed, nil
