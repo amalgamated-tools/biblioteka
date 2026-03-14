@@ -25,7 +25,7 @@ type errorResponse struct {
 func writeError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(map[string]string{"error": message}); err != nil {
+	if err := json.NewEncoder(w).Encode(errorResponse{Error: message}); err != nil {
 		slog.Error("failed to encode JSON error response", "error", err)
 	}
 }
