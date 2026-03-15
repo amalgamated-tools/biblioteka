@@ -46,7 +46,7 @@ func setupPostgres(ctx context.Context, databaseURL string) (*DB, error) {
 
 	d := &DB{DB: sqlDB, Dialect: DialectPostgres}
 
-	if err := runMigrations(d); err != nil {
+	if err := runMigrations(ctx, d); err != nil {
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to run migrations on postgres: %w", err)
 	}
@@ -118,7 +118,7 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
 
 	// Run migrations
-	if err := runMigrations(d); err != nil {
+	if err := runMigrations(ctx, d); err != nil {
 		slog.ErrorContext(ctx, "Failed to run migrations",
 			slog.String(otelkeys.Path, dbFilePath),
 			slog.Any(otelkeys.Error, err),
@@ -134,16 +134,14 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 // RunMigrations runs all pending database migrations on the given connection.
 // It is exported so that packages outside db (e.g. handler tests) can set up
 // a fully-migrated in-memory database without duplicating the schema inline.
-func RunMigrations(sqlDB *sql.DB, dialect Dialect) error {
+func RunMigrations(ctx context.Context, sqlDB *sql.DB, dialect Dialect) error {
 	d := &DB{DB: sqlDB, Dialect: dialect}
-	return runMigrations(d)
+	return runMigrations(ctx, d)
 }
 
 // runMigrations reads and executes all SQL migration files
 // Supports dbmate format with '-- migrate:up' and '-- migrate:down' markers
-func runMigrations(d *DB) error {
-	ctx := context.Background()
-
+func runMigrations(ctx context.Context, d *DB) error {
 	// Create migrations table if it doesn't exist
 	if _, err := d.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
