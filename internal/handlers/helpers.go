@@ -15,6 +15,7 @@ import (
 // returns false, so callers can simply return.
 func decodeJSON(r *http.Request, w http.ResponseWriter, v any) bool {
 	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+		slog.DebugContext(r.Context(), "failed to decode request body", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return false
 	}

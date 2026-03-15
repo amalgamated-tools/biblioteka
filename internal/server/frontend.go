@@ -30,9 +30,9 @@ func (s *Server) setupFrontend(ctx context.Context) {
 
 		// Try to serve the file directly
 		path := r.URL.Path
-		if path == "/" {
-			path = "/index.html"
-		}
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/"
+		fileServer.ServeHTTP(w, r2)
 
 		// Check if the file exists in the embedded filesystem
 		f, err := frontendFS.Open(strings.TrimPrefix(path, "/"))
