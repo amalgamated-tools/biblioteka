@@ -85,7 +85,7 @@ func (j *JWTManager) ValidateToken(ctx context.Context, tokenString string) (*Cl
 			slog.DebugContext(ctx, "JWT token expired")
 			return nil, ErrExpiredToken
 		}
-		slog.DebugContext(ctx, "JWT token invalid", slog.String(otelkeys.Error, err.Error()))
+		slog.DebugContext(ctx, "JWT token invalid", slog.Any(otelkeys.Error, err))
 		return nil, ErrInvalidToken
 	}
 
