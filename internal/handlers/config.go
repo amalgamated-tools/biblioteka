@@ -41,7 +41,7 @@ type ConfigHandler struct {
 	IsOIDCConfigured func() bool
 	OnOIDCConfigSet  func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error
 	// SendMailFunc overrides the default sendMail implementation (used in tests).
-	SendMailFunc func(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error
+	SendMailFunc func(ctx context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error
 }
 
 type configStatusResponse struct {
@@ -268,6 +268,74 @@ func (h *ConfigHandler) HandleOIDCConfig(w http.ResponseWriter, r *http.Request)
 
 // SMTP configuration types
 
+type smtpConfig struct {
+	Host        string
+	Port        string
+	Username    string
+	Password    string
+	From        string
+	TLS         string
+	EnvOverride bool
+}
+
+// resolveSMTPConfig returns the effective SMTP configuration.
+// When SMTP_HOST is set as an environment variable, all fields are sourced
+// from the environment (with defaults for port/tls). Otherwise, all fields
+// come from the database.
+func (h *ConfigHandler) resolveSMTPConfig(ctx context.Context) smtpConfig {
+	if os.Getenv("SMTP_HOST") != "" {
+		port := os.Getenv("SMTP_PORT")
+		if port == "" {
+			port = "587"
+		}
+		tlsMode := os.Getenv("SMTP_TLS")
+		if tlsMode == "" {
+			tlsMode = "starttls"
+		}
+		return smtpConfig{
+			Host:        os.Getenv("SMTP_HOST"),
+			Port:        port,
+			Username:    os.Getenv("SMTP_USERNAME"),
+			Password:    os.Getenv("SMTP_PASSWORD"),
+			From:        os.Getenv("SMTP_FROM"),
+			TLS:         tlsMode,
+			EnvOverride: true,
+		}
+	}
+
+	host, _ := h.DB.GetSetting(ctx, settingSMTPHost)
+	port, _ := h.DB.GetSetting(ctx, settingSMTPPort)
+	username, _ := h.DB.GetSetting(ctx, settingSMTPUsername)
+	password, _ := h.DB.GetSetting(ctx, settingSMTPPassword)
+	from, _ := h.DB.GetSetting(ctx, settingSMTPFrom)
+	tlsMode, _ := h.DB.GetSetting(ctx, settingSMTPTLS)
+
+	return smtpConfig{
+		Host:     host,
+		Port:     port,
+		Username: username,
+		Password: password,
+		From:     from,
+		TLS:      tlsMode,
+	}
+}
+
+// validateSMTPHost checks that host is a valid hostname/IP without embedded
+// control characters or port numbers.
+func validateSMTPHost(host string) error {
+	if host == "" {
+		return fmt.Errorf("host is required")
+	}
+	if strings.ContainsAny(host, "\r\n \t") {
+		return fmt.Errorf("host contains invalid characters")
+	}
+	// Reject embedded port (colon) unless it's a bracketed IPv6 literal like [::1]
+	if strings.Contains(host, ":") && !strings.HasPrefix(host, "[") {
+		return fmt.Errorf("host must not contain a port; specify the port separately")
+	}
+	return nil
+}
+
 type smtpConfigResponse struct {
 	Host        string `json:"host"`
 	Port        string `json:"port"`
@@ -330,43 +398,16 @@ func (h *ConfigHandler) handleGetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	host, _ := h.DB.GetSetting(r.Context(), settingSMTPHost)
-	port, _ := h.DB.GetSetting(r.Context(), settingSMTPPort)
-	username, _ := h.DB.GetSetting(r.Context(), settingSMTPUsername)
-	password, passwordErr := h.DB.GetSetting(r.Context(), settingSMTPPassword)
-	from, _ := h.DB.GetSetting(r.Context(), settingSMTPFrom)
-	tlsMode, _ := h.DB.GetSetting(r.Context(), settingSMTPTLS)
-
-	// Environment variables take precedence over DB settings
-	envOverride := os.Getenv("SMTP_HOST") != ""
-	if envOverride {
-		host = os.Getenv("SMTP_HOST")
-		if v := os.Getenv("SMTP_PORT"); v != "" {
-			port = v
-		}
-		if v := os.Getenv("SMTP_USERNAME"); v != "" {
-			username = v
-		}
-		if os.Getenv("SMTP_PASSWORD") != "" {
-			password = "set"
-			passwordErr = nil
-		}
-		if v := os.Getenv("SMTP_FROM"); v != "" {
-			from = v
-		}
-		if v := os.Getenv("SMTP_TLS"); v != "" {
-			tlsMode = v
-		}
-	}
+	cfg := h.resolveSMTPConfig(r.Context())
 
 	writeJSON(r.Context(), w, http.StatusOK, smtpConfigResponse{
-		Host:        host,
-		Port:        port,
-		Username:    username,
-		PasswordSet: passwordErr == nil && password != "",
-		From:        from,
-		TLS:         tlsMode,
-		EnvOverride: envOverride,
+		Host:        cfg.Host,
+		Port:        cfg.Port,
+		Username:    cfg.Username,
+		PasswordSet: cfg.Password != "",
+		From:        cfg.From,
+		TLS:         cfg.TLS,
+		EnvOverride: cfg.EnvOverride,
 	})
 }
 
@@ -399,8 +440,8 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 	from := strings.TrimSpace(req.From)
 	tlsMode := strings.TrimSpace(req.TLS)
 
-	if host == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "host is required")
+	if err := validateSMTPHost(host); err != nil {
+		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
 		return
 	}
 	if from == "" {
@@ -439,14 +480,14 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// If password is empty, try to preserve the existing one (like OIDC client_secret).
+	// If password is empty, try to preserve the existing DB value (like OIDC client_secret).
+	// We intentionally do NOT fall back to SMTP_PASSWORD env var to avoid copying
+	// env-managed secrets into the database.
 	// Only require a password when a username is set (allow unauthenticated SMTP).
 	if password == "" {
 		existing, _ := h.DB.GetSetting(r.Context(), settingSMTPPassword)
 		if existing != "" {
 			password = existing
-		} else if envPw := strings.TrimSpace(os.Getenv("SMTP_PASSWORD")); envPw != "" {
-			password = envPw
 		}
 	}
 	if username != "" && password == "" {
@@ -561,37 +602,20 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 	// Use the bare address for SMTP envelope commands.
 	user.Email = parsedUserEmail.Address
 
-	// Load SMTP config: env vars first, then DB
-	host := os.Getenv("SMTP_HOST")
-	port := os.Getenv("SMTP_PORT")
-	username := os.Getenv("SMTP_USERNAME")
-	password := os.Getenv("SMTP_PASSWORD")
-	from := os.Getenv("SMTP_FROM")
-	tlsMode := os.Getenv("SMTP_TLS")
+	// Load SMTP config using the shared resolver.
+	cfg := h.resolveSMTPConfig(r.Context())
 
-	// When SMTP_HOST is set via env, only require SMTP_FROM.
-	// Port defaults to 587 if missing; username/password are optional.
-	if host != "" && from == "" {
+	if cfg.Host == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "SMTP is not configured")
+		return
+	}
+	if cfg.EnvOverride && cfg.From == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "incomplete SMTP environment configuration: SMTP_HOST is set but SMTP_FROM is missing")
 		return
 	}
 
-	if host == "" {
-		host, _ = h.DB.GetSetting(r.Context(), settingSMTPHost)
-		port, _ = h.DB.GetSetting(r.Context(), settingSMTPPort)
-		username, _ = h.DB.GetSetting(r.Context(), settingSMTPUsername)
-		password, _ = h.DB.GetSetting(r.Context(), settingSMTPPassword)
-		from, _ = h.DB.GetSetting(r.Context(), settingSMTPFrom)
-		tlsMode, _ = h.DB.GetSetting(r.Context(), settingSMTPTLS)
-	}
-
-	if host == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "SMTP is not configured")
-		return
-	}
-
 	// Validate SMTP "from" address to prevent header injection and invalid addresses.
-	from = strings.TrimSpace(from)
+	from := strings.TrimSpace(cfg.From)
 	if from == "" {
 		slog.ErrorContext(r.Context(), "SMTP from address is empty")
 		writeError(r.Context(), w, http.StatusBadRequest, "SMTP from address is not configured")
@@ -611,9 +635,12 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	from = parsedFromAddr.Address
+
+	port := cfg.Port
 	if port == "" {
 		port = "587"
 	}
+	tlsMode := cfg.TLS
 	if tlsMode == "" {
 		tlsMode = "starttls"
 	}
@@ -627,10 +654,10 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 	body := "This is a test email from Biblioteka to confirm your SMTP settings are working correctly."
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s", from, to, subject, body)
 
-	addr := net.JoinHostPort(host, port)
+	addr := net.JoinHostPort(cfg.Host, port)
 	var smtpAuth smtp.Auth
-	if username != "" && password != "" {
-		smtpAuth = smtp.PlainAuth("", username, password, host)
+	if cfg.Username != "" && cfg.Password != "" {
+		smtpAuth = smtp.PlainAuth("", cfg.Username, cfg.Password, cfg.Host)
 	}
 
 	send := sendMail
@@ -638,7 +665,7 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		send = h.SendMailFunc
 	}
 
-	if err := send(addr, smtpAuth, from, to, []byte(msg), tlsMode); err != nil {
+	if err := send(r.Context(), addr, smtpAuth, from, to, []byte(msg), tlsMode); err != nil {
 		slog.ErrorContext(r.Context(), "failed to send test email",
 			slog.String(otelkeys.Email, to),
 			slog.Any(otelkeys.Error, err),
@@ -658,7 +685,7 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 const smtpSessionTimeout = 30 * time.Second
 
 // sendMail sends an email using the specified TLS mode.
-func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
+func sendMail(_ context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		return fmt.Errorf("invalid address: %w", err)

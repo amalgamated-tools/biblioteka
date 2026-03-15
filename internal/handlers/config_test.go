@@ -904,7 +904,7 @@ func TestHandleSMTPTest_Success(t *testing.T) {
 	_ = h.DB.SetSetting(context.Background(), settingSMTPTLS, "starttls")
 
 	var calledFrom, calledTo string
-	h.SendMailFunc = func(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
+	h.SendMailFunc = func(_ context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
 		calledFrom = from
 		calledTo = to
 		return nil
@@ -935,7 +935,7 @@ func TestHandleSMTPTest_SendMailFailure(t *testing.T) {
 	_ = h.DB.SetSetting(context.Background(), settingSMTPFrom, "noreply@example.com")
 	_ = h.DB.SetSetting(context.Background(), settingSMTPTLS, "starttls")
 
-	h.SendMailFunc = func(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
+	h.SendMailFunc = func(_ context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
 		return fmt.Errorf("connection refused")
 	}
 
