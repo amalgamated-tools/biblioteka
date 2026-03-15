@@ -64,22 +64,25 @@ type Server struct {
 
 	Worker *worker.Worker
 
-	oidcHandler     *handlers.OIDCHandler
-	authHandler     *handlers.AuthHandler
-	configHandler   *handlers.ConfigHandler
-	adminHandler    *handlers.AdminHandler
-	libraryHandler  *handlers.LibraryHandler
-	authorHandler   *handlers.AuthorHandler
-	seriesHandler   *handlers.SeriesHandler
-	bookHandler     *handlers.BookHandler
-	bookFileHandler *handlers.BookFileHandler
-	auditLogHandler *handlers.AuditLogHandler
-	requireAuth     func(http.Handler) http.Handler
-	requireAdmin    func(http.Handler) http.Handler
-	authLimiter     *auth.RateLimiter
-	mux             *http.ServeMux
-	httpServer      *http.Server
-	shutdownFuncs   []ShutdownFunc
+	oidcHandler           *handlers.OIDCHandler
+	authHandler           *handlers.AuthHandler
+	configHandler         *handlers.ConfigHandler
+	adminHandler          *handlers.AdminHandler
+	libraryHandler        *handlers.LibraryHandler
+	authorHandler         *handlers.AuthorHandler
+	seriesHandler         *handlers.SeriesHandler
+	bookHandler           *handlers.BookHandler
+	bookFileHandler       *handlers.BookFileHandler
+	auditLogHandler       *handlers.AuditLogHandler
+	opdsHandler           *handlers.OPDSHandler
+	opdsCredentialHandler *handlers.OPDSCredentialHandler
+	requireAuth           func(http.Handler) http.Handler
+	requireAdmin          func(http.Handler) http.Handler
+	requireOPDSAuth       func(http.Handler) http.Handler
+	authLimiter           *auth.RateLimiter
+	mux                   *http.ServeMux
+	httpServer            *http.Server
+	shutdownFuncs         []ShutdownFunc
 }
 
 // NewServer creates a new server instance
@@ -145,6 +148,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.bookHandler = &handlers.BookHandler{DB: s.DB}
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
+	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
+	s.opdsCredentialHandler = &handlers.OPDSCredentialHandler{DB: s.DB}
+	s.requireOPDSAuth = auth.OPDSBasicAuthMiddleware(&opdsDBAdapter{db: s.DB})
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
@@ -265,6 +271,8 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Protected config routes
 	s.mux.Handle("/api/config/status", s.requireAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
 	s.mux.Handle("/api/config/oidc", s.requireAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
+	s.mux.Handle("/api/config/smtp", s.requireAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
+	s.mux.Handle("/api/config/smtp/test", s.requireAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
 
 	// Protected admin routes
 	s.mux.Handle("/api/admin/users", s.requireAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
@@ -291,6 +299,13 @@ func (s *Server) setupRoutes(ctx context.Context) {
 
 	// Protected audit log routes (admin only)
 	s.mux.Handle("/api/audit-logs", s.requireAuth(http.HandlerFunc(s.auditLogHandler.HandleAuditLogs)))
+
+	// OPDS credential management (JWT auth)
+	s.mux.Handle("/api/opds/credentials", s.requireAuth(http.HandlerFunc(s.opdsCredentialHandler.HandleOPDSCredentials)))
+
+	// OPDS feed routes (Basic Auth)
+	s.mux.Handle("/opds", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
+	s.mux.Handle("/opds/", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
 
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)
@@ -464,4 +479,20 @@ func (s *Server) setupFrontend(ctx context.Context) {
 		r.URL.Path = "/"
 		fileServer.ServeHTTP(w, r)
 	})
+}
+
+// opdsDBAdapter bridges *db.DB to the auth.OPDSCredentialChecker interface.
+type opdsDBAdapter struct {
+	db *db.DB
+}
+
+func (a *opdsDBAdapter) GetOPDSCredential(ctx context.Context, username string) (*auth.OPDSCredentialResult, error) {
+	cred, err := a.db.GetOPDSCredentialByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	return &auth.OPDSCredentialResult{
+		UserID:       cred.UserID,
+		PasswordHash: cred.PasswordHash,
+	}, nil
 }
