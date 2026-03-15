@@ -12,7 +12,11 @@ frontend/src/
   types.ts            Shared TypeScript interfaces for API entities
   components/         Page-level Svelte components (PascalCase)
     settings/         Sub-components for the Settings page (one per tab)
+<<<<<<< HEAD
       AccountTab.svelte    Account settings; change credentials; OIDC linking
+=======
+      AccountTab.svelte    Account & password management; OIDC linking
+>>>>>>> 2cff3313df8b8aadb706c9a4596dac199b011841
       OidcTab.svelte       Admin: OIDC / SSO provider configuration
       PreferencesTab.svelte Display theme selection
       UsersTab.svelte      Admin: user list and admin-role toggling
