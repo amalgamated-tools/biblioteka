@@ -7,7 +7,6 @@ db/biblioteka.db*
 
 # IDE
 .idea/
-.vscode/
 *.swp
 
 # OS

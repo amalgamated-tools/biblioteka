@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func TestWriteJSON(t *testing.T) {
+func Test_WriteJSON(t *testing.T) {
 	w := httptest.NewRecorder()
-	writeJSON(w, http.StatusOK, map[string]string{"key": "value"})
+	writeJSON(t.Context(), w, http.StatusOK, map[string]string{"key": "value"})
 
 	if w.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
@@ -26,9 +26,9 @@ func TestWriteJSON(t *testing.T) {
 	}
 }
 
-func TestWriteError(t *testing.T) {
+func Test_WriteError(t *testing.T) {
 	w := httptest.NewRecorder()
-	writeError(w, http.StatusBadRequest, "something went wrong")
+	writeError(t.Context(), w, http.StatusBadRequest, "something went wrong")
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
@@ -45,7 +45,7 @@ func TestWriteError(t *testing.T) {
 	}
 }
 
-func TestValidatePassword(t *testing.T) {
+func Test_ValidatePassword(t *testing.T) {
 	tests := []struct {
 		name     string
 		password string
@@ -68,7 +68,7 @@ func TestValidatePassword(t *testing.T) {
 	}
 }
 
-func TestExtractPathID(t *testing.T) {
+func Test_ExtractPathID(t *testing.T) {
 	tests := []struct {
 		name   string
 		path   string

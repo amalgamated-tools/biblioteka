@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 )
@@ -8,7 +9,7 @@ import (
 func TestCreateSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	s, err := d.CreateSeries("The Dark Tower", strPtr("dt-123"), nil, nil)
+	s, err := d.CreateSeries(context.Background(), "The Dark Tower", strPtr("dt-123"), nil, nil)
 	if err != nil {
 		t.Fatalf("CreateSeries() error: %v", err)
 	}
@@ -29,12 +30,12 @@ func TestCreateSeries(t *testing.T) {
 func TestCreateSeries_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateSeries("The Dark Tower", nil, nil, nil)
+	_, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("first CreateSeries() error: %v", err)
 	}
 
-	_, err = d.CreateSeries("The Dark Tower", nil, nil, nil)
+	_, err = d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 	if err != ErrSeriesNameExists {
 		t.Errorf("expected ErrSeriesNameExists, got %v", err)
 	}
@@ -43,9 +44,9 @@ func TestCreateSeries_DuplicateName(t *testing.T) {
 func TestGetSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateSeries("The Dark Tower", nil, nil, nil)
+	created, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 
-	found, err := d.GetSeries(created.ID)
+	found, err := d.GetSeries(context.Background(), created.ID)
 	if err != nil {
 		t.Fatalf("GetSeries() error: %v", err)
 	}
@@ -60,7 +61,7 @@ func TestGetSeries(t *testing.T) {
 func TestGetSeries_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.GetSeries("nonexistent-id")
+	_, err := d.GetSeries(context.Background(), "nonexistent-id")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
@@ -69,10 +70,10 @@ func TestGetSeries_NotFound(t *testing.T) {
 func TestListSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateSeries("Discworld", nil, nil, nil)
-	_, _ = d.CreateSeries("The Dark Tower", nil, nil, nil)
+	_, _ = d.CreateSeries(context.Background(), "Discworld", nil, nil, nil)
+	_, _ = d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 
-	list, err := d.ListSeries()
+	list, err := d.ListSeries(context.Background())
 	if err != nil {
 		t.Fatalf("ListSeries() error: %v", err)
 	}
@@ -87,9 +88,9 @@ func TestListSeries(t *testing.T) {
 func TestUpdateSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateSeries("Dark Tower", nil, nil, nil)
+	created, _ := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
 
-	updated, err := d.UpdateSeries(created.ID, "The Dark Tower", strPtr("dt-456"), nil, nil)
+	updated, err := d.UpdateSeries(context.Background(), created.ID, "The Dark Tower", strPtr("dt-456"), nil, nil)
 	if err != nil {
 		t.Fatalf("UpdateSeries() error: %v", err)
 	}
@@ -104,10 +105,10 @@ func TestUpdateSeries(t *testing.T) {
 func TestUpdateSeries_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateSeries("The Dark Tower", nil, nil, nil)
-	s2, _ := d.CreateSeries("Dark Tower", nil, nil, nil)
+	_, _ = d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s2, _ := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
 
-	_, err := d.UpdateSeries(s2.ID, "The Dark Tower", nil, nil, nil)
+	_, err := d.UpdateSeries(context.Background(), s2.ID, "The Dark Tower", nil, nil, nil)
 	if err != ErrSeriesNameExists {
 		t.Errorf("expected ErrSeriesNameExists, got %v", err)
 	}
@@ -116,14 +117,14 @@ func TestUpdateSeries_DuplicateName(t *testing.T) {
 func TestDeleteSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	s, _ := d.CreateSeries("The Dark Tower", nil, nil, nil)
+	s, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 
-	err := d.DeleteSeries(s.ID)
+	err := d.DeleteSeries(context.Background(), s.ID)
 	if err != nil {
 		t.Fatalf("DeleteSeries() error: %v", err)
 	}
 
-	_, err = d.GetSeries(s.ID)
+	_, err = d.GetSeries(context.Background(), s.ID)
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
 	}
@@ -132,7 +133,7 @@ func TestDeleteSeries(t *testing.T) {
 func TestDeleteSeries_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	err := d.DeleteSeries("nonexistent-id")
+	err := d.DeleteSeries(context.Background(), "nonexistent-id")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -14,7 +15,7 @@ func setupBookHandler(t *testing.T) (*BookHandler, string) {
 	t.Helper()
 	d := newTestDB(t)
 	h := &BookHandler{DB: d}
-	user, err := d.CreateUser("Test User", "test@example.com", "password1")
+	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -71,8 +72,8 @@ func TestCreateBook_MissingTitle(t *testing.T) {
 func TestListBooks_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	h.DB.CreateBook("A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books", nil)
 	r = withUserID(r, userID)
@@ -96,7 +97,7 @@ func TestListBooks_Handler(t *testing.T) {
 func TestGetBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID, nil)
 	r = withUserID(r, userID)
@@ -126,7 +127,7 @@ func TestGetBook_NotFound(t *testing.T) {
 func TestDeleteBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/books/"+b.ID, nil)
 	r = withUserID(r, userID)
@@ -142,8 +143,8 @@ func TestDeleteBook_Handler(t *testing.T) {
 func TestBookAuthors_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	a, _ := h.DB.CreateAuthor("Stephen King", nil, nil, nil, nil)
+	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	a, _ := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
 
 	// Set authors
 	body, _ := json.Marshal(map[string][]string{"author_ids": {a.ID}})
@@ -183,8 +184,8 @@ func TestBookAuthors_Handler(t *testing.T) {
 func TestBookSeries_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	s, _ := h.DB.CreateSeries("The Dark Tower", nil, nil, nil)
+	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	s, _ := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 
 	pos := 1.0
 	body, _ := json.Marshal(map[string][]db.BookSeriesInput{
@@ -226,7 +227,7 @@ func TestBookSeries_Handler(t *testing.T) {
 func TestBookFiles_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Create a file
 	body, _ := json.Marshal(map[string]any{

@@ -17,7 +17,7 @@ type mockLibraryLister struct {
 	err       error
 }
 
-func (m *mockLibraryLister) ListLibraries() ([]db.Library, error) {
+func (m *mockLibraryLister) ListLibraries(_ context.Context) ([]db.Library, error) {
 	return m.libraries, m.err
 }
 

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 )
@@ -8,9 +9,9 @@ import (
 func TestCreateBookFile(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
-	bf, err := d.CreateBookFile(book.ID, "epub", "gunslinger.epub", 1024000, strPtr("abc123hash"), "/books/gunslinger.epub")
+	bf, err := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024000, strPtr("abc123hash"), "/books/gunslinger.epub")
 	if err != nil {
 		t.Fatalf("CreateBookFile() error: %v", err)
 	}
@@ -40,10 +41,10 @@ func TestCreateBookFile(t *testing.T) {
 func TestGetBookFile(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	created, _ := d.CreateBookFile(book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	created, _ := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 
-	found, err := d.GetBookFile(created.ID)
+	found, err := d.GetBookFile(context.Background(), created.ID)
 	if err != nil {
 		t.Fatalf("GetBookFile() error: %v", err)
 	}
@@ -55,7 +56,7 @@ func TestGetBookFile(t *testing.T) {
 func TestGetBookFile_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.GetBookFile("nonexistent-id")
+	_, err := d.GetBookFile(context.Background(), "nonexistent-id")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
@@ -64,11 +65,11 @@ func TestGetBookFile_NotFound(t *testing.T) {
 func TestListBookFiles(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	_, _ = d.CreateBookFile(book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
-	_, _ = d.CreateBookFile(book.ID, "pdf", "gunslinger.pdf", 2048, nil, "/books/gunslinger.pdf")
+	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, _ = d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	_, _ = d.CreateBookFile(context.Background(), book.ID, "pdf", "gunslinger.pdf", 2048, nil, "/books/gunslinger.pdf")
 
-	files, err := d.ListBookFiles(book.ID)
+	files, err := d.ListBookFiles(context.Background(), book.ID)
 	if err != nil {
 		t.Fatalf("ListBookFiles() error: %v", err)
 	}
@@ -83,15 +84,15 @@ func TestListBookFiles(t *testing.T) {
 func TestDeleteBookFile(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	bf, _ := d.CreateBookFile(book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	bf, _ := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 
-	err := d.DeleteBookFile(bf.ID)
+	err := d.DeleteBookFile(context.Background(), bf.ID)
 	if err != nil {
 		t.Fatalf("DeleteBookFile() error: %v", err)
 	}
 
-	_, err = d.GetBookFile(bf.ID)
+	_, err = d.GetBookFile(context.Background(), bf.ID)
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
 	}
@@ -100,7 +101,7 @@ func TestDeleteBookFile(t *testing.T) {
 func TestDeleteBookFile_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	err := d.DeleteBookFile("nonexistent-id")
+	err := d.DeleteBookFile(context.Background(), "nonexistent-id")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
@@ -109,12 +110,12 @@ func TestDeleteBookFile_NotFound(t *testing.T) {
 func TestDeleteBook_CascadeFiles(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	bf, _ := d.CreateBookFile(book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	bf, _ := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 
-	_ = d.DeleteBook(book.ID)
+	_ = d.DeleteBook(context.Background(), book.ID)
 
-	_, err := d.GetBookFile(bf.ID)
+	_, err := d.GetBookFile(context.Background(), bf.ID)
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows after book delete (cascade), got %v", err)
 	}

@@ -39,7 +39,11 @@ db/migrations/
 
 ### Logging
 - Always use `log/slog` for structured logging.
+- **Always use context-aware variants**: `slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`, 
+  `slog.WarnContext(ctx, ...)`, `slog.DebugContext(ctx, ...)`. The non-context versions 
+  (`slog.Info`, `slog.Error`, etc.) are **forbidden by the `sloglint` linter**.
 - `log.Print*`, `log.Fatal*`, and `log.Panic*` are **forbidden** by the linter (`golangci-lint` / `forbidigo`).
+- Pass `r.Context()` in HTTP handlers or propagate `context.Context` through function signatures.
 
 ### Error handling
 - Check every error explicitly with `if err != nil`.
@@ -48,7 +52,7 @@ db/migrations/
 ### HTTP handlers
 - Each domain has a handler struct (e.g., `BookHandler`) that holds `*db.DB` and other dependencies.
 - Register routes in `internal/server/server.go` on the standard `http.ServeMux` — do not introduce a router framework.
-- Use `writeJSON(w, status, data)` and `writeError(w, status, message)` from `internal/handlers/helpers.go` for all responses.
+- Use `writeJSON(r.Context(), w, status, data)` and `writeError(r.Context(), w, status, message)` from `internal/handlers/helpers.go` for all responses.
 - Extract resource IDs from paths with `extractPathID(r.URL.Path, "/api/books/")` — there are no named URL parameters.
 
 ### Admin protection

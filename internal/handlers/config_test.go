@@ -16,11 +16,11 @@ func setupConfigHandler(t *testing.T) (*ConfigHandler, string, string) {
 	t.Helper()
 	d := newTestDB(t)
 
-	admin, err := d.CreateUser("Admin", "admin@example.com", "password1")
+	admin, err := d.CreateUser(context.Background(), "Admin", "admin@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create admin: %v", err)
 	}
-	regular, err := d.CreateUser("Regular", "regular@example.com", "password1")
+	regular, err := d.CreateUser(context.Background(), "Regular", "regular@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create regular user: %v", err)
 	}
@@ -142,10 +142,10 @@ func TestHandleGetOIDCConfig_AdminWithSettings(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
 	// Pre-populate settings
-	_ = h.DB.SetSetting(settingOIDCIssuerURL, "https://auth.example.com")
-	_ = h.DB.SetSetting(settingOIDCClientID, "my-client-id")
-	_ = h.DB.SetSetting(settingOIDCClientSecret, "my-secret")
-	_ = h.DB.SetSetting(settingOIDCRedirectURI, "https://app.example.com/callback")
+	_ = h.DB.SetSetting(context.Background(), settingOIDCIssuerURL, "https://auth.example.com")
+	_ = h.DB.SetSetting(context.Background(), settingOIDCClientID, "my-client-id")
+	_ = h.DB.SetSetting(context.Background(), settingOIDCClientSecret, "my-secret")
+	_ = h.DB.SetSetting(context.Background(), settingOIDCRedirectURI, "https://app.example.com/callback")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/config/oidc", nil)
 	r = withUserID(r, adminID)
@@ -333,7 +333,7 @@ func TestHandleSetOIDCConfig_ValidProviderSavesSettings(t *testing.T) {
 	}
 
 	// Verify settings were persisted
-	issuerURL, err := h.DB.GetSetting(settingOIDCIssuerURL)
+	issuerURL, err := h.DB.GetSetting(context.Background(), settingOIDCIssuerURL)
 	if err != nil {
 		t.Fatalf("GetSetting(issuer_url) error: %v", err)
 	}
@@ -341,7 +341,7 @@ func TestHandleSetOIDCConfig_ValidProviderSavesSettings(t *testing.T) {
 		t.Errorf("saved issuer_url = %q, want %q", issuerURL, oidcServer.URL)
 	}
 
-	clientID, err := h.DB.GetSetting(settingOIDCClientID)
+	clientID, err := h.DB.GetSetting(context.Background(), settingOIDCClientID)
 	if err != nil {
 		t.Fatalf("GetSetting(client_id) error: %v", err)
 	}
@@ -358,7 +358,7 @@ func TestHandleSetOIDCConfig_PreservesExistingSecret(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
 	// Pre-store a secret
-	_ = h.DB.SetSetting(settingOIDCClientSecret, "existing-secret")
+	_ = h.DB.SetSetting(context.Background(), settingOIDCClientSecret, "existing-secret")
 
 	// Serve a minimal OIDC discovery document.
 	oidcServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -389,7 +389,7 @@ func TestHandleSetOIDCConfig_PreservesExistingSecret(t *testing.T) {
 	}
 
 	// The stored secret should still be the original one
-	secret, err := h.DB.GetSetting(settingOIDCClientSecret)
+	secret, err := h.DB.GetSetting(context.Background(), settingOIDCClientSecret)
 	if err != nil {
 		t.Fatalf("GetSetting(client_secret): %v", err)
 	}

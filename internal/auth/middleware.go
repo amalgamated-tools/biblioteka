@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 type contextKey string
@@ -29,8 +31,8 @@ func jsonError(w http.ResponseWriter, status int, message string) {
 func extractToken(r *http.Request) (string, string) {
 	if header := r.Header.Get("Authorization"); header != "" {
 		header = strings.TrimSpace(header)
-		if strings.HasPrefix(header, "Bearer ") {
-			token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+		if after, ok := strings.CutPrefix(header, "Bearer "); ok {
+			token := strings.TrimSpace(after)
 			if token != "" {
 				return token, ""
 			}
@@ -55,7 +57,7 @@ func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 			token, reason := extractToken(r)
 			if token == "" {
 				if reason != "" {
-					slog.InfoContext(r.Context(), "authentication required", slog.String("reason", reason))
+					slog.InfoContext(r.Context(), "authentication required", slog.String(otelkeys.Reason, reason))
 				} else {
 					slog.InfoContext(r.Context(), "authentication required")
 				}
@@ -63,14 +65,14 @@ func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := jwt.ValidateToken(token)
+			claims, err := jwt.ValidateToken(r.Context(), token)
 			if err != nil {
-				slog.InfoContext(r.Context(), "invalid or expired token", slog.Any("error", err))
+				slog.InfoContext(r.Context(), "invalid or expired token", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 				return
 			}
 
-			slog.DebugContext(r.Context(), "authentication successful", slog.String("user_id", claims.UserID))
+			slog.DebugContext(r.Context(), "authentication successful", slog.String(otelkeys.UserID, claims.UserID))
 			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -175,26 +177,26 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) h
 				return
 			}
 
-			claims, err := jwt.ValidateToken(token)
+			claims, err := jwt.ValidateToken(r.Context(), token)
 			if err != nil {
-				slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any("error", err))
+				slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 				return
 			}
 
 			isAdmin, err := cachedChecker.IsAdmin(r.Context(), claims.UserID)
 			if err != nil {
-				slog.ErrorContext(r.Context(), "admin middleware: failed to check admin status", slog.Any("error", err))
+				slog.ErrorContext(r.Context(), "admin middleware: failed to check admin status", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusInternalServerError, "failed to verify permissions")
 				return
 			}
 			if !isAdmin {
-				slog.InfoContext(r.Context(), "admin middleware: non-admin access denied", slog.String("user_id", claims.UserID))
+				slog.InfoContext(r.Context(), "admin middleware: non-admin access denied", slog.String(otelkeys.UserID, claims.UserID))
 				jsonError(w, http.StatusForbidden, "admin access required")
 				return
 			}
 
-			slog.DebugContext(r.Context(), "admin authentication successful", slog.String("user_id", claims.UserID))
+			slog.DebugContext(r.Context(), "admin authentication successful", slog.String(otelkeys.UserID, claims.UserID))
 			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
