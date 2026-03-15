@@ -53,6 +53,26 @@ func isLoopbackHost(host string) bool {
 	return false
 }
 
+// isValidSMTPHostForStatus performs a minimal validation suitable for deciding
+// whether SMTP appears configured. It intentionally rejects obviously
+// misformatted values such as "host:port", bracketed IPv6, or values with
+// whitespace, while accepting plain hostnames or IPs.
+func isValidSMTPHostForStatus(host string) bool {
+	if host == "" {
+		return false
+	}
+
+	// Disallow whitespace, port decorations, and bracketed IPv6.
+	if strings.ContainsAny(host, " []") {
+		return false
+	}
+	if strings.Contains(host, ":") {
+		return false
+	}
+
+	return true
+}
+
 // ConfigHandler holds dependencies for configuration endpoints.
 type ConfigHandler struct {
 	DB               *db.DB
@@ -89,7 +109,16 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 	isAdmin, _ := h.DB.IsAdmin(r.Context(), userID)
 
 	smtpCfg := h.resolveSMTPConfig(r.Context())
-	smtpConfigured := smtpCfg.Host != "" && smtpCfg.From != ""
+
+	host := strings.TrimSpace(smtpCfg.Host)
+	from := strings.TrimSpace(smtpCfg.From)
+
+	smtpConfigured := false
+	if isValidSMTPHostForStatus(host) {
+		if parsed, err := mail.ParseAddress(from); err == nil && parsed != nil && parsed.Address != "" && parsed.Name == "" {
+			smtpConfigured = true
+		}
+	}
 
 	writeJSON(r.Context(), w, http.StatusOK, configStatusResponse{
 		OIDCConfigured: h.IsOIDCConfigured(),
