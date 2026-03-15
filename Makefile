@@ -110,7 +110,7 @@ fmt:
 	go fmt ./...
 
 hardfmt:
-	gofumpt -w -l .
+	go tool gofumpt -w -l .
 
 test:
 	go test -v ./...
