@@ -56,14 +56,19 @@ func isLoopbackHost(host string) bool {
 // isValidSMTPHostForStatus performs a minimal validation suitable for deciding
 // whether SMTP appears configured. It intentionally rejects obviously
 // misformatted values such as "host:port", bracketed IPv6, or values with
-// whitespace, while accepting plain hostnames or IPs.
+// ASCII whitespace/control characters, while accepting plain hostnames or IPs.
 func isValidSMTPHostForStatus(host string) bool {
 	if host == "" {
 		return false
 	}
 
-	// Disallow whitespace, port decorations, and bracketed IPv6.
-	if strings.ContainsAny(host, " []") {
+	// Disallow ASCII whitespace/control characters and bracketed IPv6.
+	for _, r := range host {
+		if r <= 0x20 || r == 0x7f {
+			return false
+		}
+	}
+	if strings.ContainsAny(host, "[]") {
 		return false
 	}
 
@@ -774,7 +779,10 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		return fmt.Errorf("invalid address: %w", err)
 	}
 
-	tlsConfig := &tls.Config{ServerName: host}
+	tlsConfig := &tls.Config{
+		ServerName: host,
+		MinVersion: tls.VersionTLS12,
+	}
 	netDialer := &net.Dialer{Timeout: 10 * time.Second}
 
 	switch tlsMode {

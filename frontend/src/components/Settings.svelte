@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { routerStore } from "../stores/router.svelte";
   import {
     getConfigStatus,
@@ -89,6 +89,19 @@
       // ignore - will show as not configured
     }
   });
+  let smtpTestMessageTimeout: ReturnType<typeof setTimeout> | null = null;
+  let smtpTestErrorTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (smtpTestMessageTimeout !== null) {
+      clearTimeout(smtpTestMessageTimeout);
+      smtpTestMessageTimeout = null;
+    }
+    if (smtpTestErrorTimeout !== null) {
+      clearTimeout(smtpTestErrorTimeout);
+      smtpTestErrorTimeout = null;
+    }
+  });
 
   async function handleSmtpSave(e: SubmitEvent) {
     e.preventDefault();
@@ -151,11 +164,25 @@
     try {
       const result = await testSmtpConfig();
       smtpTestMessage = result.message;
-      setTimeout(() => (smtpTestMessage = null), 5000);
+      if (smtpTestMessageTimeout !== null) {
+        clearTimeout(smtpTestMessageTimeout);
+        smtpTestMessageTimeout = null;
+      }
+      smtpTestMessageTimeout = setTimeout(() => {
+        smtpTestMessage = null;
+        smtpTestMessageTimeout = null;
+      }, 5000);
     } catch (err) {
       smtpTestError =
         err instanceof Error ? err.message : "Failed to send test email";
-      setTimeout(() => (smtpTestError = null), 5000);
+      if (smtpTestErrorTimeout !== null) {
+        clearTimeout(smtpTestErrorTimeout);
+        smtpTestErrorTimeout = null;
+      }
+      smtpTestErrorTimeout = setTimeout(() => {
+        smtpTestError = null;
+        smtpTestErrorTimeout = null;
+      }, 5000);
     } finally {
       smtpTestLoading = false;
     }
