@@ -11,6 +11,50 @@ This guide covers deploying Biblioteka in production. For local development, see
 | PostgreSQL | 17+ | Optional — SQLite is used by default |
 | Reverse proxy | — | Required for TLS and production traffic |
 
+## Split-Process Deployment (Server + Worker)
+
+By default, the binary starts both the HTTP server and the background worker in a single process. The `-mode` flag lets you run them as **separate containers or processes**, which is useful for:
+
+- **Horizontal scaling** — run multiple `server` replicas behind a load balancer while keeping a single `worker` instance.
+- **Resource isolation** — give job processing its own CPU/memory budget independent of request-serving capacity.
+- **Container-per-role architectures** — common in Kubernetes and Docker Swarm deployments.
+
+| Flag value | What starts |
+|------------|-------------|
+| `all` *(default)* | HTTP server + background worker |
+| `server` | HTTP server only |
+| `worker` | Background worker only |
+
+> **Note:** Both the `server` and `worker` roles require Redis. The server uses Redis to enqueue jobs; the worker uses it to dequeue and process them.
+
+### Example: Docker Compose split-process override
+
+Add a `docker-compose.override.yml` to your deployment alongside the default `docker-compose.yml`:
+
+```yaml
+# docker-compose.override.yml — runs server and worker as separate services
+services:
+  biblioteka:
+    command: ["-mode", "server"]
+
+  biblioteka-worker:
+    image: biblioteka          # same image as the server
+    restart: unless-stopped
+    command: ["-mode", "worker"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - redis
+```
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
+```
+
+Database migrations still run on startup of the `server` container; the `worker` container skips the HTTP listener and begins processing jobs immediately.
+
 ## Docker Compose Deployments
 
 ### SQLite + Redis (simplest)
