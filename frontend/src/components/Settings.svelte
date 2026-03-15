@@ -335,10 +335,9 @@
               <div
                 class="bg-accent-50 dark:bg-accent-800/20 border border-accent-200 dark:border-accent-700/30 text-accent-700 dark:text-accent-400 px-4 py-3 rounded-xl text-sm mb-4"
               >
-                SMTP is currently configured via environment variables
-                (SMTP_HOST, etc.). The values shown below reflect the active
-                configuration. To use database-managed settings instead, remove
-                the SMTP environment variables from the server.
+                SMTP is configured via environment variables and cannot be
+                changed here. Remove the SMTP environment variables from the
+                server to manage settings through this UI.
               </div>
             {/if}
 
@@ -356,7 +355,7 @@
                   bind:value={smtpHost}
                   class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder="smtp.example.com"
-                  disabled={smtpLoading}
+                  disabled={smtpLoading || smtpEnvOverride}
                 />
               </div>
 
@@ -373,7 +372,7 @@
                   bind:value={smtpPort}
                   class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder="587"
-                  disabled={smtpLoading}
+                  disabled={smtpLoading || smtpEnvOverride}
                 />
               </div>
 
@@ -390,10 +389,11 @@
                   bind:value={smtpUsername}
                   class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder="user@example.com"
-                  disabled={smtpLoading}
+                  disabled={smtpLoading || smtpEnvOverride}
                 />
               </div>
 
+              {#if !smtpEnvOverride}
               <div>
                 <label
                   for="smtp-password"
@@ -406,19 +406,18 @@
                   type="password"
                   bind:value={smtpPassword}
                   class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
-                  placeholder={smtpPasswordSet || smtpEnvOverride
+                  placeholder={smtpPasswordSet
                     ? "Enter new password to update"
                     : "Enter your SMTP password"}
                   disabled={smtpLoading}
                 />
-                {#if smtpPasswordSet || smtpEnvOverride}
+                {#if smtpPasswordSet}
                   <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
-                    {smtpEnvOverride
-                      ? "Password is configured via environment variable"
-                      : "Leave blank to keep the existing password"}
+                    Leave blank to keep the existing password
                   </p>
                 {/if}
               </div>
+              {/if}
 
               <div>
                 <label
@@ -433,7 +432,7 @@
                   bind:value={smtpFrom}
                   class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   placeholder="noreply@example.com"
-                  disabled={smtpLoading}
+                  disabled={smtpLoading || smtpEnvOverride}
                 />
                 <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
                   The email address that outgoing messages will be sent from
@@ -451,7 +450,7 @@
                   id="smtp-tls"
                   bind:value={smtpTls}
                   class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
-                  disabled={smtpLoading}
+                  disabled={smtpLoading || smtpEnvOverride}
                 >
                   <option value="starttls">STARTTLS</option>
                   <option value="tls">TLS</option>
@@ -475,6 +474,7 @@
                 </div>
               {/if}
 
+              {#if !smtpEnvOverride}
               <button
                 type="submit"
                 disabled={smtpLoading}
@@ -486,6 +486,7 @@
                     ? "Update Configuration"
                     : "Save Configuration"}
               </button>
+              {/if}
             </form>
           </div>
         </div>
