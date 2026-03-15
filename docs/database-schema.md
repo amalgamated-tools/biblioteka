@@ -10,9 +10,10 @@ Biblioteka uses [dbmate](https://github.com/amacneil/dbmate) migrations, which r
 
 ```
 users ────────────────────────────────────────────────┐
-                                                       │ (audit trail)
-settings                                               ▼
-                                               audit_logs
+  │                                                    │ (audit trail)
+  ├──── api_keys                  settings             ▼
+  │                                           audit_logs
+  └──── opds_credentials
 
 libraries ──── library_books ──── books ──── book_authors ──── authors
                                     │
@@ -247,6 +248,57 @@ Individual physical files (EPUB, MOBI, PDF, AZW3) linked to a book record.
 
 ---
 
+### `api_keys`
+
+Long-lived credentials for programmatic API access. Each key belongs to one user and inherits that user's permissions.
+
+| Column         | Type    | Nullable | Default  | Description                                                       |
+|----------------|---------|----------|----------|-------------------------------------------------------------------|
+| `id`           | TEXT    | NOT NULL | auto-gen | Primary key                                                       |
+| `user_id`      | TEXT    | NOT NULL | —        | FK → `users.id` (CASCADE DELETE)                                 |
+| `name`         | TEXT    | NOT NULL | —        | Human-readable label chosen at creation (e.g. `"CI Pipeline"`)   |
+| `key_hash`     | TEXT    | NOT NULL | —        | SHA-256 hash of the full key; the plaintext key is never stored  |
+| `key_prefix`   | TEXT    | NOT NULL | —        | First 12 hex chars of the key, stored in plaintext for UI display |
+| `last_used_at` | DATETIME| NULL     | NULL     | Lazily updated (at most once per 5 minutes) when the key is used |
+| `created_at`   | DATETIME| NOT NULL | `now()`  | Creation time                                                     |
+
+**Indexes:**
+- `UNIQUE(key_hash)` — fast constant-time lookup on each request
+- `idx_api_keys_user_id` — list all keys for a user
+
+**Notes:**
+- The full API key (`bib_` + 32 hex chars) is shown **once** at creation. Only the `key_hash` persists.
+- When a user is deleted, all their API keys are deleted via CASCADE.
+- See the [Authentication guide — API Keys](authentication.md#api-keys) for usage details.
+
+---
+
+### `opds_credentials`
+
+Per-user credentials used to authenticate OPDS reading apps via HTTP Basic Auth. Each user may have at most one set of OPDS credentials.
+
+| Column          | Type    | Nullable | Default  | Description                                                      |
+|-----------------|---------|----------|----------|------------------------------------------------------------------|
+| `id`            | TEXT    | NOT NULL | auto-gen | Primary key                                                      |
+| `user_id`       | TEXT    | NOT NULL | —        | FK → `users.id` (CASCADE DELETE); UNIQUE — one credential per user |
+| `username`      | TEXT    | NOT NULL | —        | Case-insensitive OPDS username (UNIQUE)                          |
+| `password_hash` | TEXT    | NOT NULL | —        | bcrypt hash of the OPDS password                                 |
+| `created_at`    | DATETIME| NOT NULL | `now()`  | Creation time                                                    |
+| `updated_at`    | DATETIME| NOT NULL | `now()`  | Last update time                                                 |
+
+**Indexes:**
+- `UNIQUE(user_id)` — one credential set per user
+- `UNIQUE(username)` — case-insensitive; enforced via `COLLATE NOCASE`
+- `idx_opds_credentials_username` — fast lookup during Basic Auth validation
+- `idx_opds_credentials_user_id` — fast lookup by user
+
+**Notes:**
+- OPDS credentials are completely separate from the main account password and JWT-based authentication.
+- When a user is deleted, their OPDS credentials are deleted via CASCADE.
+- See the [OPDS Catalog guide](opds.md) for the full feature overview.
+
+---
+
 ### `audit_logs`
 
 Append-only record of create, update, and delete actions performed on entities.
@@ -277,7 +329,7 @@ Append-only record of create, update, and delete actions performed on entities.
 
 | Deleted entity | Also deletes                                      |
 |----------------|---------------------------------------------------|
-| `users`        | `libraries` (previously scoped per user; no longer applies after migration `20260313010000`) |
+| `users`        | `api_keys`, `opds_credentials` for that user     |
 | `libraries`    | `library_books` entries for that library          |
 | `books`        | `book_files`, `book_authors`, `book_series`, `library_books` entries for that book |
 | `authors`      | `book_authors` entries for that author            |
@@ -287,14 +339,16 @@ Append-only record of create, update, and delete actions performed on entities.
 
 ## Running Migrations Manually
 
-Migrations run automatically at server startup. To run them manually (e.g. when setting up a development environment without starting the server):
+Migrations run automatically at server startup. To trigger them without starting the full HTTP server, start the server normally and stop it immediately after the migrations log output — or use the `dbmate` CLI directly against the same database:
 
 ```bash
-# SQLite (default)
-DATABASE_URL=sqlite:./biblioteka.db go run ./cmd/server --migrate-only
+# SQLite (default — database path mirrors the server's runtime path)
+dbmate -u "sqlite:./db/biblioteka.db" up
 
 # PostgreSQL
-DATABASE_URL=postgres://biblioteka:secret@localhost/biblioteka go run ./cmd/server --migrate-only
+dbmate -u "postgres://biblioteka:secret@localhost/biblioteka" up
 ```
 
-The server uses [dbmate](https://github.com/amacneil/dbmate) format. Migration files follow the naming convention `YYYYMMDDHHMMSS_description.sql` and contain `-- migrate:up` / `-- migrate:down` sections.
+Install `dbmate` from https://github.com/amacneil/dbmate or via `mise install` if the project's `mise.toml` includes it.
+
+The server uses its own built-in migration runner (not the `dbmate` binary), but both read the same `-- migrate:up` / `-- migrate:down` format. Migration files follow the naming convention `YYYYMMDDHHMMSS_description.sql`.
