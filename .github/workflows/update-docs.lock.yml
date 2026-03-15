@@ -304,9 +304,7 @@ jobs:
             const { main } = require('/opt/gh-aw/actions/checkout_pr_branch.cjs');
             await main();
       - name: Install GitHub Copilot CLI
-        env:
-          COPILOT_CLI_VERSION: v1.0.0
-        run: /opt/gh-aw/actions/install_copilot_cli.sh "$COPILOT_CLI_VERSION"
+        run: /opt/gh-aw/actions/install_copilot_cli.sh latest
       - name: Install awf binary
         run: bash /opt/gh-aw/actions/install_awf_binary.sh v0.23.0
       - name: Determine automatic lockdown mode for GitHub MCP Server
