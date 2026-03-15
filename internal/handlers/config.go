@@ -283,6 +283,21 @@ type setSMTPConfigRequest struct {
 }
 
 // HandleSMTPConfig dispatches GET and PUT requests for /api/config/smtp.
+//
+// HandleSMTPConfig godoc
+// @Summary     Get or update SMTP configuration
+// @Description GET returns current SMTP config (admin only). PUT updates SMTP config (admin only).
+// @Tags        Config
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {object} smtpConfigResponse
+// @Failure     400 {object} errorResponse
+// @Failure     401 {object} errorResponse
+// @Failure     403 {object} errorResponse
+// @Failure     500 {object} errorResponse
+// @Router      /config/smtp [get]
+// @Router      /config/smtp [put]
 func (h *ConfigHandler) HandleSMTPConfig(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -446,6 +461,19 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleSMTPTest sends a test email to the admin user's email address.
+//
+// HandleSMTPTest godoc
+// @Summary     Send SMTP test email
+// @Description Sends a test email to the authenticated admin user's email address (admin only)
+// @Tags        Config
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {object} object{message=string}
+// @Failure     400 {object} errorResponse
+// @Failure     401 {object} errorResponse
+// @Failure     403 {object} errorResponse
+// @Failure     502 {object} errorResponse
+// @Router      /config/smtp/test [post]
 func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -495,11 +523,19 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusBadRequest, "SMTP is not configured")
 		return
 	}
+	if from == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "SMTP from address is not configured")
+		return
+	}
 	if port == "" {
 		port = "587"
 	}
 	if tlsMode == "" {
 		tlsMode = "starttls"
+	}
+	if tlsMode != "none" && tlsMode != "starttls" && tlsMode != "tls" {
+		writeError(r.Context(), w, http.StatusBadRequest, "SMTP TLS mode is invalid, must be one of: none, starttls, tls")
+		return
 	}
 
 	to := user.Email
@@ -518,7 +554,7 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 			slog.String(otelkeys.Email, to),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeError(r.Context(), w, http.StatusBadGateway, "failed to send test email: "+err.Error())
+		writeError(r.Context(), w, http.StatusBadGateway, "failed to send test email")
 		return
 	}
 
@@ -551,9 +587,14 @@ func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode str
 		return smtpSend(client, a, from, to, msg)
 
 	case "starttls":
-		client, err := smtp.Dial(addr)
+		conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
+		}
+		client, err := smtp.NewClient(conn, host)
+		if err != nil {
+			conn.Close()
+			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
 		defer client.Close()
 		if err := client.StartTLS(tlsConfig); err != nil {
@@ -562,9 +603,14 @@ func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode str
 		return smtpSend(client, a, from, to, msg)
 
 	default: // "none"
-		client, err := smtp.Dial(addr)
+		conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
+		}
+		client, err := smtp.NewClient(conn, host)
+		if err != nil {
+			conn.Close()
+			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
 		defer client.Close()
 		return smtpSend(client, a, from, to, msg)
