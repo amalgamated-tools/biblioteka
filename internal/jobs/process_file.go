@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // JobProcessFile is the registered name for the file-processing job.
@@ -45,9 +46,9 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 		}
 
 		slog.DebugContext(ctx, "process:file job received",
-			slog.String("path", p.Path),
-			slog.String("file_name", p.FileName),
-			slog.String("file_type", p.FileType),
+			slog.String(otelkeys.Path, p.Path),
+			slog.String(otelkeys.FileName, p.FileName),
+			slog.String(otelkeys.FileType, p.FileType),
 			slog.Int64("file_size", p.FileSize),
 		)
 
@@ -57,9 +58,9 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 		}
 
 		slog.InfoContext(ctx, "processing file",
-			slog.String("title", title),
-			slog.String("type", p.FileType),
-			slog.String("path", p.Path),
+			slog.String(otelkeys.Title, title),
+			slog.String(otelkeys.Type, p.FileType),
+			slog.String(otelkeys.Path, p.Path),
 		)
 
 		book, err := database.CreateBook(ctx, title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
@@ -73,9 +74,9 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 		}
 
 		slog.InfoContext(ctx, "file processed",
-			slog.String("title", title),
-			slog.String("book_id", book.ID),
-			slog.String("path", p.Path),
+			slog.String(otelkeys.Title, title),
+			slog.String(otelkeys.BookID, book.ID),
+			slog.String(otelkeys.Path, p.Path),
 		)
 
 		return nil

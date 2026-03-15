@@ -41,28 +41,28 @@ func NewScanLibraryHandler(enqueuer Enqueuer) func(ctx context.Context, payload 
 			return fmt.Errorf("scan library payload: library_id is required")
 		}
 
-		slog.InfoContext(ctx, "starting library scan", slog.String("library_id", p.LibraryID))
+		slog.InfoContext(ctx, "starting library scan", slog.String(otelkeys.LibraryID, p.LibraryID))
 
 		var enqueued int
 		for _, path := range p.Paths {
 			if _, err := enqueuer.Enqueue(ctx, JobScanPath, ScanPathPayload{Path: path}); err != nil {
 				slog.WarnContext(ctx, "failed to enqueue scan:path job",
-					slog.String("library_id", p.LibraryID),
-					slog.String("path", path),
+					slog.String(otelkeys.LibraryID, p.LibraryID),
+					slog.String(otelkeys.Path, path),
 					slog.Any(otelkeys.Error, err),
 				)
 				continue
 			}
 			enqueued++
 			slog.InfoContext(ctx, "enqueued path scan",
-				slog.String("library_id", p.LibraryID),
-				slog.String("path", path),
+				slog.String(otelkeys.LibraryID, p.LibraryID),
+				slog.String(otelkeys.Path, path),
 			)
 		}
 
 		slog.InfoContext(ctx, "library scan complete",
-			slog.String("library_id", p.LibraryID),
-			slog.Int("paths_enqueued", enqueued),
+			slog.String(otelkeys.LibraryID, p.LibraryID),
+			slog.Int(otelkeys.PathsEnqueued, enqueued),
 		)
 		return nil
 	}
@@ -89,16 +89,16 @@ func NewScanLibrariesHandler(lister LibraryLister, enqueuer Enqueuer) func(ctx c
 			var paths []string
 			if err := json.Unmarshal([]byte(lib.Paths), &paths); err != nil {
 				slog.WarnContext(ctx, "failed to parse library paths",
-					slog.String("library_id", lib.ID),
-					slog.String("library_name", lib.Name),
+					slog.String(otelkeys.LibraryID, lib.ID),
+					slog.String(otelkeys.LibraryName, lib.Name),
 					slog.Any(otelkeys.Error, err),
 				)
 				continue
 			}
 			if len(paths) == 0 {
 				slog.WarnContext(ctx, "monitored library has no paths configured; skipping scan",
-					slog.String("library_id", lib.ID),
-					slog.String("library_name", lib.Name),
+					slog.String(otelkeys.LibraryID, lib.ID),
+					slog.String(otelkeys.LibraryName, lib.Name),
 				)
 				continue
 			}
@@ -108,19 +108,19 @@ func NewScanLibrariesHandler(lister LibraryLister, enqueuer Enqueuer) func(ctx c
 				Paths:     paths,
 			}); err != nil {
 				slog.WarnContext(ctx, "failed to enqueue scan:library job",
-					slog.String("library_id", lib.ID),
+					slog.String(otelkeys.LibraryID, lib.ID),
 					slog.Any(otelkeys.Error, err),
 				)
 				continue
 			}
 			enqueued++
 			slog.InfoContext(ctx, "enqueued library scan",
-				slog.String("library_id", lib.ID),
-				slog.String("library_name", lib.Name),
+				slog.String(otelkeys.LibraryID, lib.ID),
+				slog.String(otelkeys.LibraryName, lib.Name),
 			)
 		}
 
-		slog.InfoContext(ctx, "scheduled libraries scan complete", slog.Int("libraries_enqueued", enqueued))
+		slog.InfoContext(ctx, "scheduled libraries scan complete", slog.Int(otelkeys.LibrariesEnqueued, enqueued))
 		return nil
 	}
 }

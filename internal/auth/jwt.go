@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -47,7 +48,7 @@ func NewJWTManager(secret string, ttl time.Duration) (*JWTManager, error) {
 
 // CreateToken generates a signed JWT for the given user ID.
 func (j *JWTManager) CreateToken(ctx context.Context, userID string) (string, error) {
-	slog.DebugContext(ctx, "creating JWT token", slog.String("user_id", userID))
+	slog.DebugContext(ctx, "creating JWT token", slog.String(otelkeys.UserID, userID))
 	now := time.Now()
 	claims := Claims{
 		UserID: userID,
@@ -63,7 +64,7 @@ func (j *JWTManager) CreateToken(ctx context.Context, userID string) (string, er
 	if err != nil {
 		return "", fmt.Errorf("sign JWT: %w", err)
 	}
-	slog.DebugContext(ctx, "JWT token created", slog.String("user_id", userID), slog.Time("expires_at", now.Add(j.ttl)))
+	slog.DebugContext(ctx, "JWT token created", slog.String(otelkeys.UserID, userID), slog.Time("expires_at", now.Add(j.ttl)))
 	return signed, nil
 }
 
@@ -81,7 +82,7 @@ func (j *JWTManager) ValidateToken(ctx context.Context, tokenString string) (*Cl
 			slog.DebugContext(ctx, "JWT token expired")
 			return nil, ErrExpiredToken
 		}
-		slog.DebugContext(ctx, "JWT token invalid", slog.String("error", err.Error()))
+		slog.DebugContext(ctx, "JWT token invalid", slog.String(otelkeys.Error, err.Error()))
 		return nil, ErrInvalidToken
 	}
 
@@ -91,6 +92,6 @@ func (j *JWTManager) ValidateToken(ctx context.Context, tokenString string) (*Cl
 		return nil, ErrInvalidToken
 	}
 
-	slog.DebugContext(ctx, "JWT token validated", slog.String("user_id", claims.UserID))
+	slog.DebugContext(ctx, "JWT token validated", slog.String(otelkeys.UserID, claims.UserID))
 	return claims, nil
 }

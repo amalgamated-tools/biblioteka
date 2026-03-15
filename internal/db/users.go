@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // ErrEmailExists is returned when a user with the given email already exists.
@@ -41,7 +43,7 @@ const userColumns = `id, name, email, password_hash, oidc_subject, is_admin, cre
 // Returns ErrEmailExists if the email is already registered.
 // The first user created is automatically promoted to admin.
 func (d *DB) CreateUser(ctx context.Context, name, email, passwordHash string) (*User, error) {
-	slog.DebugContext(ctx, "db: creating user", slog.String("email", email))
+	slog.DebugContext(ctx, "db: creating user", slog.String(otelkeys.Email, email))
 	var exists bool
 	if err := d.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = LOWER($1))`, email).Scan(&exists); err != nil {
 		return nil, err
@@ -67,7 +69,7 @@ func (d *DB) CreateUser(ctx context.Context, name, email, passwordHash string) (
 // Returns ErrEmailExists if the email is already registered.
 // The first user created is automatically promoted to admin.
 func (d *DB) CreateOIDCUser(ctx context.Context, name, email, oidcSubject string) (*User, error) {
-	slog.DebugContext(ctx, "db: creating OIDC user", slog.String("email", email))
+	slog.DebugContext(ctx, "db: creating OIDC user", slog.String(otelkeys.Email, email))
 	var exists bool
 	if err := d.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = LOWER($1))`, email).Scan(&exists); err != nil {
 		return nil, err
@@ -90,7 +92,7 @@ func (d *DB) CreateOIDCUser(ctx context.Context, name, email, oidcSubject string
 
 // GetUserByEmail returns a user by email, or sql.ErrNoRows if not found.
 func (d *DB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	slog.DebugContext(ctx, "db: fetching user by email", slog.String("email", email))
+	slog.DebugContext(ctx, "db: fetching user by email", slog.String(otelkeys.Email, email))
 	return scanUser(d.QueryRowContext(ctx,
 		`SELECT `+userColumns+` FROM users WHERE LOWER(email) = LOWER($1)`,
 		email,
@@ -99,7 +101,7 @@ func (d *DB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 
 // GetUserByID returns a user by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
-	slog.DebugContext(ctx, "db: fetching user by ID", slog.String("id", id))
+	slog.DebugContext(ctx, "db: fetching user by ID", slog.String(otelkeys.ID, id))
 	return scanUser(d.QueryRowContext(ctx,
 		`SELECT `+userColumns+` FROM users WHERE id = $1`,
 		id,
@@ -117,7 +119,7 @@ func (d *DB) GetUserByOIDCSubject(ctx context.Context, subject string) (*User, e
 
 // LinkOIDCSubject sets the OIDC subject on an existing user.
 func (d *DB) LinkOIDCSubject(ctx context.Context, userID, oidcSubject string) error {
-	slog.DebugContext(ctx, "db: linking OIDC subject", slog.String("user_id", userID))
+	slog.DebugContext(ctx, "db: linking OIDC subject", slog.String(otelkeys.UserID, userID))
 	res, err := d.ExecContext(ctx, `UPDATE users SET oidc_subject = $1 WHERE id = $2`, oidcSubject, userID)
 	if err != nil {
 		return err
@@ -131,7 +133,7 @@ func (d *DB) LinkOIDCSubject(ctx context.Context, userID, oidcSubject string) er
 
 // UpdatePassword updates a user's password hash.
 func (d *DB) UpdatePassword(ctx context.Context, userID, newPasswordHash string) error {
-	slog.DebugContext(ctx, "db: updating password", slog.String("user_id", userID))
+	slog.DebugContext(ctx, "db: updating password", slog.String(otelkeys.UserID, userID))
 	res, err := d.ExecContext(ctx, `UPDATE users SET password_hash = $1 WHERE id = $2`, newPasswordHash, userID)
 	if err != nil {
 		return err
@@ -155,7 +157,7 @@ func (d *DB) IsAdmin(ctx context.Context, userID string) (bool, error) {
 
 // SetAdmin sets the is_admin flag on a user. Returns sql.ErrNoRows if user doesn't exist.
 func (d *DB) SetAdmin(ctx context.Context, userID string, isAdmin bool) error {
-	slog.DebugContext(ctx, "db: setting admin status", slog.String("user_id", userID), slog.Bool("is_admin", isAdmin))
+	slog.DebugContext(ctx, "db: setting admin status", slog.String(otelkeys.UserID, userID), slog.Bool(otelkeys.IsAdmin, isAdmin))
 	res, err := d.ExecContext(ctx, `UPDATE users SET is_admin = $1 WHERE id = $2`, isAdmin, userID)
 	if err != nil {
 		return err

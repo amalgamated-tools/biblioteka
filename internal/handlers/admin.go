@@ -47,7 +47,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "admin listing users", slog.String("caller_id", userID))
+	slog.DebugContext(r.Context(), "admin listing users", slog.String(otelkeys.CallerID, userID))
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
@@ -66,7 +66,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "users listed", slog.Int("count", len(users)))
+	slog.DebugContext(r.Context(), "users listed", slog.Int(otelkeys.Count, len(users)))
 	dtos := make([]adminUserDTO, 0, len(users))
 	for _, u := range users {
 		dtos = append(dtos, adminUserDTO{
@@ -105,7 +105,7 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	callerID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "setting admin status", slog.String("caller_id", callerID))
+	slog.DebugContext(r.Context(), "setting admin status", slog.String(otelkeys.CallerID, callerID))
 	isAdmin, err := h.DB.IsAdmin(r.Context(), callerID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
@@ -144,7 +144,7 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "admin status updated", slog.String("target_id", targetID), slog.Bool("is_admin", req.IsAdmin))
+	slog.DebugContext(r.Context(), "admin status updated", slog.String(otelkeys.TargetID, targetID), slog.Bool(otelkeys.IsAdmin, req.IsAdmin))
 
 	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "admin status updated"})
 }

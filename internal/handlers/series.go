@@ -95,7 +95,7 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "series listed", slog.Int("count", len(list)))
+	slog.DebugContext(r.Context(), "series listed", slog.Int(otelkeys.Count, len(list)))
 
 	dtos := make([]seriesDTO, 0, len(list))
 	for i := range list {
@@ -131,7 +131,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "creating series", slog.String("name", req.Name))
+	slog.DebugContext(r.Context(), "creating series", slog.String(otelkeys.Name, req.Name))
 
 	s, err := h.DB.CreateSeries(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
 	if err != nil {
@@ -144,7 +144,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "series created", slog.String("series_id", s.ID), slog.String("name", s.Name))
+	slog.DebugContext(r.Context(), "series created", slog.String(otelkeys.SeriesID, s.ID), slog.String(otelkeys.Name, s.Name))
 	writeJSON(r.Context(), w, http.StatusCreated, toSeriesDTO(s))
 }
 
@@ -162,7 +162,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 // @Failure     500 {object} errorResponse
 // @Router      /series/{id} [get]
 func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "fetching series", slog.String("series_id", id))
+	slog.DebugContext(r.Context(), "fetching series", slog.String(otelkeys.SeriesID, id))
 	s, err := h.DB.GetSeries(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -205,7 +205,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
-	slog.DebugContext(r.Context(), "updating series", slog.String("series_id", id), slog.String("name", req.Name))
+	slog.DebugContext(r.Context(), "updating series", slog.String(otelkeys.SeriesID, id), slog.String(otelkeys.Name, req.Name))
 
 	s, err := h.DB.UpdateSeries(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
 	if err != nil {
@@ -238,7 +238,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 // @Failure     500 {object} errorResponse
 // @Router      /series/{id} [delete]
 func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "deleting series", slog.String("series_id", id))
+	slog.DebugContext(r.Context(), "deleting series", slog.String(otelkeys.SeriesID, id))
 	err := h.DB.DeleteSeries(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {

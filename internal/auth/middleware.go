@@ -57,7 +57,7 @@ func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 			token, reason := extractToken(r)
 			if token == "" {
 				if reason != "" {
-					slog.InfoContext(r.Context(), "authentication required", slog.String("reason", reason))
+					slog.InfoContext(r.Context(), "authentication required", slog.String(otelkeys.Reason, reason))
 				} else {
 					slog.InfoContext(r.Context(), "authentication required")
 				}
@@ -72,7 +72,7 @@ func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 				return
 			}
 
-			slog.DebugContext(r.Context(), "authentication successful", slog.String("user_id", claims.UserID))
+			slog.DebugContext(r.Context(), "authentication successful", slog.String(otelkeys.UserID, claims.UserID))
 			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -191,12 +191,12 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) h
 				return
 			}
 			if !isAdmin {
-				slog.InfoContext(r.Context(), "admin middleware: non-admin access denied", slog.String("user_id", claims.UserID))
+				slog.InfoContext(r.Context(), "admin middleware: non-admin access denied", slog.String(otelkeys.UserID, claims.UserID))
 				jsonError(w, http.StatusForbidden, "admin access required")
 				return
 			}
 
-			slog.DebugContext(r.Context(), "admin authentication successful", slog.String("user_id", claims.UserID))
+			slog.DebugContext(r.Context(), "admin authentication successful", slog.String(otelkeys.UserID, claims.UserID))
 			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

@@ -118,7 +118,7 @@ func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "libraries listed", slog.Int("count", len(libraries)))
+	slog.DebugContext(r.Context(), "libraries listed", slog.Int(otelkeys.Count, len(libraries)))
 
 	dtos := make([]libraryDTO, 0, len(libraries))
 	for i := range libraries {
@@ -184,7 +184,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "creating library", slog.String("name", req.Name))
+	slog.DebugContext(r.Context(), "creating library", slog.String(otelkeys.Name, req.Name))
 
 	lib, err := h.DB.CreateLibrary(r.Context(), req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
@@ -207,7 +207,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 			Paths:     dto.Paths,
 		}); err != nil {
 			slog.ErrorContext(r.Context(), "failed to enqueue scan:library job",
-				slog.String("library_id", lib.ID),
+				slog.String(otelkeys.LibraryID, lib.ID),
 				slog.Any(otelkeys.Error, err),
 			)
 		}
@@ -230,7 +230,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 // @Failure     500 {object} errorResponse
 // @Router      /libraries/{id} [get]
 func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "fetching library", slog.String("library_id", id))
+	slog.DebugContext(r.Context(), "fetching library", slog.String(otelkeys.LibraryID, id))
 	lib, err := h.DB.GetLibrary(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -273,7 +273,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
-	slog.DebugContext(r.Context(), "updating library", slog.String("library_id", id), slog.String("name", req.Name))
+	slog.DebugContext(r.Context(), "updating library", slog.String(otelkeys.LibraryID, id), slog.String(otelkeys.Name, req.Name))
 
 	lib, err := h.DB.UpdateLibrary(r.Context(), id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
@@ -306,7 +306,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 // @Failure     500 {object} errorResponse
 // @Router      /libraries/{id} [delete]
 func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "deleting library", slog.String("library_id", id))
+	slog.DebugContext(r.Context(), "deleting library", slog.String(otelkeys.LibraryID, id))
 	err := h.DB.DeleteLibrary(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -335,7 +335,7 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 // @Failure     500 {object} errorResponse
 // @Router      /libraries/{id}/books [get]
 func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "listing library books", slog.String("library_id", id))
+	slog.DebugContext(r.Context(), "listing library books", slog.String(otelkeys.LibraryID, id))
 
 	books, err := h.DB.ListBooksByLibrary(r.Context(), id)
 	if err != nil {
@@ -358,7 +358,7 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	slog.DebugContext(r.Context(), "library books listed", slog.Int("count", len(books)))
+	slog.DebugContext(r.Context(), "library books listed", slog.Int(otelkeys.Count, len(books)))
 
 	dtos := make([]bookSummaryDTO, 0, len(books))
 	for i := range books {

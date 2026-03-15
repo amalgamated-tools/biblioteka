@@ -30,7 +30,7 @@ var version = "dev"
 func main() {
 	cancelCtx, cancelAll := context.WithCancel(context.Background())
 	otel.SetupLogger(cancelCtx)
-	slog.InfoContext(cancelCtx, "biblioteka", slog.String("version", version))
+	slog.InfoContext(cancelCtx, "biblioteka", slog.String(otelkeys.Version, version))
 	if err := realMain(cancelCtx); err != nil {
 		slog.ErrorContext(cancelCtx, "error occurred", slog.Any(otelkeys.Error, err))
 		cancelAll()
@@ -95,7 +95,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	g, ctx := errgroup.WithContext(cancelCtx)
 
 	g.Go(func() error {
-		slog.InfoContext(ctx, "Starting HTTP server", slog.Int("port", *port))
+		slog.InfoContext(ctx, "Starting HTTP server", slog.Int(otelkeys.Port, *port))
 		return http.Run(ctx)
 	})
 

@@ -132,7 +132,7 @@ func (h *OIDCHandler) CreateLinkNonce(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "creating OIDC link nonce", slog.String("user_id", userID))
+	slog.DebugContext(r.Context(), "creating OIDC link nonce", slog.String(otelkeys.UserID, userID))
 
 	nonce, err := generateState() // reuse the same 32-byte random generator
 	if err != nil {
@@ -205,7 +205,7 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "initiating OIDC link flow", slog.String("user_id", userID))
+	slog.DebugContext(r.Context(), "initiating OIDC link flow", slog.String(otelkeys.UserID, userID))
 
 	// Fail fast if the user already has an OIDC subject linked
 	existingUser, err := h.DB.GetUserByID(r.Context(), userID)
@@ -319,7 +319,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	// Check for error response from provider
 	if errParam := r.URL.Query().Get("error"); errParam != "" {
-		slog.ErrorContext(r.Context(), "OIDC provider returned error", slog.String("error_code", errParam), slog.String("description", r.URL.Query().Get("error_description")))
+		slog.ErrorContext(r.Context(), "OIDC provider returned error", slog.String(otelkeys.ErrorCode, errParam), slog.String(otelkeys.Description, r.URL.Query().Get("error_description")))
 		writeError(r.Context(), w, http.StatusUnauthorized, "authentication failed")
 		return
 	}
@@ -396,7 +396,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	// Handle link flow: attach OIDC subject to an existing authenticated user
 	if linkUserID != "" {
-		slog.DebugContext(r.Context(), "OIDC link flow: linking account", slog.String("user_id", linkUserID), slog.String("subject", claims.Sub))
+		slog.DebugContext(r.Context(), "OIDC link flow: linking account", slog.String(otelkeys.UserID, linkUserID), slog.String(otelkeys.Subject, claims.Sub))
 		user, err := h.DB.GetUserByID(r.Context(), linkUserID)
 		if err != nil {
 			slog.ErrorContext(r.Context(), "failed to get user for OIDC link", slog.Any(otelkeys.Error, err))
@@ -413,11 +413,11 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := h.DB.LinkOIDCSubject(r.Context(), linkUserID, claims.Sub); err != nil {
-			slog.ErrorContext(r.Context(), "failed to link OIDC subject to user", slog.String("user_id", linkUserID), slog.Any(otelkeys.Error, err))
+			slog.ErrorContext(r.Context(), "failed to link OIDC subject to user", slog.String(otelkeys.UserID, linkUserID), slog.Any(otelkeys.Error, err))
 			http.Redirect(w, r, "/?oidc_link_error="+url.QueryEscape("Failed to link account"), http.StatusFound)
 			return
 		}
-		slog.DebugContext(r.Context(), "OIDC account linked successfully", slog.String("user_id", linkUserID))
+		slog.DebugContext(r.Context(), "OIDC account linked successfully", slog.String(otelkeys.UserID, linkUserID))
 		http.Redirect(w, r, "/?oidc_linked=true", http.StatusFound)
 		return
 	}
@@ -433,12 +433,12 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Issue a biblioteka JWT
 	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create token for OIDC user", slog.String("user_id", user.ID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to create token for OIDC user", slog.String(otelkeys.UserID, user.ID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create session")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "OIDC login successful", slog.String("user_id", user.ID))
+	slog.DebugContext(r.Context(), "OIDC login successful", slog.String(otelkeys.UserID, user.ID))
 
 	// Set auth cookie for browser-based access and redirect to the frontend root.
 	// The JWT is provided via the auth cookie only (no token query parameter).
@@ -451,10 +451,10 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 // It handles races between concurrent logins by retrying lookups if CreateOIDCUser fails.
 func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name string) (*db.User, error) {
 	// First, try by OIDC subject
-	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by subject", slog.String("subject", subject))
+	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by subject", slog.String(otelkeys.Subject, subject))
 	user, err := h.DB.GetUserByOIDCSubject(ctx, subject)
 	if err == nil {
-		slog.DebugContext(ctx, "OIDC findOrCreateUser: found existing user by subject", slog.String("user_id", user.ID))
+		slog.DebugContext(ctx, "OIDC findOrCreateUser: found existing user by subject", slog.String(otelkeys.UserID, user.ID))
 		return user, nil
 	}
 	if err != sql.ErrNoRows {
@@ -462,10 +462,10 @@ func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name
 	}
 
 	// Try by email — link the OIDC subject to an existing account
-	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by email", slog.String("email", email))
+	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by email", slog.String(otelkeys.Email, email))
 	user, err = h.DB.GetUserByEmail(ctx, email)
 	if err == nil {
-		slog.DebugContext(ctx, "OIDC findOrCreateUser: linking subject to existing user", slog.String("user_id", user.ID))
+		slog.DebugContext(ctx, "OIDC findOrCreateUser: linking subject to existing user", slog.String(otelkeys.UserID, user.ID))
 		if err := h.DB.LinkOIDCSubject(ctx, user.ID, subject); err != nil {
 			return nil, err
 		}
@@ -477,10 +477,10 @@ func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name
 
 	// Create a new OIDC user. If this fails due to a race with a concurrent
 	// login, retry the lookups to find the user the other request created/linked.
-	slog.DebugContext(ctx, "OIDC findOrCreateUser: creating new user", slog.String("email", email))
+	slog.DebugContext(ctx, "OIDC findOrCreateUser: creating new user", slog.String(otelkeys.Email, email))
 	user, err = h.DB.CreateOIDCUser(ctx, name, email, subject)
 	if err == nil {
-		slog.DebugContext(ctx, "OIDC findOrCreateUser: new user created", slog.String("user_id", user.ID))
+		slog.DebugContext(ctx, "OIDC findOrCreateUser: new user created", slog.String(otelkeys.UserID, user.ID))
 		return user, nil
 	}
 

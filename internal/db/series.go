@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 var ErrSeriesNameExists = errors.New("series name already exists")
@@ -31,7 +33,7 @@ func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
 }
 
 func (d *DB) CreateSeries(ctx context.Context, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
-	slog.DebugContext(ctx, "db: creating series", slog.String("name", name))
+	slog.DebugContext(ctx, "db: creating series", slog.String(otelkeys.Name, name))
 	s, err := scanSeries(d.QueryRowContext(ctx,
 		`INSERT INTO series (name, goodreads_id, hardcover_id, google_books_id) VALUES ($1, $2, $3, $4) RETURNING `+seriesColumns,
 		name, goodreadsID, hardcoverID, googleBooksID,
@@ -46,7 +48,7 @@ func (d *DB) CreateSeries(ctx context.Context, name string, goodreadsID, hardcov
 }
 
 func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
-	slog.DebugContext(ctx, "db: fetching series", slog.String("id", id))
+	slog.DebugContext(ctx, "db: fetching series", slog.String(otelkeys.ID, id))
 	return scanSeries(d.QueryRowContext(ctx,
 		`SELECT `+seriesColumns+` FROM series WHERE id = $1`,
 		id,
@@ -79,7 +81,7 @@ func (d *DB) ListSeries(ctx context.Context) ([]Series, error) {
 }
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
-	slog.DebugContext(ctx, "db: updating series", slog.String("id", id), slog.String("name", name))
+	slog.DebugContext(ctx, "db: updating series", slog.String(otelkeys.ID, id), slog.String(otelkeys.Name, name))
 	s, err := scanSeries(d.QueryRowContext(ctx,
 		`UPDATE series SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+seriesColumns,
 		name, goodreadsID, hardcoverID, googleBooksID, id,
@@ -94,7 +96,7 @@ func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, har
 }
 
 func (d *DB) DeleteSeries(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "db: deleting series", slog.String("id", id))
+	slog.DebugContext(ctx, "db: deleting series", slog.String(otelkeys.ID, id))
 	res, err := d.ExecContext(ctx, `DELETE FROM series WHERE id = $1`, id)
 	if err != nil {
 		return err

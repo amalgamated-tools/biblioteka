@@ -46,7 +46,7 @@ func (h *BookFileHandler) HandleBookFile(w http.ResponseWriter, r *http.Request)
 // @Failure     500 {object} errorResponse
 // @Router      /book-files/{id} [get]
 func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "fetching book file", slog.String("book_file_id", id))
+	slog.DebugContext(r.Context(), "fetching book file", slog.String(otelkeys.BookFileID, id))
 	bf, err := h.DB.GetBookFile(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -74,7 +74,7 @@ func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id
 // @Failure     500 {object} errorResponse
 // @Router      /book-files/{id} [delete]
 func (h *BookFileHandler) deleteBookFile(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "deleting book file", slog.String("book_file_id", id))
+	slog.DebugContext(r.Context(), "deleting book file", slog.String(otelkeys.BookFileID, id))
 	err := h.DB.DeleteBookFile(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {

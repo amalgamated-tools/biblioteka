@@ -269,7 +269,7 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "books listed", slog.Int("count", len(books)))
+	slog.DebugContext(r.Context(), "books listed", slog.Int(otelkeys.Count, len(books)))
 
 	dtos := make([]bookSummaryDTO, 0, len(books))
 	for i := range books {
@@ -304,7 +304,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "creating book", slog.String("title", req.Title))
+	slog.DebugContext(r.Context(), "creating book", slog.String(otelkeys.Title, req.Title))
 
 	b, err := h.DB.CreateBook(r.Context(), req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
 	if err != nil {
@@ -315,7 +315,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String(otelkeys.BookID, b.ID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book")
 		return
 	}
@@ -336,7 +336,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 // @Failure     500 {object} errorResponse
 // @Router      /books/{id} [get]
 func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "fetching book", slog.String("book_id", id))
+	slog.DebugContext(r.Context(), "fetching book", slog.String(otelkeys.BookID, id))
 	b, err := h.DB.GetBook(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -350,7 +350,7 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String(otelkeys.BookID, b.ID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get book")
 		return
 	}
@@ -384,7 +384,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		return
 	}
 
-	slog.DebugContext(r.Context(), "updating book", slog.String("book_id", id), slog.String("title", req.Title))
+	slog.DebugContext(r.Context(), "updating book", slog.String(otelkeys.BookID, id), slog.String(otelkeys.Title, req.Title))
 
 	b, err := h.DB.UpdateBook(r.Context(), id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
 	if err != nil {
@@ -399,7 +399,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String("book_id", b.ID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String(otelkeys.BookID, b.ID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book")
 		return
 	}
@@ -419,7 +419,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 // @Failure     500 {object} errorResponse
 // @Router      /books/{id} [delete]
 func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "deleting book", slog.String("book_id", id))
+	slog.DebugContext(r.Context(), "deleting book", slog.String(otelkeys.BookID, id))
 	err := h.DB.DeleteBook(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {

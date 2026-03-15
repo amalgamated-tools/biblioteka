@@ -50,7 +50,7 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "fetching config status", slog.String("user_id", userID))
+	slog.DebugContext(r.Context(), "fetching config status", slog.String(otelkeys.UserID, userID))
 	isAdmin, _ := h.DB.IsAdmin(r.Context(), userID)
 
 	writeJSON(r.Context(), w, http.StatusOK, configStatusResponse{
@@ -86,10 +86,10 @@ type setOIDCConfigRequest struct {
 // @Router      /config/oidc [get]
 func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "fetching OIDC config", slog.String("user_id", userID))
+	slog.DebugContext(r.Context(), "fetching OIDC config", slog.String(otelkeys.UserID, userID))
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String("user_id", userID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String(otelkeys.UserID, userID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
@@ -129,7 +129,7 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	userID := auth.UserIDFromContext(r.Context())
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String("user_id", userID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String(otelkeys.UserID, userID), slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
@@ -172,7 +172,7 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		clientSecret = existing
 	}
 
-	slog.DebugContext(r.Context(), "saving OIDC config", slog.String("issuer_url", issuerURL), slog.String("redirect_uri", redirectURI))
+	slog.DebugContext(r.Context(), "saving OIDC config", slog.String(otelkeys.IssuerURL, issuerURL), slog.String(otelkeys.RedirectURI, redirectURI))
 
 	// Validate the OIDC provider by performing discovery
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)

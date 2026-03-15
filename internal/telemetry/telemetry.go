@@ -108,7 +108,7 @@ func SendBoot(ctx context.Context, version string) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		slog.ErrorContext(ctx, "Telemetry request failed", slog.Int("status", resp.StatusCode))
+		slog.ErrorContext(ctx, "Telemetry request failed", slog.Int(otelkeys.Status, resp.StatusCode))
 		return
 	}
 
@@ -119,7 +119,7 @@ func SendBoot(ctx context.Context, version string) {
 		slog.ErrorContext(ctx, "Failed to read telemetry response", slog.Any(otelkeys.Error, err))
 		return
 	}
-	slog.DebugContext(ctx, "Telemetry response", slog.String("body", string(body)))
+	slog.DebugContext(ctx, "Telemetry response", slog.String(otelkeys.Body, string(body)))
 
 	err = os.WriteFile(installIDPath, []byte(id), 0644)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime/debug"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/telemetry"
 )
 
@@ -53,8 +54,8 @@ func SetupLogger(ctx context.Context) {
 		}
 	}
 
-	logger = logger.With(slog.String("version", Version))
-	logger.InfoContext(ctx, "Logger initialized", slog.String("format", format), slog.String("level", level.String()))
+	logger = logger.With(slog.String(otelkeys.Version, Version))
+	logger.InfoContext(ctx, "Logger initialized", slog.String(otelkeys.Format, format), slog.String(otelkeys.Level, level.String()))
 	slog.SetDefault(logger)
 
 	telemetry.SendBoot(ctx, Version)

@@ -169,7 +169,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 			return nil, fmt.Errorf("failed to initialize OIDC provider: %w", err)
 		}
 		s.oidcHandler = oidcHandler
-		slog.InfoContext(ctx, "OIDC authentication enabled", slog.String("issuer", issuer))
+		slog.InfoContext(ctx, "OIDC authentication enabled", slog.String(otelkeys.Issuer, issuer))
 	} else if dbIssuer, err := s.DB.GetSetting(ctx, "oidc_issuer_url"); err == nil && dbIssuer != "" {
 		dbClientID, _ := s.DB.GetSetting(ctx, "oidc_client_id")
 		dbClientSecret, _ := s.DB.GetSetting(ctx, "oidc_client_secret")
@@ -180,7 +180,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 				slog.WarnContext(ctx, "failed to initialize OIDC from saved settings", slog.Any(otelkeys.Error, err))
 			} else {
 				s.oidcHandler = oidcHandler
-				slog.InfoContext(ctx, "OIDC authentication enabled from saved settings", slog.String("issuer", dbIssuer))
+				slog.InfoContext(ctx, "OIDC authentication enabled from saved settings", slog.String(otelkeys.Issuer, dbIssuer))
 			}
 		}
 	}
@@ -192,7 +192,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 func (s *Server) Run(ctx context.Context) error {
 	newctx, span := otel.StartTracer(ctx, "server.Run")
 	defer span.End()
-	slog.DebugContext(newctx, "Running server", slog.String("address", s.Address))
+	slog.DebugContext(newctx, "Running server", slog.String(otelkeys.Address, s.Address))
 	ctx, cancel := context.WithCancel(newctx)
 
 	chain := alice.New(

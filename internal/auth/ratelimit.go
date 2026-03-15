@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 type visitor struct {
@@ -122,7 +124,7 @@ func (rl *RateLimiter) Limit(next http.HandlerFunc) http.HandlerFunc {
 		if !rl.allow(ip) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusTooManyRequests)
-			slog.InfoContext(r.Context(), "rate limit exceeded", slog.String("ip", ip))
+			slog.InfoContext(r.Context(), "rate limit exceeded", slog.String(otelkeys.IP, ip))
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": "too many requests, please try again later"})
 			return
 		}

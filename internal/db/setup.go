@@ -62,35 +62,35 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 	var dbFilePath string
 	if _, err := os.Stat("/data"); err == nil {
 		dbFilePath = "/data/biblioteka.db"
-		slog.DebugContext(ctx, "Using mounted /data folder", slog.String("path", dbFilePath))
+		slog.DebugContext(ctx, "Using mounted /data folder", slog.String(otelkeys.Path, dbFilePath))
 	} else {
 		dbFilePath = filepath.Join(getProjectRoot(), "db", "biblioteka.db")
-		slog.DebugContext(ctx, "Using local db folder", slog.String("path", dbFilePath))
+		slog.DebugContext(ctx, "Using local db folder", slog.String(otelkeys.Path, dbFilePath))
 	}
 
 	// Ensure parent directory exists
 	dbDir := filepath.Dir(dbFilePath)
 	if err := os.MkdirAll(dbDir, 0755); err != nil {
-		slog.ErrorContext(ctx, "Failed to create database directory", slog.String("path", dbDir), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "Failed to create database directory", slog.String(otelkeys.Path, dbDir), slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("failed to create database directory %s: %w", dbDir, err)
 	}
 
 	// Open database with modernc.org/sqlite pure Go driver
-	slog.DebugContext(ctx, "Opening database", slog.String("path", dbFilePath))
+	slog.DebugContext(ctx, "Opening database", slog.String(otelkeys.Path, dbFilePath))
 	sqlDB, err := sql.Open("sqlite", dbFilePath)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to open database", slog.String("path", dbFilePath), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "Failed to open database", slog.String(otelkeys.Path, dbFilePath), slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("failed to open database at %s: %w", dbFilePath, err)
 	}
 
 	// Verify connection
 	if err := sqlDB.PingContext(ctx); err != nil {
-		slog.ErrorContext(ctx, "Failed to ping database", slog.String("path", dbFilePath), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "Failed to ping database", slog.String(otelkeys.Path, dbFilePath), slog.Any(otelkeys.Error, err))
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to ping database at %s: %w", dbFilePath, err)
 	}
 
-	slog.DebugContext(ctx, "Database connection established", slog.String("path", dbFilePath))
+	slog.DebugContext(ctx, "Database connection established", slog.String(otelkeys.Path, dbFilePath))
 
 	// Set PRAGMAs for better performance and integrity
 	if _, err := sqlDB.Exec(`
@@ -98,23 +98,23 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 		PRAGMA synchronous = NORMAL;
 		PRAGMA foreign_keys = ON;
 	`); err != nil {
-		slog.ErrorContext(ctx, "Failed to set PRAGMAs", slog.String("path", dbFilePath), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "Failed to set PRAGMAs", slog.String(otelkeys.Path, dbFilePath), slog.Any(otelkeys.Error, err))
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to set PRAGMAs on database at %s: %w", dbFilePath, err)
 	}
 
-	slog.DebugContext(ctx, "PRAGMAs set successfully", slog.String("path", dbFilePath))
+	slog.DebugContext(ctx, "PRAGMAs set successfully", slog.String(otelkeys.Path, dbFilePath))
 
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
 
 	// Run migrations
 	if err := runMigrations(d); err != nil {
-		slog.ErrorContext(ctx, "Failed to run migrations", slog.String("path", dbFilePath), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "Failed to run migrations", slog.String(otelkeys.Path, dbFilePath), slog.Any(otelkeys.Error, err))
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to run migrations on database at %s: %w", dbFilePath, err)
 	}
 
-	slog.InfoContext(ctx, "Database setup complete", slog.String("path", dbFilePath))
+	slog.InfoContext(ctx, "Database setup complete", slog.String(otelkeys.Path, dbFilePath))
 	return d, nil
 }
 
@@ -178,7 +178,7 @@ func runMigrations(d *DB) error {
 		}
 
 		if applied > 0 {
-			slog.DebugContext(ctx, "Migration already applied", slog.String("version", version))
+			slog.DebugContext(ctx, "Migration already applied", slog.String(otelkeys.Version, version))
 			continue
 		}
 
@@ -228,7 +228,7 @@ func runMigrations(d *DB) error {
 		if err := tx.Commit(); err != nil {
 			return fmt.Errorf("failed to commit migration %s: %w", filename, err)
 		}
-		slog.InfoContext(ctx, "Migration applied", slog.String("version", version))
+		slog.InfoContext(ctx, "Migration applied", slog.String(otelkeys.Version, version))
 	}
 
 	return nil

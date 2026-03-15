@@ -98,7 +98,7 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "authors listed", slog.Int("count", len(authors)))
+	slog.DebugContext(r.Context(), "authors listed", slog.Int(otelkeys.Count, len(authors)))
 
 	dtos := make([]authorDTO, 0, len(authors))
 	for i := range authors {
@@ -134,7 +134,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "creating author", slog.String("name", req.Name))
+	slog.DebugContext(r.Context(), "creating author", slog.String(otelkeys.Name, req.Name))
 
 	a, err := h.DB.CreateAuthor(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
@@ -147,7 +147,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "author created", slog.String("author_id", a.ID), slog.String("name", a.Name))
+	slog.DebugContext(r.Context(), "author created", slog.String(otelkeys.AuthorID, a.ID), slog.String(otelkeys.Name, a.Name))
 	writeJSON(r.Context(), w, http.StatusCreated, toAuthorDTO(a))
 }
 
@@ -165,7 +165,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 // @Failure     500 {object} errorResponse
 // @Router      /authors/{id} [get]
 func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "fetching author", slog.String("author_id", id))
+	slog.DebugContext(r.Context(), "fetching author", slog.String(otelkeys.AuthorID, id))
 	a, err := h.DB.GetAuthor(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -208,7 +208,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
-	slog.DebugContext(r.Context(), "updating author", slog.String("author_id", id), slog.String("name", req.Name))
+	slog.DebugContext(r.Context(), "updating author", slog.String(otelkeys.AuthorID, id), slog.String(otelkeys.Name, req.Name))
 
 	a, err := h.DB.UpdateAuthor(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
@@ -241,7 +241,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 // @Failure     500 {object} errorResponse
 // @Router      /authors/{id} [delete]
 func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "deleting author", slog.String("author_id", id))
+	slog.DebugContext(r.Context(), "deleting author", slog.String(otelkeys.AuthorID, id))
 	err := h.DB.DeleteAuthor(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
