@@ -40,6 +40,8 @@ type ConfigHandler struct {
 	DB               *db.DB
 	IsOIDCConfigured func() bool
 	OnOIDCConfigSet  func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error
+	// SendMailFunc overrides the default sendMail implementation (used in tests).
+	SendMailFunc func(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error
 }
 
 type configStatusResponse struct {
@@ -405,6 +407,16 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		writeError(r.Context(), w, http.StatusBadRequest, "from address is required")
 		return
 	}
+	if strings.ContainsAny(from, "\r\n") {
+		writeError(r.Context(), w, http.StatusBadRequest, "from address contains invalid characters")
+		return
+	}
+	parsedFrom, err := mail.ParseAddress(from)
+	if err != nil {
+		writeError(r.Context(), w, http.StatusBadRequest, "from address is not a valid email address")
+		return
+	}
+	from = parsedFrom.Address
 	if port == "" {
 		port = "587"
 	}
@@ -423,18 +435,23 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// If password is empty, fall back to environment-based configuration
+	// If password is empty, try to preserve the existing one (like OIDC client_secret).
+	// Only require a password when a username is set (allow unauthenticated SMTP).
 	if password == "" {
-		envPassword := strings.TrimSpace(os.Getenv("SMTP_PASSWORD"))
-		if envPassword == "" {
-			writeError(r.Context(), w, http.StatusBadRequest, "password is required")
-			return
+		existing, _ := h.DB.GetSetting(r.Context(), settingSMTPPassword)
+		if existing != "" {
+			password = existing
+		} else if envPw := strings.TrimSpace(os.Getenv("SMTP_PASSWORD")); envPw != "" {
+			password = envPw
 		}
-		password = envPassword
+	}
+	if username != "" && password == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "password is required when username is set")
+		return
 	}
 
 	slog.DebugContext(r.Context(), "saving SMTP config",
-		slog.String(otelkeys.Name, host),
+		slog.String(otelkeys.Address, host),
 		slog.String(otelkeys.Email, from),
 	)
 
@@ -528,7 +545,8 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid user email")
 		return
 	}
-	if _, err := mail.ParseAddress(userEmail); err != nil {
+	parsedUserEmail, err := mail.ParseAddress(userEmail)
+	if err != nil {
 		slog.ErrorContext(r.Context(), "user email is not a valid address",
 			slog.String(otelkeys.UserID, userID),
 			slog.Any(otelkeys.Error, err),
@@ -536,24 +554,23 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid user email")
 		return
 	}
-	// Use the sanitized email address for subsequent operations in this handler.
-	user.Email = userEmail
+	// Use the bare address for SMTP envelope commands.
+	user.Email = parsedUserEmail.Address
 
 	// Load SMTP config: env vars first, then DB
 	host := os.Getenv("SMTP_HOST")
 	port := os.Getenv("SMTP_PORT")
 	username := os.Getenv("SMTP_USERNAME")
-
-	// When SMTP_HOST is set, require the other core SMTP_* env vars to be set as well.
-	// This avoids sending test emails with an incomplete env-based configuration and
-	// keeps behavior consistent with the main config endpoint.
-	if host != "" && (port == "" || username == "") {
-		writeError(r.Context(), w, http.StatusBadRequest, "incomplete SMTP environment configuration: SMTP_HOST is set but SMTP_PORT or SMTP_USERNAME is missing")
-		return
-	}
 	password := os.Getenv("SMTP_PASSWORD")
 	from := os.Getenv("SMTP_FROM")
 	tlsMode := os.Getenv("SMTP_TLS")
+
+	// When SMTP_HOST is set via env, only require SMTP_FROM.
+	// Port defaults to 587 if missing; username/password are optional.
+	if host != "" && from == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "incomplete SMTP environment configuration: SMTP_HOST is set but SMTP_FROM is missing")
+		return
+	}
 
 	if host == "" {
 		host, _ = h.DB.GetSetting(r.Context(), settingSMTPHost)
@@ -581,13 +598,15 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid SMTP from address")
 		return
 	}
-	if _, err := mail.ParseAddress(from); err != nil {
+	parsedFromAddr, err := mail.ParseAddress(from)
+	if err != nil {
 		slog.ErrorContext(r.Context(), "SMTP from address is not a valid email address",
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid SMTP from address")
 		return
 	}
+	from = parsedFromAddr.Address
 	if port == "" {
 		port = "587"
 	}
@@ -610,7 +629,12 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		smtpAuth = smtp.PlainAuth("", username, password, host)
 	}
 
-	if err := sendMail(addr, smtpAuth, from, to, []byte(msg), tlsMode); err != nil {
+	send := sendMail
+	if h.SendMailFunc != nil {
+		send = h.SendMailFunc
+	}
+
+	if err := send(addr, smtpAuth, from, to, []byte(msg), tlsMode); err != nil {
 		slog.ErrorContext(r.Context(), "failed to send test email",
 			slog.String(otelkeys.Email, to),
 			slog.Any(otelkeys.Error, err),
@@ -624,6 +648,10 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		"message": fmt.Sprintf("Test email sent to %s", to),
 	})
 }
+
+// smtpSessionTimeout is the overall deadline for the entire SMTP session
+// (after the TCP connection is established).
+const smtpSessionTimeout = 30 * time.Second
 
 // sendMail sends an email using the specified TLS mode.
 func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
@@ -640,8 +668,10 @@ func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode str
 		if err != nil {
 			return fmt.Errorf("TLS connection failed: %w", err)
 		}
+		conn.SetDeadline(time.Now().Add(smtpSessionTimeout))
 		client, err := smtp.NewClient(conn, host)
 		if err != nil {
+			conn.Close()
 			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
 		defer client.Close()
@@ -652,6 +682,7 @@ func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode str
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
+		conn.SetDeadline(time.Now().Add(smtpSessionTimeout))
 		client, err := smtp.NewClient(conn, host)
 		if err != nil {
 			conn.Close()
@@ -668,6 +699,7 @@ func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode str
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
+		conn.SetDeadline(time.Now().Add(smtpSessionTimeout))
 		client, err := smtp.NewClient(conn, host)
 		if err != nil {
 			conn.Close()

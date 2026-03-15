@@ -40,6 +40,7 @@
   // SMTP state
   let smtpConfigured = $state(false);
   let smtpEnvOverride = $state(false);
+  let smtpPasswordSet = $state(false);
   let smtpHost = $state("");
   let smtpPort = $state("587");
   let smtpUsername = $state("");
@@ -79,6 +80,7 @@
           smtpFrom = smtp.from;
           smtpTls = smtp.tls || "starttls";
           smtpEnvOverride = smtp.env_override;
+          smtpPasswordSet = smtp.password_set;
         } catch {
           // ignore - user can re-enter
         }
@@ -101,8 +103,8 @@
       smtpError = "From Address is required";
       return;
     }
-    if (!smtpPassword.trim() && !smtpConfigured) {
-      smtpError = "Password is required";
+    if (!smtpPassword.trim() && !smtpPasswordSet && !smtpEnvOverride && smtpUsername.trim()) {
+      smtpError = "Password is required when username is set";
       return;
     }
 
@@ -119,6 +121,9 @@
       });
       smtpSuccess = true;
       smtpConfigured = true;
+      if (smtpPassword.trim()) {
+        smtpPasswordSet = true;
+      }
       smtpPassword = "";
       setTimeout(() => (smtpSuccess = false), 3000);
     } catch (err) {
@@ -366,14 +371,16 @@
                   type="password"
                   bind:value={smtpPassword}
                   class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
-                  placeholder={smtpConfigured
+                  placeholder={smtpPasswordSet || smtpEnvOverride
                     ? "Enter new password to update"
                     : "Enter your SMTP password"}
                   disabled={smtpLoading}
                 />
-                {#if smtpConfigured}
+                {#if smtpPasswordSet || smtpEnvOverride}
                   <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
-                    Leave blank to keep the existing password
+                    {smtpEnvOverride
+                      ? "Password is configured via environment variable"
+                      : "Leave blank to keep the existing password"}
                   </p>
                 {/if}
               </div>

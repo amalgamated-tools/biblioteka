@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/smtp"
 	"testing"
 )
 
@@ -795,5 +797,163 @@ func TestHandleSMTPTest_NotConfigured(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}
+
+// --- Password handling ---
+
+func TestHandleSetSMTPConfig_PreservesExistingPassword(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	// Pre-store a password
+	_ = h.DB.SetSetting(context.Background(), settingSMTPPassword, "existing-pw")
+
+	// Send request with empty password — should reuse the existing one
+	body := `{"host":"smtp.example.com","from":"noreply@example.com","username":"user","password":""}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	pw, err := h.DB.GetSetting(context.Background(), settingSMTPPassword)
+	if err != nil {
+		t.Fatalf("GetSetting(smtp_password): %v", err)
+	}
+	if pw != "existing-pw" {
+		t.Errorf("smtp_password = %q, want %q", pw, "existing-pw")
+	}
+}
+
+func TestHandleSetSMTPConfig_UnauthenticatedSMTP(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	// No username, no password — should succeed (unauthenticated SMTP)
+	body := `{"host":"smtp.example.com","from":"noreply@example.com","username":"","password":""}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+}
+
+func TestHandleSetSMTPConfig_UsernameWithoutPasswordFails(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	// Username set but no password anywhere — should fail
+	body := `{"host":"smtp.example.com","from":"noreply@example.com","username":"user","password":""}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}
+
+func TestHandleSetSMTPConfig_InvalidFromAddress(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	body := `{"host":"smtp.example.com","from":"not-an-email","password":"secret"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}
+
+func TestHandleSetSMTPConfig_FromWithDisplayName(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	// "Display Name <addr>" is valid per mail.ParseAddress — we should store the bare address
+	body := `{"host":"smtp.example.com","from":"App <noreply@example.com>","password":"secret"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	from, err := h.DB.GetSetting(context.Background(), settingSMTPFrom)
+	if err != nil {
+		t.Fatalf("GetSetting(smtp_from): %v", err)
+	}
+	if from != "noreply@example.com" {
+		t.Errorf("saved smtp_from = %q, want bare address %q", from, "noreply@example.com")
+	}
+}
+
+// --- HandleSMTPTest success path ---
+
+func TestHandleSMTPTest_Success(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	// Configure SMTP in DB
+	_ = h.DB.SetSetting(context.Background(), settingSMTPHost, "smtp.example.com")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPPort, "587")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPFrom, "noreply@example.com")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPTLS, "starttls")
+
+	var calledFrom, calledTo string
+	h.SendMailFunc = func(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
+		calledFrom = from
+		calledTo = to
+		return nil
+	}
+
+	r := httptest.NewRequest(http.MethodPost, "/api/config/smtp/test", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPTest(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if calledFrom != "noreply@example.com" {
+		t.Errorf("sendMail from = %q, want %q", calledFrom, "noreply@example.com")
+	}
+	if calledTo != "admin@example.com" {
+		t.Errorf("sendMail to = %q, want %q", calledTo, "admin@example.com")
+	}
+}
+
+func TestHandleSMTPTest_SendMailFailure(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	_ = h.DB.SetSetting(context.Background(), settingSMTPHost, "smtp.example.com")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPPort, "587")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPFrom, "noreply@example.com")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPTLS, "starttls")
+
+	h.SendMailFunc = func(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
+		return fmt.Errorf("connection refused")
+	}
+
+	r := httptest.NewRequest(http.MethodPost, "/api/config/smtp/test", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPTest(w, r)
+
+	if w.Code != http.StatusBadGateway {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadGateway, w.Body.String())
 	}
 }
