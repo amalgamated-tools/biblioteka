@@ -2,7 +2,11 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -11,6 +15,118 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
+
+// APIKeyPrefix is the prefix that distinguishes API keys from JWT tokens.
+const APIKeyPrefix = "bib_"
+
+// APIKeyValidator looks up an API key by its SHA-256 hash.
+type APIKeyValidator interface {
+	ValidateAPIKey(ctx context.Context, keyHash string) (userID string, apiKeyID string, err error)
+	TouchAPIKeyLastUsed(ctx context.Context, id string) error
+}
+
+// HashAPIKey returns the hex-encoded SHA-256 hash of the given API key.
+// SHA-256 is appropriate here because API keys are high-entropy random tokens
+// (128 bits), not user-chosen passwords. Expensive hashing (bcrypt/argon2) is
+// unnecessary — an attacker cannot brute-force 128-bit keys regardless of hash speed.
+func HashAPIKey(key string) string {
+	h := sha256.Sum256([]byte(key)) // #nosec G401 -- not a password; high-entropy API key
+	return hex.EncodeToString(h[:])
+}
+
+var (
+	apiKeyTouchMu       sync.Mutex
+	apiKeyLastTouchedAt = make(map[string]time.Time)
+)
+
+// apiKeyTouchInterval controls how often we will update last_used_at for a
+// given API key. This throttles DB writes while keeping the field reasonably fresh.
+const apiKeyTouchInterval = 5 * time.Minute
+
+// shouldTouchAPIKeyLastUsed returns true if we should issue a TouchAPIKeyLastUsed
+// call for the given API key ID at the provided time. It uses an in-memory,
+// process-local cache to avoid writing on every request for frequently used keys.
+// Expired entries are swept when the cache exceeds a size threshold to prevent
+// unbounded memory growth.
+func shouldTouchAPIKeyLastUsed(id string, now time.Time) bool {
+	apiKeyTouchMu.Lock()
+	defer apiKeyTouchMu.Unlock()
+
+	last, ok := apiKeyLastTouchedAt[id]
+	if ok && now.Sub(last) < apiKeyTouchInterval {
+		return false
+	}
+
+	apiKeyLastTouchedAt[id] = now
+
+	// Sweep expired entries when the map grows beyond a reasonable size.
+	const sweepThreshold = 100
+	const maxCacheSize = 200
+	if len(apiKeyLastTouchedAt) >= sweepThreshold {
+		for k, v := range apiKeyLastTouchedAt {
+			if now.Sub(v) >= apiKeyTouchInterval {
+				delete(apiKeyLastTouchedAt, k)
+			}
+		}
+
+		// Enforce a hard upper bound even if nothing was old enough to sweep.
+		if len(apiKeyLastTouchedAt) > maxCacheSize {
+			for k := range apiKeyLastTouchedAt {
+				if k == id {
+					continue // keep the entry we just inserted
+				}
+				delete(apiKeyLastTouchedAt, k)
+				if len(apiKeyLastTouchedAt) <= maxCacheSize {
+					break
+				}
+			}
+		}
+	}
+
+	return true
+}
+
+// resolveUser determines the user ID from the given token. If the token starts
+// with "bib_" and was sourced from the Authorization header, it is treated as
+// an API key; API keys from cookies are rejected to prevent CSRF attacks.
+// Otherwise it is validated as a JWT.
+func resolveUser(ctx context.Context, token string, source tokenSource, jwt *JWTManager, apiKeys APIKeyValidator) (userID string, err error) {
+	if apiKeys != nil && strings.HasPrefix(token, APIKeyPrefix) {
+		if source != tokenSourceHeader {
+			// API keys from non-header sources (e.g., cookies) are considered invalid to
+			// prevent CSRF; treat this as an authentication failure, not a server error.
+			return "", ErrInvalidToken
+		}
+		keyHash := HashAPIKey(token)
+		uid, keyID, err := apiKeys.ValidateAPIKey(ctx, keyHash)
+		if err != nil {
+			// A "not found" API key is an auth failure and should be normalized to
+			// ErrInvalidToken so that middleware returns 401 instead of 500.
+			if errors.Is(err, sql.ErrNoRows) {
+				return "", ErrInvalidToken
+			}
+			// Unexpected validator/DB errors are propagated so they surface as 500s.
+			return "", err
+		}
+
+		// Throttle last_used_at updates to avoid excessive DB writes on hot keys.
+		if shouldTouchAPIKeyLastUsed(keyID, time.Now()) {
+			if err := apiKeys.TouchAPIKeyLastUsed(ctx, keyID); err != nil {
+				slog.WarnContext(ctx, "failed to touch API key last_used_at",
+					slog.String(otelkeys.UserID, uid),
+					slog.Any(otelkeys.Error, err),
+				)
+			}
+		}
+
+		return uid, nil
+	}
+	claims, err := jwt.ValidateToken(ctx, token)
+	if err != nil {
+		return "", err
+	}
+	return claims.UserID, nil
+}
 
 type contextKey string
 
@@ -25,16 +141,25 @@ func jsonError(w http.ResponseWriter, status int, message string) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
+// tokenSource indicates where a token was extracted from.
+type tokenSource int
+
+const (
+	tokenSourceNone   tokenSource = iota
+	tokenSourceHeader             // Authorization header
+	tokenSourceCookie             // biblioteka_token cookie
+)
+
 // extractToken tries to read a JWT from the Authorization header first,
-// then falls back to the "biblioteka_token" cookie. It returns the token and
-// an optional reason describing why no token could be extracted.
-func extractToken(r *http.Request) (string, string) {
+// then falls back to the "biblioteka_token" cookie. It returns the token,
+// its source, and an optional reason describing why no token could be extracted.
+func extractToken(r *http.Request) (string, tokenSource, string) {
 	if header := r.Header.Get("Authorization"); header != "" {
 		header = strings.TrimSpace(header)
 		if after, ok := strings.CutPrefix(header, "Bearer "); ok {
 			token := strings.TrimSpace(after)
 			if token != "" {
-				return token, ""
+				return token, tokenSourceHeader, ""
 			}
 		}
 		// Non-Bearer or empty Bearer — fall through to cookie.
@@ -42,19 +167,19 @@ func extractToken(r *http.Request) (string, string) {
 
 	// Fallback to cookie-based authentication.
 	if c, err := r.Cookie(tokenCookieName); err == nil && c.Value != "" {
-		return c.Value, ""
+		return c.Value, tokenSourceCookie, ""
 	}
 
-	return "", "missing token"
+	return "", tokenSourceNone, "missing token"
 }
 
-// Middleware returns an HTTP middleware that validates the JWT from the
+// Middleware returns an HTTP middleware that validates the JWT or API key from the
 // Authorization header or biblioteka_token cookie and injects the user ID into
-// the request context.
-func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
+// the request context. The apiKeys parameter may be nil to disable API key auth.
+func Middleware(jwt *JWTManager, apiKeys APIKeyValidator) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token, reason := extractToken(r)
+			token, source, reason := extractToken(r)
 			if token == "" {
 				if reason != "" {
 					slog.InfoContext(r.Context(), "authentication required", slog.String(otelkeys.Reason, reason))
@@ -65,15 +190,26 @@ func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := jwt.ValidateToken(r.Context(), token)
+			userID, err := resolveUser(r.Context(), token, source, jwt, apiKeys)
 			if err != nil {
-				slog.InfoContext(r.Context(), "invalid or expired token", slog.Any(otelkeys.Error, err))
-				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+				// Distinguish between expected auth failures (invalid/expired token)
+				// and unexpected internal errors (e.g., database/network issues).
+				if errors.Is(err, ErrInvalidToken) {
+					slog.InfoContext(r.Context(), "invalid or expired token", slog.Any(otelkeys.Error, err))
+					jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+				} else {
+					slog.ErrorContext(
+						r.Context(),
+						"failed to resolve authenticated user",
+						slog.Any(otelkeys.Error, err),
+					)
+					jsonError(w, http.StatusInternalServerError, "internal server error")
+				}
 				return
 			}
 
-			slog.DebugContext(r.Context(), "authentication successful", slog.String(otelkeys.UserID, claims.UserID))
-			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+			slog.DebugContext(r.Context(), "authentication successful", slog.String(otelkeys.UserID, userID))
+			ctx := context.WithValue(r.Context(), userIDKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -162,7 +298,7 @@ func (c *cachingAdminChecker) IsAdmin(ctx context.Context, userID string) (bool,
 	return isAdmin, nil
 }
 
-func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) http.Handler {
+func AdminMiddleware(jwt *JWTManager, checker AdminChecker, apiKeys APIKeyValidator) func(http.Handler) http.Handler {
 	// Wrap the provided AdminChecker with a short-lived cache to avoid
 	// repeated DB lookups for high-frequency admin endpoints (e.g., /asynqmon/).
 	const adminCacheTTL = 5 * time.Second
@@ -170,34 +306,39 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) h
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token, _ := extractToken(r)
+			token, source, _ := extractToken(r)
 			if token == "" {
 				slog.InfoContext(r.Context(), "admin middleware: no token found")
 				jsonError(w, http.StatusUnauthorized, "authentication required")
 				return
 			}
 
-			claims, err := jwt.ValidateToken(r.Context(), token)
+			userID, err := resolveUser(r.Context(), token, source, jwt, apiKeys)
 			if err != nil {
-				slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any(otelkeys.Error, err))
-				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+				if errors.Is(err, ErrInvalidToken) {
+					slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any(otelkeys.Error, err))
+					jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+				} else {
+					slog.ErrorContext(r.Context(), "admin middleware: failed to resolve user", slog.Any(otelkeys.Error, err))
+					jsonError(w, http.StatusInternalServerError, "internal authentication error")
+				}
 				return
 			}
 
-			isAdmin, err := cachedChecker.IsAdmin(r.Context(), claims.UserID)
+			isAdmin, err := cachedChecker.IsAdmin(r.Context(), userID)
 			if err != nil {
 				slog.ErrorContext(r.Context(), "admin middleware: failed to check admin status", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusInternalServerError, "failed to verify permissions")
 				return
 			}
 			if !isAdmin {
-				slog.InfoContext(r.Context(), "admin middleware: non-admin access denied", slog.String(otelkeys.UserID, claims.UserID))
+				slog.InfoContext(r.Context(), "admin middleware: non-admin access denied", slog.String(otelkeys.UserID, userID))
 				jsonError(w, http.StatusForbidden, "admin access required")
 				return
 			}
 
-			slog.DebugContext(r.Context(), "admin authentication successful", slog.String(otelkeys.UserID, claims.UserID))
-			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+			slog.DebugContext(r.Context(), "admin authentication successful", slog.String(otelkeys.UserID, userID))
+			ctx := context.WithValue(r.Context(), userIDKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
