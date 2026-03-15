@@ -149,7 +149,9 @@
     </p>
 
     <form onsubmit={handleCreateAPIKey} class="flex gap-3 mb-6">
+      <label for="new-api-key-name" class="sr-only">API key name</label>
       <input
+        id="new-api-key-name"
         type="text"
         bind:value={newKeyName}
         class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"

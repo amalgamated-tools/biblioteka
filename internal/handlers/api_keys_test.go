@@ -249,8 +249,14 @@ func TestDeleteAPIKey_OtherUserCannotDelete(t *testing.T) {
 	d := newTestDB(t)
 	h := &APIKeyHandler{DB: d}
 
-	user1, _ := d.CreateUser(context.Background(), "User 1", "u1@example.com", "password1")
-	user2, _ := d.CreateUser(context.Background(), "User 2", "u2@example.com", "password2")
+	user1, err := d.CreateUser(context.Background(), "User 1", "u1@example.com", "password1")
+	if err != nil {
+		t.Fatalf("create user1: %v", err)
+	}
+	user2, err := d.CreateUser(context.Background(), "User 2", "u2@example.com", "password2")
+	if err != nil {
+		t.Fatalf("create user2: %v", err)
+	}
 
 	// Create a key as user1.
 	body, _ := json.Marshal(apiKeyCreateRequest{Name: "User1 Key"})
@@ -260,7 +266,9 @@ func TestDeleteAPIKey_OtherUserCannotDelete(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var created apiKeyCreateResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &created)
+	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
+		t.Fatalf("failed to unmarshal response body: %v", err)
+	}
 
 	// Try to delete as user2.
 	r = httptest.NewRequest(http.MethodDelete, "/api/api-keys/"+created.ID, nil)
