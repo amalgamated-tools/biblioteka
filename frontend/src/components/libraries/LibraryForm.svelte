@@ -48,6 +48,9 @@
         formMonitored = lib.monitored;
         formError = null;
         showDeleteConfirm = false;
+      } else {
+        editingId = null;
+        formError = "Library not found";
       }
     }
   });
@@ -104,11 +107,15 @@
 
   async function handleDelete() {
     if (!editingId) return;
+    saving = true;
     try {
       await libraryStore.remove(editingId);
       routerStore.navigate("libraries");
     } catch (e) {
       formError = e instanceof Error ? e.message : "Failed to delete library";
+      showDeleteConfirm = false;
+    } finally {
+      saving = false;
     }
   }
 </script>
@@ -123,6 +130,7 @@
     <button
       onclick={navigateBack}
       class="text-ink-300 hover:text-ink-500 dark:hover:text-ink-200 transition-colors"
+      aria-label="Close form"
     >
       <X class="w-5 h-5" />
     </button>
@@ -178,6 +186,7 @@
                 }}
                 class="p-2 text-ink-300 hover:text-danger-600 transition-colors"
                 title="Remove folder"
+                aria-label="Remove folder"
                 disabled={saving}
               >
                 <X class="w-4 h-4" />
@@ -256,7 +265,8 @@
             <button
               type="button"
               onclick={handleDelete}
-              class="px-3 py-1.5 text-sm bg-danger-600 text-white rounded-lg hover:bg-danger-700 transition-colors"
+              disabled={saving}
+              class="px-3 py-1.5 text-sm bg-danger-600 text-white rounded-lg hover:bg-danger-700 transition-colors disabled:opacity-50"
             >
               Yes
             </button>

@@ -48,9 +48,7 @@
         <p class="text-ink-400 dark:text-ink-400">Loading books...</p>
       </div>
     </div>
-  {:else if error}
-    <!-- error banner at the top of the page already shows the message -->
-  {:else if books.length === 0}
+  {:else if !error && books.length === 0}
     <div class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800">
       <div class="text-center py-8">
         <BookOpen class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4" />

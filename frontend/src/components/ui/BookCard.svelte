@@ -17,6 +17,7 @@
       <img
         src={book.cover_image_url}
         alt={book.title}
+        loading="lazy"
         class="w-full h-full object-cover"
       />
     </div>

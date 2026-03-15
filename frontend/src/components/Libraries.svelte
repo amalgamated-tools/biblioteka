@@ -46,6 +46,7 @@
 
   // Load books when viewing a library
   $effect(() => {
+    error = null;
     if (mode === "view" && viewId) {
       loadLibraryBooks(viewId);
     }
