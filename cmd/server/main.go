@@ -113,7 +113,10 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	if runWorker {
 		g.Go(func() error {
 			slog.InfoContext(ctx, "Starting background worker")
-			w.Start(ctx)
+			if err := w.Start(ctx); err != nil {
+				slog.ErrorContext(ctx, "background worker failed", slog.Any(otelkeys.Error, err))
+				return fmt.Errorf("background worker failed: %w", err)
+			}
 			slog.InfoContext(ctx, "Background worker stopped")
 			return nil
 		})
