@@ -1,5 +1,7 @@
 package otelkeys
 
+// This file defines common attribute keys for structured logging and telemetry.
+// Keep these in alphabetical order
 const (
 	Address           string = "address"
 	AuthorCount       string = "author_count"
@@ -15,9 +17,11 @@ const (
 	Email             string = "email"
 	Error             string = "error"
 	ErrorCode         string = "error_code"
+	ExpiresAt         string = "expires_at"
 	Ext               string = "ext"
 	FileName          string = "file_name"
 	FilesFound        string = "files_found"
+	FileSize          string = "file_size"
 	FileType          string = "file_type"
 	Format            string = "format"
 	ID                string = "id"
@@ -54,6 +58,4 @@ const (
 	UserAgent         string = "user_agent"
 	UserID            string = "user_id"
 	Version           string = "version"
-	ExpiresAt         string = "expires_at"
-	FileSize          string = "file_size"
 )
