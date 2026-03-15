@@ -54,6 +54,7 @@
         formPaths = [{ id: nextPathId++, value: "" }];
         formMonitored = false;
         formError = "Library not found";
+        showDeleteConfirm = false;
       }
     }
   });
