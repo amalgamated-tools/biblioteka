@@ -178,6 +178,10 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 		Key:       fullKey,
 	}
 
+	// Prevent caching of the response that contains the full API key.
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+
 	writeJSON(r.Context(), w, http.StatusCreated, resp)
 }
 
