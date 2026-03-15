@@ -189,7 +189,9 @@ internal/
 5. **(Optional) Enqueue from a handler** if it should be triggered by an API call:
 
    ```go
-   h.Enqueuer.Enqueue(ctx, jobs.JobExample, jobs.ExamplePayload{ID: "abc"})
+   if _, err := h.Enqueuer.Enqueue(ctx, jobs.JobExample, jobs.ExamplePayload{ID: "abc"}); err != nil {
+       return fmt.Errorf("enqueue example job: %w", err)
+   }
    ```
 
 6. **Write tests** — see the existing `*_test.go` files in `internal/jobs/` for patterns using mock enqueuers and in-memory SQLite databases.
