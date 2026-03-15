@@ -50,7 +50,7 @@ func writeOPDSError(ctx context.Context, w http.ResponseWriter, status int, mess
 	buf.WriteString(`<entry>`)
 	buf.WriteString(`<title>Authentication Error</title>`)
 	buf.WriteString(`<content type="text">`)
-	xml.EscapeText(&buf, []byte(message))
+	_ = xml.EscapeText(&buf, []byte(message))
 	buf.WriteString(`</content>`)
 	buf.WriteString(`</entry>`)
 	buf.WriteString(`</feed>`)
