@@ -66,11 +66,6 @@ jobs:
             type=sha,enable={{is_default_branch}}
             type=raw,value=latest,enable=${{ github.event_name == 'release' }}
 
-      # Push is opt-in via the ENABLE_DOCKER_PUSH repository variable.
-      # To enable: Settings > Secrets and variables > Actions > Variables > New variable
-      #   Name:  ENABLE_DOCKER_PUSH
-      #   Value: true
-      #
       # If pushes fail with 403 Forbidden, the GHCR package permissions need
       # to be configured:
       #   1. Go to https://github.com/orgs/<org>/packages and find the package.
@@ -84,7 +79,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: ${{ vars.ENABLE_DOCKER_PUSH == 'true' }}
+          push: true
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
