@@ -267,8 +267,10 @@ func (h *OPDSHandler) recentBooks(w http.ResponseWriter, r *http.Request) {
 func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	baseURL := opdsBaseURL(r)
+	page := parsePage(r)
+	offset := (page - 1) * opdsPageSize
 
-	authors, err := h.DB.ListAuthors(ctx)
+	authors, total, err := h.DB.ListAuthorsPaginated(ctx, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list authors", slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list authors")
@@ -287,15 +289,16 @@ func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	selfURL := baseURL + "/authors"
+	links := paginationLinks(selfURL, page, total, opdsPageSize)
+	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
+
 	feed := &opdsFeed{
 		XMLNS:   xmlnsAtom,
-		ID:      baseURL + "/authors",
+		ID:      selfURL,
 		Title:   "Authors",
 		Updated: time.Now().UTC().Format(time.RFC3339),
-		Links: []opdsLink{
-			{Rel: relSelf, Href: baseURL + "/authors", Type: opdsNavContentType},
-			{Rel: relStart, Href: baseURL, Type: opdsNavContentType},
-		},
+		Links:   links,
 		Entries: entries,
 	}
 	writeOPDSFeed(r, w, opdsNavContentType, feed)
