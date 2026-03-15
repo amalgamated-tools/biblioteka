@@ -28,5 +28,5 @@ jobs:
         with:
           path-to-signatures: '.github/cla-signatures.json'
           path-to-document: 'https://github.com/amalgamated-tools/biblioteka/blob/main/CLA.md'
-          branch: 'main'
+          branch: 'cla-signatures'
           allowlist: dependabot[bot],renovate[bot],github-actions[bot]
