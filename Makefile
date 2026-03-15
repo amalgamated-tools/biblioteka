@@ -99,9 +99,11 @@ redis-check:
 			fi; \
 		fi; \
 	fi; \
-	if nc -z localhost 6379 > /dev/null 2>&1; then \
-		echo "Something is listening on port 6379. Assuming Redis is running."; \
-		exit 0; \
+	if command -v nc > /dev/null 2>&1; then \
+		if nc -z localhost 6379 > /dev/null 2>&1; then \
+			echo "Something is listening on port 6379. Assuming Redis is running."; \
+			exit 0; \
+		fi; \
 	fi; \
 	echo "Error: Redis is not running. Start it with 'redis-server', 'brew services start redis', or 'docker compose up -d redis'."; \
 	exit 1
