@@ -518,7 +518,7 @@ Create a library.
 |---------------------|----------|----------|-------------|
 | `name`              | string   | ✓        | Display name (must be unique) |
 | `paths`             | string[] | ✓        | Absolute file-system paths; each must be an existing directory |
-| `organization_type` | string   |          | `"book_per_folder"` (default) |
+| `organization_type` | string   |          | Currently only `"book_per_folder"` is supported (default). Each immediate subdirectory of a library path is treated as one book. |
 | `monitored`         | boolean  |          | Whether to auto-import new files |
 
 **Responses:** `201 Created` with the new library object, or `409 Conflict` if the name is taken.
@@ -924,7 +924,7 @@ Attach a file record to a book.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `file_type` | string | ✓ | Format identifier (e.g. `epub`, `pdf`) |
+| `file_type` | string | ✓ | Format identifier: `epub`, `mobi`, `pdf`, or `azw3` |
 | `file_name` | string | ✓ | File name on disk |
 | `file_path` | string | ✓ | Absolute path to the file |
 | `file_size` | integer | | File size in bytes |
