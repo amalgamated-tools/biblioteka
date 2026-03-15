@@ -126,6 +126,8 @@ The server runs a Redis-backed job queue (powered by [asynq](https://github.com/
 
 Jobs are deduplicated for 24 hours — attempting to re-scan a path that was already queued within that window won’t enqueue an additional task (the duplicate enqueue is rejected).
 
+See [docs/background-jobs.md](docs/background-jobs.md) for the job catalog, scheduling, worker configuration, the Asynqmon monitoring dashboard, and a guide to adding new jobs.
+
 ## Database Migrations
 
 Migrations in `db/migrations/{sqlite,postgres}/` run automatically on startup. No separate migration command is needed.
@@ -222,9 +224,6 @@ An interactive Swagger UI is served at `/swagger/` (public — no login required
 
 The UI is a Svelte 5 SPA with hash-based routing. State is managed through reactive `$state` class stores. See [docs/frontend.md](docs/frontend.md) for the architecture overview, store pattern, routing, and a guide to adding new views and stores.
 
-## Background Jobs
-
-Library scanning and file processing run asynchronously via a Redis-backed job queue. See [docs/background-jobs.md](docs/background-jobs.md) for the job catalog, scheduling, worker configuration, the Asynqmon monitoring dashboard, and a guide to adding new jobs.
 
 ## Deployment
 
