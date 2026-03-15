@@ -385,8 +385,8 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 	}
 
 	slog.DebugContext(r.Context(), "saving SMTP config",
-		slog.String("smtp_host", host),
-		slog.String("smtp_from", from),
+		slog.String(otelkeys.Name, host),
+		slog.String(otelkeys.Email, from),
 	)
 
 	for k, v := range map[string]string{
