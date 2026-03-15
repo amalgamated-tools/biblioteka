@@ -2,6 +2,7 @@ version: "2"
 linters:
   enable:
     - forbidigo
+    - sloglint
   settings:
     forbidigo:
       forbid:
@@ -12,6 +13,12 @@ linters:
         - pattern: ^log\.Panic.*$
           msg: use log/slog instead of log.Panic
       analyze-types: true
+    sloglint:
+      context: "all"  # Enforces *Context() variants everywhere
+      attr-only: true
+      no-raw-keys: true
+      key-naming-case: "snake"
+      args-on-sep-lines: true      
   exclusions:
     generated: lax
     presets:

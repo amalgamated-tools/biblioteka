@@ -1,5 +1,9 @@
 {
   "go.lintTool": "golangci-lint",
+  "go.lintFlags": [
+    "--fast"
+  ],
+  "go.lintOnSave": "workspace",
   "editor.formatOnSave": true,
   "files.exclude": {
     "**/.go_mod_cache": true

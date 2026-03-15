@@ -8,6 +8,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // AdminHandler holds dependencies for admin endpoints.
@@ -41,31 +42,31 @@ type setAdminRequest struct {
 // @Router      /admin/users [get]
 func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "admin listing users", slog.String("caller_id", userID))
+	slog.DebugContext(r.Context(), "admin listing users", slog.String(otelkeys.CallerID, userID))
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
 	if !isAdmin {
-		writeError(w, http.StatusForbidden, "admin access required")
+		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
 		return
 	}
 
-	users, err := h.DB.ListUsers()
+	users, err := h.DB.ListUsers(r.Context())
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list users", slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to list users")
+		slog.ErrorContext(r.Context(), "failed to list users", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list users")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "users listed", slog.Int("count", len(users)))
+	slog.DebugContext(r.Context(), "users listed", slog.Int(otelkeys.Count, len(users)))
 	dtos := make([]adminUserDTO, 0, len(users))
 	for _, u := range users {
 		dtos = append(dtos, adminUserDTO{
@@ -78,7 +79,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	writeJSON(w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, dtos)
 }
 
 // HandleSetAdmin godoc
@@ -99,51 +100,54 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 // @Router      /admin/users/{id} [put]
 func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
 	callerID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "setting admin status", slog.String("caller_id", callerID))
+	slog.DebugContext(r.Context(), "setting admin status", slog.String(otelkeys.CallerID, callerID))
 	isAdmin, err := h.DB.IsAdmin(r.Context(), callerID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to verify permissions")
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
 	if !isAdmin {
-		writeError(w, http.StatusForbidden, "admin access required")
+		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
 		return
 	}
 
 	targetID, ok := extractPathID(r.URL.Path, "/api/admin/users/")
 	if !ok {
-		writeError(w, http.StatusBadRequest, "invalid user ID")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid user ID")
 		return
 	}
 
 	if targetID == callerID {
-		writeError(w, http.StatusBadRequest, "cannot change your own admin status")
+		writeError(r.Context(), w, http.StatusBadRequest, "cannot change your own admin status")
 		return
 	}
 
 	var req setAdminRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	if err := h.DB.SetAdmin(targetID, req.IsAdmin); err != nil {
+	if err := h.DB.SetAdmin(r.Context(), targetID, req.IsAdmin); err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "user not found")
+			writeError(r.Context(), w, http.StatusNotFound, "user not found")
 			return
 		}
-		slog.Error("failed to set admin status", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to update admin status")
+		slog.ErrorContext(r.Context(), "failed to set admin status", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update admin status")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "admin status updated", slog.String("target_id", targetID), slog.Bool("is_admin", req.IsAdmin))
+	slog.DebugContext(r.Context(), "admin status updated",
+		slog.String(otelkeys.TargetID, targetID),
+		slog.Bool(otelkeys.IsAdmin, req.IsAdmin),
+	)
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "admin status updated"})
+	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "admin status updated"})
 }

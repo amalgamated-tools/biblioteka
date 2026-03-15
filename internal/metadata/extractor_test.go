@@ -95,7 +95,7 @@ func makeTestPDF(t *testing.T, path, title, author string) {
 
 	pdf := header + obj1 + obj2 + obj3 + xref + "trailer\n" + trailer + startxref
 
-	if err := os.WriteFile(path, []byte(pdf), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(pdf), 0o644); err != nil {
 		t.Fatalf("write pdf: %v", err)
 	}
 
@@ -250,7 +250,7 @@ func TestExtractMetadata_PDF(t *testing.T) {
 func TestExtractMetadata_InvalidFile(t *testing.T) {
 	dir := t.TempDir()
 	badPath := filepath.Join(dir, "bad.epub")
-	os.WriteFile(badPath, []byte("not a real epub"), 0644)
+	os.WriteFile(badPath, []byte("not a real epub"), 0o644)
 
 	ext, err := NewExtractor()
 	if err != nil {

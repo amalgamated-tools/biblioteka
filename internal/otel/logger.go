@@ -1,16 +1,18 @@
 package otel
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"runtime/debug"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/telemetry"
 )
 
 var Version = "dev"
 
-func SetupLogger() {
+func SetupLogger(ctx context.Context) {
 	format := "json"
 	level := slog.LevelInfo
 	addSource := false
@@ -52,9 +54,12 @@ func SetupLogger() {
 		}
 	}
 
-	logger = logger.With(slog.String("version", Version))
-	logger.Info("Logger initialized", slog.String("format", format), slog.String("level", level.String()))
+	logger = logger.With(slog.String(otelkeys.Version, Version))
+	logger.InfoContext(ctx, "Logger initialized",
+		slog.String(otelkeys.Format, format),
+		slog.String(otelkeys.Level, level.String()),
+	)
 	slog.SetDefault(logger)
 
-	telemetry.Send(Version)
+	telemetry.SendBoot(ctx, Version)
 }

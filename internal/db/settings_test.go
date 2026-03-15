@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 )
@@ -8,11 +9,11 @@ import (
 func TestSetAndGetSetting(t *testing.T) {
 	d := newTestDB(t)
 
-	if err := d.SetSetting("theme", "dark"); err != nil {
+	if err := d.SetSetting(context.Background(), "theme", "dark"); err != nil {
 		t.Fatalf("SetSetting() error: %v", err)
 	}
 
-	val, err := d.GetSetting("theme")
+	val, err := d.GetSetting(context.Background(), "theme")
 	if err != nil {
 		t.Fatalf("GetSetting() error: %v", err)
 	}
@@ -24,7 +25,7 @@ func TestSetAndGetSetting(t *testing.T) {
 func TestGetSetting_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.GetSetting("nonexistent")
+	_, err := d.GetSetting(context.Background(), "nonexistent")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
@@ -33,10 +34,10 @@ func TestGetSetting_NotFound(t *testing.T) {
 func TestSetSetting_Upsert(t *testing.T) {
 	d := newTestDB(t)
 
-	_ = d.SetSetting("color", "blue")
-	_ = d.SetSetting("color", "red")
+	_ = d.SetSetting(context.Background(), "color", "blue")
+	_ = d.SetSetting(context.Background(), "color", "red")
 
-	val, err := d.GetSetting("color")
+	val, err := d.GetSetting(context.Background(), "color")
 	if err != nil {
 		t.Fatalf("GetSetting() error: %v", err)
 	}

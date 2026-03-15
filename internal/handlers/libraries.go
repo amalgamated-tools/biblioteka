@@ -13,6 +13,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // LibraryHandler holds dependencies for library endpoints.
@@ -62,7 +63,7 @@ func (h *LibraryHandler) HandleLibraries(w http.ResponseWriter, r *http.Request)
 	case http.MethodPost:
 		h.createLibrary(w, r)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
@@ -70,7 +71,7 @@ func (h *LibraryHandler) HandleLibraries(w http.ResponseWriter, r *http.Request)
 func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 	id, sub, ok := extractPathSegments(r.URL.Path, "/api/libraries/")
 	if !ok {
-		writeError(w, http.StatusBadRequest, "invalid library ID")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid library ID")
 		return
 	}
 
@@ -84,17 +85,17 @@ func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 		case http.MethodDelete:
 			h.deleteLibrary(w, r, id)
 		default:
-			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		}
 	case "books":
 		switch r.Method {
 		case http.MethodGet:
 			h.listLibraryBooks(w, r, id)
 		default:
-			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		}
 	default:
-		writeError(w, http.StatusNotFound, "not found")
+		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}
 }
 
@@ -110,40 +111,40 @@ func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 // @Router      /libraries [get]
 func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing libraries")
-	libraries, err := h.DB.ListLibraries()
+	libraries, err := h.DB.ListLibraries(r.Context())
 	if err != nil {
-		slog.Error("failed to list libraries", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to list libraries")
+		slog.ErrorContext(r.Context(), "failed to list libraries", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list libraries")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "libraries listed", slog.Int("count", len(libraries)))
+	slog.DebugContext(r.Context(), "libraries listed", slog.Int(otelkeys.Count, len(libraries)))
 
 	dtos := make([]libraryDTO, 0, len(libraries))
 	for i := range libraries {
 		dtos = append(dtos, toLibraryDTO(&libraries[i]))
 	}
 
-	writeJSON(w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, dtos)
 }
 
 // validateAndPrepareLibrary validates the library request fields and encodes paths to JSON.
 // It writes the appropriate error response and returns ("", false) on failure.
-func validateAndPrepareLibrary(w http.ResponseWriter, req *libraryRequest) (pathsJSON string, ok bool) {
+func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *libraryRequest) (pathsJSON string, ok bool) {
 	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
+		writeError(ctx, w, http.StatusBadRequest, "name is required")
 		return "", false
 	}
 	if len(req.Paths) == 0 {
-		writeError(w, http.StatusBadRequest, "at least one path is required")
+		writeError(ctx, w, http.StatusBadRequest, "at least one path is required")
 		return "", false
 	}
 	if slices.Contains(req.Paths, "") {
-		writeError(w, http.StatusBadRequest, "paths must not be empty strings")
+		writeError(ctx, w, http.StatusBadRequest, "paths must not be empty strings")
 		return "", false
 	}
 	if err := validatePaths(req.Paths); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(ctx, w, http.StatusBadRequest, err.Error())
 		return "", false
 	}
 	if req.OrganizationType == "" {
@@ -151,7 +152,7 @@ func validateAndPrepareLibrary(w http.ResponseWriter, req *libraryRequest) (path
 	}
 	data, err := json.Marshal(req.Paths)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to encode paths")
+		writeError(ctx, w, http.StatusInternalServerError, "failed to encode paths")
 		return "", false
 	}
 	return string(data), true
@@ -174,25 +175,25 @@ func validateAndPrepareLibrary(w http.ResponseWriter, req *libraryRequest) (path
 func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 	var req libraryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	pathsJSON, ok := validateAndPrepareLibrary(w, &req)
+	pathsJSON, ok := validateAndPrepareLibrary(r.Context(), w, &req)
 	if !ok {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "creating library", slog.String("name", req.Name))
+	slog.DebugContext(r.Context(), "creating library", slog.String(otelkeys.Name, req.Name))
 
-	lib, err := h.DB.CreateLibrary(req.Name, pathsJSON, req.OrganizationType, req.Monitored)
+	lib, err := h.DB.CreateLibrary(r.Context(), req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
 		if err == db.ErrLibraryNameExists {
-			writeError(w, http.StatusConflict, "a library with that name already exists")
+			writeError(r.Context(), w, http.StatusConflict, "a library with that name already exists")
 			return
 		}
-		slog.Error("failed to create library", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to create library")
+		slog.ErrorContext(r.Context(), "failed to create library", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create library")
 		return
 	}
 
@@ -206,13 +207,13 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 			Paths:     dto.Paths,
 		}); err != nil {
 			slog.ErrorContext(r.Context(), "failed to enqueue scan:library job",
-				slog.String("library_id", lib.ID),
-				slog.Any("error", err),
+				slog.String(otelkeys.LibraryID, lib.ID),
+				slog.Any(otelkeys.Error, err),
 			)
 		}
 	}
 
-	writeJSON(w, http.StatusCreated, dto)
+	writeJSON(r.Context(), w, http.StatusCreated, dto)
 }
 
 // getLibrary godoc
@@ -229,19 +230,19 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 // @Failure     500 {object} errorResponse
 // @Router      /libraries/{id} [get]
 func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "fetching library", slog.String("library_id", id))
-	lib, err := h.DB.GetLibrary(id)
+	slog.DebugContext(r.Context(), "fetching library", slog.String(otelkeys.LibraryID, id))
+	lib, err := h.DB.GetLibrary(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "library not found")
+			writeError(r.Context(), w, http.StatusNotFound, "library not found")
 			return
 		}
-		slog.Error("failed to get library", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to get library")
+		slog.ErrorContext(r.Context(), "failed to get library", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get library")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toLibraryDTO(lib))
+	writeJSON(r.Context(), w, http.StatusOK, toLibraryDTO(lib))
 }
 
 // updateLibrary godoc
@@ -263,33 +264,38 @@ func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id s
 func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, id string) {
 	var req libraryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	pathsJSON, ok := validateAndPrepareLibrary(w, &req)
+	pathsJSON, ok := validateAndPrepareLibrary(r.Context(), w, &req)
 	if !ok {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "updating library", slog.String("library_id", id), slog.String("name", req.Name))
+	slog.DebugContext(r.Context(), "updating library",
+		slog.String(otelkeys.LibraryID, id),
+		slog.String(otelkeys.Name, req.Name),
+	)
 
-	lib, err := h.DB.UpdateLibrary(id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
+	lib, err := h.DB.UpdateLibrary(r.Context(), id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "library not found")
+			writeError(r.Context(), w, http.StatusNotFound, "library not found")
 			return
 		}
 		if err == db.ErrLibraryNameExists {
-			writeError(w, http.StatusConflict, "a library with that name already exists")
+			writeError(r.Context(), w, http.StatusConflict, "a library with that name already exists")
 			return
 		}
-		slog.Error("failed to update library", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to update library")
+		slog.ErrorContext(r.Context(), "failed to update library",
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update library")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toLibraryDTO(lib))
+	writeJSON(r.Context(), w, http.StatusOK, toLibraryDTO(lib))
 }
 
 // deleteLibrary godoc
@@ -305,15 +311,15 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 // @Failure     500 {object} errorResponse
 // @Router      /libraries/{id} [delete]
 func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "deleting library", slog.String("library_id", id))
-	err := h.DB.DeleteLibrary(id)
+	slog.DebugContext(r.Context(), "deleting library", slog.String(otelkeys.LibraryID, id))
+	err := h.DB.DeleteLibrary(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "library not found")
+			writeError(r.Context(), w, http.StatusNotFound, "library not found")
 			return
 		}
-		slog.Error("failed to delete library", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to delete library")
+		slog.ErrorContext(r.Context(), "failed to delete library", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete library")
 		return
 	}
 
@@ -334,37 +340,41 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 // @Failure     500 {object} errorResponse
 // @Router      /libraries/{id}/books [get]
 func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "listing library books", slog.String("library_id", id))
+	slog.DebugContext(r.Context(), "listing library books", slog.String(otelkeys.LibraryID, id))
 
-	books, err := h.DB.ListBooksByLibrary(id)
+	books, err := h.DB.ListBooksByLibrary(r.Context(), id)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list library books", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to list library books")
+		slog.ErrorContext(r.Context(), "failed to list library books",
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list library books")
 		return
 	}
 
 	// If no books found, check whether the library actually exists.
 	if len(books) == 0 {
-		_, err := h.DB.GetLibrary(id)
+		_, err := h.DB.GetLibrary(r.Context(), id)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				writeError(w, http.StatusNotFound, "library not found")
+				writeError(r.Context(), w, http.StatusNotFound, "library not found")
 				return
 			}
-			slog.ErrorContext(r.Context(), "failed to get library", "error", err)
-			writeError(w, http.StatusInternalServerError, "failed to get library")
+			slog.ErrorContext(r.Context(), "failed to get library",
+				slog.Any(otelkeys.Error, err),
+			)
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to get library")
 			return
 		}
 	}
 
-	slog.DebugContext(r.Context(), "library books listed", slog.Int("count", len(books)))
+	slog.DebugContext(r.Context(), "library books listed", slog.Int(otelkeys.Count, len(books)))
 
 	dtos := make([]bookSummaryDTO, 0, len(books))
 	for i := range books {
 		dtos = append(dtos, toBookSummaryDTO(&books[i]))
 	}
 
-	writeJSON(w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, dtos)
 }
 
 func validatePaths(paths []string) error {
