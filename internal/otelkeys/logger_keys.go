@@ -3,6 +3,7 @@ package otelkeys
 // This file defines common attribute keys for structured logging and telemetry.
 // Keep these in alphabetical order
 const (
+	Action            string = "action"
 	Address           string = "address"
 	AuthorCount       string = "author_count"
 	AuthorID          string = "author_id"
@@ -15,6 +16,8 @@ const (
 	Description       string = "description"
 	Duration          string = "duration"
 	Email             string = "email"
+	EntityID          string = "entity_id"
+	EntityType        string = "entity_type"
 	Error             string = "error"
 	ErrorCode         string = "error_code"
 	ExpiresAt         string = "expires_at"
@@ -35,8 +38,10 @@ const (
 	LibrariesEnqueued string = "libraries_enqueued"
 	LibraryID         string = "library_id"
 	LibraryName       string = "library_name"
+	Limit             string = "limit"
 	Method            string = "method"
 	Name              string = "name"
+	Offset            string = "offset"
 	Path              string = "path"
 	PathsEnqueued     string = "paths_enqueued"
 	Port              string = "port"

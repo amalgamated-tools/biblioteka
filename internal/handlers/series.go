@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -148,6 +149,12 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 		slog.String(otelkeys.SeriesID, s.ID),
 		slog.String(otelkeys.Name, s.Name),
 	)
+
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSeriesCreated, "series", s.ID, map[string]any{"name": s.Name}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+
 	writeJSON(r.Context(), w, http.StatusCreated, toSeriesDTO(s))
 }
 
@@ -228,6 +235,11 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSeriesUpdated, "series", s.ID, map[string]any{"name": s.Name}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+
 	writeJSON(r.Context(), w, http.StatusOK, toSeriesDTO(s))
 }
 
@@ -245,8 +257,19 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 // @Router      /series/{id} [delete]
 func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting series", slog.String(otelkeys.SeriesID, id))
-	err := h.DB.DeleteSeries(r.Context(), id)
+
+	s, err := h.DB.GetSeries(r.Context(), id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			writeError(r.Context(), w, http.StatusNotFound, "series not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to get series", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete series")
+		return
+	}
+
+	if err := h.DB.DeleteSeries(r.Context(), id); err != nil {
 		if err == sql.ErrNoRows {
 			writeError(r.Context(), w, http.StatusNotFound, "series not found")
 			return
@@ -254,6 +277,11 @@ func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id 
 		slog.ErrorContext(r.Context(), "failed to delete series", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete series")
 		return
+	}
+
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSeriesDeleted, "series", id, map[string]any{"name": s.Name}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
 	w.WriteHeader(http.StatusNoContent)
