@@ -484,6 +484,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `book_file.deleted`    | `book_file`   | File deleted via `DELETE /api/book-files/{id}` |
 | `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
+| `smtp.config_updated`  | `config`      | SMTP settings saved via `PUT /api/config/smtp` |
 
 | Status | Description |
 |--------|-------------|
