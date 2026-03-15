@@ -17,7 +17,21 @@ The credential can be supplied in two ways:
 
 2. **Session cookie** (used automatically by the browser): On login and signup the server sets an `HttpOnly` session cookie named `biblioteka_token`. Subsequent browser requests to protected pages (including [`/asynqmon/`](#get-asynqmon)) use this cookie automatically — no manual header is required. Cookies are **not** accepted for API keys.
 
-Endpoints that require authentication are marked with 🔒. Endpoints that additionally require the caller to be an admin are marked with 🔒 **Admin**.
+Endpoints that require authentication are marked with 🔒. Endpoints that additionally require the caller to be an admin are marked with 🔒 **Admin**. Endpoints marked with 🔒 **JWT only** require a JWT token specifically — API keys are **not** accepted for those routes (see [JWT-only endpoints](#jwt-only-endpoints)).
+
+### JWT-only endpoints
+
+The following endpoints use a stricter JWT-only check and **do not accept API keys**. This is an intentional security constraint — for example, an API key cannot be used to create, list, or delete other API keys.
+
+| Endpoint | Reason |
+|----------|--------|
+| `PUT /api/auth/password` | Password changes must use a JWT session |
+| `GET /api/config/status` | Sensitive config visibility requires a JWT |
+| `GET /api/config/oidc`, `PUT /api/config/oidc` | Sensitive server config; admin only |
+| `GET /api/config/smtp`, `PUT /api/config/smtp`, `POST /api/config/smtp/test` | Sensitive server config; admin only |
+| `GET /api/admin/users`, `PUT /api/admin/users/{id}` | User management; admin only |
+| `GET /api/opds/credentials`, `PUT /api/opds/credentials`, `DELETE /api/opds/credentials` | Credential management requires a JWT |
+| `GET /api/api-keys`, `POST /api/api-keys`, `DELETE /api/api-keys/{id}` | API key management requires a JWT to prevent key self-escalation |
 
 ---
 
@@ -115,7 +129,7 @@ Return the currently authenticated user's profile.
 
 ---
 
-### `PUT /api/auth/password` 🔒
+### `PUT /api/auth/password` 🔒 **JWT only**
 
 Change the authenticated user's password. Not supported for OIDC-only accounts.
 
@@ -132,7 +146,7 @@ Change the authenticated user's password. Not supported for OIDC-only accounts.
 |--------|-------------|
 | `200 OK` | Password updated |
 | `400 Bad Request` | Missing fields, invalid password, or OIDC-only account |
-| `401 Unauthorized` | Current password is incorrect |
+| `401 Unauthorized` | Missing or invalid JWT, or current password is incorrect |
 
 ---
 
@@ -212,7 +226,9 @@ Generate a short-lived, single-use nonce that authorises the OIDC account-linkin
 
 API keys allow programmatic access to Biblioteka without a JWT. Keys begin with the prefix `bib_` and are supplied via the `Authorization` header. See the [authentication guide](authentication.md#api-keys) for full details.
 
-### `GET /api/api-keys` 🔒
+> **Note:** All API key management endpoints require a **JWT** (not an API key). This prevents an API key from listing, creating, or deleting other API keys.
+
+### `GET /api/api-keys` 🔒 **JWT only**
 
 List all API keys belonging to the authenticated user. Results are ordered by creation time (newest first). The full key value is **never** returned by this endpoint — only the prefix and metadata.
 
@@ -221,7 +237,7 @@ List all API keys belonging to the authenticated user. Results are ordered by cr
 | Status | Description |
 |--------|-------------|
 | `200 OK` | Returns an array of API key objects |
-| `401 Unauthorized` | Missing or invalid token |
+| `401 Unauthorized` | Missing or invalid JWT |
 | `500 Internal Server Error` | Unexpected error |
 
 **Response body (`200`):**
@@ -250,7 +266,7 @@ List all API keys belonging to the authenticated user. Results are ordered by cr
 
 ---
 
-### `POST /api/api-keys` 🔒
+### `POST /api/api-keys` 🔒 **JWT only**
 
 Create a new API key for the authenticated user.
 
@@ -266,7 +282,7 @@ Create a new API key for the authenticated user.
 |--------|-------------|
 | `201 Created` | Key created; full key value included in response |
 | `400 Bad Request` | Missing or invalid `name` |
-| `401 Unauthorized` | Missing or invalid token |
+| `401 Unauthorized` | Missing or invalid JWT |
 | `500 Internal Server Error` | Key generation or database error |
 
 **Response body (`201`):**
@@ -286,7 +302,7 @@ Create a new API key for the authenticated user.
 
 ---
 
-### `DELETE /api/api-keys/{id}` 🔒
+### `DELETE /api/api-keys/{id}` 🔒 **JWT only**
 
 Permanently revoke an API key. The caller must own the key.
 
@@ -302,7 +318,7 @@ Permanently revoke an API key. The caller must own the key.
 |--------|-------------|
 | `204 No Content` | Key deleted successfully |
 | `400 Bad Request` | Invalid key ID format |
-| `401 Unauthorized` | Missing or invalid token |
+| `401 Unauthorized` | Missing or invalid JWT |
 | `404 Not Found` | Key not found or does not belong to the caller |
 | `405 Method Not Allowed` | Invalid HTTP method |
 | `500 Internal Server Error` | Unexpected error |
@@ -311,7 +327,7 @@ Permanently revoke an API key. The caller must own the key.
 
 ## Config
 
-### `GET /api/config/status` 🔒
+### `GET /api/config/status` 🔒 **JWT only**
 
 Returns application configuration status visible to the authenticated user.
 
@@ -333,7 +349,7 @@ Returns application configuration status visible to the authenticated user.
 
 ---
 
-### `GET /api/config/oidc` 🔒 **Admin**
+### `GET /api/config/oidc` 🔒 **Admin** · **JWT only**
 
 Return the current OIDC configuration. The `client_secret` value is never returned; `client_secret_set` indicates whether one is stored.
 
@@ -350,7 +366,7 @@ Return the current OIDC configuration. The `client_secret` value is never return
 
 ---
 
-### `PUT /api/config/oidc` 🔒 **Admin**
+### `PUT /api/config/oidc` 🔒 **Admin** · **JWT only**
 
 Save OIDC provider settings. The server performs OIDC discovery on the `issuer_url` before saving. If `client_secret` is omitted, the existing stored secret is preserved; however, a `client_secret` **must** be supplied the first time OIDC is configured (when no secret is yet stored).
 
@@ -375,7 +391,7 @@ Save OIDC provider settings. The server performs OIDC discovery on the `issuer_u
 
 ---
 
-### `GET /api/config/smtp` 🔒 **Admin**
+### `GET /api/config/smtp` 🔒 **Admin** · **JWT only**
 
 Return the current SMTP configuration. The `password` value is never returned; `password_set` indicates whether one is stored. When `env_override` is `true`, all SMTP settings are sourced from environment variables and any database-stored values are ignored.
 
@@ -405,7 +421,7 @@ Return the current SMTP configuration. The `password` value is never returned; `
 
 ---
 
-### `PUT /api/config/smtp` 🔒 **Admin**
+### `PUT /api/config/smtp` 🔒 **Admin** · **JWT only**
 
 Save SMTP server settings. If `password` is omitted while `username` is supplied and matches the currently stored username, the existing password is preserved. Setting `username` to an empty string clears both the stored username and password.
 
@@ -433,7 +449,7 @@ Save SMTP server settings. If `password` is omitted while `username` is supplied
 |--------|-------------|
 | `200 OK` | Settings saved; returns confirmation message |
 | `400 Bad Request` | Validation error (invalid host, port, from address, or TLS mode) |
-| `401 Unauthorized` | Not authenticated |
+| `401 Unauthorized` | Missing or invalid JWT |
 | `403 Forbidden` | Caller is not an admin |
 | `500 Internal Server Error` | Database error |
 
@@ -447,7 +463,7 @@ Save SMTP server settings. If `password` is omitted while `username` is supplied
 
 ---
 
-### `POST /api/config/smtp/test` 🔒 **Admin**
+### `POST /api/config/smtp/test` 🔒 **Admin** · **JWT only**
 
 Send a test email to the authenticated admin's registered email address using the current SMTP configuration. This is useful for verifying that SMTP settings are correct before relying on them.
 
@@ -459,7 +475,7 @@ Send a test email to the authenticated admin's registered email address using th
 |--------|-------------|
 | `200 OK` | Test email sent successfully |
 | `400 Bad Request` | SMTP not configured, incomplete environment configuration, or invalid SMTP settings |
-| `401 Unauthorized` | Not authenticated |
+| `401 Unauthorized` | Missing or invalid JWT |
 | `403 Forbidden` | Caller is not an admin |
 | `502 Bad Gateway` | SMTP connection or delivery failure |
 
@@ -475,7 +491,7 @@ Send a test email to the authenticated admin's registered email address using th
 
 ## Admin
 
-### `GET /api/admin/users` 🔒 **Admin**
+### `GET /api/admin/users` 🔒 **Admin** · **JWT only**
 
 List all registered users.
 
@@ -496,7 +512,7 @@ List all registered users.
 
 ---
 
-### `PUT /api/admin/users/{id}` 🔒 **Admin**
+### `PUT /api/admin/users/{id}` 🔒 **Admin** · **JWT only**
 
 Grant or revoke admin privileges for a user. Admins cannot change their own admin status.
 
@@ -595,7 +611,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 |--------|-------------|
 | `200 OK` | Paginated audit log entries |
 | `400 Bad Request` | Invalid `limit` or `offset` value |
-| `401 Unauthorized` | Missing or invalid JWT |
+| `401 Unauthorized` | Missing or invalid token |
 | `403 Forbidden` | Caller is not an admin |
 | `405 Method Not Allowed` | Non-GET request |
 | `500 Internal Server Error` | Database error |
@@ -1052,7 +1068,7 @@ Attach a file record to a book.
 
 Each user can configure one set of OPDS credentials (a separate username and password) for use with OPDS reading apps. Credentials are stored as a bcrypt hash. See the [OPDS Catalog guide](opds.md) for the full feature overview.
 
-### `GET /api/opds/credentials` 🔒
+### `GET /api/opds/credentials` 🔒 **JWT only**
 
 Return the current user's OPDS credential.
 
@@ -1076,7 +1092,7 @@ Return the current user's OPDS credential.
 
 ---
 
-### `PUT /api/opds/credentials` 🔒
+### `PUT /api/opds/credentials` 🔒 **JWT only**
 
 Create or replace the current user's OPDS credential. If a credential already exists it is updated in-place; the username and hashed password are both replaced.
 
@@ -1100,7 +1116,7 @@ Create or replace the current user's OPDS credential. If a credential already ex
 
 ---
 
-### `DELETE /api/opds/credentials` 🔒
+### `DELETE /api/opds/credentials` 🔒 **JWT only**
 
 Delete the current user's OPDS credential. Any OPDS client using those credentials will subsequently receive `401 Unauthorized`.
 
