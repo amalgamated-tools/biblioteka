@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -473,7 +474,7 @@ func (m *mockAPIKeyValidator) ValidateAPIKey(_ context.Context, keyHash string) 
 	}
 	entry, ok := m.keys[keyHash]
 	if !ok {
-		return "", "", errors.New("api key not found")
+		return "", "", sql.ErrNoRows
 	}
 	return entry.userID, entry.keyID, nil
 }

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -89,11 +90,19 @@ func shouldTouchAPIKeyLastUsed(id string, now time.Time) bool {
 func resolveUser(ctx context.Context, token string, source tokenSource, jwt *JWTManager, apiKeys APIKeyValidator) (userID string, err error) {
 	if apiKeys != nil && strings.HasPrefix(token, APIKeyPrefix) {
 		if source != tokenSourceHeader {
-			return "", fmt.Errorf("API keys must be sent via Authorization header")
+			// API keys from non-header sources (e.g., cookies) are considered invalid to
+			// prevent CSRF; treat this as an authentication failure, not a server error.
+			return "", ErrInvalidToken
 		}
 		keyHash := HashAPIKey(token)
 		uid, keyID, err := apiKeys.ValidateAPIKey(ctx, keyHash)
 		if err != nil {
+			// A "not found" API key is an auth failure and should be normalized to
+			// ErrInvalidToken so that middleware returns 401 instead of 500.
+			if errors.Is(err, sql.ErrNoRows) {
+				return "", ErrInvalidToken
+			}
+			// Unexpected validator/DB errors are propagated so they surface as 500s.
 			return "", err
 		}
 
