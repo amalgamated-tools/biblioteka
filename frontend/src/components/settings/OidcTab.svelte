@@ -2,6 +2,7 @@
   import { onDestroy } from "svelte";
   import { setOidcConfig } from "../../lib/api";
   import { Shield } from "lucide-svelte";
+  import AlertBanner from "../ui/AlertBanner.svelte";
 
   interface Props {
     initialOidcConfigured: boolean;
@@ -207,19 +208,11 @@
       </div>
 
       {#if oidcError}
-        <div
-          class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
-        >
-          {oidcError}
-        </div>
+        <AlertBanner variant="error">{oidcError}</AlertBanner>
       {/if}
 
       {#if oidcSuccess}
-        <div
-          class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
-        >
-          OIDC configuration saved successfully
-        </div>
+        <AlertBanner variant="success">OIDC configuration saved successfully</AlertBanner>
       {/if}
 
       <button

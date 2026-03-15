@@ -3,6 +3,7 @@
   import { BookCheck } from "lucide-svelte";
   import { authStore } from "../stores/auth.svelte";
   import { getOidcEnabled } from "../lib/api";
+  import AlertBanner from "./ui/AlertBanner.svelte";
 
   let isLogin = $state(true);
   let email = $state("");
@@ -179,13 +180,7 @@
         </div>
 
         {#if error}
-          <div
-            data-testid="auth-error"
-            role="alert"
-            class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
-          >
-            {error}
-          </div>
+          <AlertBanner variant="error" testId="auth-error" role="alert">{error}</AlertBanner>
         {/if}
 
         <button
