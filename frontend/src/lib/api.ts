@@ -162,6 +162,7 @@ export async function changePassword(
 
 export interface ConfigStatus {
   oidc_configured: boolean;
+  smtp_configured: boolean;
   is_admin: boolean;
 }
 
@@ -196,6 +197,41 @@ export async function setOidcConfig(config: SetOIDCConfigInput): Promise<{ messa
 export async function createOidcLinkNonce(): Promise<string> {
   const data = await request<{ nonce: string }>("POST", "/api/auth/oidc/link-nonce");
   return data.nonce;
+}
+
+// Admin - User Management
+
+// SMTP Config
+
+export interface SMTPConfig {
+  host: string;
+  port: string;
+  username: string;
+  password_set: boolean;
+  from: string;
+  tls: string;
+  env_override: boolean;
+}
+
+export interface SetSMTPConfigInput {
+  host: string;
+  port: string;
+  username: string;
+  password: string;
+  from: string;
+  tls: string;
+}
+
+export async function getSmtpConfig(): Promise<SMTPConfig> {
+  return request<SMTPConfig>("GET", "/api/config/smtp");
+}
+
+export async function setSmtpConfig(config: SetSMTPConfigInput): Promise<{ message: string }> {
+  return request<{ message: string }>("PUT", "/api/config/smtp", config);
+}
+
+export async function testSmtpConfig(): Promise<{ message: string }> {
+  return request<{ message: string }>("POST", "/api/config/smtp/test");
 }
 
 // Admin - User Management
