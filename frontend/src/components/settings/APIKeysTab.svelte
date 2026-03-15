@@ -54,6 +54,12 @@
     createKeyLoading = true;
     apiKeysError = null;
     newlyCreatedKey = null;
+    // Reset any previous "copied" state when starting to create a new key
+    if (keyCopiedTimeout !== null) {
+      clearTimeout(keyCopiedTimeout);
+      keyCopiedTimeout = null;
+    }
+    keyCopied = false;
 
     try {
       const result = await createAPIKey(newKeyName.trim());

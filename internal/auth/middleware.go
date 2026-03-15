@@ -68,10 +68,10 @@ func shouldTouchAPIKeyLastUsed(id string, now time.Time) bool {
 		}
 
 		// Enforce a hard upper bound even if nothing was old enough to sweep.
-		if len(apiKeyLastTouchedAt) > maxCacheSize {
+		if len(apiKeyLastTouchedAt) >= maxCacheSize {
 			for k := range apiKeyLastTouchedAt {
 				delete(apiKeyLastTouchedAt, k)
-				if len(apiKeyLastTouchedAt) <= maxCacheSize {
+				if len(apiKeyLastTouchedAt) < maxCacheSize {
 					break
 				}
 			}
@@ -311,8 +311,19 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker, apiKeys APIKeyValida
 
 			userID, err := resolveUser(r.Context(), token, source, jwt, apiKeys)
 			if err != nil {
-				slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any(otelkeys.Error, err))
-				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+				// Distinguish between expected auth errors (invalid/expired token)
+				// and unexpected internal/operational failures (DB/network, timeouts).
+				switch {
+				case errors.Is(err, context.Canceled),
+					errors.Is(err, context.DeadlineExceeded),
+					errors.Is(err, sql.ErrConnDone),
+					errors.Is(err, sql.ErrTxDone):
+					slog.ErrorContext(r.Context(), "admin middleware: failed to resolve user", slog.Any(otelkeys.Error, err))
+					jsonError(w, http.StatusInternalServerError, "internal authentication error")
+				default:
+					slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any(otelkeys.Error, err))
+					jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+				}
 				return
 			}
 
