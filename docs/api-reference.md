@@ -15,7 +15,7 @@ The token can be supplied in two ways:
    Authorization: Bearer <token>
    ```
 
-2. **Session cookie** (used automatically by the browser): On login and signup the server sets an `HttpOnly` session cookie named `biblioteka_token`. Subsequent browser requests to protected pages (including [`/asynqmon/`](#get-asynqmon-)) use this cookie automatically — no manual header is required.
+2. **Session cookie** (used automatically by the browser): On login and signup the server sets an `HttpOnly` session cookie named `biblioteka_token`. Subsequent browser requests to protected pages (including [`/asynqmon/`](#get-asynqmon)) use this cookie automatically — no manual header is required.
 
 Endpoints that require authentication are marked with 🔒. Endpoints that additionally require the caller to be an admin are marked with 🔒 **Admin**.
 
