@@ -40,7 +40,12 @@ func main() {
 // This is the real main function. That's why it's called realMain.
 func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The newctx context comes from the StartTracer function, so it's already wrapped.
 	port := flag.Int("port", 8080, "port to listen on")
+	mode := flag.String("mode", "all", `run mode: "all" runs the HTTP server and the background worker together (default), "server" runs only the HTTP server, "worker" runs only the background worker`)
 	flag.Parse()
+
+	if *mode != "all" && *mode != "server" && *mode != "worker" {
+		return fmt.Errorf("invalid mode %q: must be one of all, server, worker", *mode)
+	}
 
 	// Allow PORT env var to override the flag default
 	if p := os.Getenv("PORT"); p != "" {
@@ -57,7 +62,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	}
 	defer func() { _ = database.Close() }()
 
-	// Start the background worker
+	// Set up the background worker (always needed: server mode uses it for enqueuing, worker/all modes also process jobs)
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
 		redisURL = "redis://localhost:6379"
@@ -69,43 +74,58 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	}
 	defer func() { _ = w.Close() }()
 
-	// Register background jobs
-	w.Register(cancelCtx, jobs.JobScanPath, jobs.NewScanPathHandler(w))
-	w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database))
-	w.Register(cancelCtx, jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
-	w.Register(cancelCtx, jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
+	runServer := *mode == "all" || *mode == "server"
+	runWorker := *mode == "all" || *mode == "worker"
 
-	// Schedule periodic jobs
-	if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
-		slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any(otelkeys.Error, err))
-		return fmt.Errorf("failed to schedule scan:libraries job: %w", err)
+	// Register job handlers and schedules only when this instance processes jobs
+	if runWorker {
+		w.Register(cancelCtx, jobs.JobScanPath, jobs.NewScanPathHandler(w))
+		w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database))
+		w.Register(cancelCtx, jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
+		w.Register(cancelCtx, jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
+
+		if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
+			slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any(otelkeys.Error, err))
+			return fmt.Errorf("failed to schedule scan:libraries job: %w", err)
+		}
 	}
 
-	http, err := server.NewServer(
-		cancelCtx,
-		server.WithPort(*port),
-		server.WithDB(database),
-		server.WithWorker(w),
-		server.WithVersion(version),
-	)
-	if err != nil {
-		slog.ErrorContext(cancelCtx, "failed to create server", slog.Any(otelkeys.Error, err))
-		return fmt.Errorf("failed to create server: %w", err)
+	if !runServer && !runWorker {
+		return fmt.Errorf("mode %q starts neither server nor worker", *mode)
 	}
 
 	g, ctx := errgroup.WithContext(cancelCtx)
 
-	g.Go(func() error {
-		slog.InfoContext(ctx, "Starting HTTP server", slog.Int(otelkeys.Port, *port))
-		return http.Run(ctx)
-	})
+	if runServer {
+		httpServer, err := server.NewServer(
+			cancelCtx,
+			server.WithPort(*port),
+			server.WithDB(database),
+			server.WithWorker(w),
+			server.WithVersion(version),
+		)
+		if err != nil {
+			slog.ErrorContext(cancelCtx, "failed to create server", slog.Any(otelkeys.Error, err))
+			return fmt.Errorf("failed to create server: %w", err)
+		}
 
-	g.Go(func() error {
-		slog.InfoContext(ctx, "Starting background worker")
-		w.Start(ctx)
-		slog.InfoContext(ctx, "Background worker stopped")
-		return nil
-	})
+		g.Go(func() error {
+			slog.InfoContext(ctx, "Starting HTTP server", slog.Int(otelkeys.Port, *port))
+			return httpServer.Run(ctx)
+		})
+	}
+
+	if runWorker {
+		g.Go(func() error {
+			slog.InfoContext(ctx, "Starting background worker")
+			if err := w.Start(ctx); err != nil {
+				slog.ErrorContext(ctx, "background worker failed", slog.Any(otelkeys.Error, err))
+				return fmt.Errorf("background worker failed: %w", err)
+			}
+			slog.InfoContext(ctx, "Background worker stopped")
+			return nil
+		})
+	}
 
 	return g.Wait()
 }

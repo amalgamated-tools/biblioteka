@@ -492,12 +492,12 @@ func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, logMessag
 	return false
 }
 
-//	@Summary		Get server version
-//	@Description	Returns the server version
-//	@Tags			System
-//	@Produce		json
-//	@Success		200	{object}	versionResponse
-//	@Router			/version [get]
+// @Summary		Get server version
+// @Description	Returns the server version
+// @Tags			System
+// @Produce		json
+// @Success		200	{object}	versionResponse
+// @Router			/version [get]
 func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 	if !checkSystemEndpointMethod(w, r, "failed to encode version method not allowed response", http.MethodGet, http.MethodHead) {
 		return
