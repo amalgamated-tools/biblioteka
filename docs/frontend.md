@@ -99,7 +99,7 @@ routerStore.navigate("settings/account");
 
 ### Sub-path routing
 
-Views that need their own internal navigation use `routerStore.subPath`. The convention is: anything after the first `/` in the hash is the sub-path, and each view component interprets it however it needs.
+Views that need their own internal navigation use `routerStore.subPath`. The convention is: `routerStore.hash` holds the normalized fragment without any leading `#/`, it is split on `/`, the first segment becomes the view (`currentView`), and the remaining segments (joined with `/`) form `subPath`, which each view component interprets as it needs.
 
 | View | Sub-path pattern | Meaning |
 |------|------------------|---------|
