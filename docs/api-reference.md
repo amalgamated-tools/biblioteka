@@ -133,6 +133,28 @@ Change the authenticated user's password. Not supported for OIDC-only accounts.
 
 ---
 
+### `POST /api/auth/logout` 🔒
+
+Sign the current user out. Clears the session cookie.
+
+The request must originate from the same origin as the server (the `Origin` or `Referer` header is validated). Cross-origin logout requests are rejected.
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Session cookie cleared; returns confirmation |
+| `403 Forbidden` | Request origin does not match server origin |
+| `405 Method Not Allowed` | Non-POST request |
+
+**Response body (`200`):**
+
+```json
+{ "message": "logged out" }
+```
+
+---
+
 ## OIDC / SSO
 
 ### `GET /api/auth/oidc/enabled`
@@ -280,6 +302,59 @@ Grant or revoke admin privileges for a user. Admins cannot change their own admi
 ```json
 { "message": "admin status updated" }
 ```
+
+---
+
+### `GET /api/audit-logs` 🔒 **Admin**
+
+Return a paginated list of all audit log entries. Each entry records an action performed on an entity (e.g. book created, library deleted).
+
+**Query parameters:**
+
+| Parameter | Type    | Default | Description |
+|-----------|---------|---------|-------------|
+| `limit`   | integer | `50`    | Maximum entries to return (capped at `200`) |
+| `offset`  | integer | `0`     | Number of entries to skip (for pagination) |
+
+**Response body (`200`):**
+
+```json
+{
+  "entries": [
+    {
+      "id": "<id>",
+      "user_id": "<user-id>",
+      "action": "created",
+      "entity_type": "book",
+      "entity_id": "<book-id>",
+      "metadata": { "title": "Dune" },
+      "created_at": "2026-03-14T02:00:00Z"
+    }
+  ],
+  "total": 142,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+| Field         | Type    | Description |
+|---------------|---------|-------------|
+| `entries`     | array   | Page of audit log entries |
+| `total`       | integer | Total number of entries (for pagination) |
+| `limit`       | integer | Effective limit used |
+| `offset`      | integer | Effective offset used |
+| `user_id`     | string? | ID of the user who performed the action; `null` for system actions |
+| `metadata`    | object? | Optional extra context (e.g. entity name at time of action); omitted when empty |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Paginated audit log entries |
+| `400 Bad Request` | Invalid `limit` or `offset` value |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `403 Forbidden` | Caller is not an admin |
+| `500 Internal Server Error` | Database error |
 
 ---
 
