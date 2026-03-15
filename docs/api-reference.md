@@ -6,16 +6,16 @@ All endpoints are under the base path `/api`. JSON is used for all request and r
 
 ## Authentication
 
-Most endpoints require a JWT bearer token obtained from the [login](#post-apiauthlogin) or [signup](#post-apiauthsignup) endpoints.
+Most endpoints require a JWT bearer token obtained from the [login](#post-apiauthlogin) or [signup](#post-apiauthsignup) endpoints, **or** a long-lived [API key](#api-keys) (prefix `bib_`).
 
-The token can be supplied in two ways:
+The credential can be supplied in two ways:
 
-1. **Authorization header** (recommended for API clients):
+1. **Authorization header** (required for API keys; recommended for API clients):
    ```
-   Authorization: Bearer <token>
+   Authorization: Bearer <token-or-api-key>
    ```
 
-2. **Session cookie** (used automatically by the browser): On login and signup the server sets an `HttpOnly` session cookie named `biblioteka_token`. Subsequent browser requests to protected pages (including [`/asynqmon/`](#get-asynqmon)) use this cookie automatically — no manual header is required.
+2. **Session cookie** (used automatically by the browser): On login and signup the server sets an `HttpOnly` session cookie named `biblioteka_token`. Subsequent browser requests to protected pages (including [`/asynqmon/`](#get-asynqmon)) use this cookie automatically — no manual header is required. Cookies are **not** accepted for API keys.
 
 Endpoints that require authentication are marked with 🔒. Endpoints that additionally require the caller to be an admin are marked with 🔒 **Admin**.
 
@@ -205,6 +205,107 @@ Generate a short-lived, single-use nonce that authorises the OIDC account-linkin
 ```json
 { "nonce": "<token>" }
 ```
+
+---
+
+## API Keys
+
+API keys allow programmatic access to Biblioteka without a JWT. Keys begin with the prefix `bib_` and are supplied via the `Authorization` header. See the [authentication guide](authentication.md#api-keys) for full details.
+
+### `GET /api/api-keys` 🔒
+
+List all API keys belonging to the authenticated user. Results are ordered by creation time (newest first). The full key value is **never** returned by this endpoint — only the prefix and metadata.
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Returns an array of API key objects |
+| `401 Unauthorized` | Missing or invalid token |
+| `500 Internal Server Error` | Unexpected error |
+
+**Response body (`200`):**
+
+```json
+[
+  {
+    "id": "f47ac10b58cc4372a567b409e2087bc1",
+    "name": "CI Pipeline",
+    "key_prefix": "bib_a3f2c8e1d074",
+    "last_used_at": "2026-03-15T10:00:00Z",
+    "created_at": "2026-03-14T09:00:00Z"
+  }
+]
+```
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Opaque key ID |
+| `name` | string | Human-readable label |
+| `key_prefix` | string | `bib_` prefix + first 12 hex chars — for identification only |
+| `last_used_at` | string \| null | ISO 8601 timestamp of last use, or `null` if never used |
+| `created_at` | string | ISO 8601 creation timestamp |
+
+---
+
+### `POST /api/api-keys` 🔒
+
+Create a new API key for the authenticated user.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | ✓ | Descriptive label (max 100 characters) |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `201 Created` | Key created; full key value included in response |
+| `400 Bad Request` | Missing or invalid `name` |
+| `401 Unauthorized` | Missing or invalid token |
+| `500 Internal Server Error` | Key generation or database error |
+
+**Response body (`201`):**
+
+```json
+{
+  "id": "f47ac10b58cc4372a567b409e2087bc1",
+  "name": "CI Pipeline",
+  "key_prefix": "bib_a3f2c8e1d074",
+  "last_used_at": null,
+  "created_at": "2026-03-15T09:00:00Z",
+  "key": "bib_a3f2c8e1d074b651..."
+}
+```
+
+> **Important:** The `key` field is returned **only once** at creation. Store it securely — it cannot be retrieved later. The response also sets `Cache-Control: no-store` and `Pragma: no-cache` headers to prevent caching.
+
+---
+
+### `DELETE /api/api-keys/{id}` 🔒
+
+Permanently revoke an API key. The caller must own the key.
+
+**Path parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `id` | API key ID |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `204 No Content` | Key deleted successfully |
+| `400 Bad Request` | Invalid key ID format |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Key not found or does not belong to the caller |
+| `405 Method Not Allowed` | Invalid HTTP method |
+| `500 Internal Server Error` | Unexpected error |
 
 ---
 
