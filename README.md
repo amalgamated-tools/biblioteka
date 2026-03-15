@@ -221,6 +221,18 @@ A health check endpoint is available at `GET /api/health` — it returns `200 OK
 
 An interactive Swagger UI is served at `/swagger/` (public — no login required to browse). The raw OpenAPI spec is available at `/swagger/doc.json`. When invoking protected API endpoints from the UI, you must provide a valid JWT; public endpoints such as `/api/health`, `/api/auth/login`, and `/api/auth/signup` remain accessible without authentication.
 
+## Authentication
+
+Biblioteka supports local password accounts and OIDC/SSO. See [docs/authentication.md](docs/authentication.md) for JWT details, OIDC configuration, step-by-step provider setup examples (Keycloak, Authentik, Google), and account linking.
+
+## Administration
+
+For user management, audit log reference, library setup, and background job monitoring, see [docs/administration.md](docs/administration.md).
+
+## Database Schema
+
+A consolidated reference for all database tables, columns, indexes, and cascade-deletion rules is at [docs/database-schema.md](docs/database-schema.md).
+
 ## Frontend
 
 The UI is a Svelte 5 SPA with hash-based routing. State is managed through reactive `$state` class stores. See [docs/frontend.md](docs/frontend.md) for the architecture overview, store pattern, routing, and a guide to adding new views and stores.
