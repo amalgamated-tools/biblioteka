@@ -4,10 +4,11 @@ on:
   push:
     branches: [main]
     # Skip docs-only changes — they don't affect the container image
-    # Skip docs-only changes — they don't affect the container image
+    # Except for generated Swagger docs in docs/docs.go, which affect the binary
     paths:
       - 'cmd/**'
       - 'internal/**'
+      - 'docs/docs.go'
       - 'frontend/**'
       - 'db/**'
       - 'go.mod'
