@@ -116,7 +116,7 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "not-a-dir.txt")
-	if err := os.WriteFile(filePath, []byte("hello"), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte("hello"), 0o644); err != nil {
 		t.Fatalf("write file: %v", err)
 	}
 

@@ -121,7 +121,7 @@ func SendBoot(ctx context.Context, version string) {
 	}
 	slog.DebugContext(ctx, "Telemetry response", slog.String(otelkeys.Body, string(body)))
 
-	err = os.WriteFile(installIDPath, []byte(id), 0644)
+	err = os.WriteFile(installIDPath, []byte(id), 0o644)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to write install ID", slog.Any(otelkeys.Error, err))
 		return

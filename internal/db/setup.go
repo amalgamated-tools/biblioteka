@@ -15,9 +15,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-var (
-	_, b, _, _ = runtime.Caller(0)
-)
+var _, b, _, _ = runtime.Caller(0)
 
 func SetupDatabase(ctx context.Context) (*DB, error) {
 	slog.DebugContext(ctx, "Setting up database")
@@ -70,7 +68,7 @@ func setupSQLite(ctx context.Context) (*DB, error) {
 
 	// Ensure parent directory exists
 	dbDir := filepath.Dir(dbFilePath)
-	if err := os.MkdirAll(dbDir, 0755); err != nil {
+	if err := os.MkdirAll(dbDir, 0o755); err != nil {
 		slog.ErrorContext(ctx, "Failed to create database directory", slog.String(otelkeys.Path, dbDir), slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("failed to create database directory %s: %w", dbDir, err)
 	}

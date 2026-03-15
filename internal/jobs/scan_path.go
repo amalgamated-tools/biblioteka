@@ -108,7 +108,6 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 
 			return nil
 		})
-
 		if err != nil {
 			return fmt.Errorf("walk path %s: %w", p.Path, err)
 		}

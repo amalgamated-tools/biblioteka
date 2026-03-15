@@ -457,5 +457,4 @@ func (s *Server) setupFrontend(ctx context.Context) {
 		r.URL.Path = "/"
 		fileServer.ServeHTTP(w, r)
 	})
-
 }
