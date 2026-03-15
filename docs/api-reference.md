@@ -583,6 +583,10 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `series.deleted`       | `series`      | Series deleted via `DELETE /api/series/{id}` |
 | `book_file.created`    | `book_file`   | File attached via `POST /api/books/{id}/files` |
 | `book_file.deleted`    | `book_file`   | File deleted via `DELETE /api/book-files/{id}` |
+| `api_key.created`      | `api_key`     | API key created via `POST /api/api-keys` |
+| `api_key.deleted`      | `api_key`     | API key revoked via `DELETE /api/api-keys/{id}` |
+| `opds_credential.updated` | `opds_credential` | OPDS credentials set via `PUT /api/opds/credentials` |
+| `opds_credential.deleted` | `opds_credential` | OPDS credentials removed via `DELETE /api/opds/credentials` |
 | `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
 | `smtp.config_updated`  | `config`      | SMTP settings saved via `PUT /api/config/smtp` |
