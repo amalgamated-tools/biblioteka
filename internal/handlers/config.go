@@ -394,6 +394,79 @@ func validateSMTPHost(host string) error {
 	return nil
 }
 
+// smtpSendParams holds the normalized, validated parameters ready for sending.
+type smtpSendParams struct {
+	Addr string    // host:port
+	From string    // validated from address
+	TLS  string    // normalized TLS mode
+	Auth smtp.Auth // nil for unauthenticated SMTP
+}
+
+// validateSMTPForSend validates and normalizes an smtpConfig into parameters
+// ready for sending. This is shared between handleSetSMTPConfig (for validation)
+// and HandleSMTPTest (for validation + sending).
+func validateSMTPForSend(cfg smtpConfig) (smtpSendParams, error) {
+	if cfg.Host == "" {
+		return smtpSendParams{}, fmt.Errorf("host is required")
+	}
+	if err := validateSMTPHost(cfg.Host); err != nil {
+		return smtpSendParams{}, err
+	}
+
+	from := strings.TrimSpace(cfg.From)
+	if from == "" {
+		return smtpSendParams{}, fmt.Errorf("from address is required")
+	}
+	if strings.ContainsAny(from, "\r\n") {
+		return smtpSendParams{}, fmt.Errorf("from address contains invalid characters")
+	}
+	parsedFrom, err := mail.ParseAddress(from)
+	if err != nil {
+		return smtpSendParams{}, fmt.Errorf("from address is not a valid email address")
+	}
+	if parsedFrom.Name != "" {
+		return smtpSendParams{}, fmt.Errorf("from address must be a plain email address without a display name")
+	}
+	from = parsedFrom.Address
+
+	port := strings.TrimSpace(cfg.Port)
+	if port == "" {
+		port = "587"
+	}
+	portNum, err := strconv.Atoi(port)
+	if err != nil || portNum < 1 || portNum > 65535 {
+		return smtpSendParams{}, fmt.Errorf("port must be a number between 1 and 65535")
+	}
+	port = strconv.Itoa(portNum)
+
+	tlsMode := strings.TrimSpace(cfg.TLS)
+	if tlsMode == "" {
+		tlsMode = "starttls"
+	}
+	if tlsMode != "none" && tlsMode != "starttls" && tlsMode != "tls" {
+		return smtpSendParams{}, fmt.Errorf("tls must be one of: none, starttls, tls")
+	}
+
+	if cfg.Username != "" && cfg.Password == "" {
+		return smtpSendParams{}, fmt.Errorf("password is required when username is set")
+	}
+	if tlsMode == "none" && cfg.Username != "" && !isLoopbackHost(cfg.Host) {
+		return smtpSendParams{}, fmt.Errorf("authenticated SMTP without TLS is only allowed for localhost/loopback; use STARTTLS or TLS for remote servers")
+	}
+
+	var smtpAuth smtp.Auth
+	if cfg.Username != "" && cfg.Password != "" {
+		smtpAuth = smtp.PlainAuth("", cfg.Username, cfg.Password, cfg.Host)
+	}
+
+	return smtpSendParams{
+		Addr: net.JoinHostPort(cfg.Host, port),
+		From: from,
+		TLS:  tlsMode,
+		Auth: smtpAuth,
+	}, nil
+}
+
 type smtpConfigResponse struct {
 	Host        string `json:"host"`
 	Port        string `json:"port"`
@@ -492,103 +565,64 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 	}
 
 	host := strings.TrimSpace(req.Host)
-	port := strings.TrimSpace(req.Port)
 	username := strings.TrimSpace(req.Username)
 	password := strings.TrimSpace(req.Password)
-	from := strings.TrimSpace(req.From)
-	tlsMode := strings.TrimSpace(req.TLS)
 
-	if err := validateSMTPHost(host); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if from == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "from address is required")
-		return
-	}
-	if strings.ContainsAny(from, "\r\n") {
-		writeError(r.Context(), w, http.StatusBadRequest, "from address contains invalid characters")
-		return
-	}
-	parsedFrom, err := mail.ParseAddress(from)
-	if err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "from address is not a valid email address")
-		return
-	}
-	if parsedFrom.Name != "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "from address must be a plain email address without a display name")
-		return
-	}
-	from = parsedFrom.Address
-	if port == "" {
-		port = "587"
-	}
-	parsedPort, err := strconv.Atoi(port)
-	if err != nil || parsedPort < 1 || parsedPort > 65535 {
-		writeError(r.Context(), w, http.StatusBadRequest, "port must be a number between 1 and 65535")
-		return
-	}
-	// normalize port representation
-	port = strconv.Itoa(parsedPort)
-	if tlsMode == "" {
-		tlsMode = "starttls"
-	}
-	if tlsMode != "none" && tlsMode != "starttls" && tlsMode != "tls" {
-		writeError(r.Context(), w, http.StatusBadRequest, "tls must be one of: none, starttls, tls")
-		return
-	}
-	if tlsMode == "none" && username != "" && !isLoopbackHost(host) {
-		writeError(r.Context(), w, http.StatusBadRequest, "authenticated SMTP without TLS is only allowed for localhost/loopback; use STARTTLS or TLS for remote servers")
-		return
-	}
-
-	// If password is empty but username is set, try to preserve the existing DB value
-	// (like OIDC client_secret). We intentionally do NOT fall back to SMTP_PASSWORD
-	// env var to avoid copying env-managed secrets into the database.
+	// If password is empty but username is set, try to preserve the existing DB value.
+	// We intentionally do NOT fall back to SMTP_PASSWORD env var to avoid copying
+	// env-managed secrets into the database.
 	// When username is empty (switching to unauthenticated SMTP), we clear the
 	// password to avoid leaving stale credentials in the database.
 	if username == "" {
-		// Unauthenticated SMTP: always drop any provided password so we don't
-		// keep unused/stale credentials in the database.
 		password = ""
-	} else {
-		if password == "" {
-			existing, err := h.DB.GetSetting(r.Context(), settingSMTPPassword)
-			if err != nil {
-				if errors.Is(err, sql.ErrNoRows) {
-					// No existing password stored; leave password empty and let
-					// the validation below enforce that a password is required.
-				} else {
-					slog.ErrorContext(
-						r.Context(),
-						"failed to load existing SMTP password",
-						slog.Any(otelkeys.Error, err),
-					)
-					writeError(r.Context(), w, http.StatusInternalServerError, "failed to load SMTP configuration")
-					return
-				}
-			} else if existing != "" {
-				password = existing
+	} else if password == "" {
+		existing, err := h.DB.GetSetting(r.Context(), settingSMTPPassword)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				// No existing password stored; leave password empty and let
+				// validateSMTPForSend enforce that a password is required.
+			} else {
+				slog.ErrorContext(
+					r.Context(),
+					"failed to load existing SMTP password",
+					slog.Any(otelkeys.Error, err),
+				)
+				writeError(r.Context(), w, http.StatusInternalServerError, "failed to load SMTP configuration")
+				return
 			}
+		} else if existing != "" {
+			password = existing
 		}
-		if password == "" {
-			writeError(r.Context(), w, http.StatusBadRequest, "password is required when username is set")
-			return
-		}
+	}
+
+	params, err := validateSMTPForSend(smtpConfig{
+		Host:     host,
+		Port:     strings.TrimSpace(req.Port),
+		Username: username,
+		Password: password,
+		From:     strings.TrimSpace(req.From),
+		TLS:      strings.TrimSpace(req.TLS),
+	})
+	if err != nil {
+		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	slog.DebugContext(r.Context(), "saving SMTP config",
 		slog.String(otelkeys.Address, host),
-		slog.String(otelkeys.Email, from),
+		slog.String(otelkeys.Email, params.From),
 	)
+
+	// Extract normalized port from the validated addr (host:port).
+	_, port, _ := net.SplitHostPort(params.Addr)
 
 	for k, v := range map[string]string{
 		settingSMTPHost:     host,
 		settingSMTPPort:     port,
 		settingSMTPUsername: username,
 		settingSMTPPassword: password,
-		settingSMTPFrom:     from,
-		settingSMTPTLS:      tlsMode,
+		settingSMTPFrom:     params.From,
+		settingSMTPTLS:      params.TLS,
 	} {
 		if err := h.DB.SetSetting(r.Context(), k, v); err != nil {
 			slog.ErrorContext(r.Context(), "failed to save SMTP setting",
@@ -602,7 +636,7 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 
 	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSMTPConfigUpdated, "config", "smtp", map[string]any{
 		"host": host,
-		"from": from,
+		"from": params.From,
 	}); err != nil {
 		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
@@ -691,86 +725,28 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusBadRequest, "SMTP is not configured")
 		return
 	}
-	if err := validateSMTPHost(cfg.Host); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "SMTP host is invalid: "+err.Error())
-		return
-	}
 	if cfg.EnvOverride && cfg.From == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "incomplete SMTP environment configuration: SMTP_HOST is set but SMTP_FROM is missing")
 		return
 	}
 
-	// Validate SMTP "from" address to prevent header injection and invalid addresses.
-	from := strings.TrimSpace(cfg.From)
-	if from == "" {
-		slog.ErrorContext(r.Context(), "SMTP from address is empty")
-		writeError(r.Context(), w, http.StatusBadRequest, "SMTP from address is not configured")
-		return
-	}
-	if strings.ContainsAny(from, "\r\n") {
-		slog.ErrorContext(r.Context(), "SMTP from address contains forbidden control characters")
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid SMTP from address")
-		return
-	}
-	parsedFromAddr, err := mail.ParseAddress(from)
+	params, err := validateSMTPForSend(cfg)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "SMTP from address is not a valid email address",
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid SMTP from address")
-		return
-	}
-	if parsedFromAddr.Name != "" {
-		slog.ErrorContext(r.Context(), "SMTP from address includes a display name, which is not allowed")
-		writeError(r.Context(), w, http.StatusBadRequest, "SMTP from address must be a bare email address without a display name")
-		return
-	}
-	from = parsedFromAddr.Address
-
-	port := cfg.Port
-	if port == "" {
-		port = "587"
-	}
-	portNum, err := strconv.Atoi(port)
-	if err != nil || portNum < 1 || portNum > 65535 {
-		writeError(r.Context(), w, http.StatusBadRequest, "SMTP port is invalid, must be a number between 1 and 65535")
-		return
-	}
-	port = strconv.Itoa(portNum)
-	tlsMode := cfg.TLS
-	if tlsMode == "" {
-		tlsMode = "starttls"
-	}
-	if tlsMode != "none" && tlsMode != "starttls" && tlsMode != "tls" {
-		writeError(r.Context(), w, http.StatusBadRequest, "SMTP TLS mode is invalid, must be one of: none, starttls, tls")
-		return
-	}
-	if cfg.Username != "" && cfg.Password == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "SMTP password is missing but username is set")
-		return
-	}
-	if tlsMode == "none" && cfg.Username != "" && !isLoopbackHost(cfg.Host) {
-		writeError(r.Context(), w, http.StatusBadRequest, "authenticated SMTP without TLS is only allowed for localhost/loopback; use STARTTLS or TLS for remote servers")
+		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	to := user.Email
 	subject := "Biblioteka SMTP Test"
 	body := "This is a test email from Biblioteka to confirm your SMTP settings are working correctly."
-	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s", from, to, subject, body)
-
-	addr := net.JoinHostPort(cfg.Host, port)
-	var smtpAuth smtp.Auth
-	if cfg.Username != "" && cfg.Password != "" {
-		smtpAuth = smtp.PlainAuth("", cfg.Username, cfg.Password, cfg.Host)
-	}
+	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s", params.From, to, subject, body)
 
 	send := sendMail
 	if h.SendMailFunc != nil {
 		send = h.SendMailFunc
 	}
 
-	if err := send(r.Context(), addr, smtpAuth, from, to, []byte(msg), tlsMode); err != nil {
+	if err := send(r.Context(), params.Addr, params.Auth, params.From, to, []byte(msg), params.TLS); err != nil {
 		slog.ErrorContext(r.Context(), "failed to send test email",
 			slog.String(otelkeys.Email, to),
 			slog.Any(otelkeys.Error, err),
