@@ -46,7 +46,7 @@ func (d *DB) GetOPDSCredentialByUserID(ctx context.Context, userID string) (*OPD
 func (d *DB) GetOPDSCredentialByUsername(ctx context.Context, username string) (*OPDSCredential, error) {
 	slog.DebugContext(ctx, "db: fetching OPDS credential by username", slog.String(otelkeys.OPDSUsername, username))
 	return scanOPDSCredential(d.QueryRowContext(ctx,
-		`SELECT `+opdsCredentialColumns+` FROM opds_credentials WHERE username = $1`,
+		`SELECT `+opdsCredentialColumns+` FROM opds_credentials WHERE LOWER(username) = $1`,
 		username,
 	))
 }
