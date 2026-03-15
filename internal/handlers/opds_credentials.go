@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -71,8 +70,7 @@ func (h *OPDSCredentialHandler) upsertCredentials(w http.ResponseWriter, r *http
 	userID := auth.UserIDFromContext(ctx)
 
 	var req opdsCredentialRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 
