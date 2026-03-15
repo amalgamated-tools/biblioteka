@@ -14,6 +14,7 @@
   let userList: AdminUser[] = $state.raw(cachedUsers);
   let usersLoading = $state(false);
   let usersError: string | null = $state(null);
+  let togglingId: string | null = $state(null);
 
   $effect(() => {
     if (userList.length === 0 && cachedUsers.length > 0) {
@@ -41,6 +42,8 @@
   }
 
   async function toggleAdmin(u: AdminUser) {
+    if (togglingId === u.id) return;
+    togglingId = u.id;
     try {
       await setUserAdmin(u.id, !u.is_admin);
       userList = userList.map((item) =>
@@ -49,6 +52,8 @@
       onUsersLoaded(userList);
     } catch (err) {
       usersError = err instanceof Error ? err.message : "Failed to update user";
+    } finally {
+      togglingId = null;
     }
   }
 </script>
@@ -116,7 +121,8 @@
                   {:else}
                     <button
                       onclick={() => toggleAdmin(u)}
-                      class="px-3 py-1 rounded-full text-xs font-medium transition-colors {u.is_admin
+                      disabled={togglingId === u.id}
+                      class="px-3 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 {u.is_admin
                         ? 'bg-success-50 text-success-700 hover:bg-danger-50 hover:text-danger-700 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-danger-700/10 dark:hover:text-red-400'
                         : 'bg-ink-50 text-ink-500 hover:bg-success-50 hover:text-success-700 dark:bg-ink-800 dark:text-ink-400 dark:hover:bg-green-900/20 dark:hover:text-green-400'}"
                     >
