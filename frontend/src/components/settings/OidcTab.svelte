@@ -11,39 +11,23 @@
     onOidcSaved: (config: { configured: boolean; issuerUrl: string; clientId: string; redirectUri: string }) => void;
   }
 
-  const props = $props<Props>();
-  let { onOidcSaved } = props;
+  let {
+    initialOidcConfigured,
+    initialIssuerUrl = "",
+    initialClientId = "",
+    initialRedirectUri = "",
+    onOidcSaved,
+  }: Props = $props();
 
-  let oidcConfigured = $state(props.initialOidcConfigured);
-  let oidcIssuerUrl = $state(props.initialIssuerUrl ?? "");
-  let oidcClientId = $state(props.initialClientId ?? "");
+  let oidcConfigured = $state(initialOidcConfigured);
+  let oidcIssuerUrl = $state(initialIssuerUrl);
+  let oidcClientId = $state(initialClientId);
   let oidcClientSecret = $state("");
-  let oidcRedirectUri = $state(props.initialRedirectUri ?? "");
+  let oidcRedirectUri = $state(initialRedirectUri);
   let oidcError: string | null = $state(null);
   let oidcSuccess = $state(false);
   let oidcLoading = $state(false);
   let successTimer: ReturnType<typeof setTimeout> | undefined;
-  let initializedFromProps = $state(false);
-
-  $effect(() => {
-    if (initializedFromProps) return;
-
-    // Wait until we have some meaningful values from the parent before initializing.
-    if (
-      props.initialIssuerUrl === undefined &&
-      props.initialClientId === undefined &&
-      props.initialRedirectUri === undefined &&
-      !props.initialOidcConfigured
-    ) {
-      return;
-    }
-
-    oidcConfigured = props.initialOidcConfigured;
-   oidcIssuerUrl = props.initialIssuerUrl ?? "";
-    oidcClientId = props.initialClientId ?? "";
-    oidcRedirectUri = props.initialRedirectUri ?? "";
-    initializedFromProps = true;
-  });
 
   onDestroy(() => {
     if (successTimer) clearTimeout(successTimer);
