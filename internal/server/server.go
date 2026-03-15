@@ -78,6 +78,7 @@ type Server struct {
 	opdsHandler           *handlers.OPDSHandler
 	opdsCredentialHandler *handlers.OPDSCredentialHandler
 	requireAuth           func(http.Handler) http.Handler
+	requireJWTAuth        func(http.Handler) http.Handler
 	requireAdmin          func(http.Handler) http.Handler
 	requireOPDSAuth       func(http.Handler) http.Handler
 	authLimiter           *auth.RateLimiter
@@ -125,6 +126,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 
 	if s.requireAuth == nil {
 		s.requireAuth = auth.Middleware(s.JWT, s.DB)
+	}
+
+	if s.requireJWTAuth == nil {
+		s.requireJWTAuth = auth.Middleware(s.JWT, nil)
 	}
 
 	if s.requireAdmin == nil {
@@ -309,9 +314,9 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/opds", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
 	s.mux.Handle("/opds/", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
 
-	// Protected API key routes
-	s.mux.Handle("/api/api-keys", s.requireAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKeys)))
-	s.mux.Handle("/api/api-keys/", s.requireAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKey)))
+	// Protected API key routes (JWT-only: API keys cannot manage other API keys)
+	s.mux.Handle("/api/api-keys", s.requireJWTAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKeys)))
+	s.mux.Handle("/api/api-keys/", s.requireJWTAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKey)))
 
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)
