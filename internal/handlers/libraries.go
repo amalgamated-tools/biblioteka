@@ -273,7 +273,10 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
-	slog.DebugContext(r.Context(), "updating library", slog.String(otelkeys.LibraryID, id), slog.String(otelkeys.Name, req.Name))
+	slog.DebugContext(r.Context(), "updating library",
+		slog.String(otelkeys.LibraryID, id),
+		slog.String(otelkeys.Name, req.Name),
+	)
 
 	lib, err := h.DB.UpdateLibrary(r.Context(), id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
@@ -285,7 +288,9 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 			writeError(r.Context(), w, http.StatusConflict, "a library with that name already exists")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to update library", "error", err)
+		slog.ErrorContext(r.Context(), "failed to update library",
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update library")
 		return
 	}
@@ -339,7 +344,9 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 
 	books, err := h.DB.ListBooksByLibrary(r.Context(), id)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list library books", "error", err)
+		slog.ErrorContext(r.Context(), "failed to list library books",
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list library books")
 		return
 	}
@@ -352,7 +359,9 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 				writeError(r.Context(), w, http.StatusNotFound, "library not found")
 				return
 			}
-			slog.ErrorContext(r.Context(), "failed to get library", "error", err)
+			slog.ErrorContext(r.Context(), "failed to get library",
+				slog.Any(otelkeys.Error, err),
+			)
 			writeError(r.Context(), w, http.StatusInternalServerError, "failed to get library")
 			return
 		}

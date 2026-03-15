@@ -315,7 +315,10 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String(otelkeys.BookID, b.ID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to build book DTO",
+			slog.String(otelkeys.BookID, b.ID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book")
 		return
 	}
@@ -350,7 +353,10 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String(otelkeys.BookID, b.ID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to build book DTO",
+			slog.String(otelkeys.BookID, b.ID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get book")
 		return
 	}
@@ -384,7 +390,10 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		return
 	}
 
-	slog.DebugContext(r.Context(), "updating book", slog.String(otelkeys.BookID, id), slog.String(otelkeys.Title, req.Title))
+	slog.DebugContext(r.Context(), "updating book",
+		slog.String(otelkeys.BookID, id),
+		slog.String(otelkeys.Title, req.Title),
+	)
 
 	b, err := h.DB.UpdateBook(r.Context(), id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
 	if err != nil {
@@ -399,7 +408,10 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 
 	dto, err := h.toBookDTO(r.Context(), b)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to build book DTO", slog.String(otelkeys.BookID, b.ID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to build book DTO",
+			slog.String(otelkeys.BookID, b.ID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book")
 		return
 	}

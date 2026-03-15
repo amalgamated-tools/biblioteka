@@ -111,7 +111,10 @@ func (w *Worker) Enqueue(ctx context.Context, name string, payload any) (string,
 	if err != nil {
 		return "", fmt.Errorf("enqueue task %s: %w", name, err)
 	}
-	slog.DebugContext(ctx, "job enqueued", slog.String(otelkeys.Job, name), slog.String(otelkeys.TaskID, info.ID))
+	slog.DebugContext(ctx, "job enqueued",
+		slog.String(otelkeys.Job, name),
+		slog.String(otelkeys.TaskID, info.ID),
+	)
 	return info.ID, nil
 }
 

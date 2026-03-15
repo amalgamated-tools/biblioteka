@@ -55,7 +55,10 @@ func SetupLogger(ctx context.Context) {
 	}
 
 	logger = logger.With(slog.String(otelkeys.Version, Version))
-	logger.InfoContext(ctx, "Logger initialized", slog.String(otelkeys.Format, format), slog.String(otelkeys.Level, level.String()))
+	logger.InfoContext(ctx, "Logger initialized",
+		slog.String(otelkeys.Format, format),
+		slog.String(otelkeys.Level, level.String()),
+	)
 	slog.SetDefault(logger)
 
 	telemetry.SendBoot(ctx, Version)

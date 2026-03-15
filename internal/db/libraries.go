@@ -92,7 +92,10 @@ func (d *DB) ListLibraries(ctx context.Context) ([]Library, error) {
 // Returns sql.ErrNoRows if the library doesn't exist.
 // Returns ErrLibraryNameExists if the new name conflicts with another library.
 func (d *DB) UpdateLibrary(ctx context.Context, id, name, paths, organizationType string, monitored bool) (*Library, error) {
-	slog.DebugContext(ctx, "db: updating library", slog.String(otelkeys.ID, id), slog.String(otelkeys.Name, name))
+	slog.DebugContext(ctx, "db: updating library",
+		slog.String(otelkeys.ID, id),
+		slog.String(otelkeys.Name, name),
+	)
 	lib, err := scanLibrary(d.QueryRowContext(ctx,
 		`UPDATE libraries SET name = $1, paths = $2, organization_type = $3, monitored = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+libraryColumns,
 		name, paths, organizationType, monitored, id,

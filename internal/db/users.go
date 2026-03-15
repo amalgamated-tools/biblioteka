@@ -157,7 +157,10 @@ func (d *DB) IsAdmin(ctx context.Context, userID string) (bool, error) {
 
 // SetAdmin sets the is_admin flag on a user. Returns sql.ErrNoRows if user doesn't exist.
 func (d *DB) SetAdmin(ctx context.Context, userID string, isAdmin bool) error {
-	slog.DebugContext(ctx, "db: setting admin status", slog.String(otelkeys.UserID, userID), slog.Bool(otelkeys.IsAdmin, isAdmin))
+	slog.DebugContext(ctx, "db: setting admin status",
+		slog.String(otelkeys.UserID, userID),
+		slog.Bool(otelkeys.IsAdmin, isAdmin),
+	)
 	res, err := d.ExecContext(ctx, `UPDATE users SET is_admin = $1 WHERE id = $2`, isAdmin, userID)
 	if err != nil {
 		return err

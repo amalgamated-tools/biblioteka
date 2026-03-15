@@ -58,7 +58,10 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 		var found int
 		err := filepath.WalkDir(p.Path, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
-				slog.WarnContext(ctx, "error accessing path", slog.String(otelkeys.Path, path), slog.Any(otelkeys.Error, err))
+				slog.WarnContext(ctx, "error accessing path",
+					slog.String(otelkeys.Path, path),
+					slog.Any(otelkeys.Error, err),
+				)
 				return nil
 			}
 
@@ -74,13 +77,19 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			ext := strings.ToLower(filepath.Ext(path))
 			fileType, ok := supportedExtensions[ext]
 			if !ok {
-				slog.DebugContext(ctx, "scan:path skipping unsupported file", slog.String(otelkeys.Path, path), slog.String(otelkeys.Ext, ext))
+				slog.DebugContext(ctx, "scan:path skipping unsupported file",
+					slog.String(otelkeys.Path, path),
+					slog.String(otelkeys.Ext, ext),
+				)
 				return nil
 			}
 
 			info, err := d.Info()
 			if err != nil {
-				slog.WarnContext(ctx, "error reading file info", slog.String(otelkeys.Path, path), slog.Any(otelkeys.Error, err))
+				slog.WarnContext(ctx, "error reading file info",
+					slog.String(otelkeys.Path, path),
+					slog.Any(otelkeys.Error, err),
+				)
 				return nil
 			}
 
@@ -96,7 +105,10 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 				FileSize: info.Size(),
 			})
 			if err != nil {
-				slog.WarnContext(ctx, "error enqueuing process:file job", slog.String(otelkeys.Path, absPath), slog.Any(otelkeys.Error, err))
+				slog.WarnContext(ctx, "error enqueuing process:file job",
+					slog.String(otelkeys.Path, absPath),
+					slog.Any(otelkeys.Error, err),
+				)
 				return nil
 			}
 
@@ -112,7 +124,10 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			return fmt.Errorf("walk path %s: %w", p.Path, err)
 		}
 
-		slog.InfoContext(ctx, "path scan complete", slog.String(otelkeys.Path, p.Path), slog.Int(otelkeys.FilesFound, found))
+		slog.InfoContext(ctx, "path scan complete",
+			slog.String(otelkeys.Path, p.Path),
+			slog.Int(otelkeys.FilesFound, found),
+		)
 		return nil
 	}
 }

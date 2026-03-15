@@ -89,7 +89,10 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	slog.DebugContext(r.Context(), "fetching OIDC config", slog.String(otelkeys.UserID, userID))
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String(otelkeys.UserID, userID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to check admin status",
+			slog.String(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
@@ -129,7 +132,10 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	userID := auth.UserIDFromContext(r.Context())
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String(otelkeys.UserID, userID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to check admin status",
+			slog.String(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
 		return
 	}
@@ -172,13 +178,19 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		clientSecret = existing
 	}
 
-	slog.DebugContext(r.Context(), "saving OIDC config", slog.String(otelkeys.IssuerURL, issuerURL), slog.String(otelkeys.RedirectURI, redirectURI))
+	slog.DebugContext(r.Context(), "saving OIDC config",
+		slog.String(otelkeys.IssuerURL, issuerURL),
+		slog.String(otelkeys.RedirectURI, redirectURI),
+	)
 
 	// Validate the OIDC provider by performing discovery
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 	if _, err := oidc.NewProvider(ctx, issuerURL); err != nil {
-		slog.ErrorContext(ctx, "OIDC provider discovery failed", "issuer_url", issuerURL, "error", err)
+		slog.ErrorContext(ctx, "OIDC provider discovery failed",
+			slog.String(otelkeys.IssuerURL, issuerURL),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusBadRequest, "failed to discover OIDC provider at the given issuer URL")
 		return
 	}
@@ -191,7 +203,10 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		settingOIDCRedirectURI:  redirectURI,
 	} {
 		if err := h.DB.SetSetting(r.Context(), k, v); err != nil {
-			slog.ErrorContext(ctx, "failed to save OIDC setting", "key", k, "error", err)
+			slog.ErrorContext(ctx, "failed to save OIDC setting",
+				slog.String(otelkeys.Key, k),
+				slog.Any(otelkeys.Error, err),
+			)
 			writeError(r.Context(), w, http.StatusInternalServerError, "failed to save OIDC configuration")
 			return
 		}
@@ -200,7 +215,9 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	// Apply the new configuration
 	if h.OnOIDCConfigSet != nil {
 		if err := h.OnOIDCConfigSet(r.Context(), issuerURL, clientID, clientSecret, redirectURI); err != nil {
-			slog.ErrorContext(ctx, "failed to apply OIDC configuration", "error", err)
+			slog.ErrorContext(ctx, "failed to apply OIDC configuration",
+				slog.Any(otelkeys.Error, err),
+			)
 			writeError(r.Context(), w, http.StatusInternalServerError, "settings saved but failed to apply OIDC configuration")
 			return
 		}

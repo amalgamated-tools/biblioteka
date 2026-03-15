@@ -147,7 +147,10 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "author created", slog.String(otelkeys.AuthorID, a.ID), slog.String(otelkeys.Name, a.Name))
+	slog.DebugContext(r.Context(), "author created",
+		slog.String(otelkeys.AuthorID, a.ID),
+		slog.String(otelkeys.Name, a.Name),
+	)
 	writeJSON(r.Context(), w, http.StatusCreated, toAuthorDTO(a))
 }
 
@@ -208,7 +211,10 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
-	slog.DebugContext(r.Context(), "updating author", slog.String(otelkeys.AuthorID, id), slog.String(otelkeys.Name, req.Name))
+	slog.DebugContext(r.Context(), "updating author",
+		slog.String(otelkeys.AuthorID, id),
+		slog.String(otelkeys.Name, req.Name),
+	)
 
 	a, err := h.DB.UpdateAuthor(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {

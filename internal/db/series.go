@@ -81,7 +81,10 @@ func (d *DB) ListSeries(ctx context.Context) ([]Series, error) {
 }
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
-	slog.DebugContext(ctx, "db: updating series", slog.String(otelkeys.ID, id), slog.String(otelkeys.Name, name))
+	slog.DebugContext(ctx, "db: updating series",
+		slog.String(otelkeys.ID, id),
+		slog.String(otelkeys.Name, name),
+	)
 	s, err := scanSeries(d.QueryRowContext(ctx,
 		`UPDATE series SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+seriesColumns,
 		name, goodreadsID, hardcoverID, googleBooksID, id,

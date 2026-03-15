@@ -34,7 +34,10 @@ func scanBookFile(row interface{ Scan(...any) error }) (*BookFile, error) {
 
 // CreateBookFile inserts a new book file record and returns it.
 func (d *DB) CreateBookFile(ctx context.Context, bookID, fileType, fileName string, fileSize int64, fileHash *string, filePath string) (*BookFile, error) {
-	slog.DebugContext(ctx, "db: creating book file", slog.String(otelkeys.BookID, bookID), slog.String(otelkeys.FileName, fileName))
+	slog.DebugContext(ctx, "db: creating book file",
+		slog.String(otelkeys.BookID, bookID),
+		slog.String(otelkeys.FileName, fileName),
+	)
 	bf, err := scanBookFile(d.QueryRowContext(ctx,
 		`INSERT INTO book_files (book_id, file_type, file_name, file_size, file_hash, file_path) VALUES ($1, $2, $3, $4, $5, $6) RETURNING `+bookFileColumns,
 		bookID, fileType, fileName, fileSize, fileHash, filePath,

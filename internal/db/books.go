@@ -116,7 +116,10 @@ func (d *DB) ListBooksByLibrary(ctx context.Context, libraryID string) ([]Book, 
 
 // UpdateBook updates a book's fields and returns the updated book.
 func (d *DB) UpdateBook(ctx context.Context, id, title string, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language *string, numPages *int, coverImageURL *string) (*Book, error) {
-	slog.DebugContext(ctx, "db: updating book", slog.String(otelkeys.ID, id), slog.String(otelkeys.Title, title))
+	slog.DebugContext(ctx, "db: updating book",
+		slog.String(otelkeys.ID, id),
+		slog.String(otelkeys.Title, title),
+	)
 	b, err := scanBook(d.QueryRowContext(ctx,
 		`UPDATE books SET title = $1, description = $2, asin = $3, isbn10 = $4, isbn13 = $5, goodreads_id = $6, hardcover_id = $7, google_books_id = $8, publication_date = $9, publisher = $10, language = $11, num_pages = $12, cover_image_url = $13, updated_at = `+d.now()+` WHERE id = $14 RETURNING `+bookColumns,
 		title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, numPages, coverImageURL, id,
@@ -143,7 +146,10 @@ func (d *DB) DeleteBook(ctx context.Context, id string) error {
 
 // AddBookToLibrary creates an association between a book and a library.
 func (d *DB) AddBookToLibrary(ctx context.Context, libraryID, bookID string) error {
-	slog.DebugContext(ctx, "db: adding book to library", slog.String(otelkeys.LibraryID, libraryID), slog.String(otelkeys.BookID, bookID))
+	slog.DebugContext(ctx, "db: adding book to library",
+		slog.String(otelkeys.LibraryID, libraryID),
+		slog.String(otelkeys.BookID, bookID),
+	)
 	_, err := d.ExecContext(ctx,
 		`INSERT INTO library_books (library_id, book_id) VALUES ($1, $2)`,
 		libraryID, bookID,
@@ -153,7 +159,10 @@ func (d *DB) AddBookToLibrary(ctx context.Context, libraryID, bookID string) err
 
 // RemoveBookFromLibrary removes the association between a book and a library.
 func (d *DB) RemoveBookFromLibrary(ctx context.Context, libraryID, bookID string) error {
-	slog.DebugContext(ctx, "db: removing book from library", slog.String(otelkeys.LibraryID, libraryID), slog.String(otelkeys.BookID, bookID))
+	slog.DebugContext(ctx, "db: removing book from library",
+		slog.String(otelkeys.LibraryID, libraryID),
+		slog.String(otelkeys.BookID, bookID),
+	)
 	res, err := d.ExecContext(ctx,
 		`DELETE FROM library_books WHERE library_id = $1 AND book_id = $2`,
 		libraryID, bookID,
@@ -200,7 +209,10 @@ func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error
 // SetBookAuthors replaces all author associations for a book.
 // Duplicate author IDs are silently deduplicated.
 func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []string) error {
-	slog.DebugContext(ctx, "db: setting book authors", slog.String(otelkeys.BookID, bookID), slog.Int(otelkeys.AuthorCount, len(authorIDs)))
+	slog.DebugContext(ctx, "db: setting book authors",
+		slog.String(otelkeys.BookID, bookID),
+		slog.Int(otelkeys.AuthorCount, len(authorIDs)),
+	)
 	seen := make(map[string]struct{}, len(authorIDs))
 	unique := make([]string, 0, len(authorIDs))
 	for _, id := range authorIDs {
@@ -262,7 +274,10 @@ type BookSeriesInput struct {
 // SetBookSeries replaces all series associations for a book.
 // Duplicate series IDs are silently deduplicated (last position wins).
 func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSeriesInput) error {
-	slog.DebugContext(ctx, "db: setting book series", slog.String(otelkeys.BookID, bookID), slog.Int(otelkeys.SeriesCount, len(entries)))
+	slog.DebugContext(ctx, "db: setting book series",
+		slog.String(otelkeys.BookID, bookID),
+		slog.Int(otelkeys.SeriesCount, len(entries)),
+	)
 	seen := make(map[string]struct{}, len(entries))
 	unique := make([]BookSeriesInput, 0, len(entries))
 	for i := len(entries) - 1; i >= 0; i-- {

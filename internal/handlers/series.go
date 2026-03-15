@@ -144,7 +144,10 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "series created", slog.String(otelkeys.SeriesID, s.ID), slog.String(otelkeys.Name, s.Name))
+	slog.DebugContext(r.Context(), "series created",
+		slog.String(otelkeys.SeriesID, s.ID),
+		slog.String(otelkeys.Name, s.Name),
+	)
 	writeJSON(r.Context(), w, http.StatusCreated, toSeriesDTO(s))
 }
 
@@ -205,7 +208,10 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
-	slog.DebugContext(r.Context(), "updating series", slog.String(otelkeys.SeriesID, id), slog.String(otelkeys.Name, req.Name))
+	slog.DebugContext(r.Context(), "updating series",
+		slog.String(otelkeys.SeriesID, id),
+		slog.String(otelkeys.Name, req.Name),
+	)
 
 	s, err := h.DB.UpdateSeries(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
 	if err != nil {

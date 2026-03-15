@@ -319,7 +319,10 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	// Check for error response from provider
 	if errParam := r.URL.Query().Get("error"); errParam != "" {
-		slog.ErrorContext(r.Context(), "OIDC provider returned error", slog.String(otelkeys.ErrorCode, errParam), slog.String(otelkeys.Description, r.URL.Query().Get("error_description")))
+		slog.ErrorContext(r.Context(), "OIDC provider returned error",
+			slog.String(otelkeys.ErrorCode, errParam),
+			slog.String(otelkeys.Description, r.URL.Query().Get("error_description")),
+		)
 		writeError(r.Context(), w, http.StatusUnauthorized, "authentication failed")
 		return
 	}
@@ -396,7 +399,10 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	// Handle link flow: attach OIDC subject to an existing authenticated user
 	if linkUserID != "" {
-		slog.DebugContext(r.Context(), "OIDC link flow: linking account", slog.String(otelkeys.UserID, linkUserID), slog.String(otelkeys.Subject, claims.Sub))
+		slog.DebugContext(r.Context(), "OIDC link flow: linking account",
+			slog.String(otelkeys.UserID, linkUserID),
+			slog.String(otelkeys.Subject, claims.Sub),
+		)
 		user, err := h.DB.GetUserByID(r.Context(), linkUserID)
 		if err != nil {
 			slog.ErrorContext(r.Context(), "failed to get user for OIDC link", slog.Any(otelkeys.Error, err))
@@ -413,7 +419,10 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := h.DB.LinkOIDCSubject(r.Context(), linkUserID, claims.Sub); err != nil {
-			slog.ErrorContext(r.Context(), "failed to link OIDC subject to user", slog.String(otelkeys.UserID, linkUserID), slog.Any(otelkeys.Error, err))
+			slog.ErrorContext(r.Context(), "failed to link OIDC subject to user",
+				slog.String(otelkeys.UserID, linkUserID),
+				slog.Any(otelkeys.Error, err),
+			)
 			http.Redirect(w, r, "/?oidc_link_error="+url.QueryEscape("Failed to link account"), http.StatusFound)
 			return
 		}
@@ -433,7 +442,10 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Issue a biblioteka JWT
 	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create token for OIDC user", slog.String(otelkeys.UserID, user.ID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to create token for OIDC user",
+			slog.String(otelkeys.UserID, user.ID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create session")
 		return
 	}

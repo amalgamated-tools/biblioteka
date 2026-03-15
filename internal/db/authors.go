@@ -82,7 +82,10 @@ func (d *DB) ListAuthors(ctx context.Context) ([]Author, error) {
 }
 
 func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {
-	slog.DebugContext(ctx, "db: updating author", slog.String(otelkeys.ID, id), slog.String(otelkeys.Name, name))
+	slog.DebugContext(ctx, "db: updating author",
+		slog.String(otelkeys.ID, id),
+		slog.String(otelkeys.Name, name),
+	)
 	a, err := scanAuthor(d.QueryRowContext(ctx,
 		`UPDATE authors SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, image_url = $5, updated_at = `+d.now()+` WHERE id = $6 RETURNING `+authorColumns,
 		name, goodreadsID, hardcoverID, googleBooksID, imageURL, id,

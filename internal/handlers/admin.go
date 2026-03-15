@@ -144,7 +144,10 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "admin status updated", slog.String(otelkeys.TargetID, targetID), slog.Bool(otelkeys.IsAdmin, req.IsAdmin))
+	slog.DebugContext(r.Context(), "admin status updated",
+		slog.String(otelkeys.TargetID, targetID),
+		slog.Bool(otelkeys.IsAdmin, req.IsAdmin),
+	)
 
 	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "admin status updated"})
 }
