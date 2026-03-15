@@ -671,8 +671,6 @@ func TestAllBooks_Pagination(t *testing.T) {
 
 	// Create enough books to have a second page (opdsPageSize is 50).
 	for i := range 55 {
-		title := "Book " + strings.Repeat("0", 3-len(strings.TrimLeft(strings.Repeat("0", 3), "0")))
-		_ = title
 		h.DB.CreateBook(ctx, "Book "+padInt(i), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	}
 
