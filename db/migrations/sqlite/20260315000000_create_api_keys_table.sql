@@ -1,7 +1,7 @@
 -- migrate:up
 CREATE TABLE IF NOT EXISTS api_keys (
 	id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-	user_id TEXT NOT NULL,
+	user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	name TEXT NOT NULL,
 	key_hash TEXT NOT NULL,
 	key_prefix TEXT NOT NULL,

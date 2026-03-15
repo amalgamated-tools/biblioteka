@@ -50,6 +50,23 @@ func toAPIKeyDTO(k *db.APIKey) apiKeyDTO {
 const maxAPIKeyNameLength = 100
 
 // HandleAPIKeys handles GET /api/api-keys and POST /api/api-keys.
+//
+// @Summary List and create API keys
+// @Description
+// @Description List all API keys for the authenticated user with GET /api/api-keys.
+// @Description Create a new API key for the authenticated user with POST /api/api-keys.
+// @Tags api-keys
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Success 200 {array} apiKeyDTO "List API keys"
+// @Success 201 {object} apiKeyCreateResponse "API key created"
+// @Failure 400 {object} errorResponse "Bad request"
+// @Failure 401 {object} errorResponse "Unauthorized"
+// @Failure 405 {object} errorResponse "Method not allowed"
+// @Failure 500 {object} errorResponse "Internal server error"
+// @Router /api/api-keys [get]
+// @Router /api/api-keys [post]
 func (h *APIKeyHandler) HandleAPIKeys(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -62,6 +79,20 @@ func (h *APIKeyHandler) HandleAPIKeys(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleAPIKey handles DELETE /api/api-keys/{id}.
+//
+// @Summary Delete an API key
+// @Description Delete a specific API key owned by the authenticated user.
+// @Tags api-keys
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "API key ID"
+// @Success 204 {string} string "API key deleted"
+// @Failure 400 {object} errorResponse "Invalid API key ID"
+// @Failure 401 {object} errorResponse "Unauthorized"
+// @Failure 404 {object} errorResponse "API key not found"
+// @Failure 405 {object} errorResponse "Method not allowed"
+// @Failure 500 {object} errorResponse "Internal server error"
+// @Router /api/api-keys/{id} [delete]
 func (h *APIKeyHandler) HandleAPIKey(w http.ResponseWriter, r *http.Request) {
 	id, ok := extractPathID(r.URL.Path, "/api/api-keys/")
 	if !ok {
