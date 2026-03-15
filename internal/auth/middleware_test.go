@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 
 func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +35,7 @@ func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 
 func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +60,7 @@ func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 
 func TestMiddleware_InvalidToken(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +83,7 @@ func TestMiddleware_InvalidToken(t *testing.T) {
 
 func TestMiddleware_ValidToken(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "user-abc")
 
@@ -137,58 +138,68 @@ func assertJSONError(t *testing.T, body []byte, wantMsg string) {
 
 func TestExtractToken(t *testing.T) {
 	tests := []struct {
-		name      string
-		header    string // Authorization header value ("" = not set)
-		cookie    string // cookie value ("" = no cookie)
-		wantToken string
+		name       string
+		header     string // Authorization header value ("" = not set)
+		cookie     string // cookie value ("" = no cookie)
+		wantToken  string
+		wantSource tokenSource
 	}{
 		{
-			name:      "no header no cookie",
-			wantToken: "",
+			name:       "no header no cookie",
+			wantToken:  "",
+			wantSource: tokenSourceNone,
 		},
 		{
-			name:      "Bearer header only",
-			header:    "Bearer validtoken",
-			wantToken: "validtoken",
+			name:       "Bearer header only",
+			header:     "Bearer validtoken",
+			wantToken:  "validtoken",
+			wantSource: tokenSourceHeader,
 		},
 		{
-			name:      "cookie only",
-			cookie:    "cookietoken",
-			wantToken: "cookietoken",
+			name:       "cookie only",
+			cookie:     "cookietoken",
+			wantToken:  "cookietoken",
+			wantSource: tokenSourceCookie,
 		},
 		{
-			name:      "both present, header takes precedence",
-			header:    "Bearer headertoken",
-			cookie:    "cookietoken",
-			wantToken: "headertoken",
+			name:       "both present, header takes precedence",
+			header:     "Bearer headertoken",
+			cookie:     "cookietoken",
+			wantToken:  "headertoken",
+			wantSource: tokenSourceHeader,
 		},
 		{
-			name:      "non-Bearer header with valid cookie falls back to cookie",
-			header:    "Basic sometoken",
-			cookie:    "cookietoken",
-			wantToken: "cookietoken",
+			name:       "non-Bearer header with valid cookie falls back to cookie",
+			header:     "Basic sometoken",
+			cookie:     "cookietoken",
+			wantToken:  "cookietoken",
+			wantSource: tokenSourceCookie,
 		},
 		{
-			name:      "non-Bearer header without cookie",
-			header:    "Basic sometoken",
-			wantToken: "",
+			name:       "non-Bearer header without cookie",
+			header:     "Basic sometoken",
+			wantToken:  "",
+			wantSource: tokenSourceNone,
 		},
 		{
-			name:      "Bearer with empty token falls back to cookie",
-			header:    "Bearer ",
-			cookie:    "cookietoken",
-			wantToken: "cookietoken",
+			name:       "Bearer with empty token falls back to cookie",
+			header:     "Bearer ",
+			cookie:     "cookietoken",
+			wantToken:  "cookietoken",
+			wantSource: tokenSourceCookie,
 		},
 		{
-			name:      "Bearer with whitespace-only token falls back to cookie",
-			header:    "Bearer   ",
-			cookie:    "cookietoken",
-			wantToken: "cookietoken",
+			name:       "Bearer with whitespace-only token falls back to cookie",
+			header:     "Bearer   ",
+			cookie:     "cookietoken",
+			wantToken:  "cookietoken",
+			wantSource: tokenSourceCookie,
 		},
 		{
-			name:      "empty cookie value ignored",
-			cookie:    "",
-			wantToken: "",
+			name:       "empty cookie value ignored",
+			cookie:     "",
+			wantToken:  "",
+			wantSource: tokenSourceNone,
 		},
 	}
 
@@ -201,9 +212,12 @@ func TestExtractToken(t *testing.T) {
 			if tt.cookie != "" {
 				r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: tt.cookie})
 			}
-			got, _ := extractToken(r)
+			got, gotSource, _ := extractToken(r)
 			if got != tt.wantToken {
-				t.Errorf("extractToken() = %q, want %q", got, tt.wantToken)
+				t.Errorf("extractToken() token = %q, want %q", got, tt.wantToken)
+			}
+			if gotSource != tt.wantSource {
+				t.Errorf("extractToken() source = %v, want %v", gotSource, tt.wantSource)
 			}
 		})
 	}
@@ -213,7 +227,7 @@ func TestExtractToken(t *testing.T) {
 
 func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "cookie-user")
 
@@ -237,7 +251,7 @@ func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 
 func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -260,7 +274,7 @@ func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 
 func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	headerToken, _ := jm.CreateToken(t.Context(), "header-user")
 	cookieToken, _ := jm.CreateToken(t.Context(), "cookie-user")
@@ -299,7 +313,7 @@ func (m *mockAdminChecker) IsAdmin(_ context.Context, userID string) (bool, erro
 func TestAdminMiddleware_NoToken(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{admins: map[string]bool{}}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -322,7 +336,7 @@ func TestAdminMiddleware_NoToken(t *testing.T) {
 func TestAdminMiddleware_InvalidToken(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{admins: map[string]bool{}}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -346,7 +360,7 @@ func TestAdminMiddleware_InvalidToken(t *testing.T) {
 func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "regular-user")
 
@@ -372,7 +386,7 @@ func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 func TestAdminMiddleware_AdminUser(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "admin-user")
 
@@ -397,7 +411,7 @@ func TestAdminMiddleware_AdminUser(t *testing.T) {
 func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "admin-user")
 
@@ -422,7 +436,7 @@ func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 func TestAdminMiddleware_CheckerError(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{err: errors.New("db down")}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "some-user")
 
@@ -443,4 +457,148 @@ func TestAdminMiddleware_CheckerError(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
 	}
 	assertJSONError(t, w.Body.Bytes(), "failed to verify permissions")
+}
+
+// --- API Key auth tests ---
+
+// mockAPIKeyValidator implements APIKeyValidator for testing.
+type mockAPIKeyValidator struct {
+	keys    map[string]struct{ userID, keyID string } // keyHash -> (userID, keyID)
+	touched []string                                  // keyIDs passed to TouchAPIKeyLastUsed
+	err     error
+}
+
+func (m *mockAPIKeyValidator) ValidateAPIKey(_ context.Context, keyHash string) (string, string, error) {
+	if m.err != nil {
+		return "", "", m.err
+	}
+	entry, ok := m.keys[keyHash]
+	if !ok {
+		return "", "", sql.ErrNoRows
+	}
+	return entry.userID, entry.keyID, nil
+}
+
+func (m *mockAPIKeyValidator) TouchAPIKeyLastUsed(_ context.Context, id string) error {
+	m.touched = append(m.touched, id)
+	return nil
+}
+
+func TestMiddleware_ValidAPIKey(t *testing.T) {
+	jm, _ := NewJWTManager("secret", time.Hour)
+	apiKey := "bib_abcdef1234567890abcdef1234567890"
+	keyHash := HashAPIKey(apiKey)
+	validator := &mockAPIKeyValidator{
+		keys: map[string]struct{ userID, keyID string }{
+			keyHash: {userID: "apikey-user", keyID: "key-1"},
+		},
+	}
+	mw := Middleware(jm, validator)
+
+	var gotUserID string
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUserID = UserIDFromContext(r.Context())
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set("Authorization", "Bearer "+apiKey)
+	w := httptest.NewRecorder()
+	mw(next).ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+	if gotUserID != "apikey-user" {
+		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "apikey-user")
+	}
+
+	if len(validator.touched) != 1 || validator.touched[0] != "key-1" {
+		t.Errorf("TouchAPIKeyLastUsed called with %v, want [key-1]", validator.touched)
+	}
+}
+
+func TestMiddleware_InvalidAPIKey(t *testing.T) {
+	jm, _ := NewJWTManager("secret", time.Hour)
+	validator := &mockAPIKeyValidator{
+		keys: map[string]struct{ userID, keyID string }{},
+	}
+	mw := Middleware(jm, validator)
+
+	called := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set("Authorization", "Bearer bib_invalidkey00000000000000000000")
+	w := httptest.NewRecorder()
+	mw(next).ServeHTTP(w, r)
+
+	if called {
+		t.Error("next handler should not have been called")
+	}
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+	}
+	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
+}
+
+func TestMiddleware_APIKeyViaCookieRejected(t *testing.T) {
+	jm, _ := NewJWTManager("secret", time.Hour)
+	apiKey := "bib_abcdef1234567890abcdef1234567890"
+	keyHash := HashAPIKey(apiKey)
+	validator := &mockAPIKeyValidator{
+		keys: map[string]struct{ userID, keyID string }{
+			keyHash: {userID: "apikey-user", keyID: "key-1"},
+		},
+	}
+	mw := Middleware(jm, validator)
+
+	called := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: apiKey})
+	w := httptest.NewRecorder()
+	mw(next).ServeHTTP(w, r)
+
+	if called {
+		t.Error("next handler should not have been called for API key via cookie")
+	}
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+	}
+	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
+}
+
+func TestAdminMiddleware_ValidAPIKey(t *testing.T) {
+	jm, _ := NewJWTManager("secret", time.Hour)
+	apiKey := "bib_abcdef1234567890abcdef1234567890"
+	keyHash := HashAPIKey(apiKey)
+	validator := &mockAPIKeyValidator{
+		keys: map[string]struct{ userID, keyID string }{
+			keyHash: {userID: "admin-user", keyID: "key-2"},
+		},
+	}
+	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
+	mw := AdminMiddleware(jm, checker, validator)
+
+	var gotUserID string
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUserID = UserIDFromContext(r.Context())
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set("Authorization", "Bearer "+apiKey)
+	w := httptest.NewRecorder()
+	mw(next).ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+	if gotUserID != "admin-user" {
+		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "admin-user")
+	}
 }
