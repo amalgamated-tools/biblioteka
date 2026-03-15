@@ -8,6 +8,7 @@
     initialIssuerUrl?: string;
     initialClientId?: string;
     initialRedirectUri?: string;
+    onOidcSaved: (config: { configured: boolean; issuerUrl: string; clientId: string; redirectUri: string }) => void;
   }
 
   let {
@@ -15,6 +16,7 @@
     initialIssuerUrl = "",
     initialClientId = "",
     initialRedirectUri = "",
+    onOidcSaved,
   }: Props = $props();
 
   let oidcConfigured = $state(initialOidcConfigured);
@@ -65,6 +67,12 @@
       oidcSuccess = true;
       oidcConfigured = true;
       oidcClientSecret = "";
+      onOidcSaved({
+        configured: true,
+        issuerUrl: oidcIssuerUrl.trim(),
+        clientId: oidcClientId.trim(),
+        redirectUri: oidcRedirectUri.trim(),
+      });
       successTimer = setTimeout(() => (oidcSuccess = false), 3000);
     } catch (err) {
       oidcError =

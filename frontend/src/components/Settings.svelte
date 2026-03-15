@@ -128,6 +128,12 @@
           initialIssuerUrl={oidcIssuerUrl}
           initialClientId={oidcClientId}
           initialRedirectUri={oidcRedirectUri}
+          onOidcSaved={(cfg) => {
+            oidcConfigured = cfg.configured;
+            oidcIssuerUrl = cfg.issuerUrl;
+            oidcClientId = cfg.clientId;
+            oidcRedirectUri = cfg.redirectUri;
+          }}
         />
       {/if}
 
