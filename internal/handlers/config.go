@@ -66,8 +66,13 @@ func isValidSMTPHostForStatus(host string) bool {
 	if strings.ContainsAny(host, " []") {
 		return false
 	}
+
+	// Allow bare IPv6 literals with colons (e.g. "::1"), but continue to reject
+	// values that look like "host:port" or otherwise aren't valid IPs.
 	if strings.Contains(host, ":") {
-		return false
+		if ip := net.ParseIP(host); ip == nil {
+			return false
+		}
 	}
 
 	return true
@@ -715,6 +720,11 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid SMTP from address")
 		return
 	}
+	if parsedFromAddr.Name != "" {
+		slog.ErrorContext(r.Context(), "SMTP from address includes a display name, which is not allowed")
+		writeError(r.Context(), w, http.StatusBadRequest, "SMTP from address must be a bare email address without a display name")
+		return
+	}
 	from = parsedFromAddr.Address
 
 	port := cfg.Port
@@ -801,10 +811,23 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		if err != nil {
 			return fmt.Errorf("TLS connection failed: %w", err)
 		}
-		if err := conn.SetDeadline(time.Now().Add(smtpSessionTimeout)); err != nil {
+		sessionDeadline := time.Now().Add(smtpSessionTimeout)
+		if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(sessionDeadline) {
+			sessionDeadline = ctxDeadline
+		}
+		if err := conn.SetDeadline(sessionDeadline); err != nil {
 			conn.Close()
 			return fmt.Errorf("failed to set connection deadline: %w", err)
 		}
+		done := make(chan struct{})
+		go func(c net.Conn, done <-chan struct{}, ctx context.Context) {
+			select {
+			case <-ctx.Done():
+				c.Close()
+			case <-done:
+			}
+		}(conn, done, ctx)
+		defer close(done)
 		client, err := smtp.NewClient(conn, host)
 		if err != nil {
 			conn.Close()
@@ -818,10 +841,23 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
-		if err := conn.SetDeadline(time.Now().Add(smtpSessionTimeout)); err != nil {
+		sessionDeadline := time.Now().Add(smtpSessionTimeout)
+		if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(sessionDeadline) {
+			sessionDeadline = ctxDeadline
+		}
+		if err := conn.SetDeadline(sessionDeadline); err != nil {
 			conn.Close()
 			return fmt.Errorf("failed to set connection deadline: %w", err)
 		}
+		done := make(chan struct{})
+		go func(c net.Conn, done <-chan struct{}, ctx context.Context) {
+			select {
+			case <-ctx.Done():
+				c.Close()
+			case <-done:
+			}
+		}(conn, done, ctx)
+		defer close(done)
 		client, err := smtp.NewClient(conn, host)
 		if err != nil {
 			conn.Close()
@@ -838,10 +874,23 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
-		if err := conn.SetDeadline(time.Now().Add(smtpSessionTimeout)); err != nil {
+		sessionDeadline := time.Now().Add(smtpSessionTimeout)
+		if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(sessionDeadline) {
+			sessionDeadline = ctxDeadline
+		}
+		if err := conn.SetDeadline(sessionDeadline); err != nil {
 			conn.Close()
 			return fmt.Errorf("failed to set connection deadline: %w", err)
 		}
+		done := make(chan struct{})
+		go func(c net.Conn, done <-chan struct{}, ctx context.Context) {
+			select {
+			case <-ctx.Done():
+				c.Close()
+			case <-done:
+			}
+		}(conn, done, ctx)
+		defer close(done)
 		client, err := smtp.NewClient(conn, host)
 		if err != nil {
 			conn.Close()
