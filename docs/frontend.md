@@ -124,6 +124,7 @@ Views that need their own internal navigation use `routerStore.subPath`. The con
 | `libraries` | `edit/{id}` | Edit-library form |
 | `settings` | `account` | Account settings tab |
 | `settings` | `oidc` | OIDC / SSO settings tab |
+| `settings` | `smtp` | SMTP mail configuration tab (admin) |
 | `settings` | `users` | User management tab (admin) |
 | `settings` | `preferences` | Appearance preferences tab |
 
@@ -197,9 +198,10 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 | `AccountTab.svelte` | `settings/account` | All users | Change password; link OIDC account |
 | `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
+| *(inline in `Settings.svelte`)* | `settings/smtp` | Admins only | Configure SMTP mail server |
 | `UsersTab.svelte` | `settings/users` | Admins only | List users; toggle admin role |
 
-`Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data.
+`Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data. The SMTP tab is the exception: its state and logic live directly in `Settings.svelte` rather than in a dedicated sub-component.
 
 ### Adding a new settings tab
 
