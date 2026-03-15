@@ -32,7 +32,10 @@ func scanAPIKey(row interface{ Scan(...any) error }) (*APIKey, error) {
 
 // CreateAPIKey inserts a new API key and returns it.
 func (d *DB) CreateAPIKey(ctx context.Context, userID, name, keyHash, keyPrefix string) (*APIKey, error) {
-	slog.DebugContext(ctx, "db: creating api key", slog.String(otelkeys.UserID, userID), slog.String(otelkeys.Name, name))
+	slog.DebugContext(ctx, "db: creating api key",
+		slog.String(otelkeys.UserID, userID),
+		slog.String(otelkeys.Name, name),
+	)
 	return scanAPIKey(d.QueryRowContext(ctx,
 		`INSERT INTO api_keys (user_id, name, key_hash, key_prefix) VALUES ($1, $2, $3, $4) RETURNING `+apiKeyColumns,
 		userID, name, keyHash, keyPrefix,
@@ -74,7 +77,10 @@ func (d *DB) GetAPIKey(ctx context.Context, id, userID string) (*APIKey, error) 
 // DeleteAPIKey removes an API key by ID, scoped to the given user.
 // Returns sql.ErrNoRows if the key doesn't exist or doesn't belong to the user.
 func (d *DB) DeleteAPIKey(ctx context.Context, id, userID string) error {
-	slog.DebugContext(ctx, "db: deleting api key", slog.String(otelkeys.ID, id), slog.String(otelkeys.UserID, userID))
+	slog.DebugContext(ctx, "db: deleting api key",
+		slog.String(otelkeys.ID, id),
+		slog.String(otelkeys.UserID, userID),
+	)
 	res, err := d.ExecContext(ctx, `DELETE FROM api_keys WHERE id = $1 AND user_id = $2`, id, userID)
 	if err != nil {
 		return err
