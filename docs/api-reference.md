@@ -224,11 +224,11 @@ Returns application configuration status visible to the authenticated user.
 }
 ```
 
-| Field             | Type    | Description |
-|-------------------|---------|-------------|
-| `oidc_configured` | boolean | `true` when a valid OIDC provider is configured (via environment variables or the admin settings page) |
-| `smtp_configured` | boolean | `true` when `SMTP_HOST` and `smtp_from` are set and `SMTP_HOST` is a non-loopback hostname |
-| `is_admin`        | boolean | `true` when the authenticated user has admin privileges |
+| Field | Type | Description |
+|-------|------|-------------|
+| `oidc_configured` | boolean | `true` when an OIDC provider is configured and active |
+| `smtp_configured` | boolean | `true` when an SMTP host and a valid `From` address are configured |
+| `is_admin` | boolean | `true` when the authenticated user has admin privileges |
 
 ---
 
@@ -276,7 +276,7 @@ Save OIDC provider settings. The server performs OIDC discovery on the `issuer_u
 
 ### `GET /api/config/smtp` 🔒 **Admin**
 
-Return the current SMTP configuration. The `password` value is never returned; `password_set` indicates whether one is stored. When `env_override` is `true`, all fields are sourced from environment variables and the stored database settings are ignored.
+Return the current SMTP configuration. The `password` value is never returned; `password_set` indicates whether one is stored. When `env_override` is `true`, all SMTP settings are sourced from environment variables and any database-stored values are ignored.
 
 **Response body (`200`):**
 
@@ -284,47 +284,54 @@ Return the current SMTP configuration. The `password` value is never returned; `
 {
   "host": "smtp.example.com",
   "port": "587",
-  "username": "notifications@example.com",
+  "username": "user@example.com",
   "password_set": true,
-  "from": "notifications@example.com",
+  "from": "biblioteka@example.com",
   "tls": "starttls",
   "env_override": false
 }
 ```
 
-| Field          | Type    | Description |
-|----------------|---------|-------------|
-| `host`         | string  | SMTP server hostname |
-| `port`         | string  | SMTP server port (default `587`) |
-| `username`     | string  | SMTP authentication username |
-| `password_set` | boolean | `true` when a password is stored; the value itself is never returned |
-| `from`         | string  | Sender address used in the `From` header |
-| `tls`          | string  | TLS mode: `none`, `starttls` (default), or `tls` |
-| `env_override` | boolean | `true` when `SMTP_HOST` is set as an environment variable; all fields in this case reflect env values, and database settings are inactive |
+| Field | Type | Description |
+|-------|------|-------------|
+| `host` | string | SMTP server hostname or IP address |
+| `port` | string | SMTP server port (defaults to `"587"` when not set) |
+| `username` | string | SMTP authentication username (empty for unauthenticated SMTP) |
+| `password_set` | boolean | `true` when an SMTP auth credential is stored; the value itself is never returned |
+| `from` | string | Envelope `From` address used for outgoing mail |
+| `tls` | string | TLS mode: `"none"`, `"starttls"`, or `"tls"` |
+| `env_override` | boolean | `true` when `SMTP_HOST` is set as an environment variable and overrides database settings |
 
 ---
 
 ### `PUT /api/config/smtp` 🔒 **Admin**
 
-Save SMTP provider settings. If `password` is omitted and `username` is unchanged, the existing stored password is preserved; clearing `username` also clears the stored password.
+Save SMTP server settings. If `password` is omitted while `username` is supplied and matches the currently stored username, the stored credential is preserved. Setting `username` to an empty string clears both the stored username and credential.
 
 **Request body:**
 
-| Field      | Type   | Required | Description |
-|------------|--------|----------|-------------|
-| `host`     | string | ✓        | SMTP server hostname (non-IP required for remote servers) |
-| `port`     | string |          | SMTP server port (default `587`) |
-| `username` | string |          | SMTP authentication username; omit for unauthenticated relay |
-| `password` | string |          | SMTP password; omit to preserve the existing stored value when `username` is unchanged |
-| `from`     | string | ✓        | Sender address (plain email, no display name) |
-| `tls`      | string |          | TLS mode: `none`, `starttls` (default), or `tls` |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `host` | string | ✓ | SMTP server hostname or IP address (no scheme, port, or path) |
+| `port` | string | | SMTP port; defaults to `"587"` when omitted |
+| `username` | string | | SMTP authentication username; leave empty for unauthenticated SMTP |
+| `password` | string | ✓* | SMTP auth credential; required when `username` is set and none is currently stored |
+| `from` | string | ✓ | Envelope `From` address (must be a plain `user@host` address without a display name) |
+| `tls` | string | | `"none"`, `"starttls"` (default), or `"tls"` |
+
+\* Required when `username` is set and no credential is currently stored; may be omitted to preserve an existing credential for the same username.
+
+**Validation rules:**
+- `host` must be a valid hostname or IP address — no scheme (`smtp://`), embedded port, or path component.
+- Authenticated SMTP (`username` set) without TLS is only allowed for localhost/loopback addresses. Use `starttls` or `tls` for remote servers.
+- `from` must be a valid RFC 5321 email address without a display name (e.g. `"Alice <alice@example.com>"` is rejected).
 
 **Responses:**
 
 | Status | Description |
 |--------|-------------|
-| `200 OK` | Settings saved |
-| `400 Bad Request` | Missing or invalid fields |
+| `200 OK` | Settings saved; returns confirmation message |
+| `400 Bad Request` | Validation error (invalid host, port, from address, or TLS mode) |
 | `401 Unauthorized` | Not authenticated |
 | `403 Forbidden` | Caller is not an admin |
 | `500 Internal Server Error` | Database error |
@@ -335,40 +342,33 @@ Save SMTP provider settings. If `password` is omitted and `username` is unchange
 { "message": "SMTP configuration saved successfully" }
 ```
 
-> **Note:** If the `SMTP_HOST` environment variable is set, it takes precedence over database-stored settings. Saving via this endpoint still writes to the database, but the environment value will remain active. The response message will warn about this when `SMTP_HOST` is present in the environment.
-
-**Validation rules:**
-- `host` must be a valid hostname (IP addresses are rejected for remote servers).
-- `from` must be a plain email address without a display name (e.g. `noreply@example.com`, not `"Biblioteka" <noreply@example.com>`).
-- `port` must be an integer between 1 and 65535.
-- `tls` must be one of `none`, `starttls`, or `tls`.
-- Authenticated SMTP (`username` set) with `tls: none` is only permitted for localhost/loopback hosts.
+> **Note:** If the `SMTP_HOST` environment variable is set, it takes precedence over database settings at server startup. When `SMTP_HOST` is set at the time of this `PUT` request, the response message will warn about this and instruct you to remove the variable to use the stored settings.
 
 ---
 
 ### `POST /api/config/smtp/test` 🔒 **Admin**
 
-Send a test email to the authenticated admin user's email address using the current SMTP configuration.
+Send a test email to the authenticated admin's registered email address using the current SMTP configuration. This is useful for verifying that SMTP settings are correct before relying on them.
 
-**Request body:** Empty.
+**Request body:** none
 
 **Responses:**
 
 | Status | Description |
 |--------|-------------|
-| `200 OK` | Test email sent |
-| `400 Bad Request` | SMTP not configured, invalid configuration, or invalid admin email |
+| `200 OK` | Test email sent successfully |
+| `400 Bad Request` | SMTP not configured, incomplete environment configuration, or invalid SMTP settings |
 | `401 Unauthorized` | Not authenticated |
 | `403 Forbidden` | Caller is not an admin |
-| `429 Too Many Requests` | Rate limit exceeded |
-| `502 Bad Gateway` | SMTP server refused the connection or returned an error |
-| `500 Internal Server Error` | Server-side error |
+| `502 Bad Gateway` | SMTP connection or delivery failure |
 
 **Response body (`200`):**
 
 ```json
 { "message": "Test email sent to alice@example.com" }
 ```
+
+> **Note:** This endpoint is rate-limited at the same rate as the auth endpoints (5 requests/second, burst of 10). Exceeding the limit returns `429 Too Many Requests`.
 
 ---
 
@@ -518,7 +518,7 @@ Create a library.
 |---------------------|----------|----------|-------------|
 | `name`              | string   | ✓        | Display name (must be unique) |
 | `paths`             | string[] | ✓        | Absolute file-system paths; each must be an existing directory |
-| `organization_type` | string   |          | `"book_per_folder"` (default) |
+| `organization_type` | string   |          | Currently only `"book_per_folder"` is supported (default). Each immediate subdirectory of a library path is treated as one book. |
 | `monitored`         | boolean  |          | Whether to auto-import new files |
 
 **Responses:** `201 Created` with the new library object, or `409 Conflict` if the name is taken.
@@ -924,7 +924,7 @@ Attach a file record to a book.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `file_type` | string | ✓ | Format identifier (e.g. `epub`, `pdf`) |
+| `file_type` | string | ✓ | Format identifier: `epub`, `mobi`, `pdf`, or `azw3` |
 | `file_name` | string | ✓ | File name on disk |
 | `file_path` | string | ✓ | Absolute path to the file |
 | `file_size` | integer | | File size in bytes |

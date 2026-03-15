@@ -88,11 +88,11 @@ Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be 
 | `OIDC_CLIENT_ID` | *(empty)* | OIDC client ID |
 | `OIDC_CLIENT_SECRET` | *(empty)* | OIDC client secret |
 | `OIDC_REDIRECT_URI` | `http://localhost:8080/api/auth/oidc/callback` | OIDC callback URL |
-| `SMTP_HOST` | *(empty)* | SMTP server hostname; when set, all SMTP config is sourced from environment (overrides DB settings) |
+| `SMTP_HOST` | *(empty)* | SMTP server hostname or IP address. When set, all SMTP settings are read from environment variables and override any values stored in the database |
 | `SMTP_PORT` | `587` | SMTP server port |
-| `SMTP_USERNAME` | *(empty)* | SMTP authentication username |
+| `SMTP_USERNAME` | *(empty)* | SMTP authentication username (leave empty for unauthenticated relay) |
 | `SMTP_PASSWORD` | *(empty)* | SMTP authentication password |
-| `SMTP_FROM` | *(empty)* | Sender address used in outgoing emails (required when `SMTP_HOST` is set) |
+| `SMTP_FROM` | *(empty)* | Envelope `From` address for outgoing mail (e.g. `biblioteka@example.com`) |
 | `SMTP_TLS` | `starttls` | TLS mode: `none`, `starttls`, or `tls` |
 | `TELEMETRY_ENABLED` | `false` | Send anonymous usage telemetry on first startup (opt-in, disabled by default) |
 | `TELEMETRY_ENDPOINT` | *(internal default)* | Override the anonymous telemetry collection endpoint |
@@ -104,7 +104,7 @@ The first account created is automatically granted admin privileges. Admins can:
 
 - **Manage users** — list all accounts and grant or revoke admin status via `GET /api/admin/users` and `PUT /api/admin/users/{id}`.
 - **Configure OIDC at runtime** — read and update the OIDC provider settings via `GET /api/config/oidc` and `PUT /api/config/oidc` without a server restart. Environment variable values (`OIDC_ISSUER_URL`, etc.) take precedence over database-stored settings.
-- **Configure SMTP at runtime** — read and update outgoing email settings via `GET /api/config/smtp` and `PUT /api/config/smtp`. Use `POST /api/config/smtp/test` to send a test email to your admin address. `SMTP_HOST` environment variable, when set, overrides all database-stored SMTP settings.
+- **Configure SMTP at runtime** — read and update SMTP server settings via `GET /api/config/smtp` and `PUT /api/config/smtp` without a server restart. Send a test email via `POST /api/config/smtp/test` to verify the configuration. Environment variable values (`SMTP_HOST`, etc.) take precedence over database-stored settings when `SMTP_HOST` is set.
 - **Monitor background jobs** — a web dashboard is available at `/asynqmon/` when Redis is running. It shows queued, active, completed, and failed job details.
 - **Review audit logs** — a paginated audit trail of all create, update, and delete actions is available via `GET /api/audit-logs`. Each entry records the user (when available), the action, and the affected entity.
 
@@ -227,6 +227,18 @@ The server exposes a REST API under `/api`. See [docs/api-reference.md](docs/api
 A health check endpoint is available at `GET /api/health` — it returns `200 OK` with a JSON body like `{"status":"ok"}` and requires no authentication.
 
 An interactive Swagger UI is served at `/swagger/` (public — no login required to browse). The raw OpenAPI spec is available at `/swagger/doc.json`. When invoking protected API endpoints from the UI, you must provide a valid JWT; public endpoints such as `/api/health`, `/api/auth/login`, and `/api/auth/signup` remain accessible without authentication.
+
+## Authentication
+
+Biblioteka supports local accounts and OIDC/SSO. See [docs/authentication.md](docs/authentication.md) for JWT details, OIDC configuration, step-by-step provider setup examples (Keycloak, Authentik, Google), and account linking.
+
+## Administration
+
+For user management, audit log reference, library setup, and background job monitoring, see [docs/administration.md](docs/administration.md).
+
+## Database Schema
+
+A consolidated reference for all database tables, columns, indexes, and cascade-deletion rules is at [docs/database-schema.md](docs/database-schema.md).
 
 ## Frontend
 
