@@ -573,7 +573,8 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 	username := strings.TrimSpace(req.Username)
 	password := strings.TrimSpace(req.Password)
 
-	// If password is empty but username is set, try to preserve the existing DB value.
+	// If password is empty but username is set, try to preserve the existing DB value,
+	// but only when the stored username matches the requested username.
 	// We intentionally do NOT fall back to SMTP_PASSWORD env var to avoid copying
 	// env-managed secrets into the database.
 	// When username is empty (switching to unauthenticated SMTP), we clear the
@@ -581,7 +582,20 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 	if username == "" {
 		password = ""
 	} else if password == "" {
-		existing, err := h.DB.GetSetting(r.Context(), settingSMTPPassword)
+		// Load existing SMTP username to ensure we only reuse the password when
+		// the username is unchanged.
+		existingUsername, err := h.DB.GetSetting(r.Context(), settingSMTPUsername)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			slog.ErrorContext(
+				r.Context(),
+				"failed to load existing SMTP username",
+				slog.Any(otelkeys.Error, err),
+			)
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to load SMTP configuration")
+			return
+		}
+
+		existingPassword, err := h.DB.GetSetting(r.Context(), settingSMTPPassword)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				// No existing password stored; leave password empty and let
@@ -595,8 +609,10 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 				writeError(r.Context(), w, http.StatusInternalServerError, "failed to load SMTP configuration")
 				return
 			}
-		} else if existing != "" {
-			password = existing
+		} else if existingUsername == username && existingPassword != "" {
+			// Only reuse the password when the username is unchanged to avoid
+			// creating mismatched (username, password) pairs.
+			password = existingPassword
 		}
 	}
 
