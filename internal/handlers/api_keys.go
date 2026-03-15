@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -131,12 +132,13 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Name == "" {
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 		return
 	}
 
-	if len(req.Name) > maxAPIKeyNameLength {
+	if len(name) > maxAPIKeyNameLength {
 		writeError(r.Context(), w, http.StatusBadRequest, fmt.Sprintf("name must be at most %d characters", maxAPIKeyNameLength))
 		return
 	}
@@ -160,14 +162,14 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 	keyPrefix := fullKey[:8]
 
 	userID := auth.UserIDFromContext(r.Context())
-	apiKey, err := h.DB.CreateAPIKey(r.Context(), userID, req.Name, keyHash, keyPrefix)
+	apiKey, err := h.DB.CreateAPIKey(r.Context(), userID, name, keyHash, keyPrefix)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create API key", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create API key")
 		return
 	}
 
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionAPIKeyCreated, "api_key", apiKey.ID, map[string]any{"name": req.Name}); err != nil {
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionAPIKeyCreated, "api_key", apiKey.ID, map[string]any{"name": name}); err != nil {
 		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
