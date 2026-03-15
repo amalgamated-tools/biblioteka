@@ -216,7 +216,7 @@ The server exposes a REST API under `/api`. See [docs/api-reference.md](docs/api
 
 A health check endpoint is available at `GET /api/health` — it returns `200 OK` with a JSON body like `{"status":"ok"}` and requires no authentication.
 
-An interactive Swagger UI is served at `/swagger/` and requires a valid JWT. The raw OpenAPI spec is available at `/swagger/doc.json`.
+An interactive Swagger UI is served at `/swagger/` (public — no login required to browse). The raw OpenAPI spec is available at `/swagger/doc.json`. When invoking protected API endpoints from the UI, you must provide a valid JWT; public endpoints such as `/api/health`, `/api/auth/login`, and `/api/auth/signup` remain accessible without authentication.
 
 ## Frontend
 
