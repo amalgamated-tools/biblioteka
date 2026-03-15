@@ -63,6 +63,7 @@ Key-value store for runtime configuration. Currently used for OIDC provider sett
 
 *OIDC settings* (see [Authentication guide](authentication.md)):
 
+
 | Key                    | Description                              |
 |------------------------|------------------------------------------|
 | `oidc_issuer_url`      | OIDC provider issuer URL                 |
