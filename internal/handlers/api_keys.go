@@ -65,8 +65,8 @@ const maxAPIKeyNameLength = 100
 // @Failure 401 {object} errorResponse "Unauthorized"
 // @Failure 405 {object} errorResponse "Method not allowed"
 // @Failure 500 {object} errorResponse "Internal server error"
-// @Router /api/api-keys [get]
-// @Router /api/api-keys [post]
+// @Router /api-keys [get]
+// @Router /api-keys [post]
 func (h *APIKeyHandler) HandleAPIKeys(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -91,7 +91,7 @@ func (h *APIKeyHandler) HandleAPIKeys(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} errorResponse "API key not found"
 // @Failure 405 {object} errorResponse "Method not allowed"
 // @Failure 500 {object} errorResponse "Internal server error"
-// @Router /api/api-keys/{id} [delete]
+// @Router /api-keys/{id} [delete]
 func (h *APIKeyHandler) HandleAPIKey(w http.ResponseWriter, r *http.Request) {
 	id, ok := extractPathID(r.URL.Path, "/api/api-keys/")
 	if !ok {
