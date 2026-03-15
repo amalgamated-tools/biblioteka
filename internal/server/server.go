@@ -58,6 +58,7 @@ type Server struct {
 
 	Address string
 	port    int
+	version string
 
 	DB  *db.DB
 	JWT *auth.JWTManager
@@ -323,6 +324,9 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)
 
+	// Version
+	s.mux.HandleFunc("/api/version", s.handleVersion)
+
 	// Swagger UI (public, with restrictive security headers)
 	swaggerHandler := swaggerSecurityHeaders(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
@@ -417,6 +421,10 @@ type healthResponse struct {
 	Status string `json:"status"`
 }
 
+type versionResponse struct {
+	Version string `json:"version"`
+}
+
 type oidcEnabledResponse struct {
 	Enabled bool `json:"enabled"`
 }
@@ -454,6 +462,56 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.ErrorContext(r.Context(), "failed to encode health response", slog.Any(otelkeys.Error, err))
+	}
+}
+
+// handleVersion godoc
+//
+// checkSystemEndpointMethod validates that the request method is one of the allowed methods.
+// If not, it writes a JSON 405 Method Not Allowed response and returns false.
+// Callers should return immediately when this function returns false.
+func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, logMessage string, allowedMethods ...string) bool {
+	for _, m := range allowedMethods {
+		if r.Method == m {
+			return true
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", strings.Join(allowedMethods, ", "))
+	w.WriteHeader(http.StatusMethodNotAllowed)
+
+	resp := map[string]string{
+		"error": "method not allowed",
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.ErrorContext(r.Context(), logMessage, slog.Any(otelkeys.Error, err))
+	}
+
+	return false
+}
+
+// @Summary		Get server version
+// @Description	Returns the server version
+// @Tags			System
+// @Produce		json
+// @Success		200	{object}	versionResponse
+// @Router			/version [get]
+func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
+	if !checkSystemEndpointMethod(w, r, "failed to encode version method not allowed response", http.MethodGet, http.MethodHead) {
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	resp := versionResponse{
+		Version: s.version,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.ErrorContext(r.Context(), "failed to encode version response", slog.Any(otelkeys.Error, err))
 	}
 }
 

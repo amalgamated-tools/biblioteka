@@ -3,6 +3,7 @@ db/biblioteka.db*
 
 # Binaries
 /bibloteka
+/biblioteka
 *.exe
 
 # IDE
