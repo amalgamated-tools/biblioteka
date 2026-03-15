@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"crypto/tls"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -517,8 +519,21 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		password = ""
 	} else {
 		if password == "" {
-			existing, _ := h.DB.GetSetting(r.Context(), settingSMTPPassword)
-			if existing != "" {
+			existing, err := h.DB.GetSetting(r.Context(), settingSMTPPassword)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					// No existing password stored; leave password empty and let
+					// the validation below enforce that a password is required.
+				} else {
+					slog.ErrorContext(
+						r.Context(),
+						"failed to load existing SMTP password",
+						slog.Any(otelkeys.Error, err),
+					)
+					writeError(r.Context(), w, http.StatusInternalServerError, "failed to load SMTP configuration")
+					return
+				}
+			} else if existing != "" {
 				password = existing
 			}
 		}
