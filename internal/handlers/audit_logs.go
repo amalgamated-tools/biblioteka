@@ -74,19 +74,19 @@ func (h *AuditLogHandler) requireAdmin(w http.ResponseWriter, r *http.Request) b
 //	limit  - number of entries per page (default 50, max 200)
 //	offset - number of entries to skip (default 0)
 //
-// @Summary     List audit log entries
-// @Description Returns a paginated list of all audit log entries (admin only)
-// @Tags        Admin
-// @Produce     json
-// @Security    BearerAuth
-// @Param       limit  query    int false "Max entries to return (default 50)"
-// @Param       offset query    int false "Entries to skip (default 0)"
-// @Success     200    {object} auditLogListDTO
-// @Failure     400    {object} errorResponse
-// @Failure     401    {object} errorResponse
-// @Failure     403    {object} errorResponse
-// @Failure     500    {object} errorResponse
-// @Router      /audit-logs [get]
+//	@Summary		List audit log entries
+//	@Description	Returns a paginated list of all audit log entries (admin only)
+//	@Tags			Admin
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			limit	query		int	false	"Max entries to return (default 50)"
+//	@Param			offset	query		int	false	"Entries to skip (default 0)"
+//	@Success		200		{object}	auditLogListDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		403		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/audit-logs [get]
 func (h *AuditLogHandler) HandleAuditLogs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")

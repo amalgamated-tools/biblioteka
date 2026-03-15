@@ -252,15 +252,16 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 }
 
 // listBooks godoc
-// @Summary     List books
-// @Description Returns all books (summary without relations)
-// @Tags        Books
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Success     200 {array}  bookSummaryDTO
-// @Failure     500 {object} errorResponse
-// @Router      /books [get]
+//
+//	@Summary		List books
+//	@Description	Returns all books (summary without relations)
+//	@Tags			Books
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{array}		bookSummaryDTO
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books [get]
 func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing books")
 	books, err := h.DB.ListBooks(r.Context())
@@ -281,18 +282,19 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 }
 
 // createBook godoc
-// @Summary     Create a book
-// @Description Create a new book
-// @Tags        Books
-// @Accept      json
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       body body     bookRequest true "Book data"
-// @Success     201  {object} bookDTO
-// @Failure     400  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /books [post]
+//
+//	@Summary		Create a book
+//	@Description	Create a new book
+//	@Tags			Books
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			body	body		bookRequest	true	"Book data"
+//	@Success		201		{object}	bookDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/books [post]
 func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	var req bookRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -333,18 +335,19 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 }
 
 // getBook godoc
-// @Summary     Get a book
-// @Description Returns a single book with authors, series, and files
-// @Tags        Books
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id  path     string true "Book ID"
-// @Success     200 {object} bookDTO
-// @Failure     400 {object} errorResponse
-// @Failure     404 {object} errorResponse
-// @Failure     500 {object} errorResponse
-// @Router      /books/{id} [get]
+//
+//	@Summary		Get a book
+//	@Description	Returns a single book with authors, series, and files
+//	@Tags			Books
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{object}	bookDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id} [get]
 func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching book", slog.String(otelkeys.BookID, id))
 	b, err := h.DB.GetBook(r.Context(), id)
@@ -371,20 +374,21 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 }
 
 // updateBook godoc
-// @Summary     Update a book
-// @Description Update an existing book
-// @Tags        Books
-// @Accept      json
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id   path     string      true "Book ID"
-// @Param       body body     bookRequest true "Book data"
-// @Success     200  {object} bookDTO
-// @Failure     400  {object} errorResponse
-// @Failure     404  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /books/{id} [put]
+//
+//	@Summary		Update a book
+//	@Description	Update an existing book
+//	@Tags			Books
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string		true	"Book ID"
+//	@Param			body	body		bookRequest	true	"Book data"
+//	@Success		200		{object}	bookDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/books/{id} [put]
 func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id string) {
 	var req bookRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -432,17 +436,18 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 }
 
 // deleteBook godoc
-// @Summary     Delete a book
-// @Description Delete a book by ID
-// @Tags        Books
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id  path     string true "Book ID"
-// @Success     204 "No Content"
-// @Failure     400 {object} errorResponse
-// @Failure     404 {object} errorResponse
-// @Failure     500 {object} errorResponse
-// @Router      /books/{id} [delete]
+//
+//	@Summary		Delete a book
+//	@Description	Delete a book by ID
+//	@Tags			Books
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		204	"No Content"
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id} [delete]
 func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting book", slog.String(otelkeys.BookID, id))
 
@@ -496,35 +501,37 @@ type setBookAuthorsRequest struct {
 }
 
 // getBookAuthors godoc
-// @Summary     List book authors
-// @Description Get the list of authors for a book
-// @Tags        Books
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id   path     string true "Book ID"
-// @Success     200  {array}  authorDTO
-// @Failure     400  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /books/{id}/authors [get]
+//
+//	@Summary		List book authors
+//	@Description	Get the list of authors for a book
+//	@Tags			Books
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{array}		authorDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/authors [get]
 func (h *BookHandler) getBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
 	h.respondBookAuthors(r.Context(), w, bookID)
 }
 
 // putBookAuthors godoc
-// @Summary     Set book authors
-// @Description Replace the list of authors for a book
-// @Tags        Books
-// @Accept      json
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id   path string                true "Book ID"
-// @Param       body body setBookAuthorsRequest  true "Author IDs"
-// @Success     200  {array}  authorDTO
-// @Failure     400  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /books/{id}/authors [put]
+//
+//	@Summary		Set book authors
+//	@Description	Replace the list of authors for a book
+//	@Tags			Books
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string					true	"Book ID"
+//	@Param			body	body		setBookAuthorsRequest	true	"Author IDs"
+//	@Success		200		{array}		authorDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/books/{id}/authors [put]
 func (h *BookHandler) putBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
 	var req setBookAuthorsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -563,35 +570,37 @@ type setBookSeriesRequest struct {
 }
 
 // getBookSeries godoc
-// @Summary     List book series
-// @Description Get the list of series for a book
-// @Tags        Books
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id   path     string true "Book ID"
-// @Success     200  {array}  bookSeriesEntryDTO
-// @Failure     400  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /books/{id}/series [get]
+//
+//	@Summary		List book series
+//	@Description	Get the list of series for a book
+//	@Tags			Books
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{array}		bookSeriesEntryDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/series [get]
 func (h *BookHandler) getBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
 	h.respondBookSeries(r.Context(), w, bookID)
 }
 
 // putBookSeries godoc
-// @Summary     Set book series
-// @Description Replace the list of series for a book
-// @Tags        Books
-// @Accept      json
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id   path string                true "Book ID"
-// @Param       body body setBookSeriesRequest   true "Series entries"
-// @Success     200  {array}  bookSeriesEntryDTO
-// @Failure     400  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /books/{id}/series [put]
+//
+//	@Summary		Set book series
+//	@Description	Replace the list of series for a book
+//	@Tags			Books
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string					true	"Book ID"
+//	@Param			body	body		setBookSeriesRequest	true	"Series entries"
+//	@Success		200		{array}		bookSeriesEntryDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/books/{id}/series [put]
 func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
 	var req setBookSeriesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -607,17 +616,18 @@ func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, book
 }
 
 // getBookFiles godoc
-// @Summary     List book files
-// @Description List files for a book
-// @Tags        Books
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id  path string true "Book ID"
-// @Success     200 {array}  bookFileDTO
-// @Failure     400 {object} errorResponse
-// @Failure     500 {object} errorResponse
-// @Router      /books/{id}/files [get]
+//
+//	@Summary		List book files
+//	@Description	List files for a book
+//	@Tags			Books
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{array}		bookFileDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/files [get]
 func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
 	files, err := h.DB.ListBookFiles(r.Context(), bookID)
 	if err != nil {
@@ -642,19 +652,20 @@ type createBookFileRequest struct {
 }
 
 // postBookFiles godoc
-// @Summary     Add a book file
-// @Description Add a new file for a book
-// @Tags        Books
-// @Accept      json
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id   path string              true "Book ID"
-// @Param       body body createBookFileRequest true "Book file data"
-// @Success     201 {object} bookFileDTO
-// @Failure     400 {object} errorResponse
-// @Failure     500 {object} errorResponse
-// @Router      /books/{id}/files [post]
+//
+//	@Summary		Add a book file
+//	@Description	Add a new file for a book
+//	@Tags			Books
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string					true	"Book ID"
+//	@Param			body	body		createBookFileRequest	true	"Book file data"
+//	@Success		201		{object}	bookFileDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/books/{id}/files [post]
 func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
 	var req createBookFileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
