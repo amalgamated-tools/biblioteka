@@ -14,8 +14,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// apiKeyPrefix is the prefix that distinguishes API keys from JWT tokens.
-const apiKeyPrefix = "bib_"
+// APIKeyPrefix is the prefix that distinguishes API keys from JWT tokens.
+const APIKeyPrefix = "bib_"
 
 // APIKeyValidator looks up an API key by its SHA-256 hash.
 type APIKeyValidator interface {
@@ -32,7 +32,7 @@ func hashAPIKey(key string) string {
 // resolveUser determines the user ID from the given token. If the token starts
 // with "bib_", it is treated as an API key; otherwise it is validated as a JWT.
 func resolveUser(ctx context.Context, token string, jwt *JWTManager, apiKeys APIKeyValidator) (userID string, err error) {
-	if apiKeys != nil && strings.HasPrefix(token, apiKeyPrefix) {
+	if apiKeys != nil && strings.HasPrefix(token, APIKeyPrefix) {
 		keyHash := hashAPIKey(token)
 		uid, keyID, err := apiKeys.ValidateAPIKey(ctx, keyHash)
 		if err != nil {

@@ -149,7 +149,7 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate API key")
 		return
 	}
-	fullKey := "bib_" + hex.EncodeToString(randomBytes)
+	fullKey := auth.APIKeyPrefix + hex.EncodeToString(randomBytes)
 
 	// Hash the full key with SHA-256.
 	hash := sha256.Sum256([]byte(fullKey))
