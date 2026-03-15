@@ -12,6 +12,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -100,59 +101,68 @@ func clearAuthCookie(w http.ResponseWriter, secure bool) {
 // @Router      /auth/signup [post]
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
 	var req signupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	req.Name = strings.TrimSpace(req.Name)
 	req.Email = strings.TrimSpace(req.Email)
 	if req.Name == "" || req.Email == "" || req.Password == "" {
-		writeError(w, http.StatusBadRequest, "name, email, and password are required")
+		writeError(r.Context(), w, http.StatusBadRequest, "name, email, and password are required")
 		return
 	}
 
 	if msg := validatePassword(req.Password); msg != "" {
-		writeError(w, http.StatusBadRequest, msg)
+		writeError(r.Context(), w, http.StatusBadRequest, msg)
 		return
 	}
 
-	slog.DebugContext(r.Context(), "signup request", slog.String("email", redactEmail(req.Email)))
+	slog.DebugContext(r.Context(), "signup request", slog.String(otelkeys.Email, redactEmail(req.Email)))
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		slog.Error("failed to hash password during signup", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to hash password")
+		slog.ErrorContext(r.Context(), "failed to hash password during signup",
+			slog.String(otelkeys.Email, redactEmail(req.Email)),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to hash password")
 		return
 	}
 
-	user, err := h.DB.CreateUser(req.Name, req.Email, string(hash))
+	user, err := h.DB.CreateUser(r.Context(), req.Name, req.Email, string(hash))
 	if err != nil {
 		if errors.Is(err, db.ErrEmailExists) {
-			writeError(w, http.StatusConflict, "email already registered")
+			writeError(r.Context(), w, http.StatusConflict, "email already registered")
 			return
 		}
-		slog.Error("failed to create user", slog.String("email", redactEmail(req.Email)), slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to create user")
+		slog.ErrorContext(r.Context(), "failed to create user",
+			slog.String(otelkeys.Email, redactEmail(req.Email)),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create user")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "user created via signup", slog.String("user_id", user.ID))
+	slog.DebugContext(r.Context(), "user created via signup", slog.String(otelkeys.UserID, user.ID))
 
-	token, err := h.JWT.CreateToken(user.ID)
+	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
-		slog.Error("failed to create token for user", slog.Any("user_id", user.ID), slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to create token")
+		slog.ErrorContext(r.Context(), "failed to create token for user",
+			slog.Any(otelkeys.UserID, user.ID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create token")
 		return
 	}
 
 	setAuthCookie(w, token, h.SecureCookies)
-	writeJSON(w, http.StatusCreated, authResponse{
+	writeJSON(r.Context(), w, http.StatusCreated, authResponse{
 		Token: token,
 		User:  userDTO{ID: user.ID, Email: user.Email, IsAdmin: user.IsAdmin},
 	})
@@ -172,54 +182,60 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 // @Router      /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	req.Email = strings.TrimSpace(req.Email)
 	if req.Email == "" || req.Password == "" {
-		writeError(w, http.StatusBadRequest, "email and password are required")
+		writeError(r.Context(), w, http.StatusBadRequest, "email and password are required")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "login attempt", slog.String("email", req.Email))
+	slog.DebugContext(r.Context(), "login attempt", slog.String(otelkeys.Email, req.Email))
 
-	user, err := h.DB.GetUserByEmail(req.Email)
+	user, err := h.DB.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
-		slog.DebugContext(r.Context(), "login failed: user not found", slog.String("email", req.Email))
-		writeError(w, http.StatusUnauthorized, "invalid email or password")
+		slog.DebugContext(r.Context(), "login failed: user not found", slog.String(otelkeys.Email, req.Email))
+		writeError(r.Context(), w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
 
 	if user.PasswordHash == "" {
-		slog.DebugContext(r.Context(), "login failed: OIDC-only account", slog.String("email", req.Email))
-		writeError(w, http.StatusUnauthorized, "this account uses OIDC login")
+		slog.DebugContext(r.Context(), "login failed: OIDC-only account", slog.String(otelkeys.Email, req.Email))
+		writeError(r.Context(), w, http.StatusUnauthorized, "this account uses OIDC login")
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		slog.DebugContext(r.Context(), "login failed: invalid password", slog.String("email", req.Email))
-		writeError(w, http.StatusUnauthorized, "invalid email or password")
+		slog.DebugContext(r.Context(), "login failed: invalid password", slog.String(otelkeys.Email, req.Email))
+		writeError(r.Context(), w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
 
-	token, err := h.JWT.CreateToken(user.ID)
+	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
-		slog.Error("failed to create token for user", slog.Any("user_id", user.ID), slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to create token")
+		slog.ErrorContext(r.Context(), "failed to create token for user",
+			slog.Any(otelkeys.UserID, user.ID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create token")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "login successful", slog.String("user_id", user.ID), slog.String("email", user.Email))
+	slog.DebugContext(r.Context(), "login successful",
+		slog.String(otelkeys.UserID, user.ID),
+		slog.String(otelkeys.Email, user.Email),
+	)
 
 	setAuthCookie(w, token, h.SecureCookies)
-	writeJSON(w, http.StatusOK, authResponse{
+	writeJSON(r.Context(), w, http.StatusOK, authResponse{
 		Token: token,
 		User:  userDTO{ID: user.ID, Email: user.Email, IsAdmin: user.IsAdmin},
 	})
@@ -238,25 +254,28 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Router      /auth/me [get]
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "fetching current user", slog.String("user_id", userID))
+	slog.DebugContext(r.Context(), "fetching current user", slog.String(otelkeys.UserID, userID))
 
-	user, err := h.DB.GetUserByID(userID)
+	user, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "user not found")
+			writeError(r.Context(), w, http.StatusNotFound, "user not found")
 			return
 		}
-		slog.Error("failed to get user", slog.Any("user_id", userID), slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to get user")
+		slog.ErrorContext(r.Context(), "failed to get user",
+			slog.Any(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get user")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, userDTO{ID: user.ID, Email: user.Email, OIDCLinked: user.OIDCSubject != nil, IsAdmin: user.IsAdmin})
+	writeJSON(r.Context(), w, http.StatusOK, userDTO{ID: user.ID, Email: user.Email, OIDCLinked: user.OIDCSubject != nil, IsAdmin: user.IsAdmin})
 }
 
 // ChangePassword godoc
@@ -274,60 +293,69 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 // @Router      /auth/password [put]
 func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
 	var req changePasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.NewPassword == "" || req.CurrentPassword == "" {
-		writeError(w, http.StatusBadRequest, "current password and new password are required")
+		writeError(r.Context(), w, http.StatusBadRequest, "current password and new password are required")
 		return
 	}
 
 	if msg := validatePassword(req.NewPassword); msg != "" {
-		writeError(w, http.StatusBadRequest, msg)
+		writeError(r.Context(), w, http.StatusBadRequest, msg)
 		return
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	user, err := h.DB.GetUserByID(userID)
+	user, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
-		slog.Error("failed to get user for password change", slog.Any("user_id", userID), slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to get user")
+		slog.ErrorContext(r.Context(), "failed to get user for password change",
+			slog.Any(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get user")
 		return
 	}
 
 	if user.PasswordHash == "" {
-		writeError(w, http.StatusBadRequest, "cannot change password for OIDC-only account")
+		writeError(r.Context(), w, http.StatusBadRequest, "cannot change password for OIDC-only account")
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
-		writeError(w, http.StatusUnauthorized, "current password is incorrect")
+		writeError(r.Context(), w, http.StatusUnauthorized, "current password is incorrect")
 		return
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		slog.Error("failed to hash new password", slog.Any("user_id", userID), slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to hash password")
+		slog.ErrorContext(r.Context(), "failed to hash new password",
+			slog.Any(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to hash password")
 		return
 	}
 
-	if err := h.DB.UpdatePassword(userID, string(hash)); err != nil {
-		slog.Error("failed to update password", slog.Any("user_id", userID), slog.Any("error", err))
-		writeError(w, http.StatusInternalServerError, "failed to update password")
+	if err := h.DB.UpdatePassword(r.Context(), userID, string(hash)); err != nil {
+		slog.ErrorContext(r.Context(), "failed to update password",
+			slog.Any(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update password")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "password changed", slog.String("user_id", userID))
+	slog.DebugContext(r.Context(), "password changed", slog.String(otelkeys.UserID, userID))
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "password updated"})
+	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "password updated"})
 }
 
 // Logout godoc
@@ -340,17 +368,17 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 // @Router      /auth/logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
 	if !sameOrigin(r) {
-		writeError(w, http.StatusForbidden, "invalid logout request origin")
+		writeError(r.Context(), w, http.StatusForbidden, "invalid logout request origin")
 		return
 	}
 
 	clearAuthCookie(w, h.SecureCookies)
-	writeJSON(w, http.StatusOK, map[string]string{"message": "logged out"})
+	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "logged out"})
 }
 
 func sameOrigin(r *http.Request) bool {

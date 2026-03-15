@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 )
@@ -8,7 +9,7 @@ import (
 func TestCreateLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, err := d.CreateLibrary("Fiction", `["/mnt/books/fiction"]`, "book_per_folder", false)
+	lib, err := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/books/fiction"]`, "book_per_folder", false)
 	if err != nil {
 		t.Fatalf("CreateLibrary() error: %v", err)
 	}
@@ -38,12 +39,12 @@ func TestCreateLibrary(t *testing.T) {
 func TestCreateLibrary_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateLibrary("Fiction", `["/mnt/books/fiction"]`, "book_per_folder", false)
+	_, err := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/books/fiction"]`, "book_per_folder", false)
 	if err != nil {
 		t.Fatalf("first CreateLibrary() error: %v", err)
 	}
 
-	_, err = d.CreateLibrary("Fiction", `["/mnt/books/other"]`, "book_per_folder", false)
+	_, err = d.CreateLibrary(context.Background(), "Fiction", `["/mnt/books/other"]`, "book_per_folder", false)
 	if err != ErrLibraryNameExists {
 		t.Errorf("expected ErrLibraryNameExists, got %v", err)
 	}
@@ -52,9 +53,9 @@ func TestCreateLibrary_DuplicateName(t *testing.T) {
 func TestGetLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateLibrary("Fiction", `["/mnt/books/fiction"]`, "book_per_folder", true)
+	created, _ := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/books/fiction"]`, "book_per_folder", true)
 
-	found, err := d.GetLibrary(created.ID)
+	found, err := d.GetLibrary(context.Background(), created.ID)
 	if err != nil {
 		t.Fatalf("GetLibrary() error: %v", err)
 	}
@@ -72,7 +73,7 @@ func TestGetLibrary(t *testing.T) {
 func TestGetLibrary_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.GetLibrary("nonexistent-id")
+	_, err := d.GetLibrary(context.Background(), "nonexistent-id")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
@@ -81,10 +82,10 @@ func TestGetLibrary_NotFound(t *testing.T) {
 func TestListLibraries(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateLibrary("Fiction", `["/mnt/fiction"]`, "book_per_folder", false)
-	_, _ = d.CreateLibrary("Non-Fiction", `["/mnt/nonfiction"]`, "book_per_folder", true)
+	_, _ = d.CreateLibrary(context.Background(), "Fiction", `["/mnt/fiction"]`, "book_per_folder", false)
+	_, _ = d.CreateLibrary(context.Background(), "Non-Fiction", `["/mnt/nonfiction"]`, "book_per_folder", true)
 
-	libs, err := d.ListLibraries()
+	libs, err := d.ListLibraries(context.Background())
 	if err != nil {
 		t.Fatalf("ListLibraries() error: %v", err)
 	}
@@ -99,9 +100,9 @@ func TestListLibraries(t *testing.T) {
 func TestUpdateLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateLibrary("Fiction", `["/mnt/fiction"]`, "book_per_folder", false)
+	created, _ := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/fiction"]`, "book_per_folder", false)
 
-	updated, err := d.UpdateLibrary(created.ID, "Novels", `["/mnt/novels","/mnt/fiction"]`, "book_per_folder", true)
+	updated, err := d.UpdateLibrary(context.Background(), created.ID, "Novels", `["/mnt/novels","/mnt/fiction"]`, "book_per_folder", true)
 	if err != nil {
 		t.Fatalf("UpdateLibrary() error: %v", err)
 	}
@@ -119,10 +120,10 @@ func TestUpdateLibrary(t *testing.T) {
 func TestUpdateLibrary_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateLibrary("Fiction", `["/mnt/fiction"]`, "book_per_folder", false)
-	lib2, _ := d.CreateLibrary("Non-Fiction", `["/mnt/nonfiction"]`, "book_per_folder", false)
+	_, _ = d.CreateLibrary(context.Background(), "Fiction", `["/mnt/fiction"]`, "book_per_folder", false)
+	lib2, _ := d.CreateLibrary(context.Background(), "Non-Fiction", `["/mnt/nonfiction"]`, "book_per_folder", false)
 
-	_, err := d.UpdateLibrary(lib2.ID, "Fiction", `["/mnt/nonfiction"]`, "book_per_folder", false)
+	_, err := d.UpdateLibrary(context.Background(), lib2.ID, "Fiction", `["/mnt/nonfiction"]`, "book_per_folder", false)
 	if err != ErrLibraryNameExists {
 		t.Errorf("expected ErrLibraryNameExists, got %v", err)
 	}
@@ -131,14 +132,14 @@ func TestUpdateLibrary_DuplicateName(t *testing.T) {
 func TestDeleteLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, _ := d.CreateLibrary("Fiction", `["/mnt/fiction"]`, "book_per_folder", false)
+	lib, _ := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/fiction"]`, "book_per_folder", false)
 
-	err := d.DeleteLibrary(lib.ID)
+	err := d.DeleteLibrary(context.Background(), lib.ID)
 	if err != nil {
 		t.Fatalf("DeleteLibrary() error: %v", err)
 	}
 
-	_, err = d.GetLibrary(lib.ID)
+	_, err = d.GetLibrary(context.Background(), lib.ID)
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
 	}
@@ -147,7 +148,7 @@ func TestDeleteLibrary(t *testing.T) {
 func TestDeleteLibrary_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	err := d.DeleteLibrary("nonexistent-id")
+	err := d.DeleteLibrary(context.Background(), "nonexistent-id")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}

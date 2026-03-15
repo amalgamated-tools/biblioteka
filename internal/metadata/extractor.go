@@ -1,11 +1,13 @@
 package metadata
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"path/filepath"
 	"strings"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/barasher/go-exiftool"
 	"github.com/taylorskalyo/goreader/epub"
 )
@@ -27,7 +29,7 @@ type Extractor struct {
 func NewExtractor() (*Extractor, error) {
 	et, err := exiftool.NewExiftool()
 	if err != nil {
-		slog.Warn("exiftool not available; exif-based metadata extraction disabled", "err", err)
+		slog.WarnContext(context.Background(), "exiftool not available; exif-based metadata extraction disabled", slog.Any(otelkeys.Error, err))
 		return &Extractor{
 			et: nil,
 		}, nil
@@ -90,20 +92,20 @@ func (e *Extractor) extractExif(path string) (*BookMetadata, error) {
 	// ExifTool normalization: mapping various tags to our struct
 	title, err := book.GetString("Title")
 	if err != nil {
-		slog.Warn("title not found in metadata, using filename as fallback", "path", path)
+		slog.WarnContext(context.Background(), "title not found in metadata, using filename as fallback", slog.String(otelkeys.Path, path))
 		title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 	}
 	author, err := book.GetString("Author")
 	if err != nil {
-		slog.Warn("author not found in metadata", "path", path)
+		slog.WarnContext(context.Background(), "author not found in metadata", slog.String(otelkeys.Path, path))
 		author = "Unknown"
 	}
 	isbn, err := book.GetString("ISBN")
 	if err != nil {
-		slog.Warn("ISBN not found in metadata", "path", path)
+		slog.WarnContext(context.Background(), "ISBN not found in metadata", slog.String(otelkeys.Path, path))
 		isbn, err = book.GetString("Identifier") // Fallback for many MOBI files
 		if err != nil {
-			slog.Warn("Identifier not found in metadata", "path", path)
+			slog.WarnContext(context.Background(), "Identifier not found in metadata", slog.String(otelkeys.Path, path))
 			isbn = "Not Found"
 		}
 	}

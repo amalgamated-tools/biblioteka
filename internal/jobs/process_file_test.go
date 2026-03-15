@@ -27,7 +27,7 @@ func newTestDB(t *testing.T) *db.DB {
 		t.Fatalf("pragmas: %v", err)
 	}
 
-	if err := db.RunMigrations(sqlDB, db.DialectSQLite); err != nil {
+	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
 		_ = sqlDB.Close()
 		t.Fatalf("migrations: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestProcessFileHandler(t *testing.T) {
 		t.Fatalf("handler: %v", err)
 	}
 
-	books, err := database.ListBooks()
+	books, err := database.ListBooks(context.Background())
 	if err != nil {
 		t.Fatalf("list books: %v", err)
 	}
@@ -65,7 +65,7 @@ func TestProcessFileHandler(t *testing.T) {
 		t.Errorf("expected title %q, got %q", "My Book", books[0].Title)
 	}
 
-	files, err := database.ListBookFiles(books[0].ID)
+	files, err := database.ListBookFiles(context.Background(), books[0].ID)
 	if err != nil {
 		t.Fatalf("list book files: %v", err)
 	}

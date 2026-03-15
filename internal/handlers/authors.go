@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // AuthorHandler holds dependencies for author endpoints.
@@ -54,7 +55,7 @@ func (h *AuthorHandler) HandleAuthors(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		h.createAuthor(w, r)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
@@ -62,7 +63,7 @@ func (h *AuthorHandler) HandleAuthors(w http.ResponseWriter, r *http.Request) {
 func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 	id, ok := extractPathID(r.URL.Path, "/api/authors/")
 	if !ok {
-		writeError(w, http.StatusBadRequest, "invalid author ID")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid author ID")
 		return
 	}
 
@@ -74,7 +75,7 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		h.deleteAuthor(w, r, id)
 	default:
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
@@ -90,21 +91,21 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 // @Router      /authors [get]
 func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing authors")
-	authors, err := h.DB.ListAuthors()
+	authors, err := h.DB.ListAuthors(r.Context())
 	if err != nil {
-		slog.Error("failed to list authors", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to list authors")
+		slog.ErrorContext(r.Context(), "failed to list authors", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list authors")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "authors listed", slog.Int("count", len(authors)))
+	slog.DebugContext(r.Context(), "authors listed", slog.Int(otelkeys.Count, len(authors)))
 
 	dtos := make([]authorDTO, 0, len(authors))
 	for i := range authors {
 		dtos = append(dtos, toAuthorDTO(&authors[i]))
 	}
 
-	writeJSON(w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, dtos)
 }
 
 // createAuthor godoc
@@ -124,30 +125,33 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 	var req authorRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
+		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "creating author", slog.String("name", req.Name))
+	slog.DebugContext(r.Context(), "creating author", slog.String(otelkeys.Name, req.Name))
 
-	a, err := h.DB.CreateAuthor(req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
+	a, err := h.DB.CreateAuthor(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
 		if err == db.ErrAuthorNameExists {
-			writeError(w, http.StatusConflict, "an author with that name already exists")
+			writeError(r.Context(), w, http.StatusConflict, "an author with that name already exists")
 			return
 		}
-		slog.Error("failed to create author", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to create author")
+		slog.ErrorContext(r.Context(), "failed to create author", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create author")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "author created", slog.String("author_id", a.ID), slog.String("name", a.Name))
-	writeJSON(w, http.StatusCreated, toAuthorDTO(a))
+	slog.DebugContext(r.Context(), "author created",
+		slog.String(otelkeys.AuthorID, a.ID),
+		slog.String(otelkeys.Name, a.Name),
+	)
+	writeJSON(r.Context(), w, http.StatusCreated, toAuthorDTO(a))
 }
 
 // getAuthor godoc
@@ -164,19 +168,19 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 // @Failure     500 {object} errorResponse
 // @Router      /authors/{id} [get]
 func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "fetching author", slog.String("author_id", id))
-	a, err := h.DB.GetAuthor(id)
+	slog.DebugContext(r.Context(), "fetching author", slog.String(otelkeys.AuthorID, id))
+	a, err := h.DB.GetAuthor(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "author not found")
+			writeError(r.Context(), w, http.StatusNotFound, "author not found")
 			return
 		}
-		slog.Error("failed to get author", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to get author")
+		slog.ErrorContext(r.Context(), "failed to get author", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get author")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toAuthorDTO(a))
+	writeJSON(r.Context(), w, http.StatusOK, toAuthorDTO(a))
 }
 
 // updateAuthor godoc
@@ -198,33 +202,36 @@ func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id str
 func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id string) {
 	var req authorRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
+		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 		return
 	}
 
-	slog.DebugContext(r.Context(), "updating author", slog.String("author_id", id), slog.String("name", req.Name))
+	slog.DebugContext(r.Context(), "updating author",
+		slog.String(otelkeys.AuthorID, id),
+		slog.String(otelkeys.Name, req.Name),
+	)
 
-	a, err := h.DB.UpdateAuthor(id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
+	a, err := h.DB.UpdateAuthor(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "author not found")
+			writeError(r.Context(), w, http.StatusNotFound, "author not found")
 			return
 		}
 		if err == db.ErrAuthorNameExists {
-			writeError(w, http.StatusConflict, "an author with that name already exists")
+			writeError(r.Context(), w, http.StatusConflict, "an author with that name already exists")
 			return
 		}
-		slog.Error("failed to update author", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to update author")
+		slog.ErrorContext(r.Context(), "failed to update author", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update author")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toAuthorDTO(a))
+	writeJSON(r.Context(), w, http.StatusOK, toAuthorDTO(a))
 }
 
 // deleteAuthor godoc
@@ -240,15 +247,15 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 // @Failure     500 {object} errorResponse
 // @Router      /authors/{id} [delete]
 func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "deleting author", slog.String("author_id", id))
-	err := h.DB.DeleteAuthor(id)
+	slog.DebugContext(r.Context(), "deleting author", slog.String(otelkeys.AuthorID, id))
+	err := h.DB.DeleteAuthor(r.Context(), id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "author not found")
+			writeError(r.Context(), w, http.StatusNotFound, "author not found")
 			return
 		}
-		slog.Error("failed to delete author", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to delete author")
+		slog.ErrorContext(r.Context(), "failed to delete author", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete author")
 		return
 	}
 

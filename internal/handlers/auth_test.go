@@ -21,7 +21,7 @@ func newTestDB(t *testing.T) *db.DB {
 	if err != nil {
 		t.Fatalf("newTestDB: open: %v", err)
 	}
-	if err := db.RunMigrations(sqlDB, db.DialectSQLite); err != nil {
+	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
 		_ = sqlDB.Close()
 		t.Fatalf("newTestDB: migrations: %v", err)
 	}

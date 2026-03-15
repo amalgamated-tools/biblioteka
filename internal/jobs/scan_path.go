@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // JobScanPath is the registered name for the path-scanning job.
@@ -45,18 +47,21 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			return fmt.Errorf("scan path payload: path is required")
 		}
 
-		slog.DebugContext(ctx, "scan:path job received", slog.String("path", p.Path))
+		slog.DebugContext(ctx, "scan:path job received", slog.String(otelkeys.Path, p.Path))
 
 		if _, err := os.Stat(p.Path); err != nil {
 			return fmt.Errorf("scan path %s: %w", p.Path, err)
 		}
 
-		slog.InfoContext(ctx, "starting path scan", slog.String("path", p.Path))
+		slog.InfoContext(ctx, "starting path scan", slog.String(otelkeys.Path, p.Path))
 
 		var found int
 		err := filepath.WalkDir(p.Path, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
-				slog.WarnContext(ctx, "error accessing path", slog.String("path", path), slog.Any("error", err))
+				slog.WarnContext(ctx, "error accessing path",
+					slog.String(otelkeys.Path, path),
+					slog.Any(otelkeys.Error, err),
+				)
 				return nil
 			}
 
@@ -65,20 +70,26 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			}
 
 			if d.IsDir() {
-				slog.Debug("scan:path skipping directory", slog.String("path", path))
+				slog.DebugContext(ctx, "scan:path skipping directory", slog.String(otelkeys.Path, path))
 				return nil
 			}
 
 			ext := strings.ToLower(filepath.Ext(path))
 			fileType, ok := supportedExtensions[ext]
 			if !ok {
-				slog.Debug("scan:path skipping unsupported file", slog.String("path", path), slog.String("ext", ext))
+				slog.DebugContext(ctx, "scan:path skipping unsupported file",
+					slog.String(otelkeys.Path, path),
+					slog.String(otelkeys.Ext, ext),
+				)
 				return nil
 			}
 
 			info, err := d.Info()
 			if err != nil {
-				slog.Warn("error reading file info", slog.String("path", path), slog.Any("error", err))
+				slog.WarnContext(ctx, "error reading file info",
+					slog.String(otelkeys.Path, path),
+					slog.Any(otelkeys.Error, err),
+				)
 				return nil
 			}
 
@@ -94,24 +105,29 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 				FileSize: info.Size(),
 			})
 			if err != nil {
-				slog.Warn("error enqueuing process:file job", slog.String("path", absPath), slog.Any("error", err))
+				slog.WarnContext(ctx, "error enqueuing process:file job",
+					slog.String(otelkeys.Path, absPath),
+					slog.Any(otelkeys.Error, err),
+				)
 				return nil
 			}
 
 			found++
-			slog.Info("enqueued file for processing",
-				slog.String("type", fileType),
-				slog.String("path", absPath),
+			slog.InfoContext(ctx, "enqueued file for processing",
+				slog.String(otelkeys.Type, fileType),
+				slog.String(otelkeys.Path, absPath),
 			)
 
 			return nil
 		})
-
 		if err != nil {
 			return fmt.Errorf("walk path %s: %w", p.Path, err)
 		}
 
-		slog.InfoContext(ctx, "path scan complete", slog.String("path", p.Path), slog.Int("files_found", found))
+		slog.InfoContext(ctx, "path scan complete",
+			slog.String(otelkeys.Path, p.Path),
+			slog.Int(otelkeys.FilesFound, found),
+		)
 		return nil
 	}
 }

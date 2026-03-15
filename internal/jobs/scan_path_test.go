@@ -53,17 +53,17 @@ func TestScanPathHandler(t *testing.T) {
 	}
 
 	for name := range testFiles {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte("test content"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("test content"), 0o644); err != nil {
 			t.Fatalf("write file %s: %v", name, err)
 		}
 	}
 
 	// Create a subdirectory with another book
 	subdir := filepath.Join(dir, "subdir")
-	if err := os.MkdirAll(subdir, 0755); err != nil {
+	if err := os.MkdirAll(subdir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(subdir, "Nested.pdf"), []byte("nested content"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(subdir, "Nested.pdf"), []byte("nested content"), 0o644); err != nil {
 		t.Fatalf("write nested file: %v", err)
 	}
 

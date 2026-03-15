@@ -19,6 +19,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers/middleware"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 
 	_ "github.com/amalgamated-tools/biblioteka/docs"
@@ -94,7 +95,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.Address = net.JoinHostPort("0.0.0.0", strconv.Itoa(s.port))
 
 	if s.DB == nil {
-		database, err := db.SetupDatabase()
+		database, err := db.SetupDatabase(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open database: %w", err)
 		}
@@ -168,30 +169,30 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 			return nil, fmt.Errorf("failed to initialize OIDC provider: %w", err)
 		}
 		s.oidcHandler = oidcHandler
-		slog.Info("OIDC authentication enabled", slog.String("issuer", issuer))
-	} else if dbIssuer, err := s.DB.GetSetting("oidc_issuer_url"); err == nil && dbIssuer != "" {
-		dbClientID, _ := s.DB.GetSetting("oidc_client_id")
-		dbClientSecret, _ := s.DB.GetSetting("oidc_client_secret")
-		dbRedirectURI, _ := s.DB.GetSetting("oidc_redirect_uri")
+		slog.InfoContext(ctx, "OIDC authentication enabled", slog.String(otelkeys.Issuer, issuer))
+	} else if dbIssuer, err := s.DB.GetSetting(ctx, "oidc_issuer_url"); err == nil && dbIssuer != "" {
+		dbClientID, _ := s.DB.GetSetting(ctx, "oidc_client_id")
+		dbClientSecret, _ := s.DB.GetSetting(ctx, "oidc_client_secret")
+		dbRedirectURI, _ := s.DB.GetSetting(ctx, "oidc_redirect_uri")
 		if dbClientID != "" && dbClientSecret != "" && dbRedirectURI != "" {
 			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, dbIssuer, dbClientID, dbClientSecret, dbRedirectURI, secureCookies)
 			if err != nil {
-				slog.Warn("failed to initialize OIDC from saved settings", slog.Any("error", err))
+				slog.WarnContext(ctx, "failed to initialize OIDC from saved settings", slog.Any(otelkeys.Error, err))
 			} else {
 				s.oidcHandler = oidcHandler
-				slog.Info("OIDC authentication enabled from saved settings", slog.String("issuer", dbIssuer))
+				slog.InfoContext(ctx, "OIDC authentication enabled from saved settings", slog.String(otelkeys.Issuer, dbIssuer))
 			}
 		}
 	}
 
-	s.setupRoutes()
+	s.setupRoutes(ctx)
 	return s, nil
 }
 
 func (s *Server) Run(ctx context.Context) error {
 	newctx, span := otel.StartTracer(ctx, "server.Run")
 	defer span.End()
-	slog.Debug("Running server", slog.String("address", s.Address))
+	slog.DebugContext(newctx, "Running server", slog.String(otelkeys.Address, s.Address))
 	ctx, cancel := context.WithCancel(newctx)
 
 	chain := alice.New(
@@ -211,7 +212,7 @@ func (s *Server) Run(ctx context.Context) error {
 	go func() {
 		err := s.httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			slog.Error("HTTP server error", slog.Any("error", err))
+			slog.ErrorContext(newctx, "HTTP server error", slog.Any(otelkeys.Error, err))
 			s.shutdownFuncs = append(s.shutdownFuncs, func(_ context.Context) error {
 				return err
 			})
@@ -242,7 +243,7 @@ func (s *Server) shutdown(ctx context.Context) error {
 	return shutdownGroup.Wait()
 }
 
-func (s *Server) setupRoutes() {
+func (s *Server) setupRoutes(ctx context.Context) {
 	// Public auth routes (rate-limited)
 	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Limit(s.authHandler.Signup))
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
@@ -305,7 +306,7 @@ func (s *Server) setupRoutes() {
 		s.mux.Handle(mon.RootPath()+"/", s.requireAdmin(mon))
 	}
 
-	s.setupFrontend()
+	s.setupFrontend(ctx)
 }
 
 // swaggerSecurityHeaders wraps a handler with restrictive CORS and CSP headers
@@ -361,7 +362,7 @@ func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		if err := json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed"}); err != nil {
-			slog.ErrorContext(r.Context(), "failed to encode OIDC enabled method not allowed response", slog.Any("error", err))
+			slog.ErrorContext(r.Context(), "failed to encode OIDC enabled method not allowed response", slog.Any(otelkeys.Error, err))
 		}
 		return
 	}
@@ -374,7 +375,7 @@ func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), "failed to encode OIDC enabled response", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to encode OIDC enabled response", slog.Any(otelkeys.Error, err))
 	}
 }
 
@@ -404,7 +405,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			slog.ErrorContext(r.Context(), "failed to encode health method not allowed response", slog.Any("error", err))
+			slog.ErrorContext(r.Context(), "failed to encode health method not allowed response", slog.Any(otelkeys.Error, err))
 		}
 		return
 	}
@@ -417,15 +418,15 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), "failed to encode health response", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "failed to encode health response", slog.Any(otelkeys.Error, err))
 	}
 }
 
-func (s *Server) setupFrontend() {
+func (s *Server) setupFrontend(ctx context.Context) {
 	// Serve the embedded frontend SPA
 	frontendFS, err := fs.Sub(embeddedFiles, "dist")
 	if err != nil {
-		slog.Error("failed to setup frontend filesystem", slog.Any("error", err))
+		slog.ErrorContext(ctx, "failed to setup frontend filesystem", slog.Any(otelkeys.Error, err))
 		panic(fmt.Sprintf("failed to setup frontend filesystem: %v", err))
 	}
 
@@ -456,5 +457,4 @@ func (s *Server) setupFrontend() {
 		r.URL.Path = "/"
 		fileServer.ServeHTTP(w, r)
 	})
-
 }

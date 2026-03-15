@@ -46,7 +46,7 @@ func setupLibraryHandler(t *testing.T) (*LibraryHandler, string) {
 	d := newTestDB(t)
 	h := &LibraryHandler{DB: d}
 
-	user, err := d.CreateUser("Test User", "test@example.com", "password1")
+	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "not-a-dir.txt")
-	if err := os.WriteFile(filePath, []byte("hello"), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte("hello"), 0o644); err != nil {
 		t.Fatalf("write file: %v", err)
 	}
 
@@ -304,11 +304,11 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	}
 
 	// Create a book and link it to the library.
-	book, err := h.DB.CreateBook("The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	if err := h.DB.AddBookToLibrary(lib.ID, book.ID); err != nil {
+	if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
 		t.Fatalf("add book to library: %v", err)
 	}
 
