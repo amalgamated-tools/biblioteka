@@ -27,7 +27,7 @@ func newTestDB(t *testing.T) *db.DB {
 		t.Fatalf("pragmas: %v", err)
 	}
 
-	if err := db.RunMigrations(sqlDB, db.DialectSQLite); err != nil {
+	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
 		_ = sqlDB.Close()
 		t.Fatalf("migrations: %v", err)
 	}

@@ -31,7 +31,7 @@ func newTestDB(t *testing.T) *DB {
 
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
 
-	if err := runMigrations(d); err != nil {
+	if err := runMigrations(t.Context(), d); err != nil {
 		_ = sqlDB.Close()
 		t.Fatalf("newTestDB: migrations: %v", err)
 	}
