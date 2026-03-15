@@ -840,19 +840,19 @@ Delete a book file record (does not delete the file from disk). Returns `204 No 
 
 ## Swagger UI
 
-### `GET /swagger/` 🔒
+### `GET /swagger/`
 
 An interactive OpenAPI browser (powered by [Swagger UI](https://swagger.io/tools/swagger-ui/)) that documents and lets you try every API endpoint in the browser.
 
 | Property | Value |
 |----------|-------|
 | **URL** | `/swagger/` |
-| **Auth** | 🔒 Valid JWT required |
+| **Auth** | Public — no authentication required to browse the UI |
 | **Spec URL** | `/swagger/doc.json` — raw OpenAPI 3.0 JSON |
 
 > Accessing `/swagger` (without trailing slash) redirects to `/swagger/` automatically.
 
-The UI is useful during development for exploring request/response shapes without needing a separate API client.
+The UI is useful during development for exploring request/response shapes without needing a separate API client. Individual protected endpoints still require a valid JWT when invoked from within the UI.
 
 ---
 
