@@ -80,6 +80,42 @@ func (d *DB) ListSeries(ctx context.Context) ([]Series, error) {
 	return list, rows.Err()
 }
 
+// ListSeriesPaginated returns series ordered by name with pagination and total count.
+func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Series, int, error) {
+	slog.DebugContext(ctx, "db: listing series paginated",
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+
+	var total int
+	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM series`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "ORDER BY name ASC, rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY name ASC, id ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+seriesColumns+` FROM series `+orderBy+` LIMIT $1 OFFSET $2`,
+		limit, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var list []Series
+	for rows.Next() {
+		s, err := scanSeries(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		list = append(list, *s)
+	}
+	return list, total, rows.Err()
+}
+
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
 	slog.DebugContext(ctx, "db: updating series",
 		slog.String(otelkeys.ID, id),

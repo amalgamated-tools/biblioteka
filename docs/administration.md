@@ -139,6 +139,11 @@ curl "http://localhost:8080/api/audit-logs?limit=50&offset=50" \
 | `series.deleted`       | `series`      | `name`                                           | `DELETE /api/series/{id}`               |
 | `book_file.created`    | `book_file`   | `book_id`, `file_name`, `file_type`              | `POST /api/books/{id}/files`            |
 | `book_file.deleted`    | `book_file`   | `book_id`, `file_name`, `file_type`              | `DELETE /api/book-files/{id}`           |
+| `api_key.created`      | `api_key`     | `name`                                           | `POST /api/api-keys`                    |
+| `api_key.deleted`      | `api_key`     | `name`                                           | `DELETE /api/api-keys/{id}`             |
+| `opds_credential.updated` | `opds_credential` | `username`                               | `PUT /api/opds/credentials`             |
+| `opds_credential.deleted` | `opds_credential` | `username`                               | `DELETE /api/opds/credentials`          |
+| `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
 
 **Notes:**
 - `user_id` in an audit log entry is the ID of the user who performed the action. It is `null` for system-initiated actions (e.g. background job operations).
@@ -273,6 +278,43 @@ curl -X PUT http://localhost:8080/api/config/oidc \
 The server immediately tests the issuer URL by performing OIDC discovery before saving. If discovery fails, the config is rejected with a `400` error.
 
 **Precedence:** Environment variables (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI`) always override database-stored settings. If environment variables are set, the runtime configuration UI will appear read-only.
+
+---
+
+## SMTP Configuration (Runtime)
+
+Admins can configure SMTP at runtime without a server restart via **Settings → SMTP** or the API:
+
+```bash
+# Get current SMTP config (password is never returned)
+curl http://localhost:8080/api/config/smtp \
+  -H "Authorization: Bearer <admin-jwt>"
+
+# Set SMTP config
+curl -X PUT http://localhost:8080/api/config/smtp \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "host":     "smtp.example.com",
+    "port":     "587",
+    "username": "mailer@example.com",
+    "password": "<password>",
+    "from":     "biblioteka@example.com",
+    "tls":      "starttls"
+  }'
+
+# Send a test email to verify the configuration
+curl -X POST http://localhost:8080/api/config/smtp/test \
+  -H "Authorization: Bearer <admin-jwt>"
+```
+
+The test endpoint sends a short verification email to the `from` address. It returns `200 OK` with a `{"message":"…"}` body on success, or a `4xx`/`5xx` error with `{"error":"…"}` on failure.
+
+**TLS modes:** `none` (plaintext), `starttls` (STARTTLS upgrade on port 587, default), or `tls` (implicit TLS on port 465).
+
+**Precedence:** When the `SMTP_HOST` environment variable is set, all SMTP settings are read exclusively from environment variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS`) and the database values are ignored. The runtime configuration UI will appear read-only. When `SMTP_HOST` is unset (the default), the values stored in the database via the API or Settings UI are used.
+
+See [API reference — SMTP config endpoints](api-reference.md#get-apiconfigsmtp--admin) for full request/response shapes.
 
 ---
 

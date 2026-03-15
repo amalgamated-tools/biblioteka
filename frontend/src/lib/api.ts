@@ -381,3 +381,29 @@ export async function getBookFile(id: string): Promise<BookFile> {
 export async function deleteBookFile(id: string): Promise<void> {
   await request<void>("DELETE", `/api/book-files/${id}`);
 }
+
+// API Keys
+
+export interface APIKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  last_used_at: string | null;
+  created_at: string;
+}
+
+export interface APIKeyCreateResponse extends APIKey {
+  key: string;
+}
+
+export async function listAPIKeys(): Promise<APIKey[]> {
+  return request<APIKey[]>("GET", "/api/api-keys");
+}
+
+export async function createAPIKey(name: string): Promise<APIKeyCreateResponse> {
+  return request<APIKeyCreateResponse>("POST", "/api/api-keys", { name });
+}
+
+export async function deleteAPIKey(id: string): Promise<void> {
+  await request<void>("DELETE", `/api/api-keys/${id}`);
+}
