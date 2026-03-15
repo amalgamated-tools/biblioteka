@@ -64,7 +64,7 @@ func (j *JWTManager) CreateToken(ctx context.Context, userID string) (string, er
 	if err != nil {
 		return "", fmt.Errorf("sign JWT: %w", err)
 	}
-	slog.DebugContext(ctx, "JWT token created", slog.String(otelkeys.UserID, userID), slog.Time("expires_at", now.Add(j.ttl)))
+	slog.DebugContext(ctx, "JWT token created", slog.String(otelkeys.UserID, userID), slog.Time(otelkeys.ExpiresAt, now.Add(j.ttl)))
 	return signed, nil
 }
 

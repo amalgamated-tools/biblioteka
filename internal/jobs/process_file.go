@@ -49,7 +49,7 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 			slog.String(otelkeys.Path, p.Path),
 			slog.String(otelkeys.FileName, p.FileName),
 			slog.String(otelkeys.FileType, p.FileType),
-			slog.Int64("file_size", p.FileSize),
+			slog.Int64(otelkeys.FileSize, p.FileSize),
 		)
 
 		title := p.FileName

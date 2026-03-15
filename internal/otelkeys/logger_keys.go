@@ -54,4 +54,6 @@ const (
 	UserAgent         string = "user_agent"
 	UserID            string = "user_id"
 	Version           string = "version"
+	ExpiresAt         string = "expires_at"
+	FileSize          string = "file_size"
 )
