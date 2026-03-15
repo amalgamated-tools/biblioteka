@@ -9,6 +9,8 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
 - **Author & series tracking** – browse by author or series, with position numbers within each series
 - **User authentication** – JWT-based login, optional OpenID Connect (OIDC/SSO)
+- **API keys** – Long-lived tokens for programmatic and scripted access (prefix `bib_`); managed per-user via the Settings page or API
+- **OPDS 1.2 catalog** – Built-in OPDS server at `/opds` lets any compatible e-reader app (KOReader, Calibre, Moon+ Reader, …) browse and download books using Basic Auth credentials separate from your main account password
 - **Background processing** – Redis-backed job queue scans paths and processes files asynchronously; includes a built-in [Asynqmon](https://github.com/hibiken/asynqmon) monitoring UI at `/asynqmon/`
 - **Two database backends** – SQLite (zero-config, default) or PostgreSQL
 - **Single binary** – Go backend embeds the Svelte frontend; one executable to deploy
@@ -107,6 +109,25 @@ The first account created is automatically granted admin privileges. Admins can:
 - **Configure SMTP at runtime** — read and update SMTP server settings via `GET /api/config/smtp` and `PUT /api/config/smtp` without a server restart. Send a test email via `POST /api/config/smtp/test` to verify the configuration. Environment variable values (`SMTP_HOST`, etc.) take precedence over database-stored settings when `SMTP_HOST` is set.
 - **Monitor background jobs** — a web dashboard is available at `/asynqmon/` when Redis is running. It shows queued, active, completed, and failed job details.
 - **Review audit logs** — a paginated audit trail of all create, update, and delete actions is available via `GET /api/audit-logs`. Each entry records the user (when available), the action, and the affected entity.
+
+## OPDS Catalog
+
+Biblioteka includes a built-in [OPDS 1.2](https://specs.opds.io/opds-1.2) catalog server, allowing any compatible e-reader to browse and download your books without extra software.
+
+- **URL:** `/opds` (e.g. `http://localhost:8080/opds`)
+- **Authentication:** HTTP Basic Auth using a per-user OPDS credential — separate from your main account password.
+- **Manage credentials:** via the Settings page or the `PUT /api/opds/credentials` endpoint.
+
+See [docs/opds.md](docs/opds.md) for the full setup guide, catalog structure, and supported OPDS clients.
+
+## API Keys
+
+Long-lived API keys let scripts, CI pipelines, and external services authenticate without storing your password or managing JWT expiry. Keys begin with `bib_` and are supplied via the `Authorization: Bearer` header.
+
+- **Create and revoke keys:** via **Settings → API Keys** in the UI, or via the `GET / POST /api/api-keys` and `DELETE /api/api-keys/{id}` endpoints.
+- **Scope:** each key inherits the permissions of the user who created it.
+
+See [docs/authentication.md#api-keys](docs/authentication.md#api-keys) for the full reference.
 
 ## Background Job Monitoring
 
