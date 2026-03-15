@@ -272,7 +272,10 @@ func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, author
 
 	author, err := h.DB.GetAuthor(ctx, authorID)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: author not found", slog.String(otelkeys.AuthorID, authorID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "OPDS: author not found",
+			slog.String(otelkeys.AuthorID, authorID),
+			slog.Any(otelkeys.Error, err),
+		)
 		http.NotFound(w, r)
 		return
 	}
@@ -343,7 +346,10 @@ func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, series
 
 	series, err := h.DB.GetSeries(ctx, seriesID)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: series not found", slog.String(otelkeys.SeriesID, seriesID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "OPDS: series not found",
+			slog.String(otelkeys.SeriesID, seriesID),
+			slog.Any(otelkeys.Error, err),
+		)
 		http.NotFound(w, r)
 		return
 	}
@@ -437,7 +443,10 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 
 	bf, err := h.DB.GetBookFile(ctx, fileID)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: book file not found", slog.String(otelkeys.BookFileID, fileID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "OPDS: book file not found",
+			slog.String(otelkeys.BookFileID, fileID),
+			slog.Any(otelkeys.Error, err),
+		)
 		http.NotFound(w, r)
 		return
 	}
