@@ -88,17 +88,18 @@ func clearAuthCookie(w http.ResponseWriter, secure bool) {
 }
 
 // Signup godoc
-// @Summary     Sign up a new user
-// @Description Create a new user account with name, email, and password
-// @Tags        Auth
-// @Accept      json
-// @Produce     json
-// @Param       body body     signupRequest true "Signup request"
-// @Success     201  {object} authResponse
-// @Failure     400  {object} errorResponse
-// @Failure     409  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /auth/signup [post]
+//
+//	@Summary		Sign up a new user
+//	@Description	Create a new user account with name, email, and password
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		signupRequest	true	"Signup request"
+//	@Success		201		{object}	authResponse
+//	@Failure		400		{object}	errorResponse
+//	@Failure		409		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/auth/signup [post]
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -174,17 +175,18 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 }
 
 // Login godoc
-// @Summary     Log in
-// @Description Authenticate with email and password
-// @Tags        Auth
-// @Accept      json
-// @Produce     json
-// @Param       body body     loginRequest true "Login request"
-// @Success     200  {object} authResponse
-// @Failure     400  {object} errorResponse
-// @Failure     401  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /auth/login [post]
+//
+//	@Summary		Log in
+//	@Description	Authenticate with email and password
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		loginRequest	true	"Login request"
+//	@Success		200		{object}	authResponse
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -247,16 +249,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // Me godoc
-// @Summary     Get current user
-// @Description Returns the authenticated user's profile
-// @Tags        Auth
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Success     200 {object} userDTO
-// @Failure     404 {object} errorResponse
-// @Failure     500 {object} errorResponse
-// @Router      /auth/me [get]
+//
+//	@Summary		Get current user
+//	@Description	Returns the authenticated user's profile
+//	@Tags			Auth
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{object}	userDTO
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/auth/me [get]
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -284,18 +287,19 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 }
 
 // ChangePassword godoc
-// @Summary     Change password
-// @Description Change the authenticated user's password
-// @Tags        Auth
-// @Accept      json
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       body body     changePasswordRequest true "Change password request"
-// @Success     200  {object} object{message=string}
-// @Failure     400  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /auth/password [put]
+//
+//	@Summary		Change password
+//	@Description	Change the authenticated user's password
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			body	body		changePasswordRequest	true	"Change password request"
+//	@Success		200		{object}	object{message=string}
+//	@Failure		400		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/auth/password [put]
 func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -364,13 +368,14 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // Logout godoc
-// @Summary     Log out
-// @Description Clears the authentication cookie
-// @Tags        Auth
-// @Produce     json
-// @Success     200 {object} object{message=string}
-// @Failure     405 {object} errorResponse
-// @Router      /auth/logout [post]
+//
+//	@Summary		Log out
+//	@Description	Clears the authentication cookie
+//	@Tags			Auth
+//	@Produce		json
+//	@Success		200	{object}	object{message=string}
+//	@Failure		405	{object}	errorResponse
+//	@Router			/auth/logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
