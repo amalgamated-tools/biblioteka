@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -58,10 +59,21 @@ func shouldTouchAPIKeyLastUsed(id string, now time.Time) bool {
 
 	// Sweep expired entries when the map grows beyond a reasonable size.
 	const sweepThreshold = 100
+	const maxCacheSize = 200
 	if len(apiKeyLastTouchedAt) >= sweepThreshold {
 		for k, v := range apiKeyLastTouchedAt {
 			if now.Sub(v) >= apiKeyTouchInterval {
 				delete(apiKeyLastTouchedAt, k)
+			}
+		}
+
+		// Enforce a hard upper bound even if nothing was old enough to sweep.
+		if len(apiKeyLastTouchedAt) > maxCacheSize {
+			for k := range apiKeyLastTouchedAt {
+				delete(apiKeyLastTouchedAt, k)
+				if len(apiKeyLastTouchedAt) <= maxCacheSize {
+					break
+				}
 			}
 		}
 	}
@@ -168,8 +180,19 @@ func Middleware(jwt *JWTManager, apiKeys APIKeyValidator) func(http.Handler) htt
 
 			userID, err := resolveUser(r.Context(), token, source, jwt, apiKeys)
 			if err != nil {
-				slog.InfoContext(r.Context(), "invalid or expired token", slog.Any(otelkeys.Error, err))
-				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+				// Distinguish between expected auth failures (invalid/expired token)
+				// and unexpected internal errors (e.g., database/network issues).
+				if errors.Is(err, ErrInvalidToken) {
+					slog.InfoContext(r.Context(), "invalid or expired token", slog.Any(otelkeys.Error, err))
+					jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+				} else {
+					slog.ErrorContext(
+						r.Context(),
+						"failed to resolve authenticated user",
+						slog.Any(otelkeys.Error, err),
+					)
+					jsonError(w, http.StatusInternalServerError, "internal server error")
+				}
 				return
 			}
 

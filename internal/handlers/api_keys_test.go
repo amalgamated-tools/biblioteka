@@ -203,7 +203,9 @@ func TestDeleteAPIKey_Success(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var created apiKeyCreateResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &created)
+	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
+		t.Fatalf("unmarshal create response: %v; body: %s", err, w.Body.String())
+	}
 
 	// Delete it.
 	r = httptest.NewRequest(http.MethodDelete, "/api/api-keys/"+created.ID, nil)
@@ -222,7 +224,9 @@ func TestDeleteAPIKey_Success(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var remaining []apiKeyDTO
-	_ = json.Unmarshal(w.Body.Bytes(), &remaining)
+	if err := json.Unmarshal(w.Body.Bytes(), &remaining); err != nil {
+		t.Fatalf("unmarshal list response: %v; body: %s", err, w.Body.String())
+	}
 	if len(remaining) != 0 {
 		t.Errorf("expected 0 keys after delete, got %d", len(remaining))
 	}

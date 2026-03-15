@@ -15,6 +15,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+const apiKeyDisplayPrefixHexLen = 12
+
 // APIKeyHandler holds dependencies for API key endpoints.
 type APIKeyHandler struct {
 	DB *db.DB
@@ -156,8 +158,9 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 	// hashing (bcrypt/argon2) is unnecessary for cryptographically random secrets.
 	keyHash := auth.HashAPIKey(fullKey)
 
-	// Store the first 8 characters as the display prefix.
-	keyPrefix := fullKey[:8]
+	// Store a longer display prefix: static prefix + the first apiKeyDisplayPrefixHexLen hex characters.
+	hexPart := fullKey[len(auth.APIKeyPrefix):]
+	keyPrefix := auth.APIKeyPrefix + hexPart[:apiKeyDisplayPrefixHexLen]
 
 	userID := auth.UserIDFromContext(r.Context())
 	apiKey, err := h.DB.CreateAPIKey(r.Context(), userID, name, keyHash, keyPrefix)
