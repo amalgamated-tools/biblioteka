@@ -23,13 +23,13 @@ Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task q
                                      └────────────────┘
 ```
 
-The HTTP server and the asynq worker run **in the same process** and are started concurrently via an `errgroup` in `cmd/server/main.go`. Both share the same Redis connection.
+The HTTP server and the asynq worker run **in the same process** and are started concurrently via an `errgroup` in `cmd/server/main.go`. Both use the same Redis instance (via the same `REDIS_URL`), but create their own Redis connections.
 
 ## Prerequisites
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| Redis      | 7 +     | Job queue storage and scheduling |
+| Redis      | 7+      | Job queue storage and scheduling |
 
 Set the `REDIS_URL` environment variable to point at your Redis instance. The default is `redis://localhost:6379`. Standard Redis URL formats are supported (e.g. `redis://:password@host:6379/0`, `rediss://host:6379` for TLS).
 
@@ -106,17 +106,17 @@ Configuration lives in `internal/worker/worker.go` as package-level constants:
 | `DefaultConcurrency` | `4` | Maximum number of jobs executing in parallel |
 | `DefaultMaxRetry` | `5` | How many times a failed job is retried |
 
-Every enqueued task also carries a **24-hour deduplication window** — if the same job with the same payload is enqueued again within 24 hours, the duplicate is silently skipped.
+Tasks enqueued via `Worker.Enqueue` use a **24-hour deduplication window** (via `asynq.Unique(24*time.Hour)`). If the same job with the same payload is enqueued again through `Worker.Enqueue` within 24 hours, asynq returns an enqueue error (typically `asynq.ErrDuplicateTask`), and the duplicate task is not processed. Callers can choose whether to log or ignore this error — it is not silently skipped.
 
 ## How Jobs Are Enqueued
 
 Jobs enter the queue in two ways:
 
-1. **API-triggered** — When a user creates a library via `POST /api/libraries` and the library has paths, the handler immediately enqueues a `scan:library` job (see `internal/handlers/libraries.go`).
+1. **API-triggered** — When a user creates a library via `POST /api/libraries` and the library has paths, the handler immediately enqueues a `scan:library` job via `Worker.Enqueue` (see `internal/handlers/libraries.go`), and therefore benefits from the 24-hour deduplication window described above.
 
-2. **Scheduled** — The asynq scheduler fires `scan:libraries` every 24 hours, which cascades into `scan:library` → `scan:path` → `process:file`.
+2. **Scheduled** — The asynq scheduler fires `scan:libraries` every 24 hours, which cascades into `scan:library` → `scan:path` → `process:file`. These scheduled tasks are enqueued by the scheduler itself and are not deduplicated — they run on every scheduled tick.
 
-In both cases, the `Worker.Enqueue` method serialises the payload to JSON and pushes an asynq task onto the `"default"` queue.
+API-triggered jobs call `Worker.Enqueue`, which serialises the payload to JSON and pushes an asynq task onto the `"default"` queue with the configured deduplication options. Scheduled jobs are created by the asynq scheduler without going through `Worker.Enqueue`.
 
 ## Monitoring Dashboard (Asynqmon)
 
@@ -184,9 +184,7 @@ internal/
 
 4. **(Optional) Schedule it** if it should run periodically:
 
-   ```go
-   w.RegisterSchedule("@every 1h", jobs.JobExample, struct{}{})
-   ```
+   
 
 5. **(Optional) Enqueue from a handler** if it should be triggered by an API call:
 
