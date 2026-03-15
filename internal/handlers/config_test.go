@@ -713,6 +713,14 @@ func TestHandleSetSMTPConfig_Success(t *testing.T) {
 	if port != "465" {
 		t.Errorf("saved smtp_port = %q, want %q", port, "465")
 	}
+
+	pw, err := h.DB.GetSetting(context.Background(), settingSMTPPassword)
+	if err != nil {
+		t.Fatalf("GetSetting(smtp_password) error: %v", err)
+	}
+	if pw != "secret" {
+		t.Errorf("saved smtp_password = %q, want %q", pw, "secret")
+	}
 }
 
 func TestHandleSetSMTPConfig_DefaultsPortAndTLS(t *testing.T) {

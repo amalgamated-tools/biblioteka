@@ -642,6 +642,10 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusBadRequest, "SMTP is not configured")
 		return
 	}
+	if err := validateSMTPHost(cfg.Host); err != nil {
+		writeError(r.Context(), w, http.StatusBadRequest, "SMTP host is invalid: "+err.Error())
+		return
+	}
 	if cfg.EnvOverride && cfg.From == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "incomplete SMTP environment configuration: SMTP_HOST is set but SMTP_FROM is missing")
 		return
