@@ -1,0 +1,197 @@
+# Background Jobs
+
+Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task queue for Go, to run background jobs such as scanning library paths and importing book files. A built-in scheduler triggers periodic scans, and a web dashboard lets admins inspect queues and retry failures.
+
+## Architecture Overview
+
+```
+┌───────────────────────────┐        ┌───────────────┐
+│   HTTP Server             │        │    Redis       │
+│                           │        │                │
+│  POST /api/libraries ─────┼──────▶ │  "default"     │
+│  Scheduled (every 24 h) ──┼──────▶ │   queue        │
+└───────────────────────────┘        └───────┬───────┘
+                                             │
+                                     ┌───────▼───────┐
+                                     │  asynq Worker  │
+                                     │  (4 goroutines)│
+                                     │                │
+                                     │  scan:libraries│
+                                     │  scan:library  │
+                                     │  scan:path     │
+                                     │  process:file  │
+                                     └────────────────┘
+```
+
+The HTTP server and the asynq worker run **in the same process** and are started concurrently via an `errgroup` in `cmd/server/main.go`. Both share the same Redis connection.
+
+## Prerequisites
+
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| Redis      | 7 +     | Job queue storage and scheduling |
+
+Set the `REDIS_URL` environment variable to point at your Redis instance. The default is `redis://localhost:6379`. Standard Redis URL formats are supported (e.g. `redis://:password@host:6379/0`, `rediss://host:6379` for TLS).
+
+## Job Catalog
+
+### `scan:libraries`
+
+| | |
+|---|---|
+| **Source** | `internal/jobs/scan_libraries.go` — `NewScanLibrariesHandler` |
+| **Trigger** | Scheduled every 24 hours |
+| **Payload** | _none (empty struct)_ |
+
+Fetches all libraries from the database, filters to those with `monitored = true` and at least one configured path, and enqueues a `scan:library` job for each.
+
+### `scan:library`
+
+| | |
+|---|---|
+| **Source** | `internal/jobs/scan_libraries.go` — `NewScanLibraryHandler` |
+| **Trigger** | Enqueued by `scan:libraries`, or immediately when a library is created via the API |
+| **Payload** | `{ "library_id": "<uuid>", "paths": ["/books", "/more-books"] }` |
+
+Enqueues a `scan:path` job for every path in the library.
+
+### `scan:path`
+
+| | |
+|---|---|
+| **Source** | `internal/jobs/scan_path.go` — `NewScanPathHandler` |
+| **Trigger** | Enqueued by `scan:library` |
+| **Payload** | `{ "path": "/books" }` |
+
+Recursively walks the directory and enqueues a `process:file` job for every file with a supported extension (`.epub`, `.mobi`, `.pdf`, `.azw3`). Inaccessible files are logged as warnings and skipped.
+
+### `process:file`
+
+| | |
+|---|---|
+| **Source** | `internal/jobs/process_file.go` — `NewProcessFileHandler` |
+| **Trigger** | Enqueued by `scan:path` |
+| **Payload** | `{ "path": "/books/novel.epub", "file_name": "novel.epub", "file_type": "epub", "file_size": 524288 }` |
+
+Creates a `book` record (using the filename as the title) and a `book_file` record in the database.
+
+### Job Chain
+
+A full scan flows through the jobs in a fan-out pattern:
+
+```
+scan:libraries
+ └─▶ scan:library  (one per monitored library)
+      └─▶ scan:path  (one per library path)
+           └─▶ process:file  (one per supported file found)
+```
+
+## Scheduling
+
+Periodic jobs are registered with the asynq scheduler at startup in `cmd/server/main.go`:
+
+```go
+w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{})
+```
+
+The cron specification follows the format accepted by asynq — both classic cron expressions (`0 3 * * *`) and convenience shortcuts (`@every 24h`, `@daily`) are supported.
+
+## Worker Configuration
+
+Configuration lives in `internal/worker/worker.go` as package-level constants:
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| `QueueName` | `"default"` | All jobs are placed on this queue |
+| `DefaultConcurrency` | `4` | Maximum number of jobs executing in parallel |
+| `DefaultMaxRetry` | `5` | How many times a failed job is retried |
+
+Every enqueued task also carries a **24-hour deduplication window** — if the same job with the same payload is enqueued again within 24 hours, the duplicate is silently skipped.
+
+## How Jobs Are Enqueued
+
+Jobs enter the queue in two ways:
+
+1. **API-triggered** — When a user creates a library via `POST /api/libraries` and the library has paths, the handler immediately enqueues a `scan:library` job (see `internal/handlers/libraries.go`).
+
+2. **Scheduled** — The asynq scheduler fires `scan:libraries` every 24 hours, which cascades into `scan:library` → `scan:path` → `process:file`.
+
+In both cases, the `Worker.Enqueue` method serialises the payload to JSON and pushes an asynq task onto the `"default"` queue.
+
+## Monitoring Dashboard (Asynqmon)
+
+The [Asynqmon](https://github.com/hibiken/asynqmon) web UI is mounted at **`/asynqmon/`** and is restricted to admin users.
+
+**Authentication options:**
+
+| Method | How |
+|--------|-----|
+| Browser | Sign in as an admin user through the web UI, then navigate to `/asynqmon/` — the session cookie (`biblioteka_token`) is sent automatically. |
+| API client | Include an `Authorization: Bearer <JWT>` header with an admin-level token. |
+
+The dashboard lets you:
+
+- View pending, active, completed, and failed jobs
+- Inspect job payloads and error messages
+- Retry or delete failed jobs
+- See queue statistics and throughput
+
+## Project Layout
+
+```
+cmd/server/main.go            # Registers handlers, schedules, starts worker
+internal/
+  jobs/
+    process_file.go            # process:file handler
+    scan_path.go               # scan:path handler + Enqueuer interface
+    scan_libraries.go          # scan:library & scan:libraries handlers
+  worker/
+    worker.go                  # Worker struct: Register, Enqueue, Start, Close
+```
+
+## Adding a New Job
+
+1. **Define the job name and payload** in a new file under `internal/jobs/`:
+
+   ```go
+   const JobExample = "example:task"
+
+   type ExamplePayload struct {
+       ID string `json:"id"`
+   }
+   ```
+
+2. **Write the handler** returning a `func(ctx context.Context, payload []byte) error`:
+
+   ```go
+   func NewExampleHandler(database *db.DB) func(ctx context.Context, payload []byte) error {
+       return func(ctx context.Context, payload []byte) error {
+           var p ExamplePayload
+           if err := json.Unmarshal(payload, &p); err != nil {
+               return fmt.Errorf("unmarshal example payload: %w", err)
+           }
+           // ... do work ...
+           return nil
+       }
+   }
+   ```
+
+3. **Register the handler** in `cmd/server/main.go`:
+
+   ```go
+   w.Register(cancelCtx, jobs.JobExample, jobs.NewExampleHandler(database))
+   ```
+
+4. **(Optional) Schedule it** if it should run periodically:
+
+   ```go
+   w.RegisterSchedule("@every 1h", jobs.JobExample, struct{}{})
+   ```
+
+5. **(Optional) Enqueue from a handler** if it should be triggered by an API call:
+
+   ```go
+   h.Enqueuer.Enqueue(ctx, jobs.JobExample, jobs.ExamplePayload{ID: "abc"})
+   ```
+
+6. **Write tests** — see the existing `*_test.go` files in `internal/jobs/` for patterns using mock enqueuers and in-memory SQLite databases.

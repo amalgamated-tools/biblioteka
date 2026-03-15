@@ -222,6 +222,10 @@ An interactive Swagger UI is served at `/swagger/` and requires a valid JWT. The
 
 The UI is a Svelte 5 SPA with hash-based routing. State is managed through reactive `$state` class stores. See [docs/frontend.md](docs/frontend.md) for the architecture overview, store pattern, routing, and a guide to adding new views and stores.
 
+## Background Jobs
+
+Library scanning and file processing run asynchronously via a Redis-backed job queue. See [docs/background-jobs.md](docs/background-jobs.md) for the job catalog, scheduling, worker configuration, the Asynqmon monitoring dashboard, and a guide to adding new jobs.
+
 ## Deployment
 
 For a production deployment — including TLS termination, reverse proxy setup, and backup strategies — see [docs/deployment.md](docs/deployment.md).
