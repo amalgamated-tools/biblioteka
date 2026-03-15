@@ -4,12 +4,21 @@
   import { listUsers, setUserAdmin, type AdminUser } from "../../lib/api";
   import { Users } from "lucide-svelte";
 
-  let userList: AdminUser[] = $state.raw([]);
+  interface Props {
+    cachedUsers: AdminUser[];
+    onUsersLoaded: (users: AdminUser[]) => void;
+  }
+
+  let { cachedUsers, onUsersLoaded }: Props = $props();
+
+  let userList: AdminUser[] = $state.raw(cachedUsers);
   let usersLoading = $state(false);
   let usersError: string | null = $state(null);
 
   onMount(() => {
-    loadUsers();
+    if (userList.length === 0) {
+      loadUsers();
+    }
   });
 
   async function loadUsers() {
@@ -17,6 +26,7 @@
     usersError = null;
     try {
       userList = await listUsers();
+      onUsersLoaded(userList);
     } catch (err) {
       usersError = err instanceof Error ? err.message : "Failed to load users";
     } finally {
@@ -30,6 +40,7 @@
       userList = userList.map((item) =>
         item.id === u.id ? { ...item, is_admin: !item.is_admin } : item,
       );
+      onUsersLoaded(userList);
     } catch (err) {
       usersError = err instanceof Error ? err.message : "Failed to update user";
     }

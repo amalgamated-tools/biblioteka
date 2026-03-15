@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { routerStore } from "../stores/router.svelte";
-  import { getConfigStatus } from "../lib/api";
+  import { getConfigStatus, getOidcConfig, listUsers, type AdminUser } from "../lib/api";
   import { Mail, Palette, Shield, Users } from "lucide-svelte";
   import AccountTab from "./settings/AccountTab.svelte";
   import OidcTab from "./settings/OidcTab.svelte";
@@ -28,12 +28,29 @@
 
   let isAdmin = $state(false);
   let oidcConfigured = $state(false);
+  let oidcIssuerUrl = $state("");
+  let oidcClientId = $state("");
+  let oidcRedirectUri = $state("");
+  let cachedUsers: AdminUser[] = $state.raw([]);
 
   onMount(async () => {
     try {
       const status = await getConfigStatus();
       oidcConfigured = status.oidc_configured;
       isAdmin = status.is_admin;
+
+      if (isAdmin) {
+        const [oidcConfig, users] = await Promise.all([
+          status.oidc_configured ? getOidcConfig() : Promise.resolve(null),
+          listUsers(),
+        ]);
+        if (oidcConfig) {
+          oidcIssuerUrl = oidcConfig.issuer_url;
+          oidcClientId = oidcConfig.client_id;
+          oidcRedirectUri = oidcConfig.redirect_uri;
+        }
+        cachedUsers = users;
+      }
     } catch {
       // ignore - will show as not configured
     }
@@ -106,11 +123,16 @@
       {/if}
 
       {#if activeTab === "oidc" && isAdmin}
-        <OidcTab initialOidcConfigured={oidcConfigured} />
+        <OidcTab
+          initialOidcConfigured={oidcConfigured}
+          initialIssuerUrl={oidcIssuerUrl}
+          initialClientId={oidcClientId}
+          initialRedirectUri={oidcRedirectUri}
+        />
       {/if}
 
       {#if activeTab === "users" && isAdmin}
-        <UsersTab />
+        <UsersTab {cachedUsers} onUsersLoaded={(users) => (cachedUsers = users)} />
       {/if}
 
       {#if activeTab === "preferences"}

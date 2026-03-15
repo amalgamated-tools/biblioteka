@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { authStore } from "../../stores/auth.svelte";
   import {
     changePassword,
@@ -19,6 +20,11 @@
   let passwordSuccess = $state(false);
   let passwordLoading = $state(false);
   let linkSsoLoading = $state(false);
+  let successTimer: ReturnType<typeof setTimeout> | undefined;
+
+  onDestroy(() => {
+    if (successTimer) clearTimeout(successTimer);
+  });
 
   async function handleLinkSso() {
     linkSsoLoading = true;
@@ -66,7 +72,7 @@
       currentPassword = "";
       newPassword = "";
       confirmPassword = "";
-      setTimeout(() => (passwordSuccess = false), 3000);
+      successTimer = setTimeout(() => (passwordSuccess = false), 3000);
     } catch (err) {
       passwordError =
         err instanceof Error ? err.message : "Failed to update password";

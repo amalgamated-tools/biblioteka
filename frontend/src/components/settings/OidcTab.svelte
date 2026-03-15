@@ -1,37 +1,34 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { getOidcConfig, setOidcConfig } from "../../lib/api";
+  import { onDestroy } from "svelte";
+  import { setOidcConfig } from "../../lib/api";
   import { Shield } from "lucide-svelte";
-
-  let oidcConfigured = $state(false);
-  let oidcIssuerUrl = $state("");
-  let oidcClientId = $state("");
-  let oidcClientSecret = $state("");
-  let oidcRedirectUri = $state("");
-  let oidcError: string | null = $state(null);
-  let oidcSuccess = $state(false);
-  let oidcLoading = $state(false);
-  let oidcStatusLoading = $state(true);
 
   interface Props {
     initialOidcConfigured: boolean;
+    initialIssuerUrl?: string;
+    initialClientId?: string;
+    initialRedirectUri?: string;
   }
 
-  let { initialOidcConfigured }: Props = $props();
+  let {
+    initialOidcConfigured,
+    initialIssuerUrl = "",
+    initialClientId = "",
+    initialRedirectUri = "",
+  }: Props = $props();
 
-  onMount(async () => {
-    oidcConfigured = initialOidcConfigured;
-    if (initialOidcConfigured) {
-      try {
-        const config = await getOidcConfig();
-        oidcIssuerUrl = config.issuer_url;
-        oidcClientId = config.client_id;
-        oidcRedirectUri = config.redirect_uri;
-      } catch {
-        // ignore - user can re-enter
-      }
-    }
-    oidcStatusLoading = false;
+  let oidcConfigured = $state(initialOidcConfigured);
+  let oidcIssuerUrl = $state(initialIssuerUrl);
+  let oidcClientId = $state(initialClientId);
+  let oidcClientSecret = $state("");
+  let oidcRedirectUri = $state(initialRedirectUri);
+  let oidcError: string | null = $state(null);
+  let oidcSuccess = $state(false);
+  let oidcLoading = $state(false);
+  let successTimer: ReturnType<typeof setTimeout> | undefined;
+
+  onDestroy(() => {
+    if (successTimer) clearTimeout(successTimer);
   });
 
   async function handleOidcSave(e: SubmitEvent) {
@@ -68,7 +65,7 @@
       oidcSuccess = true;
       oidcConfigured = true;
       oidcClientSecret = "";
-      setTimeout(() => (oidcSuccess = false), 3000);
+      successTimer = setTimeout(() => (oidcSuccess = false), 3000);
     } catch (err) {
       oidcError =
         err instanceof Error
@@ -94,9 +91,7 @@
     <div class="mb-4">
       <div class="flex items-center gap-2 text-sm">
         <span class="text-ink-500">Status:</span>
-        {#if oidcStatusLoading}
-          <span class="text-ink-400 dark:text-ink-500">Checking...</span>
-        {:else if oidcConfigured}
+        {#if oidcConfigured}
           <span
             class="inline-flex items-center gap-1.5 text-success-700 dark:text-green-400 bg-success-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full font-medium"
           >

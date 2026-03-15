@@ -18,14 +18,13 @@
       Display Preferences
     </h2>
     <div class="space-y-6">
-      <div>
-        <label
-          for="theme-select"
+      <fieldset>
+        <legend
           class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-3"
         >
           Theme
-        </label>
-        <div id="theme-select" class="flex gap-3">
+        </legend>
+        <div class="flex gap-3">
           {#each themes as t (t)}
             <button
               onclick={() => themeStore.set(t)}
@@ -41,7 +40,7 @@
         <p class="text-xs text-ink-400 dark:text-ink-500 mt-2">
           Choose how you prefer biblioteka to appear
         </p>
-      </div>
+      </fieldset>
 
       <hr class="border-ink-100 dark:border-ink-800" />
 
