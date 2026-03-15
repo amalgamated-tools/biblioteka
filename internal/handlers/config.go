@@ -685,17 +685,24 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 const smtpSessionTimeout = 30 * time.Second
 
 // sendMail sends an email using the specified TLS mode.
-func sendMail(_ context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
+// The context is propagated to dial calls so that cancelled requests
+// (e.g. client disconnect or server shutdown) abort the SMTP session promptly.
+func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		return fmt.Errorf("invalid address: %w", err)
 	}
 
 	tlsConfig := &tls.Config{ServerName: host}
+	netDialer := &net.Dialer{Timeout: 10 * time.Second}
 
 	switch tlsMode {
 	case "tls":
-		conn, err := tls.DialWithDialer(&net.Dialer{Timeout: 10 * time.Second}, "tcp", addr, tlsConfig)
+		tlsDialer := &tls.Dialer{
+			NetDialer: netDialer,
+			Config:    tlsConfig,
+		}
+		conn, err := tlsDialer.DialContext(ctx, "tcp", addr)
 		if err != nil {
 			return fmt.Errorf("TLS connection failed: %w", err)
 		}
@@ -712,7 +719,7 @@ func sendMail(_ context.Context, addr string, a smtp.Auth, from, to string, msg 
 		return smtpSend(client, a, from, to, msg)
 
 	case "starttls":
-		conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
+		conn, err := netDialer.DialContext(ctx, "tcp", addr)
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
@@ -732,7 +739,7 @@ func sendMail(_ context.Context, addr string, a smtp.Auth, from, to string, msg 
 		return smtpSend(client, a, from, to, msg)
 
 	case "none":
-		conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
+		conn, err := netDialer.DialContext(ctx, "tcp", addr)
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}

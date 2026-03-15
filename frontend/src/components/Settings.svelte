@@ -103,7 +103,7 @@
       smtpError = "From Address is required";
       return;
     }
-    if (!smtpPassword.trim() && !smtpPasswordSet && !smtpEnvOverride && smtpUsername.trim()) {
+    if (!smtpPassword.trim() && !smtpPasswordSet && smtpUsername.trim()) {
       smtpError = "Password is required when username is set";
       return;
     }
