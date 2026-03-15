@@ -15,6 +15,12 @@
   let usersLoading = $state(false);
   let usersError: string | null = $state(null);
 
+  $effect(() => {
+    if (userList.length === 0 && cachedUsers.length > 0) {
+      userList = cachedUsers;
+    }
+  });
+
   onMount(() => {
     if (userList.length === 0) {
       loadUsers();

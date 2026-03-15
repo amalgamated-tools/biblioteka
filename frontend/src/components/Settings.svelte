@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { routerStore } from "../stores/router.svelte";
-  import { getConfigStatus, getOidcConfig, listUsers, type AdminUser } from "../lib/api";
+  import { getConfigStatus, getOidcConfig, type AdminUser } from "../lib/api";
   import { Mail, Palette, Shield, Users } from "lucide-svelte";
   import AccountTab from "./settings/AccountTab.svelte";
   import OidcTab from "./settings/OidcTab.svelte";
@@ -40,16 +40,12 @@
       isAdmin = status.is_admin;
 
       if (isAdmin) {
-        const [oidcConfig, users] = await Promise.all([
-          status.oidc_configured ? getOidcConfig() : Promise.resolve(null),
-          listUsers(),
-        ]);
+        const oidcConfig = status.oidc_configured ? await getOidcConfig() : null;
         if (oidcConfig) {
           oidcIssuerUrl = oidcConfig.issuer_url;
           oidcClientId = oidcConfig.client_id;
           oidcRedirectUri = oidcConfig.redirect_uri;
         }
-        cachedUsers = users;
       }
     } catch {
       // ignore - will show as not configured

@@ -29,6 +29,25 @@
   let oidcLoading = $state(false);
   let successTimer: ReturnType<typeof setTimeout> | undefined;
 
+  $effect(() => {
+    // Sync local state from props when initial values load, but avoid clobbering user edits.
+    if (!oidcConfigured && initialOidcConfigured) {
+      oidcConfigured = true;
+    }
+
+    if (!oidcIssuerUrl && initialIssuerUrl) {
+      oidcIssuerUrl = initialIssuerUrl;
+    }
+
+    if (!oidcClientId && initialClientId) {
+      oidcClientId = initialClientId;
+    }
+
+    if (!oidcRedirectUri && initialRedirectUri) {
+      oidcRedirectUri = initialRedirectUri;
+    }
+  });
+
   onDestroy(() => {
     if (successTimer) clearTimeout(successTimer);
   });

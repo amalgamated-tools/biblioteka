@@ -27,6 +27,8 @@
         <div class="flex gap-3">
           {#each themes as t (t)}
             <button
+              type="button"
+              aria-pressed={themeStore.preference === t}
               onclick={() => themeStore.set(t)}
               class="px-5 py-2.5 rounded-xl font-medium capitalize transition-all {themeStore.preference ===
               t
@@ -66,25 +68,4 @@
     </div>
   </div>
 
-  <hr class="border-ink-100 dark:border-ink-800" />
-
-  <div>
-    <h2
-      class="text-lg font-display font-bold text-ink-900 dark:text-cream-100 mb-4"
-    >
-      About
-    </h2>
-    <div class="space-y-3 text-sm text-ink-500 dark:text-ink-400">
-      <div class="flex justify-between">
-        <span>App Version</span>
-        <span class="font-medium text-ink-900 dark:text-cream-100">1.0.0</span>
-      </div>
-      <div class="flex justify-between">
-        <span>Last Updated</span>
-        <span class="font-medium text-ink-900 dark:text-cream-100"
-          >Feb 16, 2026</span
-        >
-      </div>
-    </div>
-  </div>
 </div>
