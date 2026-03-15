@@ -119,8 +119,9 @@
         from: smtpFrom.trim(),
         tls: smtpTls,
       });
+      const status = await getConfigStatus();
+      smtpConfigured = status.smtpConfigured;
       smtpSuccess = true;
-      smtpConfigured = true;
       if (smtpPassword.trim()) {
         smtpPasswordSet = true;
       }

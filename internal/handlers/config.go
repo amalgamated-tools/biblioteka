@@ -35,6 +35,22 @@ const (
 	settingSMTPTLS      = "smtp_tls"
 )
 
+func isLoopbackHost(host string) bool {
+	if host == "" {
+		return false
+	}
+
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		return true
+	}
+
+	return false
+}
+
 // ConfigHandler holds dependencies for configuration endpoints.
 type ConfigHandler struct {
 	DB               *db.DB
@@ -485,21 +501,31 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		writeError(r.Context(), w, http.StatusBadRequest, "tls must be one of: none, starttls, tls")
 		return
 	}
+	if tlsMode == "none" && username != "" && !isLoopbackHost(host) {
+		writeError(r.Context(), w, http.StatusBadRequest, "authenticated SMTP without TLS is only allowed for localhost/loopback; use STARTTLS or TLS for remote servers")
+		return
+	}
 
 	// If password is empty but username is set, try to preserve the existing DB value
 	// (like OIDC client_secret). We intentionally do NOT fall back to SMTP_PASSWORD
 	// env var to avoid copying env-managed secrets into the database.
 	// When username is empty (switching to unauthenticated SMTP), we clear the
 	// password to avoid leaving stale credentials in the database.
-	if username != "" && password == "" {
-		existing, _ := h.DB.GetSetting(r.Context(), settingSMTPPassword)
-		if existing != "" {
-			password = existing
+	if username == "" {
+		// Unauthenticated SMTP: always drop any provided password so we don't
+		// keep unused/stale credentials in the database.
+		password = ""
+	} else {
+		if password == "" {
+			existing, _ := h.DB.GetSetting(r.Context(), settingSMTPPassword)
+			if existing != "" {
+				password = existing
+			}
 		}
-	}
-	if username != "" && password == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "password is required when username is set")
-		return
+		if password == "" {
+			writeError(r.Context(), w, http.StatusBadRequest, "password is required when username is set")
+			return
+		}
 	}
 
 	slog.DebugContext(r.Context(), "saving SMTP config",
