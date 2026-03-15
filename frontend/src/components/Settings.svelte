@@ -270,12 +270,40 @@
           class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6 space-y-6 animate-fade-in"
         >
           <div>
-            <h2
-              class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
-            >
-              <Send class="w-5 h-5 text-accent-600" />
-              Email / SMTP Configuration
-            </h2>
+            <div class="flex items-center justify-between mb-4">
+              <h2
+                class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 flex items-center gap-2"
+              >
+                <Send class="w-5 h-5 text-accent-600" />
+                Email / SMTP Configuration
+              </h2>
+              {#if smtpConfigured}
+                <button
+                  onclick={handleSmtpTest}
+                  disabled={smtpTestLoading}
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-600 to-accent-700 text-white text-sm font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
+                >
+                  <Mail class="w-4 h-4" />
+                  {smtpTestLoading ? "Sending..." : "Send Test Email"}
+                </button>
+              {/if}
+            </div>
+
+            {#if smtpTestMessage}
+              <div
+                class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
+              >
+                {smtpTestMessage}
+              </div>
+            {/if}
+
+            {#if smtpTestError}
+              <div
+                class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
+              >
+                {smtpTestError}
+              </div>
+            {/if}
 
             <div class="mb-4">
               <div class="flex items-center gap-2 text-sm">
@@ -459,47 +487,6 @@
                     : "Save Configuration"}
               </button>
             </form>
-
-            {#if smtpConfigured}
-              <hr class="border-ink-100 dark:border-ink-800" />
-
-              <div>
-                <h3
-                  class="text-lg font-display font-bold text-ink-900 dark:text-cream-100 mb-3"
-                >
-                  Test Configuration
-                </h3>
-                <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
-                  Send a test email to your account email address to verify the
-                  SMTP settings are working correctly.
-                </p>
-
-                {#if smtpTestMessage}
-                  <div
-                    class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
-                  >
-                    {smtpTestMessage}
-                  </div>
-                {/if}
-
-                {#if smtpTestError}
-                  <div
-                    class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
-                  >
-                    {smtpTestError}
-                  </div>
-                {/if}
-
-                <button
-                  onclick={handleSmtpTest}
-                  disabled={smtpTestLoading}
-                  class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
-                >
-                  <Mail class="w-4 h-4" />
-                  {smtpTestLoading ? "Sending..." : "Send Test Email"}
-                </button>
-              </div>
-            {/if}
           </div>
         </div>
       {/if}
