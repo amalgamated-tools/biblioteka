@@ -43,10 +43,15 @@
 
   $effect(() => {
     if (!version) {
-      getVersion().then((v) => {
-        version = v;
-      });
+      getVersion()
+        .then((v) => {
+          version = v;
+        })
+        .catch(() => {
+          // version stays blank; suppress unhandled-rejection noise
+        });
     }
+  });
   });
 
   async function handleLogout() {

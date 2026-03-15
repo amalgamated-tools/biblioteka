@@ -467,6 +467,31 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 // handleVersion godoc
 //
+// checkSystemEndpointMethod validates that the request method is one of the allowed methods.
+// If not, it writes a JSON 405 Method Not Allowed response and returns false.
+// Callers should return immediately when this function returns false.
+func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, logMessage string, allowedMethods ...string) bool {
+	for _, m := range allowedMethods {
+		if r.Method == m {
+			return true
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", strings.Join(allowedMethods, ", "))
+	w.WriteHeader(http.StatusMethodNotAllowed)
+
+	resp := map[string]string{
+		"error": "method not allowed",
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.ErrorContext(r.Context(), logMessage, slog.Any(otelkeys.Error, err))
+	}
+
+	return false
+}
+
 //	@Summary		Get server version
 //	@Description	Returns the server version
 //	@Tags			System
@@ -474,18 +499,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	versionResponse
 //	@Router			/version [get]
 func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet && r.Method != http.MethodHead {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		resp := map[string]string{
-			"error": "method not allowed",
-		}
-
-		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			slog.ErrorContext(r.Context(), "failed to encode version method not allowed response", slog.Any(otelkeys.Error, err))
-		}
+	if !checkSystemEndpointMethod(w, r, "failed to encode version method not allowed response", http.MethodGet, http.MethodHead) {
 		return
 	}
 
