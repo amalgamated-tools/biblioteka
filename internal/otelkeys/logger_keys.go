@@ -45,6 +45,7 @@ const (
 	Path              string = "path"
 	PathsEnqueued     string = "paths_enqueued"
 	Port              string = "port"
+	Query             string = "query"
 	Reason            string = "reason"
 	RedirectURI       string = "redirect_uri"
 	RemoteAddr        string = "remote_addr"

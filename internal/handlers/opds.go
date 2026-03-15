@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/xml"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -95,12 +97,12 @@ func (h *OPDSHandler) Middleware(next http.Handler) http.Handler {
 		if token != "" {
 			claims, err := h.JWT.ValidateToken(ctx, token)
 			if err == nil {
-				slog.DebugContext(ctx, "OPDS: JWT authentication successful", slog.String("user_id", claims.UserID))
+				slog.DebugContext(ctx, "OPDS: JWT authentication successful", slog.String(otelkeys.UserID, claims.UserID))
 				ctx = auth.ContextWithUserID(ctx, claims.UserID)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
-			slog.DebugContext(ctx, "OPDS: invalid JWT token", slog.Any("error", err))
+			slog.DebugContext(ctx, "OPDS: invalid JWT token", slog.Any(otelkeys.Error, err))
 		}
 
 		// Fall back to HTTP Basic Auth.
@@ -114,9 +116,9 @@ func (h *OPDSHandler) Middleware(next http.Handler) http.Handler {
 		user, err := h.DB.GetUserByEmail(ctx, email)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				slog.InfoContext(ctx, "OPDS: user not found", slog.String("email", email))
+				slog.InfoContext(ctx, "OPDS: user not found", slog.String(otelkeys.Email, email))
 			} else {
-				slog.ErrorContext(ctx, "OPDS: failed to look up user", slog.Any("error", err))
+				slog.ErrorContext(ctx, "OPDS: failed to look up user", slog.Any(otelkeys.Error, err))
 			}
 			w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka"`)
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
@@ -124,27 +126,27 @@ func (h *OPDSHandler) Middleware(next http.Handler) http.Handler {
 		}
 
 		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-			slog.InfoContext(ctx, "OPDS: invalid password", slog.String("email", email))
+			slog.InfoContext(ctx, "OPDS: invalid password", slog.String(otelkeys.Email, email))
 			w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka"`)
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
 			return
 		}
 
-		slog.DebugContext(ctx, "OPDS: Basic Auth successful", slog.String("user_id", user.ID))
+		slog.DebugContext(ctx, "OPDS: Basic Auth successful", slog.String(otelkeys.UserID, user.ID))
 		ctx = auth.ContextWithUserID(ctx, user.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 // writeOPDS writes an OPDS XML feed response.
-func writeOPDS(w http.ResponseWriter, feed *opdsFeed) {
+func writeOPDS(ctx context.Context, w http.ResponseWriter, feed *opdsFeed) {
 	w.Header().Set("Content-Type", "application/atom+xml;charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(xml.Header))
 	enc := xml.NewEncoder(w)
 	enc.Indent("", "  ")
 	if err := enc.Encode(feed); err != nil {
-		slog.Error("OPDS: failed to encode feed", slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to encode feed", slog.Any(otelkeys.Error, err))
 	}
 }
 
@@ -334,7 +336,7 @@ func (h *OPDSHandler) HandleRoot(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	writeOPDS(w, feed)
+	writeOPDS(ctx, w, feed)
 }
 
 // HandleBooks serves an OPDS acquisition feed of all books.
@@ -347,7 +349,7 @@ func (h *OPDSHandler) HandleBooks(w http.ResponseWriter, r *http.Request) {
 
 	books, err := h.DB.ListBooks(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list books", slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to list books", slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list books")
 		return
 	}
@@ -365,18 +367,24 @@ func (h *OPDSHandler) HandleBooks(w http.ResponseWriter, r *http.Request) {
 		book := &books[i]
 		authors, err := h.DB.GetBookAuthors(ctx, book.ID)
 		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book authors", slog.String("book_id", book.ID), slog.Any("error", err))
+			slog.ErrorContext(ctx, "OPDS: failed to get book authors",
+				slog.String(otelkeys.BookID, book.ID),
+				slog.Any(otelkeys.Error, err),
+			)
 			authors = nil
 		}
 		files, err := h.DB.ListBookFiles(ctx, book.ID)
 		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book files", slog.String("book_id", book.ID), slog.Any("error", err))
+			slog.ErrorContext(ctx, "OPDS: failed to get book files",
+				slog.String(otelkeys.BookID, book.ID),
+				slog.Any(otelkeys.Error, err),
+			)
 			files = nil
 		}
 		feed.Entries = append(feed.Entries, bookToEntry(book, authors, files))
 	}
 
-	writeOPDS(w, feed)
+	writeOPDS(ctx, w, feed)
 }
 
 // HandleAuthors serves an OPDS navigation feed of all authors.
@@ -389,7 +397,7 @@ func (h *OPDSHandler) HandleAuthors(w http.ResponseWriter, r *http.Request) {
 
 	authors, err := h.DB.ListAuthors(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list authors", slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to list authors", slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list authors")
 		return
 	}
@@ -421,7 +429,7 @@ func (h *OPDSHandler) HandleAuthors(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	writeOPDS(w, feed)
+	writeOPDS(ctx, w, feed)
 }
 
 // HandleAuthorBooks serves an OPDS acquisition feed for books by a specific author.
@@ -438,14 +446,20 @@ func (h *OPDSHandler) HandleAuthorBooks(w http.ResponseWriter, r *http.Request, 
 			writeError(ctx, w, http.StatusNotFound, "author not found")
 			return
 		}
-		slog.ErrorContext(ctx, "OPDS: failed to get author", slog.String("author_id", authorID), slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to get author",
+			slog.String(otelkeys.AuthorID, authorID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to get author")
 		return
 	}
 
-	books, err := h.DB.ListBooksByAuthor(authorID)
+	books, err := h.DB.ListBooksByAuthor(ctx, authorID)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list books by author", slog.String("author_id", authorID), slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to list books by author",
+			slog.String(otelkeys.AuthorID, authorID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list books")
 		return
 	}
@@ -463,18 +477,24 @@ func (h *OPDSHandler) HandleAuthorBooks(w http.ResponseWriter, r *http.Request, 
 		book := &books[i]
 		authors, err := h.DB.GetBookAuthors(ctx, book.ID)
 		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book authors", slog.String("book_id", book.ID), slog.Any("error", err))
+			slog.ErrorContext(ctx, "OPDS: failed to get book authors",
+				slog.String(otelkeys.BookID, book.ID),
+				slog.Any(otelkeys.Error, err),
+			)
 			authors = nil
 		}
 		files, err := h.DB.ListBookFiles(ctx, book.ID)
 		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book files", slog.String("book_id", book.ID), slog.Any("error", err))
+			slog.ErrorContext(ctx, "OPDS: failed to get book files",
+				slog.String(otelkeys.BookID, book.ID),
+				slog.Any(otelkeys.Error, err),
+			)
 			files = nil
 		}
 		feed.Entries = append(feed.Entries, bookToEntry(book, authors, files))
 	}
 
-	writeOPDS(w, feed)
+	writeOPDS(ctx, w, feed)
 }
 
 // HandleSeriesList serves an OPDS navigation feed of all series.
@@ -487,7 +507,9 @@ func (h *OPDSHandler) HandleSeriesList(w http.ResponseWriter, r *http.Request) {
 
 	seriesList, err := h.DB.ListSeries(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list series", slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to list series",
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list series")
 		return
 	}
@@ -519,7 +541,7 @@ func (h *OPDSHandler) HandleSeriesList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	writeOPDS(w, feed)
+	writeOPDS(ctx, w, feed)
 }
 
 // HandleSeriesBooks serves an OPDS acquisition feed for books in a specific series.
@@ -536,14 +558,20 @@ func (h *OPDSHandler) HandleSeriesBooks(w http.ResponseWriter, r *http.Request, 
 			writeError(ctx, w, http.StatusNotFound, "series not found")
 			return
 		}
-		slog.ErrorContext(ctx, "OPDS: failed to get series", slog.String("series_id", seriesID), slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to get series",
+			slog.String(otelkeys.SeriesID, seriesID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to get series")
 		return
 	}
 
-	books, err := h.DB.ListBooksBySeries(seriesID)
+	books, err := h.DB.ListBooksBySeries(ctx, seriesID)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list books by series", slog.String("series_id", seriesID), slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to list books by series",
+			slog.String(otelkeys.SeriesID, seriesID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list books")
 		return
 	}
@@ -561,18 +589,24 @@ func (h *OPDSHandler) HandleSeriesBooks(w http.ResponseWriter, r *http.Request, 
 		book := &books[i]
 		authors, err := h.DB.GetBookAuthors(ctx, book.ID)
 		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book authors", slog.String("book_id", book.ID), slog.Any("error", err))
+			slog.ErrorContext(ctx, "OPDS: failed to get book authors",
+				slog.String(otelkeys.BookID, book.ID),
+				slog.Any(otelkeys.Error, err),
+			)
 			authors = nil
 		}
 		files, err := h.DB.ListBookFiles(ctx, book.ID)
 		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book files", slog.String("book_id", book.ID), slog.Any("error", err))
+			slog.ErrorContext(ctx, "OPDS: failed to get book files",
+				slog.String(otelkeys.BookID, book.ID),
+				slog.Any(otelkeys.Error, err),
+			)
 			files = nil
 		}
 		feed.Entries = append(feed.Entries, bookToEntry(book, authors, files))
 	}
 
-	writeOPDS(w, feed)
+	writeOPDS(ctx, w, feed)
 }
 
 // HandleSearch serves an OPDS acquisition feed for search results.
@@ -589,9 +623,12 @@ func (h *OPDSHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	books, err := h.DB.SearchBooks(query)
+	books, err := h.DB.SearchBooks(ctx, query)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to search books", slog.String("query", query), slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to search books",
+			slog.String(otelkeys.Query, query),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to search books")
 		return
 	}
@@ -609,18 +646,24 @@ func (h *OPDSHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		book := &books[i]
 		authors, err := h.DB.GetBookAuthors(ctx, book.ID)
 		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book authors", slog.String("book_id", book.ID), slog.Any("error", err))
+			slog.ErrorContext(ctx, "OPDS: failed to get book authors",
+				slog.String(otelkeys.BookID, book.ID),
+				slog.Any(otelkeys.Error, err),
+			)
 			authors = nil
 		}
 		files, err := h.DB.ListBookFiles(ctx, book.ID)
 		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book files", slog.String("book_id", book.ID), slog.Any("error", err))
+			slog.ErrorContext(ctx, "OPDS: failed to get book files",
+				slog.String(otelkeys.BookID, book.ID),
+				slog.Any(otelkeys.Error, err),
+			)
 			files = nil
 		}
 		feed.Entries = append(feed.Entries, bookToEntry(book, authors, files))
 	}
 
-	writeOPDS(w, feed)
+	writeOPDS(ctx, w, feed)
 }
 
 // HandleDownload serves the raw file for a book file download.
@@ -637,7 +680,10 @@ func (h *OPDSHandler) HandleDownload(w http.ResponseWriter, r *http.Request, boo
 			writeError(ctx, w, http.StatusNotFound, "book file not found")
 			return
 		}
-		slog.ErrorContext(ctx, "OPDS: failed to get book file", slog.String("file_id", fileID), slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to get book file",
+			slog.String(otelkeys.BookFileID, fileID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to get book file")
 		return
 	}
@@ -650,7 +696,10 @@ func (h *OPDSHandler) HandleDownload(w http.ResponseWriter, r *http.Request, boo
 
 	f, err := os.Open(bf.FilePath)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to open file", slog.String("path", bf.FilePath), slog.Any("error", err))
+		slog.ErrorContext(ctx, "OPDS: failed to open file",
+			slog.String(otelkeys.Path, bf.FilePath),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusNotFound, "file not found on disk")
 		return
 	}
@@ -674,16 +723,16 @@ func (h *OPDSHandler) HandleDownload(w http.ResponseWriter, r *http.Request, boo
 func (h *OPDSHandler) HandleOPDS(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
-	switch {
-	case path == "/opds" || path == "/opds/":
+	switch path {
+	case "/opds", "/opds/":
 		h.HandleRoot(w, r)
-	case path == "/opds/books":
+	case "/opds/books":
 		h.HandleBooks(w, r)
-	case path == "/opds/authors":
+	case "/opds/authors":
 		h.HandleAuthors(w, r)
-	case path == "/opds/series":
+	case "/opds/series":
 		h.HandleSeriesList(w, r)
-	case path == "/opds/search":
+	case "/opds/search":
 		h.HandleSearch(w, r)
 	default:
 		// /opds/authors/{id}
