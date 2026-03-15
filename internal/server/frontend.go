@@ -30,9 +30,9 @@ func (s *Server) setupFrontend(ctx context.Context) {
 
 		// Try to serve the file directly
 		path := r.URL.Path
-		r2 := r.Clone(r.Context())
-		r2.URL.Path = "/"
-		fileServer.ServeHTTP(w, r2)
+		if path == "/" {
+			path = "/index.html"
+		}
 
 		// Check if the file exists in the embedded filesystem
 		f, err := frontendFS.Open(strings.TrimPrefix(path, "/"))
@@ -43,7 +43,8 @@ func (s *Server) setupFrontend(ctx context.Context) {
 		}
 
 		// File not found — serve index.html for SPA client-side routing
-		r.URL.Path = "/"
-		fileServer.ServeHTTP(w, r)
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/"
+		fileServer.ServeHTTP(w, r2)
 	})
 }
