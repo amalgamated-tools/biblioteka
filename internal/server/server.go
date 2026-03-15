@@ -275,17 +275,17 @@ func (s *Server) setupRoutes(ctx context.Context) {
 
 	// Protected auth routes
 	s.mux.Handle("/api/auth/me", s.requireAuth(http.HandlerFunc(s.authHandler.Me)))
-	s.mux.Handle("/api/auth/password", s.requireAuth(http.HandlerFunc(s.authHandler.ChangePassword)))
+	s.mux.Handle("/api/auth/password", s.requireJWTAuth(http.HandlerFunc(s.authHandler.ChangePassword)))
 
-	// Protected config routes
-	s.mux.Handle("/api/config/status", s.requireAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
-	s.mux.Handle("/api/config/oidc", s.requireAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
-	s.mux.Handle("/api/config/smtp", s.requireAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
-	s.mux.Handle("/api/config/smtp/test", s.requireAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
+	// Protected config routes (JWT-only: sensitive server configuration)
+	s.mux.Handle("/api/config/status", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
+	s.mux.Handle("/api/config/oidc", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
+	s.mux.Handle("/api/config/smtp", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
+	s.mux.Handle("/api/config/smtp/test", s.requireJWTAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
 
-	// Protected admin routes
-	s.mux.Handle("/api/admin/users", s.requireAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
-	s.mux.Handle("/api/admin/users/", s.requireAuth(http.HandlerFunc(s.adminHandler.HandleSetAdmin)))
+	// Protected admin routes (JWT-only: user management)
+	s.mux.Handle("/api/admin/users", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
+	s.mux.Handle("/api/admin/users/", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleSetAdmin)))
 
 	// Protected library routes
 	s.mux.Handle("/api/libraries", s.requireAuth(http.HandlerFunc(s.libraryHandler.HandleLibraries)))
@@ -309,8 +309,8 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Protected audit log routes (admin only)
 	s.mux.Handle("/api/audit-logs", s.requireAuth(http.HandlerFunc(s.auditLogHandler.HandleAuditLogs)))
 
-	// OPDS credential management (JWT auth)
-	s.mux.Handle("/api/opds/credentials", s.requireAuth(http.HandlerFunc(s.opdsCredentialHandler.HandleOPDSCredentials)))
+	// OPDS credential management (JWT-only: credential management)
+	s.mux.Handle("/api/opds/credentials", s.requireJWTAuth(http.HandlerFunc(s.opdsCredentialHandler.HandleOPDSCredentials)))
 
 	// OPDS feed routes (Basic Auth)
 	s.mux.Handle("/opds", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
