@@ -77,7 +77,10 @@
     }
   }
 
-  async function handleDeleteAPIKey(id: string) {
+  async function handleDeleteAPIKey(id: string, name: string) {
+    if (!confirm(`Delete API key "${name}"? This action cannot be undone.`)) {
+      return;
+    }
     apiKeysError = null;
     try {
       await deleteAPIKey(id);
@@ -181,13 +184,9 @@
           </code>
           <button
             onclick={async () => {
-              try {
-                await copyToClipboard(newlyCreatedKey!);
-                keyCopied = true;
+              await copyToClipboard(newlyCreatedKey!);
+              if (keyCopied) {
                 newlyCreatedKey = null;
-              } catch (error) {
-                apiKeysError =
-                  "Failed to copy API key. Please copy it manually or try again.";
               }
             }}
             class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {keyCopied
@@ -255,7 +254,7 @@
                 </td>
                 <td class="py-3 text-right">
                   <button
-                    onclick={() => handleDeleteAPIKey(key.id)}
+                    onclick={() => handleDeleteAPIKey(key.id, key.name)}
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
