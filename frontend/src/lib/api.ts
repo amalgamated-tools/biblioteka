@@ -210,6 +210,7 @@ export interface SMTPConfig {
   password_set: boolean;
   from: string;
   tls: string;
+  env_override: boolean;
 }
 
 export interface SetSMTPConfigInput {

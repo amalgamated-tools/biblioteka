@@ -39,6 +39,7 @@
 
   // SMTP state
   let smtpConfigured = $state(false);
+  let smtpEnvOverride = $state(false);
   let smtpHost = $state("");
   let smtpPort = $state("587");
   let smtpUsername = $state("");
@@ -69,14 +70,15 @@
           oidcRedirectUri = oidcConfig.redirect_uri;
         }
       }
-      if (status.is_admin && status.smtp_configured) {
+      if (status.is_admin) {
         try {
-          const config = await getSmtpConfig();
-          smtpHost = config.host;
-          smtpPort = config.port || "587";
-          smtpUsername = config.username;
-          smtpFrom = config.from;
-          smtpTls = config.tls || "starttls";
+          const smtp = await getSmtpConfig();
+          smtpHost = smtp.host;
+          smtpPort = smtp.port || "587";
+          smtpUsername = smtp.username;
+          smtpFrom = smtp.from;
+          smtpTls = smtp.tls || "starttls";
+          smtpEnvOverride = smtp.env_override;
         } catch {
           // ignore - user can re-enter
         }
@@ -288,6 +290,17 @@
               Configure SMTP settings to enable email notifications from
               Biblioteka.
             </p>
+
+            {#if smtpEnvOverride}
+              <div
+                class="bg-accent-50 dark:bg-accent-800/20 border border-accent-200 dark:border-accent-700/30 text-accent-700 dark:text-accent-400 px-4 py-3 rounded-xl text-sm mb-4"
+              >
+                SMTP is currently configured via environment variables
+                (SMTP_HOST, etc.). The values shown below reflect the active
+                configuration. To use database-managed settings instead, remove
+                the SMTP environment variables from the server.
+              </div>
+            {/if}
 
             <form onsubmit={handleSmtpSave} class="space-y-4">
               <div>

@@ -270,6 +270,7 @@ type smtpConfigResponse struct {
 	PasswordSet bool   `json:"password_set"`
 	From        string `json:"from"`
 	TLS         string `json:"tls"`
+	EnvOverride bool   `json:"env_override"`
 }
 
 type setSMTPConfigRequest struct {
@@ -316,6 +317,28 @@ func (h *ConfigHandler) handleGetSMTPConfig(w http.ResponseWriter, r *http.Reque
 	from, _ := h.DB.GetSetting(r.Context(), settingSMTPFrom)
 	tlsMode, _ := h.DB.GetSetting(r.Context(), settingSMTPTLS)
 
+	// Environment variables take precedence over DB settings
+	envOverride := os.Getenv("SMTP_HOST") != ""
+	if envOverride {
+		host = os.Getenv("SMTP_HOST")
+		if v := os.Getenv("SMTP_PORT"); v != "" {
+			port = v
+		}
+		if v := os.Getenv("SMTP_USERNAME"); v != "" {
+			username = v
+		}
+		if os.Getenv("SMTP_PASSWORD") != "" {
+			password = "set"
+			passwordErr = nil
+		}
+		if v := os.Getenv("SMTP_FROM"); v != "" {
+			from = v
+		}
+		if v := os.Getenv("SMTP_TLS"); v != "" {
+			tlsMode = v
+		}
+	}
+
 	writeJSON(r.Context(), w, http.StatusOK, smtpConfigResponse{
 		Host:        host,
 		Port:        port,
@@ -323,6 +346,7 @@ func (h *ConfigHandler) handleGetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		PasswordSet: passwordErr == nil && password != "",
 		From:        from,
 		TLS:         tlsMode,
+		EnvOverride: envOverride,
 	})
 }
 
