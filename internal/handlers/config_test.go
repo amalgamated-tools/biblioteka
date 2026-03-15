@@ -428,3 +428,372 @@ func TestHandleOIDCConfig_DispatchMethodNotAllowed(t *testing.T) {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
+
+// --- HandleConfigStatus SMTP ---
+
+func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	// Only host set, no from → should not be configured
+	_ = h.DB.SetSetting(context.Background(), settingSMTPHost, "smtp.example.com")
+
+	r := httptest.NewRequest(http.MethodGet, "/api/config/status", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+	h.HandleConfigStatus(w, r)
+
+	var resp configStatusResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.SMTPConfigured {
+		t.Error("expected SMTPConfigured=false when only host is set")
+	}
+
+	// Set from → now configured
+	_ = h.DB.SetSetting(context.Background(), settingSMTPFrom, "noreply@example.com")
+
+	r = httptest.NewRequest(http.MethodGet, "/api/config/status", nil)
+	r = withUserID(r, adminID)
+	w = httptest.NewRecorder()
+	h.HandleConfigStatus(w, r)
+
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !resp.SMTPConfigured {
+		t.Error("expected SMTPConfigured=true when host and from are set")
+	}
+}
+
+// --- HandleSMTPConfig (GET) ---
+
+func TestHandleGetSMTPConfig_AdminNoSettings(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/config/smtp", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	var resp smtpConfigResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.Host != "" {
+		t.Errorf("Host = %q, want empty", resp.Host)
+	}
+	if resp.PasswordSet {
+		t.Error("PasswordSet should be false when no password is stored")
+	}
+	if resp.EnvOverride {
+		t.Error("EnvOverride should be false when no env vars are set")
+	}
+}
+
+func TestHandleGetSMTPConfig_AdminWithSettings(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	_ = h.DB.SetSetting(context.Background(), settingSMTPHost, "smtp.example.com")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPPort, "465")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPUsername, "user@example.com")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPPassword, "secret")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPFrom, "noreply@example.com")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPTLS, "tls")
+
+	r := httptest.NewRequest(http.MethodGet, "/api/config/smtp", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	var resp smtpConfigResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.Host != "smtp.example.com" {
+		t.Errorf("Host = %q, want %q", resp.Host, "smtp.example.com")
+	}
+	if resp.Port != "465" {
+		t.Errorf("Port = %q, want %q", resp.Port, "465")
+	}
+	if resp.Username != "user@example.com" {
+		t.Errorf("Username = %q, want %q", resp.Username, "user@example.com")
+	}
+	if !resp.PasswordSet {
+		t.Error("PasswordSet should be true when password is stored")
+	}
+	if resp.From != "noreply@example.com" {
+		t.Errorf("From = %q, want %q", resp.From, "noreply@example.com")
+	}
+	if resp.TLS != "tls" {
+		t.Errorf("TLS = %q, want %q", resp.TLS, "tls")
+	}
+}
+
+func TestHandleGetSMTPConfig_NonAdminForbidden(t *testing.T) {
+	h, _, regularID := setupConfigHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/config/smtp", nil)
+	r = withUserID(r, regularID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+	}
+}
+
+func TestHandleGetSMTPConfig_EnvOverride(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	t.Setenv("SMTP_HOST", "env-smtp.example.com")
+	t.Setenv("SMTP_FROM", "env@example.com")
+
+	r := httptest.NewRequest(http.MethodGet, "/api/config/smtp", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	var resp smtpConfigResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.Host != "env-smtp.example.com" {
+		t.Errorf("Host = %q, want %q", resp.Host, "env-smtp.example.com")
+	}
+	if resp.From != "env@example.com" {
+		t.Errorf("From = %q, want %q", resp.From, "env@example.com")
+	}
+	if !resp.EnvOverride {
+		t.Error("EnvOverride should be true when SMTP_HOST env var is set")
+	}
+}
+
+// --- HandleSMTPConfig (PUT) ---
+
+func TestHandleSetSMTPConfig_NonAdminForbidden(t *testing.T) {
+	h, _, regularID := setupConfigHandler(t)
+
+	body := `{"host":"smtp.example.com","port":"587","from":"noreply@example.com","password":"secret","tls":"starttls"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, regularID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+	}
+}
+
+func TestHandleSetSMTPConfig_MissingHost(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	body := `{"host":"","from":"noreply@example.com","password":"secret"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}
+
+func TestHandleSetSMTPConfig_MissingFrom(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	body := `{"host":"smtp.example.com","from":"","password":"secret"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}
+
+func TestHandleSetSMTPConfig_InvalidPort(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	body := `{"host":"smtp.example.com","port":"99999","from":"noreply@example.com","password":"secret"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}
+
+func TestHandleSetSMTPConfig_InvalidTLS(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	body := `{"host":"smtp.example.com","from":"noreply@example.com","password":"secret","tls":"invalid"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}
+
+func TestHandleSetSMTPConfig_InvalidJSON(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString("not json"))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}
+
+func TestHandleSetSMTPConfig_Success(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	body := `{"host":"smtp.example.com","port":"465","username":"user@example.com","password":"secret","from":"noreply@example.com","tls":"tls"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	// Verify settings were persisted
+	host, err := h.DB.GetSetting(context.Background(), settingSMTPHost)
+	if err != nil {
+		t.Fatalf("GetSetting(smtp_host) error: %v", err)
+	}
+	if host != "smtp.example.com" {
+		t.Errorf("saved smtp_host = %q, want %q", host, "smtp.example.com")
+	}
+
+	from, err := h.DB.GetSetting(context.Background(), settingSMTPFrom)
+	if err != nil {
+		t.Fatalf("GetSetting(smtp_from) error: %v", err)
+	}
+	if from != "noreply@example.com" {
+		t.Errorf("saved smtp_from = %q, want %q", from, "noreply@example.com")
+	}
+
+	port, err := h.DB.GetSetting(context.Background(), settingSMTPPort)
+	if err != nil {
+		t.Fatalf("GetSetting(smtp_port) error: %v", err)
+	}
+	if port != "465" {
+		t.Errorf("saved smtp_port = %q, want %q", port, "465")
+	}
+}
+
+func TestHandleSetSMTPConfig_DefaultsPortAndTLS(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	body := `{"host":"smtp.example.com","from":"noreply@example.com","password":"secret"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	port, _ := h.DB.GetSetting(context.Background(), settingSMTPPort)
+	if port != "587" {
+		t.Errorf("default port = %q, want %q", port, "587")
+	}
+
+	tlsMode, _ := h.DB.GetSetting(context.Background(), settingSMTPTLS)
+	if tlsMode != "starttls" {
+		t.Errorf("default tls = %q, want %q", tlsMode, "starttls")
+	}
+}
+
+// --- HandleSMTPConfig (dispatch) ---
+
+func TestHandleSMTPConfig_DispatchMethodNotAllowed(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/config/smtp", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+// --- HandleSMTPTest ---
+
+func TestHandleSMTPTest_NonAdminForbidden(t *testing.T) {
+	h, _, regularID := setupConfigHandler(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/config/smtp/test", nil)
+	r = withUserID(r, regularID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPTest(w, r)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+	}
+}
+
+func TestHandleSMTPTest_MethodNotAllowed(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/config/smtp/test", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPTest(w, r)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+func TestHandleSMTPTest_NotConfigured(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/config/smtp/test", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPTest(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}

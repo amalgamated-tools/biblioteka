@@ -69,7 +69,8 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 	isAdmin, _ := h.DB.IsAdmin(r.Context(), userID)
 
 	smtpHost, _ := h.DB.GetSetting(r.Context(), settingSMTPHost)
-	smtpConfigured := smtpHost != "" || os.Getenv("SMTP_HOST") != ""
+	smtpFrom, _ := h.DB.GetSetting(r.Context(), settingSMTPFrom)
+	smtpConfigured := (smtpHost != "" && smtpFrom != "") || (os.Getenv("SMTP_HOST") != "" && os.Getenv("SMTP_FROM") != "")
 
 	writeJSON(r.Context(), w, http.StatusOK, configStatusResponse{
 		OIDCConfigured: h.IsOIDCConfigured(),
@@ -584,10 +585,6 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid SMTP from address")
-		return
-	}
-	if from == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "SMTP from address is not configured")
 		return
 	}
 	if port == "" {
