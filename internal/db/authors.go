@@ -81,6 +81,42 @@ func (d *DB) ListAuthors(ctx context.Context) ([]Author, error) {
 	return authors, rows.Err()
 }
 
+// ListAuthorsPaginated returns authors ordered by name with pagination and total count.
+func (d *DB) ListAuthorsPaginated(ctx context.Context, limit, offset int) ([]Author, int, error) {
+	slog.DebugContext(ctx, "db: listing authors paginated",
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+
+	var total int
+	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM authors`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "ORDER BY name ASC, rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY name ASC, id ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+authorColumns+` FROM authors `+orderBy+` LIMIT $1 OFFSET $2`,
+		limit, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var authors []Author
+	for rows.Next() {
+		a, err := scanAuthor(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		authors = append(authors, *a)
+	}
+	return authors, total, rows.Err()
+}
+
 func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {
 	slog.DebugContext(ctx, "db: updating author",
 		slog.String(otelkeys.ID, id),
