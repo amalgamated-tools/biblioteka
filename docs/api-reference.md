@@ -33,6 +33,26 @@ Endpoints that require authentication are marked with 🔒. Endpoints that addit
 
 ---
 
+## Version
+
+### `GET /api/version`
+
+Returns the running server version string. No authentication required.
+
+**Response:** `200 OK`
+
+```json
+{"version":"v1.2.3"}
+```
+
+| Field     | Type   | Description                                                   |
+|-----------|--------|---------------------------------------------------------------|
+| `version` | string | Semantic version tag of the server binary (e.g. `"v1.2.3"`). Equals `"dev"` when built outside the release pipeline. |
+
+The version is also displayed in the application sidebar so users can confirm which release is deployed.
+
+---
+
 ## Auth
 
 > **Rate limiting:** The signup, login, and all OIDC auth endpoints (`/api/auth/oidc/login`, `/api/auth/oidc/callback`, `/api/auth/oidc/link`) are protected by a per-IP token-bucket rate limiter (5 requests/second, burst of 10). Exceeding the limit returns `429 Too Many Requests`.
