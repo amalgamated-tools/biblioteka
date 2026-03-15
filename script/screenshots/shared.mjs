@@ -66,6 +66,7 @@ async function waitForSignupTab(page) {
 
 async function logoutIfNeeded(page) {
     await page.locator('button#logout-button').click().catch(() => { });
+    await page.waitForSelector('button#login-btn', { timeout: NAVIGATION_TIMEOUT_MS }).catch(() => { });
 }
 
 async function loginAsDemo(page) {
