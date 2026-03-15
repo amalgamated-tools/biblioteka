@@ -54,7 +54,7 @@ func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentT
 	var buf bytes.Buffer
 	if _, err := buf.WriteString(xml.Header); err != nil {
 		slog.ErrorContext(r.Context(), "failed to write OPDS XML header",
-			slog.String(otelkeys.Error, err.Error()))
+			slog.Any(otelkeys.Error, err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -63,7 +63,7 @@ func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentT
 	enc.Indent("", "  ")
 	if err := enc.Encode(feed); err != nil {
 		slog.ErrorContext(r.Context(), "failed to encode OPDS error feed",
-			slog.String(otelkeys.Error, err.Error()))
+			slog.Any(otelkeys.Error, err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -73,7 +73,7 @@ func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentT
 
 	if _, err := w.Write(buf.Bytes()); err != nil {
 		slog.ErrorContext(r.Context(), "failed to write OPDS error response body",
-			slog.String(otelkeys.Error, err.Error()))
+			slog.Any(otelkeys.Error, err))
 	}
 }
 
@@ -137,7 +137,7 @@ type opdsContent struct {
 func (h *OPDSHandler) HandleOPDS(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
-		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		writeOPDSError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
