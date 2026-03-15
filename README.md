@@ -127,6 +127,8 @@ The server runs a Redis-backed job queue (powered by [asynq](https://github.com/
 
 Jobs are deduplicated for 24 hours — attempting to re-scan a path that was already queued within that window won’t enqueue an additional task (the duplicate enqueue is rejected).
 
+See [docs/background-jobs.md](docs/background-jobs.md) for the job catalog, scheduling, worker configuration, the Asynqmon monitoring dashboard, and a guide to adding new jobs.
+
 ## Database Migrations
 
 Migrations in `db/migrations/{sqlite,postgres}/` run automatically on startup. No separate migration command is needed.
