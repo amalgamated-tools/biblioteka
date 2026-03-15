@@ -184,7 +184,13 @@ internal/
 
 4. **(Optional) Schedule it** if it should run periodically:
 
-   
+   ```go
+   if _, err := w.RegisterSchedule("@every 24h", jobs.JobExample, jobs.ExamplePayload{}); err != nil {
+       return fmt.Errorf("schedule example job: %w", err)
+   }
+   ```
+
+   Register the schedule in `cmd/server/main.go` after calling `w.Register`. Both classic cron expressions (`0 3 * * *`) and asynq shortcuts (`@every 24h`, `@daily`) are accepted.
 
 5. **(Optional) Enqueue from a handler** if it should be triggered by an API call:
 
