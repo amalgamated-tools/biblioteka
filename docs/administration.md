@@ -139,6 +139,11 @@ curl "http://localhost:8080/api/audit-logs?limit=50&offset=50" \
 | `series.deleted`       | `series`      | `name`                                           | `DELETE /api/series/{id}`               |
 | `book_file.created`    | `book_file`   | `book_id`, `file_name`, `file_type`              | `POST /api/books/{id}/files`            |
 | `book_file.deleted`    | `book_file`   | `book_id`, `file_name`, `file_type`              | `DELETE /api/book-files/{id}`           |
+| `api_key.created`      | `api_key`     | `name`                                           | `POST /api/api-keys`                    |
+| `api_key.deleted`      | `api_key`     | `name`                                           | `DELETE /api/api-keys/{id}`             |
+| `opds_credential.updated` | `opds_credential` | `username`                               | `PUT /api/opds/credentials`             |
+| `opds_credential.deleted` | `opds_credential` | `username`                               | `DELETE /api/opds/credentials`          |
+| `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
 
 **Notes:**
 - `user_id` in an audit log entry is the ID of the user who performed the action. It is `null` for system-initiated actions (e.g. background job operations).
