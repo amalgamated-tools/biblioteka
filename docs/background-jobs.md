@@ -23,7 +23,7 @@ Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task q
                                      └────────────────┘
 ```
 
-The HTTP server and the asynq worker run **in the same process** and are started concurrently via an `errgroup` in `cmd/server/main.go`. Both use the same Redis instance (via the same `REDIS_URL`), but create their own Redis connections.
+The HTTP server and the asynq worker can run in the same process (the default `all` mode) or as separate processes using the `-mode` flag. Both modes use the same Redis instance (via `REDIS_URL`) but create their own Redis connections. See [Run Modes](../README.md#run-modes) for details.
 
 ## Prerequisites
 
@@ -88,7 +88,7 @@ scan:libraries
 
 ## Scheduling
 
-Periodic jobs are registered with the asynq scheduler at startup in `cmd/server/main.go`:
+Periodic jobs are registered with the asynq scheduler at startup in `cmd/server/main.go`, **but only when the process is running in `worker` or `all` mode**:
 
 ```go
 w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{})
@@ -176,11 +176,13 @@ internal/
    }
    ```
 
-3. **Register the handler** in `cmd/server/main.go`:
+3. **Register the handler** in the `if runWorker` block in `cmd/server/main.go`:
 
    ```go
    w.Register(cancelCtx, jobs.JobExample, jobs.NewExampleHandler(database))
    ```
+
+   Handlers registered here execute only when the process runs in `worker` or `all` mode.
 
 4. **(Optional) Schedule it** if it should run periodically:
 

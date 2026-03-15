@@ -75,11 +75,11 @@ The Go API runs on `http://localhost:8080`; Vite proxies `/api` requests to it.
 
 ## Configuration
 
-Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be set via the `--port` flag when running the binary directly (e.g., `./biblioteka --port 9090`).
+Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be set via the `-port` flag when running the binary directly (e.g., `./biblioteka -port 9090`). Use the `-mode` flag to control which components start (see [Run Modes](#run-modes) below).
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `8080` | HTTP listen port (overrides `--port` flag) |
+| `PORT` | `8080` | HTTP listen port (overrides `-port` flag) |
 | `DATABASE_URL` | *(empty – SQLite)* | PostgreSQL connection string |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
 | `JWT_SECRET` | — | **Required in production** – random secret for signing tokens |
@@ -142,9 +142,31 @@ The dashboard shows queued, active, completed, and failed jobs, and lets you ret
 
 See [docs/api-reference.md](docs/api-reference.md) for the full API reference.
 
+## Run Modes
+
+By default, the binary starts the HTTP server and the background worker together. Use the `-mode` flag to run them independently:
+
+| Flag value | What starts |
+|------------|-------------|
+| `all` *(default)* | HTTP server **and** background worker |
+| `server` | HTTP server only — no job processing |
+| `worker` | Background worker only — no HTTP listener |
+
+```bash
+# Start only the HTTP server
+./biblioteka -mode server
+
+# Start only the background worker
+./biblioteka -mode worker
+```
+
+Running the server and worker as separate processes is useful for horizontal scaling, resource isolation, or container-per-role deployments. Both roles still require Redis; the server needs it to enqueue jobs, and the worker needs it to process them.
+
+See [docs/deployment.md](docs/deployment.md) for an example split-process Docker Compose setup.
+
 ## Background Jobs
 
-The server runs a Redis-backed job queue (powered by [asynq](https://github.com/hibiken/asynq)) in-process alongside the HTTP server.
+The server runs a Redis-backed job queue (powered by [asynq](https://github.com/hibiken/asynq)). By default, the worker runs in the same process as the HTTP server; use `-mode worker` to run it separately.
 
 | Job | Trigger | Description |
 |---|---|---|
