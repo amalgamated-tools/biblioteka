@@ -14,6 +14,7 @@ import (
 // It returns true on success. On failure it writes a 400 error response and
 // returns false, so callers can simply return.
 func decodeJSON(r *http.Request, w http.ResponseWriter, v any) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB cap
 	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
 		slog.DebugContext(r.Context(), "failed to decode request body", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")

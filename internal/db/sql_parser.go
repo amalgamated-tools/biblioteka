@@ -196,7 +196,7 @@ func removeInlineComments(sql string) string {
 			if char == '$' {
 				if tag, ok := scanDollarTag(runes, i); ok && tag == dollarTag {
 					result.WriteString(tag)
-					i += len([]rune(tag)) - 1 // -1 because loop increments
+					i += len(tag) - 1 // -1 because loop increments
 					inDollarQuote = false
 					dollarTag = ""
 					continue
@@ -212,7 +212,7 @@ func removeInlineComments(sql string) string {
 				inDollarQuote = true
 				dollarTag = tag
 				result.WriteString(tag)
-				i += len([]rune(tag)) - 1 // -1 because loop increments
+				i += len(tag) - 1 // -1 because loop increments
 				continue
 			}
 		}
