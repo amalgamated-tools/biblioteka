@@ -50,6 +50,9 @@
         showDeleteConfirm = false;
       } else {
         editingId = null;
+        formName = "";
+        formPaths = [{ id: nextPathId++, value: "" }];
+        formMonitored = false;
         formError = "Library not found";
       }
     }
