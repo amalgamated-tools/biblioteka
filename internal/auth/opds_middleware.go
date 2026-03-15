@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -21,6 +22,19 @@ type OPDSCredentialChecker interface {
 	GetOPDSCredential(ctx context.Context, username string) (*OPDSCredentialResult, error)
 }
 
+// dummyOPDSBcryptHash is a precomputed valid bcrypt hash used for timing-safe
+// comparisons when a username is not found, to mitigate username enumeration
+// via timing attacks.
+var dummyOPDSBcryptHash = mustGenerateDummyOPDSHash()
+
+func mustGenerateDummyOPDSHash() []byte {
+	hash, err := bcrypt.GenerateFromPassword([]byte("dummy-opds-password"), bcrypt.DefaultCost)
+	if err != nil {
+		panic(fmt.Errorf("generate dummy OPDS bcrypt hash: %w", err))
+	}
+	return hash
+}
+
 // OPDSBasicAuthMiddleware returns an HTTP middleware that validates OPDS
 // credentials using HTTP Basic Authentication and injects the user ID into
 // the request context.
@@ -38,7 +52,7 @@ func OPDSBasicAuthMiddleware(checker OPDSCredentialChecker) func(http.Handler) h
 			cred, err := checker.GetOPDSCredential(r.Context(), strings.ToLower(username))
 			if err != nil {
 				// Perform a dummy bcrypt comparison to prevent timing-based username enumeration.
-				_ = bcrypt.CompareHashAndPassword([]byte("$2a$10$0000000000000000000000000000000000000000000000000000000"), []byte(password))
+				_ = bcrypt.CompareHashAndPassword(dummyOPDSBcryptHash, []byte(password))
 				slog.InfoContext(r.Context(), "OPDS: unknown username", slog.String(otelkeys.OPDSUsername, username))
 				w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
 				jsonError(w, http.StatusUnauthorized, "invalid credentials")
