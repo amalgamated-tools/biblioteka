@@ -1,0 +1,85 @@
+package handlers
+
+import (
+	"log/slog"
+	"net/http"
+
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+)
+
+// getBookFiles godoc
+//
+//	@Summary		List book files
+//	@Description	List files for a book
+//	@Tags			Books
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book ID"
+//	@Success		200	{array}		bookFileDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/books/{id}/files [get]
+func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
+	files, err := h.DB.ListBookFiles(r.Context(), bookID)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to list book files", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list book files")
+		return
+	}
+	dtos := make([]bookFileDTO, 0, len(files))
+	for i := range files {
+		dtos = append(dtos, toBookFileDTO(&files[i]))
+	}
+	writeJSON(r.Context(), w, http.StatusOK, dtos)
+}
+
+// createBookFileRequest is the request body for creating a book file.
+type createBookFileRequest struct {
+	FileType string  `json:"file_type"`
+	FileName string  `json:"file_name"`
+	FileSize int64   `json:"file_size"`
+	FileHash *string `json:"file_hash"`
+	FilePath string  `json:"file_path"`
+}
+
+// postBookFiles godoc
+//
+//	@Summary		Add a book file
+//	@Description	Add a new file for a book
+//	@Tags			Books
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string					true	"Book ID"
+//	@Param			body	body		createBookFileRequest	true	"Book file data"
+//	@Success		201		{object}	bookFileDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/books/{id}/files [post]
+func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
+	var req createBookFileRequest
+	if !decodeJSON(r, w, &req) {
+		return
+	}
+	if req.FileType == "" || req.FileName == "" || req.FilePath == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "file_type, file_name, and file_path are required")
+		return
+	}
+	bf, err := h.DB.CreateBookFile(r.Context(), bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to create book file", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book file")
+		return
+	}
+
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionBookFileCreated, "book_file", bf.ID, map[string]any{"book_id": bookID, "file_name": bf.FileName, "file_type": bf.FileType}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+
+	writeJSON(r.Context(), w, http.StatusCreated, toBookFileDTO(bf))
+}

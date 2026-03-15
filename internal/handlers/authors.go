@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 
@@ -127,8 +126,7 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 //	@Router			/authors [post]
 func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 	var req authorRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 
@@ -212,8 +210,7 @@ func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id str
 //	@Router			/authors/{id} [put]
 func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id string) {
 	var req authorRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 

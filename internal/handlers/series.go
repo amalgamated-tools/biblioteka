@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 
@@ -124,8 +123,7 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 //	@Router			/series [post]
 func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 	var req seriesRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 
@@ -209,8 +207,7 @@ func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id str
 //	@Router			/series/{id} [put]
 func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id string) {
 	var req seriesRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 

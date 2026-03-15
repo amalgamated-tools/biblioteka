@@ -10,6 +10,19 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// decodeJSON reads and decodes the JSON request body into v.
+// It returns true on success. On failure it writes a 400 error response and
+// returns false, so callers can simply return.
+func decodeJSON(r *http.Request, w http.ResponseWriter, v any) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB cap
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+		slog.DebugContext(r.Context(), "failed to decode request body", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+		return false
+	}
+	return true
+}
+
 // writeJSON sends a JSON response with the given status code.
 func writeJSON(ctx context.Context, w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
