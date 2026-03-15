@@ -90,16 +90,16 @@ Because all logs go to stdout in JSON format, they integrate with any log aggreg
 
 ```bash
 # Stream all logs at info level or above
-docker compose logs -f biblioteka | jq 'select(.level != "DEBUG")'
+docker compose logs -f --no-log-prefix biblioteka | jq 'select(.level != "DEBUG")'
 
 # Show only errors
-docker compose logs biblioteka | jq 'select(.level == "ERROR")'
+docker compose logs -f --no-log-prefix biblioteka | jq 'select(.level == "ERROR")'
 
 # Find all log lines for a specific request
-docker compose logs biblioteka | jq 'select(.request_id == "550e8400-e29b-41d4-a716-446655440000")'
+docker compose logs -f --no-log-prefix biblioteka | jq 'select(.request_id == "550e8400-e29b-41d4-a716-446655440000")'
 
 # Show slow requests (> 500 ms)
-docker compose logs biblioteka | jq 'select(.duration != null and .duration > 500000000)'
+docker compose logs -f --no-log-prefix biblioteka | jq 'select(.duration != null and .duration > 500000000)'
 ```
 
 ## Distributed Tracing
