@@ -84,9 +84,8 @@ func (h *APIKeyHandler) HandleAPIKeys(w http.ResponseWriter, r *http.Request) {
 // @Description Delete a specific API key owned by the authenticated user.
 // @Tags api-keys
 // @Security BearerAuth
-// @Produce json
 // @Param id path string true "API key ID"
-// @Success 204 {string} string "API key deleted"
+// @Success 204 "API key deleted"
 // @Failure 400 {object} errorResponse "Invalid API key ID"
 // @Failure 401 {object} errorResponse "Unauthorized"
 // @Failure 404 {object} errorResponse "API key not found"

@@ -498,8 +498,6 @@ func TestMiddleware_ValidAPIKey(t *testing.T) {
 		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "apikey-user")
 	}
 
-	// Give the goroutine a moment to run TouchAPIKeyLastUsed.
-	time.Sleep(50 * time.Millisecond)
 	if len(validator.touched) != 1 || validator.touched[0] != "key-1" {
 		t.Errorf("TouchAPIKeyLastUsed called with %v, want [key-1]", validator.touched)
 	}
