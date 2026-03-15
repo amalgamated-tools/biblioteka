@@ -62,6 +62,7 @@ internal/
   server/            # HTTP server setup, routing, embedded frontend
   worker/            # asynq-based background job processing
   otel/              # Logging and tracing setup
+  otelkeys/          # Shared log/telemetry field-name constants
   telemetry/         # Anonymous usage telemetry (opt-in)
 frontend/            # Svelte 5 SPA (TypeScript + Tailwind CSS)
 db/
@@ -146,7 +147,7 @@ Always commit the updated spec files alongside the handler changes that prompted
       return
   }
   ```
-- **Logging**: Use `log/slog` for structured logging. `log.Print*` is forbidden by the linter.
+- **Logging**: Use `log/slog` for structured logging. Always call the **context-aware variants** — `slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`, `slog.WarnContext(ctx, ...)`, `slog.DebugContext(ctx, ...)` — passing `r.Context()` in HTTP handlers or a propagated `context.Context` elsewhere. The non-context versions (`slog.Info`, `slog.Error`, etc.) are **forbidden** by the `sloglint` linter. `log.Print*`, `log.Fatal*`, and `log.Panic*` are also forbidden. For log field keys, use the predefined constants from `internal/otelkeys/logger_keys.go` (e.g. `otelkeys.UserID`, `otelkeys.BookID`) — never raw string literals. If you need a new field key, add a constant there first.
 - **User scoping**: All data queries must include `user_id` to enforce per-user data isolation.
 - **Formatting**: Run `go fmt ./...` before committing Go code.
 
