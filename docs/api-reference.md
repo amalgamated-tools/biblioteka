@@ -340,16 +340,24 @@ Return a paginated list of all audit log entries. Each entry records an action p
 }
 ```
 
+| Field     | Type    | Description |
+|-----------|---------|-------------|
+| `entries` | array   | Page of audit log entries |
+| `total`   | integer | Total number of entries (for pagination) |
+| `limit`   | integer | Effective limit used |
+| `offset`  | integer | Effective offset used |
+
+**Audit log entry object** (`entries[]` elements):
+
 | Field         | Type    | Description |
 |---------------|---------|-------------|
-| `entries`     | array   | Page of audit log entries |
-| `total`       | integer | Total number of entries (for pagination) |
-| `limit`       | integer | Effective limit used |
-| `offset`      | integer | Effective offset used |
+| `id`          | string  | ID of this audit log entry |
+| `user_id`     | string? | ID of the user who performed the action; `null` for system actions |
 | `action`      | string  | Dot-separated `<entity_type>.<verb>` string (see table below) |
 | `entity_type` | string  | Type of the entity affected (e.g. `book`, `library`) |
-| `user_id`     | string? | ID of the user who performed the action; `null` for system actions |
+| `entity_id`   | string  | ID of the entity affected (e.g. book ID) |
 | `metadata`    | object? | Optional extra context (e.g. entity name at time of action); omitted when empty |
+| `created_at`  | string  | Timestamp when the action was recorded (ISO 8601) |
 
 **Known `action` values:**
 
@@ -367,7 +375,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `series.created`       | `series`      | Series created via `POST /api/series` |
 | `series.updated`       | `series`      | Series updated via `PUT /api/series/{id}` |
 | `series.deleted`       | `series`      | Series deleted via `DELETE /api/series/{id}` |
-| `book_file.created`    | `book_file`   | File attached via `POST /api/books/{id}/files` or background scan |
+| `book_file.created`    | `book_file`   | File attached via `POST /api/books/{id}/files` |
 | `book_file.deleted`    | `book_file`   | File deleted via `DELETE /api/book-files/{id}` |
 | `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
