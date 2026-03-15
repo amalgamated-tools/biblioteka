@@ -116,7 +116,14 @@ Never call `fetch` directly from components or stores — always go through `api
 
 ## TypeScript types
 
-All shared interfaces are in `frontend/src/types.ts`. Add new types there; do not inline them in component or store files.
+TypeScript types are split between two files based on their purpose:
+
+| File | What goes here |
+|------|----------------|
+| `frontend/src/types.ts` | **Domain entity types** — interfaces for API resource models that are used across multiple components and stores (e.g. `Library`, `Author`, `Book`, `BookFile`). |
+| `frontend/src/lib/api.ts` | **API-specific types** — request/response shapes tightly coupled to a single API module group (e.g. `ConfigStatus`, `OIDCConfig`, `SetOIDCConfigInput`, `AdminUser`). These may be imported into components that use the relevant API functions. |
+
+Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. If a type is shared across more than one component or store, move it to `types.ts`.
 
 ## Adding a new store
 
