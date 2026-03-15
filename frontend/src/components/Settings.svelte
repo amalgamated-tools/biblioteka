@@ -103,7 +103,11 @@
       smtpError = "From Address is required";
       return;
     }
-    if (!smtpPassword.trim() && !smtpPasswordSet && smtpUsername.trim()) {
+    if (
+      !smtpPassword.trim() &&
+      smtpUsername.trim() &&
+      (!smtpPasswordSet || smtpEnvOverride)
+    ) {
       smtpError = "Password is required when username is set";
       return;
     }
@@ -421,9 +425,9 @@
                   class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
                   disabled={smtpLoading}
                 >
-                  <option value="starttls">STARTTLS (port 587)</option>
-                  <option value="tls">TLS (port 465)</option>
-                  <option value="none">None (port 25)</option>
+                  <option value="starttls">STARTTLS</option>
+                  <option value="tls">TLS</option>
+                  <option value="none">None</option>
                 </select>
               </div>
 
