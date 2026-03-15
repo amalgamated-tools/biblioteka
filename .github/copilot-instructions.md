@@ -44,6 +44,8 @@ db/migrations/
   (`slog.Info`, `slog.Error`, etc.) are **forbidden by the `sloglint` linter**.
 - `log.Print*`, `log.Fatal*`, and `log.Panic*` are **forbidden** by the linter (`golangci-lint` / `forbidigo`).
 - Pass `r.Context()` in HTTP handlers or propagate `context.Context` through function signatures.
+- Make sure to NOT use raw string keys in log fields; use the predefined constants in `internal/otel_keys/logger_keys.go` (e.g., `otelkeys.UserID`) for consistency and to enable better log querying.
+- If you need to add a new log field, add a new constant in `otel_keys/logger_keys.go` and use that constant in your logging calls.
 
 ### Error handling
 - Check every error explicitly with `if err != nil`.
