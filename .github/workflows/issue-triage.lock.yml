@@ -657,7 +657,7 @@ jobs:
                   "maxLength": 128
                 }
               },
-              "customValidation": "requiresOneOf:status,title,body"
+              "customValidation": "requiresOneOf:status,title,body,labels"
             }
           }
           GH_AW_SAFE_OUTPUTS_VALIDATION_EOF

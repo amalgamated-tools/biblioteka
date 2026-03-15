@@ -23,6 +23,7 @@ tools:
 safe-outputs:
   add-comment:
     max: 2
+    discussions: false
   update-issue:
     max: 1
   noop:
@@ -36,8 +37,8 @@ Your job is to examine every newly opened (or edited) issue and perform four tas
 1. **Label by type** — assign exactly one type label based on Conventional Commits.
 2. **Label by priority** — assign exactly one priority label.
 3. **Detect duplicates** — search for existing issues that cover the same topic.
-4. **Request clarification** — if the description is too vague to triage, post a
-   polite comment asking for more information instead of guessing labels.
+4. **Request clarification** — if the description is too vague to triage confidently,
+   post a polite comment asking for more information before applying best-guess labels.
 
 ---
 
@@ -105,28 +106,24 @@ or request. Use the GitHub search tool to compare titles and key phrases.
 
 If the issue body is missing critical information (no reproduction steps for a
 bug, no description of desired behavior for a feature, or the description is
-too vague to meaningfully triage), **post a comment** asking for specifics.
+too vague to meaningfully triage), **post a comment** asking for specifics —
+**but only if no previous clarification request from this workflow already
+exists on the issue**. Search the issue's existing comments for a prior
+clarification comment from `github-actions[bot]` before posting a new one.
 
 Example:
-
-> Thanks for opening this issue! Could you provide a bit more detail so we can
-> triage it properly?
->
-> - **For bugs**: Steps to reproduce, expected vs. actual behavior, and
->   environment details (OS, browser, version).
-> - **For features**: A description of the desired behavior and the problem it
->   solves.
-
-When requesting clarification, still apply your best-guess labels so the issue
-is not left completely unclassified.
 
 ---
 
 ## Step 6 — Apply Labels
 
 Use the `update-issue` safe output to apply the chosen type and priority labels
-to the issue.
+to the issue. When doing so, **preserve all existing labels** that are not
+type/priority labels — merge the new triage labels with the labels already on
+the issue rather than replacing the full label list.
 
+If the issue already carries a type label and a priority label that match your
+classification, skip this step entirely and proceed to Step 7.
 ---
 
 ## Step 7 — Nothing to Do
