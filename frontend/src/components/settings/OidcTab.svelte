@@ -29,6 +29,12 @@
   let oidcLoading = $state(false);
   let successTimer: ReturnType<typeof setTimeout> | undefined;
 
+  let saveButtonLabel = $derived.by(() => {
+    if (oidcLoading) return "Saving...";
+    if (oidcConfigured) return "Update Configuration";
+    return "Save Configuration";
+  });
+
   onDestroy(() => {
     if (successTimer) clearTimeout(successTimer);
   });
@@ -227,11 +233,7 @@
         disabled={oidcLoading}
         class="w-full px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
       >
-        {oidcLoading
-          ? "Saving..."
-          : oidcConfigured
-            ? "Update Configuration"
-            : "Save Configuration"}
+        {saveButtonLabel}
       </button>
     </form>
   </div>
