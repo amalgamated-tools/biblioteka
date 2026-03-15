@@ -265,6 +265,8 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Protected config routes
 	s.mux.Handle("/api/config/status", s.requireAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
 	s.mux.Handle("/api/config/oidc", s.requireAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
+	s.mux.Handle("/api/config/smtp", s.requireAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
+	s.mux.Handle("/api/config/smtp/test", s.requireAuth(http.HandlerFunc(s.configHandler.HandleSMTPTest)))
 
 	// Protected admin routes
 	s.mux.Handle("/api/admin/users", s.requireAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))

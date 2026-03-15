@@ -2,9 +2,13 @@ package handlers
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/smtp"
 	"os"
 	"strings"
 	"time"
@@ -20,6 +24,13 @@ const (
 	settingOIDCClientID     = "oidc_client_id"
 	settingOIDCClientSecret = "oidc_client_secret"
 	settingOIDCRedirectURI  = "oidc_redirect_uri"
+
+	settingSMTPHost     = "smtp_host"
+	settingSMTPPort     = "smtp_port"
+	settingSMTPUsername = "smtp_username"
+	settingSMTPPassword = "smtp_password"
+	settingSMTPFrom     = "smtp_from"
+	settingSMTPTLS      = "smtp_tls"
 )
 
 // ConfigHandler holds dependencies for configuration endpoints.
@@ -31,6 +42,7 @@ type ConfigHandler struct {
 
 type configStatusResponse struct {
 	OIDCConfigured bool `json:"oidc_configured"`
+	SMTPConfigured bool `json:"smtp_configured"`
 	IsAdmin        bool `json:"is_admin"`
 }
 
@@ -54,8 +66,12 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 	slog.DebugContext(r.Context(), "fetching config status", slog.String(otelkeys.UserID, userID))
 	isAdmin, _ := h.DB.IsAdmin(r.Context(), userID)
 
+	smtpHost, _ := h.DB.GetSetting(r.Context(), settingSMTPHost)
+	smtpConfigured := smtpHost != "" || os.Getenv("SMTP_HOST") != ""
+
 	writeJSON(r.Context(), w, http.StatusOK, configStatusResponse{
 		OIDCConfigured: h.IsOIDCConfigured(),
+		SMTPConfigured: smtpConfigured,
 		IsAdmin:        isAdmin,
 	})
 }
@@ -243,4 +259,315 @@ func (h *ConfigHandler) HandleOIDCConfig(w http.ResponseWriter, r *http.Request)
 	default:
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 	}
+}
+
+// SMTP configuration types
+
+type smtpConfigResponse struct {
+	Host        string `json:"host"`
+	Port        string `json:"port"`
+	Username    string `json:"username"`
+	PasswordSet bool   `json:"password_set"`
+	From        string `json:"from"`
+	TLS         string `json:"tls"`
+}
+
+type setSMTPConfigRequest struct {
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	From     string `json:"from"`
+	TLS      string `json:"tls"`
+}
+
+// HandleSMTPConfig dispatches GET and PUT requests for /api/config/smtp.
+func (h *ConfigHandler) HandleSMTPConfig(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		h.handleGetSMTPConfig(w, r)
+	case http.MethodPut:
+		h.handleSetSMTPConfig(w, r)
+	default:
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+func (h *ConfigHandler) handleGetSMTPConfig(w http.ResponseWriter, r *http.Request) {
+	userID := auth.UserIDFromContext(r.Context())
+	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to check admin status",
+			slog.String(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
+		return
+	}
+	if !isAdmin {
+		writeError(r.Context(), w, http.StatusForbidden, "only the admin user can view this setting")
+		return
+	}
+
+	host, _ := h.DB.GetSetting(r.Context(), settingSMTPHost)
+	port, _ := h.DB.GetSetting(r.Context(), settingSMTPPort)
+	username, _ := h.DB.GetSetting(r.Context(), settingSMTPUsername)
+	password, passwordErr := h.DB.GetSetting(r.Context(), settingSMTPPassword)
+	from, _ := h.DB.GetSetting(r.Context(), settingSMTPFrom)
+	tlsMode, _ := h.DB.GetSetting(r.Context(), settingSMTPTLS)
+
+	writeJSON(r.Context(), w, http.StatusOK, smtpConfigResponse{
+		Host:        host,
+		Port:        port,
+		Username:    username,
+		PasswordSet: passwordErr == nil && password != "",
+		From:        from,
+		TLS:         tlsMode,
+	})
+}
+
+func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Request) {
+	userID := auth.UserIDFromContext(r.Context())
+	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to check admin status",
+			slog.String(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
+		return
+	}
+	if !isAdmin {
+		writeError(r.Context(), w, http.StatusForbidden, "only the admin user can change this setting")
+		return
+	}
+
+	var req setSMTPConfigRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	host := strings.TrimSpace(req.Host)
+	port := strings.TrimSpace(req.Port)
+	username := strings.TrimSpace(req.Username)
+	password := strings.TrimSpace(req.Password)
+	from := strings.TrimSpace(req.From)
+	tlsMode := strings.TrimSpace(req.TLS)
+
+	if host == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "host is required")
+		return
+	}
+	if from == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "from address is required")
+		return
+	}
+	if port == "" {
+		port = "587"
+	}
+	if tlsMode == "" {
+		tlsMode = "starttls"
+	}
+	if tlsMode != "none" && tlsMode != "starttls" && tlsMode != "tls" {
+		writeError(r.Context(), w, http.StatusBadRequest, "tls must be one of: none, starttls, tls")
+		return
+	}
+
+	// If password is empty, preserve the existing one
+	if password == "" {
+		existing, err := h.DB.GetSetting(r.Context(), settingSMTPPassword)
+		if err != nil || existing == "" {
+			writeError(r.Context(), w, http.StatusBadRequest, "password is required")
+			return
+		}
+		password = existing
+	}
+
+	slog.DebugContext(r.Context(), "saving SMTP config",
+		slog.String("smtp_host", host),
+		slog.String("smtp_from", from),
+	)
+
+	for k, v := range map[string]string{
+		settingSMTPHost:     host,
+		settingSMTPPort:     port,
+		settingSMTPUsername: username,
+		settingSMTPPassword: password,
+		settingSMTPFrom:     from,
+		settingSMTPTLS:      tlsMode,
+	} {
+		if err := h.DB.SetSetting(r.Context(), k, v); err != nil {
+			slog.ErrorContext(r.Context(), "failed to save SMTP setting",
+				slog.String(otelkeys.Key, k),
+				slog.Any(otelkeys.Error, err),
+			)
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to save SMTP configuration")
+			return
+		}
+	}
+
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSMTPConfigUpdated, "config", "smtp", map[string]any{
+		"host": host,
+		"from": from,
+	}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+
+	msg := "SMTP configuration saved successfully"
+	if os.Getenv("SMTP_HOST") != "" {
+		msg = "SMTP settings saved. Note: the SMTP_HOST environment variable is set and will take precedence. Remove SMTP_HOST from the environment to use these settings."
+	}
+	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": msg})
+}
+
+// HandleSMTPTest sends a test email to the admin user's email address.
+func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	userID := auth.UserIDFromContext(r.Context())
+	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to check admin status",
+			slog.String(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
+		return
+	}
+	if !isAdmin {
+		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
+		return
+	}
+
+	user, err := h.DB.GetUserByID(r.Context(), userID)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to get user", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get user details")
+		return
+	}
+
+	// Load SMTP config: env vars first, then DB
+	host := os.Getenv("SMTP_HOST")
+	port := os.Getenv("SMTP_PORT")
+	username := os.Getenv("SMTP_USERNAME")
+	password := os.Getenv("SMTP_PASSWORD")
+	from := os.Getenv("SMTP_FROM")
+	tlsMode := os.Getenv("SMTP_TLS")
+
+	if host == "" {
+		host, _ = h.DB.GetSetting(r.Context(), settingSMTPHost)
+		port, _ = h.DB.GetSetting(r.Context(), settingSMTPPort)
+		username, _ = h.DB.GetSetting(r.Context(), settingSMTPUsername)
+		password, _ = h.DB.GetSetting(r.Context(), settingSMTPPassword)
+		from, _ = h.DB.GetSetting(r.Context(), settingSMTPFrom)
+		tlsMode, _ = h.DB.GetSetting(r.Context(), settingSMTPTLS)
+	}
+
+	if host == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "SMTP is not configured")
+		return
+	}
+	if port == "" {
+		port = "587"
+	}
+	if tlsMode == "" {
+		tlsMode = "starttls"
+	}
+
+	to := user.Email
+	subject := "Biblioteka SMTP Test"
+	body := "This is a test email from Biblioteka to confirm your SMTP settings are working correctly."
+	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s", from, to, subject, body)
+
+	addr := net.JoinHostPort(host, port)
+	var smtpAuth smtp.Auth
+	if username != "" && password != "" {
+		smtpAuth = smtp.PlainAuth("", username, password, host)
+	}
+
+	if err := sendMail(addr, smtpAuth, from, to, []byte(msg), tlsMode); err != nil {
+		slog.ErrorContext(r.Context(), "failed to send test email",
+			slog.String(otelkeys.Email, to),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusBadGateway, "failed to send test email: "+err.Error())
+		return
+	}
+
+	slog.InfoContext(r.Context(), "test email sent", slog.String(otelkeys.Email, to))
+	writeJSON(r.Context(), w, http.StatusOK, map[string]string{
+		"message": fmt.Sprintf("Test email sent to %s", to),
+	})
+}
+
+// sendMail sends an email using the specified TLS mode.
+func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return fmt.Errorf("invalid address: %w", err)
+	}
+
+	tlsConfig := &tls.Config{ServerName: host}
+
+	switch tlsMode {
+	case "tls":
+		conn, err := tls.DialWithDialer(&net.Dialer{Timeout: 10 * time.Second}, "tcp", addr, tlsConfig)
+		if err != nil {
+			return fmt.Errorf("TLS connection failed: %w", err)
+		}
+		client, err := smtp.NewClient(conn, host)
+		if err != nil {
+			return fmt.Errorf("SMTP client creation failed: %w", err)
+		}
+		defer client.Close()
+		return smtpSend(client, a, from, to, msg)
+
+	case "starttls":
+		client, err := smtp.Dial(addr)
+		if err != nil {
+			return fmt.Errorf("SMTP connection failed: %w", err)
+		}
+		defer client.Close()
+		if err := client.StartTLS(tlsConfig); err != nil {
+			return fmt.Errorf("STARTTLS failed: %w", err)
+		}
+		return smtpSend(client, a, from, to, msg)
+
+	default: // "none"
+		client, err := smtp.Dial(addr)
+		if err != nil {
+			return fmt.Errorf("SMTP connection failed: %w", err)
+		}
+		defer client.Close()
+		return smtpSend(client, a, from, to, msg)
+	}
+}
+
+func smtpSend(c *smtp.Client, a smtp.Auth, from, to string, msg []byte) error {
+	if a != nil {
+		if err := c.Auth(a); err != nil {
+			return fmt.Errorf("SMTP auth failed: %w", err)
+		}
+	}
+	if err := c.Mail(from); err != nil {
+		return fmt.Errorf("MAIL FROM failed: %w", err)
+	}
+	if err := c.Rcpt(to); err != nil {
+		return fmt.Errorf("RCPT TO failed: %w", err)
+	}
+	w, err := c.Data()
+	if err != nil {
+		return fmt.Errorf("DATA failed: %w", err)
+	}
+	if _, err := w.Write(msg); err != nil {
+		return fmt.Errorf("message write failed: %w", err)
+	}
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("message close failed: %w", err)
+	}
+	return c.Quit()
 }
