@@ -8,11 +8,14 @@ All endpoints are under the base path `/api`. JSON is used for all request and r
 
 Most endpoints require a JWT bearer token obtained from the [login](#post-apiauthlogin) or [signup](#post-apiauthsignup) endpoints.
 
-Include the token in the `Authorization` header:
+The token can be supplied in two ways:
 
-```
-Authorization: Bearer <token>
-```
+1. **Authorization header** (recommended for API clients):
+   ```
+   Authorization: Bearer <token>
+   ```
+
+2. **Session cookie** (used automatically by the browser): On login and signup the server sets an `HttpOnly` session cookie named `biblioteka_token`. Subsequent browser requests to protected pages (including [`/asynqmon/`](#get-asynqmon)) use this cookie automatically — no manual header is required.
 
 Endpoints that require authentication are marked with 🔒. Endpoints that additionally require the caller to be an admin are marked with 🔒 **Admin**.
 
@@ -837,19 +840,19 @@ Delete a book file record (does not delete the file from disk). Returns `204 No 
 
 ## Swagger UI
 
-### `GET /swagger/` 🔒
+### `GET /swagger/`
 
 An interactive OpenAPI browser (powered by [Swagger UI](https://swagger.io/tools/swagger-ui/)) that documents and lets you try every API endpoint in the browser.
 
 | Property | Value |
 |----------|-------|
 | **URL** | `/swagger/` |
-| **Auth** | 🔒 Valid JWT required |
+| **Auth** | Public — no authentication required to browse the UI |
 | **Spec URL** | `/swagger/doc.json` — raw OpenAPI 3.0 JSON |
 
 > Accessing `/swagger` (without trailing slash) redirects to `/swagger/` automatically.
 
-The UI is useful during development for exploring request/response shapes without needing a separate API client.
+The UI is useful during development for exploring request/response shapes without needing a separate API client. Individual protected endpoints still require a valid JWT when invoked from within the UI.
 
 ---
 
@@ -862,12 +865,12 @@ An interactive web UI for monitoring background jobs (powered by [asynqmon](http
 | Property | Value |
 |----------|-------|
 | **URL** | `/asynqmon/` |
-| **Auth** | 🔒 Valid JWT required (same token as API calls) |
+| **Auth** | 🔒 Valid admin JWT required — accepted as `Authorization: Bearer <token>` header **or** the `biblioteka_token` session cookie set on login |
 | **Availability** | Route is mounted whenever the background worker subsystem is enabled; a reachable Redis instance is required for the UI to function correctly |
 
-This dashboard is only available when the server is started with a Redis-backed worker (i.e. `REDIS_URL` is configured, default: `redis://localhost:6379`). It requires an authenticated session — accessing it without a valid JWT returns `401 Unauthorized`.
+This dashboard is only available when the server is started with a Redis-backed worker (i.e. `REDIS_URL` is configured, default: `redis://localhost:6379`). It requires an authenticated admin session — accessing it without a valid JWT returns `401 Unauthorized`.
 
-Navigate to `http://<host>:<port>/asynqmon/` in a browser after logging in to view queued, active, completed, and failed background jobs (library scans, file processing), and retry or delete individual tasks.
+Navigate to `http://<host>:<port>/asynqmon/` in a browser after signing in as an admin to view queued, active, completed, and failed background jobs (library scans, file processing), and retry or delete individual tasks. Because login sets a `biblioteka_token` session cookie, the browser sends it automatically — no manual header or proxy configuration is required for browser access.
 
 ---
 
