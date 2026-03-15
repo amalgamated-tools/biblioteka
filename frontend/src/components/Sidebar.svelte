@@ -52,7 +52,7 @@
         });
     }
   });
-  });
+  
 
   async function handleLogout() {
     await authStore.signOut();
