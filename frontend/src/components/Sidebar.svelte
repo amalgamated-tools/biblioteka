@@ -42,9 +42,11 @@
   });
 
   $effect(() => {
-    getVersion().then((v) => {
-      version = v;
-    });
+    if (!version) {
+      getVersion().then((v) => {
+        version = v;
+      });
+    }
   });
 
   async function handleLogout() {
