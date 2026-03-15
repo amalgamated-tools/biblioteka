@@ -219,9 +219,16 @@ Returns application configuration status visible to the authenticated user.
 ```json
 {
   "oidc_configured": true,
+  "smtp_configured": true,
   "is_admin": false
 }
 ```
+
+| Field             | Type    | Description |
+|-------------------|---------|-------------|
+| `oidc_configured` | boolean | `true` when a valid OIDC provider is configured (via environment variables or the admin settings page) |
+| `smtp_configured` | boolean | `true` when `SMTP_HOST` and `smtp_from` are set and `SMTP_HOST` is a non-loopback hostname |
+| `is_admin`        | boolean | `true` when the authenticated user has admin privileges |
 
 ---
 
@@ -264,6 +271,104 @@ Save OIDC provider settings. The server performs OIDC discovery on the `issuer_u
 ```
 
 > **Note:** If the `OIDC_ISSUER_URL` environment variable is set, it takes precedence over these stored settings at server startup — the server will use the environment variables instead of the saved configuration. When `OIDC_ISSUER_URL` is set at the time of this `PUT` request, the response message will warn about this and instruct you to remove the variable to use the stored settings.
+
+---
+
+### `GET /api/config/smtp` 🔒 **Admin**
+
+Return the current SMTP configuration. The `password` value is never returned; `password_set` indicates whether one is stored. When `env_override` is `true`, all fields are sourced from environment variables and the stored database settings are ignored.
+
+**Response body (`200`):**
+
+```json
+{
+  "host": "smtp.example.com",
+  "port": "587",
+  "username": "notifications@example.com",
+  "password_set": true,
+  "from": "notifications@example.com",
+  "tls": "starttls",
+  "env_override": false
+}
+```
+
+| Field          | Type    | Description |
+|----------------|---------|-------------|
+| `host`         | string  | SMTP server hostname |
+| `port`         | string  | SMTP server port (default `587`) |
+| `username`     | string  | SMTP authentication username |
+| `password_set` | boolean | `true` when a password is stored; the value itself is never returned |
+| `from`         | string  | Sender address used in the `From` header |
+| `tls`          | string  | TLS mode: `none`, `starttls` (default), or `tls` |
+| `env_override` | boolean | `true` when `SMTP_HOST` is set as an environment variable; all fields in this case reflect env values, and database settings are inactive |
+
+---
+
+### `PUT /api/config/smtp` 🔒 **Admin**
+
+Save SMTP provider settings. If `password` is omitted and `username` is unchanged, the existing stored password is preserved; clearing `username` also clears the stored password.
+
+**Request body:**
+
+| Field      | Type   | Required | Description |
+|------------|--------|----------|-------------|
+| `host`     | string | ✓        | SMTP server hostname (non-IP required for remote servers) |
+| `port`     | string |          | SMTP server port (default `587`) |
+| `username` | string |          | SMTP authentication username; omit for unauthenticated relay |
+| `password` | string |          | SMTP password; omit to preserve the existing stored value when `username` is unchanged |
+| `from`     | string | ✓        | Sender address (plain email, no display name) |
+| `tls`      | string |          | TLS mode: `none`, `starttls` (default), or `tls` |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Settings saved |
+| `400 Bad Request` | Missing or invalid fields |
+| `401 Unauthorized` | Not authenticated |
+| `403 Forbidden` | Caller is not an admin |
+| `500 Internal Server Error` | Database error |
+
+**Response body (`200`):**
+
+```json
+{ "message": "SMTP configuration saved successfully" }
+```
+
+> **Note:** If the `SMTP_HOST` environment variable is set, it takes precedence over database-stored settings. Saving via this endpoint still writes to the database, but the environment value will remain active. The response message will warn about this when `SMTP_HOST` is present in the environment.
+
+**Validation rules:**
+- `host` must be a valid hostname (IP addresses are rejected for remote servers).
+- `from` must be a plain email address without a display name (e.g. `noreply@example.com`, not `"Biblioteka" <noreply@example.com>`).
+- `port` must be an integer between 1 and 65535.
+- `tls` must be one of `none`, `starttls`, or `tls`.
+- Authenticated SMTP (`username` set) with `tls: none` is only permitted for localhost/loopback hosts.
+
+---
+
+### `POST /api/config/smtp/test` 🔒 **Admin**
+
+Send a test email to the authenticated admin user's email address using the current SMTP configuration.
+
+**Request body:** Empty.
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Test email sent |
+| `400 Bad Request` | SMTP not configured, invalid configuration, or invalid admin email |
+| `401 Unauthorized` | Not authenticated |
+| `403 Forbidden` | Caller is not an admin |
+| `429 Too Many Requests` | Rate limit exceeded |
+| `502 Bad Gateway` | SMTP server refused the connection or returned an error |
+| `500 Internal Server Error` | Server-side error |
+
+**Response body (`200`):**
+
+```json
+{ "message": "Test email sent to alice@example.com" }
+```
 
 ---
 

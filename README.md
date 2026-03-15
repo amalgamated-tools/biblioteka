@@ -88,6 +88,12 @@ Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be 
 | `OIDC_CLIENT_ID` | *(empty)* | OIDC client ID |
 | `OIDC_CLIENT_SECRET` | *(empty)* | OIDC client secret |
 | `OIDC_REDIRECT_URI` | `http://localhost:8080/api/auth/oidc/callback` | OIDC callback URL |
+| `SMTP_HOST` | *(empty)* | SMTP server hostname; when set, all SMTP config is sourced from environment (overrides DB settings) |
+| `SMTP_PORT` | `587` | SMTP server port |
+| `SMTP_USERNAME` | *(empty)* | SMTP authentication username |
+| `SMTP_PASSWORD` | *(empty)* | SMTP authentication password |
+| `SMTP_FROM` | *(empty)* | Sender address used in outgoing emails (required when `SMTP_HOST` is set) |
+| `SMTP_TLS` | `starttls` | TLS mode: `none`, `starttls`, or `tls` |
 | `TELEMETRY_ENABLED` | `false` | Send anonymous usage telemetry on first startup (opt-in, disabled by default) |
 | `TELEMETRY_ENDPOINT` | *(internal default)* | Override the anonymous telemetry collection endpoint |
 | `POSTGRES_PASSWORD` | — | PostgreSQL password; used by the `docker-compose.postgres.yml` Docker Compose file |
@@ -98,6 +104,7 @@ The first account created is automatically granted admin privileges. Admins can:
 
 - **Manage users** — list all accounts and grant or revoke admin status via `GET /api/admin/users` and `PUT /api/admin/users/{id}`.
 - **Configure OIDC at runtime** — read and update the OIDC provider settings via `GET /api/config/oidc` and `PUT /api/config/oidc` without a server restart. Environment variable values (`OIDC_ISSUER_URL`, etc.) take precedence over database-stored settings.
+- **Configure SMTP at runtime** — read and update outgoing email settings via `GET /api/config/smtp` and `PUT /api/config/smtp`. Use `POST /api/config/smtp/test` to send a test email to your admin address. `SMTP_HOST` environment variable, when set, overrides all database-stored SMTP settings.
 - **Monitor background jobs** — a web dashboard is available at `/asynqmon/` when Redis is running. It shows queued, active, completed, and failed job details.
 - **Review audit logs** — a paginated audit trail of all create, update, and delete actions is available via `GET /api/audit-logs`. Each entry records the user (when available), the action, and the affected entity.
 
