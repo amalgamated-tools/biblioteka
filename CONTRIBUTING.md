@@ -2,12 +2,31 @@
 
 Thanks for your interest in contributing! This guide covers everything you need to get started.
 
+## Before You Start: Contributor License Agreement
+
+All contributors must sign the [Contributor License Agreement (CLA)](CLA.md) before their pull request can be merged. The CLA bot will automatically prompt you when you open a pull request. Sign by leaving a comment on the PR with the following exact text:
+
+```
+I have read the CLA Document and I hereby sign the CLA
+```
+
+Your signature is recorded once and applies to all future contributions.
+
 ## Prerequisites
 
 - Go 1.25+
 - Node.js 22+ with [pnpm](https://pnpm.io/)
 - Redis (for background jobs)
+- [ExifTool](https://exiftool.org/) (optional; only needed for PDF and MOBI/AZW3 metadata extraction)
 - Docker (optional, for running the full stack locally)
+
+### Installing Tools with mise
+
+If you use [mise](https://mise.jdx.dev/), you can install Go, Node.js, pnpm, and golangci-lint at the versions pinned in `mise.toml` with a single command:
+
+```bash
+mise install
+```
 
 ## Getting Started
 
@@ -138,7 +157,7 @@ Name files with a timestamp prefix: `YYYYMMDDHHMMSS_description.sql`. Migrations
 
 ## Continuous Integration
 
-The test workflow (`.github/workflows/test.yml`) runs on pushes and pull requests targeting `main` or `develop`, but only when the following paths are modified:
+The test workflow (`.github/workflows/test.yml`) runs on pushes and pull requests targeting `main`, but only when the following paths are modified:
 
 | Path pattern | What it covers |
 |---|---|
@@ -179,9 +198,11 @@ Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: '
 
 1. Fork the repository and create a feature branch from `main`.
 2. Make your changes following the conventions above.
-3. Run `go test ./...` and `cd frontend && pnpm run lint && pnpm run check` to verify everything passes.
-4. Open a pull request against `main` with a clear description of what and why.
-5. A maintainer will review your PR and provide feedback.
+3. Run `go fmt ./...` and `go test ./...` to verify all Go code is formatted and tests pass.
+4. Run `cd frontend && pnpm run lint && pnpm run check` to verify frontend code.
+5. Open a pull request against `main` with a clear description of what and why.
+6. Sign the [CLA](CLA.md) if prompted by the CLA bot (first-time contributors only).
+7. A maintainer will review your PR and provide feedback.
 
 ## Questions?
 
