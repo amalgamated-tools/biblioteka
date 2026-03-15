@@ -11,6 +11,11 @@ frontend/src/
   index.css           Tailwind CSS directives
   types.ts            Shared TypeScript interfaces for API entities
   components/         Page-level Svelte components (PascalCase)
+    settings/         Sub-components for the Settings page (one per tab)
+      AccountTab.svelte    Account & password management; OIDC linking
+      OidcTab.svelte       Admin: OIDC / SSO provider configuration
+      PreferencesTab.svelte Display theme selection
+      UsersTab.svelte      Admin: user list and admin-role toggling
   stores/             Reactive state modules (lowercase, *.svelte.ts)
   lib/
     api.ts            Centralised API client
@@ -139,6 +144,28 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 3. Add the route to the `valid` array in `RouterStore.currentView`.
 4. Import and render `<MyView />` in `App.svelte` inside the `{#if … }` routing block.
 5. Add a navigation entry in `Sidebar.svelte`.
+
+## Settings component architecture
+
+`Settings.svelte` is a shell that owns shared state (admin flag, OIDC config) and renders one tab at a time. Each tab is a standalone sub-component in `frontend/src/components/settings/`.
+
+| Component | Route | Visibility | Responsibility |
+|-----------|-------|------------|----------------|
+| `AccountTab.svelte` | `settings/account` | All users | Change password; link/unlink OIDC account |
+| `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
+| `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
+| `UsersTab.svelte` | `settings/users` | Admins only | List users; toggle admin role |
+
+`Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data.
+
+### Adding a new settings tab
+
+1. Create `frontend/src/components/settings/MyTab.svelte`.
+2. Define an `interface Props { … }` and use `$props()` for any data the tab needs from `Settings.svelte`.
+3. Add `"my-tab"` to the `SettingsTab` union type and `validTabs` array in `Settings.svelte`.
+4. Import and render `<MyTab />` inside the `{#if activeTab === "my-tab"}` block in `Settings.svelte`.
+5. Add a navigation `<button>` in `Settings.svelte`'s sidebar `<nav>`, wrapped in `{#if isAdmin}` if the tab is admin-only.
+6. Update the table above.
 
 ## Linting and type-checking
 
