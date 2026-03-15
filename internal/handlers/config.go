@@ -384,8 +384,13 @@ func validateSMTPHost(host string) error {
 	if host == "" {
 		return fmt.Errorf("host is required")
 	}
-	if strings.ContainsAny(host, "\r\n \t") {
-		return fmt.Errorf("host contains invalid characters")
+	// Reject all ASCII control characters, space, and DEL to avoid malformed
+	// addresses and potential log/header injection.
+	for i := 0; i < len(host); i++ {
+		c := host[i]
+		if c <= 0x20 || c == 0x7f {
+			return fmt.Errorf("host contains invalid characters")
+		}
 	}
 	if strings.ContainsAny(host, "[]") {
 		return fmt.Errorf("host must not contain brackets; provide the bare IPv6 address")
@@ -789,6 +794,39 @@ const smtpSessionTimeout = 30 * time.Second
 // sendMail sends an email using the specified TLS mode.
 // The context is propagated to dial calls so that cancelled requests
 // (e.g. client disconnect or server shutdown) abort the SMTP session promptly.
+func newSMTPClientWithContext(ctx context.Context, conn net.Conn, host string) (*smtp.Client, func(), error) {
+	sessionDeadline := time.Now().Add(smtpSessionTimeout)
+	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(sessionDeadline) {
+		sessionDeadline = ctxDeadline
+	}
+	if err := conn.SetDeadline(sessionDeadline); err != nil {
+		conn.Close()
+		return nil, nil, fmt.Errorf("failed to set connection deadline: %w", err)
+	}
+
+	done := make(chan struct{})
+	go func(c net.Conn, done <-chan struct{}, ctx context.Context) {
+		select {
+		case <-ctx.Done():
+			c.Close()
+		case <-done:
+		}
+	}(conn, done, ctx)
+
+	client, err := smtp.NewClient(conn, host)
+	if err != nil {
+		close(done)
+		conn.Close()
+		return nil, nil, fmt.Errorf("SMTP client creation failed: %w", err)
+	}
+
+	cleanup := func() {
+		close(done)
+	}
+
+	return client, cleanup, nil
+}
+
 func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
@@ -811,29 +849,14 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		if err != nil {
 			return fmt.Errorf("TLS connection failed: %w", err)
 		}
-		sessionDeadline := time.Now().Add(smtpSessionTimeout)
-		if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(sessionDeadline) {
-			sessionDeadline = ctxDeadline
-		}
-		if err := conn.SetDeadline(sessionDeadline); err != nil {
-			conn.Close()
-			return fmt.Errorf("failed to set connection deadline: %w", err)
-		}
-		done := make(chan struct{})
-		go func(c net.Conn, done <-chan struct{}, ctx context.Context) {
-			select {
-			case <-ctx.Done():
-				c.Close()
-			case <-done:
-			}
-		}(conn, done, ctx)
-		defer close(done)
-		client, err := smtp.NewClient(conn, host)
+
+		client, cleanup, err := newSMTPClientWithContext(ctx, conn, host)
 		if err != nil {
-			conn.Close()
-			return fmt.Errorf("SMTP client creation failed: %w", err)
+			return err
 		}
+		defer cleanup()
 		defer client.Close()
+
 		return smtpSend(client, a, from, to, msg)
 
 	case "starttls":
@@ -874,29 +897,14 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
-		sessionDeadline := time.Now().Add(smtpSessionTimeout)
-		if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(sessionDeadline) {
-			sessionDeadline = ctxDeadline
-		}
-		if err := conn.SetDeadline(sessionDeadline); err != nil {
-			conn.Close()
-			return fmt.Errorf("failed to set connection deadline: %w", err)
-		}
-		done := make(chan struct{})
-		go func(c net.Conn, done <-chan struct{}, ctx context.Context) {
-			select {
-			case <-ctx.Done():
-				c.Close()
-			case <-done:
-			}
-		}(conn, done, ctx)
-		defer close(done)
-		client, err := smtp.NewClient(conn, host)
+
+		client, cleanup, err := newSMTPClientWithContext(ctx, conn, host)
 		if err != nil {
-			conn.Close()
-			return fmt.Errorf("SMTP client creation failed: %w", err)
+			return err
 		}
+		defer cleanup()
 		defer client.Close()
+
 		return smtpSend(client, a, from, to, msg)
 	default:
 		return fmt.Errorf("unsupported TLS mode %q", tlsMode)
