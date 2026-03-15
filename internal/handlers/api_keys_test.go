@@ -322,7 +322,9 @@ func TestDeleteAPIKey_AuditLog(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var created apiKeyCreateResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &created)
+	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
+		t.Fatalf("unmarshal create response: %v; body: %s", err, w.Body.String())
+	}
 
 	r = httptest.NewRequest(http.MethodDelete, "/api/api-keys/"+created.ID, nil)
 	r = withUserID(r, userID)
