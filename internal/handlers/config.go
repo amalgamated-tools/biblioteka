@@ -70,9 +70,8 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 	slog.DebugContext(r.Context(), "fetching config status", slog.String(otelkeys.UserID, userID))
 	isAdmin, _ := h.DB.IsAdmin(r.Context(), userID)
 
-	smtpHost, _ := h.DB.GetSetting(r.Context(), settingSMTPHost)
-	smtpFrom, _ := h.DB.GetSetting(r.Context(), settingSMTPFrom)
-	smtpConfigured := (smtpHost != "" && smtpFrom != "") || (os.Getenv("SMTP_HOST") != "" && os.Getenv("SMTP_FROM") != "")
+	smtpCfg := h.resolveSMTPConfig(r.Context())
+	smtpConfigured := smtpCfg.Host != "" && smtpCfg.From != ""
 
 	writeJSON(r.Context(), w, http.StatusOK, configStatusResponse{
 		OIDCConfigured: h.IsOIDCConfigured(),
@@ -321,7 +320,9 @@ func (h *ConfigHandler) resolveSMTPConfig(ctx context.Context) smtpConfig {
 }
 
 // validateSMTPHost checks that host is a valid hostname/IP without embedded
-// control characters or port numbers.
+// control characters, port numbers, or brackets.
+// IPv6 addresses must be supplied without brackets (e.g. "::1" not "[::1]");
+// net.JoinHostPort will add brackets automatically.
 func validateSMTPHost(host string) error {
 	if host == "" {
 		return fmt.Errorf("host is required")
@@ -329,9 +330,14 @@ func validateSMTPHost(host string) error {
 	if strings.ContainsAny(host, "\r\n \t") {
 		return fmt.Errorf("host contains invalid characters")
 	}
-	// Reject embedded port (colon) unless it's a bracketed IPv6 literal like [::1]
-	if strings.Contains(host, ":") && !strings.HasPrefix(host, "[") {
-		return fmt.Errorf("host must not contain a port; specify the port separately")
+	if strings.ContainsAny(host, "[]") {
+		return fmt.Errorf("host must not contain brackets; provide the bare IPv6 address")
+	}
+	// A bare IPv6 address contains colons — allow it only if net.ParseIP recognises it.
+	if strings.Contains(host, ":") {
+		if net.ParseIP(host) == nil {
+			return fmt.Errorf("host must not contain a port; specify the port separately")
+		}
 	}
 	return nil
 }
@@ -480,11 +486,12 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// If password is empty, try to preserve the existing DB value (like OIDC client_secret).
-	// We intentionally do NOT fall back to SMTP_PASSWORD env var to avoid copying
-	// env-managed secrets into the database.
-	// Only require a password when a username is set (allow unauthenticated SMTP).
-	if password == "" {
+	// If password is empty but username is set, try to preserve the existing DB value
+	// (like OIDC client_secret). We intentionally do NOT fall back to SMTP_PASSWORD
+	// env var to avoid copying env-managed secrets into the database.
+	// When username is empty (switching to unauthenticated SMTP), we clear the
+	// password to avoid leaving stale credentials in the database.
+	if username != "" && password == "" {
 		existing, _ := h.DB.GetSetting(r.Context(), settingSMTPPassword)
 		if existing != "" {
 			password = existing
@@ -640,6 +647,12 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 	if port == "" {
 		port = "587"
 	}
+	portNum, err := strconv.Atoi(port)
+	if err != nil || portNum < 1 || portNum > 65535 {
+		writeError(r.Context(), w, http.StatusBadRequest, "SMTP port is invalid, must be a number between 1 and 65535")
+		return
+	}
+	port = strconv.Itoa(portNum)
 	tlsMode := cfg.TLS
 	if tlsMode == "" {
 		tlsMode = "starttls"
