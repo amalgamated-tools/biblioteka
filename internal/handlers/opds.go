@@ -141,32 +141,32 @@ func (h *OPDSHandler) HandleOPDS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	path := strings.TrimPrefix(r.URL.Path, "/opds")
-	path = strings.TrimSuffix(path, "/")
+	subPath := strings.TrimPrefix(r.URL.Path, "/opds")
+	subPath = strings.TrimSuffix(subPath, "/")
 
 	switch {
-	case path == "" || path == "/":
+	case subPath == "" || subPath == "/":
 		h.rootFeed(w, r)
-	case path == "/all":
+	case subPath == "/all":
 		h.allBooks(w, r)
-	case path == "/recent":
+	case subPath == "/recent":
 		h.recentBooks(w, r)
-	case path == "/authors":
+	case subPath == "/authors":
 		h.authorsFeed(w, r)
-	case strings.HasPrefix(path, "/authors/"):
-		h.authorBooks(w, r, strings.TrimPrefix(path, "/authors/"))
-	case path == "/series":
+	case strings.HasPrefix(subPath, "/authors/"):
+		h.authorBooks(w, r, strings.TrimPrefix(subPath, "/authors/"))
+	case subPath == "/series":
 		h.seriesFeed(w, r)
-	case strings.HasPrefix(path, "/series/"):
-		h.seriesBooks(w, r, strings.TrimPrefix(path, "/series/"))
-	case path == "/search":
+	case strings.HasPrefix(subPath, "/series/"):
+		h.seriesBooks(w, r, strings.TrimPrefix(subPath, "/series/"))
+	case subPath == "/search":
 		if r.URL.Query().Get("q") != "" {
 			h.searchResults(w, r)
 		} else {
 			h.openSearchDescription(w, r)
 		}
-	case strings.HasPrefix(path, "/download/"):
-		h.downloadFile(w, r, strings.TrimPrefix(path, "/download/"))
+	case strings.HasPrefix(subPath, "/download/"):
+		h.downloadFile(w, r, strings.TrimPrefix(subPath, "/download/"))
 	default:
 		http.NotFound(w, r)
 	}
@@ -239,7 +239,7 @@ func (h *OPDSHandler) allBooks(w http.ResponseWriter, r *http.Request) {
 		ID:        baseURL + "/all",
 		Title:     "All Books",
 		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     paginationLinks(baseURL+"/all", page, total, opdsPageSize),
+		Links:     paginationLinks(baseURL+"/all", page, total, opdsPageSize, opdsAcqContentType),
 		Entries:   entries,
 	}
 	writeOPDSFeed(r, w, opdsAcqContentType, feed)
@@ -265,7 +265,7 @@ func (h *OPDSHandler) recentBooks(w http.ResponseWriter, r *http.Request) {
 		ID:        baseURL + "/recent",
 		Title:     "Recent Books",
 		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     paginationLinks(baseURL+"/recent", page, total, opdsPageSize),
+		Links:     paginationLinks(baseURL+"/recent", page, total, opdsPageSize, opdsAcqContentType),
 		Entries:   entries,
 	}
 	writeOPDSFeed(r, w, opdsAcqContentType, feed)
@@ -297,7 +297,7 @@ func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	selfURL := baseURL + "/authors"
-	links := paginationLinks(selfURL, page, total, opdsPageSize)
+	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsNavContentType)
 	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
 
 	feed := &opdsFeed{
@@ -330,13 +330,13 @@ func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, author
 	books, total, err := h.DB.ListBooksByAuthorPaginated(ctx, authorID, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list books by author", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to list books")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, baseURL+"/authors/"+authorID, "Failed to list books")
 		return
 	}
 
 	entries := h.bookEntries(ctx, books, baseURL)
 	selfURL := baseURL + "/authors/" + authorID
-	links := paginationLinks(selfURL, page, total, opdsPageSize)
+	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsAcqContentType)
 	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
 	feed := &opdsFeed{
 		XMLNS:     xmlnsAtom,
@@ -359,7 +359,7 @@ func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
 	seriesList, total, err := h.DB.ListSeriesPaginated(ctx, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list series", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to list series")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, baseURL+"/series", "Failed to list series")
 		return
 	}
 
@@ -376,7 +376,7 @@ func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	selfURL := baseURL + "/series"
-	links := paginationLinks(selfURL, page, total, opdsPageSize)
+	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsNavContentType)
 	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
 
 	feed := &opdsFeed{
@@ -409,13 +409,13 @@ func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, series
 	books, total, err := h.DB.ListBooksBySeriesPaginated(ctx, seriesID, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list books by series", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to list books")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, baseURL+"/series/"+seriesID, "Failed to list books")
 		return
 	}
 
 	entries := h.bookEntries(ctx, books, baseURL)
 	selfURL := baseURL + "/series/" + seriesID
-	links := paginationLinks(selfURL, page, total, opdsPageSize)
+	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsAcqContentType)
 	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
 	feed := &opdsFeed{
 		XMLNS:     xmlnsAtom,
@@ -439,7 +439,7 @@ func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
 	books, total, err := h.DB.SearchBooks(ctx, query, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: search failed", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "search failed")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, baseURL+"/search", "Search failed")
 		return
 	}
 
@@ -452,7 +452,7 @@ func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
 		ID:        selfURL,
 		Title:     fmt.Sprintf("Search: %s", query),
 		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     paginationLinks(baseURL+"/search?q="+escapedQuery, page, total, opdsPageSize),
+		Links:     paginationLinks(baseURL+"/search?q="+escapedQuery, page, total, opdsPageSize, opdsAcqContentType),
 		Entries:   entries,
 	}
 	writeOPDSFeed(r, w, opdsAcqContentType, feed)
@@ -526,7 +526,7 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 			slog.String(otelkeys.BookFileID, fileID),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to read file")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, "urn:biblioteka:opds:error", "Failed to read file")
 		return
 	}
 
@@ -635,7 +635,7 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func paginationLinks(selfURL string, page, total, pageSize int) []opdsLink {
+func paginationLinks(selfURL string, page, total, pageSize int, contentType string) []opdsLink {
 	// For URLs that already have query params (like search), use & instead of ?
 	sep := "?"
 	if strings.Contains(selfURL, "?") {
@@ -643,14 +643,14 @@ func paginationLinks(selfURL string, page, total, pageSize int) []opdsLink {
 	}
 
 	links := []opdsLink{
-		{Rel: relSelf, Href: selfURL + sep + "page=" + strconv.Itoa(page), Type: opdsAcqContentType},
+		{Rel: relSelf, Href: selfURL + sep + "page=" + strconv.Itoa(page), Type: contentType},
 	}
 
 	if page > 1 {
 		links = append(links, opdsLink{
 			Rel:  relPrevious,
 			Href: selfURL + sep + "page=" + strconv.Itoa(page-1),
-			Type: opdsAcqContentType,
+			Type: contentType,
 		})
 	}
 
@@ -659,7 +659,7 @@ func paginationLinks(selfURL string, page, total, pageSize int) []opdsLink {
 		links = append(links, opdsLink{
 			Rel:  relNext,
 			Href: selfURL + sep + "page=" + strconv.Itoa(page+1),
-			Type: opdsAcqContentType,
+			Type: contentType,
 		})
 	}
 

@@ -842,7 +842,7 @@ func TestParsePage(t *testing.T) {
 
 func TestPaginationLinks(t *testing.T) {
 	// Single page: no next or previous.
-	links := paginationLinks("/opds/all", 1, 10, 50)
+	links := paginationLinks("/opds/all", 1, 10, 50, opdsAcqContentType)
 	if findLink(links, relNext) != nil {
 		t.Error("single page: should not have next link")
 	}
@@ -851,7 +851,7 @@ func TestPaginationLinks(t *testing.T) {
 	}
 
 	// First of multiple pages: next but no previous.
-	links = paginationLinks("/opds/all", 1, 100, 50)
+	links = paginationLinks("/opds/all", 1, 100, 50, opdsAcqContentType)
 	if findLink(links, relNext) == nil {
 		t.Error("first page: should have next link")
 	}
@@ -860,7 +860,7 @@ func TestPaginationLinks(t *testing.T) {
 	}
 
 	// Middle page: both next and previous.
-	links = paginationLinks("/opds/all", 2, 150, 50)
+	links = paginationLinks("/opds/all", 2, 150, 50, opdsAcqContentType)
 	if findLink(links, relNext) == nil {
 		t.Error("middle page: should have next link")
 	}
@@ -869,7 +869,7 @@ func TestPaginationLinks(t *testing.T) {
 	}
 
 	// Last page: previous but no next.
-	links = paginationLinks("/opds/all", 2, 100, 50)
+	links = paginationLinks("/opds/all", 2, 100, 50, opdsAcqContentType)
 	if findLink(links, relNext) != nil {
 		t.Error("last page: should not have next link")
 	}
@@ -880,7 +880,7 @@ func TestPaginationLinks(t *testing.T) {
 
 func TestPaginationLinks_SearchURL(t *testing.T) {
 	// URLs with existing query params should use "&" not "?" for page param.
-	links := paginationLinks("/opds/search?q=test", 1, 100, 50)
+	links := paginationLinks("/opds/search?q=test", 1, 100, 50, opdsAcqContentType)
 	selfLink := findLink(links, relSelf)
 	if selfLink == nil {
 		t.Fatal("missing self link")
