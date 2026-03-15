@@ -117,7 +117,10 @@ func TestListAPIKeys_AfterCreate(t *testing.T) {
 
 	// Create two keys.
 	for _, name := range []string{"Key A", "Key B"} {
-		body, _ := json.Marshal(apiKeyCreateRequest{Name: name})
+		body, err := json.Marshal(apiKeyCreateRequest{Name: name})
+		if err != nil {
+			t.Fatalf("marshal create request for %q: %v", name, err)
+		}
 		r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 		r = withUserID(r, userID)
 		w := httptest.NewRecorder()
@@ -155,11 +158,20 @@ func TestListAPIKeys_UserScoped(t *testing.T) {
 	d := newTestDB(t)
 	h := &APIKeyHandler{DB: d}
 
-	user1, _ := d.CreateUser(context.Background(), "User 1", "u1@example.com", "password1")
-	user2, _ := d.CreateUser(context.Background(), "User 2", "u2@example.com", "password2")
+	user1, err := d.CreateUser(context.Background(), "User 1", "u1@example.com", "password1")
+	if err != nil {
+		t.Fatalf("create user1: %v", err)
+	}
+	user2, err := d.CreateUser(context.Background(), "User 2", "u2@example.com", "password2")
+	if err != nil {
+		t.Fatalf("create user2: %v", err)
+	}
 
 	// Create a key for user1.
-	body, _ := json.Marshal(apiKeyCreateRequest{Name: "User1 Key"})
+	body, err := json.Marshal(apiKeyCreateRequest{Name: "User1 Key"})
+	if err != nil {
+		t.Fatalf("marshal create request: %v", err)
+	}
 	r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 	r = withUserID(r, user1.ID)
 	w := httptest.NewRecorder()
@@ -172,7 +184,9 @@ func TestListAPIKeys_UserScoped(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var dtos []apiKeyDTO
-	_ = json.Unmarshal(w.Body.Bytes(), &dtos)
+	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
+		t.Fatalf("unmarshal list response: %v", err)
+	}
 	if len(dtos) != 0 {
 		t.Errorf("user2 should see 0 keys, got %d", len(dtos))
 	}
