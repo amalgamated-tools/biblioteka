@@ -42,7 +42,7 @@ The `version` field is always present and reflects the binary version at startup
 | `level` | string | `DEBUG`, `INFO`, `WARN`, or `ERROR` |
 | `msg` | string | Human-readable summary of the event |
 | `version` | string | Application version |
-| `request_id` | string | UUID generated (or forwarded) per HTTP request — correlates all log lines for a single request |
+| `request_id` | string | Value generated (or forwarded) per HTTP request — normally a UUID v4; may be the placeholder `none` if UUID generation fails — correlates all log lines for a single request |
 | `user_id` | string | ID of the authenticated user, if available |
 | `method` | string | HTTP method |
 | `url` | string | Request URL path and query string |
@@ -50,14 +50,14 @@ The `version` field is always present and reflects the binary version at startup
 | `duration` | integer | Request duration in nanoseconds |
 | `error` | string | Error message, present on `ERROR`-level entries |
 
-> **Tip:** Set `LOG_LEVEL=debug` to see `Incoming request` and `Request completed` lines for every HTTP request, which include all fields above. At `info` level only startup messages and errors are emitted.
+> **Tip:** Set `LOG_LEVEL=debug` to see `Incoming request` and `Request completed` lines for every HTTP request, which include all fields above. At `info` level, these per-request access logs are suppressed, but other components (for example auth/rate-limiting and background job activity) may still emit `INFO`-level entries.
 
 ## Request ID Correlation
 
-Every HTTP request is assigned a unique `X-Request-ID` UUID:
+Every HTTP request is assigned an `X-Request-ID` value for correlation:
 
 - If the **incoming request** already carries an `X-Request-ID` header (e.g. forwarded by a reverse proxy), that value is reused.
-- Otherwise a new UUID v4 is generated.
+- Otherwise the server attempts to generate a new UUID v4; if UUID generation fails, the literal value `none` is used as a fallback.
 
 The request ID is:
 1. Added to the request context so every log line emitted while handling the request carries the same `request_id` field.
