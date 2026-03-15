@@ -2,8 +2,6 @@
   import { themeStore } from "../../stores/theme.svelte";
   import { Palette } from "lucide-svelte";
 
-  let compactView = $state(false);
-
   const themes = ["light", "dark", "auto"] as const;
 </script>
 
@@ -43,28 +41,6 @@
           Choose how you prefer biblioteka to appear
         </p>
       </fieldset>
-
-      <hr class="border-ink-100 dark:border-ink-800" />
-
-      <div>
-        <label class="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            bind:checked={compactView}
-            class="w-4 h-4 rounded border-ink-300 text-accent-600 outline-none focus:ring-2 focus:ring-accent-500"
-          />
-          <div>
-            <span
-              class="block text-sm font-medium text-ink-600 dark:text-ink-300"
-            >
-              Compact View
-            </span>
-            <span class="text-xs text-ink-400 dark:text-ink-500">
-              Display content in a more compact layout
-            </span>
-          </div>
-        </label>
-      </div>
     </div>
   </div>
 
