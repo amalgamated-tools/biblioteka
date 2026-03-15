@@ -854,8 +854,8 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		if err != nil {
 			return err
 		}
-		defer cleanup()
 		defer client.Close()
+		defer cleanup()
 
 		return smtpSend(client, a, from, to, msg)
 
@@ -864,29 +864,14 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
-		sessionDeadline := time.Now().Add(smtpSessionTimeout)
-		if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(sessionDeadline) {
-			sessionDeadline = ctxDeadline
-		}
-		if err := conn.SetDeadline(sessionDeadline); err != nil {
-			conn.Close()
-			return fmt.Errorf("failed to set connection deadline: %w", err)
-		}
-		done := make(chan struct{})
-		go func(c net.Conn, done <-chan struct{}, ctx context.Context) {
-			select {
-			case <-ctx.Done():
-				c.Close()
-			case <-done:
-			}
-		}(conn, done, ctx)
-		defer close(done)
-		client, err := smtp.NewClient(conn, host)
+
+		client, cleanup, err := newSMTPClientWithContext(ctx, conn, host)
 		if err != nil {
-			conn.Close()
-			return fmt.Errorf("SMTP client creation failed: %w", err)
+			return err
 		}
 		defer client.Close()
+		defer cleanup()
+
 		if err := client.StartTLS(tlsConfig); err != nil {
 			return fmt.Errorf("STARTTLS failed: %w", err)
 		}
@@ -902,8 +887,8 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		if err != nil {
 			return err
 		}
-		defer cleanup()
 		defer client.Close()
+		defer cleanup()
 
 		return smtpSend(client, a, from, to, msg)
 	default:

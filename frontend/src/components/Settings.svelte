@@ -48,7 +48,7 @@
   let smtpFrom = $state("");
   let smtpTls = $state("starttls");
   let smtpError: string | null = $state(null);
-  let smtpSuccess = $state(false);
+  let smtpSuccessMessage: string | null = $state(null);
   let smtpLoading = $state(false);
   let smtpTestLoading = $state(false);
   let smtpTestMessage: string | null = $state(null);
@@ -106,7 +106,7 @@
   async function handleSmtpSave(e: SubmitEvent) {
     e.preventDefault();
     smtpError = null;
-    smtpSuccess = false;
+    smtpSuccessMessage = null;
 
     if (!smtpHost.trim()) {
       smtpError = "SMTP Host is required";
@@ -128,7 +128,7 @@
     smtpLoading = true;
 
     try {
-      await setSmtpConfig({
+      const result = await setSmtpConfig({
         host: smtpHost.trim(),
         port: smtpPort.trim() || "587",
         username: smtpUsername.trim(),
@@ -137,7 +137,7 @@
         tls: smtpTls,
       });
       const status = await getConfigStatus();
-      smtpSuccess = true;
+      smtpSuccessMessage = result.message;
       smtpConfigured = status.smtp_configured;
       if (smtpPassword.trim()) {
         smtpPasswordSet = true;
@@ -493,11 +493,11 @@
                 </div>
               {/if}
 
-              {#if smtpSuccess}
+              {#if smtpSuccessMessage}
                 <div
                   class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
                 >
-                  SMTP configuration saved successfully
+                  {smtpSuccessMessage}
                 </div>
               {/if}
 
