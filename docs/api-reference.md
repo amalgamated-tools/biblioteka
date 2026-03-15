@@ -327,7 +327,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
     {
       "id": "<id>",
       "user_id": "<user-id>",
-      "action": "created",
+      "action": "book.created",
       "entity_type": "book",
       "entity_id": "<book-id>",
       "metadata": { "title": "Dune" },
@@ -346,8 +346,31 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `total`       | integer | Total number of entries (for pagination) |
 | `limit`       | integer | Effective limit used |
 | `offset`      | integer | Effective offset used |
+| `action`      | string  | Dot-separated `<entity_type>.<verb>` string (see table below) |
+| `entity_type` | string  | Type of the entity affected (e.g. `book`, `library`) |
 | `user_id`     | string? | ID of the user who performed the action; `null` for system actions |
 | `metadata`    | object? | Optional extra context (e.g. entity name at time of action); omitted when empty |
+
+**Known `action` values:**
+
+| `action`               | `entity_type` | Trigger |
+|------------------------|---------------|---------|
+| `library.created`      | `library`     | Library created via `POST /api/libraries` |
+| `library.updated`      | `library`     | Library updated via `PUT /api/libraries/{id}` |
+| `library.deleted`      | `library`     | Library deleted via `DELETE /api/libraries/{id}` |
+| `book.created`         | `book`        | Book created via `POST /api/books` |
+| `book.updated`         | `book`        | Book updated via `PUT /api/books/{id}` |
+| `book.deleted`         | `book`        | Book deleted via `DELETE /api/books/{id}` |
+| `author.created`       | `author`      | Author created via `POST /api/authors` |
+| `author.updated`       | `author`      | Author updated via `PUT /api/authors/{id}` |
+| `author.deleted`       | `author`      | Author deleted via `DELETE /api/authors/{id}` |
+| `series.created`       | `series`      | Series created via `POST /api/series` |
+| `series.updated`       | `series`      | Series updated via `PUT /api/series/{id}` |
+| `series.deleted`       | `series`      | Series deleted via `DELETE /api/series/{id}` |
+| `book_file.created`    | `book_file`   | File attached via `POST /api/books/{id}/files` or background scan |
+| `book_file.deleted`    | `book_file`   | File deleted via `DELETE /api/book-files/{id}` |
+| `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
+| `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
 
 | Status | Description |
 |--------|-------------|
