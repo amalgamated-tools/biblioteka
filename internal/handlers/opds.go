@@ -40,6 +40,36 @@ const (
 	relImage       = "http://opds-spec.org/image"
 )
 
+// writeOPDSError writes an error response for OPDS endpoints as a minimal Atom feed,
+// so that OPDS clients always receive XML instead of JSON when an error occurs.
+func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentType, id, title string) {
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(status)
+
+	feed := &opdsFeed{
+		XMLNS:     xmlnsAtom,
+		XMLNSOPDS: xmlnsOPDS,
+		ID:        id,
+		Title:     title,
+		Updated:   time.Now().UTC().Format(time.RFC3339),
+	}
+
+	var buf bytes.Buffer
+	if _, err := buf.WriteString(xml.Header); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	enc := xml.NewEncoder(&buf)
+	enc.Indent("", "  ")
+	if err := enc.Encode(feed); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	_, _ = w.Write(buf.Bytes())
+}
+
 // MIME types for common ebook formats.
 var fileTypeMIME = map[string]string{
 	"epub": "application/epub+zip",
@@ -191,7 +221,7 @@ func (h *OPDSHandler) allBooks(w http.ResponseWriter, r *http.Request) {
 	books, total, err := h.DB.ListBooksPaginated(ctx, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list books", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to list books")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, baseURL+"/all", "Failed to list books")
 		return
 	}
 
@@ -217,7 +247,7 @@ func (h *OPDSHandler) recentBooks(w http.ResponseWriter, r *http.Request) {
 	books, total, err := h.DB.ListRecentBooks(ctx, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list recent books", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to list books")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, baseURL+"/recent", "Failed to list books")
 		return
 	}
 
