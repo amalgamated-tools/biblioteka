@@ -109,3 +109,65 @@ Biblioteka includes OpenTelemetry trace context propagation (`TraceMiddleware`) 
 To emit traces, mount a custom `TracerProvider` before `server.NewServer` is called (see `internal/otel/tracing.go`). The span names follow the pattern `METHOD /path` (e.g. `GET /api/books`).
 
 > Most deployments are well-served by structured log correlation via `request_id` alone. Distributed tracing is an advanced integration point for larger environments.
+
+---
+
+## Anonymous Telemetry
+
+Biblioteka can optionally send a single anonymous boot ping to help the maintainers understand how many installations exist. Telemetry is **opt-in and disabled by default**.
+
+### What is sent
+
+When enabled, a one-time HTTP POST is sent to the telemetry endpoint on first boot. The payload contains no personally identifiable information:
+
+| Field         | Example                                 | Description                                 |
+|---------------|-----------------------------------------|---------------------------------------------|
+| `application` | `"biblioteka"`                          | Constant identifier                         |
+| `install_id`  | `"550e8400-e29b-41d4-a716-446655440000"` | Randomly generated UUID, created once and stored locally |
+| `version`     | `"1.2.0"`                              | Biblioteka binary version                   |
+| `os`          | `"linux"`                               | Operating system (`GOOS`)                   |
+| `arch`        | `"amd64"`                               | CPU architecture (`GOARCH`)                 |
+| `timestamp`   | `"2026-03-15T21:00:00Z"`               | UTC timestamp of the boot event             |
+
+No IP addresses, hostnames, user data, library contents, or configuration values are included.
+
+### When it fires
+
+Telemetry is sent **at most once per install**. After the first successful transmission the install ID is written to disk (`/data/install_id` when the `/data` directory is present, otherwise `./data/install_id`). Subsequent server restarts detect this file and skip the ping.
+
+### How to control it
+
+| `TELEMETRY_ENABLED` value | Behaviour |
+|---------------------------|-----------|
+| *(unset)* | Telemetry is **disabled** (default) |
+| `false` | Telemetry is explicitly disabled |
+| `true` | Telemetry is enabled; ping fires once on first boot |
+
+```bash
+# Explicitly disable (same as leaving the variable unset)
+TELEMETRY_ENABLED=false docker compose up
+
+# Opt in
+TELEMETRY_ENABLED=true docker compose up
+```
+
+To override the collection endpoint (e.g. for air-gapped testing):
+
+```bash
+TELEMETRY_ENDPOINT=https://my-collector.internal/boot docker compose up
+```
+
+### Log messages
+
+When telemetry is enabled you will see the following `WARN`-level message in the startup logs:
+
+```
+NOTICE: This application collects anonymous telemetry data to help improve the product.
+To disable telemetry, set the environment variable TELEMETRY_ENABLED=false
+```
+
+When the variable is unset (the default), a `WARN`-level message confirms that telemetry is disabled:
+
+```
+TELEMETRY_ENABLED environment variable not set, telemetry is disabled by default
+```
