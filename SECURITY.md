@@ -13,7 +13,7 @@ Only the latest release of Biblioteka receives security fixes. Older versions ar
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Please report security issues by emailing the maintainers privately or by using [GitHub's private security advisory feature](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability):
+Please report security issues using [GitHub's private security advisory feature](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability):
 
 1. Go to the [**Security** tab](../../security) of this repository.
 2. Click **"Report a vulnerability"**.
