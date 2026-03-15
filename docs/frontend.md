@@ -5,21 +5,31 @@ Biblioteka's frontend is a single-page application (SPA) built with **Svelte 5**
 ## Directory layout
 
 ```
-frontend/src/
-  App.svelte          Root component: auth gate + shell layout + routing
-  main.ts             Entry point; mounts App and initialises the theme
-  index.css           Tailwind CSS directives
-  types.ts            Shared TypeScript interfaces for API entities
-  components/         Page-level Svelte components (PascalCase)
-    settings/         Sub-components for the Settings page (one per tab)
-      AccountTab.svelte    Account & password management; OIDC linking
-      OidcTab.svelte       Admin: OIDC / SSO provider configuration
-      PreferencesTab.svelte Display theme selection
-      UsersTab.svelte      Admin: user list and admin-role toggling
-  stores/             Reactive state modules (lowercase, *.svelte.ts)
-  lib/
-    api.ts            Centralised API client
-    api.test.ts       API client unit tests
+frontend/
+  index.html          HTML entry point; loads favicon, web manifest, and main.ts
+  public/             Static assets served at the root URL (copied verbatim by Vite)
+    favicon.ico             Default favicon
+    favicon-16x16.png       16 × 16 PNG favicon
+    favicon-32x32.png       32 × 32 PNG favicon
+    apple-touch-icon.png    iOS home-screen icon
+    android-chrome-192x192.png  Android home-screen icon (192 × 192)
+    android-chrome-512x512.png  Android home-screen icon (512 × 512)
+    site.webmanifest        PWA web app manifest (name, icons, theme colour)
+  src/
+    App.svelte          Root component: auth gate + shell layout + routing
+    main.ts             Entry point; mounts App and initialises the theme
+    index.css           Tailwind CSS directives
+    types.ts            Shared TypeScript interfaces for API entities
+    components/         Page-level Svelte components (PascalCase)
+      settings/         Sub-components for the Settings page (one per tab)
+        AccountTab.svelte    Account & password management; OIDC linking
+        OidcTab.svelte       Admin: OIDC / SSO provider configuration
+        PreferencesTab.svelte Display theme selection
+        UsersTab.svelte      Admin: user list and admin-role toggling
+    stores/             Reactive state modules (lowercase, *.svelte.ts)
+    lib/
+      api.ts            Centralised API client
+      api.test.ts       API client unit tests
 ```
 
 ## Reactive stores
@@ -177,8 +187,6 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 3. Add the route to the `valid` array in `RouterStore.currentView`.
 4. Import and render `<MyView />` in `App.svelte` inside the `{#if … }` routing block.
 5. Add a navigation entry in `Sidebar.svelte`.
-
-If the view needs its own intra-view navigation (e.g. a detail panel or a create/edit form), handle it via `routerStore.subPath` inside the component instead of defining additional top-level `AppView` values. Use `$derived` or `$derived.by` to react to sub-path changes, and call `routerStore.navigate("view/sub-path")` to transition between sub-states. Document the sub-path conventions in the [Sub-path routing](#sub-path-routing) table above.
 
 ## Settings component architecture
 
