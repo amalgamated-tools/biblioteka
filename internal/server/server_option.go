@@ -51,3 +51,9 @@ func WithWorker(w *worker.Worker) ServerOption {
 		s.Worker = w
 	}
 }
+
+func WithVersion(version string) ServerOption {
+	return func(s *Server) {
+		s.version = version
+	}
+}
