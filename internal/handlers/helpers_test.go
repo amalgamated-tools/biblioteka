@@ -68,6 +68,35 @@ func Test_ValidatePassword(t *testing.T) {
 	}
 }
 
+func Test_ExtractPathSegments(t *testing.T) {
+	tests := []struct {
+		name    string
+		path    string
+		prefix  string
+		wantID  string
+		wantSub string
+		wantOK  bool
+	}{
+		{"id only", "/api/books/123", "/api/books/", "123", "", true},
+		{"id with trailing slash", "/api/books/123/", "/api/books/", "123", "", true},
+		{"id with sub-resource", "/api/books/123/authors", "/api/books/", "123", "authors", true},
+		{"id with sub-resource trailing slash", "/api/books/123/authors/", "/api/books/", "123", "authors", true},
+		{"empty path after prefix", "/api/books/", "/api/books/", "", "", false},
+		{"prefix only no slash", "/api/books", "/api/books/", "", "", false},
+		{"uuid id with sub", "/api/books/550e8400-e29b-41d4-a716-446655440000/files", "/api/books/", "550e8400-e29b-41d4-a716-446655440000", "files", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotID, gotSub, gotOK := extractPathSegments(tt.path, tt.prefix)
+			if gotID != tt.wantID || gotSub != tt.wantSub || gotOK != tt.wantOK {
+				t.Errorf("extractPathSegments(%q, %q) = (%q, %q, %v), want (%q, %q, %v)",
+					tt.path, tt.prefix, gotID, gotSub, gotOK, tt.wantID, tt.wantSub, tt.wantOK)
+			}
+		})
+	}
+}
+
 func Test_ExtractPathID(t *testing.T) {
 	tests := []struct {
 		name   string
