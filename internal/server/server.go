@@ -133,7 +133,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	}
 
 	if s.requireAdmin == nil {
-		s.requireAdmin = auth.AdminMiddleware(s.JWT, s.DB, s.DB)
+		var adminChecker auth.AdminChecker = s.DB
+		var apiKeyValidator auth.APIKeyValidator = s.DB
+		s.requireAdmin = auth.AdminMiddleware(s.JWT, adminChecker, apiKeyValidator)
 	}
 
 	if s.authLimiter == nil {

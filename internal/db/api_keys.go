@@ -46,7 +46,7 @@ func (d *DB) CreateAPIKey(ctx context.Context, userID, name, keyHash, keyPrefix 
 func (d *DB) ListAPIKeys(ctx context.Context, userID string) ([]APIKey, error) {
 	slog.DebugContext(ctx, "db: listing api keys", slog.String(otelkeys.UserID, userID))
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+apiKeyColumns+` FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC`,
+		`SELECT `+apiKeyColumns+` FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC, id DESC`,
 		userID,
 	)
 	if err != nil {
