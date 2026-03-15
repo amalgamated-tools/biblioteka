@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"strconv"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -481,4 +483,91 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 // bookColumnsWithPrefix returns book columns with a table alias prefix.
 func bookColumnsWithPrefix(prefix string) string {
 	return prefix + "id, " + prefix + "title, " + prefix + "description, " + prefix + "asin, " + prefix + "isbn10, " + prefix + "isbn13, " + prefix + "goodreads_id, " + prefix + "hardcover_id, " + prefix + "google_books_id, " + prefix + "publication_date, " + prefix + "publisher, " + prefix + "language, " + prefix + "num_pages, " + prefix + "cover_image_url, " + prefix + "created_at, " + prefix + "updated_at"
+}
+
+// GetAuthorsForBooks returns authors grouped by book ID for the given book IDs.
+func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[string][]Author, error) {
+	if len(bookIDs) == 0 {
+		return nil, nil
+	}
+	slog.DebugContext(ctx, "db: batch fetching authors for books", slog.Int("book_count", len(bookIDs)))
+
+	placeholders := make([]string, len(bookIDs))
+	args := make([]any, len(bookIDs))
+	for i, id := range bookIDs {
+		placeholders[i] = dollarN(i + 1)
+		args[i] = id
+	}
+
+	rows, err := d.QueryContext(ctx,
+		`SELECT ba.book_id, a.id, a.name, a.goodreads_id, a.hardcover_id, a.google_books_id, a.image_url, a.created_at, a.updated_at
+		FROM authors a INNER JOIN book_authors ba ON ba.author_id = a.id
+		WHERE ba.book_id IN (`+strings.Join(placeholders, ",")+`)
+		ORDER BY a.name ASC`,
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string][]Author, len(bookIDs))
+	for rows.Next() {
+		var bookID string
+		var a Author
+		if err := rows.Scan(&bookID, &a.ID, &a.Name, &a.GoodreadsID, &a.HardcoverID, &a.GoogleBooksID, &a.ImageURL, &a.CreatedAt, &a.UpdatedAt); err != nil {
+			return nil, err
+		}
+		result[bookID] = append(result[bookID], a)
+	}
+	return result, rows.Err()
+}
+
+// GetFilesForBooks returns book files grouped by book ID for the given book IDs.
+func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string][]BookFile, error) {
+	if len(bookIDs) == 0 {
+		return nil, nil
+	}
+	slog.DebugContext(ctx, "db: batch fetching files for books", slog.Int("book_count", len(bookIDs)))
+
+	placeholders := make([]string, len(bookIDs))
+	args := make([]any, len(bookIDs))
+	for i, id := range bookIDs {
+		placeholders[i] = dollarN(i + 1)
+		args[i] = id
+	}
+
+	orderBy := "ORDER BY bf.file_name ASC, bf.rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY bf.file_name ASC, bf.id ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookFileColumnsWithPrefix("bf.")+` FROM book_files bf WHERE bf.book_id IN (`+strings.Join(placeholders, ",")+`) `+orderBy,
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string][]BookFile, len(bookIDs))
+	for rows.Next() {
+		var bf BookFile
+		if err := rows.Scan(&bf.ID, &bf.BookID, &bf.FileType, &bf.FileName, &bf.FileSize, &bf.FileHash, &bf.FilePath, &bf.CreatedAt, &bf.UpdatedAt); err != nil {
+			return nil, err
+		}
+		result[bf.BookID] = append(result[bf.BookID], bf)
+	}
+	return result, rows.Err()
+}
+
+// dollarN returns a PostgreSQL-style positional placeholder ($1, $2, ...).
+// SQLite also accepts dollar-sign placeholders.
+func dollarN(n int) string {
+	return "$" + strconv.Itoa(n)
+}
+
+// bookFileColumnsWithPrefix returns book_files columns with a table alias prefix.
+func bookFileColumnsWithPrefix(prefix string) string {
+	return prefix + "id, " + prefix + "book_id, " + prefix + "file_type, " + prefix + "file_name, " + prefix + "file_size, " + prefix + "file_hash, " + prefix + "file_path, " + prefix + "created_at, " + prefix + "updated_at"
 }

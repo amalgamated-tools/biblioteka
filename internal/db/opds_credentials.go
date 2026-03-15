@@ -59,12 +59,6 @@ func (d *DB) UpsertOPDSCredential(ctx context.Context, userID, username, passwor
 		slog.String(otelkeys.OPDSUsername, username),
 	)
 
-	// Check if the username is taken by a different user.
-	existing, err := d.GetOPDSCredentialByUsername(ctx, username)
-	if err == nil && existing.UserID != userID {
-		return nil, ErrOPDSUsernameExists
-	}
-
 	var query string
 	if d.Dialect == DialectPostgres {
 		query = `INSERT INTO opds_credentials (user_id, username, password_hash)
@@ -78,7 +72,11 @@ func (d *DB) UpsertOPDSCredential(ctx context.Context, userID, username, passwor
 			RETURNING ` + opdsCredentialColumns
 	}
 
-	return scanOPDSCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
+	cred, err := scanOPDSCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
+	if err != nil && isUniqueViolation(err) {
+		return nil, ErrOPDSUsernameExists
+	}
+	return cred, err
 }
 
 // DeleteOPDSCredential removes the OPDS credential for a user.

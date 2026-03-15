@@ -77,6 +77,7 @@ func (h *OPDSCredentialHandler) upsertCredentials(w http.ResponseWriter, r *http
 	}
 
 	req.Username = strings.TrimSpace(req.Username)
+	req.Username = strings.ToLower(req.Username)
 	if req.Username == "" {
 		writeError(ctx, w, http.StatusBadRequest, "username is required")
 		return

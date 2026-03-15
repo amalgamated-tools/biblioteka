@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
 	"fmt"
 	"log/slog"
+	"mime"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -392,14 +395,15 @@ func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
 	}
 
 	entries := h.bookEntries(ctx, books, baseURL)
-	selfURL := baseURL + "/search?q=" + query
+	escapedQuery := url.QueryEscape(query)
+	selfURL := baseURL + "/search?q=" + escapedQuery
 	feed := &opdsFeed{
 		XMLNS:     xmlnsAtom,
 		XMLNSOPDS: xmlnsOPDS,
 		ID:        selfURL,
 		Title:     fmt.Sprintf("Search: %s", query),
 		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     paginationLinks(baseURL+"/search?q="+query, page, total, opdsPageSize),
+		Links:     paginationLinks(baseURL+"/search?q="+escapedQuery, page, total, opdsPageSize),
 		Entries:   entries,
 	}
 	writeOPDSFeed(r, w, opdsAcqContentType, feed)
@@ -451,18 +455,45 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 		return
 	}
 
-	mime := fileTypeMIME[strings.ToLower(bf.FileType)]
-	if mime == "" {
-		mime = "application/octet-stream"
+	mimeType := fileTypeMIME[strings.ToLower(bf.FileType)]
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
 	}
-	w.Header().Set("Content-Type", mime)
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, bf.FileName))
+	w.Header().Set("Content-Type", mimeType)
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": bf.FileName}))
 	http.ServeFile(w, r, bf.FilePath)
 }
 
 // bookEntries converts a slice of books into OPDS entry elements, including
-// authors and download links for each book.
+// authors and download links for each book. Uses batch queries to avoid N+1.
 func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL string) []opdsEntry {
+	if len(books) == 0 {
+		return nil
+	}
+
+	// Collect book IDs for batch loading.
+	bookIDs := make([]string, len(books))
+	for i, b := range books {
+		bookIDs[i] = b.ID
+	}
+
+	// Batch-load authors and files in two queries.
+	authorsByBook, err := h.DB.GetAuthorsForBooks(ctx, bookIDs)
+	if err != nil {
+		slog.ErrorContext(ctx, "OPDS: failed to batch-load book authors",
+			slog.Any(otelkeys.Error, err),
+		)
+		authorsByBook = nil
+	}
+
+	filesByBook, err := h.DB.GetFilesForBooks(ctx, bookIDs)
+	if err != nil {
+		slog.ErrorContext(ctx, "OPDS: failed to batch-load book files",
+			slog.Any(otelkeys.Error, err),
+		)
+		filesByBook = nil
+	}
+
 	entries := make([]opdsEntry, 0, len(books))
 	for _, book := range books {
 		entry := opdsEntry{
@@ -475,15 +506,9 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 			entry.Content = &opdsContent{Type: "text", Value: *book.Description}
 		}
 
-		// Add authors
-		authors, err := h.DB.GetBookAuthors(ctx, book.ID)
-		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book authors",
-				slog.String(otelkeys.BookID, book.ID),
-				slog.Any(otelkeys.Error, err),
-			)
-		} else {
-			for _, a := range authors {
+		// Add authors from batch result.
+		if authorsByBook != nil {
+			for _, a := range authorsByBook[book.ID] {
 				entry.Authors = append(entry.Authors, opdsAuthor{Name: a.Name})
 			}
 		}
@@ -497,23 +522,17 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 			})
 		}
 
-		// Add download links for each file
-		files, err := h.DB.ListBookFiles(ctx, book.ID)
-		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book files",
-				slog.String(otelkeys.BookID, book.ID),
-				slog.Any(otelkeys.Error, err),
-			)
-		} else {
-			for _, f := range files {
-				mime := fileTypeMIME[strings.ToLower(f.FileType)]
-				if mime == "" {
-					mime = "application/octet-stream"
+		// Add download links from batch result.
+		if filesByBook != nil {
+			for _, f := range filesByBook[book.ID] {
+				mimeType := fileTypeMIME[strings.ToLower(f.FileType)]
+				if mimeType == "" {
+					mimeType = "application/octet-stream"
 				}
 				entry.Links = append(entry.Links, opdsLink{
 					Rel:  relAcquisition,
 					Href: baseURL + "/download/" + f.ID,
-					Type: mime,
+					Type: mimeType,
 				})
 			}
 		}
@@ -576,12 +595,16 @@ func paginationLinks(selfURL string, page, total, pageSize int) []opdsLink {
 }
 
 func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, feed *opdsFeed) {
-	w.Header().Set("Content-Type", contentType)
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(xml.Header))
-	enc := xml.NewEncoder(w)
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+	enc := xml.NewEncoder(&buf)
 	enc.Indent("", "  ")
 	if err := enc.Encode(feed); err != nil {
 		slog.ErrorContext(r.Context(), "OPDS: failed to encode feed", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to encode feed")
+		return
 	}
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(buf.Bytes())
 }

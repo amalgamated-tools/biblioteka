@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"golang.org/x/crypto/bcrypt"
@@ -34,7 +35,7 @@ func OPDSBasicAuthMiddleware(checker OPDSCredentialChecker) func(http.Handler) h
 				return
 			}
 
-			cred, err := checker.GetOPDSCredential(r.Context(), username)
+			cred, err := checker.GetOPDSCredential(r.Context(), strings.ToLower(username))
 			if err != nil {
 				slog.InfoContext(r.Context(), "OPDS: unknown username", slog.String(otelkeys.OPDSUsername, username))
 				w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
