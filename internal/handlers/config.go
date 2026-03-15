@@ -442,6 +442,7 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		settingSMTPHost:     host,
 		settingSMTPPort:     port,
 		settingSMTPUsername: username,
+		settingSMTPPassword: password,
 		settingSMTPFrom:     from,
 		settingSMTPTLS:      tlsMode,
 	} {
