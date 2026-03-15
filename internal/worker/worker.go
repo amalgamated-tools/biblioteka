@@ -65,7 +65,7 @@ func (w *Worker) RegisterSchedule(cronspec, jobName string, payload any) (string
 	if err != nil {
 		return "", fmt.Errorf("marshal payload for %s: %w", jobName, err)
 	}
-	task := asynq.NewTask(jobName, body, asynq.MaxRetry(DefaultMaxRetry), asynq.Queue(QueueName))
+	task := asynq.NewTask(jobName, body, asynq.MaxRetry(DefaultMaxRetry), asynq.Queue(QueueName), asynq.Unique(24*time.Hour))
 	entryID, err := w.scheduler.Register(cronspec, task)
 	if err != nil {
 		return "", fmt.Errorf("register schedule %s %q: %w", jobName, cronspec, err)
@@ -75,7 +75,7 @@ func (w *Worker) RegisterSchedule(cronspec, jobName string, payload any) (string
 
 // Start begins processing jobs and running scheduled tasks, blocking until ctx
 // is cancelled.
-func (w *Worker) Start(ctx context.Context) {
+func (w *Worker) Start(ctx context.Context) error {
 	slog.DebugContext(ctx, "starting asynq worker", slog.Int(otelkeys.Concurrency, DefaultConcurrency))
 	srv := asynq.NewServer(w.redisOpt, asynq.Config{
 		Concurrency: DefaultConcurrency,
@@ -83,19 +83,18 @@ func (w *Worker) Start(ctx context.Context) {
 	})
 
 	if err := srv.Start(w.mux); err != nil {
-		slog.ErrorContext(ctx, "Failed to start asynq server", slog.Any(otelkeys.Error, err))
-		return
+		return fmt.Errorf("start asynq server: %w", err)
 	}
 
 	if err := w.scheduler.Start(); err != nil {
-		slog.ErrorContext(ctx, "Failed to start asynq scheduler", slog.Any(otelkeys.Error, err))
 		srv.Shutdown()
-		return
+		return fmt.Errorf("start asynq scheduler: %w", err)
 	}
 
 	<-ctx.Done()
 	w.scheduler.Shutdown()
 	srv.Shutdown()
+	return nil
 }
 
 // Enqueue adds a job to the queue with the given name and JSON-serialisable payload.

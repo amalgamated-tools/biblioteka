@@ -90,6 +90,10 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		}
 	}
 
+	if !runServer && !runWorker {
+		return fmt.Errorf("mode %q starts neither server nor worker", *mode)
+	}
+
 	g, ctx := errgroup.WithContext(cancelCtx)
 
 	if runServer {
