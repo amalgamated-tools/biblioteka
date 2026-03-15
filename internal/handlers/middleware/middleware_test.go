@@ -119,9 +119,12 @@ type plainResponseWriter struct {
 	body   []byte
 }
 
-func (w *plainResponseWriter) Header() http.Header         { return w.header }
-func (w *plainResponseWriter) Write(b []byte) (int, error) { w.body = append(w.body, b...); return len(b), nil }
-func (w *plainResponseWriter) WriteHeader(code int)        { w.code = code }
+func (w *plainResponseWriter) Header() http.Header { return w.header }
+func (w *plainResponseWriter) Write(b []byte) (int, error) {
+	w.body = append(w.body, b...)
+	return len(b), nil
+}
+func (w *plainResponseWriter) WriteHeader(code int) { w.code = code }
 
 // --- LoggingMiddleware tests ---
 
