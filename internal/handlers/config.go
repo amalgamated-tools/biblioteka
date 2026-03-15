@@ -668,7 +668,10 @@ func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode str
 		if err != nil {
 			return fmt.Errorf("TLS connection failed: %w", err)
 		}
-		conn.SetDeadline(time.Now().Add(smtpSessionTimeout))
+		if err := conn.SetDeadline(time.Now().Add(smtpSessionTimeout)); err != nil {
+			conn.Close()
+			return fmt.Errorf("failed to set connection deadline: %w", err)
+		}
 		client, err := smtp.NewClient(conn, host)
 		if err != nil {
 			conn.Close()
@@ -682,7 +685,10 @@ func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode str
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
-		conn.SetDeadline(time.Now().Add(smtpSessionTimeout))
+		if err := conn.SetDeadline(time.Now().Add(smtpSessionTimeout)); err != nil {
+			conn.Close()
+			return fmt.Errorf("failed to set connection deadline: %w", err)
+		}
 		client, err := smtp.NewClient(conn, host)
 		if err != nil {
 			conn.Close()
@@ -699,7 +705,10 @@ func sendMail(addr string, a smtp.Auth, from, to string, msg []byte, tlsMode str
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
-		conn.SetDeadline(time.Now().Add(smtpSessionTimeout))
+		if err := conn.SetDeadline(time.Now().Add(smtpSessionTimeout)); err != nil {
+			conn.Close()
+			return fmt.Errorf("failed to set connection deadline: %w", err)
+		}
 		client, err := smtp.NewClient(conn, host)
 		if err != nil {
 			conn.Close()
