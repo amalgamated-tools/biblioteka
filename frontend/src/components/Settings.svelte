@@ -121,7 +121,7 @@
       });
       const status = await getConfigStatus();
       smtpSuccess = true;
-      smtpConfigured = true;
+      smtpConfigured = status.smtp_configured;
       if (smtpPassword.trim()) {
         smtpPasswordSet = true;
       } else if (!smtpUsername.trim()) {
