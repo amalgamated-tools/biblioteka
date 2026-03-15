@@ -6,6 +6,7 @@
     createOidcLinkNonce,
   } from "../../lib/api";
   import { Lock, Mail, Link } from "lucide-svelte";
+  import AlertBanner from "../ui/AlertBanner.svelte";
 
   interface Props {
     oidcConfigured: boolean;
@@ -139,11 +140,7 @@
         </p>
       {:else}
         {#if authStore.oidcLinkError}
-          <div
-            class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm mb-4"
-          >
-            {authStore.oidcLinkError}
-          </div>
+          <AlertBanner variant="error" class="mb-4">{authStore.oidcLinkError}</AlertBanner>
         {/if}
         <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
           Link your account to the SSO provider to enable single sign-on
@@ -223,19 +220,11 @@
       </div>
 
       {#if passwordError}
-        <div
-          class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
-        >
-          {passwordError}
-        </div>
+        <AlertBanner variant="error">{passwordError}</AlertBanner>
       {/if}
 
       {#if passwordSuccess}
-        <div
-          class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
-        >
-          Password updated successfully
-        </div>
+        <AlertBanner variant="success">Password updated successfully</AlertBanner>
       {/if}
 
       <button
