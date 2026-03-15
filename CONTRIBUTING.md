@@ -127,10 +127,19 @@ Always commit the updated spec files alongside the handler changes that prompted
 ## Code Conventions
 
 - **No new dependencies** without a discussion issue first. The project values minimal dependencies.
-- **Standard library routing**: Routes are registered on `http.ServeMux` in `internal/server/server.go`. No router framework.
+- **Standard library routing**: Routes are registered on `http.ServeMux` via `setupRoutes` in `internal/server/routes.go`. No router framework.
 - **Handler structure**: Each domain has a handler struct (e.g., `BookHandler`) holding a `*db.DB` and other dependencies. Handlers live in `internal/handlers/`.
 - **JSON responses**: Use `writeJSON(r.Context(), w, status, data)` and `writeError(r.Context(), w, status, message)` from `internal/handlers/helpers.go`.
-- **Path parameters**: Extract resource IDs with `extractPathID(path, prefix)` from `internal/handlers/helpers.go` — there is no router with named params. Example: `id, ok := extractPathID(r.URL.Path, "/api/books/")`.
+- **JSON request decoding**: Use `decodeJSON(r, w, &req)` from `internal/handlers/helpers.go` to decode the request body. It caps the body at 1 MiB, writes a `400 Bad Request` error on failure, and returns `false` so callers can simply `return`:
+  ```go
+  var req createBookRequest
+  if !decodeJSON(r, w, &req) {
+      return
+  }
+  ```
+- **Path parameters**: Two helpers in `internal/handlers/helpers.go` extract URL segments — there is no router with named params:
+  - `extractPathID(path, prefix)` — extracts a single resource ID. Example: `id, ok := extractPathID(r.URL.Path, "/api/books/")`.
+  - `extractPathSegments(path, prefix)` — extracts a resource ID **and** an optional sub-resource. Example: `id, sub, ok := extractPathSegments(r.URL.Path, "/api/books/")` where `sub` holds the trailing segment (e.g., `"authors"`, `"files"`).
 - **Admin-only endpoints**: Use the handler's `requireAdmin(w, r) bool` method to protect admin endpoints. Return early if it returns `false` — the method already writes the error response:
   ```go
   if !h.requireAdmin(w, r) {
