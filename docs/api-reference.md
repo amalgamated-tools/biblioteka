@@ -297,7 +297,7 @@ Return the current SMTP configuration. The `password` value is never returned; `
 | `host` | string | SMTP server hostname or IP address |
 | `port` | string | SMTP server port (defaults to `"587"` when not set) |
 | `username` | string | SMTP authentication username (empty for unauthenticated SMTP) |
-| `password_set` | boolean | `true` when an SMTP auth credential is stored; the value itself is never returned |
+| `password_set` | boolean | `true` when a password is stored; the password itself is never returned |
 | `from` | string | Envelope `From` address used for outgoing mail |
 | `tls` | string | TLS mode: `"none"`, `"starttls"`, or `"tls"` |
 | `env_override` | boolean | `true` when `SMTP_HOST` is set as an environment variable and overrides database settings |
@@ -306,7 +306,7 @@ Return the current SMTP configuration. The `password` value is never returned; `
 
 ### `PUT /api/config/smtp` 🔒 **Admin**
 
-Save SMTP server settings. If `password` is omitted while `username` is supplied and matches the currently stored username, the stored credential is preserved. Setting `username` to an empty string clears both the stored username and credential.
+Save SMTP server settings. If `password` is omitted while `username` is supplied and matches the currently stored username, the existing password is preserved. Setting `username` to an empty string clears both the stored username and password.
 
 **Request body:**
 
@@ -315,11 +315,11 @@ Save SMTP server settings. If `password` is omitted while `username` is supplied
 | `host` | string | ✓ | SMTP server hostname or IP address (no scheme, port, or path) |
 | `port` | string | | SMTP port; defaults to `"587"` when omitted |
 | `username` | string | | SMTP authentication username; leave empty for unauthenticated SMTP |
-| `password` | string | ✓* | SMTP auth credential; required when `username` is set and none is currently stored |
+| `password` | string | ✓* | SMTP authentication password; required when `username` is set and no password is currently stored |
 | `from` | string | ✓ | Envelope `From` address (must be a plain `user@host` address without a display name) |
 | `tls` | string | | `"none"`, `"starttls"` (default), or `"tls"` |
 
-\* Required when `username` is set and no credential is currently stored; may be omitted to preserve an existing credential for the same username.
+\* Required when `username` is set and no password is currently stored; may be omitted to preserve an existing password for the same username.
 
 **Validation rules:**
 - `host` must be a valid hostname or IP address — no scheme (`smtp://`), embedded port, or path component.
@@ -484,6 +484,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `book_file.deleted`    | `book_file`   | File deleted via `DELETE /api/book-files/{id}` |
 | `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
+| `smtp.config_updated`  | `config`      | SMTP settings saved via `PUT /api/config/smtp` |
 
 | Status | Description |
 |--------|-------------|

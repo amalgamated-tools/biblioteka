@@ -230,7 +230,7 @@ An interactive Swagger UI is served at `/swagger/` (public — no login required
 
 ## Authentication
 
-Biblioteka supports local accounts and OIDC/SSO. See [docs/authentication.md](docs/authentication.md) for JWT details, OIDC configuration, step-by-step provider setup examples (Keycloak, Authentik, Google), and account linking.
+Biblioteka supports local password accounts and OIDC/SSO. See [docs/authentication.md](docs/authentication.md) for JWT details, OIDC configuration, step-by-step provider setup examples (Keycloak, Authentik, Google), and account linking.
 
 ## Administration
 
