@@ -118,6 +118,90 @@ func TestHandleHealth_POST(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// handleVersion
+// ---------------------------------------------------------------------------
+
+func TestHandleVersion_GET(t *testing.T) {
+	s := &Server{version: "1.2.3"}
+	req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
+	rec := httptest.NewRecorder()
+
+	s.handleVersion(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	var body versionResponse
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.Version != "1.2.3" {
+		t.Fatalf("expected version 1.2.3, got %q", body.Version)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("expected Content-Type application/json, got %q", ct)
+	}
+}
+
+func TestHandleVersion_HEAD(t *testing.T) {
+	s := &Server{version: "dev"}
+	req := httptest.NewRequest(http.MethodHead, "/api/version", nil)
+	rec := httptest.NewRecorder()
+
+	s.handleVersion(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+}
+
+func TestHandleVersion_POST(t *testing.T) {
+	s := &Server{version: "dev"}
+	req := httptest.NewRequest(http.MethodPost, "/api/version", nil)
+	rec := httptest.NewRecorder()
+
+	s.handleVersion(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected status 405, got %d", rec.Code)
+	}
+
+	allow := rec.Header().Get("Allow")
+	if allow == "" {
+		t.Fatal("expected Allow header to be set")
+	}
+
+	var body map[string]string
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body["error"] != "method not allowed" {
+		t.Fatalf("expected error 'method not allowed', got %q", body["error"])
+	}
+}
+
+func TestHandleVersion_EmptyVersion(t *testing.T) {
+	s := &Server{}
+	req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
+	rec := httptest.NewRecorder()
+
+	s.handleVersion(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	var body versionResponse
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.Version != "" {
+		t.Fatalf("expected empty version, got %q", body.Version)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // handleOIDCEnabled
 // ---------------------------------------------------------------------------
 

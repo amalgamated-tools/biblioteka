@@ -208,6 +208,66 @@ If a user signs in via OIDC and no existing account has that `sub` claim, the se
 
 ---
 
+## API Keys
+
+API keys provide a convenient way to authenticate programmatic access to Biblioteka without requiring you to store your password or manage JWT expiry.
+
+### When to use API keys
+
+Use API keys when:
+
+- You are calling the Biblioteka API from a script, CI pipeline, or external service.
+- You want long-lived credentials that do not expire on a fixed schedule.
+- You need to avoid storing your password in automation tooling.
+
+Use JWT tokens (from login/signup) for interactive browser sessions.
+
+### Key format
+
+Every API key begins with the prefix `bib_` followed by 32 lowercase hexadecimal characters (128 bits of entropy), for example:
+
+```
+bib_a3f2c8e1d074b651...
+```
+
+Only the `bib_` prefix and the first 12 hex characters (the *key prefix*) are stored in plaintext for identification in the UI. The remainder is stored only as a SHA-256 hash — the full key is never retrievable after creation.
+
+### Using an API key
+
+Supply the key in the `Authorization` header as a Bearer token:
+
+```bash
+curl http://localhost:8080/api/books \
+  -H "Authorization: Bearer bib_a3f2c8e1d074b651..."
+```
+
+> **Security note:** API keys are accepted **only** from the `Authorization` header. They are explicitly rejected from cookies to prevent [Cross-Site Request Forgery (CSRF)](https://owasp.org/www-community/attacks/csrf) attacks.
+
+### Managing API keys via the UI
+
+1. Sign in to Biblioteka.
+2. Navigate to **Settings → API Keys**.
+3. Enter a descriptive name (e.g., `CI Pipeline`) and click **Create Key**.
+4. Copy the full key immediately — it is shown **only once** at creation and cannot be retrieved later.
+5. To revoke a key, click **Delete** next to it in the key list.
+
+To manage keys programmatically, see the [API Keys endpoints](api-reference.md#api-keys) in the API reference.
+
+### Security properties
+
+| Property | Detail |
+|----------|--------|
+| Entropy | 128 bits (cryptographically random) |
+| Storage | SHA-256 hash only — plaintext key is never persisted after creation |
+| Scope | Tied to the creating user; inherits that user's permissions |
+| Transmission | HTTPS only in production; `Authorization` header only (cookies rejected) |
+| Visibility | Key prefix (`bib_XXXXXXXXXXXX`) shown in the UI for identification |
+| Last used | Timestamp updated lazily (throttled to at most once per 5 minutes) |
+
+> **Keep API keys secret.** Anyone who obtains a key can authenticate as you. Revoke and reissue keys that may have been exposed.
+
+---
+
 ## Rate Limiting
 
 Signup, login, and all OIDC endpoints are protected by a per-IP token-bucket rate limiter:

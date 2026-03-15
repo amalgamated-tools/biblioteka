@@ -7,20 +7,22 @@
     getSmtpConfig,
     type AdminUser,
   } from "../lib/api";
-  import { Mail, Palette, Shield, Users, Send } from "lucide-svelte";
+  import { Mail, Palette, Shield, Users, Send, KeyRound } from "lucide-svelte";
   import AccountTab from "./settings/AccountTab.svelte";
   import OidcTab from "./settings/OidcTab.svelte";
   import UsersTab from "./settings/UsersTab.svelte";
   import PreferencesTab from "./settings/PreferencesTab.svelte";
   import SmtpTab from "./settings/SmtpTab.svelte";
+  import APIKeysTab from "./settings/APIKeysTab.svelte";
 
-  type SettingsTab = "account" | "preferences" | "oidc" | "smtp" | "users";
+  type SettingsTab = "account" | "preferences" | "oidc" | "smtp" | "users" | "api-keys";
   const validTabs: SettingsTab[] = [
     "account",
     "preferences",
     "oidc",
     "smtp",
     "users",
+    "api-keys",
   ];
 
   let activeTab: SettingsTab = $derived(
@@ -109,6 +111,16 @@
           Account
         </button>
         <button
+          onclick={() => routerStore.navigate("settings/api-keys")}
+          class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
+          'api-keys'
+            ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
+            : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+        >
+          <KeyRound class="w-5 h-5" />
+          API Keys
+        </button>
+        <button
           onclick={() => routerStore.navigate("settings/preferences")}
           class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
           'preferences'
@@ -167,6 +179,10 @@
     <section class="flex-1">
       {#if activeTab === "account"}
         <AccountTab {oidcConfigured} />
+      {/if}
+
+      {#if activeTab === "api-keys"}
+        <APIKeysTab />
       {/if}
 
       {#if activeTab === "oidc" && isAdmin}

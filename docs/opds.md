@@ -32,7 +32,7 @@ All OPDS paths fall under `/opds`. The catalog is scoped to the authenticated us
 
 ## Setting up OPDS in your reading app
 
-1. **Generate your OPDS credentials** — log in to Biblioteka, go to *Settings → OPDS*, and set a username and password. You can also use the [API](#managing-opds-credentials-via-the-api) directly.
+1. **Generate your OPDS credentials** — use the [API](#managing-opds-credentials-via-the-api) to set a username and password for your account.
 2. **Add a catalog in your reading app** — enter the URL `https://<your-host>/opds`, and supply the OPDS username and password when prompted.
 3. **Browse and download** — your app will display the navigation catalog. Tap a book to see its download links.
 

@@ -9,6 +9,8 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
 - **Author & series tracking** – browse by author or series, with position numbers within each series
 - **User authentication** – JWT-based login, optional OpenID Connect (OIDC/SSO)
+- **API keys** – Long-lived tokens for programmatic and scripted access (prefix `bib_`); managed per-user via the Settings page or API
+- **OPDS 1.2 catalog** – Built-in OPDS server at `/opds` lets any compatible e-reader app (KOReader, Calibre, Moon+ Reader, …) browse and download books using Basic Auth credentials separate from your main account password
 - **Background processing** – Redis-backed job queue scans paths and processes files asynchronously; includes a built-in [Asynqmon](https://github.com/hibiken/asynqmon) monitoring UI at `/asynqmon/`
 - **Two database backends** – SQLite (zero-config, default) or PostgreSQL
 - **Single binary** – Go backend embeds the Svelte frontend; one executable to deploy
@@ -73,11 +75,11 @@ The Go API runs on `http://localhost:8080`; Vite proxies `/api` requests to it.
 
 ## Configuration
 
-Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be set via the `--port` flag when running the binary directly (e.g., `./biblioteka --port 9090`).
+Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be set via the `-port` flag when running the binary directly (e.g., `./biblioteka -port 9090`). Use the `-mode` flag to control which components start (see [Run Modes](#run-modes) below).
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `8080` | HTTP listen port (overrides `--port` flag) |
+| `PORT` | `8080` | HTTP listen port (overrides `-port` flag) |
 | `DATABASE_URL` | *(empty – SQLite)* | PostgreSQL connection string |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
 | `JWT_SECRET` | — | **Required in production** – random secret for signing tokens |
@@ -108,6 +110,25 @@ The first account created is automatically granted admin privileges. Admins can:
 - **Monitor background jobs** — a web dashboard is available at `/asynqmon/` when Redis is running. It shows queued, active, completed, and failed job details.
 - **Review audit logs** — a paginated audit trail of all create, update, and delete actions is available via `GET /api/audit-logs`. Each entry records the user (when available), the action, and the affected entity.
 
+## OPDS Catalog
+
+Biblioteka includes a built-in [OPDS 1.2](https://specs.opds.io/opds-1.2) catalog server, allowing any compatible e-reader to browse and download your books without extra software.
+
+- **URL:** `/opds` (e.g. `http://localhost:8080/opds`)
+- **Authentication:** HTTP Basic Auth using a per-user OPDS credential — separate from your main account password.
+- **Manage credentials:** via the Settings page or the `PUT /api/opds/credentials` endpoint.
+
+See [docs/opds.md](docs/opds.md) for the full setup guide, catalog structure, and supported OPDS clients.
+
+## API Keys
+
+Long-lived API keys let scripts, CI pipelines, and external services authenticate without storing your password or managing JWT expiry. Keys begin with `bib_` and are supplied via the `Authorization: Bearer` header.
+
+- **Create and revoke keys:** via **Settings → API Keys** in the UI, or via the `GET / POST /api/api-keys` and `DELETE /api/api-keys/{id}` endpoints.
+- **Scope:** each key inherits the permissions of the user who created it.
+
+See [docs/authentication.md#api-keys](docs/authentication.md#api-keys) for the full reference.
+
 ## Background Job Monitoring
 
 When Redis is configured, Biblioteka embeds the [Asynqmon](https://github.com/hibiken/asynqmon) web UI for monitoring and managing background jobs.
@@ -121,9 +142,31 @@ The dashboard shows queued, active, completed, and failed jobs, and lets you ret
 
 See [docs/api-reference.md](docs/api-reference.md) for the full API reference.
 
+## Run Modes
+
+By default, the binary starts the HTTP server and the background worker together. Use the `-mode` flag to run them independently:
+
+| Flag value | What starts |
+|------------|-------------|
+| `all` *(default)* | HTTP server **and** background worker |
+| `server` | HTTP server only — no job processing |
+| `worker` | Background worker only — no HTTP listener |
+
+```bash
+# Start only the HTTP server
+./biblioteka -mode server
+
+# Start only the background worker
+./biblioteka -mode worker
+```
+
+Running the server and worker as separate processes is useful for horizontal scaling, resource isolation, or container-per-role deployments. Both roles still require Redis; the server needs it to enqueue jobs, and the worker needs it to process them.
+
+See [docs/deployment.md](docs/deployment.md) for an example split-process Docker Compose setup.
+
 ## Background Jobs
 
-The server runs a Redis-backed job queue (powered by [asynq](https://github.com/hibiken/asynq)) in-process alongside the HTTP server.
+The server runs a Redis-backed job queue (powered by [asynq](https://github.com/hibiken/asynq)). By default, the worker runs in the same process as the HTTP server; use `-mode worker` to run it separately.
 
 | Job | Trigger | Description |
 |---|---|---|
