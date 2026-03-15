@@ -8,17 +8,8 @@
   import UsersTab from "./settings/UsersTab.svelte";
   import PreferencesTab from "./settings/PreferencesTab.svelte";
 
-  type SettingsTab =
-    | "account"
-    | "preferences"
-    | "oidc"
-    | "users";
-  const validTabs: SettingsTab[] = [
-    "account",
-    "preferences",
-    "oidc",
-    "users",
-  ];
+  type SettingsTab = "account" | "preferences" | "oidc" | "users";
+  const validTabs: SettingsTab[] = ["account", "preferences", "oidc", "users"];
 
   let activeTab: SettingsTab = $derived(
     validTabs.includes(routerStore.subPath as SettingsTab)
@@ -40,7 +31,9 @@
       isAdmin = status.is_admin;
 
       if (isAdmin) {
-        const oidcConfig = status.oidc_configured ? await getOidcConfig() : null;
+        const oidcConfig = status.oidc_configured
+          ? await getOidcConfig()
+          : null;
         if (oidcConfig) {
           oidcIssuerUrl = oidcConfig.issuer_url;
           oidcClientId = oidcConfig.client_id;
@@ -55,7 +48,9 @@
 
 <div>
   <div class="mb-6">
-    <h1 class="text-2xl font-display font-bold text-ink-900 dark:text-cream-100">
+    <h1
+      class="text-2xl font-display font-bold text-ink-900 dark:text-cream-100"
+    >
       Settings
     </h1>
     <p class="text-sm text-ink-400 dark:text-ink-400">
@@ -78,7 +73,28 @@
           <Mail class="w-5 h-5" />
           Account
         </button>
+        <button
+          onclick={() => routerStore.navigate("settings/preferences")}
+          class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
+          'preferences'
+            ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
+            : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+        >
+          <Palette class="w-5 h-5" />
+          Preferences
+        </button>
         {#if isAdmin}
+          <div class="hidden sm:flex items-center gap-2 px-4 pt-3 pb-1">
+            <hr class="flex-1 border-ink-200 dark:border-ink-700" />
+            <span
+              class="text-xs font-medium uppercase text-ink-400 dark:text-ink-500"
+              >Admin</span
+            >
+            <hr class="flex-1 border-ink-200 dark:border-ink-700" />
+          </div>
+          <div
+            class="sm:hidden w-px bg-ink-200 dark:bg-ink-700 self-stretch my-1"
+          ></div>
           <button
             onclick={() => routerStore.navigate("settings/oidc")}
             class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
@@ -100,16 +116,6 @@
             Users
           </button>
         {/if}
-        <button
-          onclick={() => routerStore.navigate("settings/preferences")}
-          class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
-          'preferences'
-            ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-            : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
-        >
-          <Palette class="w-5 h-5" />
-          Preferences
-        </button>
       </nav>
     </aside>
 
@@ -134,7 +140,10 @@
       {/if}
 
       {#if activeTab === "users" && isAdmin}
-        <UsersTab {cachedUsers} onUsersLoaded={(users) => (cachedUsers = users)} />
+        <UsersTab
+          {cachedUsers}
+          onUsersLoaded={(users) => (cachedUsers = users)}
+        />
       {/if}
 
       {#if activeTab === "preferences"}
