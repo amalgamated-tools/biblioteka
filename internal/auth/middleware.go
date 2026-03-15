@@ -41,12 +41,13 @@ func resolveUser(ctx context.Context, token string, jwt *JWTManager, apiKeys API
 		if err != nil {
 			return "", err
 		}
-		// Update last_used_at asynchronously to avoid adding latency.
-		go func() {
-			bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
-			_ = apiKeys.TouchAPIKeyLastUsed(bgCtx, keyID)
-		}()
+		// Update last_used_at synchronously to avoid unbounded goroutine growth.
+		if err := apiKeys.TouchAPIKeyLastUsed(ctx, keyID); err != nil {
+			slog.WarnContext(ctx, "failed to touch API key last_used_at",
+				otelkeys.UserID, uid,
+				otelkeys.Error, err,
+			)
+		}
 		return uid, nil
 	}
 	claims, err := jwt.ValidateToken(ctx, token)
