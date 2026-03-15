@@ -258,7 +258,7 @@ Long-lived credentials for programmatic API access. Each key belongs to one user
 | `user_id`      | TEXT    | NOT NULL | —        | FK → `users.id` (CASCADE DELETE)                                 |
 | `name`         | TEXT    | NOT NULL | —        | Human-readable label chosen at creation (e.g. `"CI Pipeline"`)   |
 | `key_hash`     | TEXT    | NOT NULL | —        | SHA-256 hash of the full key; the plaintext key is never stored  |
-| `key_prefix`   | TEXT    | NOT NULL | —        | First 12 hex chars of the key, stored in plaintext for UI display |
+| `key_prefix`   | TEXT    | NOT NULL | —        | `bib_` prefix + first 12 hex chars of the key (e.g. `bib_a3f2c8e1d074`), stored in plaintext for UI display |
 | `last_used_at` | DATETIME| NULL     | NULL     | Lazily updated (at most once per 5 minutes) when the key is used |
 | `created_at`   | DATETIME| NOT NULL | `now()`  | Creation time                                                     |
 
