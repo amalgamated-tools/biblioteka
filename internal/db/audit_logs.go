@@ -10,25 +10,25 @@ import (
 
 // Audit action constants for all tracked operations.
 const (
-	AuditActionLibraryCreated        = "library.created"
-	AuditActionLibraryUpdated        = "library.updated"
-	AuditActionLibraryDeleted        = "library.deleted"
-	AuditActionBookCreated           = "book.created"
-	AuditActionBookUpdated           = "book.updated"
-	AuditActionBookDeleted           = "book.deleted"
+	AuditActionAdminUpdated          = "user.admin_updated"
 	AuditActionAuthorCreated         = "author.created"
-	AuditActionAuthorUpdated         = "author.updated"
 	AuditActionAuthorDeleted         = "author.deleted"
-	AuditActionSeriesCreated         = "series.created"
-	AuditActionSeriesUpdated         = "series.updated"
-	AuditActionSeriesDeleted         = "series.deleted"
+	AuditActionAuthorUpdated         = "author.updated"
+	AuditActionBookCreated           = "book.created"
+	AuditActionBookDeleted           = "book.deleted"
 	AuditActionBookFileCreated       = "book_file.created"
 	AuditActionBookFileDeleted       = "book_file.deleted"
-	AuditActionOPDSCredentialUpdated = "opds_credential.updated"
+	AuditActionBookUpdated           = "book.updated"
+	AuditActionLibraryCreated        = "library.created"
+	AuditActionLibraryDeleted        = "library.deleted"
+	AuditActionLibraryUpdated        = "library.updated"
 	AuditActionOPDSCredentialDeleted = "opds_credential.deleted"
-	AuditActionUserSignedUp          = "user.signed_up"
-	AuditActionAdminUpdated          = "user.admin_updated"
+	AuditActionOPDSCredentialUpdated = "opds_credential.updated"
+	AuditActionSeriesCreated         = "series.created"
+	AuditActionSeriesDeleted         = "series.deleted"
+	AuditActionSeriesUpdated         = "series.updated"
 	AuditActionSMTPConfigUpdated     = "smtp.config_updated"
+	AuditActionUserSignedUp          = "user.signed_up"
 )
 
 // AuditLog represents a single audit log entry.
