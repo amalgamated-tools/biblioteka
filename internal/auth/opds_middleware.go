@@ -37,6 +37,8 @@ func OPDSBasicAuthMiddleware(checker OPDSCredentialChecker) func(http.Handler) h
 
 			cred, err := checker.GetOPDSCredential(r.Context(), strings.ToLower(username))
 			if err != nil {
+				// Perform a dummy bcrypt comparison to prevent timing-based username enumeration.
+				_ = bcrypt.CompareHashAndPassword([]byte("$2a$10$0000000000000000000000000000000000000000000000000000000"), []byte(password))
 				slog.InfoContext(r.Context(), "OPDS: unknown username", slog.String(otelkeys.OPDSUsername, username))
 				w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
 				jsonError(w, http.StatusUnauthorized, "invalid credentials")

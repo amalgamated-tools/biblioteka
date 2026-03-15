@@ -296,13 +296,15 @@ func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, author
 
 	entries := h.bookEntries(ctx, books, baseURL)
 	selfURL := baseURL + "/authors/" + authorID
+	links := paginationLinks(selfURL, page, total, opdsPageSize)
+	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
 	feed := &opdsFeed{
 		XMLNS:     xmlnsAtom,
 		XMLNSOPDS: xmlnsOPDS,
 		ID:        selfURL,
 		Title:     "Books by " + author.Name,
 		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     paginationLinks(selfURL, page, total, opdsPageSize),
+		Links:     links,
 		Entries:   entries,
 	}
 	writeOPDSFeed(r, w, opdsAcqContentType, feed)
@@ -370,13 +372,15 @@ func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, series
 
 	entries := h.bookEntries(ctx, books, baseURL)
 	selfURL := baseURL + "/series/" + seriesID
+	links := paginationLinks(selfURL, page, total, opdsPageSize)
+	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
 	feed := &opdsFeed{
 		XMLNS:     xmlnsAtom,
 		XMLNSOPDS: xmlnsOPDS,
 		ID:        selfURL,
 		Title:     series.Name,
 		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     paginationLinks(selfURL, page, total, opdsPageSize),
+		Links:     links,
 		Entries:   entries,
 	}
 	writeOPDSFeed(r, w, opdsAcqContentType, feed)

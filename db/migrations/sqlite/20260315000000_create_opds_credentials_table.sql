@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS opds_credentials (
     updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_opds_credentials_username ON opds_credentials (username);
+CREATE INDEX IF NOT EXISTS idx_opds_credentials_username ON opds_credentials (LOWER(username));
 CREATE INDEX IF NOT EXISTS idx_opds_credentials_user_id ON opds_credentials (user_id);
 
 -- migrate:down
