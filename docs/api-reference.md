@@ -69,7 +69,7 @@ The version is also displayed in the application sidebar so users can confirm wh
 
 ## Auth
 
-> **Rate limiting:** The signup, login, and all OIDC auth endpoints (`/api/auth/oidc/login`, `/api/auth/oidc/callback`, `/api/auth/oidc/link`) are protected by a per-IP token-bucket rate limiter (5 requests/second, burst of 10). Exceeding the limit returns `429 Too Many Requests`.
+> **Rate limiting:** The signup, login, logout, and all OIDC auth endpoints (`/api/auth/oidc/login`, `/api/auth/oidc/callback`, `/api/auth/oidc/link`) are protected by a per-IP token-bucket rate limiter (5 requests/second, burst of 10). Exceeding the limit returns `429 Too Many Requests`.
 
 ### `POST /api/auth/signup`
 
@@ -183,6 +183,7 @@ The request must originate from the same origin as the server (the `Origin` or `
 | `200 OK` | Session cookie cleared; returns confirmation |
 | `403 Forbidden` | Request origin does not match server origin |
 | `405 Method Not Allowed` | Non-POST request |
+| `429 Too Many Requests` | Rate limit exceeded |
 
 **Response body (`200`):**
 
@@ -1358,5 +1359,5 @@ Common HTTP status codes:
 | `404` | Not found |
 | `405` | Method not allowed |
 | `409` | Conflict — duplicate name or email |
-| `429` | Too Many Requests — per-IP rate limit exceeded (auth endpoints only) |
+| `429` | Too Many Requests — per-IP rate limit exceeded (auth endpoints and `POST /api/config/smtp/test`) |
 | `500` | Internal server error |
