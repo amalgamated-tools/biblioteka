@@ -30,6 +30,7 @@ type setAdminRequest struct {
 }
 
 // HandleListUsers godoc
+//
 //	@Summary		List all users
 //	@Description	Returns a list of all users (admin only)
 //	@Tags			Admin
@@ -83,6 +84,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleSetAdmin godoc
+//
 //	@Summary		Set user admin status
 //	@Description	Change a user's admin status (admin only)
 //	@Tags			Admin

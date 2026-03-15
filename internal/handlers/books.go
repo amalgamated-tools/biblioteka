@@ -252,6 +252,7 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 }
 
 // listBooks godoc
+//
 //	@Summary		List books
 //	@Description	Returns all books (summary without relations)
 //	@Tags			Books
@@ -281,6 +282,7 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 }
 
 // createBook godoc
+//
 //	@Summary		Create a book
 //	@Description	Create a new book
 //	@Tags			Books
@@ -333,6 +335,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 }
 
 // getBook godoc
+//
 //	@Summary		Get a book
 //	@Description	Returns a single book with authors, series, and files
 //	@Tags			Books
@@ -371,6 +374,7 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 }
 
 // updateBook godoc
+//
 //	@Summary		Update a book
 //	@Description	Update an existing book
 //	@Tags			Books
@@ -432,6 +436,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 }
 
 // deleteBook godoc
+//
 //	@Summary		Delete a book
 //	@Description	Delete a book by ID
 //	@Tags			Books
@@ -496,6 +501,7 @@ type setBookAuthorsRequest struct {
 }
 
 // getBookAuthors godoc
+//
 //	@Summary		List book authors
 //	@Description	Get the list of authors for a book
 //	@Tags			Books
@@ -512,6 +518,7 @@ func (h *BookHandler) getBookAuthors(w http.ResponseWriter, r *http.Request, boo
 }
 
 // putBookAuthors godoc
+//
 //	@Summary		Set book authors
 //	@Description	Replace the list of authors for a book
 //	@Tags			Books
@@ -563,6 +570,7 @@ type setBookSeriesRequest struct {
 }
 
 // getBookSeries godoc
+//
 //	@Summary		List book series
 //	@Description	Get the list of series for a book
 //	@Tags			Books
@@ -579,6 +587,7 @@ func (h *BookHandler) getBookSeries(w http.ResponseWriter, r *http.Request, book
 }
 
 // putBookSeries godoc
+//
 //	@Summary		Set book series
 //	@Description	Replace the list of series for a book
 //	@Tags			Books
@@ -607,6 +616,7 @@ func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, book
 }
 
 // getBookFiles godoc
+//
 //	@Summary		List book files
 //	@Description	List files for a book
 //	@Tags			Books
@@ -642,6 +652,7 @@ type createBookFileRequest struct {
 }
 
 // postBookFiles godoc
+//
 //	@Summary		Add a book file
 //	@Description	Add a new file for a book
 //	@Tags			Books

@@ -101,6 +101,7 @@ func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 }
 
 // listLibraries godoc
+//
 //	@Summary		List libraries
 //	@Description	Returns all libraries
 //	@Tags			Libraries
@@ -160,6 +161,7 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 }
 
 // createLibrary godoc
+//
 //	@Summary		Create a library
 //	@Description	Create a new library and enqueue scan jobs
 //	@Tags			Libraries
@@ -223,6 +225,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 }
 
 // getLibrary godoc
+//
 //	@Summary		Get a library
 //	@Description	Returns a single library by ID
 //	@Tags			Libraries
@@ -252,6 +255,7 @@ func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id s
 }
 
 // updateLibrary godoc
+//
 //	@Summary		Update a library
 //	@Description	Update an existing library
 //	@Tags			Libraries
@@ -310,6 +314,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 }
 
 // deleteLibrary godoc
+//
 //	@Summary		Delete a library
 //	@Description	Delete a library by ID
 //	@Tags			Libraries
@@ -354,6 +359,7 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 }
 
 // listLibraryBooks godoc
+//
 //	@Summary		List books in a library
 //	@Description	Returns all books belonging to a specific library
 //	@Tags			Libraries

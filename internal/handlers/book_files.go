@@ -34,6 +34,7 @@ func (h *BookFileHandler) HandleBookFile(w http.ResponseWriter, r *http.Request)
 }
 
 // getBookFile godoc
+//
 //	@Summary		Get a book file
 //	@Description	Returns a single book file by ID
 //	@Tags			BookFiles
@@ -63,6 +64,7 @@ func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id
 }
 
 // deleteBookFile godoc
+//
 //	@Summary		Delete a book file
 //	@Description	Delete a book file by ID
 //	@Tags			BookFiles

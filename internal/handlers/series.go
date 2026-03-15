@@ -78,6 +78,7 @@ func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
 }
 
 // listSeries godoc
+//
 //	@Summary		List series
 //	@Description	Returns all series
 //	@Tags			Series
@@ -107,6 +108,7 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 }
 
 // createSeries godoc
+//
 //	@Summary		Create a series
 //	@Description	Create a new series
 //	@Tags			Series
@@ -159,6 +161,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 }
 
 // getSeries godoc
+//
 //	@Summary		Get a series
 //	@Description	Returns a single series by ID
 //	@Tags			Series
@@ -188,6 +191,7 @@ func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id str
 }
 
 // updateSeries godoc
+//
 //	@Summary		Update a series
 //	@Description	Update an existing series
 //	@Tags			Series
@@ -244,6 +248,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 }
 
 // deleteSeries godoc
+//
 //	@Summary		Delete a series
 //	@Description	Delete a series by ID
 //	@Tags			Series

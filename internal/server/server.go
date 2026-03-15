@@ -355,6 +355,7 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 }
 
 // handleOIDCEnabled godoc
+//
 //	@Summary		Check if OIDC is enabled
 //	@Description	Returns whether OIDC authentication is configured on this server
 //	@Tags			System
@@ -393,6 +394,7 @@ type oidcEnabledResponse struct {
 }
 
 // handleHealth godoc
+//
 //	@Summary		Health check
 //	@Description	Returns server health status
 //	@Tags			System

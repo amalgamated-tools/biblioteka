@@ -35,6 +35,7 @@ type configStatusResponse struct {
 }
 
 // HandleConfigStatus godoc
+//
 //	@Summary		Get configuration status
 //	@Description	Returns OIDC configuration status and admin status
 //	@Tags			Config
@@ -74,6 +75,7 @@ type setOIDCConfigRequest struct {
 }
 
 // HandleGetOIDCConfig godoc
+//
 //	@Summary		Get OIDC configuration
 //	@Description	Returns current OIDC configuration (admin only)
 //	@Tags			Config
@@ -115,6 +117,7 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleSetOIDCConfig godoc
+//
 //	@Summary		Set OIDC configuration
 //	@Description	Update OIDC configuration with validation (admin only)
 //	@Tags			Config

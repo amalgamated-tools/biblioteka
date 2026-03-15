@@ -69,6 +69,7 @@ func NewOIDCHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, 
 }
 
 // Login godoc
+//
 //	@Summary		OIDC login
 //	@Description	Redirects to the OIDC provider's authorization endpoint
 //	@Tags			OIDC
@@ -116,6 +117,7 @@ func (h *OIDCHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateLinkNonce godoc
+//
 //	@Summary		Create OIDC link nonce
 //	@Description	Generate a short-lived nonce for linking an OIDC account
 //	@Tags			OIDC
@@ -176,6 +178,7 @@ func (h *OIDCHandler) consumeLinkNonce(nonce string) string {
 }
 
 // Link godoc
+//
 //	@Summary		Link OIDC account
 //	@Description	Redirects to OIDC provider to link account (requires nonce)
 //	@Tags			OIDC
@@ -260,6 +263,7 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 }
 
 // Callback godoc
+//
 //	@Summary		OIDC callback
 //	@Description	Handles the OIDC provider's redirect after authentication
 //	@Tags			OIDC

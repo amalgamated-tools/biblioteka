@@ -81,6 +81,7 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 }
 
 // listAuthors godoc
+//
 //	@Summary		List authors
 //	@Description	Returns all authors
 //	@Tags			Authors
@@ -110,6 +111,7 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 }
 
 // createAuthor godoc
+//
 //	@Summary		Create an author
 //	@Description	Create a new author
 //	@Tags			Authors
@@ -162,6 +164,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 }
 
 // getAuthor godoc
+//
 //	@Summary		Get an author
 //	@Description	Returns a single author by ID
 //	@Tags			Authors
@@ -191,6 +194,7 @@ func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id str
 }
 
 // updateAuthor godoc
+//
 //	@Summary		Update an author
 //	@Description	Update an existing author
 //	@Tags			Authors
@@ -247,6 +251,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 }
 
 // deleteAuthor godoc
+//
 //	@Summary		Delete an author
 //	@Description	Delete an author by ID
 //	@Tags			Authors

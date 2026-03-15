@@ -88,6 +88,7 @@ func clearAuthCookie(w http.ResponseWriter, secure bool) {
 }
 
 // Signup godoc
+//
 //	@Summary		Sign up a new user
 //	@Description	Create a new user account with name, email, and password
 //	@Tags			Auth
@@ -174,6 +175,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 }
 
 // Login godoc
+//
 //	@Summary		Log in
 //	@Description	Authenticate with email and password
 //	@Tags			Auth
@@ -247,6 +249,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // Me godoc
+//
 //	@Summary		Get current user
 //	@Description	Returns the authenticated user's profile
 //	@Tags			Auth
@@ -284,6 +287,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 }
 
 // ChangePassword godoc
+//
 //	@Summary		Change password
 //	@Description	Change the authenticated user's password
 //	@Tags			Auth
@@ -364,6 +368,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // Logout godoc
+//
 //	@Summary		Log out
 //	@Description	Clears the authentication cookie
 //	@Tags			Auth
