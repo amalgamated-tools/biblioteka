@@ -151,7 +151,7 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 
 | Component | Route | Visibility | Responsibility |
 |-----------|-------|------------|----------------|
-| `AccountTab.svelte` | `settings/account` | All users | Change password; link/unlink OIDC account |
+| `AccountTab.svelte` | `settings/account` | All users | Change password; link OIDC account |
 | `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
 | `UsersTab.svelte` | `settings/users` | Admins only | List users; toggle admin role |
