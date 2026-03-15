@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     # Skip docs-only changes — they don't affect the container image
+    # Skip docs-only changes — they don't affect the container image
     paths:
       - 'cmd/**'
       - 'internal/**'
