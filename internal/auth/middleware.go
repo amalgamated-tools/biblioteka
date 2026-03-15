@@ -45,6 +45,8 @@ const apiKeyTouchInterval = 5 * time.Minute
 // shouldTouchAPIKeyLastUsed returns true if we should issue a TouchAPIKeyLastUsed
 // call for the given API key ID at the provided time. It uses an in-memory,
 // process-local cache to avoid writing on every request for frequently used keys.
+// Expired entries are swept when the cache exceeds a size threshold to prevent
+// unbounded memory growth.
 func shouldTouchAPIKeyLastUsed(id string, now time.Time) bool {
 	apiKeyTouchMu.Lock()
 	defer apiKeyTouchMu.Unlock()
@@ -52,6 +54,16 @@ func shouldTouchAPIKeyLastUsed(id string, now time.Time) bool {
 	last, ok := apiKeyLastTouchedAt[id]
 	if ok && now.Sub(last) < apiKeyTouchInterval {
 		return false
+	}
+
+	// Sweep expired entries when the map grows beyond a reasonable size.
+	const sweepThreshold = 100
+	if len(apiKeyLastTouchedAt) >= sweepThreshold {
+		for k, v := range apiKeyLastTouchedAt {
+			if now.Sub(v) >= apiKeyTouchInterval {
+				delete(apiKeyLastTouchedAt, k)
+			}
+		}
 	}
 
 	apiKeyLastTouchedAt[id] = now
