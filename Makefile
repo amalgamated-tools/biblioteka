@@ -54,7 +54,7 @@ kill-dev:
 	@echo "Dev ports 5173 and 8080 are now free."
 
 # Capture application screenshots via Playwright
-screenshots: node_modules
+screenshots: clean node_modules
 	@mkdir -p screenshots
 	# call kill-dev first to ensure no existing servers are running
 	$(MAKE) kill-dev
@@ -81,13 +81,32 @@ screenshots: node_modules
 redis-check:
 	@set -e; \
 	if command -v redis-cli > /dev/null 2>&1; then \
-		redis-cli ping > /dev/null 2>&1 || (echo "Error: Redis is not running. Start it with 'redis-server' or 'brew services start redis'." && exit 1); \
-	elif command -v docker > /dev/null 2>&1 && docker compose ps --status=running redis > /dev/null 2>&1; then \
-		docker compose exec -T redis redis-cli ping > /dev/null 2>&1 || (echo "Error: Redis container is not reachable. Start it with 'docker compose up -d redis'." && exit 1); \
-	else \
-		echo "Error: redis-cli is not installed and Docker Redis check is unavailable. Install redis-cli or start Redis with 'docker compose up -d redis'."; \
-		exit 1; \
-	fi
+		if redis-cli ping > /dev/null 2>&1; then \
+			echo "Redis is reachable via redis-cli."; \
+			exit 0; \
+		fi; \
+	fi; \
+	if command -v docker > /dev/null 2>&1; then \
+		if docker ps --filter "name=redis" --filter "status=running" -q | grep -q .; then \
+			if docker compose ps --status=running redis 2>/dev/null | grep -q redis; then \
+				echo "Redis Docker container is running via docker-compose."; \
+				exit 0; \
+			elif docker ps --filter "name=redis" --filter "status=running" --filter "publish=6379" -q | grep -q .; then \
+				echo "A non-compose Redis container is running with port 6379 mapped."; \
+				exit 0; \
+			else \
+				echo "Warning: A container with 'redis' in its name is running, but it is not managed by this project's docker-compose.yml and does not have port 6379 mapped."; \
+			fi; \
+		fi; \
+	fi; \
+	if command -v nc > /dev/null 2>&1; then \
+		if nc -z localhost 6379 > /dev/null 2>&1; then \
+			echo "Something is listening on port 6379. Assuming Redis is running."; \
+			exit 0; \
+		fi; \
+	fi; \
+	echo "Error: Redis is not running. Start it with 'redis-server', 'brew services start redis', or 'docker compose up -d redis'."; \
+	exit 1
 
 # Clean build artifacts
 clean:
