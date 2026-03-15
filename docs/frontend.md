@@ -127,6 +127,7 @@ Views that need their own internal navigation use `routerStore.subPath`. The con
 | `settings` | `smtp` | SMTP mail configuration tab (admin) |
 | `settings` | `users` | User management tab (admin) |
 | `settings` | `preferences` | Appearance preferences tab |
+| `settings` | `api-keys` | API keys management tab (all users) |
 
 **Example — navigating to a library's book list:**
 
@@ -196,6 +197,7 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 | Component | Route | Visibility | Responsibility |
 |-----------|-------|------------|----------------|
 | `AccountTab.svelte` | `settings/account` | All users | Change password; link OIDC account |
+| `APIKeysTab.svelte` | `settings/api-keys` | All users | Create and revoke long-lived API keys (`bib_` prefix) |
 | `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
 | *(inline in `Settings.svelte`)* | `settings/smtp` | Admins only | Configure SMTP mail server |
