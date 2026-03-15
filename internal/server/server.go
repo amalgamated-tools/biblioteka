@@ -355,12 +355,12 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 }
 
 // handleOIDCEnabled godoc
-// @Summary     Check if OIDC is enabled
-// @Description Returns whether OIDC authentication is configured on this server
-// @Tags        System
-// @Produce     json
-// @Success     200 {object} oidcEnabledResponse
-// @Router      /auth/oidc/enabled [get]
+//	@Summary		Check if OIDC is enabled
+//	@Description	Returns whether OIDC authentication is configured on this server
+//	@Tags			System
+//	@Produce		json
+//	@Success		200	{object}	oidcEnabledResponse
+//	@Router			/auth/oidc/enabled [get]
 func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
@@ -393,12 +393,12 @@ type oidcEnabledResponse struct {
 }
 
 // handleHealth godoc
-// @Summary     Health check
-// @Description Returns server health status
-// @Tags        System
-// @Produce     json
-// @Success     200 {object} healthResponse
-// @Router      /health [get]
+//	@Summary		Health check
+//	@Description	Returns server health status
+//	@Tags			System
+//	@Produce		json
+//	@Success		200	{object}	healthResponse
+//	@Router			/health [get]
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Content-Type", "application/json")

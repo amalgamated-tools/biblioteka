@@ -18,14 +18,14 @@ import (
 
 var version = "dev"
 
-// @title         Biblioteka API
-// @version       1.0
-// @description   Personal library management API
-// @BasePath      /api
-// @securityDefinitions.apikey BearerAuth
-// @in                         header
-// @name                       Authorization
-// @description                Enter "Bearer {token}"
+//	@title						Biblioteka API
+//	@version					1.0
+//	@description				Personal library management API
+//	@BasePath					/api
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Enter "Bearer {token}"
 
 func main() {
 	cancelCtx, cancelAll := context.WithCancel(context.Background())

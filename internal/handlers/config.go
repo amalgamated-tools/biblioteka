@@ -35,14 +35,14 @@ type configStatusResponse struct {
 }
 
 // HandleConfigStatus godoc
-// @Summary     Get configuration status
-// @Description Returns OIDC configuration status and admin status
-// @Tags        Config
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Success     200 {object} configStatusResponse
-// @Router      /config/status [get]
+//	@Summary		Get configuration status
+//	@Description	Returns OIDC configuration status and admin status
+//	@Tags			Config
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{object}	configStatusResponse
+//	@Router			/config/status [get]
 func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -74,16 +74,16 @@ type setOIDCConfigRequest struct {
 }
 
 // HandleGetOIDCConfig godoc
-// @Summary     Get OIDC configuration
-// @Description Returns current OIDC configuration (admin only)
-// @Tags        Config
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Success     200 {object} oidcConfigResponse
-// @Failure     403 {object} errorResponse
-// @Failure     500 {object} errorResponse
-// @Router      /config/oidc [get]
+//	@Summary		Get OIDC configuration
+//	@Description	Returns current OIDC configuration (admin only)
+//	@Tags			Config
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{object}	oidcConfigResponse
+//	@Failure		403	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/config/oidc [get]
 func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	slog.DebugContext(r.Context(), "fetching OIDC config", slog.String(otelkeys.UserID, userID))
@@ -115,19 +115,19 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleSetOIDCConfig godoc
-// @Summary     Set OIDC configuration
-// @Description Update OIDC configuration with validation (admin only)
-// @Tags        Config
-// @Accept      json
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       body body     setOIDCConfigRequest true "OIDC configuration"
-// @Success     200  {object} object{message=string}
-// @Failure     400  {object} errorResponse
-// @Failure     403  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /config/oidc [put]
+//	@Summary		Set OIDC configuration
+//	@Description	Update OIDC configuration with validation (admin only)
+//	@Tags			Config
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			body	body		setOIDCConfigRequest	true	"OIDC configuration"
+//	@Success		200		{object}	object{message=string}
+//	@Failure		400		{object}	errorResponse
+//	@Failure		403		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/config/oidc [put]
 func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)

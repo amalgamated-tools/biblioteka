@@ -78,15 +78,15 @@ func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
 }
 
 // listSeries godoc
-// @Summary     List series
-// @Description Returns all series
-// @Tags        Series
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Success     200 {array}  seriesDTO
-// @Failure     500 {object} errorResponse
-// @Router      /series [get]
+//	@Summary		List series
+//	@Description	Returns all series
+//	@Tags			Series
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{array}		seriesDTO
+//	@Failure		500	{object}	errorResponse
+//	@Router			/series [get]
 func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "listing series")
 	list, err := h.DB.ListSeries(r.Context())
@@ -107,19 +107,19 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 }
 
 // createSeries godoc
-// @Summary     Create a series
-// @Description Create a new series
-// @Tags        Series
-// @Accept      json
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       body body     seriesRequest true "Series data"
-// @Success     201  {object} seriesDTO
-// @Failure     400  {object} errorResponse
-// @Failure     409  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /series [post]
+//	@Summary		Create a series
+//	@Description	Create a new series
+//	@Tags			Series
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			body	body		seriesRequest	true	"Series data"
+//	@Success		201		{object}	seriesDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		409		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/series [post]
 func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 	var req seriesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -159,18 +159,18 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 }
 
 // getSeries godoc
-// @Summary     Get a series
-// @Description Returns a single series by ID
-// @Tags        Series
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id  path     string true "Series ID"
-// @Success     200 {object} seriesDTO
-// @Failure     400 {object} errorResponse
-// @Failure     404 {object} errorResponse
-// @Failure     500 {object} errorResponse
-// @Router      /series/{id} [get]
+//	@Summary		Get a series
+//	@Description	Returns a single series by ID
+//	@Tags			Series
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Series ID"
+//	@Success		200	{object}	seriesDTO
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/series/{id} [get]
 func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching series", slog.String(otelkeys.SeriesID, id))
 	s, err := h.DB.GetSeries(r.Context(), id)
@@ -188,21 +188,21 @@ func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id str
 }
 
 // updateSeries godoc
-// @Summary     Update a series
-// @Description Update an existing series
-// @Tags        Series
-// @Accept      json
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id   path     string        true "Series ID"
-// @Param       body body     seriesRequest true "Series data"
-// @Success     200  {object} seriesDTO
-// @Failure     400  {object} errorResponse
-// @Failure     404  {object} errorResponse
-// @Failure     409  {object} errorResponse
-// @Failure     500  {object} errorResponse
-// @Router      /series/{id} [put]
+//	@Summary		Update a series
+//	@Description	Update an existing series
+//	@Tags			Series
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401		{object}	errorResponse
+//	@Param			id		path		string			true	"Series ID"
+//	@Param			body	body		seriesRequest	true	"Series data"
+//	@Success		200		{object}	seriesDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		409		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/series/{id} [put]
 func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id string) {
 	var req seriesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -244,17 +244,17 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 }
 
 // deleteSeries godoc
-// @Summary     Delete a series
-// @Description Delete a series by ID
-// @Tags        Series
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Param       id  path     string true "Series ID"
-// @Success     204 "No Content"
-// @Failure     400 {object} errorResponse
-// @Failure     404 {object} errorResponse
-// @Failure     500 {object} errorResponse
-// @Router      /series/{id} [delete]
+//	@Summary		Delete a series
+//	@Description	Delete a series by ID
+//	@Tags			Series
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Series ID"
+//	@Success		204	"No Content"
+//	@Failure		400	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/series/{id} [delete]
 func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting series", slog.String(otelkeys.SeriesID, id))
 

@@ -69,13 +69,13 @@ func NewOIDCHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, 
 }
 
 // Login godoc
-// @Summary     OIDC login
-// @Description Redirects to the OIDC provider's authorization endpoint
-// @Tags        OIDC
-// @Success     302 "Redirect to OIDC provider"
-// @Failure     404 {object} errorResponse "OIDC not configured"
-// @Failure     500 {object} errorResponse
-// @Router      /auth/oidc/login [get]
+//	@Summary		OIDC login
+//	@Description	Redirects to the OIDC provider's authorization endpoint
+//	@Tags			OIDC
+//	@Success		302	"Redirect to OIDC provider"
+//	@Failure		404	{object}	errorResponse	"OIDC not configured"
+//	@Failure		500	{object}	errorResponse
+//	@Router			/auth/oidc/login [get]
 func (h *OIDCHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -116,15 +116,15 @@ func (h *OIDCHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateLinkNonce godoc
-// @Summary     Create OIDC link nonce
-// @Description Generate a short-lived nonce for linking an OIDC account
-// @Tags        OIDC
-// @Produce     json
-// @Security    BearerAuth
-// @Failure     401 {object} errorResponse
-// @Success     200 {object} object{nonce=string}
-// @Failure     500 {object} errorResponse
-// @Router      /auth/oidc/link-nonce [post]
+//	@Summary		Create OIDC link nonce
+//	@Description	Generate a short-lived nonce for linking an OIDC account
+//	@Tags			OIDC
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{object}	object{nonce=string}
+//	@Failure		500	{object}	errorResponse
+//	@Router			/auth/oidc/link-nonce [post]
 func (h *OIDCHandler) CreateLinkNonce(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -176,16 +176,16 @@ func (h *OIDCHandler) consumeLinkNonce(nonce string) string {
 }
 
 // Link godoc
-// @Summary     Link OIDC account
-// @Description Redirects to OIDC provider to link account (requires nonce)
-// @Tags        OIDC
-// @Param       nonce query    string true "Link nonce from CreateLinkNonce"
-// @Success     302   "Redirect to OIDC provider"
-// @Failure     400   {object} errorResponse
-// @Failure     401   {object} errorResponse
-// @Failure     409   {object} errorResponse
-// @Failure     500   {object} errorResponse
-// @Router      /auth/oidc/link [get]
+//	@Summary		Link OIDC account
+//	@Description	Redirects to OIDC provider to link account (requires nonce)
+//	@Tags			OIDC
+//	@Param			nonce	query	string	true	"Link nonce from CreateLinkNonce"
+//	@Success		302		"Redirect to OIDC provider"
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		409		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/auth/oidc/link [get]
 func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -260,16 +260,16 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 }
 
 // Callback godoc
-// @Summary     OIDC callback
-// @Description Handles the OIDC provider's redirect after authentication
-// @Tags        OIDC
-// @Param       state query    string true "OIDC state parameter"
-// @Param       code  query    string true "Authorization code"
-// @Success     302   "Redirect to frontend with token"
-// @Failure     400   {object} errorResponse
-// @Failure     401   {object} errorResponse
-// @Failure     500   {object} errorResponse
-// @Router      /auth/oidc/callback [get]
+//	@Summary		OIDC callback
+//	@Description	Handles the OIDC provider's redirect after authentication
+//	@Tags			OIDC
+//	@Param			state	query	string	true	"OIDC state parameter"
+//	@Param			code	query	string	true	"Authorization code"
+//	@Success		302		"Redirect to frontend with token"
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/auth/oidc/callback [get]
 func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
