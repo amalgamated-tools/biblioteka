@@ -85,7 +85,7 @@ func SendBoot(ctx context.Context, version string) {
 
 	body, _ := json.Marshal(payload)
 
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(body))
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to create telemetry request", slog.Any(otelkeys.Error, err))
 		return
