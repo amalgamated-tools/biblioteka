@@ -65,8 +65,14 @@ async function waitForSignupTab(page) {
 }
 
 async function logoutIfNeeded(page) {
-    await page.locator('button#logout-button').click().catch(() => { });
-    await page.waitForSelector('button#login-btn', { timeout: NAVIGATION_TIMEOUT_MS }).catch(() => { });
+    await page.evaluate(() => {
+        localStorage.removeItem('biblioteka_token');
+    });
+    await page.goto(`${BASE_URL}/`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.waitForSelector('button#login-btn');
 }
 
 async function loginAsDemo(page) {
