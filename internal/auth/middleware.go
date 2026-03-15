@@ -32,6 +32,31 @@ func hashAPIKey(key string) string {
 	return hex.EncodeToString(h[:])
 }
 
+var (
+	apiKeyTouchMu       sync.Mutex
+	apiKeyLastTouchedAt = make(map[string]time.Time)
+)
+
+// apiKeyTouchInterval controls how often we will update last_used_at for a
+// given API key. This throttles DB writes while keeping the field reasonably fresh.
+const apiKeyTouchInterval = 5 * time.Minute
+
+// shouldTouchAPIKeyLastUsed returns true if we should issue a TouchAPIKeyLastUsed
+// call for the given API key ID at the provided time. It uses an in-memory,
+// process-local cache to avoid writing on every request for frequently used keys.
+func shouldTouchAPIKeyLastUsed(id string, now time.Time) bool {
+	apiKeyTouchMu.Lock()
+	defer apiKeyTouchMu.Unlock()
+
+	last, ok := apiKeyLastTouchedAt[id]
+	if ok && now.Sub(last) < apiKeyTouchInterval {
+		return false
+	}
+
+	apiKeyLastTouchedAt[id] = now
+	return true
+}
+
 // resolveUser determines the user ID from the given token. If the token starts
 // with "bib_", it is treated as an API key; otherwise it is validated as a JWT.
 func resolveUser(ctx context.Context, token string, jwt *JWTManager, apiKeys APIKeyValidator) (userID string, err error) {
@@ -41,13 +66,17 @@ func resolveUser(ctx context.Context, token string, jwt *JWTManager, apiKeys API
 		if err != nil {
 			return "", err
 		}
-		// Update last_used_at synchronously to avoid unbounded goroutine growth.
-		if err := apiKeys.TouchAPIKeyLastUsed(ctx, keyID); err != nil {
-			slog.WarnContext(ctx, "failed to touch API key last_used_at",
-				slog.String(otelkeys.UserID, uid),
-				slog.Any(otelkeys.Error, err),
-			)
+
+		// Throttle last_used_at updates to avoid excessive DB writes on hot keys.
+		if shouldTouchAPIKeyLastUsed(keyID, time.Now()) {
+			if err := apiKeys.TouchAPIKeyLastUsed(ctx, keyID); err != nil {
+				slog.WarnContext(ctx, "failed to touch API key last_used_at",
+					slog.String(otelkeys.UserID, uid),
+					slog.Any(otelkeys.Error, err),
+				)
+			}
 		}
+
 		return uid, nil
 	}
 	claims, err := jwt.ValidateToken(ctx, token)

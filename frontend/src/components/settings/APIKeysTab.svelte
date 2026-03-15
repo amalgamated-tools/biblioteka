@@ -6,6 +6,7 @@
     type APIKey,
   } from "../../lib/api";
   import { KeyRound, Copy, Trash2 } from "lucide-svelte";
+  import { onDestroy } from "svelte";
 
   let apiKeyList: APIKey[] = $state.raw([]);
   let apiKeysLoading = $state(false);
@@ -16,15 +17,19 @@
   let apiKeysLoaded = $state(false);
   let keyCopied = $state(false);
   let apiKeysTried = $state(false);
+  let keyCopiedTimeout: number | null = null;
+
+  onDestroy(() => {
+    if (keyCopiedTimeout !== null) {
+      clearTimeout(keyCopiedTimeout);
+      keyCopiedTimeout = null;
+    }
+  });
 
   $effect(() => {
     if (!apiKeysLoaded && !apiKeysLoading && !apiKeysTried) {
       apiKeysTried = true;
-      loadAPIKeys().then(() => {
-        if (!apiKeysLoaded && apiKeysError) {
-          apiKeysTried = false;
-        }
-      });
+      void loadAPIKeys();
     }
   });
 
@@ -87,7 +92,14 @@
     try {
       await navigator.clipboard.writeText(text);
       keyCopied = true;
-      setTimeout(() => (keyCopied = false), 2000);
+      if (keyCopiedTimeout !== null) {
+        clearTimeout(keyCopiedTimeout);
+        keyCopiedTimeout = null;
+      }
+      keyCopiedTimeout = window.setTimeout(() => {
+        keyCopied = false;
+        keyCopiedTimeout = null;
+      }, 2000);
     } catch {
       // Clipboard API unavailable (insecure context or denied permission).
       // Fallback: use a temporary textarea to select+copy the text.
@@ -100,7 +112,14 @@
       try {
         document.execCommand("copy");
         keyCopied = true;
-        setTimeout(() => (keyCopied = false), 2000);
+        if (keyCopiedTimeout !== null) {
+          clearTimeout(keyCopiedTimeout);
+          keyCopiedTimeout = null;
+        }
+        keyCopiedTimeout = window.setTimeout(() => {
+          keyCopied = false;
+          keyCopiedTimeout = null;
+        }, 2000);
       } catch {
         apiKeysError =
           "Failed to copy to clipboard. Please select and copy the key manually.";
