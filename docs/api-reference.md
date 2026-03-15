@@ -837,14 +837,14 @@ Delete a book file record (does not delete the file from disk). Returns `204 No 
 
 ## Swagger UI
 
-### `GET /swagger/` 🔒
+### `GET /swagger/`
 
 An interactive OpenAPI browser (powered by [Swagger UI](https://swagger.io/tools/swagger-ui/)) that documents and lets you try every API endpoint in the browser.
 
 | Property | Value |
 |----------|-------|
 | **URL** | `/swagger/` |
-| **Auth** | 🔒 Valid JWT required |
+| **Auth** | No authentication required (publicly accessible) |
 | **Spec URL** | `/swagger/doc.json` — raw OpenAPI 3.0 JSON |
 
 > Accessing `/swagger` (without trailing slash) redirects to `/swagger/` automatically.
@@ -855,17 +855,17 @@ The UI is useful during development for exploring request/response shapes withou
 
 ## Monitoring Dashboard
 
-### `GET /asynqmon/` 🔒
+### `GET /asynqmon/` 🔒 **Admin**
 
 An interactive web UI for monitoring background jobs (powered by [asynqmon](https://github.com/hibiken/asynqmon)).
 
 | Property | Value |
 |----------|-------|
 | **URL** | `/asynqmon/` |
-| **Auth** | 🔒 Valid JWT required (same token as API calls) |
+| **Auth** | 🔒 **Admin** — valid admin JWT required |
 | **Availability** | Route is mounted whenever the background worker subsystem is enabled; a reachable Redis instance is required for the UI to function correctly |
 
-This dashboard is only available when the server is started with a Redis-backed worker (i.e. `REDIS_URL` is configured, default: `redis://localhost:6379`). It requires an authenticated session — accessing it without a valid JWT returns `401 Unauthorized`.
+This dashboard is only available when the server is started with a Redis-backed worker (i.e. `REDIS_URL` is configured, default: `redis://localhost:6379`). It requires an authenticated admin session — accessing it without a valid admin JWT returns `401 Unauthorized` or `403 Forbidden`.
 
 Navigate to `http://<host>:<port>/asynqmon/` in a browser after logging in to view queued, active, completed, and failed background jobs (library scans, file processing), and retry or delete individual tasks.
 
