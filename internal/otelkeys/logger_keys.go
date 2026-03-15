@@ -8,6 +8,7 @@ const (
 	AuthorCount       string = "author_count"
 	AuthorID          string = "author_id"
 	Body              string = "body"
+	BookCount         string = "book_count"
 	BookFileID        string = "book_file_id"
 	BookID            string = "book_id"
 	CallerID          string = "caller_id"

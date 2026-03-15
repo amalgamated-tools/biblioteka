@@ -490,7 +490,7 @@ func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[stri
 	if len(bookIDs) == 0 {
 		return nil, nil
 	}
-	slog.DebugContext(ctx, "db: batch fetching authors for books", slog.Int("book_count", len(bookIDs)))
+	slog.DebugContext(ctx, "db: batch fetching authors for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
 
 	placeholders := make([]string, len(bookIDs))
 	args := make([]any, len(bookIDs))
@@ -528,7 +528,7 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 	if len(bookIDs) == 0 {
 		return nil, nil
 	}
-	slog.DebugContext(ctx, "db: batch fetching files for books", slog.Int("book_count", len(bookIDs)))
+	slog.DebugContext(ctx, "db: batch fetching files for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
 
 	placeholders := make([]string, len(bookIDs))
 	args := make([]any, len(bookIDs))
