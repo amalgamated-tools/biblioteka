@@ -27,6 +27,38 @@ definitions:
       oidc_linked:
         type: boolean
     type: object
+  internal_handlers.auditLogDTO:
+    properties:
+      action:
+        type: string
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      entity_id:
+        type: string
+      entity_type:
+        type: string
+      id:
+        type: string
+      metadata:
+        items:
+          type: integer
+        type: array
+      user_id:
+        type: string
+    type: object
+  internal_handlers.auditLogListDTO:
+    properties:
+      entries:
+        items:
+          $ref: '#/definitions/internal_handlers.auditLogDTO'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
   internal_handlers.authResponse:
     properties:
       token:
@@ -462,6 +494,46 @@ paths:
       summary: Set user admin status
       tags:
       - Admin
+  /audit-logs:
+    get:
+      description: Returns a paginated list of all audit log entries (admin only)
+      parameters:
+      - description: Max entries to return (default 50)
+        in: query
+        name: limit
+        type: integer
+      - description: Entries to skip (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.auditLogListDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List audit log entries
+      tags:
+      - Admin
   /auth/login:
     post:
       consumes:
@@ -494,6 +566,26 @@ paths:
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
       summary: Log in
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Clears the authentication cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      summary: Log out
       tags:
       - Auth
   /auth/me:
@@ -1647,6 +1739,45 @@ paths:
       security:
       - BearerAuth: []
       summary: Update a library
+      tags:
+      - Libraries
+  /libraries/{id}/books:
+    get:
+      description: Returns all books belonging to a specific library
+      parameters:
+      - description: Library ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.bookSummaryDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List books in a library
       tags:
       - Libraries
   /series:
