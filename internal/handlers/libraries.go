@@ -177,8 +177,7 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 //	@Router			/libraries [post]
 func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 	var req libraryRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 
@@ -273,8 +272,7 @@ func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id s
 //	@Router			/libraries/{id} [put]
 func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, id string) {
 	var req libraryRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 

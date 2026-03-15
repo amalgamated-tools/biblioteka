@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 
@@ -297,8 +296,7 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 //	@Router			/books [post]
 func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	var req bookRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 
@@ -391,8 +389,7 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 //	@Router			/books/{id} [put]
 func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id string) {
 	var req bookRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 
@@ -478,215 +475,4 @@ func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// respondBookAuthors fetches and writes the author list for a book as JSON.
-func (h *BookHandler) respondBookAuthors(ctx context.Context, w http.ResponseWriter, bookID string) {
-	authors, err := h.DB.GetBookAuthors(ctx, bookID)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get book authors", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get book authors")
-		return
-	}
-	dtos := make([]authorDTO, 0, len(authors))
-	for i := range authors {
-		dtos = append(dtos, toAuthorDTO(&authors[i]))
-	}
-	writeJSON(ctx, w, http.StatusOK, dtos)
-}
-
-// setBookAuthorsRequest is the request body for setting book authors.
-type setBookAuthorsRequest struct {
-	AuthorIDs []string `json:"author_ids"`
-}
-
-// getBookAuthors godoc
-//
-//	@Summary		List book authors
-//	@Description	Get the list of authors for a book
-//	@Tags			Books
-//	@Produce		json
-//	@Security		BearerAuth
-//	@Failure		401	{object}	errorResponse
-//	@Param			id	path		string	true	"Book ID"
-//	@Success		200	{array}		authorDTO
-//	@Failure		400	{object}	errorResponse
-//	@Failure		500	{object}	errorResponse
-//	@Router			/books/{id}/authors [get]
-func (h *BookHandler) getBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
-	h.respondBookAuthors(r.Context(), w, bookID)
-}
-
-// putBookAuthors godoc
-//
-//	@Summary		Set book authors
-//	@Description	Replace the list of authors for a book
-//	@Tags			Books
-//	@Accept			json
-//	@Produce		json
-//	@Security		BearerAuth
-//	@Failure		401		{object}	errorResponse
-//	@Param			id		path		string					true	"Book ID"
-//	@Param			body	body		setBookAuthorsRequest	true	"Author IDs"
-//	@Success		200		{array}		authorDTO
-//	@Failure		400		{object}	errorResponse
-//	@Failure		500		{object}	errorResponse
-//	@Router			/books/{id}/authors [put]
-func (h *BookHandler) putBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
-	var req setBookAuthorsRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if err := h.DB.SetBookAuthors(r.Context(), bookID, req.AuthorIDs); err != nil {
-		slog.ErrorContext(r.Context(), "failed to set book authors", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to set book authors")
-		return
-	}
-	h.respondBookAuthors(r.Context(), w, bookID)
-}
-
-// respondBookSeries fetches and writes the series list for a book as JSON.
-func (h *BookHandler) respondBookSeries(ctx context.Context, w http.ResponseWriter, bookID string) {
-	entries, err := h.DB.GetBookSeries(ctx, bookID)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get book series", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get book series")
-		return
-	}
-	dtos := make([]bookSeriesEntryDTO, 0, len(entries))
-	for _, e := range entries {
-		dtos = append(dtos, bookSeriesEntryDTO{
-			Series:   toSeriesDTO(&e.Series),
-			Position: e.Position,
-		})
-	}
-	writeJSON(ctx, w, http.StatusOK, dtos)
-}
-
-// setBookSeriesRequest is the request body for setting book series.
-type setBookSeriesRequest struct {
-	Entries []db.BookSeriesInput `json:"entries"`
-}
-
-// getBookSeries godoc
-//
-//	@Summary		List book series
-//	@Description	Get the list of series for a book
-//	@Tags			Books
-//	@Produce		json
-//	@Security		BearerAuth
-//	@Failure		401	{object}	errorResponse
-//	@Param			id	path		string	true	"Book ID"
-//	@Success		200	{array}		bookSeriesEntryDTO
-//	@Failure		400	{object}	errorResponse
-//	@Failure		500	{object}	errorResponse
-//	@Router			/books/{id}/series [get]
-func (h *BookHandler) getBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
-	h.respondBookSeries(r.Context(), w, bookID)
-}
-
-// putBookSeries godoc
-//
-//	@Summary		Set book series
-//	@Description	Replace the list of series for a book
-//	@Tags			Books
-//	@Accept			json
-//	@Produce		json
-//	@Security		BearerAuth
-//	@Failure		401		{object}	errorResponse
-//	@Param			id		path		string					true	"Book ID"
-//	@Param			body	body		setBookSeriesRequest	true	"Series entries"
-//	@Success		200		{array}		bookSeriesEntryDTO
-//	@Failure		400		{object}	errorResponse
-//	@Failure		500		{object}	errorResponse
-//	@Router			/books/{id}/series [put]
-func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
-	var req setBookSeriesRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if err := h.DB.SetBookSeries(r.Context(), bookID, req.Entries); err != nil {
-		slog.ErrorContext(r.Context(), "failed to set book series", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to set book series")
-		return
-	}
-	h.respondBookSeries(r.Context(), w, bookID)
-}
-
-// getBookFiles godoc
-//
-//	@Summary		List book files
-//	@Description	List files for a book
-//	@Tags			Books
-//	@Produce		json
-//	@Security		BearerAuth
-//	@Failure		401	{object}	errorResponse
-//	@Param			id	path		string	true	"Book ID"
-//	@Success		200	{array}		bookFileDTO
-//	@Failure		400	{object}	errorResponse
-//	@Failure		500	{object}	errorResponse
-//	@Router			/books/{id}/files [get]
-func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
-	files, err := h.DB.ListBookFiles(r.Context(), bookID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list book files", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list book files")
-		return
-	}
-	dtos := make([]bookFileDTO, 0, len(files))
-	for i := range files {
-		dtos = append(dtos, toBookFileDTO(&files[i]))
-	}
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
-}
-
-// createBookFileRequest is the request body for creating a book file.
-type createBookFileRequest struct {
-	FileType string  `json:"file_type"`
-	FileName string  `json:"file_name"`
-	FileSize int64   `json:"file_size"`
-	FileHash *string `json:"file_hash"`
-	FilePath string  `json:"file_path"`
-}
-
-// postBookFiles godoc
-//
-//	@Summary		Add a book file
-//	@Description	Add a new file for a book
-//	@Tags			Books
-//	@Accept			json
-//	@Produce		json
-//	@Security		BearerAuth
-//	@Failure		401		{object}	errorResponse
-//	@Param			id		path		string					true	"Book ID"
-//	@Param			body	body		createBookFileRequest	true	"Book file data"
-//	@Success		201		{object}	bookFileDTO
-//	@Failure		400		{object}	errorResponse
-//	@Failure		500		{object}	errorResponse
-//	@Router			/books/{id}/files [post]
-func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
-	var req createBookFileRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if req.FileType == "" || req.FileName == "" || req.FilePath == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "file_type, file_name, and file_path are required")
-		return
-	}
-	bf, err := h.DB.CreateBookFile(r.Context(), bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create book file", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book file")
-		return
-	}
-
-	userID := auth.UserIDFromContext(r.Context())
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionBookFileCreated, "book_file", bf.ID, map[string]any{"book_id": bookID, "file_name": bf.FileName, "file_type": bf.FileType}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
-
-	writeJSON(r.Context(), w, http.StatusCreated, toBookFileDTO(bf))
 }

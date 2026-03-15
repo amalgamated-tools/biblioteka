@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -128,8 +127,7 @@ func (h *APIKeyHandler) listAPIKeys(w http.ResponseWriter, r *http.Request) {
 
 func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 	var req apiKeyCreateRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 

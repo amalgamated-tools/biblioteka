@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net"
@@ -107,8 +106,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req signupRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 
@@ -194,8 +192,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req loginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 
@@ -307,8 +304,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req changePasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid request body")
+	if !decodeJSON(r, w, &req) {
 		return
 	}
 
