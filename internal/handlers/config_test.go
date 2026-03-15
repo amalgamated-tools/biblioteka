@@ -853,6 +853,34 @@ func TestHandleSetSMTPConfig_UnauthenticatedSMTP(t *testing.T) {
 	}
 }
 
+func TestHandleSetSMTPConfig_UnauthenticatedSMTP_ClearsExistingPassword(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	// Pre-store credentials
+	_ = h.DB.SetSetting(context.Background(), settingSMTPPassword, "old-secret")
+	_ = h.DB.SetSetting(context.Background(), settingSMTPUsername, "old-user")
+
+	// Switch to unauthenticated — both fields intentionally empty
+	body := `{"host":"smtp.example.com","from":"noreply@example.com","username":"","password":""}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	pw, err := h.DB.GetSetting(context.Background(), settingSMTPPassword)
+	if err != nil {
+		t.Fatalf("GetSetting(smtp_password): %v", err)
+	}
+	if pw != "" {
+		t.Errorf("smtp_password = %q, want empty after switching to unauthenticated SMTP", pw)
+	}
+}
+
 func TestHandleSetSMTPConfig_UsernameWithoutPasswordFails(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 

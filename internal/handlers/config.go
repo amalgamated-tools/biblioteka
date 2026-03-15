@@ -691,6 +691,14 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusBadRequest, "SMTP TLS mode is invalid, must be one of: none, starttls, tls")
 		return
 	}
+	if cfg.Username != "" && cfg.Password == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "SMTP password is missing but username is set")
+		return
+	}
+	if tlsMode == "none" && cfg.Username != "" && !isLoopbackHost(cfg.Host) {
+		writeError(r.Context(), w, http.StatusBadRequest, "authenticated SMTP without TLS is only allowed for localhost/loopback; use STARTTLS or TLS for remote servers")
+		return
+	}
 
 	to := user.Email
 	subject := "Biblioteka SMTP Test"
