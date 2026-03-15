@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -23,11 +24,11 @@ type APIKeyValidator interface {
 	TouchAPIKeyLastUsed(ctx context.Context, id string) error
 }
 
-// hashAPIKey returns the hex-encoded SHA-256 hash of the given API key.
+// HashAPIKey returns the hex-encoded SHA-256 hash of the given API key.
 // SHA-256 is appropriate here because API keys are high-entropy random tokens
 // (128 bits), not user-chosen passwords. Expensive hashing (bcrypt/argon2) is
 // unnecessary — an attacker cannot brute-force 128-bit keys regardless of hash speed.
-func hashAPIKey(key string) string {
+func HashAPIKey(key string) string {
 	h := sha256.Sum256([]byte(key)) // #nosec G401 -- not a password; high-entropy API key
 	return hex.EncodeToString(h[:])
 }
@@ -58,10 +59,15 @@ func shouldTouchAPIKeyLastUsed(id string, now time.Time) bool {
 }
 
 // resolveUser determines the user ID from the given token. If the token starts
-// with "bib_", it is treated as an API key; otherwise it is validated as a JWT.
-func resolveUser(ctx context.Context, token string, jwt *JWTManager, apiKeys APIKeyValidator) (userID string, err error) {
+// with "bib_" and was sourced from the Authorization header, it is treated as
+// an API key; API keys from cookies are rejected to prevent CSRF attacks.
+// Otherwise it is validated as a JWT.
+func resolveUser(ctx context.Context, token string, source tokenSource, jwt *JWTManager, apiKeys APIKeyValidator) (userID string, err error) {
 	if apiKeys != nil && strings.HasPrefix(token, APIKeyPrefix) {
-		keyHash := hashAPIKey(token)
+		if source != tokenSourceHeader {
+			return "", fmt.Errorf("API keys must be sent via Authorization header")
+		}
+		keyHash := HashAPIKey(token)
 		uid, keyID, err := apiKeys.ValidateAPIKey(ctx, keyHash)
 		if err != nil {
 			return "", err
@@ -99,16 +105,25 @@ func jsonError(w http.ResponseWriter, status int, message string) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
+// tokenSource indicates where a token was extracted from.
+type tokenSource int
+
+const (
+	tokenSourceNone   tokenSource = iota
+	tokenSourceHeader             // Authorization header
+	tokenSourceCookie             // biblioteka_token cookie
+)
+
 // extractToken tries to read a JWT from the Authorization header first,
-// then falls back to the "biblioteka_token" cookie. It returns the token and
-// an optional reason describing why no token could be extracted.
-func extractToken(r *http.Request) (string, string) {
+// then falls back to the "biblioteka_token" cookie. It returns the token,
+// its source, and an optional reason describing why no token could be extracted.
+func extractToken(r *http.Request) (string, tokenSource, string) {
 	if header := r.Header.Get("Authorization"); header != "" {
 		header = strings.TrimSpace(header)
 		if after, ok := strings.CutPrefix(header, "Bearer "); ok {
 			token := strings.TrimSpace(after)
 			if token != "" {
-				return token, ""
+				return token, tokenSourceHeader, ""
 			}
 		}
 		// Non-Bearer or empty Bearer — fall through to cookie.
@@ -116,10 +131,10 @@ func extractToken(r *http.Request) (string, string) {
 
 	// Fallback to cookie-based authentication.
 	if c, err := r.Cookie(tokenCookieName); err == nil && c.Value != "" {
-		return c.Value, ""
+		return c.Value, tokenSourceCookie, ""
 	}
 
-	return "", "missing token"
+	return "", tokenSourceNone, "missing token"
 }
 
 // Middleware returns an HTTP middleware that validates the JWT or API key from the
@@ -128,7 +143,7 @@ func extractToken(r *http.Request) (string, string) {
 func Middleware(jwt *JWTManager, apiKeys APIKeyValidator) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token, reason := extractToken(r)
+			token, source, reason := extractToken(r)
 			if token == "" {
 				if reason != "" {
 					slog.InfoContext(r.Context(), "authentication required", slog.String(otelkeys.Reason, reason))
@@ -139,7 +154,7 @@ func Middleware(jwt *JWTManager, apiKeys APIKeyValidator) func(http.Handler) htt
 				return
 			}
 
-			userID, err := resolveUser(r.Context(), token, jwt, apiKeys)
+			userID, err := resolveUser(r.Context(), token, source, jwt, apiKeys)
 			if err != nil {
 				slog.InfoContext(r.Context(), "invalid or expired token", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
@@ -244,14 +259,14 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker, apiKeys APIKeyValida
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token, _ := extractToken(r)
+			token, source, _ := extractToken(r)
 			if token == "" {
 				slog.InfoContext(r.Context(), "admin middleware: no token found")
 				jsonError(w, http.StatusUnauthorized, "authentication required")
 				return
 			}
 
-			userID, err := resolveUser(r.Context(), token, jwt, apiKeys)
+			userID, err := resolveUser(r.Context(), token, source, jwt, apiKeys)
 			if err != nil {
 				slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusUnauthorized, "invalid or expired token")

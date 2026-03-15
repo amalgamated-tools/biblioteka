@@ -137,58 +137,68 @@ func assertJSONError(t *testing.T, body []byte, wantMsg string) {
 
 func TestExtractToken(t *testing.T) {
 	tests := []struct {
-		name      string
-		header    string // Authorization header value ("" = not set)
-		cookie    string // cookie value ("" = no cookie)
-		wantToken string
+		name       string
+		header     string // Authorization header value ("" = not set)
+		cookie     string // cookie value ("" = no cookie)
+		wantToken  string
+		wantSource tokenSource
 	}{
 		{
-			name:      "no header no cookie",
-			wantToken: "",
+			name:       "no header no cookie",
+			wantToken:  "",
+			wantSource: tokenSourceNone,
 		},
 		{
-			name:      "Bearer header only",
-			header:    "Bearer validtoken",
-			wantToken: "validtoken",
+			name:       "Bearer header only",
+			header:     "Bearer validtoken",
+			wantToken:  "validtoken",
+			wantSource: tokenSourceHeader,
 		},
 		{
-			name:      "cookie only",
-			cookie:    "cookietoken",
-			wantToken: "cookietoken",
+			name:       "cookie only",
+			cookie:     "cookietoken",
+			wantToken:  "cookietoken",
+			wantSource: tokenSourceCookie,
 		},
 		{
-			name:      "both present, header takes precedence",
-			header:    "Bearer headertoken",
-			cookie:    "cookietoken",
-			wantToken: "headertoken",
+			name:       "both present, header takes precedence",
+			header:     "Bearer headertoken",
+			cookie:     "cookietoken",
+			wantToken:  "headertoken",
+			wantSource: tokenSourceHeader,
 		},
 		{
-			name:      "non-Bearer header with valid cookie falls back to cookie",
-			header:    "Basic sometoken",
-			cookie:    "cookietoken",
-			wantToken: "cookietoken",
+			name:       "non-Bearer header with valid cookie falls back to cookie",
+			header:     "Basic sometoken",
+			cookie:     "cookietoken",
+			wantToken:  "cookietoken",
+			wantSource: tokenSourceCookie,
 		},
 		{
-			name:      "non-Bearer header without cookie",
-			header:    "Basic sometoken",
-			wantToken: "",
+			name:       "non-Bearer header without cookie",
+			header:     "Basic sometoken",
+			wantToken:  "",
+			wantSource: tokenSourceNone,
 		},
 		{
-			name:      "Bearer with empty token falls back to cookie",
-			header:    "Bearer ",
-			cookie:    "cookietoken",
-			wantToken: "cookietoken",
+			name:       "Bearer with empty token falls back to cookie",
+			header:     "Bearer ",
+			cookie:     "cookietoken",
+			wantToken:  "cookietoken",
+			wantSource: tokenSourceCookie,
 		},
 		{
-			name:      "Bearer with whitespace-only token falls back to cookie",
-			header:    "Bearer   ",
-			cookie:    "cookietoken",
-			wantToken: "cookietoken",
+			name:       "Bearer with whitespace-only token falls back to cookie",
+			header:     "Bearer   ",
+			cookie:     "cookietoken",
+			wantToken:  "cookietoken",
+			wantSource: tokenSourceCookie,
 		},
 		{
-			name:      "empty cookie value ignored",
-			cookie:    "",
-			wantToken: "",
+			name:       "empty cookie value ignored",
+			cookie:     "",
+			wantToken:  "",
+			wantSource: tokenSourceNone,
 		},
 	}
 
@@ -201,9 +211,12 @@ func TestExtractToken(t *testing.T) {
 			if tt.cookie != "" {
 				r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: tt.cookie})
 			}
-			got, _ := extractToken(r)
+			got, gotSource, _ := extractToken(r)
 			if got != tt.wantToken {
-				t.Errorf("extractToken() = %q, want %q", got, tt.wantToken)
+				t.Errorf("extractToken() token = %q, want %q", got, tt.wantToken)
+			}
+			if gotSource != tt.wantSource {
+				t.Errorf("extractToken() source = %v, want %v", gotSource, tt.wantSource)
 			}
 		})
 	}
@@ -473,7 +486,7 @@ func (m *mockAPIKeyValidator) TouchAPIKeyLastUsed(_ context.Context, id string) 
 func TestMiddleware_ValidAPIKey(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	apiKey := "bib_abcdef1234567890abcdef1234567890"
-	keyHash := hashAPIKey(apiKey)
+	keyHash := HashAPIKey(apiKey)
 	validator := &mockAPIKeyValidator{
 		keys: map[string]struct{ userID, keyID string }{
 			keyHash: {userID: "apikey-user", keyID: "key-1"},
@@ -529,10 +542,40 @@ func TestMiddleware_InvalidAPIKey(t *testing.T) {
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
 
+func TestMiddleware_APIKeyViaCookieRejected(t *testing.T) {
+	jm, _ := NewJWTManager("secret", time.Hour)
+	apiKey := "bib_abcdef1234567890abcdef1234567890"
+	keyHash := HashAPIKey(apiKey)
+	validator := &mockAPIKeyValidator{
+		keys: map[string]struct{ userID, keyID string }{
+			keyHash: {userID: "apikey-user", keyID: "key-1"},
+		},
+	}
+	mw := Middleware(jm, validator)
+
+	called := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: apiKey})
+	w := httptest.NewRecorder()
+	mw(next).ServeHTTP(w, r)
+
+	if called {
+		t.Error("next handler should not have been called for API key via cookie")
+	}
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+	}
+	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
+}
+
 func TestAdminMiddleware_ValidAPIKey(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	apiKey := "bib_abcdef1234567890abcdef1234567890"
-	keyHash := hashAPIKey(apiKey)
+	keyHash := HashAPIKey(apiKey)
 	validator := &mockAPIKeyValidator{
 		keys: map[string]struct{ userID, keyID string }{
 			keyHash: {userID: "admin-user", keyID: "key-2"},

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
@@ -155,8 +154,7 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 	// Hash the full key with SHA-256. This is appropriate because API keys are
 	// high-entropy random tokens (128 bits), not user-chosen passwords. Expensive
 	// hashing (bcrypt/argon2) is unnecessary for cryptographically random secrets.
-	hash := sha256.Sum256([]byte(fullKey)) // #nosec G401 -- not a password; high-entropy API key
-	keyHash := hex.EncodeToString(hash[:])
+	keyHash := auth.HashAPIKey(fullKey)
 
 	// Store the first 8 characters as the display prefix.
 	keyPrefix := fullKey[:8]
