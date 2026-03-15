@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -273,6 +274,8 @@ func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
 func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
 	ctx := r.Context()
 	baseURL := opdsBaseURL(r)
+	page := parsePage(r)
+	offset := (page - 1) * opdsPageSize
 
 	author, err := h.DB.GetAuthor(ctx, authorID)
 	if err != nil {
@@ -284,7 +287,7 @@ func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, author
 		return
 	}
 
-	books, err := h.DB.ListBooksByAuthor(ctx, authorID)
+	books, total, err := h.DB.ListBooksByAuthorPaginated(ctx, authorID, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list books by author", slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list books")
@@ -292,17 +295,15 @@ func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, author
 	}
 
 	entries := h.bookEntries(ctx, books, baseURL)
+	selfURL := baseURL + "/authors/" + authorID
 	feed := &opdsFeed{
 		XMLNS:     xmlnsAtom,
 		XMLNSOPDS: xmlnsOPDS,
-		ID:        baseURL + "/authors/" + authorID,
+		ID:        selfURL,
 		Title:     "Books by " + author.Name,
 		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links: []opdsLink{
-			{Rel: relSelf, Href: baseURL + "/authors/" + authorID, Type: opdsAcqContentType},
-			{Rel: relStart, Href: baseURL, Type: opdsNavContentType},
-		},
-		Entries: entries,
+		Links:     paginationLinks(selfURL, page, total, opdsPageSize),
+		Entries:   entries,
 	}
 	writeOPDSFeed(r, w, opdsAcqContentType, feed)
 }
@@ -347,6 +348,8 @@ func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
 func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, seriesID string) {
 	ctx := r.Context()
 	baseURL := opdsBaseURL(r)
+	page := parsePage(r)
+	offset := (page - 1) * opdsPageSize
 
 	series, err := h.DB.GetSeries(ctx, seriesID)
 	if err != nil {
@@ -358,7 +361,7 @@ func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, series
 		return
 	}
 
-	books, err := h.DB.ListBooksBySeries(ctx, seriesID)
+	books, total, err := h.DB.ListBooksBySeriesPaginated(ctx, seriesID, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list books by series", slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list books")
@@ -366,17 +369,15 @@ func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, series
 	}
 
 	entries := h.bookEntries(ctx, books, baseURL)
+	selfURL := baseURL + "/series/" + seriesID
 	feed := &opdsFeed{
 		XMLNS:     xmlnsAtom,
 		XMLNSOPDS: xmlnsOPDS,
-		ID:        baseURL + "/series/" + seriesID,
+		ID:        selfURL,
 		Title:     series.Name,
 		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links: []opdsLink{
-			{Rel: relSelf, Href: baseURL + "/series/" + seriesID, Type: opdsAcqContentType},
-			{Rel: relStart, Href: baseURL, Type: opdsNavContentType},
-		},
-		Entries: entries,
+		Links:     paginationLinks(selfURL, page, total, opdsPageSize),
+		Entries:   entries,
 	}
 	writeOPDSFeed(r, w, opdsAcqContentType, feed)
 }
@@ -538,10 +539,11 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 
 		// Add cover image link
 		if book.CoverImageURL != nil && *book.CoverImageURL != "" {
+			coverType := coverMIMEType(*book.CoverImageURL)
 			entry.Links = append(entry.Links, opdsLink{
 				Rel:  relImage,
 				Href: *book.CoverImageURL,
-				Type: "image/jpeg",
+				Type: coverType,
 			})
 		}
 
@@ -572,7 +574,7 @@ func opdsBaseURL(r *http.Request) string {
 	if r.TLS != nil {
 		scheme = "https"
 	}
-	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto == "http" || proto == "https" {
 		scheme = proto
 	}
 	return scheme + "://" + r.Host + "/opds"
@@ -630,4 +632,22 @@ func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, f
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(buf.Bytes())
+}
+
+// coverMIMEType returns the MIME type for a cover image URL based on its extension.
+func coverMIMEType(imageURL string) string {
+	switch strings.ToLower(path.Ext(imageURL)) {
+	case ".png":
+		return "image/png"
+	case ".webp":
+		return "image/webp"
+	case ".avif":
+		return "image/avif"
+	case ".gif":
+		return "image/gif"
+	case ".svg":
+		return "image/svg+xml"
+	default:
+		return "image/jpeg"
+	}
 }

@@ -407,6 +407,46 @@ func (d *DB) ListBooksByAuthor(ctx context.Context, authorID string) ([]Book, er
 	return books, rows.Err()
 }
 
+// ListBooksByAuthorPaginated returns books for a specific author with pagination and total count.
+func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, limit, offset int) ([]Book, int, error) {
+	slog.DebugContext(ctx, "db: listing books by author paginated",
+		slog.String(otelkeys.AuthorID, authorID),
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+
+	var total int
+	if err := d.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1`,
+		authorID,
+	).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY b.title ASC, b.id ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
+		authorID, limit, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		books = append(books, *b)
+	}
+	return books, total, rows.Err()
+}
+
 // ListBooksBySeries returns all books in a specific series, ordered by position.
 func (d *DB) ListBooksBySeries(ctx context.Context, seriesID string) ([]Book, error) {
 	slog.DebugContext(ctx, "db: listing books by series", slog.String(otelkeys.SeriesID, seriesID))
@@ -434,6 +474,46 @@ func (d *DB) ListBooksBySeries(ctx context.Context, seriesID string) ([]Book, er
 	return books, rows.Err()
 }
 
+// ListBooksBySeriesPaginated returns books in a specific series with pagination and total count.
+func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, limit, offset int) ([]Book, int, error) {
+	slog.DebugContext(ctx, "db: listing books by series paginated",
+		slog.String(otelkeys.SeriesID, seriesID),
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+
+	var total int
+	if err := d.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1`,
+		seriesID,
+	).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	nullsLast := "ORDER BY bs.position ASC, b.title ASC"
+	if d.Dialect == DialectPostgres {
+		nullsLast = "ORDER BY bs.position ASC NULLS LAST, b.title ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 `+nullsLast+` LIMIT $2 OFFSET $3`,
+		seriesID, limit, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		books = append(books, *b)
+	}
+	return books, total, rows.Err()
+}
+
 // SearchBooks searches books by title or description with pagination and total count.
 func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) ([]Book, int, error) {
 	slog.DebugContext(ctx, "db: searching books",
@@ -442,13 +522,14 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	likePattern := "%" + query + "%"
+	escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(query)
+	likePattern := "%" + escaped + "%"
 
 	var whereClause string
 	if d.Dialect == DialectPostgres {
-		whereClause = `WHERE title ILIKE $1 OR description ILIKE $1`
+		whereClause = `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`
 	} else {
-		whereClause = `WHERE title LIKE $1 OR description LIKE $1`
+		whereClause = `WHERE (title LIKE $1 ESCAPE '\' OR description LIKE $1 ESCAPE '\')`
 	}
 
 	var total int
