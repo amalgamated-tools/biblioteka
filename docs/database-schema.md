@@ -10,9 +10,9 @@ Biblioteka uses [dbmate](https://github.com/amacneil/dbmate) migrations, which r
 
 ```
 users ────────────────────────────────────────────────┐
-                                                       │ (audit trail)
-settings                                               ▼
-                                               audit_logs
+  │                                                    │ (audit trail)
+  │ api_keys                          settings         ▼
+  └──────────────────────────────────────────  audit_logs
 
 libraries ──── library_books ──── books ──── book_authors ──── authors
                                     │
@@ -46,6 +46,32 @@ Stores registered user accounts.
 **Notes:**
 - The first user to sign up is automatically granted `is_admin = 1`.
 - OIDC-only users (created via SSO login without a prior password account) have a non-empty `password_hash` that cannot match any real password.
+
+---
+
+### `api_keys`
+
+Long-lived tokens that authenticate programmatic access without requiring a JWT. Each key belongs to one user.
+
+| Column        | Type    | Nullable | Default   | Description                                                  |
+|---------------|---------|----------|-----------|--------------------------------------------------------------|
+| `id`          | TEXT    | NOT NULL | auto-gen  | Primary key                                                  |
+| `user_id`     | TEXT    | NOT NULL | —         | FK → `users.id` (CASCADE DELETE)                            |
+| `name`        | TEXT    | NOT NULL | —         | Human-readable label for the key (max 100 characters)        |
+| `key_hash`    | TEXT    | NOT NULL | —         | SHA-256 hash of the full key value (unique); never exposed via the API |
+| `key_prefix`  | TEXT    | NOT NULL | —         | `bib_` + first 12 hex characters of the key; shown in the UI for identification |
+| `last_used_at`| DATETIME| NULL     | NULL      | Last time the key was used to authenticate; `NULL` if never used |
+| `created_at`  | DATETIME| NOT NULL | `now()`   | Creation time                                                |
+
+**Indexes:**
+- `UNIQUE(key_hash)` — fast lookup on each authenticated request
+- `idx_api_keys_user_id` — fast retrieval of all keys for a user
+
+**Notes:**
+- The raw key value is returned **once** at creation and is never stored. Only the SHA-256 hash is persisted.
+- API keys are prefixed with `bib_` followed by 32 lowercase hex characters (128 bits of entropy).
+- Deleting the owning user cascades to delete all their API keys.
+- See [Authentication guide — API Keys](authentication.md#api-keys) and the [API reference](api-reference.md#api-keys) for usage details.
 
 ---
 
@@ -277,7 +303,7 @@ Append-only record of create, update, and delete actions performed on entities.
 
 | Deleted entity | Also deletes                                      |
 |----------------|---------------------------------------------------|
-| `users`        | `libraries` (previously scoped per user; no longer applies after migration `20260313010000`) |
+| `users`        | `api_keys` for that user                          |
 | `libraries`    | `library_books` entries for that library          |
 | `books`        | `book_files`, `book_authors`, `book_series`, `library_books` entries for that book |
 | `authors`      | `book_authors` entries for that author            |
