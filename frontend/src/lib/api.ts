@@ -407,3 +407,10 @@ export async function createAPIKey(name: string): Promise<APIKeyCreateResponse> 
 export async function deleteAPIKey(id: string): Promise<void> {
   await request<void>("DELETE", `/api/api-keys/${id}`);
 }
+
+// Version
+
+export async function getVersion(): Promise<string> {
+  const data = await request<{ version: string }>("GET", "/api/version");
+  return data.version;
+}
