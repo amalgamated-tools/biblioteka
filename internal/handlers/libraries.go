@@ -11,6 +11,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -199,6 +200,11 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 
 	dto := toLibraryDTO(lib)
 
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionLibraryCreated, "library", lib.ID, map[string]any{"name": lib.Name}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+
 	if h.Enqueuer != nil && len(dto.Paths) > 0 {
 		ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 10*time.Second)
 		defer cancel()
@@ -295,6 +301,11 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionLibraryUpdated, "library", lib.ID, map[string]any{"name": lib.Name}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+
 	writeJSON(r.Context(), w, http.StatusOK, toLibraryDTO(lib))
 }
 
@@ -312,8 +323,19 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 // @Router      /libraries/{id} [delete]
 func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "deleting library", slog.String(otelkeys.LibraryID, id))
-	err := h.DB.DeleteLibrary(r.Context(), id)
+
+	lib, err := h.DB.GetLibrary(r.Context(), id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			writeError(r.Context(), w, http.StatusNotFound, "library not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to get library", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete library")
+		return
+	}
+
+	if err := h.DB.DeleteLibrary(r.Context(), id); err != nil {
 		if err == sql.ErrNoRows {
 			writeError(r.Context(), w, http.StatusNotFound, "library not found")
 			return
@@ -321,6 +343,11 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 		slog.ErrorContext(r.Context(), "failed to delete library", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete library")
 		return
+	}
+
+	userID := auth.UserIDFromContext(r.Context())
+	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionLibraryDeleted, "library", id, map[string]any{"name": lib.Name}); err != nil {
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
 	w.WriteHeader(http.StatusNoContent)
