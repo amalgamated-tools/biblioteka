@@ -86,6 +86,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		server.WithPort(*port),
 		server.WithDB(database),
 		server.WithWorker(w),
+		server.WithVersion(version),
 	)
 	if err != nil {
 		slog.ErrorContext(cancelCtx, "failed to create server", slog.Any(otelkeys.Error, err))

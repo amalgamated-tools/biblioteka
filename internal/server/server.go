@@ -58,6 +58,7 @@ type Server struct {
 
 	Address string
 	port    int
+	version string
 
 	DB  *db.DB
 	JWT *auth.JWTManager
@@ -323,6 +324,9 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)
 
+	// Version
+	s.mux.HandleFunc("/api/version", s.handleVersion)
+
 	// Swagger UI (public, with restrictive security headers)
 	swaggerHandler := swaggerSecurityHeaders(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
@@ -417,6 +421,10 @@ type healthResponse struct {
 	Status string `json:"status"`
 }
 
+type versionResponse struct {
+	Version string `json:"version"`
+}
+
 type oidcEnabledResponse struct {
 	Enabled bool `json:"enabled"`
 }
@@ -454,6 +462,42 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.ErrorContext(r.Context(), "failed to encode health response", slog.Any(otelkeys.Error, err))
+	}
+}
+
+// handleVersion godoc
+//
+//	@Summary		Get server version
+//	@Description	Returns the server version
+//	@Tags			System
+//	@Produce		json
+//	@Success		200	{object}	versionResponse
+//	@Router			/version [get]
+func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		resp := map[string]string{
+			"error": "method not allowed",
+		}
+
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			slog.ErrorContext(r.Context(), "failed to encode version method not allowed response", slog.Any(otelkeys.Error, err))
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	resp := versionResponse{
+		Version: s.version,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.ErrorContext(r.Context(), "failed to encode version response", slog.Any(otelkeys.Error, err))
 	}
 }
 

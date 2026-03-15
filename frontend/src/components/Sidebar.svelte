@@ -3,6 +3,7 @@
   import type { AppView } from "../stores/router.svelte";
   import { routerStore } from "../stores/router.svelte";
   import { libraryStore } from "../stores/libraries.svelte";
+  import { getVersion } from "../lib/api";
   import {
     LayoutDashboard,
     BookOpen,
@@ -22,6 +23,7 @@
   }
 
   let { currentView, onNavigate, open, onClose }: Props = $props();
+  let version = $state("");
 
   function handleViewNavigate(view: AppView) {
     onNavigate(view);
@@ -37,6 +39,12 @@
     if (authStore.user && !libraryStore.loaded) {
       libraryStore.load();
     }
+  });
+
+  $effect(() => {
+    getVersion().then((v) => {
+      version = v;
+    });
   });
 
   async function handleLogout() {
@@ -165,7 +173,7 @@
     </div>
   </nav>
   <div class="px-5 py-2 border-t border-ink-800/60">
-    <p class="text-[10px] text-ink-600 text-center tracking-wider uppercase">v0.0.1</p>
+    <p class="text-[10px] text-ink-600 text-center tracking-wider uppercase">{version ? `v${version}` : ""}</p>
   </div>
 
   <div class="px-3 py-4 border-t border-ink-800/60">
