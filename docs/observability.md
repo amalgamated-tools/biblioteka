@@ -46,11 +46,17 @@ The `version` field is always present and reflects the binary version at startup
 | `user_id` | string | ID of the authenticated user, if available |
 | `method` | string | HTTP method |
 | `url` | string | Request URL path and query string |
+| `remote_addr` | string | Client IP address and port |
+| `user_agent` | string | Client `User-Agent` header value |
 | `status_code` | integer | HTTP response status code |
 | `duration` | integer | Request duration in nanoseconds |
 | `error` | string | Error message, present on `ERROR`-level entries |
 
-> **Tip:** Set `LOG_LEVEL=debug` to see `Incoming request` and `Request completed` lines for every HTTP request, which include all fields above. At `info` level, these per-request access logs are suppressed, but other components (for example auth/rate-limiting and background job activity) may still emit `INFO`-level entries.
+> **Tip:** Set `LOG_LEVEL=debug` to enable per-request access logs.
+> - `Incoming request` is logged at the start of each request and includes `method`, `url`, `remote_addr`, `user_agent`, `request_id`, and `user_id`.
+> - `Request completed` is logged after the response is sent and includes `method`, `url`, `status_code`, `duration`, `request_id`, and `user_id`.
+>
+> At `info` level these per-request lines are suppressed, but other components (for example auth/rate-limiting and background job activity) may still emit `INFO`-level entries.
 
 ## Request ID Correlation
 
