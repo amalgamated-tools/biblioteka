@@ -133,7 +133,7 @@ Change the authenticated user's password. Not supported for OIDC-only accounts.
 
 ---
 
-### `POST /api/auth/logout` 🔒
+### `POST /api/auth/logout`
 
 Sign the current user out. Clears the session cookie.
 
@@ -346,14 +346,13 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `user_id`     | string? | ID of the user who performed the action; `null` for system actions |
 | `metadata`    | object? | Optional extra context (e.g. entity name at time of action); omitted when empty |
 
-**Responses:**
-
 | Status | Description |
 |--------|-------------|
 | `200 OK` | Paginated audit log entries |
 | `400 Bad Request` | Invalid `limit` or `offset` value |
 | `401 Unauthorized` | Missing or invalid JWT |
 | `403 Forbidden` | Caller is not an admin |
+| `405 Method Not Allowed` | Non-GET request |
 | `500 Internal Server Error` | Database error |
 
 ---
