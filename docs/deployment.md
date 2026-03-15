@@ -110,7 +110,7 @@ server {
 }
 ```
 
-> **Asynqmon access:** The background-job dashboard at `/asynqmon/` requires an `Authorization: Bearer <JWT>` header. Browsers don't send this automatically. If you need browser access in production, configure your reverse proxy to inject the header for trusted admin clients, or use a tool such as [ModHeader](https://modheader.com/) during debugging.
+> **Asynqmon access:** The background-job dashboard at `/asynqmon/` accepts authentication via the `Authorization: Bearer <JWT>` header **or** the `biblioteka_token` session cookie. Admin users who are already signed in through the web UI can navigate directly to `/asynqmon/` in their browser — the login cookie is sent automatically. API clients should supply the `Authorization` header.
 
 ## Backups
 
