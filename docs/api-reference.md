@@ -6,16 +6,16 @@ All endpoints are under the base path `/api`. JSON is used for all request and r
 
 ## Authentication
 
-Most endpoints require a JWT bearer token obtained from the [login](#post-apiauthlogin) or [signup](#post-apiauthsignup) endpoints.
+Most endpoints require a JWT bearer token obtained from the [login](#post-apiauthlogin) or [signup](#post-apiauthsignup) endpoints, **or** a long-lived [API key](#api-keys) (prefix `bib_`).
 
-The token can be supplied in two ways:
+The credential can be supplied in two ways:
 
-1. **Authorization header** (recommended for API clients):
+1. **Authorization header** (required for API keys; recommended for API clients):
    ```
-   Authorization: Bearer <token>
+   Authorization: Bearer <token-or-api-key>
    ```
 
-2. **Session cookie** (used automatically by the browser): On login and signup the server sets an `HttpOnly` session cookie named `biblioteka_token`. Subsequent browser requests to protected pages (including [`/asynqmon/`](#get-asynqmon)) use this cookie automatically — no manual header is required.
+2. **Session cookie** (used automatically by the browser): On login and signup the server sets an `HttpOnly` session cookie named `biblioteka_token`. Subsequent browser requests to protected pages (including [`/asynqmon/`](#get-asynqmon)) use this cookie automatically — no manual header is required. Cookies are **not** accepted for API keys.
 
 Endpoints that require authentication are marked with 🔒. Endpoints that additionally require the caller to be an admin are marked with 🔒 **Admin**.
 
@@ -208,6 +208,107 @@ Generate a short-lived, single-use nonce that authorises the OIDC account-linkin
 
 ---
 
+## API Keys
+
+API keys allow programmatic access to Biblioteka without a JWT. Keys begin with the prefix `bib_` and are supplied via the `Authorization` header. See the [authentication guide](authentication.md#api-keys) for full details.
+
+### `GET /api/api-keys` 🔒
+
+List all API keys belonging to the authenticated user. Results are ordered by creation time (newest first). The full key value is **never** returned by this endpoint — only the prefix and metadata.
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Returns an array of API key objects |
+| `401 Unauthorized` | Missing or invalid token |
+| `500 Internal Server Error` | Unexpected error |
+
+**Response body (`200`):**
+
+```json
+[
+  {
+    "id": "f47ac10b58cc4372a567b409e2087bc1",
+    "name": "CI Pipeline",
+    "key_prefix": "bib_a3f2c8e1d074",
+    "last_used_at": "2026-03-15T10:00:00Z",
+    "created_at": "2026-03-14T09:00:00Z"
+  }
+]
+```
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Opaque key ID |
+| `name` | string | Human-readable label |
+| `key_prefix` | string | `bib_` prefix + first 12 hex chars — for identification only |
+| `last_used_at` | string \| null | ISO 8601 timestamp of last use, or `null` if never used |
+| `created_at` | string | ISO 8601 creation timestamp |
+
+---
+
+### `POST /api/api-keys` 🔒
+
+Create a new API key for the authenticated user.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | ✓ | Descriptive label (max 100 characters) |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `201 Created` | Key created; full key value included in response |
+| `400 Bad Request` | Missing or invalid `name` |
+| `401 Unauthorized` | Missing or invalid token |
+| `500 Internal Server Error` | Key generation or database error |
+
+**Response body (`201`):**
+
+```json
+{
+  "id": "f47ac10b58cc4372a567b409e2087bc1",
+  "name": "CI Pipeline",
+  "key_prefix": "bib_a3f2c8e1d074",
+  "last_used_at": null,
+  "created_at": "2026-03-15T09:00:00Z",
+  "key": "bib_a3f2c8e1d074b651..."
+}
+```
+
+> **Important:** The `key` field is returned **only once** at creation. Store it securely — it cannot be retrieved later. The response also sets `Cache-Control: no-store` and `Pragma: no-cache` headers to prevent caching.
+
+---
+
+### `DELETE /api/api-keys/{id}` 🔒
+
+Permanently revoke an API key. The caller must own the key.
+
+**Path parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `id` | API key ID |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `204 No Content` | Key deleted successfully |
+| `400 Bad Request` | Invalid key ID format |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Key not found or does not belong to the caller |
+| `405 Method Not Allowed` | Invalid HTTP method |
+| `500 Internal Server Error` | Unexpected error |
+
+---
+
 ## Config
 
 ### `GET /api/config/status` 🔒
@@ -219,9 +320,16 @@ Returns application configuration status visible to the authenticated user.
 ```json
 {
   "oidc_configured": true,
+  "smtp_configured": true,
   "is_admin": false
 }
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `oidc_configured` | boolean | `true` when an OIDC provider is configured and active |
+| `smtp_configured` | boolean | `true` when an SMTP host and a valid `From` address are configured |
+| `is_admin` | boolean | `true` when the authenticated user has admin privileges |
 
 ---
 
@@ -264,6 +372,104 @@ Save OIDC provider settings. The server performs OIDC discovery on the `issuer_u
 ```
 
 > **Note:** If the `OIDC_ISSUER_URL` environment variable is set, it takes precedence over these stored settings at server startup — the server will use the environment variables instead of the saved configuration. When `OIDC_ISSUER_URL` is set at the time of this `PUT` request, the response message will warn about this and instruct you to remove the variable to use the stored settings.
+
+---
+
+### `GET /api/config/smtp` 🔒 **Admin**
+
+Return the current SMTP configuration. The `password` value is never returned; `password_set` indicates whether one is stored. When `env_override` is `true`, all SMTP settings are sourced from environment variables and any database-stored values are ignored.
+
+**Response body (`200`):**
+
+```json
+{
+  "host": "smtp.example.com",
+  "port": "587",
+  "username": "user@example.com",
+  "password_set": true,
+  "from": "biblioteka@example.com",
+  "tls": "starttls",
+  "env_override": false
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `host` | string | SMTP server hostname or IP address |
+| `port` | string | SMTP server port (defaults to `"587"` when not set) |
+| `username` | string | SMTP authentication username (empty for unauthenticated SMTP) |
+| `password_set` | boolean | `true` when a password is stored; the password itself is never returned |
+| `from` | string | Envelope `From` address used for outgoing mail |
+| `tls` | string | TLS mode: `"none"`, `"starttls"`, or `"tls"` |
+| `env_override` | boolean | `true` when `SMTP_HOST` is set as an environment variable and overrides database settings |
+
+---
+
+### `PUT /api/config/smtp` 🔒 **Admin**
+
+Save SMTP server settings. If `password` is omitted while `username` is supplied and matches the currently stored username, the existing password is preserved. Setting `username` to an empty string clears both the stored username and password.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `host` | string | ✓ | SMTP server hostname or IP address (no scheme, port, or path) |
+| `port` | string | | SMTP port; defaults to `"587"` when omitted |
+| `username` | string | | SMTP authentication username; leave empty for unauthenticated SMTP |
+| `password` | string | ✓* | SMTP authentication password; required when `username` is set and no password is currently stored |
+| `from` | string | ✓ | Envelope `From` address (must be a plain `user@host` address without a display name) |
+| `tls` | string | | `"none"`, `"starttls"` (default), or `"tls"` |
+
+\* Required when `username` is set and no password is currently stored; may be omitted to preserve an existing password for the same username.
+
+**Validation rules:**
+- `host` must be a valid hostname or IP address — no scheme (`smtp://`), embedded port, or path component.
+- Authenticated SMTP (`username` set) without TLS is only allowed for localhost/loopback addresses. Use `starttls` or `tls` for remote servers.
+- `from` must be a valid RFC 5321 email address without a display name (e.g. `"Alice <alice@example.com>"` is rejected).
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Settings saved; returns confirmation message |
+| `400 Bad Request` | Validation error (invalid host, port, from address, or TLS mode) |
+| `401 Unauthorized` | Not authenticated |
+| `403 Forbidden` | Caller is not an admin |
+| `500 Internal Server Error` | Database error |
+
+**Response body (`200`):**
+
+```json
+{ "message": "SMTP configuration saved successfully" }
+```
+
+> **Note:** If the `SMTP_HOST` environment variable is set, it takes precedence over database settings at server startup. When `SMTP_HOST` is set at the time of this `PUT` request, the response message will warn about this and instruct you to remove the variable to use the stored settings.
+
+---
+
+### `POST /api/config/smtp/test` 🔒 **Admin**
+
+Send a test email to the authenticated admin's registered email address using the current SMTP configuration. This is useful for verifying that SMTP settings are correct before relying on them.
+
+**Request body:** none
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Test email sent successfully |
+| `400 Bad Request` | SMTP not configured, incomplete environment configuration, or invalid SMTP settings |
+| `401 Unauthorized` | Not authenticated |
+| `403 Forbidden` | Caller is not an admin |
+| `502 Bad Gateway` | SMTP connection or delivery failure |
+
+**Response body (`200`):**
+
+```json
+{ "message": "Test email sent to alice@example.com" }
+```
+
+> **Note:** This endpoint is rate-limited at the same rate as the auth endpoints (5 requests/second, burst of 10). Exceeding the limit returns `429 Too Many Requests`.
 
 ---
 
@@ -379,6 +585,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `book_file.deleted`    | `book_file`   | File deleted via `DELETE /api/book-files/{id}` |
 | `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
+| `smtp.config_updated`  | `config`      | SMTP settings saved via `PUT /api/config/smtp` |
 
 | Status | Description |
 |--------|-------------|
@@ -413,7 +620,7 @@ Create a library.
 |---------------------|----------|----------|-------------|
 | `name`              | string   | ✓        | Display name (must be unique) |
 | `paths`             | string[] | ✓        | Absolute file-system paths; each must be an existing directory |
-| `organization_type` | string   |          | `"book_per_folder"` (default) |
+| `organization_type` | string   |          | Currently only `"book_per_folder"` is supported (default). Each immediate subdirectory of a library path is treated as one book. |
 | `monitored`         | boolean  |          | Whether to auto-import new files |
 
 **Responses:** `201 Created` with the new library object, or `409 Conflict` if the name is taken.
@@ -819,7 +1026,7 @@ Attach a file record to a book.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `file_type` | string | ✓ | Format identifier (e.g. `epub`, `pdf`) |
+| `file_type` | string | ✓ | Format identifier: `epub`, `mobi`, `pdf`, or `azw3` |
 | `file_name` | string | ✓ | File name on disk |
 | `file_path` | string | ✓ | Absolute path to the file |
 | `file_size` | integer | | File size in bytes |
@@ -834,6 +1041,194 @@ Attach a file record to a book.
 | `400` | Missing `file_type`, `file_name`, or `file_path` |
 | `404` | Book with the given `{id}` not found |
 | `500` | Unexpected server error |
+
+---
+
+## OPDS Credentials
+
+Each user can configure one set of OPDS credentials (a separate username and password) for use with OPDS reading apps. Credentials are stored as a bcrypt hash. See the [OPDS Catalog guide](opds.md) for the full feature overview.
+
+### `GET /api/opds/credentials` 🔒
+
+Return the current user's OPDS credential.
+
+**Response body (`200`):**
+
+```json
+{
+  "username": "alice",
+  "created_at": "2026-03-14T02:00:00Z",
+  "updated_at": "2026-03-14T02:00:00Z"
+}
+```
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Returns credential |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `404 Not Found` | No OPDS credential configured |
+
+---
+
+### `PUT /api/opds/credentials` 🔒
+
+Create or replace the current user's OPDS credential. If a credential already exists it is updated in-place; the username and hashed password are both replaced.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `username` | string | ✓ | OPDS username (case-insensitive, trimmed) |
+| `password` | string | ✓ | OPDS password (min 6 chars) |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Returns the updated credential |
+| `400 Bad Request` | Missing or invalid fields |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `409 Conflict` | Username already taken by another user |
+
+**Response body (`200`):** Same shape as the GET response above.
+
+---
+
+### `DELETE /api/opds/credentials` 🔒
+
+Delete the current user's OPDS credential. Any OPDS client using those credentials will subsequently receive `401 Unauthorized`.
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `204 No Content` | Credential deleted |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `404 Not Found` | No OPDS credential configured |
+
+---
+
+## OPDS Catalog
+
+The OPDS catalog is served under `/opds` (not under `/api`). It uses **HTTP Basic Authentication** with the OPDS-specific credentials set via [the credentials endpoints above](#opds-credentials)—not the account JWT.
+
+All responses are `application/atom+xml` Atom feeds compliant with [OPDS 1.2](https://specs.opds.io/opds-1.2). Even error responses are returned as Atom XML so that OPDS clients can parse them. See the [OPDS Catalog guide](opds.md) for setup instructions and client examples.
+
+### `GET /opds` — Root catalog
+
+Navigation feed listing all catalog sections (All Books, Recent Books, Authors, Series). Includes a link to the OpenSearch description document.
+
+**Auth:** HTTP Basic (`WWW-Authenticate: Basic realm="Biblioteka OPDS"`)
+
+**Response content-type:** `application/atom+xml;profile=opds-catalog;kind=navigation`
+
+---
+
+### `GET /opds/all` — All books
+
+Acquisition feed of all books, paginated (50 per page).
+
+**Query parameters:** `page` (integer, default `1`)
+
+**Response content-type:** `application/atom+xml;profile=opds-catalog;kind=acquisition`
+
+---
+
+### `GET /opds/recent` — Recent books
+
+Acquisition feed of books ordered by most recently added, paginated (50 per page).
+
+**Query parameters:** `page` (integer, default `1`)
+
+---
+
+### `GET /opds/authors` — Authors list
+
+Navigation feed of all authors, paginated (50 per page).
+
+**Query parameters:** `page` (integer, default `1`)
+
+**Response content-type:** `application/atom+xml;profile=opds-catalog;kind=navigation`
+
+---
+
+### `GET /opds/authors/{id}` — Books by author
+
+Acquisition feed of books by the specified author, paginated (50 per page).
+
+**Path parameters:** `{id}` — author resource ID
+
+**Query parameters:** `page` (integer, default `1`)
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Acquisition feed |
+| `404 Not Found` | Author not found |
+
+---
+
+### `GET /opds/series` — Series list
+
+Navigation feed of all series, paginated (50 per page).
+
+**Query parameters:** `page` (integer, default `1`)
+
+---
+
+### `GET /opds/series/{id}` — Books in series
+
+Acquisition feed of books in the specified series, paginated (50 per page).
+
+**Path parameters:** `{id}` — series resource ID
+
+**Query parameters:** `page` (integer, default `1`)
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Acquisition feed |
+| `404 Not Found` | Series not found |
+
+---
+
+### `GET /opds/search` — OpenSearch description
+
+When called **without** the `q` parameter, returns an [OpenSearch description document](https://opensearch.org) that OPDS clients use to discover the search template.
+
+**Response content-type:** `application/opensearchdescription+xml`
+
+---
+
+### `GET /opds/search?q={query}` — Search results
+
+Acquisition feed of books matching the query, paginated (50 per page).
+
+**Query parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `q` | Search query (title, author, description) |
+| `page` | Page number (default `1`) |
+
+---
+
+### `GET /opds/download/{file-id}` — Download book file
+
+Streams a book file to the client with the correct `Content-Type` and `Content-Disposition: attachment` header.
+
+**Path parameters:** `{file-id}` — book file resource ID (from the `rel="http://opds-spec.org/acquisition"` link in an acquisition feed entry)
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | File stream |
+| `404 Not Found` | File not found |
 
 ---
 

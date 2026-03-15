@@ -1,0 +1,350 @@
+# Administration Guide
+
+This guide covers day-to-day administration of a Biblioteka instance: managing users, reviewing audit logs, monitoring background jobs, and maintaining libraries.
+
+---
+
+## First-Time Setup
+
+The **first account** to sign up on a fresh instance is automatically granted admin privileges. There is no separate admin creation step — just navigate to your Biblioteka instance and register.
+
+After signing up, complete the initial configuration:
+
+1. **Set a strong JWT secret** — ensure `JWT_SECRET` in your environment is a long random value (e.g. `openssl rand -hex 32`). The default value is insecure.
+2. **Enable secure cookies** — set `SECURE_COOKIES=true` if your instance is behind HTTPS (recommended for any non-local deployment).
+3. **(Optional) Configure OIDC** — see the [Authentication guide](authentication.md) to set up SSO.
+4. **Create libraries** — add at least one library with filesystem paths pointing to your book collection. Biblioteka will scan those paths for supported file types (`.epub`, `.mobi`, `.pdf`, `.azw3`).
+
+---
+
+## User Management
+
+Admins can manage all user accounts via **Settings → Users** in the web UI or directly via the API.
+
+### List users
+
+```bash
+curl http://localhost:8080/api/admin/users \
+  -H "Authorization: Bearer <admin-jwt>"
+```
+
+**Response:**
+
+```json
+[
+  {
+    "id": "<id>",
+    "name": "Alice",
+    "email": "alice@example.com",
+    "is_admin": true,
+    "oidc_linked": false,
+    "created_at": "2026-03-14T02:00:00Z"
+  },
+  {
+    "id": "<id>",
+    "name": "Bob",
+    "email": "bob@example.com",
+    "is_admin": false,
+    "oidc_linked": true,
+    "created_at": "2026-03-15T10:00:00Z"
+  }
+]
+```
+
+### Grant or revoke admin access
+
+```bash
+# Grant admin
+curl -X PUT http://localhost:8080/api/admin/users/<user-id> \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"is_admin": true}'
+
+# Revoke admin
+curl -X PUT http://localhost:8080/api/admin/users/<user-id> \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"is_admin": false}'
+```
+
+**Notes:**
+- There is no user deletion API. Remove accounts directly in the database if needed.
+- An admin cannot revoke their own admin status via the API. Use a second admin account or edit the database directly.
+
+### The `oidc_linked` field
+
+`oidc_linked: true` means the account is linked to an OIDC/SSO provider. The user can log in via their SSO provider without a password. They may also retain a local password if the account was created locally before linking.
+
+---
+
+## Audit Logs
+
+Biblioteka records an append-only audit trail of all significant actions. Use this to track who changed what and when.
+
+### Viewing audit logs
+
+```bash
+# Most recent 50 entries
+curl http://localhost:8080/api/audit-logs \
+  -H "Authorization: Bearer <admin-jwt>"
+
+# Paginate: skip the first 50, return the next 50
+curl "http://localhost:8080/api/audit-logs?limit=50&offset=50" \
+  -H "Authorization: Bearer <admin-jwt>"
+```
+
+**Response:**
+
+```json
+{
+  "entries": [
+    {
+      "id": "<id>",
+      "user_id": "<user-id>",
+      "action": "book.created",
+      "entity_type": "book",
+      "entity_id": "<book-id>",
+      "metadata": { "title": "Dune" },
+      "created_at": "2026-03-14T02:00:00Z"
+    }
+  ],
+  "total": 142,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+**Pagination:**
+- `limit` defaults to `50`, maximum `200`.
+- `offset` is the number of entries to skip.
+- Entries are returned newest-first.
+
+### Action reference
+
+| `action`               | `entity_type` | `metadata` fields                                | Trigger                                  |
+|------------------------|---------------|--------------------------------------------------|------------------------------------------|
+| `user.signed_up`       | `user`        | `email`, `name`                                  | New account via `POST /api/auth/signup`  |
+| `user.admin_updated`   | `user`        | `is_admin`                                       | Admin toggle via `PUT /api/admin/users/{id}` |
+| `library.created`      | `library`     | `name`                                           | `POST /api/libraries`                   |
+| `library.updated`      | `library`     | `name`                                           | `PUT /api/libraries/{id}`               |
+| `library.deleted`      | `library`     | `name`                                           | `DELETE /api/libraries/{id}`            |
+| `book.created`         | `book`        | `title`                                          | `POST /api/books`                       |
+| `book.updated`         | `book`        | `title`                                          | `PUT /api/books/{id}`                   |
+| `book.deleted`         | `book`        | `title`                                          | `DELETE /api/books/{id}`                |
+| `author.created`       | `author`      | `name`                                           | `POST /api/authors`                     |
+| `author.updated`       | `author`      | `name`                                           | `PUT /api/authors/{id}`                 |
+| `author.deleted`       | `author`      | `name`                                           | `DELETE /api/authors/{id}`              |
+| `series.created`       | `series`      | `name`                                           | `POST /api/series`                      |
+| `series.updated`       | `series`      | `name`                                           | `PUT /api/series/{id}`                  |
+| `series.deleted`       | `series`      | `name`                                           | `DELETE /api/series/{id}`               |
+| `book_file.created`    | `book_file`   | `book_id`, `file_name`, `file_type`              | `POST /api/books/{id}/files`            |
+| `book_file.deleted`    | `book_file`   | `book_id`, `file_name`, `file_type`              | `DELETE /api/book-files/{id}`           |
+
+**Notes:**
+- `user_id` in an audit log entry is the ID of the user who performed the action. It is `null` for system-initiated actions (e.g. background job operations).
+- Audit log entries are never modified or deleted. They represent a historical record.
+- Book files created automatically by the background scanner do **not** currently produce an `audit_log` entry — only files created via the API are audited.
+
+---
+
+## Background Job Monitoring
+
+Biblioteka uses Redis-backed background jobs to scan library paths and import book files. When Redis is configured, the [Asynqmon](https://github.com/hibiken/asynqmon) dashboard is available at `/asynqmon/`.
+
+### Accessing the dashboard
+
+Navigate to `http://<your-host>/asynqmon/` in a browser while signed in as an admin. The session cookie is sent automatically.
+
+If accessing via an API client or a tool without cookie support:
+
+```bash
+curl http://localhost:8080/asynqmon/ \
+  -H "Authorization: Bearer <admin-jwt>"
+```
+
+### What to look for
+
+| Queue view | Meaning |
+|------------|---------|
+| **Pending** | Jobs waiting to be picked up by a worker |
+| **Active** | Jobs currently being processed (up to 4 concurrently by default) |
+| **Completed** | Successfully finished jobs (retained briefly for inspection) |
+| **Failed** | Jobs that exhausted all retries (default: 5 attempts) |
+| **Scheduled** | Jobs queued to run at a future time |
+
+### Retrying failed jobs
+
+From the Asynqmon UI, select a failed job and click **Retry**. The job re-enters the pending queue and will be processed shortly.
+
+To retry all failed jobs in the default queue via the Asynqmon API:
+
+```bash
+curl -X POST "http://localhost:8080/asynqmon/api/queues/default/tasks:batch-run" \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"task_ids":["all"]}'
+```
+
+### Job pipeline
+
+A library scan cascades through four job types:
+
+```
+scan:libraries (scheduled every 24h)
+ └─▶ scan:library  (one per monitored library)
+      └─▶ scan:path  (one per library path)
+           └─▶ process:file  (one per supported file found)
+```
+
+See [Background Jobs](background-jobs.md) for full details on each job type, payloads, and how to add new jobs.
+
+### Forcing a manual scan
+
+Creating a library via the API immediately enqueues a `scan:library` job. Updating an existing library does **not** trigger an automatic re-scan — to force a re-scan, delete and recreate the library, or wait for the next scheduled 24-hour scan.
+
+```bash
+# Create a library — triggers an immediate scan
+curl -X POST http://localhost:8080/api/libraries \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Fiction",
+    "paths": ["/mnt/books/fiction"],
+    "monitored": true
+  }'
+```
+
+---
+
+## Managing Libraries
+
+Libraries are global collections of filesystem paths. Any authenticated user can view libraries; only the background worker writes to them.
+
+### Create a library
+
+```bash
+curl -X POST http://localhost:8080/api/libraries \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Science Fiction",
+    "paths": ["/mnt/books/scifi"],
+    "organization_type": "book_per_folder",
+    "monitored": true
+  }'
+```
+
+| Field               | Required | Default             | Description                                           |
+|---------------------|----------|---------------------|-------------------------------------------------------|
+| `name`              | ✓        | —                   | Unique library name                                   |
+| `paths`             | —        | `[]`                | Filesystem paths to scan                              |
+| `organization_type` | —        | `"book_per_folder"` | How the library is organised (see note below)         |
+| `monitored`         | —        | `false`             | Include in scheduled 24-hour scans                    |
+
+> **`organization_type`:** The only supported value is `"book_per_folder"`. Each immediate subdirectory under a library path is treated as a single book's folder.
+
+### Editing and deleting libraries
+
+Use `PUT /api/libraries/{id}` to update a library and `DELETE /api/libraries/{id}` to remove it. Deleting a library removes only the library record and its book associations — the underlying book, author, series, and book file records are not deleted.
+
+---
+
+## OIDC Configuration (Runtime)
+
+Admins can configure OIDC at runtime without a server restart via **Settings → SSO** or the API:
+
+```bash
+# Get current OIDC config
+curl http://localhost:8080/api/config/oidc \
+  -H "Authorization: Bearer <admin-jwt>"
+
+# Set OIDC config
+curl -X PUT http://localhost:8080/api/config/oidc \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "issuer_url":    "https://sso.example.com/realms/my-realm",
+    "client_id":     "biblioteka",
+    "client_secret": "<secret>",
+    "redirect_uri":  "https://books.example.com/api/auth/oidc/callback"
+  }'
+```
+
+The server immediately tests the issuer URL by performing OIDC discovery before saving. If discovery fails, the config is rejected with a `400` error.
+
+**Precedence:** Environment variables (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI`) always override database-stored settings. If environment variables are set, the runtime configuration UI will appear read-only.
+
+---
+
+## SMTP Configuration (Runtime)
+
+Admins can configure SMTP at runtime without a server restart via **Settings → SMTP** or the API:
+
+```bash
+# Get current SMTP config (password is never returned)
+curl http://localhost:8080/api/config/smtp \
+  -H "Authorization: Bearer <admin-jwt>"
+
+# Set SMTP config
+curl -X PUT http://localhost:8080/api/config/smtp \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "host":     "smtp.example.com",
+    "port":     "587",
+    "username": "mailer@example.com",
+    "password": "<password>",
+    "from":     "biblioteka@example.com",
+    "tls":      "starttls"
+  }'
+
+# Send a test email to verify the configuration
+curl -X POST http://localhost:8080/api/config/smtp/test \
+  -H "Authorization: Bearer <admin-jwt>"
+```
+
+The test endpoint sends a short verification email to the `from` address. It returns `200 OK` with a `{"message":"…"}` body on success, or a `4xx`/`5xx` error with `{"error":"…"}` on failure.
+
+**TLS modes:** `none` (plaintext), `starttls` (STARTTLS upgrade on port 587, default), or `tls` (implicit TLS on port 465).
+
+**Precedence:** When the `SMTP_HOST` environment variable is set, all SMTP settings are read exclusively from environment variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS`) and the database values are ignored. The runtime configuration UI will appear read-only. When `SMTP_HOST` is unset (the default), the values stored in the database via the API or Settings UI are used.
+
+See [API reference — SMTP config endpoints](api-reference.md#get-apiconfigsmtp--admin) for full request/response shapes.
+
+---
+
+## Health Check
+
+Use the health endpoint to verify the server is running:
+
+```bash
+curl -sf http://localhost:8080/api/health
+# → {"status":"ok"}
+```
+
+This endpoint requires no authentication and is suitable for liveness/readiness probes.
+
+---
+
+## Log-Based Troubleshooting
+
+Biblioteka writes structured JSON logs to stdout. Increase verbosity by setting `LOG_LEVEL=debug`:
+
+```bash
+LOG_LEVEL=debug LOG_FORMAT=text docker compose up
+```
+
+Useful patterns:
+
+```bash
+# Watch all ERROR-level entries
+docker compose logs -f biblioteka | jq 'select(.level == "ERROR")'
+
+# Trace a specific request by its ID
+docker compose logs biblioteka | jq 'select(.request_id == "<id>")'
+
+# See all background job activity
+docker compose logs biblioteka | jq 'select(.msg | test("job|scan|process|file"))'
+```
+
+See the [Observability guide](observability.md) for the full log field reference.
