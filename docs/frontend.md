@@ -112,6 +112,39 @@ import { routerStore } from "../stores/router.svelte";
 routerStore.navigate("settings/account");
 ```
 
+### Sub-path routing
+
+Views that need their own internal navigation use `routerStore.subPath`. The convention is: `routerStore.hash` holds the normalized fragment without any leading `#/`, it is split on `/`, the first segment becomes the view (`currentView`), and the remaining segments (joined with `/`) form `subPath`, which each view component interprets as it needs.
+
+| View | Sub-path pattern | Meaning |
+|------|------------------|---------|
+| `libraries` | *(empty)* | List / empty state |
+| `libraries` | `new` | Create-library form |
+| `libraries` | `{id}` | View a library's books |
+| `libraries` | `edit/{id}` | Edit-library form |
+| `settings` | `account` | Account settings tab |
+| `settings` | `oidc` | OIDC / SSO settings tab |
+| `settings` | `users` | User management tab (admin) |
+| `settings` | `preferences` | Appearance preferences tab |
+
+**Example — navigating to a library's book list:**
+
+```ts
+// After creating a library, navigate to its detail view
+routerStore.navigate(`libraries/${lib.id}`);
+
+// Inside Libraries.svelte, derive the mode from subPath
+let mode = $derived.by(() => {
+  const sp = routerStore.subPath;
+  if (sp === "new")              return "create";
+  if (sp.startsWith("edit/"))   return "edit";
+  if (sp !== "")                return "view";   // {id} → show books
+  return "empty";
+});
+```
+
+When a view component renders, it reads `routerStore.subPath` as a `$derived` value so it re-renders reactively whenever navigation occurs — no lifecycle hook is needed for the navigation itself.
+
 ## API client
 
 All HTTP calls go through `frontend/src/lib/api.ts`. This module:

@@ -51,7 +51,7 @@ Stores registered user accounts.
 
 ### `settings`
 
-Key-value store for runtime configuration. Currently used for OIDC provider settings.
+Key-value store for runtime configuration. Currently used for OIDC provider settings and SMTP mail configuration.
 
 | Column       | Type    | Nullable | Default  | Description             |
 |--------------|---------|----------|----------|-------------------------|
@@ -61,6 +61,8 @@ Key-value store for runtime configuration. Currently used for OIDC provider sett
 
 **Known keys:**
 
+*OIDC settings* (see [Authentication guide](authentication.md)):
+
 | Key                    | Description                              |
 |------------------------|------------------------------------------|
 | `oidc_issuer_url`      | OIDC provider issuer URL                 |
@@ -68,8 +70,20 @@ Key-value store for runtime configuration. Currently used for OIDC provider sett
 | `oidc_client_secret`   | OIDC application client secret           |
 | `oidc_redirect_uri`    | OAuth2 redirect URI for the callback     |
 
+*SMTP settings* (see [API reference — `GET /api/config/smtp`](api-reference.md#get-apiconfigsmtp--admin)):
+
+| Key               | Description                                                      |
+|-------------------|------------------------------------------------------------------|
+| `smtp_host`       | SMTP server hostname or IP address                               |
+| `smtp_port`       | SMTP server port (defaults to `587` when absent)                 |
+| `smtp_username`   | SMTP authentication username; empty for unauthenticated relay    |
+| `smtp_password`   | SMTP authentication password (stored as plaintext; never returned by the API) |
+| `smtp_from`       | Envelope `From` address for outgoing mail                        |
+| `smtp_tls`        | TLS mode: `none`, `starttls` (default), or `tls`                 |
+
 **Notes:**
-- Environment variables (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, etc.) take precedence over values stored in this table.
+- Environment variables (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `SMTP_HOST`, etc.) take precedence over values stored in this table.
+- When `SMTP_HOST` is set as an environment variable, **all** SMTP settings are read from environment variables and any database-stored SMTP values are ignored.
 - This table is intentionally minimal — it is not a general-purpose configuration store.
 
 ---
