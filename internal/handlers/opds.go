@@ -137,7 +137,7 @@ type opdsContent struct {
 func (h *OPDSHandler) HandleOPDS(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
-		writeOPDSError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		writeOPDSError(r, w, http.StatusMethodNotAllowed, opdsNavContentType, "urn:biblioteka:opds:error", "Method not allowed")
 		return
 	}
 
