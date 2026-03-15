@@ -83,7 +83,11 @@ func SendBoot(ctx context.Context, version string) {
 		Timestamp:   time.Now().UTC().Format(time.RFC3339),
 	}
 
-	body, _ := json.Marshal(payload)
+	body, err := json.Marshal(payload)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to marshal telemetry payload", slog.Any(otelkeys.Error, err))
+		return
+	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(body))
 	if err != nil {
