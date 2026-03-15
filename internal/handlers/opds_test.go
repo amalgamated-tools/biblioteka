@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
@@ -25,7 +26,7 @@ func setupOPDSHandler(t *testing.T) (*OPDSHandler, string, string) {
 	if err != nil {
 		t.Fatalf("bcrypt: %v", err)
 	}
-	user, err := d.CreateUser("Test User", "user@example.com", string(hash))
+	user, err := d.CreateUser(context.Background(), "Test User", "user@example.com", string(hash))
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -113,7 +114,7 @@ func TestOPDSMiddleware_BasicAuthUnknownUser(t *testing.T) {
 func TestOPDSMiddleware_JWTBearer(t *testing.T) {
 	h, userID, _ := setupOPDSHandler(t)
 
-	token, err := h.JWT.CreateToken(userID)
+	token, err := h.JWT.CreateToken(context.Background(), userID)
 	if err != nil {
 		t.Fatalf("create token: %v", err)
 	}
@@ -215,7 +216,7 @@ func TestHandleOPDSBooks_WithBooks(t *testing.T) {
 	publisher := "Test Publisher"
 	lang := "en"
 	isbn13 := "9780000000001"
-	_, err := h.DB.CreateBook("Book One", &desc, nil, nil, &isbn13, nil, nil, nil, nil, &publisher, &lang, nil, nil)
+	_, err := h.DB.CreateBook(context.Background(), "Book One", &desc, nil, nil, &isbn13, nil, nil, nil, nil, &publisher, &lang, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -271,7 +272,7 @@ func TestHandleOPDSAuthors_Empty(t *testing.T) {
 func TestHandleOPDSAuthors_WithAuthor(t *testing.T) {
 	h, userID, _ := setupOPDSHandler(t)
 
-	author, err := h.DB.CreateAuthor("Jane Doe", nil, nil, nil, nil)
+	author, err := h.DB.CreateAuthor(context.Background(), "Jane Doe", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author: %v", err)
 	}
@@ -313,15 +314,15 @@ func TestHandleOPDSAuthorBooks_NotFound(t *testing.T) {
 func TestHandleOPDSAuthorBooks_WithBooks(t *testing.T) {
 	h, userID, _ := setupOPDSHandler(t)
 
-	author, err := h.DB.CreateAuthor("Author Name", nil, nil, nil, nil)
+	author, err := h.DB.CreateAuthor(context.Background(), "Author Name", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author: %v", err)
 	}
-	book, err := h.DB.CreateBook("My Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(context.Background(), "My Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	if err := h.DB.SetBookAuthors(book.ID, []string{author.ID}); err != nil {
+	if err := h.DB.SetBookAuthors(context.Background(), book.ID, []string{author.ID}); err != nil {
 		t.Fatalf("set book authors: %v", err)
 	}
 
@@ -366,7 +367,7 @@ func TestHandleOPDSSeriesList_Empty(t *testing.T) {
 func TestHandleOPDSSeriesList_WithSeries(t *testing.T) {
 	h, userID, _ := setupOPDSHandler(t)
 
-	s, err := h.DB.CreateSeries("The Series", nil, nil, nil)
+	s, err := h.DB.CreateSeries(context.Background(), "The Series", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series: %v", err)
 	}
@@ -408,16 +409,16 @@ func TestHandleOPDSSeriesBooks_NotFound(t *testing.T) {
 func TestHandleOPDSSeriesBooks_WithBooks(t *testing.T) {
 	h, userID, _ := setupOPDSHandler(t)
 
-	series, err := h.DB.CreateSeries("My Series", nil, nil, nil)
+	series, err := h.DB.CreateSeries(context.Background(), "My Series", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series: %v", err)
 	}
-	book, err := h.DB.CreateBook("Series Book 1", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(context.Background(), "Series Book 1", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 	pos := 1.0
-	if err := h.DB.SetBookSeries(book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}}); err != nil {
+	if err := h.DB.SetBookSeries(context.Background(), book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}}); err != nil {
 		t.Fatalf("set book series: %v", err)
 	}
 
@@ -473,11 +474,11 @@ func TestHandleOPDSSearch_NoResults(t *testing.T) {
 func TestHandleOPDSSearch_MatchesByTitle(t *testing.T) {
 	h, userID, _ := setupOPDSHandler(t)
 
-	_, err := h.DB.CreateBook("The Hobbit", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := h.DB.CreateBook(context.Background(), "The Hobbit", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	_, err = h.DB.CreateBook("Lord of the Rings", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = h.DB.CreateBook(context.Background(), "Lord of the Rings", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -519,11 +520,11 @@ func TestHandleOPDSDownload_NotFound(t *testing.T) {
 func TestHandleOPDSDownload_WrongBook(t *testing.T) {
 	h, userID, _ := setupOPDSHandler(t)
 
-	book, err := h.DB.CreateBook("A Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(context.Background(), "A Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	bf, err := h.DB.CreateBookFile(book.ID, "epub", "test.epub", 100, nil, "/tmp/test.epub")
+	bf, err := h.DB.CreateBookFile(context.Background(), book.ID, "epub", "test.epub", 100, nil, "/tmp/test.epub")
 	if err != nil {
 		t.Fatalf("create book file: %v", err)
 	}
