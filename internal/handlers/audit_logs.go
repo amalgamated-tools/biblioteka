@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -16,13 +17,13 @@ type AuditLogHandler struct {
 }
 
 type auditLogDTO struct {
-	ID         string       `json:"id"`
-	UserID     *string      `json:"user_id"`
-	Action     string       `json:"action"`
-	EntityType string       `json:"entity_type"`
-	EntityID   string       `json:"entity_id"`
-	Metadata   *string      `json:"metadata"`
-	CreatedAt  db.Timestamp `json:"created_at"`
+	ID         string          `json:"id"`
+	UserID     *string         `json:"user_id"`
+	Action     string          `json:"action"`
+	EntityType string          `json:"entity_type"`
+	EntityID   string          `json:"entity_id"`
+	Metadata   json.RawMessage `json:"metadata,omitempty"`
+	CreatedAt  db.Timestamp    `json:"created_at"`
 }
 
 type auditLogListDTO struct {
@@ -33,13 +34,18 @@ type auditLogListDTO struct {
 }
 
 func toAuditLogDTO(e *db.AuditLog) auditLogDTO {
+	var metadata json.RawMessage
+	if e.Metadata != nil && *e.Metadata != "" {
+		metadata = json.RawMessage(*e.Metadata)
+	}
+
 	return auditLogDTO{
 		ID:         e.ID,
 		UserID:     e.UserID,
 		Action:     e.Action,
 		EntityType: e.EntityType,
 		EntityID:   e.EntityID,
-		Metadata:   e.Metadata,
+		Metadata:   metadata,
 		CreatedAt:  e.CreatedAt,
 	}
 }
