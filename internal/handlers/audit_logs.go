@@ -119,8 +119,8 @@ func (h *AuditLogHandler) HandleAuditLogs(w http.ResponseWriter, r *http.Request
 	}
 
 	slog.DebugContext(r.Context(), "listing audit logs",
-		slog.Int("limit", limit),
-		slog.Int("offset", offset),
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
 	)
 
 	entries, total, err := h.DB.ListAuditLogs(r.Context(), limit, offset)

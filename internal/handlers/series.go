@@ -145,11 +145,14 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "series created", slog.String("series_id", s.ID), slog.String("name", s.Name))
+	slog.DebugContext(r.Context(), "series created",
+		slog.String(otelkeys.SeriesID, s.ID),
+		slog.String(otelkeys.Name, s.Name),
+	)
 
 	userID := auth.UserIDFromContext(r.Context())
 	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSeriesCreated, "series", s.ID, map[string]any{"name": s.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any("error", err))
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
 	writeJSON(r.Context(), w, http.StatusCreated, toSeriesDTO(s))
@@ -234,7 +237,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 
 	userID := auth.UserIDFromContext(r.Context())
 	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSeriesUpdated, "series", s.ID, map[string]any{"name": s.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any("error", err))
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
 	writeJSON(r.Context(), w, http.StatusOK, toSeriesDTO(s))
@@ -253,7 +256,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 // @Failure     500 {object} errorResponse
 // @Router      /series/{id} [delete]
 func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "deleting series", slog.String("series_id", id))
+	slog.DebugContext(r.Context(), "deleting series", slog.String(otelkeys.SeriesID, id))
 
 	s, err := h.DB.GetSeries(r.Context(), id)
 	if err != nil {
@@ -278,7 +281,7 @@ func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id 
 
 	userID := auth.UserIDFromContext(r.Context())
 	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSeriesDeleted, "series", id, map[string]any{"name": s.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any("error", err))
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
 	w.WriteHeader(http.StatusNoContent)

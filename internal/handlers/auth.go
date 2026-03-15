@@ -164,7 +164,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	setAuthCookie(w, token, h.SecureCookies)
 
 	if err := h.DB.CreateAuditLog(r.Context(), user.ID, db.AuditActionUserSignedUp, "user", user.ID, map[string]any{"email": user.Email, "name": user.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any("error", err))
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
 	writeJSON(r.Context(), w, http.StatusCreated, authResponse{

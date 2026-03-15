@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // Audit action constants for all tracked operations.
@@ -53,9 +55,9 @@ func scanAuditLog(row interface{ Scan(...any) error }) (*AuditLog, error) {
 // system-initiated actions.
 func (d *DB) CreateAuditLog(ctx context.Context, userID, action, entityType, entityID string, metadata map[string]any) error {
 	slog.DebugContext(ctx, "db: creating audit log",
-		slog.String("action", action),
-		slog.String("entity_type", entityType),
-		slog.String("entity_id", entityID),
+		slog.String(otelkeys.Action, action),
+		slog.String(otelkeys.EntityType, entityType),
+		slog.String(otelkeys.EntityID, entityID),
 	)
 
 	var metadataJSON *string
@@ -83,7 +85,10 @@ func (d *DB) CreateAuditLog(ctx context.Context, userID, action, entityType, ent
 // ListAuditLogs returns audit log entries ordered by creation time (newest first),
 // with the total count of all entries. limit and offset control pagination.
 func (d *DB) ListAuditLogs(ctx context.Context, limit, offset int) ([]AuditLog, int, error) {
-	slog.DebugContext(ctx, "db: listing audit logs", slog.Int("limit", limit), slog.Int("offset", offset))
+	slog.DebugContext(ctx, "db: listing audit logs",
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
 
 	var total int
 	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_logs`).Scan(&total); err != nil {

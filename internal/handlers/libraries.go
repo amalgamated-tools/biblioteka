@@ -202,7 +202,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 
 	userID := auth.UserIDFromContext(r.Context())
 	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionLibraryCreated, "library", lib.ID, map[string]any{"name": lib.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any("error", err))
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
 	if h.Enqueuer != nil && len(dto.Paths) > 0 {
@@ -303,7 +303,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 
 	userID := auth.UserIDFromContext(r.Context())
 	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionLibraryUpdated, "library", lib.ID, map[string]any{"name": lib.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any("error", err))
+		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
 	}
 
 	writeJSON(r.Context(), w, http.StatusOK, toLibraryDTO(lib))
