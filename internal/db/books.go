@@ -166,17 +166,28 @@ func (d *DB) ListBooksBySeries(ctx context.Context, seriesID string) ([]Book, er
 	return books, rows.Err()
 }
 
+// escapeLike escapes SQL LIKE metacharacters in the given string so that
+// they are treated as literals when used with an ESCAPE '\' clause.
+func escapeLike(s string) string {
+	// First escape the escape character itself, then '%' and '_'.
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
+}
+
 // SearchBooks returns all books whose title, description, publisher, or author name
 // contains the given query string (case-insensitive).
 func (d *DB) SearchBooks(ctx context.Context, query string) ([]Book, error) {
 	slog.DebugContext(ctx, "db: searching books", slog.String(otelkeys.Query, query))
-	like := "%" + strings.ToLower(query) + "%"
+	escaped := escapeLike(strings.ToLower(query))
+	like := "%" + escaped + "%"
 	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
 	if d.Dialect == DialectPostgres {
 		orderBy = "ORDER BY b.title ASC, b.id ASC"
 	}
 	rows, err := d.QueryContext(ctx,
-		`SELECT DISTINCT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13, b.goodreads_id, b.hardcover_id, b.google_books_id, b.publication_date, b.publisher, b.language, b.num_pages, b.cover_image_url, b.created_at, b.updated_at FROM books b LEFT JOIN book_authors ba ON ba.book_id = b.id LEFT JOIN authors a ON a.id = ba.author_id WHERE LOWER(b.title) LIKE $1 OR LOWER(b.description) LIKE $1 OR LOWER(b.publisher) LIKE $1 OR LOWER(a.name) LIKE $1 `+orderBy,
+		`SELECT DISTINCT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13, b.goodreads_id, b.hardcover_id, b.google_books_id, b.publication_date, b.publisher, b.language, b.num_pages, b.cover_image_url, b.created_at, b.updated_at FROM books b LEFT JOIN book_authors ba ON ba.book_id = b.id LEFT JOIN authors a ON a.id = ba.author_id WHERE LOWER(b.title) LIKE $1 ESCAPE '\' OR LOWER(b.description) LIKE $1 ESCAPE '\' OR LOWER(b.publisher) LIKE $1 ESCAPE '\' OR LOWER(a.name) LIKE $1 ESCAPE '\' `+orderBy,
 		like,
 	)
 	if err != nil {

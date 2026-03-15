@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"log/slog"
 	"mime"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -33,6 +36,59 @@ const (
 	opdsRelImage        = "http://opds-spec.org/image"
 	opdsRelThumbnail    = "http://opds-spec.org/image/thumbnail"
 )
+
+// Basic Auth rate limiting for OPDS middleware.
+//
+// This is a simple per-client-IP sliding window limiter used to reduce
+// brute-force attempts against the OPDS Basic Auth endpoint. JWT-based
+// authentication bypasses this limiter.
+const (
+	opdsAuthMaxAttempts = 10
+	opdsAuthWindow      = time.Minute
+)
+
+type opdsAuthRateState struct {
+	count       int
+	windowStart time.Time
+}
+
+var (
+	opdsAuthRateMu    sync.Mutex
+	opdsAuthRateStateMap = make(map[string]*opdsAuthRateState)
+)
+
+func opdsAuthClientKey(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
+}
+
+// allowOPDSBasicAuth applies a simple per-IP rate limit for Basic Auth attempts.
+func allowOPDSBasicAuth(r *http.Request) bool {
+	key := opdsAuthClientKey(r)
+	now := time.Now()
+
+	opdsAuthRateMu.Lock()
+	defer opdsAuthRateMu.Unlock()
+
+	state, ok := opdsAuthRateStateMap[key]
+	if !ok || now.Sub(state.windowStart) > opdsAuthWindow {
+		opdsAuthRateStateMap[key] = &opdsAuthRateState{
+			count:       1,
+			windowStart: now,
+		}
+		return true
+	}
+
+	if state.count >= opdsAuthMaxAttempts {
+		return false
+	}
+
+	state.count++
+	return true
+}
 
 // opdsFeed represents an OPDS/Atom feed document.
 type opdsFeed struct {
@@ -105,7 +161,14 @@ func (h *OPDSHandler) Middleware(next http.Handler) http.Handler {
 			slog.DebugContext(ctx, "OPDS: invalid JWT token", slog.Any(otelkeys.Error, err))
 		}
 
-		// Fall back to HTTP Basic Auth.
+		// Fall back to HTTP Basic Auth with rate limiting to prevent brute-force attacks.
+		if !allowOPDSBasicAuth(r) {
+			slog.WarnContext(ctx, "OPDS: Basic Auth rate limit exceeded", slog.String("remote_addr", r.RemoteAddr))
+			w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka"`)
+			http.Error(w, "too many authentication attempts, please try again later", http.StatusTooManyRequests)
+			return
+		}
+
 		email, password, ok := r.BasicAuth()
 		if !ok || email == "" || password == "" {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka"`)
@@ -354,6 +417,26 @@ func (h *OPDSHandler) HandleBooks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Collect book IDs for batched related-data queries.
+	bookIDs := make([]string, 0, len(books))
+	for i := range books {
+		bookIDs = append(bookIDs, books[i].ID)
+	}
+
+	// Batch-load authors for all books.
+	authorsByBook, err := h.DB.GetBookAuthorsForBooks(ctx, bookIDs)
+	if err != nil {
+		slog.ErrorContext(ctx, "OPDS: failed to get authors for books batch", slog.Any(otelkeys.Error, err))
+		authorsByBook = nil
+	}
+
+	// Batch-load files for all books.
+	filesByBook, err := h.DB.ListBookFilesForBooks(ctx, bookIDs)
+	if err != nil {
+		slog.ErrorContext(ctx, "OPDS: failed to get files for books batch", slog.Any(otelkeys.Error, err))
+		filesByBook = nil
+	}
+
 	feed := newFeed(
 		"tag:biblioteka:catalog:books",
 		"All Books",
@@ -365,22 +448,21 @@ func (h *OPDSHandler) HandleBooks(w http.ResponseWriter, r *http.Request) {
 
 	for i := range books {
 		book := &books[i]
-		authors, err := h.DB.GetBookAuthors(ctx, book.ID)
-		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book authors",
-				slog.String(otelkeys.BookID, book.ID),
-				slog.Any(otelkeys.Error, err),
-			)
-			authors = nil
+
+		var authors []db.Author
+		if authorsByBook != nil {
+			if a, ok := authorsByBook[book.ID]; ok {
+				authors = a
+			}
 		}
-		files, err := h.DB.ListBookFiles(ctx, book.ID)
-		if err != nil {
-			slog.ErrorContext(ctx, "OPDS: failed to get book files",
-				slog.String(otelkeys.BookID, book.ID),
-				slog.Any(otelkeys.Error, err),
-			)
-			files = nil
+
+		var files []db.BookFile
+		if filesByBook != nil {
+			if f, ok := filesByBook[book.ID]; ok {
+				files = f
+			}
 		}
+
 		feed.Entries = append(feed.Entries, bookToEntry(book, authors, files))
 	}
 
@@ -633,10 +715,12 @@ func (h *OPDSHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	encodedQuery := url.QueryEscape(query)
+
 	feed := newFeed(
 		fmt.Sprintf("tag:biblioteka:catalog:search:%s", query),
 		fmt.Sprintf("Search: %s", query),
-		fmt.Sprintf("/opds/search?q=%s", query),
+		fmt.Sprintf("/opds/search?q=%s", encodedQuery),
 		opdsAcquisitionType,
 		time.Now(),
 	)
