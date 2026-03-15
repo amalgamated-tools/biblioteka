@@ -27,6 +27,37 @@ definitions:
       oidc_linked:
         type: boolean
     type: object
+  internal_handlers.auditLogDTO:
+    properties:
+      action:
+        type: string
+      created_at:
+        type: string
+      entity_id:
+        type: string
+      entity_type:
+        type: string
+      id:
+        type: string
+      metadata:
+        type: object
+      user_id:
+        type: string
+        x-nullable: true
+    type: object
+  internal_handlers.auditLogListDTO:
+    properties:
+      entries:
+        items:
+          $ref: '#/definitions/internal_handlers.auditLogDTO'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
   internal_handlers.authResponse:
     properties:
       token:
@@ -379,7 +410,7 @@ info:
   contact: {}
   description: Personal library management API
   title: Biblioteka API
-  version: "1.0"
+  version: '1.0'
 paths:
   /admin/users:
     get:
@@ -387,21 +418,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             items:
               $ref: '#/definitions/internal_handlers.adminUserDTO'
             type: array
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "403":
+        '403':
           description: Forbidden
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -430,36 +461,76 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             properties:
               message:
                 type: string
             type: object
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "403":
+        '403':
           description: Forbidden
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Set user admin status
+      tags:
+      - Admin
+  /audit-logs:
+    get:
+      description: Returns a paginated list of all audit log entries (admin only)
+      parameters:
+      - description: Max entries to return (default 50)
+        in: query
+        name: limit
+        type: integer
+      - description: Entries to skip (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.auditLogListDTO'
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        403:
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List audit log entries
       tags:
       - Admin
   /auth/login:
@@ -477,23 +548,47 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.authResponse'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
       summary: Log in
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Clears the authentication cookie
+      produces:
+      - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        403:
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        405:
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      summary: Log out
       tags:
       - Auth
   /auth/me:
@@ -502,19 +597,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.userDTO'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -538,17 +633,17 @@ paths:
         required: true
         type: string
       responses:
-        "302":
+        '302':
           description: Redirect to frontend with token
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -561,7 +656,7 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_server.oidcEnabledResponse'
@@ -578,21 +673,21 @@ paths:
         required: true
         type: string
       responses:
-        "302":
+        '302':
           description: Redirect to OIDC provider
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "409":
+        '409':
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -605,18 +700,18 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             properties:
               nonce:
                 type: string
             type: object
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -629,13 +724,13 @@ paths:
     get:
       description: Redirects to the OIDC provider's authorization endpoint
       responses:
-        "302":
+        '302':
           description: Redirect to OIDC provider
-        "404":
+        '404':
           description: OIDC not configured
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -657,22 +752,22 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             properties:
               message:
                 type: string
             type: object
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -696,19 +791,19 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: Created
           schema:
             $ref: '#/definitions/internal_handlers.authResponse'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "409":
+        '409':
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -721,17 +816,17 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             items:
               $ref: '#/definitions/internal_handlers.authorDTO'
             type: array
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -754,23 +849,23 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: Created
           schema:
             $ref: '#/definitions/internal_handlers.authorDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "409":
+        '409':
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -789,21 +884,21 @@ paths:
         required: true
         type: string
       responses:
-        "204":
+        '204':
           description: No Content
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -823,23 +918,23 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.authorDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -867,27 +962,27 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.authorDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "409":
+        '409':
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -906,21 +1001,21 @@ paths:
         required: true
         type: string
       responses:
-        "204":
+        '204':
           description: No Content
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -940,23 +1035,23 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.bookFileDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -971,17 +1066,17 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             items:
               $ref: '#/definitions/internal_handlers.bookSummaryDTO'
             type: array
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1004,19 +1099,19 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: Created
           schema:
             $ref: '#/definitions/internal_handlers.bookDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1035,21 +1130,21 @@ paths:
         required: true
         type: string
       responses:
-        "204":
+        '204':
           description: No Content
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1069,23 +1164,23 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.bookDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1113,23 +1208,23 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.bookDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1150,21 +1245,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             items:
               $ref: '#/definitions/internal_handlers.authorDTO'
             type: array
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1192,21 +1287,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             items:
               $ref: '#/definitions/internal_handlers.authorDTO'
             type: array
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1227,21 +1322,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             items:
               $ref: '#/definitions/internal_handlers.bookFileDTO'
             type: array
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1269,19 +1364,19 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: Created
           schema:
             $ref: '#/definitions/internal_handlers.bookFileDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1302,21 +1397,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             items:
               $ref: '#/definitions/internal_handlers.bookSeriesEntryDTO'
             type: array
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1344,21 +1439,21 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             items:
               $ref: '#/definitions/internal_handlers.bookSeriesEntryDTO'
             type: array
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1373,19 +1468,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.oidcConfigResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "403":
+        '403':
           description: Forbidden
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1408,26 +1503,26 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             properties:
               message:
                 type: string
             type: object
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "403":
+        '403':
           description: Forbidden
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1442,11 +1537,11 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.configStatusResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1461,7 +1556,7 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_server.healthResponse'
@@ -1474,17 +1569,17 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             items:
               $ref: '#/definitions/internal_handlers.libraryDTO'
             type: array
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1507,23 +1602,23 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: Created
           schema:
             $ref: '#/definitions/internal_handlers.libraryDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "409":
+        '409':
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1542,21 +1637,21 @@ paths:
         required: true
         type: string
       responses:
-        "204":
+        '204':
           description: No Content
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1576,23 +1671,23 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.libraryDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1620,27 +1715,27 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.libraryDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "409":
+        '409':
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1655,17 +1750,17 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             items:
               $ref: '#/definitions/internal_handlers.seriesDTO'
             type: array
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1688,23 +1783,23 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        '201':
           description: Created
           schema:
             $ref: '#/definitions/internal_handlers.seriesDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "409":
+        '409':
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1723,21 +1818,21 @@ paths:
         required: true
         type: string
       responses:
-        "204":
+        '204':
           description: No Content
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1757,23 +1852,23 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.seriesDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1801,27 +1896,27 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
+        '200':
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.seriesDTO'
-        "400":
+        '400':
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
+        '401':
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
+        '404':
           description: Not Found
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "409":
+        '409':
           description: Conflict
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
+        '500':
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
@@ -1836,4 +1931,4 @@ securityDefinitions:
     in: header
     name: Authorization
     type: apiKey
-swagger: "2.0"
+swagger: '2.0'
