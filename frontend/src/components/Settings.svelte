@@ -120,13 +120,15 @@
         tls: smtpTls,
       });
       const status = await getConfigStatus();
-      smtpConfigured = status.smtpConfigured;
       smtpSuccess = true;
+      smtpConfigured = true;
       if (smtpPassword.trim()) {
         smtpPasswordSet = true;
+      } else if (!smtpUsername.trim()) {
+        // Saved with no username → credentials were cleared
+        smtpPasswordSet = false;
       }
       smtpPassword = "";
-      setTimeout(() => (smtpSuccess = false), 3000);
     } catch (err) {
       smtpError =
         err instanceof Error
