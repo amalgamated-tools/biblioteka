@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"bytes"
 	"context"
+	"encoding/xml"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -35,6 +37,27 @@ func mustGenerateDummyOPDSHash() []byte {
 	return hash
 }
 
+// writeOPDSError writes an OPDS-compatible XML error response for authentication failures.
+func writeOPDSError(ctx context.Context, w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", `application/atom+xml;profile=opds-catalog;kind=navigation`)
+	w.WriteHeader(status)
+
+	var buf bytes.Buffer
+	buf.WriteString(`<?xml version="1.0" encoding="utf-8"?>` + "\n")
+	buf.WriteString(`<feed xmlns="http://www.w3.org/2005/Atom">`)
+	buf.WriteString(`<title>Biblioteka OPDS Error</title>`)
+	buf.WriteString(`<id>urn:biblioteka:opds:error</id>`)
+	buf.WriteString(`<entry>`)
+	buf.WriteString(`<title>Authentication Error</title>`)
+	buf.WriteString(`<content type="text">`)
+	xml.EscapeText(&buf, []byte(message))
+	buf.WriteString(`</content>`)
+	buf.WriteString(`</entry>`)
+	buf.WriteString(`</feed>`)
+
+	_, _ = w.Write(buf.Bytes())
+}
+
 // OPDSBasicAuthMiddleware returns an HTTP middleware that validates OPDS
 // credentials using HTTP Basic Authentication and injects the user ID into
 // the request context.
@@ -45,7 +68,7 @@ func OPDSBasicAuthMiddleware(checker OPDSCredentialChecker) func(http.Handler) h
 			if !ok || username == "" {
 				slog.InfoContext(r.Context(), "OPDS: missing credentials")
 				w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
-				jsonError(w, http.StatusUnauthorized, "authentication required")
+				writeOPDSError(r.Context(), w, http.StatusUnauthorized, "authentication required")
 				return
 			}
 
@@ -55,14 +78,14 @@ func OPDSBasicAuthMiddleware(checker OPDSCredentialChecker) func(http.Handler) h
 				_ = bcrypt.CompareHashAndPassword(dummyOPDSBcryptHash, []byte(password))
 				slog.InfoContext(r.Context(), "OPDS: unknown username", slog.String(otelkeys.OPDSUsername, username))
 				w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
-				jsonError(w, http.StatusUnauthorized, "invalid credentials")
+				writeOPDSError(r.Context(), w, http.StatusUnauthorized, "invalid credentials")
 				return
 			}
 
 			if err := bcrypt.CompareHashAndPassword([]byte(cred.PasswordHash), []byte(password)); err != nil {
 				slog.InfoContext(r.Context(), "OPDS: invalid password", slog.String(otelkeys.OPDSUsername, username))
 				w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
-				jsonError(w, http.StatusUnauthorized, "invalid credentials")
+				writeOPDSError(r.Context(), w, http.StatusUnauthorized, "invalid credentials")
 				return
 			}
 

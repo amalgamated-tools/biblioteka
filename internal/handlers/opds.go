@@ -43,9 +43,6 @@ const (
 // writeOPDSError writes an error response for OPDS endpoints as a minimal Atom feed,
 // so that OPDS clients always receive XML instead of JSON when an error occurs.
 func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentType, id, title string) {
-	w.Header().Set("Content-Type", contentType)
-	w.WriteHeader(status)
-
 	feed := &opdsFeed{
 		XMLNS:     xmlnsAtom,
 		XMLNSOPDS: xmlnsOPDS,
@@ -56,6 +53,8 @@ func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentT
 
 	var buf bytes.Buffer
 	if _, err := buf.WriteString(xml.Header); err != nil {
+		slog.ErrorContext(r.Context(), "failed to write OPDS XML header",
+			slog.String(otelkeys.Error, err.Error()))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -63,11 +62,19 @@ func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentT
 	enc := xml.NewEncoder(&buf)
 	enc.Indent("", "  ")
 	if err := enc.Encode(feed); err != nil {
+		slog.ErrorContext(r.Context(), "failed to encode OPDS error feed",
+			slog.String(otelkeys.Error, err.Error()))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	_, _ = w.Write(buf.Bytes())
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(status)
+
+	if _, err := w.Write(buf.Bytes()); err != nil {
+		slog.ErrorContext(r.Context(), "failed to write OPDS error response body",
+			slog.String(otelkeys.Error, err.Error()))
+	}
 }
 
 // MIME types for common ebook formats.
@@ -273,7 +280,7 @@ func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
 	authors, total, err := h.DB.ListAuthorsPaginated(ctx, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list authors", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to list authors")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, baseURL+"/authors", "failed to list authors")
 		return
 	}
 
@@ -346,8 +353,10 @@ func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, author
 func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	baseURL := opdsBaseURL(r)
+	page := parsePage(r)
+	offset := (page - 1) * opdsPageSize
 
-	seriesList, err := h.DB.ListSeries(ctx)
+	seriesList, total, err := h.DB.ListSeriesPaginated(ctx, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list series", slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list series")
@@ -366,15 +375,16 @@ func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	selfURL := baseURL + "/series"
+	links := paginationLinks(selfURL, page, total, opdsPageSize)
+	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
+
 	feed := &opdsFeed{
 		XMLNS:   xmlnsAtom,
-		ID:      baseURL + "/series",
+		ID:      selfURL,
 		Title:   "Series",
 		Updated: time.Now().UTC().Format(time.RFC3339),
-		Links: []opdsLink{
-			{Rel: relSelf, Href: baseURL + "/series", Type: opdsNavContentType},
-			{Rel: relStart, Href: baseURL, Type: opdsNavContentType},
-		},
+		Links:   links,
 		Entries: entries,
 	}
 	writeOPDSFeed(r, w, opdsNavContentType, feed)
