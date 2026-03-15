@@ -813,7 +813,8 @@ func TestHandleSMTPTest_NotConfigured(t *testing.T) {
 func TestHandleSetSMTPConfig_PreservesExistingPassword(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
-	// Pre-store a password
+	// Pre-store a username and password
+	_ = h.DB.SetSetting(context.Background(), settingSMTPUsername, "user")
 	_ = h.DB.SetSetting(context.Background(), settingSMTPPassword, "existing-pw")
 
 	// Send request with empty password — should reuse the existing one
