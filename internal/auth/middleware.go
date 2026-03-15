@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -11,6 +13,45 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
+
+// apiKeyPrefix is the prefix that distinguishes API keys from JWT tokens.
+const apiKeyPrefix = "bib_"
+
+// APIKeyValidator looks up an API key by its SHA-256 hash.
+type APIKeyValidator interface {
+	ValidateAPIKey(ctx context.Context, keyHash string) (userID string, apiKeyID string, err error)
+	TouchAPIKeyLastUsed(ctx context.Context, id string) error
+}
+
+// hashAPIKey returns the hex-encoded SHA-256 hash of the given API key.
+func hashAPIKey(key string) string {
+	h := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(h[:])
+}
+
+// resolveUser determines the user ID from the given token. If the token starts
+// with "bib_", it is treated as an API key; otherwise it is validated as a JWT.
+func resolveUser(ctx context.Context, token string, jwt *JWTManager, apiKeys APIKeyValidator) (userID string, err error) {
+	if apiKeys != nil && strings.HasPrefix(token, apiKeyPrefix) {
+		keyHash := hashAPIKey(token)
+		uid, keyID, err := apiKeys.ValidateAPIKey(ctx, keyHash)
+		if err != nil {
+			return "", err
+		}
+		// Update last_used_at asynchronously to avoid adding latency.
+		go func() {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			_ = apiKeys.TouchAPIKeyLastUsed(bgCtx, keyID)
+		}()
+		return uid, nil
+	}
+	claims, err := jwt.ValidateToken(ctx, token)
+	if err != nil {
+		return "", err
+	}
+	return claims.UserID, nil
+}
 
 type contextKey string
 
@@ -48,10 +89,10 @@ func extractToken(r *http.Request) (string, string) {
 	return "", "missing token"
 }
 
-// Middleware returns an HTTP middleware that validates the JWT from the
+// Middleware returns an HTTP middleware that validates the JWT or API key from the
 // Authorization header or biblioteka_token cookie and injects the user ID into
-// the request context.
-func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
+// the request context. The apiKeys parameter may be nil to disable API key auth.
+func Middleware(jwt *JWTManager, apiKeys APIKeyValidator) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token, reason := extractToken(r)
@@ -65,15 +106,15 @@ func Middleware(jwt *JWTManager) func(http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := jwt.ValidateToken(r.Context(), token)
+			userID, err := resolveUser(r.Context(), token, jwt, apiKeys)
 			if err != nil {
 				slog.InfoContext(r.Context(), "invalid or expired token", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 				return
 			}
 
-			slog.DebugContext(r.Context(), "authentication successful", slog.String(otelkeys.UserID, claims.UserID))
-			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+			slog.DebugContext(r.Context(), "authentication successful", slog.String(otelkeys.UserID, userID))
+			ctx := context.WithValue(r.Context(), userIDKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -162,7 +203,7 @@ func (c *cachingAdminChecker) IsAdmin(ctx context.Context, userID string) (bool,
 	return isAdmin, nil
 }
 
-func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) http.Handler {
+func AdminMiddleware(jwt *JWTManager, checker AdminChecker, apiKeys APIKeyValidator) func(http.Handler) http.Handler {
 	// Wrap the provided AdminChecker with a short-lived cache to avoid
 	// repeated DB lookups for high-frequency admin endpoints (e.g., /asynqmon/).
 	const adminCacheTTL = 5 * time.Second
@@ -177,27 +218,27 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker) func(http.Handler) h
 				return
 			}
 
-			claims, err := jwt.ValidateToken(r.Context(), token)
+			userID, err := resolveUser(r.Context(), token, jwt, apiKeys)
 			if err != nil {
 				slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 				return
 			}
 
-			isAdmin, err := cachedChecker.IsAdmin(r.Context(), claims.UserID)
+			isAdmin, err := cachedChecker.IsAdmin(r.Context(), userID)
 			if err != nil {
 				slog.ErrorContext(r.Context(), "admin middleware: failed to check admin status", slog.Any(otelkeys.Error, err))
 				jsonError(w, http.StatusInternalServerError, "failed to verify permissions")
 				return
 			}
 			if !isAdmin {
-				slog.InfoContext(r.Context(), "admin middleware: non-admin access denied", slog.String(otelkeys.UserID, claims.UserID))
+				slog.InfoContext(r.Context(), "admin middleware: non-admin access denied", slog.String(otelkeys.UserID, userID))
 				jsonError(w, http.StatusForbidden, "admin access required")
 				return
 			}
 
-			slog.DebugContext(r.Context(), "admin authentication successful", slog.String(otelkeys.UserID, claims.UserID))
-			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+			slog.DebugContext(r.Context(), "admin authentication successful", slog.String(otelkeys.UserID, userID))
+			ctx := context.WithValue(r.Context(), userIDKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

@@ -74,6 +74,7 @@ type Server struct {
 	bookHandler           *handlers.BookHandler
 	bookFileHandler       *handlers.BookFileHandler
 	auditLogHandler       *handlers.AuditLogHandler
+	apiKeyHandler         *handlers.APIKeyHandler
 	opdsHandler           *handlers.OPDSHandler
 	opdsCredentialHandler *handlers.OPDSCredentialHandler
 	requireAuth           func(http.Handler) http.Handler
@@ -123,11 +124,11 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	}
 
 	if s.requireAuth == nil {
-		s.requireAuth = auth.Middleware(s.JWT)
+		s.requireAuth = auth.Middleware(s.JWT, s.DB)
 	}
 
 	if s.requireAdmin == nil {
-		s.requireAdmin = auth.AdminMiddleware(s.JWT, s.DB)
+		s.requireAdmin = auth.AdminMiddleware(s.JWT, s.DB, s.DB)
 	}
 
 	if s.authLimiter == nil {
@@ -150,6 +151,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
 	s.opdsCredentialHandler = &handlers.OPDSCredentialHandler{DB: s.DB}
+	s.apiKeyHandler = &handlers.APIKeyHandler{DB: s.DB}
 	s.requireOPDSAuth = auth.OPDSBasicAuthMiddleware(&opdsDBAdapter{db: s.DB})
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
@@ -306,6 +308,10 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// OPDS feed routes (Basic Auth)
 	s.mux.Handle("/opds", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
 	s.mux.Handle("/opds/", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
+
+	// Protected API key routes
+	s.mux.Handle("/api/api-keys", s.requireAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKeys)))
+	s.mux.Handle("/api/api-keys/", s.requireAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKey)))
 
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)

@@ -12,7 +12,7 @@ import (
 
 func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +34,7 @@ func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 
 func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +59,7 @@ func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 
 func TestMiddleware_InvalidToken(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +82,7 @@ func TestMiddleware_InvalidToken(t *testing.T) {
 
 func TestMiddleware_ValidToken(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "user-abc")
 
@@ -213,7 +213,7 @@ func TestExtractToken(t *testing.T) {
 
 func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "cookie-user")
 
@@ -237,7 +237,7 @@ func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 
 func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -260,7 +260,7 @@ func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 
 func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
-	mw := Middleware(jm)
+	mw := Middleware(jm, nil)
 
 	headerToken, _ := jm.CreateToken(t.Context(), "header-user")
 	cookieToken, _ := jm.CreateToken(t.Context(), "cookie-user")
@@ -299,7 +299,7 @@ func (m *mockAdminChecker) IsAdmin(_ context.Context, userID string) (bool, erro
 func TestAdminMiddleware_NoToken(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{admins: map[string]bool{}}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -322,7 +322,7 @@ func TestAdminMiddleware_NoToken(t *testing.T) {
 func TestAdminMiddleware_InvalidToken(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{admins: map[string]bool{}}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -346,7 +346,7 @@ func TestAdminMiddleware_InvalidToken(t *testing.T) {
 func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "regular-user")
 
@@ -372,7 +372,7 @@ func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 func TestAdminMiddleware_AdminUser(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "admin-user")
 
@@ -397,7 +397,7 @@ func TestAdminMiddleware_AdminUser(t *testing.T) {
 func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "admin-user")
 
@@ -422,7 +422,7 @@ func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 func TestAdminMiddleware_CheckerError(t *testing.T) {
 	jm, _ := NewJWTManager("secret", time.Hour)
 	checker := &mockAdminChecker{err: errors.New("db down")}
-	mw := AdminMiddleware(jm, checker)
+	mw := AdminMiddleware(jm, checker, nil)
 
 	token, _ := jm.CreateToken(t.Context(), "some-user")
 
