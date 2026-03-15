@@ -19,6 +19,8 @@ const (
 	AuditActionBookFileCreated       = "book_file.created"
 	AuditActionBookFileDeleted       = "book_file.deleted"
 	AuditActionBookUpdated           = "book.updated"
+	AuditActionAPIKeyCreated         = "api_key.created"
+	AuditActionAPIKeyDeleted         = "api_key.deleted"
 	AuditActionLibraryCreated        = "library.created"
 	AuditActionLibraryDeleted        = "library.deleted"
 	AuditActionLibraryUpdated        = "library.updated"

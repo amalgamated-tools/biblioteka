@@ -74,9 +74,11 @@ type Server struct {
 	bookHandler           *handlers.BookHandler
 	bookFileHandler       *handlers.BookFileHandler
 	auditLogHandler       *handlers.AuditLogHandler
+	apiKeyHandler         *handlers.APIKeyHandler
 	opdsHandler           *handlers.OPDSHandler
 	opdsCredentialHandler *handlers.OPDSCredentialHandler
 	requireAuth           func(http.Handler) http.Handler
+	requireJWTAuth        func(http.Handler) http.Handler
 	requireAdmin          func(http.Handler) http.Handler
 	requireOPDSAuth       func(http.Handler) http.Handler
 	authLimiter           *auth.RateLimiter
@@ -123,11 +125,17 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	}
 
 	if s.requireAuth == nil {
-		s.requireAuth = auth.Middleware(s.JWT)
+		s.requireAuth = auth.Middleware(s.JWT, s.DB)
+	}
+
+	if s.requireJWTAuth == nil {
+		s.requireJWTAuth = auth.Middleware(s.JWT, nil)
 	}
 
 	if s.requireAdmin == nil {
-		s.requireAdmin = auth.AdminMiddleware(s.JWT, s.DB)
+		var adminChecker auth.AdminChecker = s.DB
+		var apiKeyValidator auth.APIKeyValidator = s.DB
+		s.requireAdmin = auth.AdminMiddleware(s.JWT, adminChecker, apiKeyValidator)
 	}
 
 	if s.authLimiter == nil {
@@ -150,6 +158,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
 	s.opdsCredentialHandler = &handlers.OPDSCredentialHandler{DB: s.DB}
+	s.apiKeyHandler = &handlers.APIKeyHandler{DB: s.DB}
 	s.requireOPDSAuth = auth.OPDSBasicAuthMiddleware(&opdsDBAdapter{db: s.DB})
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
@@ -266,17 +275,17 @@ func (s *Server) setupRoutes(ctx context.Context) {
 
 	// Protected auth routes
 	s.mux.Handle("/api/auth/me", s.requireAuth(http.HandlerFunc(s.authHandler.Me)))
-	s.mux.Handle("/api/auth/password", s.requireAuth(http.HandlerFunc(s.authHandler.ChangePassword)))
+	s.mux.Handle("/api/auth/password", s.requireJWTAuth(http.HandlerFunc(s.authHandler.ChangePassword)))
 
-	// Protected config routes
-	s.mux.Handle("/api/config/status", s.requireAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
-	s.mux.Handle("/api/config/oidc", s.requireAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
-	s.mux.Handle("/api/config/smtp", s.requireAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
-	s.mux.Handle("/api/config/smtp/test", s.requireAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
+	// Protected config routes (JWT-only: sensitive server configuration)
+	s.mux.Handle("/api/config/status", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
+	s.mux.Handle("/api/config/oidc", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
+	s.mux.Handle("/api/config/smtp", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
+	s.mux.Handle("/api/config/smtp/test", s.requireJWTAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
 
-	// Protected admin routes
-	s.mux.Handle("/api/admin/users", s.requireAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
-	s.mux.Handle("/api/admin/users/", s.requireAuth(http.HandlerFunc(s.adminHandler.HandleSetAdmin)))
+	// Protected admin routes (JWT-only: user management)
+	s.mux.Handle("/api/admin/users", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
+	s.mux.Handle("/api/admin/users/", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleSetAdmin)))
 
 	// Protected library routes
 	s.mux.Handle("/api/libraries", s.requireAuth(http.HandlerFunc(s.libraryHandler.HandleLibraries)))
@@ -300,12 +309,16 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Protected audit log routes (admin only)
 	s.mux.Handle("/api/audit-logs", s.requireAuth(http.HandlerFunc(s.auditLogHandler.HandleAuditLogs)))
 
-	// OPDS credential management (JWT auth)
-	s.mux.Handle("/api/opds/credentials", s.requireAuth(http.HandlerFunc(s.opdsCredentialHandler.HandleOPDSCredentials)))
+	// OPDS credential management (JWT-only: credential management)
+	s.mux.Handle("/api/opds/credentials", s.requireJWTAuth(http.HandlerFunc(s.opdsCredentialHandler.HandleOPDSCredentials)))
 
 	// OPDS feed routes (Basic Auth)
 	s.mux.Handle("/opds", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
 	s.mux.Handle("/opds/", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
+
+	// Protected API key routes (JWT-only: API keys cannot manage other API keys)
+	s.mux.Handle("/api/api-keys", s.requireJWTAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKeys)))
+	s.mux.Handle("/api/api-keys/", s.requireJWTAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKey)))
 
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)
