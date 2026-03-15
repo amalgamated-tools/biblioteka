@@ -305,3 +305,180 @@ func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSer
 
 	return tx.Commit()
 }
+
+// ListBooksPaginated returns books ordered by title with pagination and total count.
+func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book, int, error) {
+	slog.DebugContext(ctx, "db: listing books paginated",
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+
+	var total int
+	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "ORDER BY title ASC, rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY title ASC, id ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookColumns+` FROM books `+orderBy+` LIMIT $1 OFFSET $2`,
+		limit, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		books = append(books, *b)
+	}
+	return books, total, rows.Err()
+}
+
+// ListRecentBooks returns books ordered by creation time (newest first) with pagination and total count.
+func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, int, error) {
+	slog.DebugContext(ctx, "db: listing recent books",
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+
+	var total int
+	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "ORDER BY created_at DESC, rowid DESC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY created_at DESC, id DESC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookColumns+` FROM books `+orderBy+` LIMIT $1 OFFSET $2`,
+		limit, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		books = append(books, *b)
+	}
+	return books, total, rows.Err()
+}
+
+// ListBooksByAuthor returns all books for a specific author.
+func (d *DB) ListBooksByAuthor(ctx context.Context, authorID string) ([]Book, error) {
+	slog.DebugContext(ctx, "db: listing books by author", slog.String(otelkeys.AuthorID, authorID))
+	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY b.title ASC, b.id ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1 `+orderBy,
+		authorID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, *b)
+	}
+	return books, rows.Err()
+}
+
+// ListBooksBySeries returns all books in a specific series, ordered by position.
+func (d *DB) ListBooksBySeries(ctx context.Context, seriesID string) ([]Book, error) {
+	slog.DebugContext(ctx, "db: listing books by series", slog.String(otelkeys.SeriesID, seriesID))
+	nullsLast := "ORDER BY bs.position ASC, b.title ASC"
+	if d.Dialect == DialectPostgres {
+		nullsLast = "ORDER BY bs.position ASC NULLS LAST, b.title ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 `+nullsLast,
+		seriesID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, *b)
+	}
+	return books, rows.Err()
+}
+
+// SearchBooks searches books by title or description with pagination and total count.
+func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) ([]Book, int, error) {
+	slog.DebugContext(ctx, "db: searching books",
+		slog.String(otelkeys.Query, query),
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+
+	likePattern := "%" + query + "%"
+
+	var whereClause string
+	if d.Dialect == DialectPostgres {
+		whereClause = `WHERE title ILIKE $1 OR description ILIKE $1`
+	} else {
+		whereClause = `WHERE title LIKE $1 OR description LIKE $1`
+	}
+
+	var total int
+	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books `+whereClause, likePattern).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "ORDER BY title ASC, rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY title ASC, id ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookColumns+` FROM books `+whereClause+` `+orderBy+` LIMIT $2 OFFSET $3`,
+		likePattern, limit, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		books = append(books, *b)
+	}
+	return books, total, rows.Err()
+}
+
+// bookColumnsWithPrefix returns book columns with a table alias prefix.
+func bookColumnsWithPrefix(prefix string) string {
+	return prefix + "id, " + prefix + "title, " + prefix + "description, " + prefix + "asin, " + prefix + "isbn10, " + prefix + "isbn13, " + prefix + "goodreads_id, " + prefix + "hardcover_id, " + prefix + "google_books_id, " + prefix + "publication_date, " + prefix + "publisher, " + prefix + "language, " + prefix + "num_pages, " + prefix + "cover_image_url, " + prefix + "created_at, " + prefix + "updated_at"
+}
