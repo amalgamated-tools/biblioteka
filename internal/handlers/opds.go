@@ -9,6 +9,7 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -459,9 +460,31 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
 	}
+
+	f, err := os.Open(bf.FilePath)
+	if err != nil {
+		slog.ErrorContext(ctx, "OPDS: failed to open book file",
+			slog.String(otelkeys.BookFileID, fileID),
+			slog.Any(otelkeys.Error, err),
+		)
+		http.NotFound(w, r)
+		return
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		slog.ErrorContext(ctx, "OPDS: failed to stat book file",
+			slog.String(otelkeys.BookFileID, fileID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to read file")
+		return
+	}
+
 	w.Header().Set("Content-Type", mimeType)
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": bf.FileName}))
-	http.ServeFile(w, r, bf.FilePath)
+	http.ServeContent(w, r, bf.FileName, stat.ModTime(), f)
 }
 
 // bookEntries converts a slice of books into OPDS entry elements, including
