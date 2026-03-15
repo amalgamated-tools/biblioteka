@@ -416,6 +416,10 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		writeError(r.Context(), w, http.StatusBadRequest, "from address is not a valid email address")
 		return
 	}
+	if parsedFrom.Name != "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "from address must be a plain email address without a display name")
+		return
+	}
 	from = parsedFrom.Address
 	if port == "" {
 		port = "587"

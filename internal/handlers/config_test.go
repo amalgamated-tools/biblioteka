@@ -879,7 +879,7 @@ func TestHandleSetSMTPConfig_InvalidFromAddress(t *testing.T) {
 func TestHandleSetSMTPConfig_FromWithDisplayName(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
-	// "Display Name <addr>" is valid per mail.ParseAddress — we should store the bare address
+	// "Display Name <addr>" should be rejected — only bare email addresses allowed
 	body := `{"host":"smtp.example.com","from":"App <noreply@example.com>","password":"secret"}`
 	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
 	r = withUserID(r, adminID)
@@ -887,16 +887,8 @@ func TestHandleSetSMTPConfig_FromWithDisplayName(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
-
-	from, err := h.DB.GetSetting(context.Background(), settingSMTPFrom)
-	if err != nil {
-		t.Fatalf("GetSetting(smtp_from): %v", err)
-	}
-	if from != "noreply@example.com" {
-		t.Errorf("saved smtp_from = %q, want bare address %q", from, "noreply@example.com")
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
