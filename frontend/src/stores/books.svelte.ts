@@ -9,8 +9,16 @@ class BookStore {
   async load(): Promise<void> {
     this.loading = true;
     try {
-      const data = await api.listBooks();
-      this.books = data.books;
+      const all: BookSummary[] = [];
+      let offset = 0;
+      const limit = 200;
+      for (;;) {
+        const data = await api.listBooks(limit, offset);
+        all.push(...data.books);
+        if (all.length >= data.total) break;
+        offset += limit;
+      }
+      this.books = all;
       this.loaded = true;
     } catch {
       // Silently fail — individual pages can handle errors
