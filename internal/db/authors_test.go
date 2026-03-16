@@ -173,8 +173,14 @@ func TestGetAuthorByName_NotFound(t *testing.T) {
 func TestListAuthors(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateAuthor(context.Background(), "Brandon Sanderson", nil, nil, nil, nil)
-	_, _ = d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	_, err := d.CreateAuthor(context.Background(), "Brandon Sanderson", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
+	_, err = d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
 
 	authors, err := d.ListAuthors(context.Background())
 	if err != nil {
@@ -211,7 +217,10 @@ func TestUpdateAuthor(t *testing.T) {
 func TestUpdateAuthor_PreservesCapitalization(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateAuthor(context.Background(), "Jane Austen", nil, nil, nil, nil)
+	created, err := d.CreateAuthor(context.Background(), "Jane Austen", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
 
 	updated, err := d.UpdateAuthor(context.Background(), created.ID, "  Anne  McCaffrey  ", nil, nil, nil, nil)
 	if err != nil {

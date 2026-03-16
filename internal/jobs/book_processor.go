@@ -16,7 +16,7 @@ import (
 
 func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, p ProcessFilePayload) error {
 	if database == nil {
-		err := fmt.Errorf("ProcessBookFile: database is nil")
+		err := fmt.Errorf("process book file: database is nil")
 		slog.ErrorContext(ctx, "book processing failed: database is nil",
 			slog.Any(otelkeys.Error, err),
 		)
@@ -24,7 +24,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	}
 
 	if extractor == nil {
-		err := fmt.Errorf("ProcessBookFile: extractor is nil")
+		err := fmt.Errorf("process book file: extractor is nil")
 		slog.ErrorContext(ctx, "book processing failed: extractor is nil",
 			slog.Any(otelkeys.Error, err),
 		)
@@ -32,7 +32,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	}
 
 	if strings.TrimSpace(p.Path) == "" {
-		err := fmt.Errorf("ProcessBookFile: payload path is empty")
+		err := fmt.Errorf("process book file: payload path is empty")
 		slog.ErrorContext(ctx, "book processing failed: empty path in payload",
 			slog.Any(otelkeys.Error, err),
 		)
@@ -40,7 +40,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	}
 
 	if strings.TrimSpace(p.FileName) == "" {
-		err := fmt.Errorf("ProcessBookFile: payload file name is empty")
+		err := fmt.Errorf("process book file: payload file name is empty")
 		slog.ErrorContext(ctx, "book processing failed: empty file name in payload",
 			slog.Any(otelkeys.Error, err),
 			slog.String(otelkeys.Path, p.Path),
@@ -49,7 +49,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	}
 
 	if strings.TrimSpace(p.FileType) == "" {
-		err := fmt.Errorf("ProcessBookFile: payload file type is empty")
+		err := fmt.Errorf("process book file: payload file type is empty")
 		slog.ErrorContext(ctx, "book processing failed: empty file type in payload",
 			slog.Any(otelkeys.Error, err),
 			slog.String(otelkeys.Path, p.Path),
@@ -230,12 +230,13 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 				}
 				err = database.SetBookAuthors(ctx, book.ID, []string{author.ID})
 				if err != nil {
-					slog.ErrorContext(ctx, "failed to associate author with book for file",
+					// Best-effort enrichment: log a warning but do not fail the job to avoid retries
+					// that could create duplicate book/book_file rows after the main transaction.
+					slog.WarnContext(ctx, "failed to associate author with book for file",
 						slog.String(otelkeys.Path, p.Path),
 						slog.String(otelkeys.Author, authorName),
 						slog.Any(otelkeys.Error, err),
 					)
-					return fmt.Errorf("associate author with book for %s: %w", p.Path, err)
 				}
 			}
 		}
