@@ -134,6 +134,33 @@ func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, har
 	return s, nil
 }
 
+// FindOrCreateSeries looks up a series by name and returns it, creating a new
+// one if it doesn't exist. Handles concurrent insert races gracefully.
+func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, error) {
+	slog.DebugContext(ctx, "db: find or create series", slog.String(otelkeys.Name, name))
+	s, err := scanSeries(d.QueryRowContext(ctx,
+		`SELECT `+seriesColumns+` FROM series WHERE name = $1`,
+		name,
+	))
+	if err == nil {
+		return s, nil
+	}
+	if err != sql.ErrNoRows {
+		return nil, err
+	}
+	s, err = d.CreateSeries(ctx, name, nil, nil, nil)
+	if err == nil {
+		return s, nil
+	}
+	if err != ErrSeriesNameExists {
+		return nil, err
+	}
+	return scanSeries(d.QueryRowContext(ctx,
+		`SELECT `+seriesColumns+` FROM series WHERE name = $1`,
+		name,
+	))
+}
+
 func (d *DB) DeleteSeries(ctx context.Context, id string) error {
 	slog.DebugContext(ctx, "db: deleting series", slog.String(otelkeys.ID, id))
 	res, err := d.ExecContext(ctx, `DELETE FROM series WHERE id = $1`, id)

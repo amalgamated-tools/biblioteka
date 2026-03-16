@@ -11,7 +11,9 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
+	"github.com/amalgamated-tools/biblioteka/internal/organize"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/pathparser"
 )
 
 func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, p ProcessFilePayload) error {
@@ -56,6 +58,14 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 			slog.String(otelkeys.FileName, p.FileName),
 		)
 		return err
+	}
+
+	// Check for duplicate: skip if this file path is already indexed.
+	if _, err := database.GetBookFileByPath(ctx, p.Path); err == nil {
+		slog.InfoContext(ctx, "file already indexed, skipping",
+			slog.String(otelkeys.Path, p.Path),
+		)
+		return nil
 	}
 
 	var title string
@@ -129,6 +139,52 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		)
 	}
 
+	// Parse directory structure for author, title, series info.
+	var pathInfo pathparser.PathInfo
+	if p.LibraryRoot != "" {
+		pathInfo = pathparser.ParseBookPath(p.Path, p.LibraryRoot)
+	}
+
+	// Resolve author: prefer embedded metadata, fall back to path-derived.
+	var metaAuthor string
+	if meta != nil {
+		metaAuthor = strings.TrimSpace(meta.Author)
+	}
+	authorName := metaAuthor
+	if authorName == "" || authorName == "Unknown" {
+		authorName = pathInfo.Author
+	}
+
+	// Resolve title: fall back to path-derived title if metadata had none.
+	if (meta == nil || meta.Title == "") && pathInfo.Title != "" {
+		title = pathInfo.Title
+	}
+
+	// Reorganize file into Author/Title/ structure if enabled and we have enough info.
+	filePath := p.Path
+	if p.LibraryRoot != "" && authorName != "" && title != "" {
+		shouldOrganize := true
+		setting, settingErr := database.GetSetting(ctx, "organize_files")
+		if settingErr == nil && setting == "false" {
+			shouldOrganize = false
+		}
+		if shouldOrganize {
+			newPath, reorgErr := organize.ReorganizeFile(filePath, p.LibraryRoot, authorName, title)
+			if reorgErr != nil {
+				slog.WarnContext(ctx, "failed to reorganize file, using original path",
+					slog.String(otelkeys.Path, filePath),
+					slog.Any(otelkeys.Error, reorgErr),
+				)
+			} else if newPath != filePath {
+				slog.InfoContext(ctx, "file reorganized",
+					slog.String(otelkeys.From, filePath),
+					slog.String(otelkeys.To, newPath),
+				)
+				filePath = newPath
+			}
+		}
+	}
+
 	var publicationDate *string
 	var publisher *string
 	var language *string
@@ -166,7 +222,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		p.FileName,
 		p.FileSize,
 		nil,
-		p.Path,
+		filePath,
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create book and file records",
@@ -176,69 +232,88 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		return fmt.Errorf("create book with file for %s: %w", p.Path, err)
 	}
 
-	// create an Author record if metadata extraction found an author and associate it with the book
-	if meta != nil {
-		authorName := strings.TrimSpace(meta.Author)
-		if authorName != "" {
-			skipAuthorAssociation := false
-			author, err := database.GetAuthorByName(ctx, authorName)
-			if err != nil {
-				if errors.Is(err, sql.ErrNoRows) {
-					// Author does not exist yet; we'll create it below.
-				} else {
-					// Author lookup/creation failed after the book and file have already
-					// been created. Treat this as a non-fatal, best-effort enrichment
-					// failure to avoid causing job retries that could duplicate the
-					// previously committed book/file records.
-					slog.WarnContext(ctx, "failed to get or create author record for file; skipping author association",
-						slog.String(otelkeys.Path, p.Path),
-						slog.String(otelkeys.Author, authorName),
-						slog.Any(otelkeys.Error, err),
-					)
-					// Skip further author processing but keep the successfully created
-					// book/file, avoiding duplicate records on retries.
-					skipAuthorAssociation = true
-				}
+	// Create an Author record and associate it with the book.
+	if authorName != "" {
+		skipAuthorAssociation := false
+		author, err := database.GetAuthorByName(ctx, authorName)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				// Author does not exist yet; we'll create it below.
+			} else {
+				slog.WarnContext(ctx, "failed to get or create author record for file; skipping author association",
+					slog.String(otelkeys.Path, p.Path),
+					slog.String(otelkeys.Author, authorName),
+					slog.Any(otelkeys.Error, err),
+				)
+				skipAuthorAssociation = true
 			}
-			if !skipAuthorAssociation {
-				if author == nil {
-					author, err = database.CreateAuthor(ctx, authorName, nil, nil, nil, nil)
-					if err != nil {
-						// Handle expected race: another worker may have created this author concurrently.
-						if errors.Is(err, db.ErrAuthorNameExists) {
-							author, err = database.GetAuthorByName(ctx, authorName)
-							if err != nil {
-								slog.ErrorContext(ctx, "failed to load existing author after concurrent create",
-									slog.String(otelkeys.Path, p.Path),
-									slog.String(otelkeys.Author, authorName),
-									slog.Any(otelkeys.Error, err),
-								)
-								return fmt.Errorf("get existing author after conflict for %s: %w", p.Path, err)
-							}
-							if author == nil {
-								return fmt.Errorf("author %q exists but could not be loaded for %s", authorName, p.Path)
-							}
-						} else {
-							slog.ErrorContext(ctx, "failed to create author record for file",
+		}
+		if !skipAuthorAssociation {
+			if author == nil {
+				author, err = database.CreateAuthor(ctx, authorName, nil, nil, nil, nil)
+				if err != nil {
+					if errors.Is(err, db.ErrAuthorNameExists) {
+						author, err = database.GetAuthorByName(ctx, authorName)
+						if err != nil {
+							slog.ErrorContext(ctx, "failed to load existing author after concurrent create",
 								slog.String(otelkeys.Path, p.Path),
 								slog.String(otelkeys.Author, authorName),
 								slog.Any(otelkeys.Error, err),
 							)
-							return fmt.Errorf("create author for %s: %w", p.Path, err)
+							return fmt.Errorf("get existing author after conflict for %s: %w", p.Path, err)
 						}
+						if author == nil {
+							return fmt.Errorf("author %q exists but could not be loaded for %s", authorName, p.Path)
+						}
+					} else {
+						slog.ErrorContext(ctx, "failed to create author record for file",
+							slog.String(otelkeys.Path, p.Path),
+							slog.String(otelkeys.Author, authorName),
+							slog.Any(otelkeys.Error, err),
+						)
+						return fmt.Errorf("create author for %s: %w", p.Path, err)
 					}
 				}
-				err = database.SetBookAuthors(ctx, book.ID, []string{author.ID})
-				if err != nil {
-					// Best-effort enrichment: log a warning but do not fail the job to avoid retries
-					// that could create duplicate book/book_file rows after the main transaction.
-					slog.WarnContext(ctx, "failed to associate author with book for file",
-						slog.String(otelkeys.Path, p.Path),
-						slog.String(otelkeys.Author, authorName),
-						slog.Any(otelkeys.Error, err),
-					)
-				}
 			}
+			err = database.SetBookAuthors(ctx, book.ID, []string{author.ID})
+			if err != nil {
+				slog.WarnContext(ctx, "failed to associate author with book for file",
+					slog.String(otelkeys.Path, p.Path),
+					slog.String(otelkeys.Author, authorName),
+					slog.Any(otelkeys.Error, err),
+				)
+			}
+		}
+	}
+
+	// Link series to book.
+	if pathInfo.SeriesName != "" {
+		series, seriesErr := database.FindOrCreateSeries(ctx, pathInfo.SeriesName)
+		if seriesErr != nil {
+			slog.WarnContext(ctx, "failed to find or create series",
+				slog.String(otelkeys.Path, p.Path),
+				slog.Any(otelkeys.Error, seriesErr),
+			)
+		} else {
+			if err := database.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{
+				{SeriesID: series.ID, Position: pathInfo.SeriesPosition},
+			}); err != nil {
+				slog.WarnContext(ctx, "failed to set book series",
+					slog.String(otelkeys.BookID, book.ID),
+					slog.Any(otelkeys.Error, err),
+				)
+			}
+		}
+	}
+
+	// Link book to library.
+	if p.LibraryID != "" {
+		if err := database.AddBookToLibrary(ctx, p.LibraryID, book.ID); err != nil {
+			slog.WarnContext(ctx, "failed to add book to library",
+				slog.String(otelkeys.BookID, book.ID),
+				slog.String(otelkeys.LibraryID, p.LibraryID),
+				slog.Any(otelkeys.Error, err),
+			)
 		}
 	}
 

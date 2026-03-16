@@ -31,7 +31,9 @@ type Enqueuer interface {
 
 // ScanPathPayload is the JSON payload for the scan:path job.
 type ScanPathPayload struct {
-	Path string `json:"path"`
+	Path        string `json:"path"`
+	LibraryID   string `json:"library_id,omitempty"`
+	LibraryRoot string `json:"library_root,omitempty"`
 }
 
 // NewScanPathHandler returns a worker.Func that walks the given path and
@@ -99,10 +101,12 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			}
 
 			_, err = enqueuer.Enqueue(ctx, JobProcessFile, ProcessFilePayload{
-				Path:     absPath,
-				FileName: filepath.Base(path),
-				FileType: fileType,
-				FileSize: info.Size(),
+				Path:        absPath,
+				FileName:    filepath.Base(path),
+				FileType:    fileType,
+				FileSize:    info.Size(),
+				LibraryID:   p.LibraryID,
+				LibraryRoot: p.LibraryRoot,
 			})
 			if err != nil {
 				slog.WarnContext(ctx, "error enqueuing process:file job",
