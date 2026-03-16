@@ -40,7 +40,12 @@ func processFile(database *db.DB, extractor *metadata.Extractor) func(ctx contex
 	return func(ctx context.Context, payload []byte) error {
 		var p ProcessFilePayload
 		if err := json.Unmarshal(payload, &p); err != nil {
-			slog.ErrorContext(ctx, "failed to unmarshal process:file payload", slog.Any(otelkeys.Error, err), slog.Any(otelkeys.Payload, string(payload)))
+			slog.ErrorContext(
+				ctx,
+				"failed to unmarshal process:file payload",
+				slog.Any(otelkeys.Error, err),
+				slog.Any(otelkeys.Payload, string(payload)),
+			)
 			return fmt.Errorf("unmarshal process file payload: %w", err)
 		}
 
