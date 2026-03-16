@@ -73,7 +73,15 @@ Recursively walks the directory and enqueues a `process:file` job for every file
 | **Trigger** | Enqueued by `scan:path` |
 | **Payload** | `{ "path": "/books/novel.epub", "file_name": "novel.epub", "file_type": "epub", "file_size": 524288 }` |
 
-Creates a `book` record and a `book_file` record in the database. The book title is derived from the filename (e.g. `Pride and Prejudice.epub` → `"Pride and Prejudice"`). Full metadata extraction (author, ISBN, publisher, etc.) is not performed during import and is planned for a future enhancement; the extractor module (`internal/metadata`) already exists — see [docs/metadata.md](metadata.md) for its capabilities. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to extract metadata from individual files in the meantime.
+Creates a `book` record and a `book_file` record in the database. The `process:file` handler runs `internal/metadata.Extractor.ExtractMetadata` on every imported file and uses the result to populate the book record:
+
+| Extracted field | Stored as | Fallback |
+|----------------|-----------|----------|
+| `Title` | `books.title` | Filename without extension |
+| `ISBN` (10 or 13 digits) | `books.isbn_10` / `books.isbn_13` | Not stored |
+| `Description` (when non-empty) | `books.description` | Not stored |
+
+`Author`, `Publisher`, and `Format` are extracted by the extractor but are **not yet** used to create related records during import. If ExifTool is absent or extraction fails for any other reason, the job logs a warning and falls back to the filename-derived title. See [docs/metadata.md](metadata.md) for extraction details and what's planned next. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
 
 ### Job Chain
 
