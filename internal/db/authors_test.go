@@ -112,7 +112,10 @@ func TestCreateAuthor_DuplicateNameCaseInsensitive(t *testing.T) {
 func TestGetAuthor(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	created, err := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
 
 	found, err := d.GetAuthor(context.Background(), created.ID)
 	if err != nil {
@@ -138,7 +141,10 @@ func TestGetAuthor_NotFound(t *testing.T) {
 func TestGetAuthorByName(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateAuthor(context.Background(), "Anne McCaffrey", nil, nil, nil, nil)
+	created, err := d.CreateAuthor(context.Background(), "Anne McCaffrey", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
 
 	// All case variants should find the same author.
 	for _, name := range []string{"Anne McCaffrey", "anne mccaffrey", "ANNE MCCAFFREY", "anne McCaffrey"} {

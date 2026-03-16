@@ -298,7 +298,9 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	// Create a file that isn't a valid EPUB — extraction will fail
 	dir := t.TempDir()
 	path := filepath.Join(dir, "broken.epub")
-	os.WriteFile(path, []byte("not a valid epub"), 0644)
+	if err := os.WriteFile(path, []byte("not a valid epub"), 0644); err != nil {
+		t.Fatalf("write broken.epub: %v", err)
+	}
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:     path,
