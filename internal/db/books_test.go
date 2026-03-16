@@ -122,10 +122,16 @@ func TestDeleteBook_NotFound(t *testing.T) {
 func TestAddBookToLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, _ := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	lib, err := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
+	if err != nil {
+		t.Fatalf("CreateLibrary() error: %v", err)
+	}
+	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
 
-	err := d.AddBookToLibrary(context.Background(), lib.ID, book.ID)
+	err = d.AddBookToLibrary(context.Background(), lib.ID, book.ID)
 	if err != nil {
 		t.Fatalf("AddBookToLibrary() error: %v", err)
 	}
@@ -145,13 +151,34 @@ func TestAddBookToLibrary(t *testing.T) {
 func TestListBooksByLibraryPaginated(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, _ := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
-	b1, _ := d.CreateBook(context.Background(), "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	b2, _ := d.CreateBook(context.Background(), "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	b3, _ := d.CreateBook(context.Background(), "Gamma", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	_ = d.AddBookToLibrary(context.Background(), lib.ID, b1.ID)
-	_ = d.AddBookToLibrary(context.Background(), lib.ID, b2.ID)
-	_ = d.AddBookToLibrary(context.Background(), lib.ID, b3.ID)
+	lib, err := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
+	if err != nil {
+		t.Fatalf("CreateLibrary() error: %v", err)
+	}
+	b1, err := d.CreateBook(context.Background(), "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() for Alpha error: %v", err)
+	}
+	b2, err := d.CreateBook(context.Background(), "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() for Beta error: %v", err)
+	}
+	b3, err := d.CreateBook(context.Background(), "Gamma", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() for Gamma error: %v", err)
+	}
+	err = d.AddBookToLibrary(context.Background(), lib.ID, b1.ID)
+	if err != nil {
+		t.Fatalf("AddBookToLibrary() for Alpha error: %v", err)
+	}
+	err = d.AddBookToLibrary(context.Background(), lib.ID, b2.ID)
+	if err != nil {
+		t.Fatalf("AddBookToLibrary() for Beta error: %v", err)
+	}
+	err = d.AddBookToLibrary(context.Background(), lib.ID, b3.ID)
+	if err != nil {
+		t.Fatalf("AddBookToLibrary() for Gamma error: %v", err)
+	}
 
 	books, total, err := d.ListBooksByLibraryPaginated(context.Background(), lib.ID, 2, 0)
 	if err != nil {

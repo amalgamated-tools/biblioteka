@@ -272,18 +272,14 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 //	@Failure		401		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse
 //	@Router			/books [get]
-func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
-	const defaultLimit = 50
-	const maxLimit = 200
-
+func parseLimitOffset(r *http.Request, defaultLimit, maxLimit int) (int, int, string) {
 	limit := defaultLimit
 	offset := 0
 
 	if v := r.URL.Query().Get("limit"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1 {
-			writeError(r.Context(), w, http.StatusBadRequest, "invalid limit parameter")
-			return
+			return 0, 0, "invalid limit parameter"
 		}
 		if n > maxLimit {
 			n = maxLimit
@@ -294,10 +290,22 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	if v := r.URL.Query().Get("offset"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 0 {
-			writeError(r.Context(), w, http.StatusBadRequest, "invalid offset parameter")
-			return
+			return 0, 0, "invalid offset parameter"
 		}
 		offset = n
+	}
+
+	return limit, offset, ""
+}
+
+func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
+	const defaultLimit = 50
+	const maxLimit = 200
+
+	limit, offset, errMsg := parseLimitOffset(r, defaultLimit, maxLimit)
+	if errMsg != "" {
+		writeError(r.Context(), w, http.StatusBadRequest, errMsg)
+		return
 	}
 
 	slog.DebugContext(r.Context(), "listing books",
