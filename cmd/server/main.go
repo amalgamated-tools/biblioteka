@@ -9,6 +9,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
+	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/server"
@@ -62,6 +63,15 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	}
 	defer func() { _ = database.Close() }()
 
+	// Set up Extractor that will get information from the file and also fetch metadata from external sources (e.g. Open Library) in the future.
+	// For now, it just creates a book record with the file name as the title and the file type as the format.
+	extractor, err := metadata.NewExtractor()
+	if err != nil {
+		slog.ErrorContext(cancelCtx, "failed to setup metadata extractor", slog.Any(otelkeys.Error, err))
+		return fmt.Errorf("failed to setup metadata extractor: %w", err)
+	}
+	defer func() { extractor.Close() }()
+
 	// Set up the background worker (always needed: server mode uses it for enqueuing, worker/all modes also process jobs)
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
@@ -80,7 +90,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	// Register job handlers and schedules only when this instance processes jobs
 	if runWorker {
 		w.Register(cancelCtx, jobs.JobScanPath, jobs.NewScanPathHandler(w))
-		w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database))
+		w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database, extractor))
 		w.Register(cancelCtx, jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
 		w.Register(cancelCtx, jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
 

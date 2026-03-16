@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -26,7 +27,7 @@ type ProcessFilePayload struct {
 // NewProcessFileHandler returns a worker.Func that creates a book and book_file
 // record for the given file. This is where future metadata extraction (parsing
 // EPUB/MOBI/PDF internals) would be added.
-func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []byte) error {
+func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(ctx context.Context, payload []byte) error {
 	return func(ctx context.Context, payload []byte) error {
 		var p ProcessFilePayload
 		if err := json.Unmarshal(payload, &p); err != nil {
@@ -63,6 +64,15 @@ func NewProcessFileHandler(database *db.DB) func(ctx context.Context, payload []
 			slog.String(otelkeys.Path, p.Path),
 		)
 
+		// need to extract metadata before creating the book record, otherwise we won't have the book ID to link the file to. In the future, we may want to update the book record with more metadata after extraction, but for now we'll just create a basic record with the title and file type.
+		metadata, err := extractor.ExtractMetadata(p.Path)
+		if err != nil {
+			return fmt.Errorf("extract metadata for %s: %w", p.Path, err)
+		}
+		slog.DebugContext(ctx, "metadata extracted",
+			slog.String(otelkeys.Title, metadata.Title),
+			slog.String(otelkeys.Format, metadata.Format),
+		)
 		book, err := database.CreateBook(ctx, title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			return fmt.Errorf("create book for %s: %w", p.Path, err)

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Get the latest version of ExifTool from SourceForge.
+# Usage: ./script/get-exif-tool
+
+# make sure we are in the vendor directory, creating it if it doesn't exist
+mkdir -p "$(dirname "$0")/../vendor"
+cd "$(dirname "$0")/../vendor"
+# download the version 13.52 of ExifTool silently (without progress bar)
+wget -q -O Image-ExifTool-13.52.tar.gz https://sourceforge.net/projects/exiftool/files/Image-ExifTool-13.52.tar.gz/download
+# if the download failed, print an error message and exit with a non-zero status code
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to download ExifTool. Please check your internet connection and try again."
+    exit 1
+fi
+# extract the downloaded tar.gz file to the current directory
+tar -xzf Image-ExifTool-13.52.tar.gz
+# remove the downloaded tar.gz file
+rm Image-ExifTool-13.52.tar.gz
+# print a success message
+echo "ExifTool version 13.52 has been downloaded and extracted successfully."
