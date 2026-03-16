@@ -102,7 +102,7 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 
 ### Output Requirements
 
-- **Create Draft Pull Requests**: When documentation needs updates, create focused draft pull requests with clear descriptions
+- **Create Draft Pull Requests**: When documentation needs updates, create focused draft pull requests with clear descriptions. Pull request titles must follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `docs: <short description>` (e.g., `docs(api): update authentication endpoint reference`).
 
 ### Technical Implementation
 
