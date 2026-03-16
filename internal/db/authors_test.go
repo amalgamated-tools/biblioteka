@@ -119,6 +119,32 @@ func TestUpdateAuthor_DuplicateName(t *testing.T) {
 	}
 }
 
+func TestGetAuthorByName(t *testing.T) {
+	d := newTestDB(t)
+
+	created, _ := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+
+	found, err := d.GetAuthorByName(context.Background(), "Stephen King")
+	if err != nil {
+		t.Fatalf("GetAuthorByName() error: %v", err)
+	}
+	if found.ID != created.ID {
+		t.Errorf("ID = %q, want %q", found.ID, created.ID)
+	}
+	if found.Name != "Stephen King" {
+		t.Errorf("Name = %q, want %q", found.Name, "Stephen King")
+	}
+}
+
+func TestGetAuthorByName_NotFound(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.GetAuthorByName(context.Background(), "Nonexistent Author")
+	if err != sql.ErrNoRows {
+		t.Errorf("expected sql.ErrNoRows, got %v", err)
+	}
+}
+
 func TestDeleteAuthor(t *testing.T) {
 	d := newTestDB(t)
 
