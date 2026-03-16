@@ -232,12 +232,19 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		format = meta.Format
 	}
 
+	// Log full metadata only at DEBUG level to avoid bloating INFO logs.
+	if meta != nil {
+		slog.DebugContext(ctx, "book metadata extracted",
+			slog.String(otelkeys.BookID, book.ID),
+			slog.Any(otelkeys.BookMetadata, meta),
+		)
+	}
+
 	slog.InfoContext(ctx, "file processed",
 		slog.String(otelkeys.BookID, book.ID),
 		slog.String(otelkeys.Title, title),
 		slog.String(otelkeys.FileType, p.FileType),
 		slog.Int64(otelkeys.FileSize, p.FileSize),
-		slog.Any(otelkeys.BookMetadata, meta),
 		slog.String(otelkeys.Format, format),
 		slog.String(otelkeys.Path, p.Path),
 	)
