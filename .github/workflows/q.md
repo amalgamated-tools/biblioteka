@@ -21,7 +21,7 @@ safe-outputs:
   add-comment:
     max: 1
   create-pull-request:
-    title-prefix: "[q] "
+    title-prefix: "chore(q): "
     labels: [automation, workflow-optimization]
     draft: false
     if-no-changes: "ignore"
