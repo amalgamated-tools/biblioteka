@@ -103,6 +103,125 @@ func TestListBooks_Handler(t *testing.T) {
 	}
 }
 
+func TestListBooks_InvalidLimitOffset_NonInt(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	// Seed some data
+	h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	// Provide non-integer limit/offset; handler should fall back to defaults.
+	r := httptest.NewRequest(http.MethodGet, "/api/books?limit=abc&offset=xyz", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if len(resp.Books) != 2 {
+		t.Errorf("len = %d, want 2", len(resp.Books))
+	}
+	if resp.Total != 2 {
+		t.Errorf("total = %d, want 2", resp.Total)
+	}
+	// Invalid values should cause defaults to be used.
+	if resp.Limit != 50 {
+		t.Errorf("limit = %d, want 50 (default)", resp.Limit)
+	}
+	if resp.Offset != 0 {
+		t.Errorf("offset = %d, want 0 (default)", resp.Offset)
+	}
+}
+
+func TestListBooks_NegativeLimitOffset(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/books?limit=-5&offset=-10", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if len(resp.Books) != 2 {
+		t.Errorf("len = %d, want 2", len(resp.Books))
+	}
+	if resp.Total != 2 {
+		t.Errorf("total = %d, want 2", resp.Total)
+	}
+
+	// Negative values should be clamped to safe non-negative values.
+	if resp.Limit <= 0 {
+		t.Errorf("limit = %d, want > 0 after clamping", resp.Limit)
+	}
+	if resp.Offset < 0 {
+		t.Errorf("offset = %d, want >= 0 after clamping", resp.Offset)
+	}
+	if resp.Limit == -5 {
+		t.Errorf("limit should not echo negative input; got %d", resp.Limit)
+	}
+	if resp.Offset == -10 {
+		t.Errorf("offset should not echo negative input; got %d", resp.Offset)
+	}
+}
+
+func TestListBooks_MaxLimitClamping(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	// Request an absurdly large limit; handler should clamp to a maximum.
+	r := httptest.NewRequest(http.MethodGet, "/api/books?limit=999999&offset=0", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if len(resp.Books) != 2 {
+		t.Errorf("len = %d, want 2", len(resp.Books))
+	}
+	if resp.Total != 2 {
+		t.Errorf("total = %d, want 2", resp.Total)
+	}
+
+	// We don't assert the exact max, only that the requested huge limit was clamped.
+	if resp.Limit == 999999 {
+		t.Errorf("limit should be clamped below requested huge value; got %d", resp.Limit)
+	}
+	if resp.Limit < len(resp.Books) {
+		t.Errorf("limit = %d, want >= number of returned books (%d)", resp.Limit, len(resp.Books))
+	}
+}
+
 func TestGetBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 

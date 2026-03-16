@@ -337,6 +337,168 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	}
 }
 
+func TestListLibraryBooks_PaginationValid(t *testing.T) {
+	h, userID := setupLibraryHandler(t)
+
+	// Create a library.
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{Name: "Paginated", Paths: []string{dir}})
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+	h.HandleLibraries(w, r)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
+	}
+	var lib libraryDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
+		t.Fatalf("unmarshal library: %v", err)
+	}
+
+	// Create multiple books and link them to the library.
+	const totalBooks = 3
+	for i := 0; i < totalBooks; i++ {
+		title := fmt.Sprintf("Book %d", i+1)
+		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		if err != nil {
+			t.Fatalf("create book %d: %v", i+1, err)
+		}
+		if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
+			t.Fatalf("add book %d to library: %v", i+1, err)
+		}
+	}
+
+	// Request a paginated slice of books.
+	r2 := httptest.NewRequest(http.MethodGet, "/api/libraries/"+lib.ID+"/books?limit=2&offset=1", nil)
+	r2 = withUserID(r2, userID)
+	w2 := httptest.NewRecorder()
+	h.HandleLibrary(w2, r2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal books: %v", err)
+	}
+
+	if resp.Total != totalBooks {
+		t.Fatalf("total = %d, want %d", resp.Total, totalBooks)
+	}
+	if len(resp.Books) == 0 || len(resp.Books) > 2 {
+		t.Fatalf("books count = %d, want between 1 and 2", len(resp.Books))
+	}
+}
+
+func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
+	h, userID := setupLibraryHandler(t)
+
+	// Create a library.
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{Name: "InvalidPagination", Paths: []string{dir}})
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+	h.HandleLibraries(w, r)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
+	}
+	var lib libraryDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
+		t.Fatalf("unmarshal library: %v", err)
+	}
+
+	// Create multiple books and link them to the library.
+	const totalBooks = 3
+	for i := 0; i < totalBooks; i++ {
+		title := fmt.Sprintf("Invalid Book %d", i+1)
+		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		if err != nil {
+			t.Fatalf("create book %d: %v", i+1, err)
+		}
+		if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
+			t.Fatalf("add book %d to library: %v", i+1, err)
+		}
+	}
+
+	// Use negative values that should be validated/clamped by the handler.
+	r2 := httptest.NewRequest(http.MethodGet, "/api/libraries/"+lib.ID+"/books?limit=-5&offset=-10", nil)
+	r2 = withUserID(r2, userID)
+	w2 := httptest.NewRecorder()
+	h.HandleLibrary(w2, r2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal books: %v", err)
+	}
+
+	if resp.Total != totalBooks {
+		t.Fatalf("total = %d, want %d", resp.Total, totalBooks)
+	}
+	if len(resp.Books) == 0 {
+		t.Fatalf("books count = %d, want > 0", len(resp.Books))
+	}
+}
+
+func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
+	h, userID := setupLibraryHandler(t)
+
+	// Create a library.
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{Name: "MaxLimit", Paths: []string{dir}})
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+	h.HandleLibraries(w, r)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
+	}
+	var lib libraryDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
+		t.Fatalf("unmarshal library: %v", err)
+	}
+
+	// Create several books and link them to the library.
+	const totalBooks = 10
+	for i := 0; i < totalBooks; i++ {
+		title := fmt.Sprintf("Clamped Book %d", i+1)
+		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		if err != nil {
+			t.Fatalf("create book %d: %v", i+1, err)
+		}
+		if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
+			t.Fatalf("add book %d to library: %v", i+1, err)
+		}
+	}
+
+	// Request with an excessively large limit to ensure it is clamped internally.
+	r2 := httptest.NewRequest(http.MethodGet, "/api/libraries/"+lib.ID+"/books?limit=999999&offset=0", nil)
+	r2 = withUserID(r2, userID)
+	w2 := httptest.NewRecorder()
+	h.HandleLibrary(w2, r2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal books: %v", err)
+	}
+
+	if resp.Total != totalBooks {
+		t.Fatalf("total = %d, want %d", resp.Total, totalBooks)
+	}
+	if len(resp.Books) != totalBooks {
+		t.Fatalf("books count = %d, want %d", len(resp.Books), totalBooks)
+	}
+}
+
 func TestListLibraryBooks_NotFound(t *testing.T) {
 	h, userID := setupLibraryHandler(t)
 

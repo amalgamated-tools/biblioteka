@@ -15,7 +15,7 @@ class BookStore {
       for (;;) {
         const data = await api.listBooks(limit, offset);
         all.push(...data.books);
-        if (all.length >= data.total) break;
+        if (all.length >= data.total || data.books.length === 0) break;
         offset += limit;
       }
       this.books = all;

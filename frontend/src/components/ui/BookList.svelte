@@ -50,8 +50,10 @@
   }
 
   $effect(() => {
-    // Re-fetch when offset changes (including initial load)
+    // Re-fetch when offset, fetchBooks, or pageSize change (including initial load)
     void offset;
+    void fetchBooks;
+    void pageSize;
     load();
   });
 
