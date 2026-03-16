@@ -164,5 +164,5 @@ func findISBN(book *epub.Rootfile) string {
 		return cleanID
 	}
 
-	return "Not Found"
+	return ""
 }
