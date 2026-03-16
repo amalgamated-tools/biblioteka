@@ -763,13 +763,15 @@ Create an author.
 | `google_books_id`| string |          | Google Books author ID |
 | `image_url`      | string |          | Author photo URL |
 
+> **Name normalization:** Before storage, the server trims leading/trailing whitespace and collapses any internal whitespace run to a single space. Capitalization is preserved. For example, `"  J.R.R.  Tolkien  "` is stored as `"J.R.R. Tolkien"`. A name that is blank after normalization is rejected with `400`.
+
 **Response:** `201 Created` with the author object.
 
 **Errors:**
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Invalid request (malformed JSON or missing name) |
+| `400` | Invalid request (malformed JSON, missing name, or name is blank after normalization) |
 | `409` | An author with that name already exists (comparison is case-insensitive) |
 | `500` | Unexpected server error |
 
@@ -808,7 +810,7 @@ Get a single author by ID.
 
 Update an author (full update).
 
-**Request body:** Same fields as `POST /api/authors`.
+**Request body:** Same fields as `POST /api/authors`. The same name normalization (whitespace trimming and collapsing) applies.
 
 **Response body (`200`):** Updated author object.
 
@@ -816,7 +818,7 @@ Update an author (full update).
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Invalid request (malformed JSON or missing name) |
+| `400` | Invalid request (malformed JSON, missing name, or name is blank after normalization) |
 | `404` | Author not found |
 | `409` | An author with that name already exists (comparison is case-insensitive) |
 

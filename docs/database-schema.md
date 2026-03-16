@@ -151,6 +151,8 @@ Metadata about book authors, shared across all libraries.
 **Indexes:**
 - `UNIQUE(LOWER(name))` (`idx_authors_name_ci`) — case-insensitive uniqueness; `"Jane Austen"` and `"jane austen"` are treated as the same author
 
+**Write normalization:** The application layer normalizes `name` before every insert or update: leading/trailing whitespace is trimmed and any internal whitespace run is collapsed to a single space. Capitalization is preserved. A name that is blank after normalization is rejected.
+
 ---
 
 ### `series`
