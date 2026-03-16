@@ -59,8 +59,11 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 			slog.String(otelkeys.FileType, p.FileType),
 			slog.Int64(otelkeys.FileSize, p.FileSize),
 		)
+		var title string
+		var description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL *string
+		var numPages *int = nil
 
-		title := p.FileName
+		title = p.FileName
 		if ext := filepath.Ext(p.FileName); ext != "" && strings.EqualFold(ext[1:], p.FileType) {
 			title = strings.TrimSuffix(p.FileName, ext)
 		}
@@ -71,33 +74,43 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 			slog.String(otelkeys.Path, p.Path),
 		)
 
-		var meta *metadata.BookMetadata
 		// Extract metadata before creating the book record so we can use the
 		// extracted fields (now or in the future) to populate or enrich the book.
 		// The book ID comes from CreateBook, not from metadata extraction.
-		if extractor == nil {
-			slog.WarnContext(ctx, "metadata extractor not configured, skipping metadata extraction",
-				slog.String(otelkeys.Path, p.Path),
-			)
-		} else {
+		if extractor != nil {
 			meta, err := extractor.ExtractMetadata(p.Path)
 			if err != nil {
 				slog.WarnContext(ctx, "metadata extraction failed, continuing with filename-derived metadata",
 					slog.String(otelkeys.Path, p.Path),
 					slog.Any(otelkeys.Error, err),
+					slog.String(otelkeys.Title, title),
 				)
 			} else {
+				description = new(meta.Description)
+				isbn10 = new(meta.ISBN)
+				title = meta.Title
 				slog.DebugContext(ctx, "metadata extracted",
 					slog.String(otelkeys.Title, meta.Title),
 					slog.String(otelkeys.Format, meta.Format),
 				)
 			}
 		}
-		bookTitle := title
-		if meta != nil && meta.Title != "" {
-			bookTitle = meta.Title
-		}
-		book, err := database.CreateBook(ctx, bookTitle, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := database.CreateBook(
+			ctx,
+			title,
+			description,
+			asin,
+			isbn10,
+			isbn13,
+			goodreadsID,
+			hardcoverID,
+			googleBooksID,
+			publicationDate,
+			publisher,
+			language,
+			numPages,
+			coverImageURL,
+		)
 		if err != nil {
 			return fmt.Errorf("create book for %s: %w", p.Path, err)
 		}
@@ -108,7 +121,6 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 		}
 
 		slog.InfoContext(ctx, "file processed",
-			slog.String(otelkeys.Title, bookTitle),
 			slog.String(otelkeys.BookID, book.ID),
 			slog.String(otelkeys.Path, p.Path),
 		)
