@@ -23,18 +23,11 @@ type BookMetadata struct {
 }
 
 type Extractor struct {
-	path string
-	et   *exiftool.Exiftool
+	et *exiftool.Exiftool
 }
 
-func NewExtractor(opts ...ExtractorOption) (*Extractor, error) {
-	ex := &Extractor{}
-	for _, opt := range opts {
-		if err := opt(ex); err != nil {
-			return nil, fmt.Errorf("applying option: %w", err)
-		}
-	}
-	et, err := exiftool.NewExiftool(exiftool.SetExiftoolBinaryPath(ex.path))
+func NewExtractor() (*Extractor, error) {
+	et, err := exiftool.NewExiftool()
 	if err != nil {
 		slog.WarnContext(context.Background(), "exiftool not available; exif-based metadata extraction disabled", slog.Any(otelkeys.Error, err))
 		return &Extractor{
