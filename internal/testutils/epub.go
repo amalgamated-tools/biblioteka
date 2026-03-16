@@ -1,0 +1,86 @@
+package testutils
+
+import (
+	"archive/zip"
+	"fmt"
+	"os"
+	"strings"
+	"testing"
+)
+
+// MakeTestEPUB creates a minimal valid EPUB file at the given path.
+// The EPUB spec requires: mimetype, META-INF/container.xml, and a content.opf.
+func MakeTestEPUB(t *testing.T, path, title, creator, identifier string) {
+	t.Helper()
+
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create epub: %v", err)
+	}
+
+	w := zip.NewWriter(f)
+	defer func() {
+		var errs []string
+
+		if err := w.Close(); err != nil {
+			errs = append(errs, fmt.Sprintf("close epub zip writer: %v", err))
+		}
+		if err := f.Close(); err != nil {
+			errs = append(errs, fmt.Sprintf("close epub file: %v", err))
+		}
+
+		if len(errs) > 0 {
+			t.Fatalf("%s", strings.Join(errs, "; "))
+		}
+	}()
+
+	// mimetype must be the first entry, stored (not compressed)
+	mh := &zip.FileHeader{Name: "mimetype", Method: zip.Store}
+	mw, err := w.CreateHeader(mh)
+	if err != nil {
+		t.Fatalf("create mimetype: %v", err)
+	}
+	if _, err := mw.Write([]byte("application/epub+zip")); err != nil {
+		t.Fatalf("write mimetype: %v", err)
+	}
+
+	// META-INF/container.xml
+	writeZipFile(t, w, "META-INF/container.xml", `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`)
+
+	// OEBPS/content.opf
+	writeZipFile(t, w, "OEBPS/content.opf", `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>`+title+`</dc:title>
+    <dc:creator>`+creator+`</dc:creator>
+    <dc:identifier id="uid">`+identifier+`</dc:identifier>
+    <dc:language>en</dc:language>
+  </metadata>
+  <manifest>
+    <item id="chapter1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="chapter1"/>
+  </spine>
+</package>`)
+
+	// A minimal chapter so the EPUB isn't completely empty
+	writeZipFile(t, w, "OEBPS/chapter1.xhtml", `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter 1</title></head><body><p>Hello</p></body></html>`)
+}
+
+func writeZipFile(t *testing.T, w *zip.Writer, name, content string) {
+	t.Helper()
+	fw, err := w.Create(name)
+	if err != nil {
+		t.Fatalf("create %s: %v", name, err)
+	}
+	if _, err := fw.Write([]byte(content)); err != nil {
+		t.Fatalf("write %s: %v", name, err)
+	}
+}
