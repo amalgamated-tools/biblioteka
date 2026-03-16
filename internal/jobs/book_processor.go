@@ -177,53 +177,56 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	}
 
 	// create an Author record if metadata extraction found an author and associate it with the book
-	if meta != nil && meta.Author != "" {
-		author, err := database.GetAuthorByName(ctx, meta.Author)
-		if err != nil {
-			if !errors.Is(err, sql.ErrNoRows) {
-				slog.ErrorContext(ctx, "failed to get or create author record for file",
-					slog.String(otelkeys.Path, p.Path),
-					slog.String(otelkeys.Author, meta.Author),
-					slog.Any(otelkeys.Error, err),
-				)
-				return fmt.Errorf("get or create author for %s: %w", p.Path, err)
-			}
-		}
-		if author == nil {
-			author, err = database.CreateAuthor(ctx, meta.Author, nil, nil, nil, nil)
+	if meta != nil {
+		authorName := strings.TrimSpace(meta.Author)
+		if authorName != "" {
+			author, err := database.GetAuthorByName(ctx, authorName)
 			if err != nil {
-				// Handle expected race: another worker may have created this author concurrently.
-				if errors.Is(err, db.ErrAuthorNameExists) {
-					author, err = database.GetAuthorByName(ctx, meta.Author)
-					if err != nil {
-						slog.ErrorContext(ctx, "failed to load existing author after concurrent create",
-							slog.String(otelkeys.Path, p.Path),
-							slog.String(otelkeys.Author, meta.Author),
-							slog.Any(otelkeys.Error, err),
-						)
-						return fmt.Errorf("get existing author after conflict for %s: %w", p.Path, err)
-					}
-					if author == nil {
-						return fmt.Errorf("author %q exists but could not be loaded for %s", meta.Author, p.Path)
-					}
-				} else {
-					slog.ErrorContext(ctx, "failed to create author record for file",
+				if !errors.Is(err, sql.ErrNoRows) {
+					slog.ErrorContext(ctx, "failed to get or create author record for file",
 						slog.String(otelkeys.Path, p.Path),
-						slog.String(otelkeys.Author, meta.Author),
+						slog.String(otelkeys.Author, authorName),
 						slog.Any(otelkeys.Error, err),
 					)
-					return fmt.Errorf("create author for %s: %w", p.Path, err)
+					return fmt.Errorf("get or create author for %s: %w", p.Path, err)
 				}
 			}
-		}
-		err = database.SetBookAuthors(ctx, book.ID, []string{author.ID})
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to associate author with book for file",
-				slog.String(otelkeys.Path, p.Path),
-				slog.String(otelkeys.Author, meta.Author),
-				slog.Any(otelkeys.Error, err),
-			)
-			return fmt.Errorf("associate author with book for %s: %w", p.Path, err)
+			if author == nil {
+				author, err = database.CreateAuthor(ctx, authorName, nil, nil, nil, nil)
+				if err != nil {
+					// Handle expected race: another worker may have created this author concurrently.
+					if errors.Is(err, db.ErrAuthorNameExists) {
+						author, err = database.GetAuthorByName(ctx, authorName)
+						if err != nil {
+							slog.ErrorContext(ctx, "failed to load existing author after concurrent create",
+								slog.String(otelkeys.Path, p.Path),
+								slog.String(otelkeys.Author, authorName),
+								slog.Any(otelkeys.Error, err),
+							)
+							return fmt.Errorf("get existing author after conflict for %s: %w", p.Path, err)
+						}
+						if author == nil {
+							return fmt.Errorf("author %q exists but could not be loaded for %s", authorName, p.Path)
+						}
+					} else {
+						slog.ErrorContext(ctx, "failed to create author record for file",
+							slog.String(otelkeys.Path, p.Path),
+							slog.String(otelkeys.Author, authorName),
+							slog.Any(otelkeys.Error, err),
+						)
+						return fmt.Errorf("create author for %s: %w", p.Path, err)
+					}
+				}
+			}
+			err = database.SetBookAuthors(ctx, book.ID, []string{author.ID})
+			if err != nil {
+				slog.ErrorContext(ctx, "failed to associate author with book for file",
+					slog.String(otelkeys.Path, p.Path),
+					slog.String(otelkeys.Author, authorName),
+					slog.Any(otelkeys.Error, err),
+				)
+				return fmt.Errorf("associate author with book for %s: %w", p.Path, err)
+			}
 		}
 	}
 
