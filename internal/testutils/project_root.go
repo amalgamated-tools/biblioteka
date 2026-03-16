@@ -5,8 +5,11 @@ import (
 	"runtime"
 )
 
-var _, b, _, _ = runtime.Caller(0)
-
 func GetProjectRoot() string {
-	return filepath.Join(filepath.Dir(b), "../..") //nolint:gocritic // This is a safe operation.
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("testutils: runtime.Caller(0) failed")
+	}
+
+	return filepath.Clean(filepath.Join(filepath.Dir(filename), "../..")) //nolint:gocritic // This is a safe operation.
 }
