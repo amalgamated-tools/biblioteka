@@ -118,7 +118,6 @@ jobs:
             exit 1
           fi
 
-
   # Lint and test run in parallel after frontend-build to shorten the critical path
   go-lint:
     needs: frontend-build
@@ -175,6 +174,10 @@ jobs:
           cache-dependency-path: go.sum
 
       - run: go version
+
+      - name: Download exiftool for tests
+        run: |
+          ./script/get-exif-tool
 
       - name: Run Go tests
         run: go test -v ./...
