@@ -25,7 +25,7 @@ frontend/
       Books.svelte        Book listing and detail view
       Dashboard.svelte    Home screen; library overview
       Libraries.svelte    Library management view
-      MyLibrary.svelte    Current user's personal library view
+      MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
       Sidebar.svelte      Navigation sidebar; fetches and displays the running server version
       libraries/          Reusable sub-components for the Libraries view
