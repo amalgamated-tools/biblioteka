@@ -11,7 +11,10 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-var ErrAuthorNameExists = errors.New("author name already exists")
+var (
+	ErrAuthorNameExists  = errors.New("author name already exists")
+	ErrInvalidAuthorName = errors.New("author name cannot be blank")
+)
 
 var collapseSpaces = regexp.MustCompile(`\s+`)
 
@@ -50,6 +53,10 @@ func scanAuthor(row interface{ Scan(...any) error }) (*Author, error) {
 
 func (d *DB) CreateAuthor(ctx context.Context, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {
 	name = NormalizeAuthorName(name)
+	if name == "" {
+		slog.WarnContext(ctx, "db: rejecting author with blank name after normalization")
+		return nil, ErrInvalidAuthorName
+	}
 	slog.DebugContext(ctx, "db: creating author", slog.String(otelkeys.Name, name))
 
 	a, err := scanAuthor(d.QueryRowContext(ctx,
