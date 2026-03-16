@@ -23,7 +23,8 @@ type BookMetadata struct {
 	Title       string
 }
 
-// Extractor extracts metadata from book files. It is safe for concurrent use.
+// Extractor extracts metadata from book files. Concurrent ExtractMetadata calls are safe,
+// but Close must not be called concurrently with other methods.
 type Extractor struct {
 	mu sync.Mutex
 	et *exiftool.Exiftool
