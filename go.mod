@@ -1,7 +1,6 @@
 module github.com/amalgamated-tools/biblioteka
 
-go 1.26.0
-toolchain go1.26.1
+go 1.26.1
 
 require (
 	github.com/barasher/go-exiftool v1.10.0
