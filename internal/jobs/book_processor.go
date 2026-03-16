@@ -68,13 +68,28 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	if _, err := os.Stat(p.Path); err != nil {
 		if os.IsNotExist(err) {
 			// Check if the file was already indexed at the original path.
-			if bf, dbErr := database.GetBookFileByPath(ctx, p.Path); dbErr == nil {
+			bf, dbErr := database.GetBookFileByPath(ctx, p.Path)
+			if dbErr != nil && !errors.Is(dbErr, sql.ErrNoRows) {
+				wrappedErr := fmt.Errorf("process book file: get book file by path %q: %w", p.Path, dbErr)
+				slog.ErrorContext(ctx, "book processing failed: error looking up book file by path",
+					slog.Any(otelkeys.Error, wrappedErr),
+					slog.String(otelkeys.Path, p.Path),
+				)
+				return wrappedErr
+			}
+			if dbErr == nil {
 				slog.InfoContext(ctx, "source file missing but already indexed, skipping",
 					slog.String(otelkeys.Path, p.Path),
 					slog.String(otelkeys.BookID, bf.BookID),
 				)
 				if p.LibraryID != "" {
-					_ = database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID)
+					if err := database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID); err != nil {
+						slog.WarnContext(ctx, "failed to add already-indexed book to library",
+							slog.Any(otelkeys.Error, err),
+							slog.String(otelkeys.Path, p.Path),
+							slog.String(otelkeys.BookID, bf.BookID),
+						)
+					}
 				}
 				return nil
 			}
@@ -92,7 +107,13 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 								slog.String(otelkeys.BookID, bf.BookID),
 							)
 							if p.LibraryID != "" {
-								_ = database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID)
+								if err := database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID); err != nil {
+									slog.WarnContext(ctx, "failed to add reorganized already-indexed book to library",
+										slog.Any(otelkeys.Error, err),
+										slog.String(otelkeys.Path, candidatePath),
+										slog.String(otelkeys.BookID, bf.BookID),
+									)
+								}
 							}
 							return nil
 						}
