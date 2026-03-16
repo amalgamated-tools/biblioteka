@@ -189,9 +189,7 @@
         disabled={currentPage <= 1}
         class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-200 dark:border-ink-700 transition-colors
           {currentPage <= 1
-            ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
-            : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
-      >
+  let loading = $state(true);
         <ChevronLeft class="w-4 h-4" />
         Previous
       </button>
