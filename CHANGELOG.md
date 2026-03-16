@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.0.5](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.4...v0.0.5) (2026-03-16)
+
+
+### Features
+
+* Extract metadata from files ([#193](https://github.com/amalgamated-tools/biblioteka/issues/193)) ([6e707f5](https://github.com/amalgamated-tools/biblioteka/commit/6e707f5106527109b8be89bb4081b6cfa9f033d1))
+
+
+### Bug Fixes
+
+* correct daily-file-diet prompt to use allowed bash command format ([#187](https://github.com/amalgamated-tools/biblioteka/issues/187)) ([672edfb](https://github.com/amalgamated-tools/biblioteka/commit/672edfb3879ca4748427b2b2251b96e41af7f116))
+* remove piped grep command in daily-file-diet prompt to match allowed tool patterns ([#200](https://github.com/amalgamated-tools/biblioteka/issues/200)) ([e19b5d0](https://github.com/amalgamated-tools/biblioteka/commit/e19b5d05fce733663cb4964a700c916fb7acfaf3))
+
+
+### Miscellaneous Chores
+
+* release 0.0.5 ([468ec08](https://github.com/amalgamated-tools/biblioteka/commit/468ec08be4f8dacb373871e21c80b2f966a3bf41))
+
 ## [0.0.4](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.3...v0.0.4) (2026-03-15)
 
 
