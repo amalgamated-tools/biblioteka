@@ -41,6 +41,20 @@ func TestCreateSeries_DuplicateName(t *testing.T) {
 	}
 }
 
+func TestCreateSeries_DuplicateNameCaseInsensitive(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateSeries(context.Background(), "Mistborn", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("first CreateSeries() error: %v", err)
+	}
+
+	_, err = d.CreateSeries(context.Background(), "mistborn", nil, nil, nil)
+	if err != ErrSeriesNameExists {
+		t.Errorf("expected ErrSeriesNameExists, got %v", err)
+	}
+}
+
 func TestGetSeries(t *testing.T) {
 	d := newTestDB(t)
 
@@ -111,6 +125,35 @@ func TestUpdateSeries_DuplicateName(t *testing.T) {
 	_, err := d.UpdateSeries(context.Background(), s2.ID, "The Dark Tower", nil, nil, nil)
 	if err != ErrSeriesNameExists {
 		t.Errorf("expected ErrSeriesNameExists, got %v", err)
+	}
+}
+
+func TestUpdateSeries_DuplicateNameCaseInsensitive(t *testing.T) {
+	d := newTestDB(t)
+
+	_, _ = d.CreateSeries(context.Background(), "Mistborn", nil, nil, nil)
+	s2, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+
+	_, err := d.UpdateSeries(context.Background(), s2.ID, "mistborn", nil, nil, nil)
+	if err != ErrSeriesNameExists {
+		t.Errorf("expected ErrSeriesNameExists, got %v", err)
+	}
+}
+
+func TestFindOrCreateSeries_CaseInsensitive(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.FindOrCreateSeries(context.Background(), "Mistborn")
+	if err != nil {
+		t.Fatalf("first FindOrCreateSeries() error: %v", err)
+	}
+
+	found, err := d.FindOrCreateSeries(context.Background(), "mistborn")
+	if err != nil {
+		t.Fatalf("second FindOrCreateSeries() error: %v", err)
+	}
+	if found.ID != created.ID {
+		t.Errorf("expected same series ID, got %q and %q", found.ID, created.ID)
 	}
 }
 
