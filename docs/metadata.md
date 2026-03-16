@@ -9,7 +9,7 @@ Biblioteka can extract metadata — title, author, ISBN, format — from book fi
 
 The extractor is implemented in [`internal/metadata/extractor.go`](../internal/metadata/extractor.go) and exposed to end users via the standalone [`cmd/cli`](../cmd/cli/main.go) utility.
 
-> **Import pipeline status:** Automatic metadata extraction during library scans (`process:file` background job) is **not yet implemented**. The job currently derives the book title from the filename only. Full integration is planned; see [Roadmap](#roadmap) below.
+> **Import pipeline status:** Automatic metadata extraction is **now active** in the `process:file` background job (since v0.0.5). When a file is imported during a library scan, the extractor runs and populates the book record with `Title`, `ISBN` (stored as ISBN-10 or ISBN-13), and `Description` when the extracted value is non-empty. If extraction fails (for example, because ExifTool is not installed), the job falls back to deriving the book title from the filename. Author records are not yet created automatically from extracted author metadata — see [What's next](#whats-next) below.
 
 ---
 
@@ -124,15 +124,15 @@ error: exif-based metadata extraction requested but exiftool is not available
 
 ---
 
-## Roadmap
+## What's next
 
-The `internal/metadata` package is designed to be called from the `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)), which currently derives the book title from the filename only. The planned integration will:
+The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) now extracts and stores `Title`, `ISBN`, and `Description`. Planned future improvements include:
 
-1. Call `extractor.ExtractMetadata(path)` inside the `process:file` handler.
-2. Populate the book record with the extracted `Title`, `Author`, `ISBN`, and other available fields.
-3. Create an author record and link it to the book if an author name is found.
+1. **Author linking** — create an author record and associate it with the imported book when an `Author` name is found in the extracted metadata.
+2. **Publisher and page count** — extract and store `Publisher` and page count for formats where those fields are available.
+3. **Cover image** — populate `cover_image_url` for formats that embed cover art.
 
-For now, use `cmd/cli` to manually inspect what metadata Biblioteka would extract from a given file.
+Use `cmd/cli` to inspect what metadata Biblioteka would extract from a given file before it is imported.
 
 ---
 
