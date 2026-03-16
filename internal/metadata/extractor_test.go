@@ -113,7 +113,7 @@ func TestExtractMetadata_PDF(t *testing.T) {
 	pdfPath := filepath.Join(dir, "test.pdf")
 	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author")
 
-	ext, err := NewExtractor()
+	ext, err := NewExtractor(WithExiftoolBinaryPath(""))
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}

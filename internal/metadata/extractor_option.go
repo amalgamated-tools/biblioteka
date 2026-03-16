@@ -8,17 +8,17 @@ import (
 	"github.com/barasher/go-exiftool"
 )
 
-type ExtractorOption func(*Extractor)
+type ExtractorOption func(*Extractor) error
 
 func WithExiftoolBinaryPath(path string) ExtractorOption {
-	return func(e *Extractor) {
+	return func(e *Extractor) error {
 		et, err := exiftool.NewExiftool(exiftool.SetExiftoolBinaryPath(path))
 		if err != nil {
 			slog.WarnContext(context.Background(), "exiftool not available; exif-based metadata extraction disabled", slog.Any(otelkeys.Error, err))
-			e.et = nil
-			return
+			return err
 		}
 
 		e.et = et
+		return nil
 	}
 }
