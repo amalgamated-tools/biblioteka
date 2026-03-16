@@ -97,6 +97,39 @@ created_at DATETIME NOT NULL DEFAULT (datetime('now')),
 updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX idx_book_files_book_id ON book_files(book_id);
+CREATE TABLE audit_logs (
+id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+user_id TEXT,
+action TEXT NOT NULL,
+entity_type TEXT NOT NULL,
+entity_id TEXT NOT NULL,
+metadata TEXT,
+created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs (created_at DESC);
+CREATE INDEX idx_audit_logs_entity ON audit_logs (entity_type, entity_id);
+CREATE INDEX idx_audit_logs_user_id ON audit_logs (user_id);
+CREATE TABLE api_keys (
+id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+name TEXT NOT NULL,
+key_hash TEXT NOT NULL,
+key_prefix TEXT NOT NULL,
+last_used_at DATETIME,
+created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX idx_api_keys_key_hash ON api_keys (key_hash);
+CREATE INDEX idx_api_keys_user_id ON api_keys (user_id);
+CREATE TABLE opds_credentials (
+id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+password_hash TEXT NOT NULL,
+created_at DATETIME NOT NULL DEFAULT (datetime('now')),
+updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_opds_credentials_username ON opds_credentials (LOWER(username));
+CREATE INDEX idx_opds_credentials_user_id ON opds_credentials (user_id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20260214235631_create_users_table'),
@@ -111,4 +144,7 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260313050000_create_library_books_table'),
   ('20260313060000_create_book_authors_table'),
   ('20260313070000_create_book_series_table'),
-  ('20260313080000_create_book_files_table');
+  ('20260313080000_create_book_files_table'),
+  ('20260314000000_create_audit_logs_table'),
+  ('20260315000000_create_api_keys_table'),
+  ('20260315000000_create_opds_credentials_table');
