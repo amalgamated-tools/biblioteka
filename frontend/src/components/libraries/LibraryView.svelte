@@ -44,5 +44,7 @@
     <AlertBanner variant="error" class="mb-4">{error}</AlertBanner>
   {/if}
 
-  <BookList {fetchBooks} />
+  {#key libraryId}
+    <BookList {fetchBooks} />
+  {/key}
 </div>
