@@ -15,12 +15,14 @@ func MakeTestEPUB(t *testing.T, path, title, creator, identifier string) {
 	if err != nil {
 		t.Fatalf("create epub: %v", err)
 	}
-	defer f.Close()
 
 	w := zip.NewWriter(f)
 	t.Cleanup(func() {
 		if err := w.Close(); err != nil {
 			t.Fatalf("close epub zip writer: %v", err)
+		}
+		if err := f.Close(); err != nil {
+			t.Fatalf("close epub file: %v", err)
 		}
 	})
 
