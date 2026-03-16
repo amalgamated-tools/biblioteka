@@ -36,6 +36,8 @@ The `version` field is always present and reflects the binary version at startup
 
 ### Common log fields
 
+The following fields appear on HTTP access-log entries. Other subsystems (auth, background jobs, OPDS, …) emit additional fields — all field name constants are defined in [`internal/otelkeys/logger_keys.go`](../internal/otelkeys/logger_keys.go) and should be referenced by that package rather than as raw string literals (see [Log field name constants](#log-field-name-constants) below).
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `time` | string | RFC 3339 timestamp |
@@ -57,6 +59,22 @@ The `version` field is always present and reflects the binary version at startup
 > - `Request completed` is logged after the response is sent and includes `method`, `url`, `status_code`, `duration`, `request_id`, and `user_id`.
 >
 > At `info` level these per-request lines are suppressed, but other components (for example auth/rate-limiting and background job activity) may still emit `INFO`-level entries.
+
+### Log field name constants
+
+All structured-log field names used in Biblioteka are centralised in [`internal/otelkeys/logger_keys.go`](../internal/otelkeys/logger_keys.go) (package `otelkeys`). Using the constants rather than raw strings ensures that field names remain consistent across the codebase and are easy to refactor.
+
+**For contributors:** when emitting a log entry with `slog.InfoContext` (or any context-aware variant), use the constant instead of a quoted string:
+
+```go
+// ✅ correct — uses the otelkeys constant
+slog.InfoContext(ctx, "Book created", slog.String(otelkeys.BookID, book.ID))
+
+// ❌ incorrect — raw string literal, bypasses the centralised key registry
+slog.InfoContext(ctx, "Book created", slog.String("book_id", book.ID))
+```
+
+If a log entry requires a field that does not yet have a constant, add one to `internal/otelkeys/logger_keys.go` (keep the list alphabetical) before using it.
 
 ## Request ID Correlation
 
