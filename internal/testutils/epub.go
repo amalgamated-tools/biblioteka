@@ -74,6 +74,90 @@ func MakeTestEPUB(t *testing.T, path, title, creator, identifier string) {
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter 1</title></head><body><p>Hello</p></body></html>`)
 }
 
+// EPUBOptions provides optional metadata fields for MakeTestEPUBWithOptions.
+type EPUBOptions struct {
+	Description     string
+	Publisher       string
+	PublicationDate string // e.g. "1925-04-10"
+	Language        string // defaults to "en" if empty
+}
+
+// MakeTestEPUBWithOptions creates a minimal valid EPUB file with full metadata control.
+func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier string, opts EPUBOptions) {
+	t.Helper()
+
+	lang := opts.Language
+	if lang == "" {
+		lang = "en"
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create epub: %v", err)
+	}
+
+	w := zip.NewWriter(f)
+	defer func() {
+		var errs []string
+		if err := w.Close(); err != nil {
+			errs = append(errs, fmt.Sprintf("close epub zip writer: %v", err))
+		}
+		if err := f.Close(); err != nil {
+			errs = append(errs, fmt.Sprintf("close epub file: %v", err))
+		}
+		if len(errs) > 0 {
+			t.Fatalf("%s", strings.Join(errs, "; "))
+		}
+	}()
+
+	mh := &zip.FileHeader{Name: "mimetype", Method: zip.Store}
+	mw, err := w.CreateHeader(mh)
+	if err != nil {
+		t.Fatalf("create mimetype: %v", err)
+	}
+	if _, err := mw.Write([]byte("application/epub+zip")); err != nil {
+		t.Fatalf("write mimetype: %v", err)
+	}
+
+	writeZipFile(t, w, "META-INF/container.xml", `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`)
+
+	var extraMeta string
+	if opts.Description != "" {
+		extraMeta += "\n    <dc:description>" + opts.Description + "</dc:description>"
+	}
+	if opts.Publisher != "" {
+		extraMeta += "\n    <dc:publisher>" + opts.Publisher + "</dc:publisher>"
+	}
+	if opts.PublicationDate != "" {
+		extraMeta += `
+    <dc:date opf:event="publication">` + opts.PublicationDate + `</dc:date>`
+	}
+
+	writeZipFile(t, w, "OEBPS/content.opf", `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+    <dc:title>`+title+`</dc:title>
+    <dc:creator>`+creator+`</dc:creator>
+    <dc:identifier id="uid">`+identifier+`</dc:identifier>
+    <dc:language>`+lang+`</dc:language>`+extraMeta+`
+  </metadata>
+  <manifest>
+    <item id="chapter1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="chapter1"/>
+  </spine>
+</package>`)
+
+	writeZipFile(t, w, "OEBPS/chapter1.xhtml", `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter 1</title></head><body><p>Hello</p></body></html>`)
+}
+
 func writeZipFile(t *testing.T, w *zip.Writer, name, content string) {
 	t.Helper()
 	fw, err := w.Create(name)
