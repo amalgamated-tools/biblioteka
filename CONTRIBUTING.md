@@ -64,7 +64,7 @@ internal/
   otel/              # Logging and tracing setup
   otelkeys/          # Shared log/telemetry field-name constants
   telemetry/         # Anonymous usage telemetry (opt-in)
-  testutils/         # Shared test helpers (fixture EPUB and PDF generators)
+  testutils/         # Test helpers: MakeTestEPUB, MakeTestPDF (used in _test.go files only)
 frontend/            # Svelte 5 SPA (TypeScript + Tailwind CSS)
 db/
   schema.sql         # Reference schema
