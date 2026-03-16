@@ -210,9 +210,10 @@ Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: '
 2. Make your changes following the conventions above.
 3. Run `go fmt ./...` and `go test ./...` to verify all Go code is formatted and tests pass.
 4. Run `cd frontend && pnpm run lint && pnpm run check` to verify frontend code.
-5. Open a pull request against `main` with a clear description of what and why.
-6. Sign the [CLA](CLA.md) if prompted by the CLA bot (first-time contributors only).
-7. A maintainer will review your PR and provide feedback.
+5. **Update documentation** in `docs/` if your change adds, removes, or modifies an API endpoint, database table, configuration option, background job, or any user-visible behaviour. If you add or change API handler annotations, regenerate the OpenAPI spec with `make swagger`.
+6. Open a pull request against `main` with a clear description of what and why.
+7. Sign the [CLA](CLA.md) if prompted by the CLA bot (first-time contributors only).
+8. A maintainer will review your PR and provide feedback.
 
 ## Questions?
 
