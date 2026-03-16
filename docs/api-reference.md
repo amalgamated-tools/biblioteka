@@ -720,6 +720,8 @@ Update a library. All fields are replaced (full update).
 
 Delete a library. Returns `204 No Content`.
 
+> **Cascade:** Deleting a library also removes all `library_books` join entries for that library. Books themselves are **not** deleted — only their membership in this library. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
+
 ---
 
 ### `GET /api/libraries/{id}/books` 🔒
@@ -816,6 +818,8 @@ Update an author (full update).
 
 Delete an author. Returns `204 No Content`.
 
+> **Cascade:** Deleting an author also removes all `book_authors` join entries for that author. Books themselves are **not** deleted. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
+
 ---
 
 ## Series
@@ -894,6 +898,8 @@ Update a series (full update).
 ### `DELETE /api/series/{id}` 🔒
 
 Delete a series. Returns `204 No Content`.
+
+> **Cascade:** Deleting a series also removes all `book_series` join entries for that series. Books themselves are **not** deleted. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
 
 ---
 
@@ -1010,6 +1016,8 @@ Update a book's metadata (full update). Returns the updated book detail object.
 ### `DELETE /api/books/{id}` 🔒
 
 Delete a book. Returns `204 No Content`.
+
+> **Cascade:** Deleting a book also removes all associated `book_files`, `book_authors`, `book_series`, and `library_books` records. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
 
 ---
 
@@ -1183,6 +1191,8 @@ Acquisition feed of books ordered by most recently added, paginated (50 per page
 
 **Query parameters:** `page` (integer, default `1`)
 
+**Response content-type:** `application/atom+xml;profile=opds-catalog;kind=acquisition`
+
 ---
 
 ### `GET /opds/authors` — Authors list
@@ -1203,6 +1213,8 @@ Acquisition feed of books by the specified author, paginated (50 per page).
 
 **Query parameters:** `page` (integer, default `1`)
 
+**Response content-type:** `application/atom+xml;profile=opds-catalog;kind=acquisition`
+
 **Responses:**
 
 | Status | Description |
@@ -1218,6 +1230,8 @@ Navigation feed of all series, paginated (50 per page).
 
 **Query parameters:** `page` (integer, default `1`)
 
+**Response content-type:** `application/atom+xml;profile=opds-catalog;kind=navigation`
+
 ---
 
 ### `GET /opds/series/{id}` — Books in series
@@ -1227,6 +1241,8 @@ Acquisition feed of books in the specified series, paginated (50 per page).
 **Path parameters:** `{id}` — series resource ID
 
 **Query parameters:** `page` (integer, default `1`)
+
+**Response content-type:** `application/atom+xml;profile=opds-catalog;kind=acquisition`
 
 **Responses:**
 
@@ -1255,6 +1271,8 @@ Acquisition feed of books matching the query, paginated (50 per page).
 |-----------|-------------|
 | `q` | Search query (title, author, description) |
 | `page` | Page number (default `1`) |
+
+**Response content-type:** `application/atom+xml;profile=opds-catalog;kind=acquisition`
 
 ---
 
