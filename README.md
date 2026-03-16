@@ -19,7 +19,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 
 | Layer | Technology |
 |---|---|
-| Backend | Go 1.25, `net/http` |
+| Backend | Go 1.26, `net/http` |
 | Frontend | Svelte 5, TypeScript, Tailwind CSS 3.4, Vite 7 |
 | Database | SQLite (default) · PostgreSQL |
 | Job queue | asynq (Redis) |
@@ -45,7 +45,7 @@ docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
 
 ### Build from Source
 
-**Prerequisites:** Go 1.25+, Node.js 22+, pnpm, Redis
+**Prerequisites:** Go 1.26+, Node.js 22+, pnpm, Redis
 
 ```bash
 git clone https://github.com/amalgamated-tools/biblioteka.git

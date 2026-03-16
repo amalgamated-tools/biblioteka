@@ -38,7 +38,7 @@ func mustGenerateDummyOPDSHash() []byte {
 }
 
 // writeOPDSError writes an OPDS-compatible XML error response for authentication failures.
-func writeOPDSError(ctx context.Context, w http.ResponseWriter, status int, message string) {
+func writeOPDSError(_ context.Context, w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", `application/atom+xml;profile=opds-catalog;kind=navigation`)
 	w.WriteHeader(status)
 
