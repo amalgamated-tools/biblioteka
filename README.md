@@ -255,6 +255,7 @@ internal/
   server/          Route registration, middleware setup, embedded frontend
   worker/          asynq worker setup
   otel/            OpenTelemetry tracing and structured logging setup
+  otelkeys/        Shared structured-log and telemetry field-name constants
   telemetry/       Anonymous usage telemetry (opt-in, disabled by default)
 frontend/          Svelte 5 SPA
 db/
