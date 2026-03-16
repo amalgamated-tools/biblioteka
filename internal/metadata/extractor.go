@@ -34,13 +34,9 @@ func NewExtractor() (*Extractor, error) {
 	et, err := exiftool.NewExiftool()
 	if err != nil {
 		slog.WarnContext(context.Background(), "exiftool not available; exif-based metadata extraction disabled", slog.Any(otelkeys.Error, err))
-		return &Extractor{
-			et: nil,
-		}, nil
+		return &Extractor{}, nil
 	}
-	return &Extractor{
-		et: et,
-	}, nil
+	return &Extractor{et: et}, nil
 }
 
 func (e *Extractor) Close() {

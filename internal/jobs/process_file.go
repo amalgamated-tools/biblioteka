@@ -59,14 +59,14 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 			slog.String(otelkeys.FileType, p.FileType),
 			slog.Int64(otelkeys.FileSize, p.FileSize),
 		)
-		var title string
-		var description, isbn10, isbn13, coverImageURL *string
-		var numPages *int
 
-		title = p.FileName
+		title := p.FileName
 		if ext := filepath.Ext(p.FileName); ext != "" && strings.EqualFold(ext[1:], p.FileType) {
 			title = strings.TrimSuffix(p.FileName, ext)
 		}
+
+		var description, isbn10, isbn13, coverImageURL *string
+		var numPages *int
 
 		slog.InfoContext(ctx, "processing file",
 			slog.String(otelkeys.Title, title),
@@ -102,33 +102,14 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 			if meta.Description != "" {
 				description = &meta.Description
 			}
-			if meta.ISBN != "" {
-				// Normalize ISBN: strip whitespace, known prefixes, and hyphens/spaces.
-				isbnRaw := strings.TrimSpace(meta.ISBN)
-				if isbnRaw != "" {
-					lower := strings.ToLower(isbnRaw)
-					switch {
-					case strings.HasPrefix(lower, "urn:isbn:"):
-						isbnRaw = isbnRaw[len("urn:isbn:"):]
-					case strings.HasPrefix(lower, "isbn:"):
-						isbnRaw = isbnRaw[len("isbn:"):]
-					}
-					isbnRaw = strings.TrimSpace(isbnRaw)
-					// Remove hyphens and internal spaces (common ISBN formatting).
-					isbnRaw = strings.ReplaceAll(isbnRaw, "-", "")
-					isbnRaw = strings.ReplaceAll(isbnRaw, " ", "")
-					isbnRaw = strings.TrimSpace(isbnRaw)
-				}
-				// Ignore sentinel/non-ISBN values.
-				if isbnRaw != "" && !strings.EqualFold(isbnRaw, "not found") {
-					// Store the normalized ISBN back into meta so the pointer remains valid.
-					meta.ISBN = isbnRaw
-					switch len(meta.ISBN) {
-					case 10:
-						isbn10 = &meta.ISBN
-					case 13:
-						isbn13 = &meta.ISBN
-					}
+			if isbn := normalizeISBN(meta.ISBN); isbn != "" {
+				// Store the normalized ISBN back into meta so the pointer remains valid.
+				meta.ISBN = isbn
+				switch len(meta.ISBN) {
+				case 10:
+					isbn10 = &meta.ISBN
+				case 13:
+					isbn13 = &meta.ISBN
 				}
 			}
 			if meta.Title != "" {
@@ -172,4 +153,30 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 
 		return nil
 	}
+}
+
+// normalizeISBN strips common prefixes, whitespace, hyphens, and spaces from a
+// raw ISBN string, and returns the normalized digits. Returns an empty string
+// for empty, unrecognized-length, or sentinel "Not Found" values.
+func normalizeISBN(raw string) string {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return ""
+	}
+	lower := strings.ToLower(s)
+	switch {
+	case strings.HasPrefix(lower, "urn:isbn:"):
+		s = s[len("urn:isbn:"):]
+	case strings.HasPrefix(lower, "isbn:"):
+		s = s[len("isbn:"):]
+	}
+	s = strings.TrimSpace(s)
+	// Remove hyphens and internal spaces (common ISBN formatting).
+	s = strings.ReplaceAll(s, "-", "")
+	s = strings.ReplaceAll(s, " ", "")
+	// Ignore sentinel/non-ISBN values and lengths that don't match ISBN-10 or ISBN-13.
+	if strings.EqualFold(s, "not found") || (len(s) != 10 && len(s) != 13) {
+		return ""
+	}
+	return s
 }
