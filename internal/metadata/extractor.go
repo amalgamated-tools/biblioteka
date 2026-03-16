@@ -52,6 +52,10 @@ func (e *Extractor) Close() {
 	}
 }
 
+func (e *Extractor) Exiftool() *exiftool.Exiftool {
+	return e.et
+}
+
 func (e *Extractor) ExtractMetadata(path string) (*BookMetadata, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	// 1. Try Native EPUB parsing first (Zero-dependency, Very Fast)

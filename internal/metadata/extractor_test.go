@@ -111,13 +111,13 @@ func TestExtractMetadata_EPUBCaseInsensitive(t *testing.T) {
 func TestExtractMetadata_PDF(t *testing.T) {
 	dir := t.TempDir()
 	pdfPath := filepath.Join(dir, "test.pdf")
-	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author")
 
-	ext, err := NewExtractor(WithExiftoolBinaryPath(""))
+	ext, err := NewExtractor(WithExiftoolBinaryPath("/Users/veverkap/Code/personal/biblioteka/vendor/Image-ExifTool-13.52/exiftool")) // Adjust path as needed for testing
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
 	defer ext.Close()
+	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author", ext.Exiftool())
 	t.Fail()
 	meta, err := ext.ExtractMetadata(pdfPath)
 	if err != nil {

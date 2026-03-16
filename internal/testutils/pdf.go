@@ -9,7 +9,7 @@ import (
 )
 
 // MakeTestPDF creates a minimal valid PDF file with metadata written by exiftool.
-func MakeTestPDF(t *testing.T, path, title, author string) {
+func MakeTestPDF(t *testing.T, path, title, author string, et *exiftool.Exiftool) {
 	t.Helper()
 
 	// Build a structurally valid PDF with correct xref offsets.
@@ -36,11 +36,13 @@ func MakeTestPDF(t *testing.T, path, title, author string) {
 
 	// Use exiftool to write proper metadata into the PDF. If exiftool is not
 	// available in the environment, skip the test rather than failing.
-	et, err := exiftool.NewExiftool()
-	if err != nil {
-		t.Skipf("skipping PDF metadata test: exiftool not available: %v", err)
+	if et == nil {
+		et, exerr := exiftool.NewExiftool()
+		if exerr != nil {
+			t.Skipf("skipping PDF metadata test: exiftool not available: %v", exerr)
+		}
+		defer et.Close()
 	}
-	defer et.Close()
 
 	fm := exiftool.EmptyFileMetadata()
 	fm.File = path
