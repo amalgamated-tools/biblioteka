@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"slices"
-	"strconv"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -377,29 +376,7 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 	const defaultLimit = 50
 	const maxLimit = 200
 
-	limit := defaultLimit
-	offset := 0
-
-	if v := r.URL.Query().Get("limit"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1 {
-			writeError(r.Context(), w, http.StatusBadRequest, "invalid limit parameter")
-			return
-		}
-		if n > maxLimit {
-			n = maxLimit
-		}
-		limit = n
-	}
-
-	if v := r.URL.Query().Get("offset"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 0 {
-			writeError(r.Context(), w, http.StatusBadRequest, "invalid offset parameter")
-			return
-		}
-		offset = n
-	}
+	limit, offset := parseLimitOffset(r, defaultLimit, maxLimit)
 
 	slog.DebugContext(r.Context(), "listing library books",
 		slog.String(otelkeys.LibraryID, id),
