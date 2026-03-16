@@ -28,6 +28,13 @@ type ProcessFilePayload struct {
 // and then creates a book and book_file record for it. The extracted metadata
 // can be used to populate or enrich the book fields (title, authors, etc.).
 func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(ctx context.Context, payload []byte) error {
+	if extractor == nil {
+		return func(ctx context.Context, payload []byte) error {
+			slog.ErrorContext(ctx, "process:file handler misconfigured: metadata extractor is nil")
+			return fmt.Errorf("process file handler misconfigured: metadata extractor is nil")
+		}
+	}
+
 	return func(ctx context.Context, payload []byte) error {
 		var p ProcessFilePayload
 		if err := json.Unmarshal(payload, &p); err != nil {
@@ -67,15 +74,29 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 		// Extract metadata before creating the book record so we can use the
 		// extracted fields (now or in the future) to populate or enrich the book.
 		// The book ID comes from CreateBook, not from metadata extraction.
-		meta, err := extractor.ExtractMetadata(p.Path)
-		if err != nil {
-			return fmt.Errorf("extract metadata for %s: %w", p.Path, err)
+		if extractor == nil {
+			slog.WarnContext(ctx, "metadata extractor not configured, skipping metadata extraction",
+				slog.String(otelkeys.Path, p.Path),
+			)
+		} else {
+			meta, err := extractor.ExtractMetadata(p.Path)
+			if err != nil {
+				slog.WarnContext(ctx, "metadata extraction failed, continuing with filename-derived metadata",
+					slog.String(otelkeys.Path, p.Path),
+					slog.Any(otelkeys.Error, err),
+				)
+			} else {
+				slog.DebugContext(ctx, "metadata extracted",
+					slog.String(otelkeys.Title, meta.Title),
+					slog.String(otelkeys.Format, meta.Format),
+				)
+			}
 		}
-		slog.DebugContext(ctx, "metadata extracted",
-			slog.String(otelkeys.Title, meta.Title),
-			slog.String(otelkeys.Format, meta.Format),
-		)
-		book, err := database.CreateBook(ctx, title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		bookTitle := title
+		if meta.Title != "" {
+			bookTitle = meta.Title
+		}
+		book, err := database.CreateBook(ctx, bookTitle, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			return fmt.Errorf("create book for %s: %w", p.Path, err)
 		}
@@ -86,7 +107,7 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 		}
 
 		slog.InfoContext(ctx, "file processed",
-			slog.String(otelkeys.Title, title),
+			slog.String(otelkeys.Title, bookTitle),
 			slog.String(otelkeys.BookID, book.ID),
 			slog.String(otelkeys.Path, p.Path),
 		)
