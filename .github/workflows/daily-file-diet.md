@@ -68,15 +68,10 @@ First, determine the primary programming language(s) used in this repository. Th
 
 **For polyglot or unknown repos:**
 ```bash
-find . -type f \( -name "*.go" -o -name "*.py" -o -name "*.ts" -o -name "*.js" -o -name "*.rb" -o -name "*.java" -o -name "*.rs" -o -name "*.cs" -o -name "*.cpp" -o -name "*.c" \) \
-  -not -path "*/node_modules/*" \
-  -not -path "*/vendor/*" \
-  -not -path "*/dist/*" \
-  -not -path "*/build/*" \
-  -not -path "*/target/*" \
-  -not -path "*/__pycache__/*" \
-  -exec wc -l {} \; 2>/dev/null | sort -rn | head -20
+find . -type f \( -name '*.go' -o -name '*.py' -o -name '*.ts' -o -name '*.js' -o -name '*.rb' -o -name '*.java' -o -name '*.rs' -o -name '*.cs' -o -name '*.cpp' -o -name '*.c' \) -not -path '*/node_modules/*' -not -path '*/vendor/*' -not -path '*/dist/*' -not -path '*/build/*' -not -path '*/target/*' -not -path '*/__pycache__/*' -exec wc -l {} \; 2>/dev/null
 ```
+
+The output will be unsorted. Look through the results and identify the file with the highest line count.
 
 Also skip test files (files ending in `_test.go`, `.test.ts`, `.spec.ts`, `.test.js`, `.spec.js`, `_test.py`, `test_*.py`, etc.) — focus on non-test production code.
 
