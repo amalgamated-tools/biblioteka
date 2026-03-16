@@ -9,9 +9,10 @@ import (
 func TestParseBookPath(t *testing.T) {
 	root := t.TempDir()
 	tests := []struct {
-		name     string
-		filePath string
-		want     PathInfo
+		name        string
+		filePath    string
+		libraryRoot string
+		want        PathInfo
 	}{
 		{
 			name: "3-level: author/series/numbered file with author and year",
@@ -88,23 +89,26 @@ func TestParseBookPath(t *testing.T) {
 			},
 		},
 		{
-			name:     "flat file: no dash separator",
-			filePath: "/library/Frankenstein.epub",
+			name:        "flat file: no dash separator",
+			filePath:    "/library/Frankenstein.epub",
+			libraryRoot: "/library",
 			want: PathInfo{
 				Title: "Frankenstein",
 			},
 		},
 		{
-			name:     "2-level: simple author/title",
-			filePath: "/library/Jane Austen/Pride and Prejudice.epub",
+			name:        "2-level: simple author/title",
+			filePath:    "/library/Jane Austen/Pride and Prejudice.epub",
+			libraryRoot: "/library",
 			want: PathInfo{
 				Author: "Jane Austen",
 				Title:  "Pride and Prejudice",
 			},
 		},
 		{
-			name:     "2-level: filename with year only",
-			filePath: "/library/Jane Austen/Pride and Prejudice (1813).epub",
+			name:        "2-level: filename with year only",
+			filePath:    "/library/Jane Austen/Pride and Prejudice (1813).epub",
+			libraryRoot: "/library",
 			want: PathInfo{
 				Author: "Jane Austen",
 				Title:  "Pride and Prejudice",
@@ -112,16 +116,18 @@ func TestParseBookPath(t *testing.T) {
 			},
 		},
 		{
-			name:     "Calibre-style: Author/Title/file.epub does not create phantom series",
-			filePath: "/library/Jane Austen/Pride and Prejudice/book.epub",
+			name:        "Calibre-style: Author/Title/file.epub does not create phantom series",
+			filePath:    "/library/Jane Austen/Pride and Prejudice/book.epub",
+			libraryRoot: "/library",
 			want: PathInfo{
 				Author: "Jane Austen",
 				Title:  "book",
 			},
 		},
 		{
-			name:     "3-level: series dir only used when filename has position prefix",
-			filePath: "/library/Brandon Sanderson/Mistborn/2. The Well of Ascension.epub",
+			name:        "3-level: series dir only used when filename has position prefix",
+			filePath:    "/library/Brandon Sanderson/Mistborn/2. The Well of Ascension.epub",
+			libraryRoot: "/library",
 			want: PathInfo{
 				Author:         "Brandon Sanderson",
 				Title:          "The Well of Ascension",
@@ -130,8 +136,9 @@ func TestParseBookPath(t *testing.T) {
 			},
 		},
 		{
-			name:     "flat 'X - Y' filename: left part is Author, right part is Title",
-			filePath: "/library/Tea Time for the Traditionally Built - Jean-Paul Sartre.epub",
+			name:        "flat 'X - Y' filename: left part is Author, right part is Title",
+			filePath:    "/library/Tea Time for the Traditionally Built - Jean-Paul Sartre.epub",
+			libraryRoot: "/library",
 			want: PathInfo{
 				Author: "Tea Time for the Traditionally Built",
 				Title:  "Jean-Paul Sartre",
@@ -141,7 +148,11 @@ func TestParseBookPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ParseBookPath(tt.filePath, root)
+			lr := root
+			if tt.libraryRoot != "" {
+				lr = tt.libraryRoot
+			}
+			got := ParseBookPath(tt.filePath, lr)
 			if got.Author != tt.want.Author {
 				t.Errorf("Author: got %q, want %q", got.Author, tt.want.Author)
 			}

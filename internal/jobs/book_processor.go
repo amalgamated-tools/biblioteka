@@ -89,9 +89,9 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 		// Best-effort: if this job was scoped to a specific library, ensure the
 		// existing book is associated with that library as well.
-		if p.LibraryID != 0 {
+		if p.LibraryID != "" {
 			if err := database.AddBookToLibrary(ctx, p.LibraryID, bookFile.BookID); err != nil {
-				wrappedErr := fmt.Errorf("process book file: add existing book %d to library %d: %w", bookFile.BookID, p.LibraryID, err)
+				wrappedErr := fmt.Errorf("process book file: add existing book %s to library %s: %w", bookFile.BookID, p.LibraryID, err)
 				slog.ErrorContext(ctx, "book processing warning: could not associate existing book with library",
 					slog.Any(otelkeys.Error, wrappedErr),
 					slog.String(otelkeys.Path, p.Path),
