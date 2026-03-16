@@ -24,9 +24,9 @@ type ProcessFilePayload struct {
 	FileSize int64  `json:"file_size"`
 }
 
-// NewProcessFileHandler returns a worker.Func that creates a book and book_file
-// record for the given file. This is where future metadata extraction (parsing
-// EPUB/MOBI/PDF internals) would be added.
+// NewProcessFileHandler returns a worker.Func that extracts metadata for a file
+// and then creates a book and book_file record for it. The extracted metadata
+// can be used to populate or enrich the book fields (title, authors, etc.).
 func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(ctx context.Context, payload []byte) error {
 	return func(ctx context.Context, payload []byte) error {
 		var p ProcessFilePayload
@@ -64,14 +64,16 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 			slog.String(otelkeys.Path, p.Path),
 		)
 
-		// need to extract metadata before creating the book record, otherwise we won't have the book ID to link the file to. In the future, we may want to update the book record with more metadata after extraction, but for now we'll just create a basic record with the title and file type.
-		metadata, err := extractor.ExtractMetadata(p.Path)
+		// Extract metadata before creating the book record so we can use the
+		// extracted fields (now or in the future) to populate or enrich the book.
+		// The book ID comes from CreateBook, not from metadata extraction.
+		meta, err := extractor.ExtractMetadata(p.Path)
 		if err != nil {
 			return fmt.Errorf("extract metadata for %s: %w", p.Path, err)
 		}
 		slog.DebugContext(ctx, "metadata extracted",
-			slog.String(otelkeys.Title, metadata.Title),
-			slog.String(otelkeys.Format, metadata.Format),
+			slog.String(otelkeys.Title, meta.Title),
+			slog.String(otelkeys.Format, meta.Format),
 		)
 		book, err := database.CreateBook(ctx, title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {

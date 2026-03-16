@@ -63,8 +63,8 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	}
 	defer func() { _ = database.Close() }()
 
-	// Set up Extractor that will get information from the file and also fetch metadata from external sources (e.g. Open Library) in the future.
-	// For now, it just creates a book record with the file name as the title and the file type as the format.
+	// Set up the metadata Extractor, which reads metadata from uploaded files (using ExifTool when available)
+	// and can fall back to basic metadata derived from the file itself (e.g. filename) when ExifTool is missing.
 	extractor, err := metadata.NewExtractor()
 	if err != nil {
 		slog.ErrorContext(cancelCtx, "failed to setup metadata extractor", slog.Any(otelkeys.Error, err))
