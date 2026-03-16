@@ -32,6 +32,52 @@ func TestCreateAuthor(t *testing.T) {
 	}
 }
 
+func TestCreateAuthor_NormalizesWhitespace(t *testing.T) {
+	d := newTestDB(t)
+
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"  Jane Austen  ", "Jane Austen"},
+		{"Stephen   King", "Stephen King"},
+		{"  Anne  McCaffrey  ", "Anne McCaffrey"},
+	}
+
+	for _, tt := range tests {
+		a, err := d.CreateAuthor(context.Background(), tt.input, nil, nil, nil, nil)
+		if err != nil {
+			t.Fatalf("CreateAuthor(%q) error: %v", tt.input, err)
+		}
+		if a.Name != tt.want {
+			t.Errorf("CreateAuthor(%q).Name = %q, want %q", tt.input, a.Name, tt.want)
+		}
+	}
+}
+
+func TestCreateAuthor_PreservesCapitalization(t *testing.T) {
+	d := newTestDB(t)
+
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"Anne McCaffrey", "Anne McCaffrey"},
+		{"Melissa de la Cruz", "Melissa de la Cruz"},
+		{"J.R.R. Tolkien", "J.R.R. Tolkien"},
+	}
+
+	for _, tt := range tests {
+		a, err := d.CreateAuthor(context.Background(), tt.input, nil, nil, nil, nil)
+		if err != nil {
+			t.Fatalf("CreateAuthor(%q) error: %v", tt.input, err)
+		}
+		if a.Name != tt.want {
+			t.Errorf("CreateAuthor(%q).Name = %q, want %q", tt.input, a.Name, tt.want)
+		}
+	}
+}
+
 func TestCreateAuthor_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
@@ -46,10 +92,30 @@ func TestCreateAuthor_DuplicateName(t *testing.T) {
 	}
 }
 
+func TestCreateAuthor_DuplicateNameCaseInsensitive(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateAuthor(context.Background(), "Jane Austen", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("first CreateAuthor() error: %v", err)
+	}
+
+	cases := []string{"jane austen", "JANE AUSTEN", "Jane AUSTEN", "jAnE aUsTeN"}
+	for _, name := range cases {
+		_, err = d.CreateAuthor(context.Background(), name, nil, nil, nil, nil)
+		if err != ErrAuthorNameExists {
+			t.Errorf("CreateAuthor(%q): expected ErrAuthorNameExists, got %v", name, err)
+		}
+	}
+}
+
 func TestGetAuthor(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	created, err := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
 
 	found, err := d.GetAuthor(context.Background(), created.ID)
 	if err != nil {
@@ -72,11 +138,49 @@ func TestGetAuthor_NotFound(t *testing.T) {
 	}
 }
 
+func TestGetAuthorByName(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.CreateAuthor(context.Background(), "Anne McCaffrey", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
+
+	// All case variants should find the same author.
+	for _, name := range []string{"Anne McCaffrey", "anne mccaffrey", "ANNE MCCAFFREY", "anne McCaffrey"} {
+		found, err := d.GetAuthorByName(context.Background(), name)
+		if err != nil {
+			t.Fatalf("GetAuthorByName(%q) error: %v", name, err)
+		}
+		if found.ID != created.ID {
+			t.Errorf("GetAuthorByName(%q) ID = %q, want %q", name, found.ID, created.ID)
+		}
+		if found.Name != "Anne McCaffrey" {
+			t.Errorf("GetAuthorByName(%q) Name = %q, want %q", name, found.Name, "Anne McCaffrey")
+		}
+	}
+}
+
+func TestGetAuthorByName_NotFound(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.GetAuthorByName(context.Background(), "Nonexistent Author")
+	if err != sql.ErrNoRows {
+		t.Errorf("expected sql.ErrNoRows, got %v", err)
+	}
+}
+
 func TestListAuthors(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateAuthor(context.Background(), "Brandon Sanderson", nil, nil, nil, nil)
-	_, _ = d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	_, err := d.CreateAuthor(context.Background(), "Brandon Sanderson", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
+	_, err = d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
 
 	authors, err := d.ListAuthors(context.Background())
 	if err != nil {
@@ -93,7 +197,10 @@ func TestListAuthors(t *testing.T) {
 func TestUpdateAuthor(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateAuthor(context.Background(), "S. King", nil, nil, nil, nil)
+	created, err := d.CreateAuthor(context.Background(), "S. King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
 
 	updated, err := d.UpdateAuthor(context.Background(), created.ID, "Stephen King", strPtr("456"), nil, nil, nil)
 	if err != nil {
@@ -107,13 +214,36 @@ func TestUpdateAuthor(t *testing.T) {
 	}
 }
 
+func TestUpdateAuthor_PreservesCapitalization(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.CreateAuthor(context.Background(), "Jane Austen", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
+
+	updated, err := d.UpdateAuthor(context.Background(), created.ID, "  Anne  McCaffrey  ", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("UpdateAuthor() error: %v", err)
+	}
+	if updated.Name != "Anne McCaffrey" {
+		t.Errorf("Name = %q, want %q", updated.Name, "Anne McCaffrey")
+	}
+}
+
 func TestUpdateAuthor_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
-	a2, _ := d.CreateAuthor(context.Background(), "S. King", nil, nil, nil, nil)
+	_, err := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
+	a2, err := d.CreateAuthor(context.Background(), "S. King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
 
-	_, err := d.UpdateAuthor(context.Background(), a2.ID, "Stephen King", nil, nil, nil, nil)
+	_, err = d.UpdateAuthor(context.Background(), a2.ID, "Stephen King", nil, nil, nil, nil)
 	if err != ErrAuthorNameExists {
 		t.Errorf("expected ErrAuthorNameExists, got %v", err)
 	}
@@ -122,9 +252,12 @@ func TestUpdateAuthor_DuplicateName(t *testing.T) {
 func TestDeleteAuthor(t *testing.T) {
 	d := newTestDB(t)
 
-	a, _ := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a, err := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
 
-	err := d.DeleteAuthor(context.Background(), a.ID)
+	err = d.DeleteAuthor(context.Background(), a.ID)
 	if err != nil {
 		t.Fatalf("DeleteAuthor() error: %v", err)
 	}
