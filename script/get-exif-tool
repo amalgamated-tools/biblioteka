@@ -7,15 +7,21 @@
 mkdir -p "$(dirname "$0")/../exiftool"
 cd "$(dirname "$0")/../exiftool"
 # download the version 13.52 of ExifTool silently (without progress bar)
-wget -q -O Image-ExifTool-13.52.tar.gz https://sourceforge.net/projects/exiftool/files/Image-ExifTool-13.52.tar.gz/download
+curl -fsSL -o exiftools.tar.gz https://github.com/exiftool/exiftool/archive/refs/tags/13.52.tar.gz
 # if the download failed, print an error message and exit with a non-zero status code
 if [ $? -ne 0 ]; then
     echo "Error: Failed to download ExifTool. Please check your internet connection and try again."
     exit 1
 fi
+EXPECTED_SHA256="38f77bd6d4e98c32995ff9815699daea909a1205888bceec55faa89d92a14463"
+echo "$EXPECTED_SHA256  exiftools.tar.gz" | sha256sum -c -
+if [ $? -ne 0 ]; then
+    echo "Error: Checksum verification failed. The downloaded file may be corrupted or tampered with."
+    exit 1
+fi
 # extract the downloaded tar.gz file to the current directory ignoring the top-level directory in the archive
-tar --strip-components=1 -xzf Image-ExifTool-13.52.tar.gz
+tar --strip-components=1 -xzf exiftools.tar.gz
 # remove the downloaded tar.gz file
-rm Image-ExifTool-13.52.tar.gz
+rm exiftools.tar.gz
 # print a success message
 echo "ExifTool version 13.52 has been downloaded and extracted successfully."
