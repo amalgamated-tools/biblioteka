@@ -64,6 +64,7 @@ internal/
   otel/              # Logging and tracing setup
   otelkeys/          # Shared log/telemetry field-name constants
   telemetry/         # Anonymous usage telemetry (opt-in)
+  testutils/         # Shared test helpers (fixture EPUB and PDF generators)
 frontend/            # Svelte 5 SPA (TypeScript + Tailwind CSS)
 db/
   schema.sql         # Reference schema
@@ -84,6 +85,26 @@ go test ./internal/handlers/
 
 # Frontend tests
 cd frontend && pnpm run test
+```
+
+#### Test helpers (`internal/testutils`)
+
+The `internal/testutils` package provides helpers for generating fixture book files in tests:
+
+| Helper | Description |
+|--------|-------------|
+| `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB at the given path |
+| `testutils.MakeTestEPUBWithOptions(t, path, title, creator, identifier, opts)` | Creates a minimal valid EPUB with additional OPF fields (description, publisher, publication date, language) |
+| `testutils.MakeTestPDF(t, path, title, author, et)` | Creates a minimal valid PDF and writes metadata via ExifTool (skips the test if ExifTool is unavailable) |
+
+Import path: `github.com/amalgamated-tools/biblioteka/internal/testutils`
+
+```go
+func TestMyExtractor(t *testing.T) {
+    path := filepath.Join(t.TempDir(), "test.epub")
+    testutils.MakeTestEPUB(t, path, "Hamlet", "William Shakespeare", "urn:isbn:9780141396507")
+    // ...
+}
 ```
 
 ### Building
