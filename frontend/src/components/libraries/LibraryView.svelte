@@ -44,6 +44,8 @@
     <AlertBanner variant="error" class="mb-4">{error}</AlertBanner>
   {/if}
 
+  <!-- {#key} forces a full remount when libraryId changes, ensuring fetchBooks
+       (which closes over libraryId) is never stale across library navigations. -->
   {#key libraryId}
     <BookList {fetchBooks} />
   {/key}

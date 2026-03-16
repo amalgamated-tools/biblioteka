@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -16,11 +15,6 @@ import (
 type BookHandler struct {
 	DB *db.DB
 }
-
-const (
-	defaultPageLimit = 50
-	maxPageLimit     = 200
-)
 
 type bookRequest struct {
 	Title           string  `json:"title"`
@@ -261,30 +255,6 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 	default:
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 	}
-}
-
-func parseLimitOffset(r *http.Request, defaultLimit, maxLimit int) (int, int) {
-	limit := defaultLimit
-	offset := 0
-
-	if v := r.URL.Query().Get("limit"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err == nil && n >= 1 {
-			if n > maxLimit {
-				n = maxLimit
-			}
-			limit = n
-		}
-	}
-
-	if v := r.URL.Query().Get("offset"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err == nil && n >= 0 {
-			offset = n
-		}
-	}
-
-	return limit, offset
 }
 
 // listBooks godoc

@@ -41,6 +41,17 @@ func scanBook(row interface{ Scan(...any) error }) (*Book, error) {
 	return &b, nil
 }
 
+// scanBookAndTotal scans book columns plus a trailing COUNT(*) OVER() total.
+func scanBookAndTotal(row interface{ Scan(...any) error }) (*Book, int, error) {
+	var b Book
+	var total int
+	err := row.Scan(&b.ID, &b.Title, &b.Description, &b.ASIN, &b.ISBN10, &b.ISBN13, &b.GoodreadsID, &b.HardcoverID, &b.GoogleBooksID, &b.PublicationDate, &b.Publisher, &b.Language, &b.NumPages, &b.CoverImageURL, &b.CreatedAt, &b.UpdatedAt, &total)
+	if err != nil {
+		return nil, 0, err
+	}
+	return &b, total, nil
+}
+
 // CreateBook inserts a new book and returns it.
 func (d *DB) CreateBook(ctx context.Context, title string, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language *string, numPages *int, coverImageURL *string) (*Book, error) {
 	slog.DebugContext(ctx, "db: creating book", slog.String(otelkeys.Title, title))
@@ -160,20 +171,12 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	var total int
-	if err := d.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1`,
-		libraryID,
-	).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
 	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
 	if d.Dialect == DialectPostgres {
 		orderBy = "ORDER BY b.title ASC, b.id ASC"
 	}
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
+		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
 		libraryID, limit, offset,
 	)
 	if err != nil {
@@ -182,14 +185,31 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 	defer rows.Close()
 
 	var books []Book
+	var total int
 	for rows.Next() {
-		b, err := scanBook(rows)
+		b, t, err := scanBookAndTotal(rows)
 		if err != nil {
 			return nil, 0, err
 		}
+		total = t
 		books = append(books, *b)
 	}
-	return books, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	// When offset exceeds total rows, the window function returns nothing.
+	// Fall back to a COUNT query so the caller can report the true total.
+	if len(books) == 0 && offset > 0 {
+		if err := d.QueryRowContext(ctx,
+			`SELECT COUNT(*) FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1`,
+			libraryID,
+		).Scan(&total); err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return books, total, nil
 }
 
 // UpdateBook updates a book's fields and returns the updated book.
@@ -391,17 +411,12 @@ func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book,
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	var total int
-	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books`).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
 	orderBy := "ORDER BY title ASC, rowid ASC"
 	if d.Dialect == DialectPostgres {
 		orderBy = "ORDER BY title ASC, id ASC"
 	}
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumns+` FROM books `+orderBy+` LIMIT $1 OFFSET $2`,
+		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+orderBy+` LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
 	if err != nil {
@@ -410,14 +425,26 @@ func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book,
 	defer rows.Close()
 
 	var books []Book
+	var total int
 	for rows.Next() {
-		b, err := scanBook(rows)
+		b, t, err := scanBookAndTotal(rows)
 		if err != nil {
 			return nil, 0, err
 		}
+		total = t
 		books = append(books, *b)
 	}
-	return books, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	if len(books) == 0 && offset > 0 {
+		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books`).Scan(&total); err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return books, total, nil
 }
 
 // ListRecentBooks returns books ordered by creation time (newest first) with pagination and total count.
@@ -427,17 +454,12 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	var total int
-	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books`).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
 	orderBy := "ORDER BY created_at DESC, rowid DESC"
 	if d.Dialect == DialectPostgres {
 		orderBy = "ORDER BY created_at DESC, id DESC"
 	}
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumns+` FROM books `+orderBy+` LIMIT $1 OFFSET $2`,
+		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+orderBy+` LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
 	if err != nil {
@@ -446,14 +468,26 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 	defer rows.Close()
 
 	var books []Book
+	var total int
 	for rows.Next() {
-		b, err := scanBook(rows)
+		b, t, err := scanBookAndTotal(rows)
 		if err != nil {
 			return nil, 0, err
 		}
+		total = t
 		books = append(books, *b)
 	}
-	return books, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	if len(books) == 0 && offset > 0 {
+		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books`).Scan(&total); err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return books, total, nil
 }
 
 // ListBooksByAuthor returns all books for a specific author.
@@ -491,20 +525,12 @@ func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, li
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	var total int
-	if err := d.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1`,
-		authorID,
-	).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
 	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
 	if d.Dialect == DialectPostgres {
 		orderBy = "ORDER BY b.title ASC, b.id ASC"
 	}
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
+		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
 		authorID, limit, offset,
 	)
 	if err != nil {
@@ -513,14 +539,29 @@ func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, li
 	defer rows.Close()
 
 	var books []Book
+	var total int
 	for rows.Next() {
-		b, err := scanBook(rows)
+		b, t, err := scanBookAndTotal(rows)
 		if err != nil {
 			return nil, 0, err
 		}
+		total = t
 		books = append(books, *b)
 	}
-	return books, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	if len(books) == 0 && offset > 0 {
+		if err := d.QueryRowContext(ctx,
+			`SELECT COUNT(*) FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1`,
+			authorID,
+		).Scan(&total); err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return books, total, nil
 }
 
 // ListBooksBySeries returns all books in a specific series, ordered by position.
@@ -558,20 +599,12 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	var total int
-	if err := d.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1`,
-		seriesID,
-	).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
 	nullsLast := "ORDER BY bs.position ASC, b.title ASC"
 	if d.Dialect == DialectPostgres {
 		nullsLast = "ORDER BY bs.position ASC NULLS LAST, b.title ASC"
 	}
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 `+nullsLast+` LIMIT $2 OFFSET $3`,
+		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1 `+nullsLast+` LIMIT $2 OFFSET $3`,
 		seriesID, limit, offset,
 	)
 	if err != nil {
@@ -580,14 +613,29 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 	defer rows.Close()
 
 	var books []Book
+	var total int
 	for rows.Next() {
-		b, err := scanBook(rows)
+		b, t, err := scanBookAndTotal(rows)
 		if err != nil {
 			return nil, 0, err
 		}
+		total = t
 		books = append(books, *b)
 	}
-	return books, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	if len(books) == 0 && offset > 0 {
+		if err := d.QueryRowContext(ctx,
+			`SELECT COUNT(*) FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1`,
+			seriesID,
+		).Scan(&total); err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return books, total, nil
 }
 
 // SearchBooks searches books by title or description with pagination and total count.
@@ -608,17 +656,12 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 		whereClause = `WHERE (title LIKE $1 ESCAPE '\' OR description LIKE $1 ESCAPE '\')`
 	}
 
-	var total int
-	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books `+whereClause, likePattern).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
 	orderBy := "ORDER BY title ASC, rowid ASC"
 	if d.Dialect == DialectPostgres {
 		orderBy = "ORDER BY title ASC, id ASC"
 	}
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumns+` FROM books `+whereClause+` `+orderBy+` LIMIT $2 OFFSET $3`,
+		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+whereClause+` `+orderBy+` LIMIT $2 OFFSET $3`,
 		likePattern, limit, offset,
 	)
 	if err != nil {
@@ -627,14 +670,26 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 	defer rows.Close()
 
 	var books []Book
+	var total int
 	for rows.Next() {
-		b, err := scanBook(rows)
+		b, t, err := scanBookAndTotal(rows)
 		if err != nil {
 			return nil, 0, err
 		}
+		total = t
 		books = append(books, *b)
 	}
-	return books, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	if len(books) == 0 && offset > 0 {
+		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books `+whereClause, likePattern).Scan(&total); err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return books, total, nil
 }
 
 // bookColumnsWithPrefix returns book columns with a table alias prefix.
