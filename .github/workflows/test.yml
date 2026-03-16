@@ -177,7 +177,8 @@ jobs:
 
       - name: Download exiftool for tests
         run: |
-          ./script/get-exif-tool
+          apt-get update
+          apt-get install -y exiftool
 
       - name: Run Go tests
         run: go test -v ./...
