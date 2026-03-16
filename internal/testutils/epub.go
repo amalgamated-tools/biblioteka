@@ -30,7 +30,7 @@ func MakeTestEPUB(t *testing.T, path, title, creator, identifier string) {
 		}
 
 		if len(errs) > 0 {
-			t.Fatalf(strings.Join(errs, "; "))
+			t.Fatalf("%s", strings.Join(errs, "; "))
 		}
 	}()
 
