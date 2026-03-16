@@ -77,35 +77,35 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 		// Extract metadata before creating the book record so we can use the
 		// extracted fields (now or in the future) to populate or enrich the book.
 		// The book ID comes from CreateBook, not from metadata extraction.
-		if extractor != nil {
-			meta, err := extractor.ExtractMetadata(p.Path)
-			if err != nil {
-				slog.WarnContext(ctx, "metadata extraction failed, continuing with filename-derived metadata",
-					slog.String(otelkeys.Path, p.Path),
-					slog.Any(otelkeys.Error, err),
-					slog.String(otelkeys.Title, title),
-				)
-			} else {
-				if meta.Description != "" {
-					description = &meta.Description
-				}
-				if meta.ISBN != "" {
-					switch len(meta.ISBN) {
-					case 10:
-						isbn10 = &meta.ISBN
-					case 13:
-						isbn13 = &meta.ISBN
-					}
-				}
-				if meta.Title != "" {
-					title = meta.Title
-				}
-				slog.DebugContext(ctx, "metadata extracted",
-					slog.String(otelkeys.Title, meta.Title),
-					slog.String(otelkeys.Format, meta.Format),
-				)
+
+		meta, err := extractor.ExtractMetadata(p.Path)
+		if err != nil {
+			slog.WarnContext(ctx, "metadata extraction failed, continuing with filename-derived metadata",
+				slog.String(otelkeys.Path, p.Path),
+				slog.Any(otelkeys.Error, err),
+				slog.String(otelkeys.Title, title),
+			)
+		} else {
+			if meta.Description != "" {
+				description = &meta.Description
 			}
+			if meta.ISBN != "" {
+				switch len(meta.ISBN) {
+				case 10:
+					isbn10 = &meta.ISBN
+				case 13:
+					isbn13 = &meta.ISBN
+				}
+			}
+			if meta.Title != "" {
+				title = meta.Title
+			}
+			slog.DebugContext(ctx, "metadata extracted",
+				slog.String(otelkeys.Title, meta.Title),
+				slog.String(otelkeys.Format, meta.Format),
+			)
 		}
+
 		book, err := database.CreateBook(
 			ctx,
 			title,
