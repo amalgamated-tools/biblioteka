@@ -171,14 +171,18 @@ func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, har
 	return a, nil
 }
 
-// FindOrCreateAuthor looks up an author by name and returns it, creating a new
-// one if it doesn't exist. Handles concurrent insert races gracefully.
+// FindOrCreateAuthor looks up an author by name (case-insensitive) and returns
+// it, creating a new one if it doesn't exist. Handles concurrent insert races
+// gracefully.
 func (d *DB) FindOrCreateAuthor(ctx context.Context, name string) (*Author, error) {
+	name = NormalizeAuthorName(name)
+	if name == "" {
+		return nil, ErrInvalidAuthorName
+	}
 	slog.DebugContext(ctx, "db: find or create author", slog.String(otelkeys.Name, name))
-	a, err := scanAuthor(d.QueryRowContext(ctx,
-		`SELECT `+authorColumns+` FROM authors WHERE name = $1`,
-		name,
-	))
+
+	// Look up using the same case-insensitive predicate as GetAuthorByName.
+	a, err := d.GetAuthorByName(ctx, name)
 	if err == nil {
 		return a, nil
 	}
@@ -194,10 +198,7 @@ func (d *DB) FindOrCreateAuthor(ctx context.Context, name string) (*Author, erro
 		return nil, err
 	}
 	// Concurrent insert won the race — fetch.
-	return scanAuthor(d.QueryRowContext(ctx,
-		`SELECT `+authorColumns+` FROM authors WHERE name = $1`,
-		name,
-	))
+	return d.GetAuthorByName(ctx, name)
 }
 
 func (d *DB) DeleteAuthor(ctx context.Context, id string) error {

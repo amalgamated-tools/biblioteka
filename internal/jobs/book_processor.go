@@ -241,47 +241,14 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	// Create an Author record and associate it with the book.
 	if authorName != "" {
-		skipAuthorAssociation := false
-		author, err := database.GetAuthorByName(ctx, authorName)
+		author, err := database.FindOrCreateAuthor(ctx, authorName)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				// Author does not exist yet; we'll create it below.
-			} else {
-				slog.WarnContext(ctx, "failed to get or create author record for file; skipping author association",
-					slog.String(otelkeys.Path, p.Path),
-					slog.String(otelkeys.Author, authorName),
-					slog.Any(otelkeys.Error, err),
-				)
-				skipAuthorAssociation = true
-			}
-		}
-		if !skipAuthorAssociation {
-			if author == nil {
-				author, err = database.CreateAuthor(ctx, authorName, nil, nil, nil, nil)
-				if err != nil {
-					if errors.Is(err, db.ErrAuthorNameExists) {
-						author, err = database.GetAuthorByName(ctx, authorName)
-						if err != nil {
-							slog.ErrorContext(ctx, "failed to load existing author after concurrent create",
-								slog.String(otelkeys.Path, p.Path),
-								slog.String(otelkeys.Author, authorName),
-								slog.Any(otelkeys.Error, err),
-							)
-							return fmt.Errorf("get existing author after conflict for %s: %w", p.Path, err)
-						}
-						if author == nil {
-							return fmt.Errorf("author %q exists but could not be loaded for %s", authorName, p.Path)
-						}
-					} else {
-						slog.ErrorContext(ctx, "failed to create author record for file",
-							slog.String(otelkeys.Path, p.Path),
-							slog.String(otelkeys.Author, authorName),
-							slog.Any(otelkeys.Error, err),
-						)
-						return fmt.Errorf("create author for %s: %w", p.Path, err)
-					}
-				}
-			}
+			slog.WarnContext(ctx, "failed to find or create author",
+				slog.String(otelkeys.Path, p.Path),
+				slog.String(otelkeys.Author, authorName),
+				slog.Any(otelkeys.Error, err),
+			)
+		} else {
 			err = database.SetBookAuthors(ctx, book.ID, []string{author.ID})
 			if err != nil {
 				slog.WarnContext(ctx, "failed to associate author with book for file",
