@@ -83,7 +83,7 @@ func (e *Extractor) extractNativeEpub(path string) (*BookMetadata, error) {
 	}
 
 	book := rc.Rootfiles[0]
-	publicationDate := "Unknown"
+	var publicationDate string
 	// if the book has a slice of Dates, we want to find one where the Event attribute is "publication"
 	for _, d := range book.Dates {
 		if d.Event == "publication" {

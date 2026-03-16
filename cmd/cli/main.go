@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
@@ -24,7 +25,7 @@ func main() {
 	fileExt := filepath.Ext(path)
 	fileType := ""
 	if len(fileExt) > 0 {
-		fileType = fileExt[1:]
+		fileType = strings.ToLower(fileExt[1:])
 	}
 
 	info, err := os.Stat(path)
@@ -54,7 +55,7 @@ func main() {
 		ext,
 		jobs.ProcessFilePayload{
 			FileName: fileName,
-			FileType: fileType, // Replace with actual file type if known
+			FileType: fileType,
 			Path:     path,
 			FileSize: fileSize,
 		},

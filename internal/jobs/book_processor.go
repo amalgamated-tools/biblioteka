@@ -15,6 +15,49 @@ import (
 )
 
 func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, p ProcessFilePayload) error {
+	if database == nil {
+		err := fmt.Errorf("ProcessBookFile: database is nil")
+		slog.ErrorContext(ctx, "book processing failed: database is nil",
+			slog.Any(otelkeys.Error, err),
+		)
+		return err
+	}
+
+	if extractor == nil {
+		err := fmt.Errorf("ProcessBookFile: extractor is nil")
+		slog.ErrorContext(ctx, "book processing failed: extractor is nil",
+			slog.Any(otelkeys.Error, err),
+		)
+		return err
+	}
+
+	if strings.TrimSpace(p.Path) == "" {
+		err := fmt.Errorf("ProcessBookFile: payload path is empty")
+		slog.ErrorContext(ctx, "book processing failed: empty path in payload",
+			slog.Any(otelkeys.Error, err),
+		)
+		return err
+	}
+
+	if strings.TrimSpace(p.FileName) == "" {
+		err := fmt.Errorf("ProcessBookFile: payload file name is empty")
+		slog.ErrorContext(ctx, "book processing failed: empty file name in payload",
+			slog.Any(otelkeys.Error, err),
+			slog.String(otelkeys.Path, p.Path),
+		)
+		return err
+	}
+
+	if strings.TrimSpace(p.FileType) == "" {
+		err := fmt.Errorf("ProcessBookFile: payload file type is empty")
+		slog.ErrorContext(ctx, "book processing failed: empty file type in payload",
+			slog.Any(otelkeys.Error, err),
+			slog.String(otelkeys.Path, p.Path),
+			slog.String(otelkeys.FileName, p.FileName),
+		)
+		return err
+	}
+
 	var title string
 	var description, isbn10, isbn13, coverImageURL *string
 	var numPages *int
@@ -60,11 +103,11 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		slog.InfoContext(ctx, "metadata extracted successfully",
 			slog.String(otelkeys.Path, p.Path),
 			slog.String(otelkeys.Title, title),
-			slog.Any(otelkeys.BookMetadata, meta),
 		)
 		if meta.Description != "" {
 			description = &meta.Description
 		}
+		if meta.ISBN != "" {
 		if meta.ISBN != "" {
 			// Normalize ISBN: strip whitespace, known prefixes, and hyphens/spaces.
 			isbnRaw := strings.TrimSpace(meta.ISBN)
@@ -97,7 +140,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		if meta.Title != "" {
 			title = meta.Title
 		}
-		slog.InfoContext(ctx, "metadata extracted",
+		slog.DebugContext(ctx, "metadata extracted",
 			slog.String(otelkeys.Title, meta.Title),
 			slog.String(otelkeys.Format, meta.Format),
 			slog.Any(otelkeys.BookMetadata, meta),
@@ -129,12 +172,12 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		nil,
 		isbn10,
 		isbn13,
+		nil,
+		nil,
+		nil,
 		publicationDate,
 		publisher,
 		language,
-		nil,
-		nil,
-		nil,
 		numPages,
 		coverImageURL,
 	)
@@ -171,12 +214,28 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		if author == nil {
 			author, err = database.CreateAuthor(ctx, meta.Author, nil, nil, nil, nil)
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to create author record for file",
-					slog.String(otelkeys.Path, p.Path),
-					slog.String(otelkeys.Author, meta.Author),
-					slog.Any(otelkeys.Error, err),
-				)
-				return fmt.Errorf("create author for %s: %w", p.Path, err)
+				// Handle expected race: another worker may have created this author concurrently.
+				if errors.Is(err, db.ErrAuthorNameExists) {
+					author, err = database.GetAuthorByName(ctx, meta.Author)
+					if err != nil {
+						slog.ErrorContext(ctx, "failed to load existing author after concurrent create",
+							slog.String(otelkeys.Path, p.Path),
+							slog.String(otelkeys.Author, meta.Author),
+							slog.Any(otelkeys.Error, err),
+						)
+						return fmt.Errorf("get existing author after conflict for %s: %w", p.Path, err)
+					}
+					if author == nil {
+						return fmt.Errorf("author %q exists but could not be loaded for %s", meta.Author, p.Path)
+					}
+				} else {
+					slog.ErrorContext(ctx, "failed to create author record for file",
+						slog.String(otelkeys.Path, p.Path),
+						slog.String(otelkeys.Author, meta.Author),
+						slog.Any(otelkeys.Error, err),
+					)
+					return fmt.Errorf("create author for %s: %w", p.Path, err)
+				}
 			}
 		}
 		err = database.SetBookAuthors(ctx, book.ID, []string{author.ID})
