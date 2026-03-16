@@ -26,7 +26,9 @@ func MakeTestEPUB(t *testing.T, path, title, creator, identifier string) {
 	if err != nil {
 		t.Fatalf("create mimetype: %v", err)
 	}
-	mw.Write([]byte("application/epub+zip"))
+	if _, err := mw.Write([]byte("application/epub+zip")); err != nil {
+		t.Fatalf("write mimetype: %v", err)
+	}
 
 	// META-INF/container.xml
 	writeZipFile(t, w, "META-INF/container.xml", `<?xml version="1.0" encoding="UTF-8"?>
