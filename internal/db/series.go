@@ -10,7 +10,10 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-var ErrSeriesNameExists = errors.New("series name already exists")
+var (
+	ErrSeriesNameExists  = errors.New("series name already exists")
+	ErrInvalidSeriesName = errors.New("invalid series name")
+)
 
 type Series struct {
 	ID            string    `json:"id"`
@@ -118,6 +121,10 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 }
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, ErrInvalidSeriesName
+	}
 	slog.DebugContext(ctx, "db: updating series",
 		slog.String(otelkeys.ID, id),
 		slog.String(otelkeys.Name, name),
@@ -141,7 +148,7 @@ func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, har
 func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return nil, errors.New("series name cannot be blank")
+		return nil, ErrInvalidSeriesName
 	}
 	slog.DebugContext(ctx, "db: find or create series", slog.String(otelkeys.Name, name))
 	s, err := scanSeries(d.QueryRowContext(ctx,

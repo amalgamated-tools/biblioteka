@@ -265,6 +265,12 @@ pathResolved:
 					slog.String(otelkeys.Path, filePath),
 					slog.Any(otelkeys.Error, reorgErr),
 				)
+				// If the source file disappeared between the initial stat and
+				// this reorganization attempt, abort processing so we do not
+				// create a book_files row pointing at a non-existent path.
+				if os.IsNotExist(reorgErr) {
+					return fmt.Errorf("source file missing during reorganize: %w", reorgErr)
+				}
 				// If the error came from a failed Remove after a successful copy,
 				// an orphaned copy may exist at newPath. Remove it so the next
 				// scan does not index it as a separate book.

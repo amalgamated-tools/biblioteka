@@ -110,12 +110,27 @@ func copyFile(src, dst string) (err error) {
 	}
 	defer in.Close()
 
+	// Capture source file metadata so we can preserve it on the destination.
+	srcInfo, err := in.Stat()
+	if err != nil {
+		return err
+	}
+	srcMode := srcInfo.Mode()
+	srcModTime := srcInfo.ModTime()
+
 	dstDir := filepath.Dir(dst)
 	out, err := os.CreateTemp(dstDir, ".biblioteka-copy-*")
 	if err != nil {
 		return err
 	}
 	tmpName := out.Name()
+
+	// Ensure the temp file has the same permissions as the source file, so that
+	// the copy behaves like a rename from the user's perspective.
+	if err := out.Chmod(srcMode.Perm()); err != nil {
+		_ = out.Close()
+		return err
+	}
 
 	defer func() {
 		// Ensure the temp file is cleaned up on any error.
@@ -132,6 +147,12 @@ func copyFile(src, dst string) (err error) {
 	// avoid rename failures on platforms like Windows.
 	if cerr := out.Close(); cerr != nil {
 		return cerr
+	}
+
+	// Preserve modification time (and use it for access time as well) so the
+	// copied file closely matches the original's metadata.
+	if err = os.Chtimes(tmpName, srcModTime, srcModTime); err != nil {
+		return err
 	}
 
 	// Fail fast if the destination already exists instead of overwriting it.
