@@ -28,9 +28,6 @@ func scanAuthor(row interface{ Scan(...any) error }) (*Author, error) {
 	var a Author
 	err := row.Scan(&a.ID, &a.Name, &a.GoodreadsID, &a.HardcoverID, &a.GoogleBooksID, &a.ImageURL, &a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
 		return nil, err
 	}
 	return &a, nil
