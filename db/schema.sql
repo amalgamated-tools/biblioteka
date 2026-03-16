@@ -36,6 +36,7 @@ image_url TEXT,
 created_at DATETIME NOT NULL DEFAULT (datetime('now')),
 updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
+CREATE UNIQUE INDEX idx_authors_name_ci ON authors (LOWER(name));
 CREATE TABLE series (
 id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
 name TEXT NOT NULL UNIQUE,
@@ -147,4 +148,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260313080000_create_book_files_table'),
   ('20260314000000_create_audit_logs_table'),
   ('20260315000000_create_api_keys_table'),
-  ('20260315000000_create_opds_credentials_table');
+  ('20260315000000_create_opds_credentials_table'),
+  ('20260316000000_author_name_ci_unique');
