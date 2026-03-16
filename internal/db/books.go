@@ -116,6 +116,46 @@ func (d *DB) ListBooksByLibrary(ctx context.Context, libraryID string) ([]Book, 
 	return books, rows.Err()
 }
 
+// ListBooksByLibraryPaginated returns books in a specific library with pagination and total count.
+func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, limit, offset int) ([]Book, int, error) {
+	slog.DebugContext(ctx, "db: listing books by library paginated",
+		slog.String(otelkeys.LibraryID, libraryID),
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+
+	var total int
+	if err := d.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1`,
+		libraryID,
+	).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY b.title ASC, b.id ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
+		libraryID, limit, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		books = append(books, *b)
+	}
+	return books, total, rows.Err()
+}
+
 // UpdateBook updates a book's fields and returns the updated book.
 func (d *DB) UpdateBook(ctx context.Context, id, title string, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language *string, numPages *int, coverImageURL *string) (*Book, error) {
 	slog.DebugContext(ctx, "db: updating book",

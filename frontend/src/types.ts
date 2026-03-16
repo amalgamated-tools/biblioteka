@@ -123,3 +123,10 @@ export interface BookInput {
   num_pages?: number;
   cover_image_url?: string;
 }
+
+export interface PaginatedBooks {
+  books: BookSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+}

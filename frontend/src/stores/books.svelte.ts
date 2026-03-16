@@ -10,7 +10,7 @@ class BookStore {
     this.loading = true;
     try {
       const data = await api.listBooks();
-      this.books = data;
+      this.books = data.books;
       this.loaded = true;
     } catch {
       // Silently fail — individual pages can handle errors

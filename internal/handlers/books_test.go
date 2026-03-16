@@ -85,12 +85,21 @@ func TestListBooks_Handler(t *testing.T) {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 	}
 
-	var dtos []bookSummaryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
+	var resp bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if len(dtos) != 2 {
-		t.Errorf("len = %d, want 2", len(dtos))
+	if len(resp.Books) != 2 {
+		t.Errorf("len = %d, want 2", len(resp.Books))
+	}
+	if resp.Total != 2 {
+		t.Errorf("total = %d, want 2", resp.Total)
+	}
+	if resp.Limit != 50 {
+		t.Errorf("limit = %d, want 50", resp.Limit)
+	}
+	if resp.Offset != 0 {
+		t.Errorf("offset = %d, want 0", resp.Offset)
 	}
 }
 

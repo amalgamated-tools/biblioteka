@@ -1,5 +1,11 @@
 <script lang="ts">
   import { BookOpen } from "lucide-svelte";
+  import BookList from "./ui/BookList.svelte";
+  import * as api from "../lib/api";
+
+  function fetchBooks(limit: number, offset: number) {
+    return api.listBooks(limit, offset);
+  }
 </script>
 
 <div>
@@ -10,15 +16,5 @@
     <h1 class="text-3xl font-display font-bold text-ink-900 dark:text-cream-100">All Books</h1>
   </div>
 
-  <div class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in">
-    <div class="text-center py-8">
-      <BookOpen class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4" />
-      <p class="text-ink-400 dark:text-ink-400 text-lg">
-        No books yet.
-      </p>
-      <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
-        Books will appear here once they are added to your libraries.
-      </p>
-    </div>
-  </div>
+  <BookList {fetchBooks} />
 </div>

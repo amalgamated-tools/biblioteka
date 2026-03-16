@@ -322,15 +322,18 @@ func TestListLibraryBooks_Success(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 
-	var books []bookSummaryDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &books); err != nil {
+	var resp bookListDTO
+	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("unmarshal books: %v", err)
 	}
-	if len(books) != 1 {
-		t.Fatalf("books count = %d, want 1", len(books))
+	if len(resp.Books) != 1 {
+		t.Fatalf("books count = %d, want 1", len(resp.Books))
 	}
-	if books[0].Title != "The Gunslinger" {
-		t.Errorf("title = %q, want %q", books[0].Title, "The Gunslinger")
+	if resp.Books[0].Title != "The Gunslinger" {
+		t.Errorf("title = %q, want %q", resp.Books[0].Title, "The Gunslinger")
+	}
+	if resp.Total != 1 {
+		t.Errorf("total = %d, want 1", resp.Total)
 	}
 }
 

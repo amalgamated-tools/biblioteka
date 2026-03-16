@@ -142,6 +142,43 @@ func TestAddBookToLibrary(t *testing.T) {
 	}
 }
 
+func TestListBooksByLibraryPaginated(t *testing.T) {
+	d := newTestDB(t)
+
+	lib, _ := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
+	b1, _ := d.CreateBook(context.Background(), "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b2, _ := d.CreateBook(context.Background(), "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b3, _ := d.CreateBook(context.Background(), "Gamma", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_ = d.AddBookToLibrary(context.Background(), lib.ID, b1.ID)
+	_ = d.AddBookToLibrary(context.Background(), lib.ID, b2.ID)
+	_ = d.AddBookToLibrary(context.Background(), lib.ID, b3.ID)
+
+	books, total, err := d.ListBooksByLibraryPaginated(context.Background(), lib.ID, 2, 0)
+	if err != nil {
+		t.Fatalf("ListBooksByLibraryPaginated() error: %v", err)
+	}
+	if total != 3 {
+		t.Errorf("total = %d, want 3", total)
+	}
+	if len(books) != 2 {
+		t.Errorf("len(books) = %d, want 2", len(books))
+	}
+	if books[0].Title != "Alpha" {
+		t.Errorf("first book = %q, want Alpha", books[0].Title)
+	}
+
+	books2, total2, err := d.ListBooksByLibraryPaginated(context.Background(), lib.ID, 2, 2)
+	if err != nil {
+		t.Fatalf("ListBooksByLibraryPaginated() page 2 error: %v", err)
+	}
+	if total2 != 3 {
+		t.Errorf("total page 2 = %d, want 3", total2)
+	}
+	if len(books2) != 1 {
+		t.Errorf("len(books) page 2 = %d, want 1", len(books2))
+	}
+}
+
 func TestRemoveBookFromLibrary(t *testing.T) {
 	d := newTestDB(t)
 
