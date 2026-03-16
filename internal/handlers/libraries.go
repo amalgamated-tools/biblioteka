@@ -372,10 +372,7 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 //	@Failure		500		{object}	errorResponse
 //	@Router			/libraries/{id}/books [get]
 func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request, id string) {
-	const defaultLimit = 50
-	const maxLimit = 200
-
-	limit, offset := parseLimitOffset(r, defaultLimit, maxLimit)
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
 
 	slog.DebugContext(r.Context(), "listing library books",
 		slog.String(otelkeys.LibraryID, id),

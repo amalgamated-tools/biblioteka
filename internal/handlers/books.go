@@ -17,6 +17,11 @@ type BookHandler struct {
 	DB *db.DB
 }
 
+const (
+	defaultPageLimit = 50
+	maxPageLimit     = 200
+)
+
 type bookRequest struct {
 	Title           string  `json:"title"`
 	Description     *string `json:"description"`
@@ -296,10 +301,7 @@ func parseLimitOffset(r *http.Request, defaultLimit, maxLimit int) (int, int) {
 //	@Failure		500		{object}	errorResponse
 //	@Router			/books [get]
 func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
-	const defaultLimit = 50
-	const maxLimit = 200
-
-	limit, offset := parseLimitOffset(r, defaultLimit, maxLimit)
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
 
 	slog.DebugContext(r.Context(), "listing books",
 		slog.Int(otelkeys.Limit, limit),

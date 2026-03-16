@@ -162,7 +162,7 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 
 	var total int
 	if err := d.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM library_books WHERE library_id = $1`,
+		`SELECT COUNT(*) FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1`,
 		libraryID,
 	).Scan(&total); err != nil {
 		return nil, 0, err

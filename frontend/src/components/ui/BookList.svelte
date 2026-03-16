@@ -9,8 +9,11 @@
     pageSize?: number;
   }
 
+  const MAX_PAGE_SIZE = 200;
+
   let { fetchBooks, pageSize = 24 }: Props = $props();
 
+  let effectivePageSize = $derived(Math.min(pageSize, MAX_PAGE_SIZE));
   let books: BookSummary[] = $state([]);
   let total = $state(0);
   let offset = $state(0);
@@ -19,17 +22,17 @@
   let viewMode: "grid" | "table" = $state("grid");
   let currentRequestId = 0;
 
-  let totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
-  let currentPage = $derived(Math.floor(offset / pageSize) + 1);
+  let totalPages = $derived(Math.max(1, Math.ceil(total / effectivePageSize)));
+  let currentPage = $derived(Math.floor(offset / effectivePageSize) + 1);
   let rangeStart = $derived(total === 0 ? 0 : offset + 1);
-  let rangeEnd = $derived(Math.min(offset + pageSize, total));
+  let rangeEnd = $derived(Math.min(offset + effectivePageSize, total));
 
-  async function load() {
+  async function load(fetchFn: typeof fetchBooks, size: number, off: number) {
     const requestId = ++currentRequestId;
     loading = true;
     error = null;
     try {
-      const data = await fetchBooks(pageSize, offset);
+      const data = await fetchFn(size, off);
       if (requestId !== currentRequestId) {
         return;
       }
@@ -50,22 +53,21 @@
   }
 
   $effect(() => {
-    // Re-fetch when offset, fetchBooks, or pageSize change (including initial load)
-    void offset;
-    void fetchBooks;
-    void pageSize;
-    load();
+    const _offset = offset;
+    const _fetchBooks = fetchBooks;
+    const _pageSize = effectivePageSize;
+    load(_fetchBooks, _pageSize, _offset);
   });
 
   function prevPage() {
     if (currentPage > 1) {
-      offset = (currentPage - 2) * pageSize;
+      offset = (currentPage - 2) * effectivePageSize;
     }
   }
 
   function nextPage() {
     if (currentPage < totalPages) {
-      offset = currentPage * pageSize;
+      offset = currentPage * effectivePageSize;
     }
   }
 </script>

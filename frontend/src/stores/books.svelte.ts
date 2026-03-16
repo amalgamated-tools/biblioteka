@@ -6,27 +6,6 @@ class BookStore {
   loading = $state(false);
   loaded = $state(false);
 
-  async load(): Promise<void> {
-    this.loading = true;
-    try {
-      const all: BookSummary[] = [];
-      let offset = 0;
-      const limit = 200;
-      for (;;) {
-        const data = await api.listBooks(limit, offset);
-        all.push(...data.books);
-        if (all.length >= data.total || data.books.length === 0) break;
-        offset += limit;
-      }
-      this.books = all;
-      this.loaded = true;
-    } catch {
-      // Silently fail — individual pages can handle errors
-    } finally {
-      this.loading = false;
-    }
-  }
-
   async add(input: BookInput): Promise<Book> {
     const created = await api.createBook(input);
     this.books = [...this.books, created];
