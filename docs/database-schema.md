@@ -137,16 +137,19 @@ Named collections of filesystem paths to scan for book files.
 
 Metadata about book authors, shared across all libraries.
 
-| Column           | Type    | Nullable | Default   | Description                   |
-|------------------|---------|----------|-----------|-------------------------------|
-| `id`             | TEXT    | NOT NULL | auto-gen  | Primary key                   |
-| `name`           | TEXT    | NOT NULL | —         | Author display name (unique)  |
-| `goodreads_id`   | TEXT    | NULL     | NULL      | Goodreads author ID           |
-| `hardcover_id`   | TEXT    | NULL     | NULL      | Hardcover author ID           |
-| `google_books_id`| TEXT    | NULL     | NULL      | Google Books author ID        |
-| `image_url`      | TEXT    | NULL     | NULL      | URL to author photo           |
-| `created_at`     | DATETIME| NOT NULL | `now()`   | Creation time                 |
-| `updated_at`     | DATETIME| NOT NULL | `now()`   | Last update time              |
+| Column           | Type    | Nullable | Default   | Description                                   |
+|------------------|---------|----------|-----------|-----------------------------------------------|
+| `id`             | TEXT    | NOT NULL | auto-gen  | Primary key                                   |
+| `name`           | TEXT    | NOT NULL | —         | Author display name (unique, case-insensitive)|
+| `goodreads_id`   | TEXT    | NULL     | NULL      | Goodreads author ID                           |
+| `hardcover_id`   | TEXT    | NULL     | NULL      | Hardcover author ID                           |
+| `google_books_id`| TEXT    | NULL     | NULL      | Google Books author ID                        |
+| `image_url`      | TEXT    | NULL     | NULL      | URL to author photo                           |
+| `created_at`     | DATETIME| NOT NULL | `now()`   | Creation time                                 |
+| `updated_at`     | DATETIME| NOT NULL | `now()`   | Last update time                              |
+
+**Indexes:**
+- `UNIQUE(LOWER(name))` (`idx_authors_name_ci`) — case-insensitive uniqueness; `"Jane Austen"` and `"jane austen"` are treated as the same author
 
 ---
 

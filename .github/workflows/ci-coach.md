@@ -27,8 +27,8 @@ tools:
 safe-outputs:
   create-pull-request:
     expires: 2d
-    protected-files: fallback-to-issue
-    title-prefix: "[ci-coach] "
+    fallback-as-issue: true
+    title-prefix: "ci(ci-coach) "
     github-token-for-extra-empty-commit: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
 timeout-minutes: 30
 source: githubnext/agentics/workflows/ci-coach.md@b897c2f3e43bde9ff7923c8fa9211055b26e27cc
@@ -177,7 +177,7 @@ If no significant improvements are found:
 
 ## Pull Request Template
 
-When creating a PR, use this structure:
+When creating a PR, the title must follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `ci: <short description>`. Use this structure for the body:
 
 ````markdown
 ### Summary
