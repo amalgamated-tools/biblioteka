@@ -60,10 +60,6 @@ func (e *Extractor) ExtractMetadata(path string) (*BookMetadata, error) {
 		return e.extractNativeEpub(path)
 	}
 
-	// 2. Fallback to ExifTool for MOBI, AZW3, and PDF
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	if e.et == nil {
 		return nil, fmt.Errorf("exif-based metadata extraction requested but exiftool is not available")
 	}
@@ -94,6 +90,7 @@ func (e *Extractor) extractNativeEpub(path string) (*BookMetadata, error) {
 func (e *Extractor) extractExif(path string) (*BookMetadata, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+
 	results := e.et.ExtractMetadata(path)
 	if len(results) == 0 {
 		return nil, fmt.Errorf("no metadata found for %s", path)
