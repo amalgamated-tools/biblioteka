@@ -100,7 +100,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 			)
 		}
 	} else {
-		slog.InfoContext(ctx, "metadata extracted successfully",
+		slog.DebugContext(ctx, "metadata extracted successfully",
 			slog.String(otelkeys.Path, p.Path),
 			slog.String(otelkeys.Title, title),
 		)

@@ -150,7 +150,9 @@ func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata
 
 // NormalizeISBN strips common prefixes (urn:isbn:, isbn:), whitespace, hyphens,
 // and spaces from a raw ISBN string. It returns the cleaned value only if it looks
-// like a valid ISBN (10 or 13 digits); otherwise it returns "".
+// like an ISBN-10 or ISBN-13: 10 or 13 characters consisting of digits, with
+// ISBN-10 allowing an 'X' (or 'x') as the final checksum character; otherwise it
+// returns "".
 func NormalizeISBN(raw string) string {
 	s := strings.TrimSpace(raw)
 	if s == "" {
@@ -167,10 +169,36 @@ func NormalizeISBN(raw string) string {
 	s = strings.ReplaceAll(s, "-", "")
 	s = strings.ReplaceAll(s, " ", "")
 	s = strings.TrimSpace(s)
-	if len(s) == 10 || len(s) == 13 {
+
+	switch len(s) {
+	case 10:
+		// First 9 characters must be digits.
+		for i := 0; i < 9; i++ {
+			if s[i] < '0' || s[i] > '9' {
+				return ""
+			}
+		}
+		// Last character may be a digit or 'X'/'x'.
+		last := s[9]
+		if (last < '0' || last > '9') && last != 'X' && last != 'x' {
+			return ""
+		}
+		// Normalize to upper-case 'X' if present.
+		if last == 'x' {
+			s = s[:9] + "X"
+		}
 		return s
+	case 13:
+		// All characters must be digits.
+		for i := 0; i < 13; i++ {
+			if s[i] < '0' || s[i] > '9' {
+				return ""
+			}
+		}
+		return s
+	default:
+		return ""
 	}
-	return ""
 }
 
 // findISBN searches the Identifier field for a valid ISBN pattern
