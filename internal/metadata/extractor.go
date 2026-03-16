@@ -45,12 +45,6 @@ func (e *Extractor) Close() {
 	}
 }
 
-// exiftool returns the underlying *exiftool.Exiftool instance.
-// It is intended for use only within the metadata package (e.g., in tests).
-func (e *Extractor) exiftool() *exiftool.Exiftool {
-	return e.et
-}
-
 func (e *Extractor) ExtractMetadata(path string) (*BookMetadata, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	// 1. Try Native EPUB parsing first (Zero-dependency, Very Fast)

@@ -6,8 +6,14 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
+	"github.com/barasher/go-exiftool"
 )
 
+// exiftool returns the underlying *exiftool.Exiftool instance.
+// It is intended for use only within the metadata package (e.g., in tests).
+func (e *Extractor) exiftool() *exiftool.Exiftool {
+	return e.et
+}
 func TestExtractMetadata_NativeEPUB(t *testing.T) {
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "test.epub")
