@@ -757,13 +757,21 @@ Create an author.
 
 | Field            | Type   | Required | Description |
 |------------------|--------|----------|-------------|
-| `name`           | string | ✓        | Author name (must be unique) |
+| `name`           | string | ✓        | Author name (must be unique, case-insensitive — `"Jane Austen"` and `"jane austen"` conflict) |
 | `goodreads_id`   | string |          | Goodreads author ID |
 | `hardcover_id`   | string |          | Hardcover author ID |
 | `google_books_id`| string |          | Google Books author ID |
 | `image_url`      | string |          | Author photo URL |
 
 **Response:** `201 Created` with the author object.
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Invalid request (malformed JSON or missing name) |
+| `409` | An author with that name already exists (comparison is case-insensitive) |
+| `500` | Unexpected server error |
 
 **Author object:**
 
@@ -810,7 +818,7 @@ Update an author (full update).
 |--------|---------|
 | `400` | Invalid request (malformed JSON or missing name) |
 | `404` | Author not found |
-| `409` | An author with that name already exists |
+| `409` | An author with that name already exists (comparison is case-insensitive) |
 
 ---
 

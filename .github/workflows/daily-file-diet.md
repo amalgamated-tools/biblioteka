@@ -16,7 +16,7 @@ tracker-id: daily-file-diet
 safe-outputs:
   create-issue:
     expires: 2d
-    title-prefix: "[file-diet] "
+    title-prefix: "chore(file-diet): "
     labels: [refactoring, code-health, automated-analysis]
     assignees: copilot
     max: 1
