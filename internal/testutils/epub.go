@@ -17,14 +17,14 @@ func MakeTestEPUB(t *testing.T, path, title, creator, identifier string) {
 	}
 
 	w := zip.NewWriter(f)
-	t.Cleanup(func() {
+	defer func() {
 		if err := w.Close(); err != nil {
 			t.Fatalf("close epub zip writer: %v", err)
 		}
 		if err := f.Close(); err != nil {
 			t.Fatalf("close epub file: %v", err)
 		}
-	})
+	}()
 
 	// mimetype must be the first entry, stored (not compressed)
 	mh := &zip.FileHeader{Name: "mimetype", Method: zip.Store}
