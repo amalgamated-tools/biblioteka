@@ -251,6 +251,7 @@ internal/
   otel/            OpenTelemetry tracing and structured logging setup
   otelkeys/        Shared structured-log and telemetry field-name constants
   telemetry/       Anonymous usage telemetry (opt-in, disabled by default)
+  testutils/       Shared test helpers for generating fixture EPUB and PDF files
 frontend/          Svelte 5 SPA
 db/
   migrations/      sqlite/ and postgres/ SQL migration files
