@@ -183,12 +183,18 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 			author, err := database.GetAuthorByName(ctx, authorName)
 			if err != nil {
 				if !errors.Is(err, sql.ErrNoRows) {
-					slog.ErrorContext(ctx, "failed to get or create author record for file",
+					// Author lookup/creation failed after the book and file have already
+					// been created. Treat this as a non-fatal, best-effort enrichment
+					// failure to avoid causing job retries that could duplicate the
+					// previously committed book/file records.
+					slog.WarnContext(ctx, "failed to get or create author record for file; skipping author association",
 						slog.String(otelkeys.Path, p.Path),
 						slog.String(otelkeys.Author, authorName),
 						slog.Any(otelkeys.Error, err),
 					)
-					return fmt.Errorf("get or create author for %s: %w", p.Path, err)
+					// Skip further author processing but keep the successfully created
+					// book/file, avoiding duplicate records on retries.
+					author = nil
 				}
 			}
 			if author == nil {

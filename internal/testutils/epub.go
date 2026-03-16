@@ -2,6 +2,8 @@ package testutils
 
 import (
 	"archive/zip"
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"os"
 	"strings"
@@ -128,23 +130,28 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
 
 	var extraMeta string
 	if opts.Description != "" {
-		extraMeta += "\n    <dc:description>" + opts.Description + "</dc:description>"
+		extraMeta += "\n    <dc:description>" + xmlEscape(opts.Description) + "</dc:description>"
 	}
 	if opts.Publisher != "" {
-		extraMeta += "\n    <dc:publisher>" + opts.Publisher + "</dc:publisher>"
+		extraMeta += "\n    <dc:publisher>" + xmlEscape(opts.Publisher) + "</dc:publisher>"
 	}
 	if opts.PublicationDate != "" {
 		extraMeta += `
-    <dc:date opf:event="publication">` + opts.PublicationDate + `</dc:date>`
+    <dc:date opf:event="publication">` + xmlEscape(opts.PublicationDate) + `</dc:date>`
 	}
+
+	escapedTitle := xmlEscape(title)
+	escapedCreator := xmlEscape(creator)
+	escapedIdentifier := xmlEscape(identifier)
+	escapedLang := xmlEscape(lang)
 
 	writeZipFile(t, w, "OEBPS/content.opf", `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
-    <dc:title>`+title+`</dc:title>
-    <dc:creator>`+creator+`</dc:creator>
-    <dc:identifier id="uid">`+identifier+`</dc:identifier>
-    <dc:language>`+lang+`</dc:language>`+extraMeta+`
+    <dc:title>`+escapedTitle+`</dc:title>
+    <dc:creator>`+escapedCreator+`</dc:creator>
+    <dc:identifier id="uid">`+escapedIdentifier+`</dc:identifier>
+    <dc:language>`+escapedLang+`</dc:language>`+extraMeta+`
   </metadata>
   <manifest>
     <item id="chapter1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
@@ -156,6 +163,15 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
 
 	writeZipFile(t, w, "OEBPS/chapter1.xhtml", `<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter 1</title></head><body><p>Hello</p></body></html>`)
+}
+
+func xmlEscape(s string) string {
+	var buf bytes.Buffer
+	if err := xml.EscapeText(&buf, []byte(s)); err != nil {
+		// xml.EscapeText currently never returns an error, but fall back to the original string if it does.
+		return s
+	}
+	return buf.String()
 }
 
 func writeZipFile(t *testing.T, w *zip.Writer, name, content string) {
