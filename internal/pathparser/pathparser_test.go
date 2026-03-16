@@ -2,19 +2,25 @@ package pathparser
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 )
 
 func TestParseBookPath(t *testing.T) {
-	root := "/library"
+	root := t.TempDir()
 	tests := []struct {
 		name     string
 		filePath string
 		want     PathInfo
 	}{
 		{
-			name:     "3-level: author/series/numbered file with author and year",
-			filePath: "/library/Alexander McCall Smith/No. 1 Ladies' Detective Agency/10. Tea Time for the Traditionally Built - Alexander McCall Smith (2009).epub",
+			name: "3-level: author/series/numbered file with author and year",
+			filePath: filepath.Join(
+				root,
+				"Alexander McCall Smith",
+				"No. 1 Ladies' Detective Agency",
+				"10. Tea Time for the Traditionally Built - Alexander McCall Smith (2009).epub",
+			),
 			want: PathInfo{
 				Author:         "Alexander McCall Smith",
 				Title:          "Tea Time for the Traditionally Built",
@@ -24,8 +30,13 @@ func TestParseBookPath(t *testing.T) {
 			},
 		},
 		{
-			name:     "3-level: second book in series",
-			filePath: "/library/Alexander McCall Smith/No. 1 Ladies' Detective Agency/11. The Double Comfort Safari Club - Alexander McCall Smith (2010).epub",
+			name: "3-level: second book in series",
+			filePath: filepath.Join(
+				root,
+				"Alexander McCall Smith",
+				"No. 1 Ladies' Detective Agency",
+				"11. The Double Comfort Safari Club - Alexander McCall Smith (2010).epub",
+			),
 			want: PathInfo{
 				Author:         "Alexander McCall Smith",
 				Title:          "The Double Comfort Safari Club",
@@ -35,8 +46,12 @@ func TestParseBookPath(t *testing.T) {
 			},
 		},
 		{
-			name:     "2-level: author folder with numbered file",
-			filePath: "/library/Agatha Christie/1. The Seven Dials Mystery - Agatha Christie (2010).epub",
+			name: "2-level: author folder with numbered file",
+			filePath: filepath.Join(
+				root,
+				"Agatha Christie",
+				"1. The Seven Dials Mystery - Agatha Christie (2010).epub",
+			),
 			want: PathInfo{
 				Author:         "Agatha Christie",
 				Title:          "The Seven Dials Mystery",
@@ -46,7 +61,7 @@ func TestParseBookPath(t *testing.T) {
 		},
 		{
 			name:     "flat file: author dash title",
-			filePath: "/library/Mary Shelley - Frankenstein.epub",
+			filePath: filepath.Join(root, "Mary Shelley - Frankenstein.epub"),
 			want: PathInfo{
 				Author: "Mary Shelley",
 				Title:  "Frankenstein",
@@ -54,15 +69,19 @@ func TestParseBookPath(t *testing.T) {
 		},
 		{
 			name:     "flat file: author dash title (ambiguous)",
-			filePath: "/library/Moby Dick - Herman Melville.epub",
+			filePath: filepath.Join(root, "Moby Dick - Herman Melville.epub"),
 			want: PathInfo{
 				Author: "Moby Dick",
 				Title:  "Herman Melville",
 			},
 		},
 		{
-			name:     "1-level: author-title folder with matching filename",
-			filePath: "/library/Emily Brontë - Wuthering Heights/Emily Brontë - Wuthering Heights.epub",
+			name: "1-level: author-title folder with matching filename",
+			filePath: filepath.Join(
+				root,
+				"Emily Brontë - Wuthering Heights",
+				"Emily Brontë - Wuthering Heights.epub",
+			),
 			want: PathInfo{
 				Author: "Emily Brontë",
 				Title:  "Wuthering Heights",
@@ -111,7 +130,7 @@ func TestParseBookPath(t *testing.T) {
 			},
 		},
 		{
-			name:     "trailing author with hyphenated name is stripped",
+			name:     "flat 'X - Y' filename: left part is Author, right part is Title",
 			filePath: "/library/Tea Time for the Traditionally Built - Jean-Paul Sartre.epub",
 			want: PathInfo{
 				Author: "Tea Time for the Traditionally Built",

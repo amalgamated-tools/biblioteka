@@ -79,11 +79,26 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		return wrappedErr
 	}
 
-	// Check for duplicate: skip if this file path is already indexed.
-	if _, err := database.GetBookFileByPath(ctx, p.Path); err == nil {
-		slog.InfoContext(ctx, "file already indexed, skipping",
+	// Check for duplicate: skip full processing if this file path is already indexed,
+	// but still ensure the book is linked to the requested library (if any).
+	bookFile, err := database.GetBookFileByPath(ctx, p.Path)
+	if err == nil {
+		slog.InfoContext(ctx, "file already indexed, skipping full processing",
 			slog.String(otelkeys.Path, p.Path),
 		)
+
+		// Best-effort: if this job was scoped to a specific library, ensure the
+		// existing book is associated with that library as well.
+		if p.LibraryID != 0 {
+			if err := database.AddBookToLibrary(ctx, p.LibraryID, bookFile.BookID); err != nil {
+				wrappedErr := fmt.Errorf("process book file: add existing book %d to library %d: %w", bookFile.BookID, p.LibraryID, err)
+				slog.ErrorContext(ctx, "book processing warning: could not associate existing book with library",
+					slog.Any(otelkeys.Error, wrappedErr),
+					slog.String(otelkeys.Path, p.Path),
+				)
+			}
+		}
+
 		return nil
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		wrappedErr := fmt.Errorf("process book file: get existing book file by path %q: %w", p.Path, err)

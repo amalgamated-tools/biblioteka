@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // PathInfo contains structured metadata extracted from a book file's path
@@ -102,11 +103,32 @@ func parseAuthorDir(authorDir, baseName string) PathInfo {
 	return info
 }
 
+// normalizeName produces a canonical form for comparing author/series/title
+// directory names and parsed titles. It lowercases, trims, and removes
+// non-letter/digit runes so that minor punctuation or spacing differences
+// don't matter when deciding whether two names are effectively the same.
+func normalizeName(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	var b strings.Builder
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+func namesEqual(a, b string) bool {
+	return normalizeName(a) == normalizeName(b)
+}
+
 // parseAuthorSeriesDirs handles: "Author/Series/[N.] Title [- Author] [(Year)].ext"
 // With 2+ directory levels, dirs[0] = Author, dirs[1] = Series.
 // If the filename does not carry a leading series-position prefix (e.g. "1. "),
 // dirs[1] is treated as a title directory (Calibre-style Author/Title/file.ext)
 // rather than a series name, to avoid creating phantom series records.
+// Additionally, when there is a series-position prefix, dirs[1] is only treated
+// as a series name if it does not effectively duplicate the parsed title.
 func parseAuthorSeriesDirs(dirs []string, baseName string) PathInfo {
 	info := PathInfo{
 		Author: dirs[0],
@@ -114,8 +136,10 @@ func parseAuthorSeriesDirs(dirs []string, baseName string) PathInfo {
 	info.Title, info.SeriesPosition, info.Year = parseFilenameComponents(baseName)
 
 	// Only treat dirs[1] as a series name when the filename has a series
-	// position prefix — otherwise it's just a title-level directory.
-	if info.SeriesPosition != nil {
+	// position prefix — otherwise it's just a title-level directory. Even when
+	// there is a series position, avoid creating a phantom series if dirs[1]
+	// is effectively the same as the parsed title (e.g. Author/Title/1. Title.ext).
+	if info.SeriesPosition != nil && !namesEqual(dirs[1], info.Title) {
 		info.SeriesName = dirs[1]
 	}
 	return info
@@ -153,7 +177,7 @@ func parseFilenameComponents(name string) (title string, pos *float64, year *int
 
 var reSeriesPos = regexp.MustCompile(`^(\d+)\.\s+`)
 var reYear = regexp.MustCompile(`\((\d{4})\)\s*$`)
-var reTrailingAuthor = regexp.MustCompile(`\s+-\s+.+$`)
+var reTrailingAuthor = regexp.MustCompile(`\s+-\s+[^-\s][^-]*$`)
 
 func extractSeriesPosition(name string) *float64 {
 	m := reSeriesPos.FindStringSubmatch(name)
@@ -181,26 +205,66 @@ func extractYear(name string) *int {
 
 func stripTrailingAuthor(name string) string {
 	// Only strip if there's a " - " separator and the part after it
-	// looks like an author name (doesn't contain digits that might be a subtitle).
-	loc := reTrailingAuthor.FindStringIndex(name)
-	if loc == nil {
+	// looks like an author name. Be conservative to avoid truncating
+	// legitimate subtitles such as "Title - A Novel" or "Title - Special Edition".
+	idx := strings.LastIndex(name, " - ")
+	if idx == -1 {
 		return name
 	}
-	// Extract the trailing part (excluding the separator) and check for digits.
-	suffix := strings.TrimSpace(name[loc[0]:])
-	if strings.HasPrefix(suffix, "-") {
-		suffix = strings.TrimSpace(strings.TrimPrefix(suffix, "-"))
-	}
+
+	suffix := strings.TrimSpace(name[idx+3:])
 	if suffix == "" {
 		return name
 	}
-	for _, r := range suffix {
+
+	if !isLikelyPersonName(suffix) {
+		// Suffix doesn't look like a personal name; keep the original string.
+		return name
+	}
+
+	return strings.TrimSpace(name[:idx])
+}
+
+// isLikelyPersonName applies a conservative heuristic to decide whether s
+// looks like a human author name (e.g. "Jane Doe", "Isaac Asimov").
+// It intentionally prefers false negatives (not stripping) over false positives.
+func isLikelyPersonName(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return false
+	}
+
+	// Quick reject if there are any digits.
+	for _, r := range s {
 		if unicode.IsDigit(r) {
-			// Likely a subtitle such as "Part 1"; don't strip.
-			return name
+			return false
 		}
 	}
-	return strings.TrimSpace(name[:loc[0]])
+
+	parts := strings.Fields(s)
+	if len(parts) < 2 || len(parts) > 4 {
+		// Require at least given name + surname, but avoid very long phrases.
+		return false
+	}
+
+	// Reject leading articles that are common in subtitles but rare in names.
+	switch strings.ToLower(parts[0]) {
+	case "a", "an", "the":
+		return false
+	}
+
+	for _, part := range parts {
+		r, _ := utf8.DecodeRuneInString(part)
+		if r == utf8.RuneError {
+			return false
+		}
+		if !unicode.IsLetter(r) || !unicode.IsUpper(r) {
+			// Names typically start with an uppercase letter.
+			return false
+		}
+	}
+
+	return true
 }
 
 func splitDash(s string) (left, right string) {

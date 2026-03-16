@@ -111,10 +111,7 @@ func copyFile(src, dst string) (err error) {
 	tmpName := out.Name()
 
 	defer func() {
-		// Ensure the temp file is closed and cleaned up on any error.
-		if cerr := out.Close(); cerr != nil && err == nil {
-			err = cerr
-		}
+		// Ensure the temp file is cleaned up on any error.
 		if err != nil {
 			_ = os.Remove(tmpName)
 		}
@@ -124,12 +121,17 @@ func copyFile(src, dst string) (err error) {
 		return err
 	}
 
-	// At this point, the defer will close out and remove tmpName if an error occurs.
-	// Preserve existing behavior of overwriting an existing destination file.
+	// Close the temp file before renaming to ensure contents are flushed and to
+	// avoid rename failures on platforms like Windows.
+	if cerr := out.Close(); cerr != nil {
+		return cerr
+	}
+
+	// Fail fast if the destination already exists instead of overwriting it.
 	if _, statErr := os.Stat(dst); statErr == nil {
-		if remErr := os.Remove(dst); remErr != nil {
-			return remErr
-		}
+		return fmt.Errorf("destination file %q already exists", dst)
+	} else if !os.IsNotExist(statErr) {
+		return statErr
 	}
 
 	if err = os.Rename(tmpName, dst); err != nil {
