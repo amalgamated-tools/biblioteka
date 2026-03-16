@@ -60,7 +60,7 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 			slog.Int64(otelkeys.FileSize, p.FileSize),
 		)
 		var title string
-		var description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL *string
+		var description, isbn10, isbn13, coverImageURL *string
 		var numPages *int
 
 		title = p.FileName

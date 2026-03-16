@@ -44,8 +44,12 @@ func NewExtractor() (*Extractor, error) {
 }
 
 func (e *Extractor) Close() {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
 	if e.et != nil {
 		e.et.Close()
+		e.et = nil
 	}
 }
 
@@ -57,6 +61,9 @@ func (e *Extractor) ExtractMetadata(path string) (*BookMetadata, error) {
 	}
 
 	// 2. Fallback to ExifTool for MOBI, AZW3, and PDF
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
 	if e.et == nil {
 		return nil, fmt.Errorf("exif-based metadata extraction requested but exiftool is not available")
 	}
