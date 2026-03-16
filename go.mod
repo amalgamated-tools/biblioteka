@@ -49,7 +49,6 @@ require (
 	github.com/swaggo/files/v2 v2.0.0 // indirect
 	github.com/swaggo/swag v1.8.1 // indirect
 	github.com/tdewolff/parse/v2 v2.8.3 // indirect
-	github.com/tetratelabs/wazero v1.11.0 // indirect
 	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/tools v0.42.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
