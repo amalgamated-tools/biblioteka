@@ -124,7 +124,9 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "My Cool Book.pdf")
 	// Create an empty file so the path exists (extraction will fail but that's OK)
-	os.WriteFile(path, []byte("not a real pdf"), 0644)
+	if err := os.WriteFile(path, []byte("not a real pdf"), 0644); err != nil {
+		t.Fatalf("write test file: %v", err)
+	}
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:     path,
@@ -159,7 +161,9 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "noext")
-	os.WriteFile(path, []byte("content"), 0644)
+	if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
+		t.Fatalf("write test file: %v", err)
+	}
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:     path,
