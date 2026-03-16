@@ -17,6 +17,7 @@
   let loading = $state(false);
   let error: string | null = $state(null);
   let viewMode: "grid" | "table" = $state("grid");
+  let currentRequestId = 0;
 
   let totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
   let currentPage = $derived(Math.floor(offset / pageSize) + 1);
@@ -24,18 +25,27 @@
   let rangeEnd = $derived(Math.min(offset + pageSize, total));
 
   async function load() {
+    const requestId = ++currentRequestId;
     loading = true;
     error = null;
     try {
       const data = await fetchBooks(pageSize, offset);
+      if (requestId !== currentRequestId) {
+        return;
+      }
       books = data.books;
       total = data.total;
     } catch (e) {
+      if (requestId !== currentRequestId) {
+        return;
+      }
       error = e instanceof Error ? e.message : "Failed to load books";
       books = [];
       total = 0;
     } finally {
-      loading = false;
+      if (requestId === currentRequestId) {
+        loading = false;
+      }
     }
   }
 
