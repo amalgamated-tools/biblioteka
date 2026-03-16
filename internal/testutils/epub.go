@@ -2,7 +2,9 @@ package testutils
 
 import (
 	"archive/zip"
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -18,11 +20,17 @@ func MakeTestEPUB(t *testing.T, path, title, creator, identifier string) {
 
 	w := zip.NewWriter(f)
 	defer func() {
+		var errs []string
+
 		if err := w.Close(); err != nil {
-			t.Fatalf("close epub zip writer: %v", err)
+			errs = append(errs, fmt.Sprintf("close epub zip writer: %v", err))
 		}
 		if err := f.Close(); err != nil {
-			t.Fatalf("close epub file: %v", err)
+			errs = append(errs, fmt.Sprintf("close epub file: %v", err))
+		}
+
+		if len(errs) > 0 {
+			t.Fatalf(strings.Join(errs, "; "))
 		}
 	}()
 

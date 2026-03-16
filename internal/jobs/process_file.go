@@ -56,12 +56,12 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 		slog.DebugContext(ctx, "process:file job received",
 			slog.String(otelkeys.Path, p.Path),
 			slog.String(otelkeys.FileName, p.FileName),
-			slog.String(otelkeys.FileType, p.FileType),
+			slog.String(otelkeys.Type, p.FileType),
 			slog.Int64(otelkeys.FileSize, p.FileSize),
 		)
 		var title string
 		var description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL *string
-		var numPages *int = nil
+		var numPages *int
 
 		title = p.FileName
 		if ext := filepath.Ext(p.FileName); ext != "" && strings.EqualFold(ext[1:], p.FileType) {
@@ -90,11 +90,32 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 				description = &meta.Description
 			}
 			if meta.ISBN != "" {
-				switch len(meta.ISBN) {
-				case 10:
-					isbn10 = &meta.ISBN
-				case 13:
-					isbn13 = &meta.ISBN
+				// Normalize ISBN: strip whitespace, known prefixes, and hyphens/spaces.
+				isbnRaw := strings.TrimSpace(meta.ISBN)
+				if isbnRaw != "" {
+					lower := strings.ToLower(isbnRaw)
+					switch {
+					case strings.HasPrefix(lower, "urn:isbn:"):
+						isbnRaw = isbnRaw[len("urn:isbn:"):]
+					case strings.HasPrefix(lower, "isbn:"):
+						isbnRaw = isbnRaw[len("isbn:"):]
+					}
+					isbnRaw = strings.TrimSpace(isbnRaw)
+					// Remove hyphens and internal spaces (common ISBN formatting).
+					isbnRaw = strings.ReplaceAll(isbnRaw, "-", "")
+					isbnRaw = strings.ReplaceAll(isbnRaw, " ", "")
+					isbnRaw = strings.TrimSpace(isbnRaw)
+				}
+				// Ignore sentinel/non-ISBN values.
+				if isbnRaw != "" && !strings.EqualFold(isbnRaw, "not found") {
+					// Store the normalized ISBN back into meta so the pointer remains valid.
+					meta.ISBN = isbnRaw
+					switch len(meta.ISBN) {
+					case 10:
+						isbn10 = &meta.ISBN
+					case 13:
+						isbn13 = &meta.ISBN
+					}
 				}
 			}
 			if meta.Title != "" {
