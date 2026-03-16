@@ -104,12 +104,20 @@ func parseAuthorDir(authorDir, baseName string) PathInfo {
 
 // parseAuthorSeriesDirs handles: "Author/Series/[N.] Title [- Author] [(Year)].ext"
 // With 2+ directory levels, dirs[0] = Author, dirs[1] = Series.
+// If the filename does not carry a leading series-position prefix (e.g. "1. "),
+// dirs[1] is treated as a title directory (Calibre-style Author/Title/file.ext)
+// rather than a series name, to avoid creating phantom series records.
 func parseAuthorSeriesDirs(dirs []string, baseName string) PathInfo {
 	info := PathInfo{
-		Author:     dirs[0],
-		SeriesName: dirs[1],
+		Author: dirs[0],
 	}
 	info.Title, info.SeriesPosition, info.Year = parseFilenameComponents(baseName)
+
+	// Only treat dirs[1] as a series name when the filename has a series
+	// position prefix — otherwise it's just a title-level directory.
+	if info.SeriesPosition != nil {
+		info.SeriesName = dirs[1]
+	}
 	return info
 }
 
@@ -145,7 +153,7 @@ func parseFilenameComponents(name string) (title string, pos *float64, year *int
 
 var reSeriesPos = regexp.MustCompile(`^(\d+)\.\s+`)
 var reYear = regexp.MustCompile(`\((\d{4})\)\s*$`)
-var reTrailingAuthor = regexp.MustCompile(`\s+-\s+[^-]+$`)
+var reTrailingAuthor = regexp.MustCompile(`\s+-\s+.+$`)
 
 func extractSeriesPosition(name string) *float64 {
 	m := reSeriesPos.FindStringSubmatch(name)

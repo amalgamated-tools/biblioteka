@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -182,12 +183,34 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 					slog.String(otelkeys.Path, filePath),
 					slog.Any(otelkeys.Error, reorgErr),
 				)
+				// If the error came from a failed Remove after a successful copy,
+				// an orphaned copy may exist at newPath. Remove it so the next
+				// scan does not index it as a separate book.
+				if newPath != "" && newPath != filePath {
+					if rmErr := os.Remove(newPath); rmErr != nil && !os.IsNotExist(rmErr) {
+						slog.WarnContext(ctx, "could not remove orphaned copy after reorganize failure",
+							slog.String(otelkeys.Path, newPath),
+							slog.Any(otelkeys.Error, rmErr),
+						)
+					}
+				}
 			} else if newPath != filePath {
 				slog.InfoContext(ctx, "file reorganized",
 					slog.String(otelkeys.From, filePath),
 					slog.String(otelkeys.To, newPath),
 				)
 				filePath = newPath
+
+				// Re-check for duplicates at the new path — another worker may
+				// have already indexed the reorganized location.
+				if _, err := database.GetBookFileByPath(ctx, filePath); err == nil {
+					slog.InfoContext(ctx, "reorganized path already indexed, skipping",
+						slog.String(otelkeys.Path, filePath),
+					)
+					return nil
+				} else if !errors.Is(err, sql.ErrNoRows) {
+					return fmt.Errorf("check duplicate at reorganized path %q: %w", filePath, err)
+				}
 			}
 		}
 	}

@@ -92,6 +92,32 @@ func TestParseBookPath(t *testing.T) {
 				Year:   pi(1813),
 			},
 		},
+		{
+			name:     "Calibre-style: Author/Title/file.epub does not create phantom series",
+			filePath: "/library/Jane Austen/Pride and Prejudice/book.epub",
+			want: PathInfo{
+				Author: "Jane Austen",
+				Title:  "book",
+			},
+		},
+		{
+			name:     "3-level: series dir only used when filename has position prefix",
+			filePath: "/library/Brandon Sanderson/Mistborn/2. The Well of Ascension.epub",
+			want: PathInfo{
+				Author:         "Brandon Sanderson",
+				Title:          "The Well of Ascension",
+				SeriesName:     "Mistborn",
+				SeriesPosition: pf(2),
+			},
+		},
+		{
+			name:     "trailing author with hyphenated name is stripped",
+			filePath: "/library/Tea Time for the Traditionally Built - Jean-Paul Sartre.epub",
+			want: PathInfo{
+				Author: "Tea Time for the Traditionally Built",
+				Title:  "Jean-Paul Sartre",
+			},
+		},
 	}
 
 	for _, tt := range tests {
