@@ -242,7 +242,11 @@ func isLikelyPersonName(s string) bool {
 
 	parts := strings.Fields(s)
 	if len(parts) < 2 || len(parts) > 4 {
-		// Require at least given name + surname, but avoid very long phrases.
+		// We require at least two words (given name + surname) to avoid
+		// false positives on single-word subtitle fragments like "Novel",
+		// "Unabridged", or "Remastered" that commonly appear after " - ".
+		// This means single-surname suffixes like "Shelley" won't be
+		// stripped — an acceptable trade-off for avoiding title corruption.
 		return false
 	}
 
