@@ -71,6 +71,7 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 			slog.String(otelkeys.Path, p.Path),
 		)
 
+		var meta *metadata.BookMetadata
 		// Extract metadata before creating the book record so we can use the
 		// extracted fields (now or in the future) to populate or enrich the book.
 		// The book ID comes from CreateBook, not from metadata extraction.
@@ -93,7 +94,7 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 			}
 		}
 		bookTitle := title
-		if meta.Title != "" {
+		if meta != nil && meta.Title != "" {
 			bookTitle = meta.Title
 		}
 		book, err := database.CreateBook(ctx, bookTitle, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
