@@ -59,13 +59,6 @@ jobs:
         working-directory: ./frontend
         run: pnpm run build
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
-        with:
-          name: dist
-          path: internal/server/dist
-          # Artifact only needed within this workflow run; 1 day avoids the 90-day default
-          retention-days: 1
-
   frontend-checks:
     runs-on: ubuntu-latest
     name: Frontend Checks
@@ -119,20 +112,14 @@ jobs:
           fi
 
 
-  # Lint and test run in parallel after frontend-build to shorten the critical path
+  # Lint and test run fully in parallel with frontend-build; the dist placeholder
+  # (.gitkeep) in internal/server/dist satisfies //go:embed all:dist for compilation.
   go-lint:
-    needs: frontend-build
     runs-on: ubuntu-latest
     name: Go Lint
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      # golangci-lint compiles the package, so it needs the embedded dist
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
-        with:
-          name: dist
-          path: internal/server/dist
 
       - name: Set up Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
@@ -155,17 +142,11 @@ jobs:
           fi
 
   go-test:
-    needs: frontend-build
     runs-on: ubuntu-latest
     name: Go Tests
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
-        with:
-          name: dist
-          path: internal/server/dist
 
       - name: Set up Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417

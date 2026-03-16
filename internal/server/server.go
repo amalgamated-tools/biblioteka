@@ -25,7 +25,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-//go:embed dist/*
+//go:embed all:dist
 var embeddedFiles embed.FS
 
 const (
