@@ -226,7 +226,7 @@ No simplifications needed - code already meets quality standards.
 
 ### 4.2 Generate PR Description
 
-If creating a PR, use this structure:
+If creating a PR, the title must follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `refactor: <short description>` (e.g., `refactor(handlers): simplify error handling logic`). Use this structure for the body:
 
 ```markdown
 ## Code Simplification - [Date]

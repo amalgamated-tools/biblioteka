@@ -239,6 +239,7 @@ Create a pull request with your improvements:
 2. **Create Pull Request**:
    - Use the `create-pull-request` tool which is configured in the workflow frontmatter
    - The PR will be created with the prefix "[q]" and labeled with "automation, workflow-optimization"
+   - The PR title must follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `ci: <short description>` (e.g., `ci: optimize workflow caching and parallelization`)
    - The system will automatically skip PR creation if there are no file changes
 
 3. **Create Focused Changes**: Make minimal, surgical modifications
