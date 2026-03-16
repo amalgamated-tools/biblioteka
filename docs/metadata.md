@@ -9,7 +9,7 @@ Biblioteka can extract metadata — title, author, ISBN, format — from book fi
 
 The extractor is implemented in [`internal/metadata/extractor.go`](../internal/metadata/extractor.go) and exposed to end users via the standalone [`cmd/cli`](../cmd/cli/main.go) utility.
 
-> **Import pipeline status:** Automatic metadata extraction is **now active** in the `process:file` background job (since v0.0.5). When a file is imported during a library scan, the extractor runs and populates the book record with `Title`, `ISBN` (stored as ISBN-10 or ISBN-13), and `Description` when the extracted value is non-empty. If extraction fails (for example, because ExifTool is not installed), the job falls back to deriving the book title from the filename. Author records are not yet created automatically from extracted author metadata — see [What's next](#whats-next) below.
+> **Import pipeline status:** Automatic metadata extraction is **now active** in the `process:file` background job (since v0.0.5). When a file is imported during a library scan, the extractor runs and populates the book record with `Title`, `ISBN` (stored as ISBN-10 or ISBN-13), `Description`, `Publisher`, `Language`, and `PublicationDate` when the extracted values are non-empty. An `Author` record is also created (or looked up) and linked to the book when an author name is found. If extraction fails (for example, because ExifTool is not installed), the job falls back to deriving the book title from the filename.
 
 ---
 
@@ -18,12 +18,14 @@ The extractor is implemented in [`internal/metadata/extractor.go`](../internal/m
 | Field | EPUB (native) | MOBI / AZW3 / PDF (ExifTool) | Notes |
 |-------|:---:|:---:|-------|
 | `Title` | ✓ | ✓ | Falls back to filename (without extension) when the ExifTool path cannot find a `Title` tag |
-| `Author` | ✓ | ✓ | Falls back to `"Unknown"` when the ExifTool path cannot find an `Author` tag |
-| `ISBN` | ✓ | ✓ | Returns `"Not Found"` when no valid 10- or 13-digit identifier is present; MOBI files also try an `Identifier` tag as a fallback |
+| `Author` | ✓ | ✓ | Empty string when no author tag is found; ExifTool falls back to `""` |
+| `ISBN` | ✓ | ✓ | Empty string when no valid 10- or 13-digit identifier is present; MOBI files also try an `Identifier` tag as a fallback |
 | `Format` | ✓ | ✓ | Uppercase file extension (e.g. `"EPUB"`, `"PDF"`) |
 | `IsNative` | `true` | `false` | Indicates whether the native EPUB parser was used |
-| `Publisher` | ✗ | ✗ | Not yet extracted; always `""` |
-| `Description` | ✗ | ✗ | Not yet extracted; always `""` |
+| `Description` | ✓ | ✗ | Populated from `<dc:description>` in EPUB OPF; not yet extracted for ExifTool-based formats |
+| `Publisher` | ✓ | ✗ | Populated from `<dc:publisher>` in EPUB OPF; not yet extracted for ExifTool-based formats |
+| `Language` | ✓ | ✗ | Populated from `<dc:language>` in EPUB OPF; not yet extracted for ExifTool-based formats |
+| `PublicationDate` | ✓ | ✗ | Populated from the `<dc:date event="publication">` element in EPUB OPF; not yet extracted for ExifTool-based formats |
 
 ---
 
@@ -33,11 +35,15 @@ EPUB files are parsed directly using the [`goreader/epub`](https://github.com/ta
 
 The extractor reads the first OPF rootfile inside the ZIP container and maps:
 
-| OPF field | `BookMetadata` field |
-|-----------|---------------------|
-| `<dc:title>` | `Title` |
-| `<dc:creator>` | `Author` |
-| `<dc:identifier>` | `ISBN` (cleaned of `urn:isbn:` / `isbn:` prefixes; validated as 10 or 13 digits) |
+| OPF field | `BookMetadata` field | Notes |
+|-----------|---------------------|-------|
+| `<dc:title>` | `Title` | |
+| `<dc:creator>` | `Author` | |
+| `<dc:identifier>` | `ISBN` | Cleaned of `urn:isbn:` / `isbn:` prefixes; validated as 10 or 13 digits |
+| `<dc:description>` | `Description` | |
+| `<dc:publisher>` | `Publisher` | |
+| `<dc:language>` | `Language` | |
+| `<dc:date event="publication">` | `PublicationDate` | Only the element with `event="publication"` is used |
 
 ---
 
@@ -50,8 +56,8 @@ Tag mapping:
 | ExifTool tag | `BookMetadata` field | Fallback |
 |--------------|---------------------|----------|
 | `Title` | `Title` | Filename stem |
-| `Author` | `Author` | `"Unknown"` |
-| `ISBN` | `ISBN` | `Identifier` tag, then `"Not Found"` |
+| `Author` | `Author` | `""` (empty string) |
+| `ISBN` | `ISBN` | `Identifier` tag, then `""` (empty string) |
 
 When ExifTool is **not installed**, `NewExtractor()` still returns a valid `*Extractor` (with a warning logged), but calling `ExtractMetadata` on a non-EPUB file returns an error:
 
@@ -93,11 +99,13 @@ go build -o biblioteka-cli ./cmd/cli
 ```json
 {
   "Author": "Jane Austen",
-  "Description": "",
+  "Description": "A novel of manners set in rural England...",
   "Format": "EPUB",
   "ISBN": "9780141439518",
   "IsNative": true,
-  "Publisher": "",
+  "Language": "en",
+  "PublicationDate": "1813-01-28",
+  "Publisher": "Penguin Classics",
   "Title": "Pride and Prejudice"
 }
 ```
@@ -126,10 +134,10 @@ error: exif-based metadata extraction requested but exiftool is not available
 
 ## What's next
 
-The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) now extracts and stores `Title`, `ISBN`, and `Description`. Planned future improvements include:
+The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) now extracts and stores `Title`, `ISBN`, `Description`, `Publisher`, `Language`, `PublicationDate`, and `Author` (created/linked as a separate record) for EPUB files. Planned future improvements include:
 
-1. **Author linking** — create an author record and associate it with the imported book when an `Author` name is found in the extracted metadata.
-2. **Publisher and page count** — extract and store `Publisher` and page count for formats where those fields are available.
+1. **ExifTool field expansion** — extract `Description`, `Publisher`, `Language`, and `PublicationDate` from MOBI, AZW3, and PDF files via ExifTool so non-EPUB formats reach parity with the native EPUB parser.
+2. **Page count** — extract and store page count for formats where that field is available.
 3. **Cover image** — populate `cover_image_url` for formats that embed cover art.
 
 Use `cmd/cli` to inspect what metadata Biblioteka would extract from a given file before it is imported.

@@ -75,13 +75,19 @@ Recursively walks the directory and enqueues a `process:file` job for every file
 
 Creates a `book` record and a `book_file` record in the database. The `process:file` handler runs `internal/metadata.Extractor.ExtractMetadata` on every imported file and uses the result to populate the book record:
 
-| Extracted field | Stored as | Fallback |
-|----------------|-----------|----------|
-| `Title` | `books.title` | Filename without extension |
-| `ISBN` (10 or 13 digits) | `books.isbn_10` / `books.isbn_13` | Not stored |
-| `Description` (when non-empty) | `books.description` | Not stored |
+| Extracted field | Stored as | EPUB | MOBI/AZW3/PDF | Fallback |
+|----------------|-----------|:----:|:-------------:|----------|
+| `Title` | `books.title` | ✓ | ✓ | Filename without extension |
+| `ISBN` (10 or 13 digits) | `books.isbn_10` / `books.isbn_13` | ✓ | ✓ | Not stored |
+| `Description` (when non-empty) | `books.description` | ✓ | ✗ | Not stored |
+| `Publisher` (when non-empty) | `books.publisher` | ✓ | ✗ | Not stored |
+| `Language` (when non-empty) | `books.language` | ✓ | ✗ | Not stored |
+| `PublicationDate` (when non-empty) | `books.publication_date` | ✓ | ✗ | Not stored |
+| `Author` (when non-empty) | `authors` + `book_authors` join | ✓ | ✓ | Not linked |
 
-`Author`, `Publisher`, and `Format` are extracted by the extractor but are **not yet** used to create related records during import. If ExifTool is absent or extraction fails for any other reason, the job logs a warning and falls back to the filename-derived title. See [docs/metadata.md](metadata.md) for extraction details and what's planned next. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
+When an author name is found, the handler looks up an existing `authors` row by name (case-insensitive) or creates one, then links it to the book via `book_authors`. If a concurrent worker races to create the same author, the handler retries the lookup before returning. Author lookup/creation failures are treated as best-effort warnings — they do not cause the job to fail or retry (which would create duplicate book/file records).
+
+If ExifTool is absent or extraction fails for any other reason, the job logs a warning and falls back to the filename-derived title. See [docs/metadata.md](metadata.md) for extraction details and what's planned next. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
 
 ### Job Chain
 
