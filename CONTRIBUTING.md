@@ -204,6 +204,55 @@ Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: '
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
 
+## Commit Messages
+
+This project follows the [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) specification for all commit messages and pull request titles.
+
+### Format
+
+```
+<type>[optional scope][optional !]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Types
+
+| Type | When to use |
+|------|-------------|
+| `feat` | A new feature |
+| `fix` | A bug fix |
+| `docs` | Documentation-only changes |
+| `style` | Code style / formatting (no logic change) |
+| `refactor` | Refactoring (no feature or bug fix) |
+| `perf` | Performance improvement |
+| `test` | Adding or fixing tests |
+| `build` | Build system or dependency changes |
+| `ci` | CI/CD pipeline changes |
+| `chore` | Maintenance tasks, tooling, or repo upkeep |
+
+### Examples
+
+```
+feat(books): add bulk import endpoint
+fix: prevent duplicate authors on concurrent inserts
+docs(api): update OPDS feed examples
+refactor(handlers)!: consolidate error response helpers
+
+BREAKING CHANGE: writeError now requires a context parameter
+```
+
+### Rules
+
+- The type **must** be one of the types listed above.
+- A scope **may** be provided in parentheses after the type (e.g., `fix(parser):`).
+- A `!` before the colon indicates a breaking change.
+- Breaking changes **must** also be described in a `BREAKING CHANGE:` footer or in the commit description when using `!`.
+- The description **must** immediately follow the colon and space.
+- Pull request titles **must** also follow this format, since PRs are squash-merged.
+
 ## Submitting a Pull Request
 
 1. Fork the repository and create a feature branch from `main`.
@@ -211,7 +260,7 @@ Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: '
 3. Run `go fmt ./...` and `go test ./...` to verify all Go code is formatted and tests pass.
 4. Run `cd frontend && pnpm run lint && pnpm run check` to verify frontend code.
 5. **Update documentation** in `docs/` if your change adds, removes, or modifies an API endpoint, database table, configuration option, background job, or any user-visible behaviour. If you add or change API handler annotations, regenerate the OpenAPI spec with `make swagger`.
-6. Open a pull request against `main` with a clear description of what and why.
+6. Open a pull request against `main` with a title that follows the [Conventional Commits](#commit-messages) format and a clear description of what and why.
 7. Sign the [CLA](CLA.md) if prompted by the CLA bot (first-time contributors only).
 8. A maintainer will review your PR and provide feedback.
 
