@@ -5,11 +5,29 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"regexp"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-var ErrAuthorNameExists = errors.New("author name already exists")
+var (
+	ErrAuthorNameExists  = errors.New("author name already exists")
+	ErrInvalidAuthorName = errors.New("author name cannot be blank")
+)
+
+var collapseSpaces = regexp.MustCompile(`\s+`)
+
+// NormalizeAuthorName trims leading/trailing whitespace and collapses internal
+// runs of whitespace to a single space. It preserves the caller's
+// capitalization so names like "McCaffrey" or "de la Cruz" are stored as-is.
+func NormalizeAuthorName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return name
+	}
+	return collapseSpaces.ReplaceAllString(name, " ")
+}
 
 type Author struct {
 	ID            string    `json:"id"`
@@ -34,7 +52,13 @@ func scanAuthor(row interface{ Scan(...any) error }) (*Author, error) {
 }
 
 func (d *DB) CreateAuthor(ctx context.Context, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {
+	name = NormalizeAuthorName(name)
+	if name == "" {
+		slog.WarnContext(ctx, "db: rejecting author with blank name after normalization")
+		return nil, ErrInvalidAuthorName
+	}
 	slog.DebugContext(ctx, "db: creating author", slog.String(otelkeys.Name, name))
+
 	a, err := scanAuthor(d.QueryRowContext(ctx,
 		`INSERT INTO authors (name, goodreads_id, hardcover_id, google_books_id, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING `+authorColumns,
 		name, goodreadsID, hardcoverID, googleBooksID, imageURL,
@@ -56,7 +80,10 @@ func (d *DB) GetAuthor(ctx context.Context, id string) (*Author, error) {
 	))
 }
 
+// GetAuthorByName looks up an author by name using case-insensitive matching.
+// The stored name preserves the original capitalization provided by the caller.
 func (d *DB) GetAuthorByName(ctx context.Context, name string) (*Author, error) {
+	name = NormalizeAuthorName(name)
 	slog.DebugContext(ctx, "db: fetching author by name", slog.String(otelkeys.Name, name))
 	return scanAuthor(d.QueryRowContext(ctx,
 		`SELECT `+authorColumns+` FROM authors WHERE LOWER(name) = LOWER($1)`,
@@ -126,6 +153,7 @@ func (d *DB) ListAuthorsPaginated(ctx context.Context, limit, offset int) ([]Aut
 }
 
 func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {
+	name = NormalizeAuthorName(name)
 	slog.DebugContext(ctx, "db: updating author",
 		slog.String(otelkeys.ID, id),
 		slog.String(otelkeys.Name, name),
