@@ -258,20 +258,6 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 }
 
-// listBooks godoc
-//
-//	@Summary		List books
-//	@Description	Returns paginated books (summary without relations)
-//	@Tags			Books
-//	@Produce		json
-//	@Security		BearerAuth
-//	@Param			limit	query		int	false	"Max items per page (default 50, max 200)"
-//	@Param			offset	query		int	false	"Number of items to skip (default 0)"
-//	@Success		200		{object}	bookListDTO
-//	@Failure		400		{object}	errorResponse
-//	@Failure		401		{object}	errorResponse
-//	@Failure		500		{object}	errorResponse
-//	@Router			/books [get]
 func parseLimitOffset(r *http.Request, defaultLimit, maxLimit int) (int, int) {
 	limit := defaultLimit
 	offset := 0
@@ -296,6 +282,19 @@ func parseLimitOffset(r *http.Request, defaultLimit, maxLimit int) (int, int) {
 	return limit, offset
 }
 
+// listBooks godoc
+//
+//	@Summary		List books
+//	@Description	Returns paginated books (summary without relations)
+//	@Tags			Books
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			limit	query		int	false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int	false	"Number of items to skip (default 0)"
+//	@Success		200		{object}	bookListDTO
+//	@Failure		401		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/books [get]
 func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	const defaultLimit = 50
 	const maxLimit = 200

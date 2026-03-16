@@ -367,7 +367,6 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 //	@Param			limit	query		int		false	"Max items per page (default 50, max 200)"
 //	@Param			offset	query		int		false	"Number of items to skip (default 0)"
 //	@Success		200		{object}	bookListDTO
-//	@Failure		400		{object}	errorResponse
 //	@Failure		401		{object}	errorResponse
 //	@Failure		404		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse
