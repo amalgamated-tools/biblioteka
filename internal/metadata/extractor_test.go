@@ -112,13 +112,14 @@ func TestExtractMetadata_PDF(t *testing.T) {
 	dir := t.TempDir()
 	pdfPath := filepath.Join(dir, "test.pdf")
 
-	ext, err := NewExtractor(WithExiftoolBinaryPath("/Users/veverkap/Code/personal/biblioteka/vendor/Image-ExifTool-13.52/exiftool")) // Adjust path as needed for testing
+	ext, err := NewExtractor(WithExiftoolBinaryPath(exifToolPathForTesting()))
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
 	defer ext.Close()
+
 	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author", ext.Exiftool())
-	t.Fail()
+
 	meta, err := ext.ExtractMetadata(pdfPath)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
@@ -166,4 +167,8 @@ func TestExtractMetadata_NonexistentFile(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nonexistent file")
 	}
+}
+
+func exifToolPathForTesting() string {
+	return filepath.Join(testutils.GetProjectRoot(), "exiftool", "exiftool") // Adjust path as needed for testing
 }

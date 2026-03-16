@@ -34,7 +34,7 @@ func NewExtractor(opts ...ExtractorOption) (*Extractor, error) {
 			return nil, fmt.Errorf("applying option: %w", err)
 		}
 	}
-	et, err := exiftool.NewExiftool()
+	et, err := exiftool.NewExiftool(exiftool.SetExiftoolBinaryPath(ex.path))
 	if err != nil {
 		slog.WarnContext(context.Background(), "exiftool not available; exif-based metadata extraction disabled", slog.Any(otelkeys.Error, err))
 		return &Extractor{
