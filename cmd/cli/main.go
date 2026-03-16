@@ -20,7 +20,19 @@ func main() {
 	}
 	ctx := context.Background()
 	path := os.Args[1]
+	fileName := filepath.Base(path)
 	fileExt := filepath.Ext(path)
+	fileType := ""
+	if len(fileExt) > 0 {
+		fileType = fileExt[1:]
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error stating file: %v\n", err)
+		os.Exit(1)
+	}
+	fileSize := info.Size()
 
 	database, err := db.SetupDatabase(ctx)
 	if err != nil {
@@ -41,10 +53,10 @@ func main() {
 		database,
 		ext,
 		jobs.ProcessFilePayload{
-			FileName: path,
-			FileType: fileExt[1:], // Replace with actual file type if known
+			FileName: fileName,
+			FileType: fileType, // Replace with actual file type if known
 			Path:     path,
-			FileSize: 0, // Replace with actual file size if known},
+			FileSize: fileSize,
 		},
 	)
 	if err != nil {

@@ -44,7 +44,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		// for many files. Downgrade those expected errors to DEBUG to avoid log flooding,
 		// but keep WARN for unexpected extraction failures.
 		if errors.Is(err, metadata.ErrExifToolUnavailable) {
-			slog.WarnContext(ctx, "metadata extraction failed due to missing exiftool, continuing with filename-derived metadata",
+			slog.DebugContext(ctx, "metadata extraction failed due to missing exiftool, continuing with filename-derived metadata",
 				slog.String(otelkeys.Path, p.Path),
 				slog.Any(otelkeys.Error, err),
 				slog.String(otelkeys.Title, title),
@@ -104,6 +104,24 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		)
 	}
 
+	var publicationDate *string
+	var publisher *string
+	var language *string
+	if meta != nil {
+		if meta.PublicationDate != "" {
+			v := meta.PublicationDate
+			publicationDate = &v
+		}
+		if meta.Publisher != "" {
+			v := meta.Publisher
+			publisher = &v
+		}
+		if meta.Language != "" {
+			v := meta.Language
+			language = &v
+		}
+	}
+
 	book, err := database.CreateBook(
 		ctx,
 		title,
@@ -111,9 +129,9 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		nil,
 		isbn10,
 		isbn13,
-		nil,
-		nil,
-		nil,
+		publicationDate,
+		publisher,
+		language,
 		nil,
 		nil,
 		nil,
@@ -137,7 +155,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		return fmt.Errorf("create book file for %s: %w", p.Path, err)
 	}
 
-	// create an Author record if metadata extraction found an author and associate it with the book --- IGNORE ---
+	// create an Author record if metadata extraction found an author and associate it with the book
 	if meta != nil && meta.Author != "" {
 		author, err := database.GetAuthorByName(ctx, meta.Author)
 		if err != nil {
@@ -172,13 +190,18 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		}
 	}
 
+	var format string
+	if meta != nil {
+		format = meta.Format
+	}
+
 	slog.InfoContext(ctx, "file processed",
 		slog.String(otelkeys.BookID, book.ID),
 		slog.String(otelkeys.Title, title),
 		slog.String(otelkeys.FileType, p.FileType),
 		slog.Int64(otelkeys.FileSize, p.FileSize),
 		slog.Any(otelkeys.BookMetadata, meta),
-		slog.String(otelkeys.Format, meta.Format),
+		slog.String(otelkeys.Format, format),
 		slog.String(otelkeys.Path, p.Path),
 	)
 

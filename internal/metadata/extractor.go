@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -13,9 +14,7 @@ import (
 	"github.com/taylorskalyo/goreader/epub"
 )
 
-var (
-	ErrExifToolUnavailable = fmt.Errorf("exiftool is not available on this system")
-)
+var ErrExifToolUnavailable = errors.New("exiftool is not available on this system")
 
 type BookMetadata struct {
 	Author          string
@@ -165,5 +164,5 @@ func findISBN(book *epub.Rootfile) string {
 		return cleanID
 	}
 
-	return ""
+	return "Not Found"
 }
