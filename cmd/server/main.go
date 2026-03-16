@@ -63,15 +63,6 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	}
 	defer func() { _ = database.Close() }()
 
-	// Set up the metadata Extractor, which reads metadata from uploaded files (using ExifTool when available)
-	// and can fall back to basic metadata derived from the file itself (e.g. filename) when ExifTool is missing.
-	extractor, err := metadata.NewExtractor()
-	if err != nil {
-		slog.ErrorContext(cancelCtx, "failed to setup metadata extractor", slog.Any(otelkeys.Error, err))
-		return fmt.Errorf("failed to setup metadata extractor: %w", err)
-	}
-	defer func() { extractor.Close() }()
-
 	// Set up the background worker (always needed: server mode uses it for enqueuing, worker/all modes also process jobs)
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
@@ -89,6 +80,15 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 
 	// Register job handlers and schedules only when this instance processes jobs
 	if runWorker {
+		// Set up the metadata Extractor, which reads metadata from uploaded files (using ExifTool when available)
+		// and can fall back to basic metadata derived from the file itself (e.g. filename) when ExifTool is missing.
+		extractor, err := metadata.NewExtractor()
+		if err != nil {
+			slog.ErrorContext(cancelCtx, "failed to setup metadata extractor", slog.Any(otelkeys.Error, err))
+			return fmt.Errorf("failed to setup metadata extractor: %w", err)
+		}
+		defer func() { extractor.Close() }()
+
 		w.Register(cancelCtx, jobs.JobScanPath, jobs.NewScanPathHandler(w))
 		w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database, extractor))
 		w.Register(cancelCtx, jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
