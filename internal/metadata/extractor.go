@@ -45,7 +45,9 @@ func (e *Extractor) Close() {
 	}
 }
 
-func (e *Extractor) Exiftool() *exiftool.Exiftool {
+// exiftool returns the underlying *exiftool.Exiftool instance.
+// It is intended for use only within the metadata package (e.g., in tests).
+func (e *Extractor) exiftool() *exiftool.Exiftool {
 	return e.et
 }
 

@@ -86,9 +86,20 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 					slog.String(otelkeys.Title, title),
 				)
 			} else {
-				description = new(meta.Description)
-				isbn10 = new(meta.ISBN)
+				if meta.Description != "" {
+					description = &meta.Description
+				}
+				if meta.ISBN != "" {
+					switch len(meta.ISBN) {
+					case 10:
+						isbn10 = &meta.ISBN
+					case 13:
+						isbn13 = &meta.ISBN
+					}
+				}
+			if meta.Title != "" {
 				title = meta.Title
+			}
 				slog.DebugContext(ctx, "metadata extracted",
 					slog.String(otelkeys.Title, meta.Title),
 					slog.String(otelkeys.Format, meta.Format),

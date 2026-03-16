@@ -48,8 +48,11 @@ func MakeTestPDF(t *testing.T, path, title, author string, et *exiftool.Exiftool
 	fm.File = path
 	fm.SetString("Title", title)
 	fm.SetString("Author", author)
-	et.WriteMetadata([]exiftool.FileMetadata{fm})
-	if fm.Err != nil {
-		t.Fatalf("write pdf metadata: %v", fm.Err)
+	metas := []exiftool.FileMetadata{fm}
+	if err := et.WriteMetadata(metas); err != nil {
+		t.Fatalf("write pdf metadata: %v", err)
+	}
+	if metas[0].Err != nil {
+		t.Fatalf("write pdf metadata: %v", metas[0].Err)
 	}
 }
