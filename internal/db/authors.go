@@ -59,7 +59,7 @@ func (d *DB) GetAuthor(ctx context.Context, id string) (*Author, error) {
 func (d *DB) GetAuthorByName(ctx context.Context, name string) (*Author, error) {
 	slog.DebugContext(ctx, "db: fetching author by name", slog.String(otelkeys.Name, name))
 	return scanAuthor(d.QueryRowContext(ctx,
-		`SELECT `+authorColumns+` FROM authors WHERE name = $1`,
+		`SELECT `+authorColumns+` FROM authors WHERE LOWER(name) = LOWER($1)`,
 		name,
 	))
 }
