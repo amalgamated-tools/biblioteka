@@ -66,6 +66,13 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 			slog.String(otelkeys.Path, p.Path),
 		)
 		return nil
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		wrappedErr := fmt.Errorf("process book file: get existing book file by path %q: %w", p.Path, err)
+		slog.ErrorContext(ctx, "book processing failed: error checking for existing file",
+			slog.Any(otelkeys.Error, wrappedErr),
+			slog.String(otelkeys.Path, p.Path),
+		)
+		return wrappedErr
 	}
 
 	var title string

@@ -53,7 +53,7 @@ func TestParseBookPath(t *testing.T) {
 			},
 		},
 		{
-			name:     "flat file: title dash author",
+			name:     "flat file: author dash title (ambiguous)",
 			filePath: "/library/Moby Dick - Herman Melville.epub",
 			want: PathInfo{
 				Author: "Moby Dick",

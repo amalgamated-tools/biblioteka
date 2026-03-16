@@ -100,13 +100,22 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 				absPath = path
 			}
 
+			libraryRootAbs := p.LibraryRoot
+			if p.LibraryRoot != "" {
+				if lrAbs, err := filepath.Abs(p.LibraryRoot); err == nil {
+					libraryRootAbs = lrAbs
+				} else {
+					libraryRootAbs = filepath.Clean(p.LibraryRoot)
+				}
+			}
+
 			_, err = enqueuer.Enqueue(ctx, JobProcessFile, ProcessFilePayload{
 				Path:        absPath,
 				FileName:    filepath.Base(path),
 				FileType:    fileType,
 				FileSize:    info.Size(),
 				LibraryID:   p.LibraryID,
-				LibraryRoot: p.LibraryRoot,
+				LibraryRoot: libraryRootAbs,
 			})
 			if err != nil {
 				slog.WarnContext(ctx, "error enqueuing process:file job",

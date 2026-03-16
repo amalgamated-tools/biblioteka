@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // PathInfo contains structured metadata extracted from a book file's path
@@ -30,6 +31,15 @@ func ParseBookPath(filePath, libraryRoot string) PathInfo {
 	if err != nil {
 		// Fall back to just filename if Rel fails.
 		relPath = filepath.Base(filePath)
+	} else {
+		// filepath.Rel can return paths starting with ".." when filePath is
+		// outside libraryRoot. In that case, or if the result is somehow
+		// absolute, avoid treating the leading segments as real author/series
+		// directories and instead fall back to just the base filename.
+		relSlash := filepath.ToSlash(relPath)
+		if filepath.IsAbs(relPath) || relSlash == ".." || strings.HasPrefix(relSlash, "../") {
+			relPath = filepath.Base(filePath)
+		}
 	}
 
 	parts := strings.Split(filepath.ToSlash(relPath), "/")
@@ -167,6 +177,20 @@ func stripTrailingAuthor(name string) string {
 	loc := reTrailingAuthor.FindStringIndex(name)
 	if loc == nil {
 		return name
+	}
+	// Extract the trailing part (excluding the separator) and check for digits.
+	suffix := strings.TrimSpace(name[loc[0]:])
+	if strings.HasPrefix(suffix, "-") {
+		suffix = strings.TrimSpace(strings.TrimPrefix(suffix, "-"))
+	}
+	if suffix == "" {
+		return name
+	}
+	for _, r := range suffix {
+		if unicode.IsDigit(r) {
+			// Likely a subtitle such as "Part 1"; don't strip.
+			return name
+		}
 	}
 	return strings.TrimSpace(name[:loc[0]])
 }

@@ -40,6 +40,14 @@ func ReorganizeFile(filePath, libraryRoot, author, title string) (string, error)
 		return "", fmt.Errorf("create target directory %s: %w", targetDir, err)
 	}
 
+	// Fail fast if a different file already exists at the target path to avoid
+	// silently overwriting data.
+	if _, err := os.Stat(targetPath); err == nil {
+		return "", fmt.Errorf("target file already exists: %s", targetPath)
+	} else if !os.IsNotExist(err) {
+		return "", fmt.Errorf("stat target file %s: %w", targetPath, err)
+	}
+
 	// Try rename first (fast, same-filesystem).
 	if err := os.Rename(filePath, targetPath); err == nil {
 		cleanEmptyDirs(filepath.Dir(filePath), libraryRoot)
@@ -52,8 +60,8 @@ func ReorganizeFile(filePath, libraryRoot, author, title string) (string, error)
 	}
 	if err := os.Remove(filePath); err != nil {
 		// File was copied but we couldn't remove the original.
-		// Return the new path since the copy succeeded.
-		return targetPath, nil
+		// Return the new path but surface the cleanup error so callers can log/handle it.
+		return targetPath, fmt.Errorf("remove original file %s after copy to %s: %w", filePath, targetPath, err)
 	}
 
 	cleanEmptyDirs(filepath.Dir(filePath), libraryRoot)
@@ -66,9 +74,17 @@ func cleanEmptyDirs(dir, stopAt string) {
 	stopAt = filepath.Clean(stopAt)
 	for {
 		dir = filepath.Clean(dir)
-		if dir == stopAt || !strings.HasPrefix(dir, stopAt) {
+
+		// Ensure dir is a strict descendant of stopAt.
+		rel, err := filepath.Rel(stopAt, dir)
+		if err != nil {
 			return
 		}
+		// If dir is the same as stopAt, or outside/above it, stop.
+		if rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || filepath.IsAbs(rel) {
+			return
+		}
+
 		entries, err := os.ReadDir(dir)
 		if err != nil || len(entries) > 0 {
 			return
@@ -80,7 +96,7 @@ func cleanEmptyDirs(dir, stopAt string) {
 	}
 }
 
-func copyFile(src, dst string) error {
+func copyFile(src, dst string) (err error) {
 	in, err := os.Open(src)
 	if err != nil {
 		return err
@@ -91,12 +107,14 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() {
+		if cerr := out.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
-	if _, err := io.Copy(out, in); err != nil {
-		return err
-	}
-	return out.Close()
+	_, err = io.Copy(out, in)
+	return err
 }
 
 // sanitizeDirName cleans a string for use as a directory name.
