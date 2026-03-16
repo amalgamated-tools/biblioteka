@@ -85,8 +85,8 @@ func TestExtractMetadata_EPUBWithNoISBN(t *testing.T) {
 		t.Fatalf("extract: %v", err)
 	}
 
-	if meta.ISBN != "Not Found" {
-		t.Errorf("expected ISBN %q, got %q", "Not Found", meta.ISBN)
+	if meta.ISBN != "" {
+		t.Errorf("expected empty ISBN, got %q", meta.ISBN)
 	}
 }
 

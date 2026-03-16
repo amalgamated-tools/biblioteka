@@ -66,9 +66,12 @@ func TestGetAuthor(t *testing.T) {
 func TestGetAuthor_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.GetAuthor(context.Background(), "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
+	a, err := d.GetAuthor(context.Background(), "nonexistent-id")
+	if a != nil {
+		t.Errorf("expected nil author, got %v", a)
+	}
+	if err != nil {
+		t.Errorf("expected nil error, got %v", err)
 	}
 }
 
@@ -129,9 +132,12 @@ func TestDeleteAuthor(t *testing.T) {
 		t.Fatalf("DeleteAuthor() error: %v", err)
 	}
 
-	_, err = d.GetAuthor(context.Background(), a.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
+	a, err = d.GetAuthor(context.Background(), a.ID)
+	if a != nil {
+		t.Errorf("expected nil author after deletion, got %v", a)
+	}
+	if err != nil {
+		t.Errorf("expected nil error after deletion, got %v", err)
 	}
 }
 
