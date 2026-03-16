@@ -5,7 +5,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 ## Features
 
 - **Multi-format support** – EPUB, MOBI, AZW3, and PDF
-- **Metadata extraction** – title, ISBN, and description extracted automatically during library scans (EPUB natively; MOBI/AZW3/PDF via [ExifTool](https://exiftool.org/)); standalone [`cmd/cli`](#cli-tool) tool available for manual inspection
+- **Metadata extraction** – title, author, ISBN, description, and publisher extracted automatically during library scans (EPUB natively; MOBI/AZW3/PDF via [ExifTool](https://exiftool.org/)); extracted authors are linked to book records automatically; standalone [`cmd/cli`](#cli-tool) tool available for manual import and inspection
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
 - **Author & series tracking** – browse by author or series, with position numbers within each series
 - **User authentication** – JWT-based login, optional OpenID Connect (OIDC/SSO)
@@ -211,7 +211,7 @@ cd frontend && pnpm run lint
 
 ## CLI Tool
 
-`cmd/cli` is a standalone utility that extracts metadata from a single book file and prints JSON to stdout. It is useful for debugging metadata extraction outside of the server.
+`cmd/cli` is a standalone utility that processes a single book file: it extracts metadata, stores a book record in the database, and creates an author record when one is found. It is useful for importing individual files and verifying metadata extraction outside of the server.
 
 ```bash
 # Build
@@ -224,19 +224,11 @@ go build -o biblioteka-cli ./cmd/cli
 
 Example output:
 
-```json
-{
-  "Author": "Jane Austen",
-  "Description": "",
-  "Format": "EPUB",
-  "ISBN": "9780141439518",
-  "IsNative": true,
-  "Publisher": "",
-  "Title": "Pride and Prejudice"
-}
+```
+Successfully processed file: /path/to/book.epub
 ```
 
-> **Note:** The `Publisher` and `Description` fields are included in the output but are not currently extracted from EPUB, MOBI, or PDF files; they will be empty strings.
+> **Note:** The CLI uses the same database configuration as the server (environment variables). See [docs/metadata.md](docs/metadata.md) for the full list of extracted fields per format.
 
 > **Note:** PDF and MOBI/AZW3 metadata extraction requires [ExifTool](https://exiftool.org/) to be installed and available on `PATH`. EPUB extraction has no external dependencies.
 
