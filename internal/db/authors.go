@@ -28,6 +28,9 @@ func scanAuthor(row interface{ Scan(...any) error }) (*Author, error) {
 	var a Author
 	err := row.Scan(&a.ID, &a.Name, &a.GoodreadsID, &a.HardcoverID, &a.GoogleBooksID, &a.ImageURL, &a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &a, nil
@@ -53,6 +56,14 @@ func (d *DB) GetAuthor(ctx context.Context, id string) (*Author, error) {
 	return scanAuthor(d.QueryRowContext(ctx,
 		`SELECT `+authorColumns+` FROM authors WHERE id = $1`,
 		id,
+	))
+}
+
+func (d *DB) GetAuthorByName(ctx context.Context, name string) (*Author, error) {
+	slog.DebugContext(ctx, "db: fetching author by name", slog.String(otelkeys.Name, name))
+	return scanAuthor(d.QueryRowContext(ctx,
+		`SELECT `+authorColumns+` FROM authors WHERE name = $1`,
+		name,
 	))
 }
 

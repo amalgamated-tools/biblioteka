@@ -13,14 +13,20 @@ import (
 	"github.com/taylorskalyo/goreader/epub"
 )
 
+var (
+	ErrExifToolUnavailable = fmt.Errorf("exiftool is not available on this system")
+)
+
 type BookMetadata struct {
-	Author      string
-	Description string
-	Format      string
-	ISBN        string
-	IsNative    bool
-	Publisher   string
-	Title       string
+	Author          string
+	Description     string
+	Format          string
+	ISBN            string
+	IsNative        bool
+	Language        string
+	PublicationDate string
+	Publisher       string
+	Title           string
 }
 
 // Extractor extracts metadata from book files. Concurrent ExtractMetadata calls are safe,
@@ -61,7 +67,7 @@ func (e *Extractor) ExtractMetadata(path string) (*BookMetadata, error) {
 	}
 
 	if e.et == nil {
-		return nil, fmt.Errorf("exif-based metadata extraction requested but exiftool is not available")
+		return nil, ErrExifToolUnavailable
 	}
 	return e.extractExif(path)
 }
@@ -78,12 +84,25 @@ func (e *Extractor) extractNativeEpub(path string) (*BookMetadata, error) {
 	}
 
 	book := rc.Rootfiles[0]
+	publicationDate := "Unknown"
+	// if the book has a slice of Dates, we want to find one where the Event attribute is "publication"
+	for _, d := range book.Dates {
+		if d.Event == "publication" {
+			publicationDate = d.Date
+			break
+		}
+	}
+
 	return &BookMetadata{
-		Author:   book.Creator,
-		Format:   "EPUB",
-		ISBN:     findISBN(book),
-		IsNative: true,
-		Title:    book.Title,
+		Author:          book.Creator,
+		Description:     book.Description,
+		Format:          "EPUB",
+		ISBN:            findISBN(book),
+		IsNative:        true,
+		Language:        book.Language,
+		PublicationDate: publicationDate,
+		Publisher:       book.Publisher,
+		Title:           book.Title,
 	}, nil
 }
 
@@ -146,5 +165,5 @@ func findISBN(book *epub.Rootfile) string {
 		return cleanID
 	}
 
-	return "Not Found"
+	return ""
 }
