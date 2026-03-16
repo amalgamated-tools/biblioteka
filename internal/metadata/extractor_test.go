@@ -118,7 +118,7 @@ func TestExtractMetadata_PDF(t *testing.T) {
 		t.Fatalf("new extractor: %v", err)
 	}
 	defer ext.Close()
-
+	t.Fail()
 	meta, err := ext.ExtractMetadata(pdfPath)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
