@@ -101,8 +101,10 @@ head -n 100 <LARGE_FILE>
 ```
 
 ```bash
-grep -n "^func\|^class\|^def\|^module\|^impl\|^struct\|^type\|^interface\|^export " <LARGE_FILE> | head -50
+grep -n "^func\|^class\|^def\|^module\|^impl\|^struct\|^type\|^interface\|^export " <LARGE_FILE>
 ```
+
+**Important**: Do NOT pipe commands together (e.g., do not use `|`). Run each command separately and review the output yourself.
 
 Identify:
 - What logical concerns or responsibilities the file contains
@@ -183,3 +185,5 @@ Based on the file's structure, split it into the following modules:
 - **Estimate effort realistically**: Large files with many dependencies may require significant refactoring effort
 
 Begin your analysis now. Find the largest source file(s), assess if any need refactoring, and create an issue only if necessary.
+
+**Reminder**: You MUST call exactly one safe-output tool before finishing. If no file exceeds 500 lines, call `noop` with a status message. If a file exceeds 500 lines, call `create_issue`. Do NOT end without calling a safe-output tool.
