@@ -114,9 +114,18 @@ Jobs enter the queue in two ways:
 
 1. **API-triggered** — When a user creates a library via `POST /api/libraries` and the library has paths, the handler immediately enqueues a `scan:library` job via `Worker.Enqueue` (see `internal/handlers/libraries.go`), and therefore benefits from the 24-hour deduplication window described above.
 
-2. **Scheduled** — The asynq scheduler fires `scan:libraries` every 24 hours, which cascades into `scan:library` → `scan:path` → `process:file`. These scheduled tasks are enqueued by the scheduler itself and are not deduplicated — they run on every scheduled tick.
+2. **Scheduled** — The asynq scheduler fires `scan:libraries` every 24 hours. The `scan:libraries` trigger itself is issued directly by the asynq scheduler (not through `Worker.Enqueue`) and carries no deduplication. However, when the `scan:libraries` handler runs, it calls `Worker.Enqueue` to create `scan:library` jobs, which cascade into `scan:path` and `process:file` jobs — all of which go through `Worker.Enqueue` and therefore benefit from the 24-hour deduplication window.
 
-API-triggered jobs call `Worker.Enqueue`, which serialises the payload to JSON and pushes an asynq task onto the `"default"` queue with the configured deduplication options. Scheduled jobs are created by the asynq scheduler without going through `Worker.Enqueue`.
+API-triggered jobs call `Worker.Enqueue`, which serialises the payload to JSON and pushes an asynq task onto the `"default"` queue with the configured deduplication options. The root `scan:libraries` scheduled trigger is created directly by the asynq scheduler and does not go through `Worker.Enqueue`.
+
+### Deduplication limitations
+
+The 24-hour deduplication window is the **only** mechanism that prevents a file from being processed more than once. The `book_files` table has no `UNIQUE` constraint on `file_path`, and the `process:file` handler always creates a new book and book_file record without checking whether the file already exists in the database.
+
+This has two practical consequences:
+
+- **Redis data loss** — If the Redis store is cleared or the server is restarted against a fresh Redis instance, the deduplication state is lost. A subsequent scan will re-process all files and create duplicate book and book_file entries.
+- **Files reachable from multiple paths** — If the same physical file is reachable under two different library paths, or under paths belonging to two separate libraries, each path produces a distinct job payload and both are processed independently, resulting in duplicate entries.
 
 ## Monitoring Dashboard (Asynqmon)
 
