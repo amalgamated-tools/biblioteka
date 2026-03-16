@@ -61,11 +61,54 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		return err
 	}
 
-	// Ensure the source path still exists before proceeding. This makes retries idempotent
-	// when a prior run has already moved the file to a new location.
+	// Ensure the source path still exists before proceeding. If a prior attempt
+	// reorganized (moved) the file but failed before committing DB rows, the
+	// original path will be gone. In that case, try to locate the file at the
+	// reorganized target and check whether it was already indexed.
 	if _, err := os.Stat(p.Path); err != nil {
 		if os.IsNotExist(err) {
-			slog.InfoContext(ctx, "source file path no longer exists, skipping",
+			// Check if the file was already indexed at the original path.
+			if bf, dbErr := database.GetBookFileByPath(ctx, p.Path); dbErr == nil {
+				slog.InfoContext(ctx, "source file missing but already indexed, skipping",
+					slog.String(otelkeys.Path, p.Path),
+					slog.String(otelkeys.BookID, bf.BookID),
+				)
+				if p.LibraryID != "" {
+					_ = database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID)
+				}
+				return nil
+			}
+
+			// Attempt to find the file at the expected reorganized location.
+			if p.LibraryRoot != "" {
+				pathInfo := pathparser.ParseBookPath(p.Path, p.LibraryRoot)
+				if pathInfo.Author != "" && pathInfo.Title != "" {
+					candidatePath := filepath.Join(p.LibraryRoot, pathInfo.Author, pathInfo.Title, filepath.Base(p.Path))
+					if _, statErr := os.Stat(candidatePath); statErr == nil {
+						// Check if the reorganized path is already indexed.
+						if bf, dbErr := database.GetBookFileByPath(ctx, candidatePath); dbErr == nil {
+							slog.InfoContext(ctx, "reorganized path already indexed, skipping",
+								slog.String(otelkeys.Path, candidatePath),
+								slog.String(otelkeys.BookID, bf.BookID),
+							)
+							if p.LibraryID != "" {
+								_ = database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID)
+							}
+							return nil
+						}
+						// File exists at reorganized location but isn't indexed — update
+						// the payload path so processing continues from the new location.
+						slog.InfoContext(ctx, "source file moved by prior attempt, continuing from reorganized path",
+							slog.String(otelkeys.From, p.Path),
+							slog.String(otelkeys.To, candidatePath),
+						)
+						p.Path = candidatePath
+						goto pathResolved
+					}
+				}
+			}
+
+			slog.InfoContext(ctx, "source file no longer exists and could not be located, skipping",
 				slog.String(otelkeys.Path, p.Path),
 			)
 			return nil
@@ -78,6 +121,8 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		)
 		return wrappedErr
 	}
+
+pathResolved:
 
 	// Check for duplicate: skip full processing if this file path is already indexed,
 	// but still ensure the book is linked to the requested library (if any).
@@ -92,7 +137,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		if p.LibraryID != "" {
 			if err := database.AddBookToLibrary(ctx, p.LibraryID, bookFile.BookID); err != nil {
 				wrappedErr := fmt.Errorf("process book file: add existing book %s to library %s: %w", bookFile.BookID, p.LibraryID, err)
-				slog.ErrorContext(ctx, "book processing warning: could not associate existing book with library",
+				slog.WarnContext(ctx, "could not associate existing book with library",
 					slog.Any(otelkeys.Error, wrappedErr),
 					slog.String(otelkeys.Path, p.Path),
 				)
@@ -201,13 +246,17 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		title = pathInfo.Title
 	}
 
-	// Reorganize file into Author/Title/ structure if enabled and we have enough info.
+	// Reorganize file into Author/Title/ structure if explicitly enabled and we have enough info.
 	filePath := p.Path
 	if p.LibraryRoot != "" && authorName != "" && title != "" {
-		shouldOrganize := true
+		shouldOrganize := false
 		setting, settingErr := database.GetSetting(ctx, "organize_files")
-		if settingErr == nil && setting == "false" {
-			shouldOrganize = false
+		if settingErr != nil {
+			slog.WarnContext(ctx, "could not read organize_files setting, skipping reorganization",
+				slog.Any(otelkeys.Error, settingErr),
+			)
+		} else if setting == "true" {
+			shouldOrganize = true
 		}
 		if shouldOrganize {
 			newPath, reorgErr := organize.ReorganizeFile(filePath, p.LibraryRoot, authorName, title)
@@ -236,10 +285,19 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 				// Re-check for duplicates at the new path — another worker may
 				// have already indexed the reorganized location.
-				if _, err := database.GetBookFileByPath(ctx, filePath); err == nil {
+				if existingBF, err := database.GetBookFileByPath(ctx, filePath); err == nil {
 					slog.InfoContext(ctx, "reorganized path already indexed, skipping",
 						slog.String(otelkeys.Path, filePath),
 					)
+					if p.LibraryID != "" {
+						if linkErr := database.AddBookToLibrary(ctx, p.LibraryID, existingBF.BookID); linkErr != nil {
+							slog.WarnContext(ctx, "could not associate existing book with library after reorg",
+								slog.String(otelkeys.BookID, existingBF.BookID),
+								slog.String(otelkeys.LibraryID, p.LibraryID),
+								slog.Any(otelkeys.Error, linkErr),
+							)
+						}
+					}
 					return nil
 				} else if !errors.Is(err, sql.ErrNoRows) {
 					return fmt.Errorf("check duplicate at reorganized path %q: %w", filePath, err)
@@ -289,10 +347,10 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create book and file records",
-			slog.String(otelkeys.Path, p.Path),
+			slog.String(otelkeys.Path, filePath),
 			slog.Any(otelkeys.Error, err),
 		)
-		return fmt.Errorf("create book with file for %s: %w", p.Path, err)
+		return fmt.Errorf("create book with file for %s: %w", filePath, err)
 	}
 
 	// Create an Author record and associate it with the book.
@@ -300,7 +358,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		author, err := database.FindOrCreateAuthor(ctx, authorName)
 		if err != nil {
 			slog.WarnContext(ctx, "failed to find or create author",
-				slog.String(otelkeys.Path, p.Path),
+				slog.String(otelkeys.Path, filePath),
 				slog.String(otelkeys.Author, authorName),
 				slog.Any(otelkeys.Error, err),
 			)
@@ -308,7 +366,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 			err = database.SetBookAuthors(ctx, book.ID, []string{author.ID})
 			if err != nil {
 				slog.WarnContext(ctx, "failed to associate author with book for file",
-					slog.String(otelkeys.Path, p.Path),
+					slog.String(otelkeys.Path, filePath),
 					slog.String(otelkeys.Author, authorName),
 					slog.Any(otelkeys.Error, err),
 				)
@@ -321,7 +379,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		series, seriesErr := database.FindOrCreateSeries(ctx, pathInfo.SeriesName)
 		if seriesErr != nil {
 			slog.WarnContext(ctx, "failed to find or create series",
-				slog.String(otelkeys.Path, p.Path),
+				slog.String(otelkeys.Path, filePath),
 				slog.Any(otelkeys.Error, seriesErr),
 			)
 		} else {
@@ -366,7 +424,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		slog.String(otelkeys.FileType, p.FileType),
 		slog.Int64(otelkeys.FileSize, p.FileSize),
 		slog.String(otelkeys.Format, format),
-		slog.String(otelkeys.Path, p.Path),
+		slog.String(otelkeys.Path, filePath),
 	)
 
 	return nil

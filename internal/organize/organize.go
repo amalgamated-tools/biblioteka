@@ -19,7 +19,7 @@ func ReorganizeFile(filePath, libraryRoot, author, title string) (string, error)
 		return filePath, nil
 	}
 
-	// Sanitize directory names: remove path separators and leading/trailing dots.
+	// Sanitize directory names: remove path separators and leading dots.
 	safeAuthor := sanitizeDirName(author)
 	safeTitle := sanitizeDirName(title)
 	if safeAuthor == "" || safeTitle == "" {
@@ -29,6 +29,13 @@ func ReorganizeFile(filePath, libraryRoot, author, title string) (string, error)
 	filename := filepath.Base(filePath)
 	targetDir := filepath.Join(libraryRoot, safeAuthor, safeTitle)
 	targetPath := filepath.Join(targetDir, filename)
+
+	// Defense-in-depth: verify the target path is still inside libraryRoot.
+	// Author/title may come from untrusted epub metadata.
+	relCheck, err := filepath.Rel(libraryRoot, targetPath)
+	if err != nil || relCheck == ".." || strings.HasPrefix(relCheck, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("target path %q escapes library root %q", targetPath, libraryRoot)
+	}
 
 	// Already in the right place.
 	if filepath.Clean(filePath) == filepath.Clean(targetPath) {
@@ -144,10 +151,10 @@ func copyFile(src, dst string) (err error) {
 // sanitizeDirName cleans a string for use as a directory name.
 func sanitizeDirName(name string) string {
 	name = strings.TrimSpace(name)
-	// Remove characters that are problematic in filenames.
+	// Remove characters that are problematic in directory names across platforms.
 	name = strings.Map(func(r rune) rune {
 		switch r {
-		case '/', '\\', '\x00':
+		case '/', '\\', '\x00', ':', '*', '?', '"', '<', '>', '|':
 			return -1
 		default:
 			return r

@@ -57,6 +57,15 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 
 		slog.InfoContext(ctx, "starting path scan", slog.String(otelkeys.Path, p.Path))
 
+		libraryRootAbs := p.LibraryRoot
+		if p.LibraryRoot != "" {
+			if lrAbs, err := filepath.Abs(p.LibraryRoot); err == nil {
+				libraryRootAbs = lrAbs
+			} else {
+				libraryRootAbs = filepath.Clean(p.LibraryRoot)
+			}
+		}
+
 		var found int
 		err := filepath.WalkDir(p.Path, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
@@ -98,15 +107,6 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			absPath, err := filepath.Abs(path)
 			if err != nil {
 				absPath = path
-			}
-
-			libraryRootAbs := p.LibraryRoot
-			if p.LibraryRoot != "" {
-				if lrAbs, err := filepath.Abs(p.LibraryRoot); err == nil {
-					libraryRootAbs = lrAbs
-				} else {
-					libraryRootAbs = filepath.Clean(p.LibraryRoot)
-				}
 			}
 
 			_, err = enqueuer.Enqueue(ctx, JobProcessFile, ProcessFilePayload{
