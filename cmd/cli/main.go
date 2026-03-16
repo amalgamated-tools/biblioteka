@@ -19,8 +19,17 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: %s <file>\n", os.Args[0])
 		os.Exit(1)
 	}
+
 	ctx := context.Background()
 	path := os.Args[1]
+
+	if err := run(ctx, path); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run(ctx context.Context, path string) error {
 	fileName := filepath.Base(path)
 	fileExt := filepath.Ext(path)
 	fileType := ""
@@ -30,22 +39,20 @@ func main() {
 
 	info, err := os.Stat(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error stating file: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("error stating file %q: %w", path, err)
 	}
 	fileSize := info.Size()
 
 	database, err := db.SetupDatabase(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to setup database", slog.Any(otelkeys.Error, err))
-		os.Exit(1)
+		return fmt.Errorf("failed to setup database: %w", err)
 	}
 	defer func() { _ = database.Close() }()
 
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to create metadata extractor: %w", err)
 	}
 	defer ext.Close()
 
@@ -61,9 +68,9 @@ func main() {
 		},
 	)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error processing file: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("error processing file %q: %w", path, err)
 	}
 
 	fmt.Printf("Successfully processed file: %s\n", path)
+	return nil
 }
