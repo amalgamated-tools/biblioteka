@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -140,12 +141,14 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	if meta != nil && meta.Author != "" {
 		author, err := database.GetAuthorByName(ctx, meta.Author)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get or create author record for file",
-				slog.String(otelkeys.Path, p.Path),
-				slog.String(otelkeys.Author, meta.Author),
-				slog.Any(otelkeys.Error, err),
-			)
-			return fmt.Errorf("get or create author for %s: %w", p.Path, err)
+			if !errors.Is(err, sql.ErrNoRows) {
+				slog.ErrorContext(ctx, "failed to get or create author record for file",
+					slog.String(otelkeys.Path, p.Path),
+					slog.String(otelkeys.Author, meta.Author),
+					slog.Any(otelkeys.Error, err),
+				)
+				return fmt.Errorf("get or create author for %s: %w", p.Path, err)
+			}
 		}
 		if author == nil {
 			author, err = database.CreateAuthor(ctx, meta.Author, nil, nil, nil, nil)
