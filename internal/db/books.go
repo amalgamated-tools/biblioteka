@@ -54,6 +54,42 @@ func (d *DB) CreateBook(ctx context.Context, title string, description, asin, is
 	return b, nil
 }
 
+// CreateBookWithFile atomically creates a book and its associated file record
+// within a single transaction. If either insert fails the transaction is rolled back.
+func (d *DB) CreateBookWithFile(ctx context.Context, title string, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language *string, numPages *int, coverImageURL *string, fileType, fileName string, fileSize int64, fileHash *string, filePath string) (*Book, *BookFile, error) {
+	slog.DebugContext(ctx, "db: creating book with file",
+		slog.String(otelkeys.Title, title),
+		slog.String(otelkeys.FileName, fileName),
+	)
+
+	tx, err := d.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	b, err := scanBook(tx.QueryRowContext(ctx,
+		`INSERT INTO books (title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, num_pages, cover_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING `+bookColumns,
+		title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, numPages, coverImageURL,
+	))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	bf, err := scanBookFile(tx.QueryRowContext(ctx,
+		`INSERT INTO book_files (book_id, file_type, file_name, file_size, file_hash, file_path) VALUES ($1, $2, $3, $4, $5, $6) RETURNING `+bookFileColumns,
+		b.ID, fileType, fileName, fileSize, fileHash, filePath,
+	))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, nil, err
+	}
+	return b, bf, nil
+}
+
 // GetBook returns a book by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetBook(ctx context.Context, id string) (*Book, error) {
 	slog.DebugContext(ctx, "db: fetching book", slog.String(otelkeys.ID, id))

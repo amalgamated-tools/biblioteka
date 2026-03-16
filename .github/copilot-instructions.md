@@ -112,6 +112,16 @@ cd frontend && pnpm run test
 
 - Go tests use a real SQLite database configured with WAL, `synchronous=NORMAL`, and `foreign_keys=ON` (see `internal/db/testhelper_test.go`).
 
+## Commit Messages and Pull Requests
+
+This project follows [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). All commit messages and pull request titles must use the format:
+
+```
+<type>[optional scope][optional !]: <description>
+```
+
+Common types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`. A scope may be added in parentheses (e.g., `fix(parser):`). Use `!` before the colon to indicate a breaking change. Pull request titles must also follow this format since PRs are squash-merged.
+
 ## Common Commands
 
 ```bash
