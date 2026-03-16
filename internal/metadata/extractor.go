@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/barasher/go-exiftool"
@@ -22,7 +23,9 @@ type BookMetadata struct {
 	Title       string
 }
 
+// Extractor extracts metadata from book files. It is safe for concurrent use.
 type Extractor struct {
+	mu sync.Mutex
 	et *exiftool.Exiftool
 }
 
@@ -81,6 +84,8 @@ func (e *Extractor) extractNativeEpub(path string) (*BookMetadata, error) {
 }
 
 func (e *Extractor) extractExif(path string) (*BookMetadata, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	results := e.et.ExtractMetadata(path)
 	if len(results) == 0 {
 		return nil, fmt.Errorf("no metadata found for %s", path)
