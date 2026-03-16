@@ -178,7 +178,6 @@ func parseFilenameComponents(name string) (title string, pos *float64, year *int
 var reSeriesPos = regexp.MustCompile(`^(\d+)\.\s+`)
 var reYear = regexp.MustCompile(`\((\d{4})\)\s*$`)
 
-
 func extractSeriesPosition(name string) *float64 {
 	m := reSeriesPos.FindStringSubmatch(name)
 	if m == nil {
