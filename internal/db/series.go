@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -134,12 +135,17 @@ func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, har
 	return s, nil
 }
 
-// FindOrCreateSeries looks up a series by name and returns it, creating a new
-// one if it doesn't exist. Handles concurrent insert races gracefully.
+// FindOrCreateSeries looks up a series by name (case-insensitive) and returns
+// it, creating a new one if it doesn't exist. Handles concurrent insert races
+// gracefully.
 func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, errors.New("series name cannot be blank")
+	}
 	slog.DebugContext(ctx, "db: find or create series", slog.String(otelkeys.Name, name))
 	s, err := scanSeries(d.QueryRowContext(ctx,
-		`SELECT `+seriesColumns+` FROM series WHERE name = $1`,
+		`SELECT `+seriesColumns+` FROM series WHERE LOWER(name) = LOWER($1)`,
 		name,
 	))
 	if err == nil {
@@ -155,8 +161,9 @@ func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, erro
 	if err != ErrSeriesNameExists {
 		return nil, err
 	}
+	// Concurrent insert won the race — fetch with case-insensitive match.
 	return scanSeries(d.QueryRowContext(ctx,
-		`SELECT `+seriesColumns+` FROM series WHERE name = $1`,
+		`SELECT `+seriesColumns+` FROM series WHERE LOWER(name) = LOWER($1)`,
 		name,
 	))
 }
