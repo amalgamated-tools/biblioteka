@@ -10,7 +10,7 @@ permissions:
 tools:
   cache-memory: true
   github:
-    lockdown: true
+    lockdown: false
     toolsets: [pull_requests, repos]
 safe-outputs:
   create-pull-request-review-comment:

@@ -19,6 +19,7 @@ safe-outputs:
   create-pull-request:
     draft: true
     labels: [automation, documentation]
+    title-prefix: "docs: "
 
 tools:
   github:
