@@ -118,7 +118,7 @@ func TestExtractMetadata_PDF(t *testing.T) {
 	}
 	defer ext.Close()
 
-	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author", ext.Exiftool())
+	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author", ext.exiftool())
 
 	meta, err := ext.ExtractMetadata(pdfPath)
 	if err != nil {
