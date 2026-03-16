@@ -240,6 +240,8 @@ Example output:
 
 > **Note:** PDF and MOBI/AZW3 metadata extraction requires [ExifTool](https://exiftool.org/) to be installed and available on `PATH`. EPUB extraction has no external dependencies.
 
+See [docs/metadata.md](docs/metadata.md) for a full description of extracted fields, fallback behaviour, and how to extend the extractor.
+
 ## Project Layout
 
 ```
