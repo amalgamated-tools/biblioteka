@@ -75,13 +75,17 @@ Recursively walks the directory and enqueues a `process:file` job for every file
 
 Creates a `book` record and a `book_file` record in the database. The `process:file` handler runs `internal/metadata.Extractor.ExtractMetadata` on every imported file and uses the result to populate the book record:
 
-| Extracted field | Stored as | Fallback |
-|----------------|-----------|----------|
-| `Title` | `books.title` | Filename without extension |
-| `ISBN` (10 or 13 digits) | `books.isbn_10` / `books.isbn_13` | Not stored |
-| `Description` (when non-empty) | `books.description` | Not stored |
+| Extracted field | Stored as | Notes |
+|----------------|-----------|-------|
+| `Title` | `books.title` | Falls back to filename without extension |
+| `ISBN` (10 or 13 digits) | `books.isbn_10` / `books.isbn_13` | Not stored when absent |
+| `Description` (when non-empty) | `books.description` | EPUB only |
+| `Publisher` (when non-empty) | `books.publisher` | EPUB only |
+| `Language` (when non-empty) | `books.language` | EPUB only |
+| `PublicationDate` (when non-empty) | `books.publication_date` | EPUB only |
+| `Author` (when non-empty) | `authors` + `book_authors` join | Creates an author record if one with that name does not already exist, then links it to the book |
 
-`Author`, `Publisher`, and `Format` are extracted by the extractor but are **not yet** used to create related records during import. If ExifTool is absent or extraction fails for any other reason, the job logs a warning and falls back to the filename-derived title. See [docs/metadata.md](metadata.md) for extraction details and what's planned next. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
+`Format` is extracted but stored on the `book_files` record via the `file_type` payload field, not from the extractor output directly. If ExifTool is absent or extraction fails for any other reason, the job logs a warning and falls back to the filename-derived title. See [docs/metadata.md](metadata.md) for extraction details. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
 
 ### Job Chain
 
