@@ -323,14 +323,22 @@ func TestCreateBookWithFile(t *testing.T) {
 func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
 	d := newTestDB(t)
 
-	// Use a context that is cancelled before the call, which should cause the
-	// transaction's second insert to fail, verifying that the book row is
-	// rolled back and no orphan remains.
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // cancel immediately
+	// Install a trigger that forces inserts into book_files to fail. This lets
+	// the book insert succeed while the book_files insert fails, so we can
+	// verify that the transaction is rolled back and no orphan book remains.
+	_, err := d.ExecContext(context.Background(), `
+		CREATE TRIGGER fail_book_files_insert
+		BEFORE INSERT ON book_files
+		BEGIN
+			SELECT RAISE(ABORT, 'book_files insert forced failure');
+		END;
+	`)
+	if err != nil {
+		t.Fatalf("failed to create trigger: %v", err)
+	}
 
-	_, _, err := d.CreateBookWithFile(
-		ctx,
+	_, _, err = d.CreateBookWithFile(
+		context.Background(),
 		"Orphan Book",
 		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		"epub",
@@ -340,7 +348,7 @@ func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
 		"/books/orphan.epub",
 	)
 	if err == nil {
-		t.Fatal("expected error from cancelled context")
+		t.Fatal("expected error from failing book_files insert")
 	}
 
 	// Verify no book was committed
