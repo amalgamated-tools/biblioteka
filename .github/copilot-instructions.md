@@ -4,7 +4,7 @@ Biblioteka is a personal digital library management system for cataloging and or
 
 ## Tech Stack
 
-- **Backend**: Go 1.25, standard `net/http` (no router framework), `database/sql`
+- **Backend**: Go 1.26.1, standard `net/http` (no router framework), `database/sql`
 - **Databases**: SQLite (default) and PostgreSQL — both are supported; use dialect-aware helpers
 - **Background jobs**: `asynq` (Redis-backed) via `internal/worker`
 - **Auth**: JWT (`golang-jwt/jwt/v5`) + OIDC (`coreos/go-oidc/v3`)

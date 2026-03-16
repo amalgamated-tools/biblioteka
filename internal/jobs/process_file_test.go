@@ -4,9 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/metadata"
+	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 	_ "modernc.org/sqlite"
 )
 
@@ -38,11 +41,20 @@ func newTestDB(t *testing.T) *db.DB {
 
 func TestProcessFileHandler(t *testing.T) {
 	database := newTestDB(t)
-	handler := NewProcessFileHandler(database)
+	extractor, err := metadata.NewExtractor()
+	if err != nil {
+		t.Fatalf("failed to create metadata extractor: %v", err)
+	}
+	defer extractor.Close()
+	handler := NewProcessFileHandler(database, extractor)
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "test.epub")
+
+	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
 	payload, err := json.Marshal(ProcessFilePayload{
-		Path:     "/books/My Book.epub",
-		FileName: "My Book.epub",
+		Path:     epubPath,
+		FileName: filepath.Base(epubPath),
 		FileType: "epub",
 		FileSize: 1024,
 	})
@@ -61,8 +73,8 @@ func TestProcessFileHandler(t *testing.T) {
 	if len(books) != 1 {
 		t.Fatalf("expected 1 book, got %d", len(books))
 	}
-	if books[0].Title != "My Book" {
-		t.Errorf("expected title %q, got %q", "My Book", books[0].Title)
+	if books[0].Title != "The Great Gatsby" {
+		t.Errorf("expected title %q, got %q", "The Great Gatsby", books[0].Title)
 	}
 
 	files, err := database.ListBookFiles(context.Background(), books[0].ID)
@@ -75,8 +87,8 @@ func TestProcessFileHandler(t *testing.T) {
 	if files[0].FileType != "epub" {
 		t.Errorf("expected file type %q, got %q", "epub", files[0].FileType)
 	}
-	if files[0].FilePath != "/books/My Book.epub" {
-		t.Errorf("expected file path %q, got %q", "/books/My Book.epub", files[0].FilePath)
+	if files[0].FilePath != epubPath {
+		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
 	}
 	if files[0].FileSize != 1024 {
 		t.Errorf("expected file size 1024, got %d", files[0].FileSize)
@@ -85,10 +97,15 @@ func TestProcessFileHandler(t *testing.T) {
 
 func TestProcessFileHandler_EmptyPath(t *testing.T) {
 	database := newTestDB(t)
-	handler := NewProcessFileHandler(database)
+	extractor, err := metadata.NewExtractor()
+	if err != nil {
+		t.Fatalf("failed to create metadata extractor: %v", err)
+	}
+	defer extractor.Close()
+	handler := NewProcessFileHandler(database, extractor)
 
 	payload, _ := json.Marshal(ProcessFilePayload{Path: ""})
-	err := handler(context.Background(), payload)
+	err = handler(context.Background(), payload)
 	if err == nil {
 		t.Fatal("expected error for empty path")
 	}
