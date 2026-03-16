@@ -25,7 +25,7 @@
 #
 # Source: githubnext/agentics/workflows/daily-file-diet.md@b897c2f3e43bde9ff7923c8fa9211055b26e27cc
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"a26eea1462beacdf50437c462f34bb59507ef11c11efd83f7de6fd96e45f1a2e","compiler_version":"v0.59.0","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"182d518843c8fa2345fc30af7c55ef100babb63a553ba7a74ee13b4d303af726","compiler_version":"v0.59.0","strict":true}
 
 name: "Daily File Diet"
 "on":
