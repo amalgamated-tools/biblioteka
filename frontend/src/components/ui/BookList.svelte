@@ -13,7 +13,7 @@
 
   let { fetchBooks, pageSize = 24 }: Props = $props();
 
-  let effectivePageSize = $derived(Math.min(pageSize, MAX_PAGE_SIZE));
+  let effectivePageSize = $derived(Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE)));
   let books: BookSummary[] = $state([]);
   let total = $state(0);
   let offset = $state(0);
@@ -21,6 +21,7 @@
   let error: string | null = $state(null);
   let viewMode: "grid" | "table" = $state("grid");
   let currentRequestId = 0;
+  const prev = { fetchBooks: null as typeof fetchBooks | null, pageSize: 0 };
 
   let totalPages = $derived(Math.max(1, Math.ceil(total / effectivePageSize)));
   let currentPage = $derived(Math.floor(offset / effectivePageSize) + 1);
@@ -43,8 +44,6 @@
         return;
       }
       error = e instanceof Error ? e.message : "Failed to load books";
-      books = [];
-      total = 0;
     } finally {
       if (requestId === currentRequestId) {
         loading = false;
@@ -53,9 +52,17 @@
   }
 
   $effect(() => {
-    const _offset = offset;
     const _fetchBooks = fetchBooks;
     const _pageSize = effectivePageSize;
+
+    // Reset offset when the data source or page size changes
+    if (_fetchBooks !== prev.fetchBooks || _pageSize !== prev.pageSize) {
+      prev.fetchBooks = _fetchBooks;
+      prev.pageSize = _pageSize;
+      offset = 0;
+    }
+
+    const _offset = offset;
     load(_fetchBooks, _pageSize, _offset);
   });
 
@@ -74,15 +81,13 @@
 
 {#if error}
   <AlertBanner variant="error" class="mb-4">{error}</AlertBanner>
-{/if}
-
-{#if loading}
+{:else if loading}
   <div class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800">
     <div class="text-center py-8">
       <p class="text-ink-400 dark:text-ink-400">Loading books...</p>
     </div>
   </div>
-{:else if !error && total === 0}
+{:else if total === 0}
   <div class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800">
     <div class="text-center py-8">
       <BookOpen class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4" />
