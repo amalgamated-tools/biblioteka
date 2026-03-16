@@ -21,11 +21,25 @@ frontend/
     index.css           Tailwind CSS directives
     types.ts            Shared TypeScript interfaces for API entities
     components/         Page-level Svelte components (PascalCase)
-      settings/         Sub-components for the Settings page (one per tab)
-        AccountTab.svelte    Account & password management; OIDC linking
-        OidcTab.svelte       Admin: OIDC / SSO provider configuration
-        PreferencesTab.svelte Display theme selection
-        UsersTab.svelte      Admin: user list and admin-role toggling
+      Auth.svelte         Login and signup forms
+      Books.svelte        Book listing and detail view
+      Dashboard.svelte    Home screen; library overview
+      Libraries.svelte    Library management view
+      MyLibrary.svelte    Current user's personal library view
+      Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
+      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version
+      libraries/          Reusable sub-components for the Libraries view
+        LibraryForm.svelte   Create / edit library form
+        LibraryView.svelte   Library detail with book listing
+      settings/           Sub-components for the Settings page (one per tab)
+        AccountTab.svelte       Account & password management; OIDC linking
+        APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix)
+        OidcTab.svelte          Admin: OIDC / SSO provider configuration
+        PreferencesTab.svelte   Display theme selection
+        UsersTab.svelte         Admin: user list and admin-role toggling
+      ui/                 Generic reusable UI components
+        AlertBanner.svelte   Dismissible alert / error banner
+        BookCard.svelte      Card widget displaying a single book summary
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
       api.ts            Centralised API client
