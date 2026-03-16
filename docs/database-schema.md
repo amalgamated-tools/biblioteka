@@ -6,6 +6,22 @@ Biblioteka uses [dbmate](https://github.com/amacneil/dbmate) migrations, which r
 
 ---
 
+## Access model
+
+Biblioteka uses a **shared catalog** model. Books, libraries, authors, and series are global resources visible to every authenticated user. There is no per-user book ownership or private reading list in the current implementation.
+
+| Entity | Scope | Notes |
+|--------|-------|-------|
+| `books`, `authors`, `series`, `book_files` | Global — all users | Any authenticated user can read, create, update, and delete |
+| `libraries` | Global — all users | Paths scanned and books indexed are shared |
+| `api_keys` | Per-user | Each key is owned by the user who created it; scoped to that user's permissions |
+| `opds_credentials` | Per-user | One credential set per user; used only for OPDS Basic Auth |
+| `audit_logs` | Global record — admin read | Logs record which user performed each action |
+
+> **Note:** The `MyLibrary` view in the frontend is a planned feature (currently a placeholder) that will eventually let each user maintain a personal reading list independent of the shared catalog.
+
+---
+
 ## Entity Relationship Overview
 
 ```
