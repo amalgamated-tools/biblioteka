@@ -103,8 +103,10 @@ Successfully processed file: /path/to/book.epub
 **Example output (PDF without ExifTool):**
 
 ```
-error: exiftool is not available on this system
+Successfully processed file: /path/to/book.pdf
 ```
+
+> **Note:** When ExifTool is not installed, PDF and MOBI/AZW3 imports still succeed. The book title falls back to the filename (without extension), and no author, ISBN, description, or other metadata is populated. Install ExifTool to enable richer metadata extraction for these formats.
 
 > **Note:** The CLI requires a database to be configured via the same environment variables as the server (see [deployment.md](deployment.md)). It inserts records directly into the database rather than going through the background job queue.
 
