@@ -253,6 +253,106 @@ func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 	}
 }
 
+func TestCreateBookWithFile(t *testing.T) {
+	d := newTestDB(t)
+
+	b, bf, err := d.CreateBookWithFile(
+		context.Background(),
+		"The Gunslinger",
+		strPtr("The first book of the Dark Tower series"),
+		nil,
+		strPtr("1234567890"),
+		nil,
+		nil, nil, nil,
+		strPtr("1982-06-10"),
+		strPtr("Grant"),
+		strPtr("en"),
+		intPtr(224),
+		nil,
+		"epub",
+		"the-gunslinger.epub",
+		4096,
+		nil,
+		"/books/the-gunslinger.epub",
+	)
+	if err != nil {
+		t.Fatalf("CreateBookWithFile() error: %v", err)
+	}
+	if b.ID == "" {
+		t.Error("book ID is empty")
+	}
+	if b.Title != "The Gunslinger" {
+		t.Errorf("Title = %q, want %q", b.Title, "The Gunslinger")
+	}
+	if b.Description == nil || *b.Description != "The first book of the Dark Tower series" {
+		t.Errorf("Description = %v, want %q", b.Description, "The first book of the Dark Tower series")
+	}
+	if b.ISBN10 == nil || *b.ISBN10 != "1234567890" {
+		t.Errorf("ISBN10 = %v, want %q", b.ISBN10, "1234567890")
+	}
+	if b.Publisher == nil || *b.Publisher != "Grant" {
+		t.Errorf("Publisher = %v, want %q", b.Publisher, "Grant")
+	}
+	if b.PublicationDate == nil || *b.PublicationDate != "1982-06-10" {
+		t.Errorf("PublicationDate = %v, want %q", b.PublicationDate, "1982-06-10")
+	}
+	if b.Language == nil || *b.Language != "en" {
+		t.Errorf("Language = %v, want %q", b.Language, "en")
+	}
+	if b.NumPages == nil || *b.NumPages != 224 {
+		t.Errorf("NumPages = %v, want 224", b.NumPages)
+	}
+
+	if bf.BookID != b.ID {
+		t.Errorf("BookFile.BookID = %q, want %q", bf.BookID, b.ID)
+	}
+	if bf.FileType != "epub" {
+		t.Errorf("FileType = %q, want %q", bf.FileType, "epub")
+	}
+	if bf.FileName != "the-gunslinger.epub" {
+		t.Errorf("FileName = %q, want %q", bf.FileName, "the-gunslinger.epub")
+	}
+	if bf.FileSize != 4096 {
+		t.Errorf("FileSize = %d, want 4096", bf.FileSize)
+	}
+	if bf.FilePath != "/books/the-gunslinger.epub" {
+		t.Errorf("FilePath = %q, want %q", bf.FilePath, "/books/the-gunslinger.epub")
+	}
+}
+
+func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
+	d := newTestDB(t)
+
+	// Use a context that is cancelled before the call, which should cause the
+	// transaction's second insert to fail, verifying that the book row is
+	// rolled back and no orphan remains.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+
+	_, _, err := d.CreateBookWithFile(
+		ctx,
+		"Orphan Book",
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		"epub",
+		"orphan.epub",
+		1024,
+		nil,
+		"/books/orphan.epub",
+	)
+	if err == nil {
+		t.Fatal("expected error from cancelled context")
+	}
+
+	// Verify no book was committed
+	books, err := d.ListBooks(context.Background())
+	if err != nil {
+		t.Fatalf("ListBooks() error: %v", err)
+	}
+	if len(books) != 0 {
+		t.Errorf("expected 0 books after rollback, got %d", len(books))
+	}
+}
+
 func TestDeleteLibrary_DoesNotDeleteBook(t *testing.T) {
 	d := newTestDB(t)
 
