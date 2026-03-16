@@ -108,26 +108,9 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 			description = &meta.Description
 		}
 		if meta.ISBN != "" {
-			// Normalize ISBN: strip whitespace, known prefixes, and hyphens/spaces.
-			isbnRaw := strings.TrimSpace(meta.ISBN)
-			if isbnRaw != "" {
-				lower := strings.ToLower(isbnRaw)
-				switch {
-				case strings.HasPrefix(lower, "urn:isbn:"):
-					isbnRaw = isbnRaw[len("urn:isbn:"):]
-				case strings.HasPrefix(lower, "isbn:"):
-					isbnRaw = isbnRaw[len("isbn:"):]
-				}
-				isbnRaw = strings.TrimSpace(isbnRaw)
-				// Remove hyphens and internal spaces (common ISBN formatting).
-				isbnRaw = strings.ReplaceAll(isbnRaw, "-", "")
-				isbnRaw = strings.ReplaceAll(isbnRaw, " ", "")
-				isbnRaw = strings.TrimSpace(isbnRaw)
-			}
-			// Ignore sentinel/non-ISBN values.
-			if isbnRaw != "" && !strings.EqualFold(isbnRaw, "not found") {
-				// Store the normalized ISBN back into meta so the pointer remains valid.
-				meta.ISBN = isbnRaw
+			normalized := metadata.NormalizeISBN(meta.ISBN)
+			if normalized != "" {
+				meta.ISBN = normalized
 				switch len(meta.ISBN) {
 				case 10:
 					isbn10 = &meta.ISBN
@@ -164,7 +147,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		}
 	}
 
-	book, err := database.CreateBook(
+	book, _, err := database.CreateBookWithFile(
 		ctx,
 		title,
 		description,
@@ -179,22 +162,18 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		language,
 		numPages,
 		coverImageURL,
+		p.FileType,
+		p.FileName,
+		p.FileSize,
+		nil,
+		p.Path,
 	)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create book record for file",
+		slog.ErrorContext(ctx, "failed to create book and file records",
 			slog.String(otelkeys.Path, p.Path),
 			slog.Any(otelkeys.Error, err),
 		)
-		return fmt.Errorf("create book for %s: %w", p.Path, err)
-	}
-
-	_, err = database.CreateBookFile(ctx, book.ID, p.FileType, p.FileName, p.FileSize, nil, p.Path)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to create book file for file",
-			slog.String(otelkeys.Path, p.Path),
-			slog.Any(otelkeys.Error, err),
-		)
-		return fmt.Errorf("create book file for %s: %w", p.Path, err)
+		return fmt.Errorf("create book with file for %s: %w", p.Path, err)
 	}
 
 	// create an Author record if metadata extraction found an author and associate it with the book

@@ -44,24 +44,8 @@ func processFile(database *db.DB, extractor *metadata.Extractor) func(ctx contex
 				ctx,
 				"failed to unmarshal process:file payload",
 				slog.Any(otelkeys.Error, err),
-				slog.Any(otelkeys.Payload, string(payload)),
 			)
 			return fmt.Errorf("unmarshal process file payload: %w", err)
-		}
-
-		if p.Path == "" {
-			slog.ErrorContext(ctx, "process:file payload missing required path", slog.Any(otelkeys.Payload, string(payload)))
-			return fmt.Errorf("process file payload: path is required")
-		}
-
-		if p.FileName == "" {
-			slog.ErrorContext(ctx, "process:file payload missing required file_name", slog.Any(otelkeys.Payload, string(payload)))
-			return fmt.Errorf("process file payload: file_name is required")
-		}
-
-		if p.FileType == "" {
-			slog.ErrorContext(ctx, "process:file payload missing required file_type", slog.Any(otelkeys.Payload, string(payload)))
-			return fmt.Errorf("process file payload: file_type is required")
 		}
 
 		slog.DebugContext(ctx, "process:file job received",

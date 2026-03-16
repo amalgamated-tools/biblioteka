@@ -49,7 +49,6 @@ const (
 	Page              string = "page"
 	Path              string = "path"
 	PathsEnqueued     string = "paths_enqueued"
-	Payload           string = "payload"
 	Port              string = "port"
 	Query             string = "query"
 	Reason            string = "reason"

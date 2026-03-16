@@ -72,6 +72,7 @@ func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*BookMeta
 }
 
 func (e *Extractor) extractNativeEpub(ctx context.Context, path string) (*BookMetadata, error) {
+	slog.DebugContext(ctx, "extracting metadata via native EPUB parser", slog.String(otelkeys.Path, path))
 	rc, err := epub.OpenReader(path)
 	if err != nil {
 		return nil, err
@@ -126,7 +127,7 @@ func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata
 	author, err := book.GetString("Author")
 	if err != nil {
 		slog.WarnContext(ctx, "author not found in metadata", slog.String(otelkeys.Path, path))
-		author = "Unknown"
+		author = ""
 	}
 	isbn, err := book.GetString("ISBN")
 	if err != nil {
@@ -147,22 +148,32 @@ func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata
 	}, nil
 }
 
+// NormalizeISBN strips common prefixes (urn:isbn:, isbn:), whitespace, hyphens,
+// and spaces from a raw ISBN string. It returns the cleaned value only if it looks
+// like a valid ISBN (10 or 13 digits); otherwise it returns "".
+func NormalizeISBN(raw string) string {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return ""
+	}
+	lower := strings.ToLower(s)
+	switch {
+	case strings.HasPrefix(lower, "urn:isbn:"):
+		s = s[len("urn:isbn:"):]
+	case strings.HasPrefix(lower, "isbn:"):
+		s = s[len("isbn:"):]
+	}
+	s = strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, "-", "")
+	s = strings.ReplaceAll(s, " ", "")
+	s = strings.TrimSpace(s)
+	if len(s) == 10 || len(s) == 13 {
+		return s
+	}
+	return ""
+}
+
 // findISBN searches the Identifier field for a valid ISBN pattern
 func findISBN(book *epub.Rootfile) string {
-	// In goreader v2, Identifier is a struct with Content and Scheme fields
-	id := book.Identifier.Content
-
-	// Strip common prefixes like "urn:isbn:" or "isbn:"
-	id = strings.ToLower(id)
-	id = strings.ReplaceAll(id, "urn:isbn:", "")
-	id = strings.ReplaceAll(id, "isbn:", "")
-	id = strings.TrimSpace(id)
-
-	// A basic ISBN check: typically 10 or 13 digits (ignoring dashes)
-	cleanID := strings.ReplaceAll(id, "-", "")
-	if len(cleanID) == 10 || len(cleanID) == 13 {
-		return cleanID
-	}
-
-	return ""
+	return NormalizeISBN(book.Identifier.Content)
 }
