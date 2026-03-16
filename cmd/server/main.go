@@ -9,6 +9,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
+	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/server"
@@ -79,8 +80,16 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 
 	// Register job handlers and schedules only when this instance processes jobs
 	if runWorker {
+		// Set up the metadata Extractor, which reads metadata from uploaded files (using ExifTool when available).
+		extractor, err := metadata.NewExtractor()
+		if err != nil {
+			slog.ErrorContext(cancelCtx, "failed to setup metadata extractor", slog.Any(otelkeys.Error, err))
+			return fmt.Errorf("failed to setup metadata extractor: %w", err)
+		}
+		defer extractor.Close()
+
 		w.Register(cancelCtx, jobs.JobScanPath, jobs.NewScanPathHandler(w))
-		w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database))
+		w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database, extractor))
 		w.Register(cancelCtx, jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
 		w.Register(cancelCtx, jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
 

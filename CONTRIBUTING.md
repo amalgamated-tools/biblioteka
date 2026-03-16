@@ -14,7 +14,7 @@ Your signature is recorded once and applies to all future contributions.
 
 ## Prerequisites
 
-- Go 1.25+
+- Go 1.26+
 - Node.js 22+ with [pnpm](https://pnpm.io/)
 - Redis (for background jobs)
 - [ExifTool](https://exiftool.org/) (optional; only needed for PDF and MOBI/AZW3 metadata extraction)

@@ -26,3 +26,4 @@ data/
 bibloteka.db
 !internal/server/dist/.gitkeep
 internal/server/dist
+exiftool/
