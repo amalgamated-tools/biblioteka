@@ -5,7 +5,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 ## Features
 
 - **Multi-format support** – EPUB, MOBI, AZW3, and PDF
-- **Metadata extraction** – title, ISBN, and description extracted automatically during library scans (EPUB natively; MOBI/AZW3/PDF via [ExifTool](https://exiftool.org/)); standalone [`cmd/cli`](#cli-tool) tool available for manual inspection
+- **Metadata extraction** – title and ISBN extracted automatically during library scans (EPUB natively; MOBI/AZW3/PDF via [ExifTool](https://exiftool.org/)); standalone [`cmd/cli`](#cli-tool) tool available for manual inspection
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
 - **Author & series tracking** – browse by author or series, with position numbers within each series
 - **User authentication** – JWT-based login, optional OpenID Connect (OIDC/SSO)

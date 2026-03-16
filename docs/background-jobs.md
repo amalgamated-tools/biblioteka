@@ -79,9 +79,8 @@ Creates a `book` record and a `book_file` record in the database. The `process:f
 |----------------|-----------|----------|
 | `Title` | `books.title` | Filename without extension |
 | `ISBN` (10 or 13 digits) | `books.isbn_10` / `books.isbn_13` | Not stored |
-| `Description` (when non-empty) | `books.description` | Not stored |
 
-`Author`, `Publisher`, and `Format` are extracted by the extractor but are **not yet** used to create related records during import. If ExifTool is absent or extraction fails for any other reason, the job logs a warning and falls back to the filename-derived title. See [docs/metadata.md](metadata.md) for extraction details and what's planned next. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
+`Author`, `Publisher`, `Description`, and `Format` are extracted by the extractor but are **not yet** used to create related records or populate book fields during import. If ExifTool is absent or extraction fails for any other reason, the job logs a warning and falls back to the filename-derived title. See [docs/metadata.md](metadata.md) for extraction details and what's planned next. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
 
 ### Job Chain
 
