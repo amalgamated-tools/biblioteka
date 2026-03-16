@@ -58,20 +58,20 @@ func (e *Extractor) Close() {
 	}
 }
 
-func (e *Extractor) ExtractMetadata(path string) (*BookMetadata, error) {
+func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*BookMetadata, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	// 1. Try Native EPUB parsing first (Zero-dependency, Very Fast)
 	if ext == ".epub" {
-		return e.extractNativeEpub(path)
+		return e.extractNativeEpub(ctx, path)
 	}
 
 	if e.et == nil {
 		return nil, ErrExifToolUnavailable
 	}
-	return e.extractExif(path)
+	return e.extractExif(ctx, path)
 }
 
-func (e *Extractor) extractNativeEpub(path string) (*BookMetadata, error) {
+func (e *Extractor) extractNativeEpub(ctx context.Context, path string) (*BookMetadata, error) {
 	rc, err := epub.OpenReader(path)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (e *Extractor) extractNativeEpub(path string) (*BookMetadata, error) {
 	}, nil
 }
 
-func (e *Extractor) extractExif(path string) (*BookMetadata, error) {
+func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -120,21 +120,21 @@ func (e *Extractor) extractExif(path string) (*BookMetadata, error) {
 	// ExifTool normalization: mapping various tags to our struct
 	title, err := book.GetString("Title")
 	if err != nil {
-		slog.WarnContext(context.Background(), "title not found in metadata, using filename as fallback", slog.String(otelkeys.Path, path))
+		slog.WarnContext(ctx, "title not found in metadata, using filename as fallback", slog.String(otelkeys.Path, path))
 		title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 	}
 	author, err := book.GetString("Author")
 	if err != nil {
-		slog.WarnContext(context.Background(), "author not found in metadata", slog.String(otelkeys.Path, path))
+		slog.WarnContext(ctx, "author not found in metadata", slog.String(otelkeys.Path, path))
 		author = "Unknown"
 	}
 	isbn, err := book.GetString("ISBN")
 	if err != nil {
-		slog.WarnContext(context.Background(), "ISBN not found in metadata", slog.String(otelkeys.Path, path))
+		slog.WarnContext(ctx, "ISBN not found in metadata", slog.String(otelkeys.Path, path))
 		isbn, err = book.GetString("Identifier") // Fallback for many MOBI files
 		if err != nil {
-			slog.WarnContext(context.Background(), "Identifier not found in metadata", slog.String(otelkeys.Path, path))
-			isbn = "Not Found"
+			slog.WarnContext(ctx, "Identifier not found in metadata", slog.String(otelkeys.Path, path))
+			isbn = ""
 		}
 	}
 

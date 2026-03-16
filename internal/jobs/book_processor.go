@@ -81,7 +81,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	// Extract metadata before creating the book record so we can use the
 	// extracted fields (now or in the future) to populate or enrich the book.
 	// The book ID comes from CreateBook, not from metadata extraction.
-	meta, err := extractor.ExtractMetadata(p.Path)
+	meta, err := extractor.ExtractMetadata(ctx, p.Path)
 	if err != nil {
 		// In environments without ExifTool, metadata extraction is expected to fail
 		// for many files. Downgrade those expected errors to DEBUG to avoid log flooding,
@@ -107,7 +107,6 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		if meta.Description != "" {
 			description = &meta.Description
 		}
-		if meta.ISBN != "" {
 		if meta.ISBN != "" {
 			// Normalize ISBN: strip whitespace, known prefixes, and hyphens/spaces.
 			isbnRaw := strings.TrimSpace(meta.ISBN)

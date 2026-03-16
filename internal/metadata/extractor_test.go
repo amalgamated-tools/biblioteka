@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,7 +26,7 @@ func TestExtractMetadata_NativeEPUB(t *testing.T) {
 	}
 	defer ext.Close()
 
-	meta, err := ext.ExtractMetadata(epubPath)
+	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -58,7 +59,7 @@ func TestExtractMetadata_EPUBWithISBN10(t *testing.T) {
 	}
 	defer ext.Close()
 
-	meta, err := ext.ExtractMetadata(epubPath)
+	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -80,13 +81,13 @@ func TestExtractMetadata_EPUBWithNoISBN(t *testing.T) {
 	}
 	defer ext.Close()
 
-	meta, err := ext.ExtractMetadata(epubPath)
+	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
 
-	if meta.ISBN != "Not Found" {
-		t.Errorf("expected ISBN %q, got %q", "Not Found", meta.ISBN)
+	if meta.ISBN != "" {
+		t.Errorf("expected ISBN %q, got %q", "", meta.ISBN)
 	}
 }
 
@@ -101,7 +102,7 @@ func TestExtractMetadata_EPUBCaseInsensitive(t *testing.T) {
 	}
 	defer ext.Close()
 
-	meta, err := ext.ExtractMetadata(epubPath)
+	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -126,7 +127,7 @@ func TestExtractMetadata_PDF(t *testing.T) {
 
 	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author", ext.exiftool())
 
-	meta, err := ext.ExtractMetadata(pdfPath)
+	meta, err := ext.ExtractMetadata(context.Background(), pdfPath)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -156,7 +157,7 @@ func TestExtractMetadata_InvalidFile(t *testing.T) {
 	}
 	defer ext.Close()
 
-	_, err = ext.ExtractMetadata(badPath)
+	_, err = ext.ExtractMetadata(context.Background(), badPath)
 	if err == nil {
 		t.Fatal("expected error for invalid EPUB")
 	}
@@ -169,7 +170,7 @@ func TestExtractMetadata_NonexistentFile(t *testing.T) {
 	}
 	defer ext.Close()
 
-	_, err = ext.ExtractMetadata("/nonexistent/file.pdf")
+	_, err = ext.ExtractMetadata(context.Background(), "/nonexistent/file.pdf")
 	if err == nil {
 		t.Fatal("expected error for nonexistent file")
 	}
