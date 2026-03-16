@@ -37,6 +37,10 @@ func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
 }
 
 func (d *DB) CreateSeries(ctx context.Context, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, ErrInvalidSeriesName
+	}
 	slog.DebugContext(ctx, "db: creating series", slog.String(otelkeys.Name, name))
 	s, err := scanSeries(d.QueryRowContext(ctx,
 		`INSERT INTO series (name, goodreads_id, hardcover_id, google_books_id) VALUES ($1, $2, $3, $4) RETURNING `+seriesColumns,

@@ -55,6 +55,41 @@ func TestCreateSeries_DuplicateNameCaseInsensitive(t *testing.T) {
 	}
 }
 
+func TestCreateSeries_BlankName(t *testing.T) {
+	d := newTestDB(t)
+
+	for _, name := range []string{"", " ", "  \t  "} {
+		_, err := d.CreateSeries(context.Background(), name, nil, nil, nil)
+		if err != ErrInvalidSeriesName {
+			t.Errorf("CreateSeries(%q) = %v, want ErrInvalidSeriesName", name, err)
+		}
+	}
+}
+
+func TestUpdateSeries_BlankName(t *testing.T) {
+	d := newTestDB(t)
+
+	s, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+
+	for _, name := range []string{"", " ", "  \t  "} {
+		_, err := d.UpdateSeries(context.Background(), s.ID, name, nil, nil, nil)
+		if err != ErrInvalidSeriesName {
+			t.Errorf("UpdateSeries(%q) = %v, want ErrInvalidSeriesName", name, err)
+		}
+	}
+}
+
+func TestFindOrCreateSeries_BlankName(t *testing.T) {
+	d := newTestDB(t)
+
+	for _, name := range []string{"", " ", "  \t  "} {
+		_, err := d.FindOrCreateSeries(context.Background(), name)
+		if err != ErrInvalidSeriesName {
+			t.Errorf("FindOrCreateSeries(%q) = %v, want ErrInvalidSeriesName", name, err)
+		}
+	}
+}
+
 func TestGetSeries(t *testing.T) {
 	d := newTestDB(t)
 
