@@ -56,7 +56,7 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 		slog.DebugContext(ctx, "process:file job received",
 			slog.String(otelkeys.Path, p.Path),
 			slog.String(otelkeys.FileName, p.FileName),
-			slog.String(otelkeys.Type, p.FileType),
+			slog.String(otelkeys.FileType, p.FileType),
 			slog.Int64(otelkeys.FileSize, p.FileSize),
 		)
 		var title string
@@ -70,7 +70,7 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 
 		slog.InfoContext(ctx, "processing file",
 			slog.String(otelkeys.Title, title),
-			slog.String(otelkeys.Type, p.FileType),
+			slog.String(otelkeys.FileType, p.FileType),
 			slog.String(otelkeys.Path, p.Path),
 		)
 
@@ -80,11 +80,24 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 
 		meta, err := extractor.ExtractMetadata(p.Path)
 		if err != nil {
-			slog.WarnContext(ctx, "metadata extraction failed, continuing with filename-derived metadata",
-				slog.String(otelkeys.Path, p.Path),
-				slog.Any(otelkeys.Error, err),
-				slog.String(otelkeys.Title, title),
-			)
+			// In environments without ExifTool, metadata extraction is expected to fail
+			// for many files. Downgrade those expected errors to DEBUG to avoid log flooding,
+			// but keep WARN for unexpected extraction failures.
+			errStr := strings.ToLower(err.Error())
+			if strings.Contains(errStr, "exiftool") &&
+				(strings.Contains(errStr, "not found") || strings.Contains(errStr, "not available") || strings.Contains(errStr, "missing")) {
+				slog.DebugContext(ctx, "metadata extraction failed due to missing exiftool, continuing with filename-derived metadata",
+					slog.String(otelkeys.Path, p.Path),
+					slog.Any(otelkeys.Error, err),
+					slog.String(otelkeys.Title, title),
+				)
+			} else {
+				slog.WarnContext(ctx, "metadata extraction failed, continuing with filename-derived metadata",
+					slog.String(otelkeys.Path, p.Path),
+					slog.Any(otelkeys.Error, err),
+					slog.String(otelkeys.Title, title),
+				)
+			}
 		} else {
 			if meta.Description != "" {
 				description = &meta.Description
