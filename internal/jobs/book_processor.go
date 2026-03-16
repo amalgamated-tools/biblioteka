@@ -61,6 +61,24 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		return err
 	}
 
+	// Ensure the source path still exists before proceeding. This makes retries idempotent
+	// when a prior run has already moved the file to a new location.
+	if _, err := os.Stat(p.Path); err != nil {
+		if os.IsNotExist(err) {
+			slog.InfoContext(ctx, "source file path no longer exists, skipping",
+				slog.String(otelkeys.Path, p.Path),
+			)
+			return nil
+		}
+
+		wrappedErr := fmt.Errorf("process book file: stat path %q: %w", p.Path, err)
+		slog.ErrorContext(ctx, "book processing failed: error stating source path",
+			slog.Any(otelkeys.Error, wrappedErr),
+			slog.String(otelkeys.Path, p.Path),
+		)
+		return wrappedErr
+	}
+
 	// Check for duplicate: skip if this file path is already indexed.
 	if _, err := database.GetBookFileByPath(ctx, p.Path); err == nil {
 		slog.InfoContext(ctx, "file already indexed, skipping",

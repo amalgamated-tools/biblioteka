@@ -103,21 +103,39 @@ func copyFile(src, dst string) (err error) {
 	}
 	defer in.Close()
 
-	out, err := os.Create(dst)
+	dstDir := filepath.Dir(dst)
+	out, err := os.CreateTemp(dstDir, ".biblioteka-copy-*")
 	if err != nil {
 		return err
 	}
+	tmpName := out.Name()
+
 	defer func() {
+		// Ensure the temp file is closed and cleaned up on any error.
 		if cerr := out.Close(); cerr != nil && err == nil {
 			err = cerr
+		}
+		if err != nil {
+			_ = os.Remove(tmpName)
 		}
 	}()
 
 	if _, err = io.Copy(out, in); err != nil {
-		out.Close()
-		os.Remove(dst)
 		return err
 	}
+
+	// At this point, the defer will close out and remove tmpName if an error occurs.
+	// Preserve existing behavior of overwriting an existing destination file.
+	if _, statErr := os.Stat(dst); statErr == nil {
+		if remErr := os.Remove(dst); remErr != nil {
+			return remErr
+		}
+	}
+
+	if err = os.Rename(tmpName, dst); err != nil {
+		return err
+	}
+
 	return nil
 }
 
