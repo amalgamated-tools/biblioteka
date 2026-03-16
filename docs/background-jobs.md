@@ -73,7 +73,7 @@ Recursively walks the directory and enqueues a `process:file` job for every file
 | **Trigger** | Enqueued by `scan:path` |
 | **Payload** | `{ "path": "/books/novel.epub", "file_name": "novel.epub", "file_type": "epub", "file_size": 524288 }` |
 
-Creates a `book` record and a `book_file` record in the database. The book title is derived from the filename (e.g. `Pride and Prejudice.epub` → `"Pride and Prejudice"`). Full metadata extraction (author, ISBN, publisher, etc.) is not performed during import and is planned for a future enhancement; use the standalone [`cmd/cli`](../README.md#cli-tool) tool to extract metadata from individual files in the meantime.
+Creates a `book` record and a `book_file` record in the database. The book title is derived from the filename (e.g. `Pride and Prejudice.epub` → `"Pride and Prejudice"`). Full metadata extraction (author, ISBN, publisher, etc.) is not performed during import and is planned for a future enhancement; the extractor module (`internal/metadata`) already exists — see [docs/metadata.md](metadata.md) for its capabilities. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to extract metadata from individual files in the meantime.
 
 ### Job Chain
 
