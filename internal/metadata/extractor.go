@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -13,14 +14,18 @@ import (
 	"github.com/taylorskalyo/goreader/epub"
 )
 
+var ErrExifToolUnavailable = errors.New("exiftool is not available on this system")
+
 type BookMetadata struct {
-	Author      string
-	Description string
-	Format      string
-	ISBN        string
-	IsNative    bool
-	Publisher   string
-	Title       string
+	Author          string
+	Description     string
+	Format          string
+	ISBN            string
+	IsNative        bool
+	Language        string
+	PublicationDate string
+	Publisher       string
+	Title           string
 }
 
 // Extractor extracts metadata from book files. Concurrent ExtractMetadata calls are safe,
@@ -49,20 +54,21 @@ func (e *Extractor) Close() {
 	}
 }
 
-func (e *Extractor) ExtractMetadata(path string) (*BookMetadata, error) {
+func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*BookMetadata, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	// 1. Try Native EPUB parsing first (Zero-dependency, Very Fast)
 	if ext == ".epub" {
-		return e.extractNativeEpub(path)
+		return e.extractNativeEpub(ctx, path)
 	}
 
 	if e.et == nil {
-		return nil, fmt.Errorf("exif-based metadata extraction requested but exiftool is not available")
+		return nil, ErrExifToolUnavailable
 	}
-	return e.extractExif(path)
+	return e.extractExif(ctx, path)
 }
 
-func (e *Extractor) extractNativeEpub(path string) (*BookMetadata, error) {
+func (e *Extractor) extractNativeEpub(ctx context.Context, path string) (*BookMetadata, error) {
+	slog.DebugContext(ctx, "extracting metadata via native EPUB parser", slog.String(otelkeys.Path, path))
 	rc, err := epub.OpenReader(path)
 	if err != nil {
 		return nil, err
@@ -74,16 +80,29 @@ func (e *Extractor) extractNativeEpub(path string) (*BookMetadata, error) {
 	}
 
 	book := rc.Rootfiles[0]
+	var publicationDate string
+	// if the book has a slice of Dates, we want to find one where the Event attribute is "publication"
+	for _, d := range book.Dates {
+		if d.Event == "publication" {
+			publicationDate = d.Date
+			break
+		}
+	}
+
 	return &BookMetadata{
-		Author:   book.Creator,
-		Format:   "EPUB",
-		ISBN:     findISBN(book),
-		IsNative: true,
-		Title:    book.Title,
+		Author:          book.Creator,
+		Description:     book.Description,
+		Format:          "EPUB",
+		ISBN:            findISBN(book),
+		IsNative:        true,
+		Language:        book.Language,
+		PublicationDate: publicationDate,
+		Publisher:       book.Publisher,
+		Title:           book.Title,
 	}, nil
 }
 
-func (e *Extractor) extractExif(path string) (*BookMetadata, error) {
+func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -98,21 +117,21 @@ func (e *Extractor) extractExif(path string) (*BookMetadata, error) {
 	// ExifTool normalization: mapping various tags to our struct
 	title, err := book.GetString("Title")
 	if err != nil {
-		slog.WarnContext(context.Background(), "title not found in metadata, using filename as fallback", slog.String(otelkeys.Path, path))
+		slog.WarnContext(ctx, "title not found in metadata, using filename as fallback", slog.String(otelkeys.Path, path))
 		title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 	}
 	author, err := book.GetString("Author")
 	if err != nil {
-		slog.WarnContext(context.Background(), "author not found in metadata", slog.String(otelkeys.Path, path))
-		author = "Unknown"
+		slog.WarnContext(ctx, "author not found in metadata", slog.String(otelkeys.Path, path))
+		author = ""
 	}
 	isbn, err := book.GetString("ISBN")
 	if err != nil {
-		slog.WarnContext(context.Background(), "ISBN not found in metadata", slog.String(otelkeys.Path, path))
+		slog.WarnContext(ctx, "ISBN not found in metadata", slog.String(otelkeys.Path, path))
 		isbn, err = book.GetString("Identifier") // Fallback for many MOBI files
 		if err != nil {
-			slog.WarnContext(context.Background(), "Identifier not found in metadata", slog.String(otelkeys.Path, path))
-			isbn = "Not Found"
+			slog.WarnContext(ctx, "Identifier not found in metadata", slog.String(otelkeys.Path, path))
+			isbn = ""
 		}
 	}
 
@@ -125,22 +144,60 @@ func (e *Extractor) extractExif(path string) (*BookMetadata, error) {
 	}, nil
 }
 
+// NormalizeISBN strips common prefixes (urn:isbn:, isbn:), whitespace, hyphens,
+// and spaces from a raw ISBN string. It returns the cleaned value only if it looks
+// like an ISBN-10 or ISBN-13: 10 or 13 characters consisting of digits, with
+// ISBN-10 allowing an 'X' (or 'x') as the final checksum character; otherwise it
+// returns "".
+func NormalizeISBN(raw string) string {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return ""
+	}
+	lower := strings.ToLower(s)
+	switch {
+	case strings.HasPrefix(lower, "urn:isbn:"):
+		s = s[len("urn:isbn:"):]
+	case strings.HasPrefix(lower, "isbn:"):
+		s = s[len("isbn:"):]
+	}
+	s = strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, "-", "")
+	s = strings.ReplaceAll(s, " ", "")
+	s = strings.TrimSpace(s)
+
+	switch len(s) {
+	case 10:
+		// First 9 characters must be digits.
+		for i := 0; i < 9; i++ {
+			if s[i] < '0' || s[i] > '9' {
+				return ""
+			}
+		}
+		// Last character may be a digit or 'X'/'x'.
+		last := s[9]
+		if (last < '0' || last > '9') && last != 'X' && last != 'x' {
+			return ""
+		}
+		// Normalize to upper-case 'X' if present.
+		if last == 'x' {
+			s = s[:9] + "X"
+		}
+		return s
+	case 13:
+		// All characters must be digits.
+		for i := 0; i < 13; i++ {
+			if s[i] < '0' || s[i] > '9' {
+				return ""
+			}
+		}
+		return s
+	default:
+		return ""
+	}
+}
+
 // findISBN searches the Identifier field for a valid ISBN pattern
 func findISBN(book *epub.Rootfile) string {
-	// In goreader v2, Identifier is a struct with Content and Scheme fields
-	id := book.Identifier.Content
-
-	// Strip common prefixes like "urn:isbn:" or "isbn:"
-	id = strings.ToLower(id)
-	id = strings.ReplaceAll(id, "urn:isbn:", "")
-	id = strings.ReplaceAll(id, "isbn:", "")
-	id = strings.TrimSpace(id)
-
-	// A basic ISBN check: typically 10 or 13 digits (ignoring dashes)
-	cleanID := strings.ReplaceAll(id, "-", "")
-	if len(cleanID) == 10 || len(cleanID) == 13 {
-		return cleanID
-	}
-
-	return "Not Found"
+	return NormalizeISBN(book.Identifier.Content)
 }
