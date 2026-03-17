@@ -1,5 +1,37 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/svelte";
+
+vi.mock("./stores/auth.svelte", () => ({
+  authStore: {
+    loading: false,
+    user: { id: 1, username: "test", is_admin: false },
+    init: vi.fn(),
+  },
+}));
+
+vi.mock("./stores/router.svelte", () => ({
+  routerStore: {
+    currentView: "dashboard",
+    navigate: vi.fn(),
+  },
+}));
+
+vi.mock("./stores/libraries.svelte", () => ({
+  libraryStore: {
+    loaded: true,
+    libraries: [],
+  },
+}));
+
+vi.mock("./components/Auth.svelte", () => ({ default: () => {} }));
+vi.mock("./components/Dashboard.svelte", () => ({ default: () => {} }));
+vi.mock("./components/Books.svelte", () => ({ default: () => {} }));
+vi.mock("./components/MyLibrary.svelte", () => ({ default: () => {} }));
+vi.mock("./components/Libraries.svelte", () => ({ default: () => {} }));
+vi.mock("./components/Sidebar.svelte", () => ({ default: () => {} }));
+vi.mock("./components/Settings.svelte", () => ({ default: () => {} }));
+vi.mock("lucide-svelte", () => ({ Menu: () => {} }));
+
 import App from "./App.svelte";
 
 describe("App", () => {
