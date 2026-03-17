@@ -439,10 +439,7 @@ pathResolved:
 	var format string
 	if meta != nil {
 		format = meta.Format
-	}
-
-	// Log full metadata only at DEBUG level to avoid bloating INFO logs.
-	if meta != nil {
+		// Log full metadata only at DEBUG level to avoid bloating INFO logs.
 		slog.DebugContext(ctx, "book metadata extracted",
 			slog.String(otelkeys.BookID, book.ID),
 			slog.Any(otelkeys.BookMetadata, meta),
