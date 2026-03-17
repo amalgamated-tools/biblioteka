@@ -63,7 +63,7 @@ Enqueues a `scan:path` job for every path in the library.
 | **Trigger** | Enqueued by `scan:library` |
 | **Payload** | `{ "path": "/books", "library_id": "<uuid>", "library_root": "/books" }` |
 
-Recursively walks the directory and enqueues a `process:file` job for every file with a supported extension (`.epub`, `.mobi`, `.pdf`, `.azw3`). Inaccessible files are logged as warnings and skipped.
+`NewScanPathHandler` parses the JSON payload and delegates to `ScanDirectory` (`internal/jobs/scan_directory.go`), which recursively walks the given directory and enqueues a `process:file` job for every file with a supported extension (`.epub`, `.mobi`, `.pdf`, `.azw3`). Inaccessible files are logged as warnings and skipped.
 
 The `library_id` and `library_root` fields are optional, but `scan:library` always populates them. When present, they are forwarded verbatim to each `process:file` payload so the file handler can (a) associate the book with the correct library and (b) derive author, title, and series information from the file's path relative to the library root (see [Path-based metadata](#path-based-metadata) below).
 
@@ -216,10 +216,11 @@ The dashboard lets you:
 cmd/server/main.go            # Registers handlers, schedules, starts worker
 internal/
   jobs/
-    process_file.go            # process:file handler
-    scan_path.go               # scan:path handler + Enqueuer interface
+    scan_directory.go          # ScanDirectory: walks a path and enqueues process:file jobs; defines Enqueuer interface and supportedExtensions
+    scan_path.go               # scan:path handler (NewScanPathHandler → ScanDirectory)
     scan_libraries.go          # scan:libraries handler (scans all monitored libraries)
     scan_library.go            # scan:library handler (scans a single library)
+    process_file.go            # process:file handler
     process_book_file.go       # ProcessBookFile: metadata extraction, path parsing, organization logic
   organize/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
