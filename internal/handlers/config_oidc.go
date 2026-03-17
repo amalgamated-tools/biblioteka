@@ -154,7 +154,7 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		settingOIDCRedirectURI:  redirectURI,
 	} {
 		if err := h.DB.SetSetting(r.Context(), k, v); err != nil {
-			slog.ErrorContext(ctx, "failed to save OIDC setting",
+			slog.ErrorContext(r.Context(), "failed to save OIDC setting",
 				slog.String(otelkeys.Key, k),
 				slog.Any(otelkeys.Error, err),
 			)
@@ -165,7 +165,7 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 
 	if h.OnOIDCConfigSet != nil {
 		if err := h.OnOIDCConfigSet(r.Context(), issuerURL, clientID, clientSecret, redirectURI); err != nil {
-			slog.ErrorContext(ctx, "failed to apply OIDC configuration", slog.Any(otelkeys.Error, err))
+			slog.ErrorContext(r.Context(), "failed to apply OIDC configuration", slog.Any(otelkeys.Error, err))
 			writeError(r.Context(), w, http.StatusInternalServerError, "settings saved but failed to apply OIDC configuration")
 			return
 		}

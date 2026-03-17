@@ -72,7 +72,8 @@ type ConfigHandler struct {
 	DB               *db.DB
 	IsOIDCConfigured func() bool
 	OnOIDCConfigSet  func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error
-	SendMailFunc     func(ctx context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error
+	// SendMailFunc overrides the default sendMail implementation (used in tests).
+	SendMailFunc func(ctx context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error
 }
 
 type configStatusResponse struct {
