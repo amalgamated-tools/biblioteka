@@ -69,6 +69,7 @@ export async function signOut(page: Page): Promise<void> {
   await expect(page.getByRole("button", { name: "Login", exact: true })).toBeVisible();
 }
 
+// Callers assert the expected post-login outcome because some tests expect failure.
 export async function signIn(page: Page, email: string, password: string): Promise<void> {
   await openAuthPage(page);
   await page.locator("input#email").fill(email);
