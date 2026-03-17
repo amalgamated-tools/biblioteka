@@ -91,7 +91,15 @@ Browser                    Biblioteka              OIDC Provider
    │◀──────────────────────────│                        │
 ```
 
-After the callback, the server sets a `biblioteka_token` session cookie and redirects to `/?oidc_login=1`. The frontend then calls `GET /api/auth/me` using the cookie to retrieve the user object.
+After the callback, the server sets a `biblioteka_token` session cookie and redirects to `/?oidc_login=1`. The frontend calls `GET /api/auth/me` using the cookie to retrieve the user object and populate the auth store.
+
+#### Session persistence across page reloads
+
+OIDC sessions are maintained entirely through the HttpOnly `biblioteka_token` cookie. On every page load, the auth store always calls `GET /api/auth/me` to restore the current user, regardless of whether a localStorage token is present. This ensures OIDC sessions survive normal browser refreshes.
+
+If a stale localStorage token is found and the `GET /api/auth/me` request returns `401` or `404`, the store clears the stale token and retries the request. The retry succeeds when a valid OIDC session cookie is present, so users are not logged out unexpectedly due to an expired local token sitting alongside an active SSO session.
+
+> **Note:** Transient errors (network failures, `5xx` responses) do not clear the localStorage token. Only definitive auth rejections (`401`/`404`) trigger the stale-token recovery path.
 
 **Scopes requested:** `openid email profile`
 
