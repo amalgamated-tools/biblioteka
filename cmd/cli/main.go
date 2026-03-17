@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -15,15 +16,29 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <file>\n", os.Args[0])
+	ctx := context.Background()
+
+	file := flag.String("file", "", "path to the file to process")
+	directory := flag.String("directory", "", "path to the directory to process")
+	flag.Parse()
+	if *file == "" && *directory == "" {
+		fmt.Fprintln(os.Stderr, "error: either --file or --directory must be provided")
 		os.Exit(1)
 	}
+	if *file != "" && *directory != "" {
+		fmt.Fprintln(os.Stderr, "error: only one of --file or --directory can be provided")
+		os.Exit(1)
+	}
+	// if a directory is provided, we will call runDirectory, which will call run for each file in the directory
+	if *directory != "" {
+		if err := runDirectory(ctx, *directory); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
 
-	ctx := context.Background()
-	path := os.Args[1]
-
-	if err := run(ctx, path); err != nil {
+	if err := run(ctx, *file); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
@@ -72,5 +87,9 @@ func run(ctx context.Context, path string) error {
 	}
 
 	fmt.Printf("Successfully processed file: %s\n", path)
+	return nil
+}
+
+func runDirectory(ctx context.Context, dirPath string) error {
 	return nil
 }
