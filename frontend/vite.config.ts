@@ -17,7 +17,6 @@ function restoreGitkeep(): Plugin {
       if (!gitkeepPath) return;
       writeFileSync(gitkeepPath, "");
     },
-    },
   };
 }
 
