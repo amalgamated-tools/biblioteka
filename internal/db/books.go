@@ -287,7 +287,6 @@ func dollarN(n int) string {
 	return "$" + strconv.Itoa(n)
 }
 
-
 // ListBooksModifiedSince returns up to limit books updated after since, ordered by
 // updated_at ascending so callers can track the high-water mark. When since is the
 // zero time all books are returned (initial sync).
@@ -384,9 +383,4 @@ func (d *DB) GetSeriesForBooks(ctx context.Context, bookIDs []string) (map[strin
 		result[bookID] = append(result[bookID], entry)
 	}
 	return result, rows.Err()
-}
-
-// bookFileColumnsWithPrefix returns book_files columns with a table alias prefix.
-func bookFileColumnsWithPrefix(prefix string) string {
-	return prefix + "id, " + prefix + "book_id, " + prefix + "file_type, " + prefix + "file_name, " + prefix + "file_size, " + prefix + "file_hash, " + prefix + "file_path, " + prefix + "created_at, " + prefix + "updated_at"
 }
