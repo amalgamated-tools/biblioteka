@@ -1,6 +1,4 @@
-import { test, expect } from "@playwright/test";
-import { Page } from "@playwright/test";
-
+import { test, expect, type Page } from "@playwright/test";
 
 const AUTH_ERROR_TEST_ID = "auth-error";
 
@@ -53,14 +51,13 @@ test.describe("Authentication flow", () => {
     await expect(page.getByText("Get started with Biblioteka")).toBeVisible();
     await expect(page.getByText(testUser.email)).toBeVisible();
 
+    // --- Sign out ---
     await page.locator('button#logout-button').click();
     await page.waitForSelector('button#login-btn', { timeout: NAVIGATION_TIMEOUT_MS });
-    // --- Sign out ---
     // Verify that the UI reflects a logged-out state and that auth token was cleared.
     await page.waitForSelector('input#email');
     await page.waitForSelector('input#password');
     await page.waitForFunction(() => localStorage.getItem('biblioteka_token') === null);
-
 
     // Should be on main page
     await expect(page).toHaveURL("/");
