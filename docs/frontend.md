@@ -204,6 +204,123 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 4. Import and render `<MyView />` in `App.svelte` inside the `{#if … }` routing block.
 5. Add a navigation entry in `Sidebar.svelte`.
 
+## UI components
+
+The three reusable components in `frontend/src/components/ui/` are shared across multiple page-level components. They accept only typed props — no global store access — and are safe to use in any context.
+
+### `AlertBanner.svelte`
+
+Displays a dismissible inline alert in either an error or success style.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `variant` | `"error" \| "success"` | ✓ | — | Visual style and implicit ARIA role |
+| `children` | `Snippet` | ✓ | — | Content rendered inside the banner |
+| `role` | `string` | | `"alert"` for errors, `"status"` for success | Overrides the implicit ARIA role |
+| `testId` | `string` | | — | Sets `data-testid` for test selection |
+| `class` | `string` | | — | Additional Tailwind classes appended to the wrapper |
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import AlertBanner from "./ui/AlertBanner.svelte";
+  let errorMessage = $state<string | null>(null);
+</script>
+
+{#if errorMessage}
+  <AlertBanner variant="error">{errorMessage}</AlertBanner>
+{/if}
+```
+
+The `variant` value controls both the colour scheme and the default ARIA `role`: `"error"` maps to `role="alert"` (announces immediately in screen readers) and `"success"` maps to `role="status"` (polite announcement). Override with the `role` prop when the default is not appropriate.
+
+---
+
+### `BookCard.svelte`
+
+Renders a single book as a card tile: cover art if available, falling back to a placeholder icon, with the title and publisher below.
+
+**Props:**
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `book` | `BookSummary` | ✓ | The book object to display (imported from `src/types.ts`) |
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import BookCard from "./ui/BookCard.svelte";
+  import type { BookSummary } from "../types";
+
+  let book: BookSummary = …;
+</script>
+
+<BookCard {book} />
+```
+
+`BookCard` is a pure display component — it emits no events and holds no internal state. Use it inside a grid or list layout; `BookList` composes `BookCard` internally.
+
+---
+
+### `BookList.svelte`
+
+A self-contained paginated book browser. It fetches a page of books via a caller-supplied callback, then renders them as either a grid of `BookCard` tiles or a compact table. Navigation between pages is handled internally.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `fetchBooks` | `(limit: number, offset: number) => Promise<PaginatedBooks>` | ✓ | — | Called whenever the page or page size changes. Use `api.listBooks` or `api.listLibraryBooks` as the value. |
+| `pageSize` | `number` | | `24` | Number of books per page. Clamped to `[1, 200]` at runtime. |
+
+**Internal state exposed to the template (not props):**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `books` | `BookSummary[]` | Current page of book objects |
+| `total` | `number` | Total books across all pages (from the API) |
+| `loading` | `boolean` | `true` while a fetch is in flight |
+| `error` | `string \| null` | Error message from the most recent failed fetch |
+| `viewMode` | `"grid" \| "table"` | User-selected display mode; toggle buttons are rendered by the component |
+
+**Usage — all books:**
+
+```svelte
+<script lang="ts">
+  import BookList from "./ui/BookList.svelte";
+  import * as api from "../lib/api";
+</script>
+
+<BookList fetchBooks={api.listBooks} />
+```
+
+**Usage — books within a specific library:**
+
+```svelte
+<script lang="ts">
+  import BookList from "../ui/BookList.svelte";
+  import * as api from "../../lib/api";
+
+  let { libraryId }: { libraryId: string } = $props();
+</script>
+
+<BookList fetchBooks={(limit, offset) => api.listLibraryBooks(libraryId, limit, offset)} />
+```
+
+> **Tip:** When binding a library-scoped `fetchBooks`, wrap `api.listLibraryBooks` in an arrow function so that `libraryId` is captured by the closure. `BookList` resets to page 1 whenever the `fetchBooks` prop reference changes, so switching libraries automatically resets pagination.
+
+**Pagination behaviour:**
+
+- On mount and whenever `fetchBooks` or `pageSize` changes, `offset` resets to `0` and a fresh fetch is triggered.
+- If items are deleted and the current page becomes empty (but earlier pages still have items), `BookList` automatically clamps back to the last valid page.
+- Stale responses from superseded fetches are silently discarded via an internal request-ID counter.
+
+---
+
 ## Settings component architecture
 
 `Settings.svelte` is a shell that owns shared state (admin flag, OIDC config) and renders one tab at a time. Each tab is a standalone sub-component in `frontend/src/components/settings/`.
