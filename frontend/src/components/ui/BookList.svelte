@@ -21,7 +21,6 @@
   let error: string | null = $state(null);
   let viewMode: "grid" | "table" = $state("grid");
   let currentRequestId = 0;
-  const prev = { fetchBooks: null as typeof fetchBooks | null, pageSize: 0 };
 
   let totalPages = $derived(Math.max(1, Math.ceil(total / effectivePageSize)));
   let currentPage = $derived(Math.floor(offset / effectivePageSize) + 1);
@@ -51,19 +50,16 @@
     }
   }
 
+  // Reset offset when the data source or page size changes
   $effect(() => {
-    const _fetchBooks = fetchBooks;
-    const _pageSize = effectivePageSize;
+    fetchBooks;
+    effectivePageSize;
+    offset = 0;
+  });
 
-    // Reset offset when the data source or page size changes
-    if (_fetchBooks !== prev.fetchBooks || _pageSize !== prev.pageSize) {
-      prev.fetchBooks = _fetchBooks;
-      prev.pageSize = _pageSize;
-      offset = 0;
-    }
-
-    const _offset = offset;
-    load(_fetchBooks, _pageSize, _offset);
+  // Load books whenever offset, page size, or fetch fn changes
+  $effect(() => {
+    load(fetchBooks, effectivePageSize, offset);
   });
 
   function prevPage() {
