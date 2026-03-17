@@ -71,6 +71,19 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/opds", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
 	s.mux.Handle("/opds/", s.requireOPDSAuth(http.HandlerFunc(s.opdsHandler.HandleOPDS)))
 
+	// KOSync credential management (JWT-only: credential management)
+	s.mux.Handle("/api/kosync/credentials", s.requireJWTAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncCredentials)))
+
+	// KOReader kosync-compatible progress sync endpoints.
+	// POST /api/user/create — KOReader always tries to register; we return 409 so
+	// it falls through to /api/user/auth.  Users set up credentials via the web UI.
+	s.mux.HandleFunc("/api/user/create", s.kosyncHandler.HandleKOSyncUserCreate)
+	// GET /api/user/auth — verified by the KOSync header auth middleware.
+	s.mux.Handle("/api/user/auth", s.requireKOSyncAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncUserAuth)))
+	// PUT /api/syncs/progress and GET /api/syncs/progress/{document}.
+	s.mux.Handle("/api/syncs/progress", s.requireKOSyncAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncProgress)))
+	s.mux.Handle("/api/syncs/progress/", s.requireKOSyncAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncProgress)))
+
 	// Protected API key routes (JWT-only: API keys cannot manage other API keys)
 	s.mux.Handle("/api/api-keys", s.requireJWTAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKeys)))
 	s.mux.Handle("/api/api-keys/", s.requireJWTAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKey)))
