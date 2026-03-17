@@ -34,16 +34,60 @@ timeout-minutes: 15
 
 steps:
   - name: Checkout repository
-    uses: actions/checkout@v4
+    uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
     with:
       fetch-depth: 0
-      persist-credentials: false
+      persist-credentials: false    
+
+  - name: Set up Node.js
+    uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+    with:
+      node-version: "20"
+
+  - name: Install pnpm
+    uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
+    with:
+      version: 10.32.1
+
+  - name: Install frontend dependencies
+    working-directory: ./frontend
+    run: pnpm install --frozen-lockfile
+
+  - name: Build frontend
+    working-directory: ./frontend
+    run: pnpm run build
+
+  - name: Set up Go
+    uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+    with:
+      go-version: 1.26.1
+      cache: true
+      cache-dependency-path: go.sum
+
+  - name: Build Go binary
+    run: go build -o biblioteka ./cmd/server    
+
   - name: Build and run app in background
     run: |
       # This step should set up the runtime environment for your app, 
       # including installing any necessary dependencies, and it should
-      # start your app in the background (e.g., using `&` at the end of the command).
+      # start your app in server-only mode in the background (e.g., using `&` at the end of the command).
       echo "Building and running the app in background..."
+      PORT=3000 JWT_SECRET=github-actions ./biblioteka -mode server &
+      echo "Waiting for server to be ready..."
+      server_ready=false
+      for i in $(seq 1 30); do
+        echo "Checking if server is up (attempt $i)..."
+        if curl -sf http://localhost:3000/api/health; then
+          server_ready=true
+          break
+        fi
+        sleep 1
+      done
+      if [ "$server_ready" = false ]; then
+        echo "Error: server did not become ready at http://localhost:3000/api/health within 30 seconds."
+        exit 1
+      fi
 source: githubnext/agentics/workflows/daily-accessibility-review.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
 engine: copilot
 ---
