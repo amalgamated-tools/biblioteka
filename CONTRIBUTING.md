@@ -66,6 +66,7 @@ internal/
   telemetry/         # Anonymous usage telemetry (opt-in)
   testutils/         # Test helpers: MakeTestEPUB, MakeTestPDF (used in _test.go files only)
 frontend/            # Svelte 5 SPA (TypeScript + Tailwind CSS)
+e2e/                 # Playwright end-to-end tests
 db/
   schema.sql         # Reference schema
   migrations/        # sqlite/ and postgres/ migration directories
@@ -86,6 +87,35 @@ go test ./internal/handlers/
 # Frontend tests
 cd frontend && pnpm run test
 ```
+
+#### End-to-end tests (`e2e/`)
+
+The `e2e/` directory contains [Playwright](https://playwright.dev/) browser tests that exercise the full application stack. They require a compiled binary — build it first, then run the tests from the `e2e/` directory:
+
+```bash
+# 1. Build the Go binary (frontend is embedded at build time)
+go build -o biblioteka ./cmd/server
+
+# 2. Install e2e dependencies and Playwright browsers (first time only)
+cd e2e && pnpm install && pnpm exec playwright install chromium
+
+# 3. Run e2e tests
+pnpm test
+```
+
+Playwright automatically starts the server on port `3847` for the duration of the test run using the binary from step 1. Screenshots are saved on failure; traces are captured on the first retry.
+
+To re-run only failed tests or a specific file:
+
+```bash
+# Run a specific test file
+pnpm exec playwright test tests/auth.spec.ts
+
+# Run in headed mode to watch the browser
+pnpm exec playwright test --headed
+```
+
+> **Note:** When `CI=true` (set automatically in GitHub Actions), Playwright always starts a fresh server. Locally, it reuses a running server on port `3847` if one is already available.
 
 #### Test helpers (`internal/testutils`)
 
@@ -224,6 +254,21 @@ Because `frontend-checks` and `go-tests` run in parallel, total CI time is rough
 Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: 'pnpm'`, keyed on `frontend/pnpm-lock.yaml`) to avoid re-downloading the dependency tree on every run.
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
+
+### E2E workflow (`.github/workflows/e2etest.yml`)
+
+The E2E workflow runs on every push and pull request targeting `main` or `develop`. It builds the full application and then executes the Playwright test suite:
+
+```
+build ──► e2e (Playwright / Chromium)
+```
+
+| Job | Depends on | What it does |
+|---|---|---|
+| `build` | — | Installs pnpm deps, builds the frontend, compiles the Go binary, uploads it as the `biblioteka-binary` artifact |
+| `e2e` | `build` | Downloads the binary, installs Playwright + Chromium, runs `pnpm test` against a live server on port `3847` |
+
+On completion, the `playwright-report/` artifact is uploaded and retained for **7 days**, giving you screenshots and traces for any failures.
 
 ## Commit Messages
 
