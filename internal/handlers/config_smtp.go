@@ -80,20 +80,11 @@ func (h *ConfigHandler) handleGetSMTPConfig(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(h.DB, w, r) {
+		return
+	}
+
 	userID := auth.UserIDFromContext(r.Context())
-	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status",
-			slog.String(otelkeys.UserID, userID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
-		return
-	}
-	if !isAdmin {
-		writeError(r.Context(), w, http.StatusForbidden, "only the admin user can change this setting")
-		return
-	}
 
 	var req setSMTPConfigRequest
 	if !decodeJSON(r, w, &req) {
@@ -197,20 +188,9 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status",
-			slog.String(otelkeys.UserID, userID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
+	if !requireAdmin(h.DB, w, r) {
 		return
 	}
-	if !isAdmin {
-		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
-		return
-	}
-
 	user, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to get user", slog.Any(otelkeys.Error, err))
