@@ -1,5 +1,6 @@
 import type { User } from "../types";
 import * as api from "../lib/api";
+import { ApiError } from "../lib/api";
 
 class AuthStore {
   user: User | null = $state(null);
@@ -30,10 +31,13 @@ class AuthStore {
     // localStorage token (normal login/signup) or an HttpOnly cookie (OIDC).
     try {
       this.user = await api.getMe();
-    } catch {
-      // If a localStorage token was sent and rejected, clear it and
-      // retry — a valid HttpOnly cookie may still authenticate.
-      if (api.hasToken()) {
+    } catch (err) {
+      // Only clear the localStorage token on auth rejection (401/403).
+      // Transient failures (network errors, 5xx) should not discard a
+      // potentially valid token.
+      const isAuthError =
+        err instanceof ApiError && (err.status === 401 || err.status === 403);
+      if (isAuthError && api.hasToken()) {
         api.clearToken();
         try {
           this.user = await api.getMe();
