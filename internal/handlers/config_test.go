@@ -9,6 +9,8 @@ import (
 	"net/http/httptest"
 	"net/smtp"
 	"testing"
+
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 )
 
 // setupConfigHandler creates a ConfigHandler with a test DB, an admin user, and
@@ -745,6 +747,62 @@ func TestHandleSetSMTPConfig_DefaultsPortAndTLS(t *testing.T) {
 	tlsMode, _ := h.DB.GetSetting(context.Background(), settingSMTPTLS)
 	if tlsMode != "starttls" {
 		t.Errorf("default tls = %q, want %q", tlsMode, "starttls")
+	}
+}
+
+func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	ctx := context.Background()
+	existing := []db.Setting{
+		{Key: settingSMTPHost, Value: "old.example.com"},
+		{Key: settingSMTPPort, Value: "587"},
+		{Key: settingSMTPUsername, Value: "old-user"},
+		{Key: settingSMTPPassword, Value: "old-secret"},
+		{Key: settingSMTPFrom, Value: "old@example.com"},
+		{Key: settingSMTPTLS, Value: "starttls"},
+	}
+	for _, setting := range existing {
+		if err := h.DB.SetSetting(ctx, setting.Key, setting.Value); err != nil {
+			t.Fatalf("SetSetting(%s): %v", setting.Key, err)
+		}
+	}
+
+	if _, err := h.DB.ExecContext(ctx, fmt.Sprintf(`
+		CREATE TRIGGER test_settings_fail_smtp_username_update
+		BEFORE UPDATE ON settings
+		WHEN NEW.key = '%s'
+		BEGIN
+			SELECT RAISE(FAIL, 'forced smtp save failure');
+		END;
+	`, settingSMTPUsername)); err != nil {
+		t.Fatalf("create trigger: %v", err)
+	}
+	t.Cleanup(func() {
+		if _, err := h.DB.ExecContext(ctx, `DROP TRIGGER IF EXISTS test_settings_fail_smtp_username_update`); err != nil {
+			t.Fatalf("drop trigger: %v", err)
+		}
+	})
+
+	body := `{"host":"smtp.example.com","port":"465","username":"user@example.com","password":"secret","from":"noreply@example.com","tls":"tls"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusInternalServerError, w.Body.String())
+	}
+
+	for _, setting := range existing {
+		value, err := h.DB.GetSetting(ctx, setting.Key)
+		if err != nil {
+			t.Fatalf("GetSetting(%s): %v", setting.Key, err)
+		}
+		if value != setting.Value {
+			t.Errorf("setting %s = %q, want %q after rollback", setting.Key, value, setting.Value)
+		}
 	}
 }
 
