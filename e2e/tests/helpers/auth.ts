@@ -32,6 +32,8 @@ export function getAuthErrorBanner(page: Page) {
 }
 
 export async function openAuthPage(page: Page): Promise<void> {
+  page.setDefaultTimeout(DEFAULT_TIMEOUT_MS);
+  page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
   await page.goto(`/`, {
     waitUntil: "networkidle",
     timeout: NAVIGATION_TIMEOUT_MS,
@@ -46,9 +48,6 @@ export async function openSignupForm(page: Page): Promise<void> {
 }
 
 export async function signUp(page: Page, user: TestUser): Promise<void> {
-  page.setDefaultTimeout(DEFAULT_TIMEOUT_MS);
-  page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
-
   await openSignupForm(page);
   await page.locator("input#name").fill(user.displayName);
   await page.locator("input#email").fill(user.email);
