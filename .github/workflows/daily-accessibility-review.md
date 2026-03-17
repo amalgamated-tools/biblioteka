@@ -47,7 +47,7 @@ steps:
   - name: Install pnpm
     uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
     with:
-      version: 10
+      version: 10.32.1
 
   - name: Install frontend dependencies
     working-directory: ./frontend
@@ -74,6 +74,12 @@ steps:
       # start your app in server-only mode in the background (e.g., using `&` at the end of the command).
       echo "Building and running the app in background..."
       PORT=3000 JWT_SECRET=github-actions ./biblioteka -mode server &
+      echo "Waiting for server to be ready..."
+      for i in $(seq 1 30); do
+        echo "Checking if server is up (attempt $i)..."
+        curl -sf http://localhost:3000/api/health && break
+        sleep 1
+      done
 source: githubnext/agentics/workflows/daily-accessibility-review.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
 engine: copilot
 ---

@@ -44,6 +44,7 @@ jobs:
       - name: Build Go binary
         run: go build -o biblioteka ./cmd/server
 
+      # We only upload the biblioteka binary because the frontend assets are already included in the binary via go:embed, so we don't need to upload the entire frontend build output.  
       - name: Upload binary
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
