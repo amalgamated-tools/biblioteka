@@ -45,11 +45,12 @@ frontend/
     lib/
       api.ts            Centralised API client
       api.test.ts       API client unit tests
+  vite.config.ts      Vite configuration: build output, dev proxy, Vitest setup, and the restoreGitkeep plugin
 ```
 
 ## Reactive stores
 
-All global state is managed through **Svelte 5 reactive class stores** in `frontend/src/stores/`. Each store is a class whose properties are declared with `$state` (or `$state.raw` for array collections), and a singleton instance is exported for use throughout the application.
+All global state is managed through **Svelte 5 reactive class stores** in `frontend/src/stores/`. Each store is a class whose properties are declared with `$state` (for scalar values and nullable objects) or `$state.raw` (for array properties that are replaced wholesale on fetch), and a singleton instance is exported for use throughout the application.
 
 ### Pattern
 
@@ -59,7 +60,10 @@ import type { Foo } from "../types";
 import * as api from "../lib/api";
 
 class ExampleStore {
-  items: Foo[] = $state.raw([]);   // $state.raw for arrays — avoids deep reactivity overhead
+  // $state.raw for arrays: tracks only the reference, not contents.
+  // Avoids deep-proxy overhead and suppresses Svelte's mutation warnings
+  // when the array is replaced wholesale.
+  items: Foo[] = $state.raw([]);
   loading = $state(false);
   loaded  = $state(false);
 
@@ -74,6 +78,9 @@ export const exampleStore = new ExampleStore();
 
 > **Why classes instead of writable stores?**  
 > Svelte 5 introduces fine-grained reactivity via `$state` runes. Using a class groups related state and methods together and makes the reactive surface explicit. It is the idiomatic Svelte 5 approach and replaces the `writable`/`readable` store API from Svelte 4.
+
+> **`$state` vs `$state.raw`**  
+> Use `$state` for scalar values (booleans, strings, numbers) and nullable object references (e.g. `user: User | null = $state(null)`). Use `$state.raw` for array properties that are replaced wholesale on every fetch — `$state.raw` tracks only the reference, not the contents of the array. This prevents Svelte from creating a deep reactive proxy over the list items, which avoids unnecessary overhead and eliminates the _"state mutated outside a reactive context"_ console warning that would appear when assigning a new array to a `$state`-annotated property from inside an `async` method.
 
 ### Available stores
 
@@ -192,7 +199,7 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 ## Adding a new store
 
 1. Create `frontend/src/stores/<name>.svelte.ts`.
-2. Define a class with `$state` / `$state.raw` properties.
+2. Define a class with `$state` / `$state.raw` properties. Use `$state.raw` for array properties and `$state` for scalars and nullable objects (see the [`$state` vs `$state.raw`](#reactive-stores) note above).
 3. Export a singleton: `export const myStore = new MyStore();`.
 4. Add an entry for the new store in the table above.
 
@@ -336,6 +343,26 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 
 `Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data. The SMTP tab is the exception: its state and logic live directly in `Settings.svelte` rather than in a dedicated sub-component.
 
+### One-time prop initialisation (`svelte-ignore state_referenced_locally`)
+
+Some settings tabs receive initial values from `Settings.svelte` as props and then manage those values as **local state** for the duration of the tab's lifetime. Because the values are not expected to react to future prop changes (the parent passes them once at mount), the tabs use `$state(initialProp)` to seed local state:
+
+```svelte
+<script lang="ts">
+  interface Props {
+    initialIssuerUrl?: string;
+    // …
+  }
+  let { initialIssuerUrl = "" }: Props = $props();
+
+  // One-time initialisation – this prop is not expected to change after mount.
+  // svelte-ignore state_referenced_locally
+  let issuerUrl = $state(initialIssuerUrl);
+</script>
+```
+
+Svelte 5 emits a `state_referenced_locally` warning for this pattern because the resulting `$state` variable does not track updates to the prop — it captures the value at creation time only. The `// svelte-ignore state_referenced_locally` comment suppresses the warning when this one-time seeding is **intentional**. Do not use this suppression for state that should reactively follow a prop; use `$derived` or `$effect` instead.
+
 ### Adding a new settings tab
 
 1. Create `frontend/src/components/settings/MyTab.svelte`.
@@ -344,6 +371,25 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 4. Import and render `<MyTab />` inside the `{#if activeTab === "my-tab"}` block in `Settings.svelte`.
 5. Add a navigation `<button>` in `Settings.svelte`'s sidebar `<nav>`, wrapped in `{#if isAdmin}` if the tab is admin-only.
 6. Update the table above.
+
+## Build configuration (`vite.config.ts`)
+
+The frontend build is configured in `frontend/vite.config.ts`. Key settings:
+
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| `build.outDir` | `../internal/server/dist` | Output is written into the Go module so it can be embedded in the binary |
+| `build.emptyOutDir` | `true` | Clears the output directory before each build to avoid stale assets |
+| `server.proxy["/api"]` | `http://localhost:8080` | Forwards API requests to the Go backend during `pnpm run dev` |
+| `test.environment` | `jsdom` | Vitest tests run in a browser-like DOM environment |
+
+### `restoreGitkeep` plugin
+
+`internal/server/dist/` is tracked by Git (via a `.gitkeep` file) so that the Go `//go:embed` directive always has a valid directory to embed — even on a clean checkout before the frontend has been built. Vite's `emptyOutDir: true` deletes the entire directory contents on each build, which would remove `.gitkeep` and break the embed on the next clean checkout.
+
+The custom `restoreGitkeep()` Vite plugin, defined at the top of `vite.config.ts`, runs after the bundle is written (`closeBundle` hook) and recreates the empty `.gitkeep` file. This keeps Git happy without requiring a manual post-build step.
+
+> **Do not remove** the `restoreGitkeep()` call from the `plugins` array. Without it, `go build` will fail on any checkout where the frontend has not been built, because the embedded directory will be missing.
 
 ## Linting and type-checking
 
