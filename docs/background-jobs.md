@@ -61,9 +61,11 @@ Enqueues a `scan:path` job for every path in the library.
 |---|---|
 | **Source** | `internal/jobs/scan_path.go` — `NewScanPathHandler` |
 | **Trigger** | Enqueued by `scan:library` |
-| **Payload** | `{ "path": "/books" }` |
+| **Payload** | `{ "path": "/books", "library_id": "<uuid>", "library_root": "/books" }` |
 
 Recursively walks the directory and enqueues a `process:file` job for every file with a supported extension (`.epub`, `.mobi`, `.pdf`, `.azw3`). Inaccessible files are logged as warnings and skipped.
+
+The `library_id` and `library_root` fields are optional, but `scan:library` always populates them. When present, they are forwarded verbatim to each `process:file` payload so the file handler can (a) associate the book with the correct library and (b) derive author, title, and series information from the file's path relative to the library root (see [Path-based metadata](#path-based-metadata) below).
 
 ### `process:file`
 
