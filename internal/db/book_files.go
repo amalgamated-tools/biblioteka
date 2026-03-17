@@ -84,6 +84,15 @@ func (d *DB) ListBookFiles(ctx context.Context, bookID string) ([]BookFile, erro
 	return files, rows.Err()
 }
 
+// GetBookFileByPath returns a book file by its file path, or sql.ErrNoRows if not found.
+func (d *DB) GetBookFileByPath(ctx context.Context, filePath string) (*BookFile, error) {
+	slog.DebugContext(ctx, "db: fetching book file by path", slog.String(otelkeys.Path, filePath))
+	return scanBookFile(d.QueryRowContext(ctx,
+		`SELECT `+bookFileColumns+` FROM book_files WHERE file_path = $1`,
+		filePath,
+	))
+}
+
 // DeleteBookFile removes a book file by ID.
 func (d *DB) DeleteBookFile(ctx context.Context, id string) error {
 	slog.DebugContext(ctx, "db: deleting book file", slog.String(otelkeys.ID, id))

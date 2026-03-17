@@ -5,11 +5,15 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-var ErrSeriesNameExists = errors.New("series name already exists")
+var (
+	ErrSeriesNameExists  = errors.New("series name already exists")
+	ErrInvalidSeriesName = errors.New("invalid series name")
+)
 
 type Series struct {
 	ID            string    `json:"id"`
@@ -33,6 +37,10 @@ func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
 }
 
 func (d *DB) CreateSeries(ctx context.Context, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, ErrInvalidSeriesName
+	}
 	slog.DebugContext(ctx, "db: creating series", slog.String(otelkeys.Name, name))
 	s, err := scanSeries(d.QueryRowContext(ctx,
 		`INSERT INTO series (name, goodreads_id, hardcover_id, google_books_id) VALUES ($1, $2, $3, $4) RETURNING `+seriesColumns,
@@ -117,6 +125,10 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 }
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, ErrInvalidSeriesName
+	}
 	slog.DebugContext(ctx, "db: updating series",
 		slog.String(otelkeys.ID, id),
 		slog.String(otelkeys.Name, name),
@@ -132,6 +144,39 @@ func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, har
 		return nil, err
 	}
 	return s, nil
+}
+
+// FindOrCreateSeries looks up a series by name (case-insensitive) and returns
+// it, creating a new one if it doesn't exist. Handles concurrent insert races
+// gracefully.
+func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, ErrInvalidSeriesName
+	}
+	slog.DebugContext(ctx, "db: find or create series", slog.String(otelkeys.Name, name))
+	s, err := scanSeries(d.QueryRowContext(ctx,
+		`SELECT `+seriesColumns+` FROM series WHERE LOWER(name) = LOWER($1)`,
+		name,
+	))
+	if err == nil {
+		return s, nil
+	}
+	if err != sql.ErrNoRows {
+		return nil, err
+	}
+	s, err = d.CreateSeries(ctx, name, nil, nil, nil)
+	if err == nil {
+		return s, nil
+	}
+	if err != ErrSeriesNameExists {
+		return nil, err
+	}
+	// Concurrent insert won the race — fetch with case-insensitive match.
+	return scanSeries(d.QueryRowContext(ctx,
+		`SELECT `+seriesColumns+` FROM series WHERE LOWER(name) = LOWER($1)`,
+		name,
+	))
 }
 
 func (d *DB) DeleteSeries(ctx context.Context, id string) error {
