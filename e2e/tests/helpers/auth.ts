@@ -1,9 +1,9 @@
 import { expect, type Page } from "@playwright/test";
 
 export const AUTH_ERROR_TEST_ID = "auth-error";
-export const DEFAULT_TIMEOUT_MS = Number(process.env.SCREENSHOT_TIMEOUT_MS || 5000);
+export const DEFAULT_TIMEOUT_MS = Number(process.env.E2E_TIMEOUT_MS || 5000);
 export const NAVIGATION_TIMEOUT_MS = Number(
-  process.env.SCREENSHOT_NAVIGATION_TIMEOUT_MS || 5000,
+  process.env.E2E_NAVIGATION_TIMEOUT_MS || 5000,
 );
 
 export interface TestUser {
@@ -39,10 +39,7 @@ export async function openSignupForm(page: Page): Promise<void> {
   await openAuthPage(page);
   await page.getByRole("button", { name: "Sign Up", exact: true }).click();
   await page.waitForSelector("input#name");
-  await page.waitForFunction(() => {
-    const btn = document.querySelector("button[type='submit']");
-    return btn?.textContent?.trim() === "Create Account";
-  });
+  await page.getByRole("button", { name: "Create Account" }).waitFor();
 }
 
 export async function signUp(page: Page, user: TestUser): Promise<void> {
