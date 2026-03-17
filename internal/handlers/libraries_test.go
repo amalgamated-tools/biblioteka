@@ -50,6 +50,9 @@ func setupLibraryHandler(t *testing.T) (*LibraryHandler, string, string) {
 	if err != nil {
 		t.Fatalf("create admin: %v", err)
 	}
+	if err := d.SetAdmin(context.Background(), admin.ID, true); err != nil {
+		t.Fatalf("set admin role: %v", err)
+	}
 	regular, err := d.CreateUser(context.Background(), "Regular", "regular@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create regular user: %v", err)
