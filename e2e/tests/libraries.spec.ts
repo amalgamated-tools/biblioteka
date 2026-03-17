@@ -14,15 +14,15 @@ test.describe("Library management", () => {
     await page.getByRole("button", { name: "Add Your First Library" }).click();
     await expect(page.getByRole("heading", { name: "Create Library" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Create Library" }).click();
+    await page.locator("form").getByRole("button", { name: "Create Library" }).click();
     await expect(page.getByText("Name is required")).toBeVisible();
 
     await page.locator("#lib-name").fill(libraryName);
-    await page.getByRole("button", { name: "Create Library" }).click();
+    await page.locator("form").getByRole("button", { name: "Create Library" }).click();
     await expect(page.getByText("At least one folder is required")).toBeVisible();
 
     await page.locator("input[placeholder='/path/to/books']").first().fill(firstPath);
-    await page.getByRole("button", { name: "Create Library" }).click();
+    await page.locator("form").getByRole("button", { name: "Create Library" }).click();
 
     await expect(page).toHaveURL(/\/#libraries\/[^/]+$/);
     await expect(page.getByRole("heading", { name: libraryName })).toBeVisible();
