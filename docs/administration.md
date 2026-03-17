@@ -318,6 +318,56 @@ See [API reference — SMTP config endpoints](api-reference.md#get-apiconfigsmtp
 
 ---
 
+## File Organization
+
+Biblioteka can automatically move imported book files into a canonical `Author/Title/` directory structure under each library root. This keeps your collection tidy and makes paths predictable.
+
+### Enabling file organization
+
+Set the `organize_files` application setting to `"true"` via the API (admin required):
+
+```bash
+curl -X PUT http://localhost:8080/api/settings/organize_files \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "true"}'
+```
+
+Disable it again by setting the value to any other string (or deleting the setting):
+
+```bash
+curl -X PUT http://localhost:8080/api/settings/organize_files \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "false"}'
+```
+
+### How it works
+
+When `organize_files` is `"true"` and a `process:file` job has a `library_root` in its payload, the handler moves each imported file to:
+
+```
+<library_root>/<Author>/<Title>/<filename>
+```
+
+The author and title come from embedded file metadata when available, falling back to values parsed from the file's existing directory structure (see [Path-based metadata](background-jobs.md#path-based-metadata)).
+
+**Behaviour details:**
+
+- Directory names are sanitized: path separators (`/`, `\`), control characters, colons, wildcards, and leading dots are removed.
+- The move uses `os.Rename` when source and destination are on the same filesystem. A copy-then-delete falls back for cross-filesystem moves; source file permissions and modification time are preserved.
+- Empty source directories left behind after a move are removed automatically (up to but not including the library root).
+- If a file already exists at the target path, the handler skips the move and logs a warning — it never silently overwrites existing files.
+- If reorganization fails for any reason, the handler logs a warning and continues processing the file at its original path. The import still completes; only the file location is affected.
+
+### Path-parsing and series inference
+
+Even when `organize_files` is disabled, Biblioteka parses each file's path relative to the library root to extract author, title, series, and publication year from the directory structure. This path-derived metadata supplements (but does not override) embedded file metadata.
+
+For full details on the supported directory layouts and precedence rules, see [Background Jobs — Path-based metadata](background-jobs.md#path-based-metadata).
+
+---
+
 ## Health Check
 
 Use the health endpoint to verify the server is running:

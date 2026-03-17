@@ -71,21 +71,67 @@ Recursively walks the directory and enqueues a `process:file` job for every file
 |---|---|
 | **Source** | `internal/jobs/process_file.go` — `NewProcessFileHandler` |
 | **Trigger** | Enqueued by `scan:path` |
-| **Payload** | `{ "path": "/books/novel.epub", "file_name": "novel.epub", "file_type": "epub", "file_size": 524288 }` |
+| **Payload** | `{ "path": "/books/novel.epub", "file_name": "novel.epub", "file_type": "epub", "file_size": 524288, "library_id": "<uuid>", "library_root": "/books" }` |
+
+The `library_id` and `library_root` fields are optional. When `library_root` is present, the handler also derives metadata from the file's directory structure (see [Path-based metadata](#path-based-metadata) below).
 
 Creates a `book` record and a `book_file` record in the database. The `process:file` handler runs `internal/metadata.Extractor.ExtractMetadata` on every imported file and uses the result to populate the book record:
 
 | Extracted field | Stored as | Notes |
 |----------------|-----------|-------|
-| `Title` | `books.title` | Falls back to filename without extension |
+| `Title` | `books.title` | Falls back to path-derived title, then filename without extension |
 | `ISBN` (10 or 13 digits) | `books.isbn_10` / `books.isbn_13` | Not stored when absent |
 | `Description` (when non-empty) | `books.description` | EPUB only |
 | `Publisher` (when non-empty) | `books.publisher` | EPUB only |
 | `Language` (when non-empty) | `books.language` | EPUB only |
 | `PublicationDate` (when non-empty) | `books.publication_date` | EPUB only |
-| `Author` (when non-empty) | `authors` + `book_authors` join | The extracted name is whitespace-normalized (trimmed, internal runs collapsed). An existing author is looked up **case-insensitively** (`"J.R.R. Tolkien"` and `"j.r.r. tolkien"` match the same record). If no match is found, a new author record is created. If a concurrent worker creates the same author first, the handler retries the lookup rather than failing. If association fails after the book record is already committed, the failure is logged as a warning and does **not** fail the job (preventing duplicate book records on retry). |
+| `Author` (when non-empty) | `authors` + `book_authors` join | The extracted name is whitespace-normalized (trimmed, internal runs collapsed). An existing author is looked up **case-insensitively** (`"J.R.R. Tolkien"` and `"j.r.r. tolkien"` match the same record). If no match is found, a new author record is created. If a concurrent worker creates the same author first, the handler retries the lookup rather than failing. If association fails after the book record is already committed, the failure is logged as a warning and does **not** fail the job (preventing duplicate book records on retry). Falls back to path-derived author when the embedded value is absent or `"Unknown"`. |
 
 `Format` is extracted but stored on the `book_files` record via the `file_type` payload field, not from the extractor output directly. If ExifTool is absent or extraction fails for any other reason, the job logs a warning and falls back to the filename-derived title. See [docs/metadata.md](metadata.md) for extraction details. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
+
+#### Path-based metadata
+
+When `library_root` is set in the payload, `internal/pathparser.ParseBookPath` extracts author, title, series name, series position, and publication year from the file's path relative to the library root. This runs for every file regardless of whether ExifTool is present.
+
+**Recognised directory layouts**
+
+| Pattern | Author | Title | Series |
+|---------|--------|-------|--------|
+| `Author/Title.ext` | `Author` dir | filename (stripped) | — |
+| `Author/N. Title (Year).ext` | `Author` dir | filename (stripped) | — |
+| `Author/Series/N. Title (Year).ext` | `Author` dir | filename (stripped) | `Series` dir |
+| `Author - Title/file.ext` | left of ` - ` | right of ` - ` | — |
+| `Author - Title.ext` | left of ` - ` | right of ` - ` | — |
+
+Key rules applied by the parser:
+- **Leading series-position prefix** (`N. `) is stripped from the filename to produce the bare title.
+- **Trailing `(YYYY)`** is parsed as publication year and removed from the title.
+- **Trailing ` - Author Name`** in filenames is stripped when the suffix looks like a personal name (two to four capitalised words, no digits). Single-word suffixes are kept to avoid corrupting subtitles.
+- A directory is treated as a **series** only when the filename has a leading series-position prefix **and** the directory name is not effectively the same as the parsed title (to avoid phantom series from Calibre-style `Author/Title/file.ext` layouts).
+- Paths outside `library_root` fall back to filename-only parsing.
+
+**Metadata precedence** (highest to lowest):
+
+1. Embedded file metadata (ExifTool) — used when present and non-empty
+2. Path-derived metadata (`pathparser`) — fills gaps left by step 1 (author falls back when value is absent or `"Unknown"`)
+3. Filename without extension — last resort for title
+
+#### File reorganization
+
+When both `library_root` is set and the `organize_files` database setting equals `"true"`, the handler moves the file into a canonical `Author/Title/` directory structure under the library root after resolving the author name and title:
+
+```
+<library_root>/<Author>/<Title>/<filename>
+```
+
+Directory names are sanitized (path separators, control characters, and leading dots removed). The move uses `os.Rename` when source and destination are on the same filesystem, falling back to copy-then-delete for cross-filesystem moves. Intermediate empty source directories are removed after a successful move.
+
+**Failure handling:**
+- If reorganization fails for any reason, the handler logs a warning and continues processing the file at its original path.
+- If the source file disappears during reorganization (indicating the file was already moved by a prior attempt), the job returns an error so asynq can retry.
+- After a successful move, the handler checks whether the new path is already indexed before creating new database records, preventing duplicates from concurrent workers.
+
+See [Administration — File organization](administration.md#file-organization) for how to enable this feature.
 
 ### Job Chain
 
@@ -130,14 +176,16 @@ Jobs enter the queue in two ways:
 
 API-triggered jobs call `Worker.Enqueue`, which serialises the payload to JSON and pushes an asynq task onto the `"default"` queue with the configured deduplication options. The root `scan:libraries` scheduled trigger is created directly by the asynq scheduler and does not go through `Worker.Enqueue`.
 
-### Deduplication limitations
+### Deduplication
 
-The 24-hour deduplication window is the **only** mechanism that prevents a file from being processed more than once. The `book_files` table has no `UNIQUE` constraint on `file_path`, and the `process:file` handler always creates a new book and book_file record without checking whether the file already exists in the database.
+The `book_files` table has a `UNIQUE` constraint on `file_path` (`idx_book_files_file_path`). If a `process:file` job tries to insert a `book_file` row for a path that is already indexed, the database rejects the insert and the handler skips creating a duplicate record. The handler also proactively checks whether the target path is already indexed before creating database records — both at the start of the job (when the original path already exists in the database) and after a file reorganization (in case a concurrent worker processed the same file first).
 
-This has two practical consequences:
+Additionally, the 24-hour asynq deduplication window (via `asynq.Unique(24*time.Hour)`) prevents the same job payload from being enqueued more than once within that window.
 
-- **Redis data loss** — If the Redis store is cleared or the server is restarted against a fresh Redis instance, the deduplication state is lost. A subsequent scan will re-process all files and create duplicate book and book_file entries.
-- **Files reachable from multiple paths** — If the same physical file is reachable under two different library paths, or under paths belonging to two separate libraries, each path produces a distinct job payload and both are processed independently, resulting in duplicate entries.
+**Remaining edge cases:**
+
+- **Files reachable from multiple paths** — If the same physical file is reachable under two different library paths (e.g. via symlinks or overlapping mounts), each path produces a distinct job payload with a different `file_path`. Both jobs can succeed and create separate `book_file` rows pointing at different paths on disk.
+- **Redis data loss** — If the Redis store is cleared or the server is restarted against a fresh Redis instance, the 24-hour deduplication window is reset. A subsequent scan may re-enqueue jobs for files already indexed; however, the database-level `UNIQUE(file_path)` constraint prevents new duplicate `book_file` rows from being created for files that have not moved.
 
 ## Monitoring Dashboard (Asynqmon)
 
@@ -166,6 +214,11 @@ internal/
     process_file.go            # process:file handler
     scan_path.go               # scan:path handler + Enqueuer interface
     scan_libraries.go          # scan:library & scan:libraries handlers
+    book_processor.go          # ProcessBookFile: metadata extraction, path parsing, organization logic
+  organize/
+    organize.go                # ReorganizeFile: moves files into Author/Title/ layout
+  pathparser/
+    pathparser.go              # ParseBookPath: extracts author/title/series/year from directory structure
   worker/
     worker.go                  # Worker struct: Register, Enqueue, Start, Close
 ```
