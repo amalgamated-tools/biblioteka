@@ -56,13 +56,12 @@ test.describe("Authentication flow", () => {
     await page.locator('button#logout-button').click();
     await page.waitForSelector('button#login-btn', { timeout: NAVIGATION_TIMEOUT_MS });
     // --- Sign out ---
-    await page.evaluate(() => {
-      localStorage.removeItem('biblioteka_token');
-    });
-    await page.goto(`/`, {
-      waitUntil: 'networkidle',
-      timeout: NAVIGATION_TIMEOUT_MS,
-    });
+    // Verify that the UI reflects a logged-out state and that auth token was cleared.
+    await page.waitForSelector('input#email');
+    await page.waitForSelector('input#password');
+    await page.waitForFunction(() => localStorage.getItem('biblioteka_token') === null);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL("/", { waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS });
 
 
     // Should be on main page

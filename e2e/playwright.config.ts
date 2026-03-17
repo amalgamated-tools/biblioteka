@@ -1,9 +1,5 @@
 import { defineConfig } from "@playwright/test";
-import { join } from "path";
-import { mkdtempSync } from "fs";
-import { tmpdir } from "os";
 
-const testTmpDir = mkdtempSync(join(tmpdir(), "biblioteka-e2e-"));
 const testPort = 3847;
 
 export default defineConfig({
