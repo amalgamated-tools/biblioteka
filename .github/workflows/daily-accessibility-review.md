@@ -17,11 +17,10 @@ network: defaults
 safe-outputs:
   mentions: false
   allowed-github-references: []
-  create-discussion:
-    title-prefix: "${{ github.workflow }}"
-    category: "q-a"
-    max: 5
-  add-comment:
+  create-issue:
+    title-prefix: "style(accessibility): "
+    labels: [a11y, automated-analysis]
+    assignees: copilot
     max: 5
 
 tools:
