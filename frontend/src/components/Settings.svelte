@@ -16,11 +16,13 @@
     Users,
     Send,
     KeyRound,
+    BookOpen,
   } from "lucide-svelte";
 
   const userTabs: { key: string; label: string; icon: typeof Mail }[] = [
     { key: "account", label: "Account", icon: Mail },
     { key: "api-keys", label: "API Keys", icon: KeyRound },
+    { key: "kobo", label: "Kobo Sync", icon: BookOpen },
     { key: "preferences", label: "Preferences", icon: Palette },
   ];
   import AccountTab from "./settings/AccountTab.svelte";
@@ -28,14 +30,9 @@
   import UsersTab from "./settings/UsersTab.svelte";
   import PreferencesTab from "./settings/PreferencesTab.svelte";
   import APIKeysTab from "./settings/APIKeysTab.svelte";
+  import KoboTab from "./settings/KoboTab.svelte";
 
-  type SettingsTab =
-    | "account"
-    | "preferences"
-    | "oidc"
-    | "smtp"
-    | "users"
-    | "api-keys";
+  type SettingsTab = "account" | "preferences" | "oidc" | "smtp" | "users" | "api-keys" | "kobo";
   const validTabs: SettingsTab[] = [
     "account",
     "preferences",
@@ -43,6 +40,7 @@
     "smtp",
     "users",
     "api-keys",
+    "kobo",
   ];
 
   let activeTab: SettingsTab = $derived(
@@ -545,6 +543,10 @@
 
       {#if activeTab === "api-keys"}
         <APIKeysTab />
+      {/if}
+
+      {#if activeTab === "kobo"}
+        <KoboTab />
       {/if}
 
       {#if activeTab === "preferences"}
