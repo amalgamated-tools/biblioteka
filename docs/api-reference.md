@@ -734,9 +734,16 @@ Delete a library. Returns `204 No Content`.
 
 ### `GET /api/libraries/{id}/books` 🔒
 
-List all books that belong to a specific library.
+List books that belong to a specific library, with pagination.
 
-**Response body (`200`):** JSON array of [book summary objects](#get-apibooks).
+**Query parameters:**
+
+| Parameter | Type    | Default | Description |
+|-----------|---------|---------|-------------|
+| `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
+| `offset`  | integer | `0`     | Number of books to skip |
+
+**Response body (`200`):** Paginated books object (same shape as [`GET /api/books`](#get-apibooks)).
 
 **Errors:**
 
@@ -925,32 +932,72 @@ Delete a series. Returns `204 No Content`.
 
 ### `GET /api/books` 🔒
 
-List all books (summary objects — no nested authors, series, or files).
+List books (summary objects — no nested authors, series, or files), with pagination.
 
-**Response body (`200`):** JSON array of book summary objects.
+**Query parameters:**
 
-**Book summary object:**
+| Parameter | Type    | Default | Description |
+|-----------|---------|---------|-------------|
+| `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
+| `offset`  | integer | `0`     | Number of books to skip |
+
+**Response body (`200`):** Paginated books object.
+
+| Field    | Type    | Description |
+|----------|---------|-------------|
+| `books`  | array   | Array of book summary objects for this page |
+| `total`  | integer | Total number of books across all pages |
+| `limit`  | integer | Effective limit used |
+| `offset` | integer | Effective offset used |
 
 ```json
 {
-  "id": "<id>",
-  "title": "Pride and Prejudice",
-  "description": null,
-  "asin": null,
-  "isbn10": null,
-  "isbn13": "978-0-14-143951-8",
-  "goodreads_id": null,
-  "hardcover_id": null,
-  "google_books_id": null,
-  "publication_date": "1813-01-28",
-  "publisher": "Penguin Classics",
-  "language": "en",
-  "num_pages": 432,
-  "cover_image_url": null,
-  "created_at": "2026-03-14T02:00:00Z",
-  "updated_at": "2026-03-14T02:00:00Z"
+  "books": [
+    {
+      "id": "<id>",
+      "title": "Pride and Prejudice",
+      "description": null,
+      "asin": null,
+      "isbn10": null,
+      "isbn13": "978-0-14-143951-8",
+      "goodreads_id": null,
+      "hardcover_id": null,
+      "google_books_id": null,
+      "publication_date": "1813-01-28",
+      "publisher": "Penguin Classics",
+      "language": "en",
+      "num_pages": 432,
+      "cover_image_url": null,
+      "created_at": "2026-03-14T02:00:00Z",
+      "updated_at": "2026-03-14T02:00:00Z"
+    }
+  ],
+  "total": 142,
+  "limit": 50,
+  "offset": 0
 }
 ```
+
+**Book summary object** fields:
+
+| Field              | Type    | Description |
+|--------------------|---------|-------------|
+| `id`               | string  | Opaque resource ID |
+| `title`            | string  | Book title |
+| `description`      | string\|null | Synopsis |
+| `asin`             | string\|null | Amazon ASIN |
+| `isbn10`           | string\|null | ISBN-10 |
+| `isbn13`           | string\|null | ISBN-13 |
+| `goodreads_id`     | string\|null | Goodreads book ID |
+| `hardcover_id`     | string\|null | Hardcover book ID |
+| `google_books_id`  | string\|null | Google Books ID |
+| `publication_date` | string\|null | ISO date (`YYYY-MM-DD`) |
+| `publisher`        | string\|null | Publisher name |
+| `language`         | string\|null | BCP 47 language tag |
+| `num_pages`        | integer\|null | Page count |
+| `cover_image_url`  | string\|null | Cover art URL |
+| `created_at`       | string  | ISO 8601 creation timestamp |
+| `updated_at`       | string  | ISO 8601 last-updated timestamp |
 
 ---
 
