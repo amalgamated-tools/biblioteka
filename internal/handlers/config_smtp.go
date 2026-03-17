@@ -187,10 +187,11 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := auth.UserIDFromContext(r.Context())
 	if !requireAdmin(h.DB, w, r) {
 		return
 	}
+
+	userID := auth.UserIDFromContext(r.Context())
 	user, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to get user", slog.Any(otelkeys.Error, err))
