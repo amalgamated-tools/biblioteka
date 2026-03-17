@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.7...v0.1.0) (2026-03-17)
+
+
+### Features
+
+* we don't need the extra indirection ([#264](https://github.com/amalgamated-tools/biblioteka/issues/264)) ([4f28c96](https://github.com/amalgamated-tools/biblioteka/commit/4f28c964181d405851e1fe1d6ef13af4a9155045))
+
+
+### Bug Fixes
+
+* **ci:** restore Daily File Diet agent execution ([#265](https://github.com/amalgamated-tools/biblioteka/issues/265)) ([9eff0af](https://github.com/amalgamated-tools/biblioteka/commit/9eff0af02f48e9d6dbf3c09e1bb9d3a7961c709d))
+* **frontend:** suppress Svelte state warnings and restore .gitkeep after build ([#285](https://github.com/amalgamated-tools/biblioteka/issues/285)) ([231cb84](https://github.com/amalgamated-tools/biblioteka/commit/231cb84ad9153824504c7ced71f938cf41c35589))
+
 ## [0.0.7](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.6...v0.0.7) (2026-03-17)
 
 
