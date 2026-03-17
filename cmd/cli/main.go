@@ -49,6 +49,11 @@ func main() {
 			}
 			err = runScanDirectory(ctx, os.Args[2], libraryID)
 		default:
+			if len(os.Args) >= 3 {
+				fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", cmd)
+				printUsage()
+				os.Exit(1)
+			}
 			// Backwards compatibility: treat first argument as a file path.
 			err = runProcessFile(ctx, cmd)
 		}
@@ -67,14 +72,13 @@ func pathExists(p string) bool {
 	if p == "" {
 		return false
 	}
-	if _, err := os.Stat(p); err != nil {
-		return !os.IsNotExist(err)
-	}
-	return true
+	_, err := os.Stat(p)
+	return err == nil
 }
 
 func printUsage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s <command> [arguments]\n\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s <command> [arguments]\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "       %s <file>                          (legacy) Process a single book file\n\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "Commands:\n")
 	fmt.Fprintf(os.Stderr, "  process-file <file>                    Process a single book file\n")
 	fmt.Fprintf(os.Stderr, "  scan-directory <directory> [library-id] Scan a directory and enqueue files for processing\n")
@@ -147,12 +151,18 @@ func runScanDirectory(ctx context.Context, path string, libraryID string) error 
 		return fmt.Errorf("failed to resolve path %q: %w", path, err)
 	}
 
-	payload := jobs.ScanPathPayload{
-		Path:      absPath,
-		LibraryID: libraryID,
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat directory %q: %w", absPath, err)
 	}
-	if libraryID != "" {
-		payload.LibraryRoot = absPath
+	if !info.IsDir() {
+		return fmt.Errorf("path %q is not a directory", absPath)
+	}
+
+	payload := jobs.ScanPathPayload{
+		Path:        absPath,
+		LibraryID:   libraryID,
+		LibraryRoot: absPath,
 	}
 
 	err = jobs.ScanDirectory(ctx, w, payload)
