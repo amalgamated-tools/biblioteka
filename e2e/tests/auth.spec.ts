@@ -25,6 +25,7 @@ test.describe("Authentication flow", () => {
   test("show validation and invalid credential errors", async ({ page }) => {
     const validationUser = createTestUser({ displayName: "Validation User" });
     const missingUser = createTestUser({ displayName: "Missing User" });
+    const wrongPassword = "wrongpass123";
 
     await openSignupForm(page);
 
@@ -40,7 +41,7 @@ test.describe("Authentication flow", () => {
     );
 
     await openAuthPage(page);
-    await signIn(page, missingUser.email, "wrongpass123");
+    await signIn(page, missingUser.email, wrongPassword);
     await expect(getAuthErrorBanner(page)).toContainText(/invalid email or password/i);
     await expect(page.getByRole("button", { name: "Login", exact: true })).toBeVisible();
   });
