@@ -13,5 +13,7 @@ CREATE TABLE IF NOT EXISTS kobo_reading_states (
 	UNIQUE (user_id, book_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_kobo_reading_states_user_updated ON kobo_reading_states (user_id, updated_at);
+
 -- migrate:down
 DROP TABLE IF EXISTS kobo_reading_states;

@@ -354,6 +354,7 @@ func (h *KoboHandler) handleInit(w http.ResponseWriter, r *http.Request, tokenVa
 func (h *KoboHandler) handleAuth(w http.ResponseWriter, r *http.Request) {
 	var userKey string
 	if r.Body != nil {
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<16) // 64 KiB is ample for an auth payload
 		var body map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&body); err == nil {
 			if k, ok := body["UserKey"].(string); ok {
@@ -501,13 +502,17 @@ func (h *KoboHandler) handleSync(w http.ResponseWriter, r *http.Request, tokenVa
 		series := seriesByBook[bk.ID]
 
 		downloadURLs := koboDownloadURLs(base, tokenValue, bk.ID, files)
+
+		// Always advance the high-water mark so that books without downloadable
+		// files do not stall pagination — otherwise the next sync would receive
+		// the same page again if all its books were file-less.
+		if bk.UpdatedAt.After(newBooksLastModified) {
+			newBooksLastModified = bk.UpdatedAt.Time
+		}
+
 		if len(downloadURLs) == 0 {
 			// Skip books that have no downloadable files.
 			continue
-		}
-
-		if bk.UpdatedAt.After(newBooksLastModified) {
-			newBooksLastModified = bk.UpdatedAt.Time
 		}
 
 		entitlement := map[string]any{
@@ -552,6 +557,10 @@ func (h *KoboHandler) handleSync(w http.ResponseWriter, r *http.Request, tokenVa
 
 // handleBookMetadata handles GET /kobo/{token}/v1/library/{uuid}/metadata.
 func (h *KoboHandler) handleBookMetadata(w http.ResponseWriter, r *http.Request, subPath, tokenValue string) {
+	if r.Method != http.MethodGet {
+		writeKoboJSON(w, http.StatusOK, []any{})
+		return
+	}
 	bookID := strings.TrimSuffix(strings.TrimPrefix(subPath, "/v1/library/"), "/metadata")
 	if bookID == "" {
 		writeKoboJSON(w, http.StatusNotFound, map[string]any{})
@@ -768,7 +777,17 @@ func (h *KoboHandler) handleCoverImage(w http.ResponseWriter, r *http.Request, s
 	}
 
 	book, err := h.DB.GetBook(r.Context(), bookID)
-	if err != nil || book.CoverImageURL == nil || *book.CoverImageURL == "" {
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			slog.WarnContext(r.Context(), "failed to fetch book for kobo cover image",
+				slog.String(otelkeys.BookID, bookID),
+				slog.Any(otelkeys.Error, err),
+			)
+		}
+		http.NotFound(w, r)
+		return
+	}
+	if book.CoverImageURL == nil || *book.CoverImageURL == "" {
 		http.NotFound(w, r)
 		return
 	}

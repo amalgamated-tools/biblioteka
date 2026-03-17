@@ -236,8 +236,8 @@
       <li>Safely eject the Kobo and trigger a sync on the device.</li>
     </ol>
     <p class="text-xs mt-2">
-      Only EPUB, MOBI, PDF, and AZW3 files are synced. HTTPS is recommended for
-      external access.
+      Only EPUB, KEPUB, MOBI, PDF, and AZW3 files are synced. HTTPS is
+      recommended for external access.
     </p>
   </div>
 </div>
