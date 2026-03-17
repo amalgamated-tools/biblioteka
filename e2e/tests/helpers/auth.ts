@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
 export const AUTH_ERROR_TEST_ID = "auth-error";
+// Keep supporting the older SCREENSHOT_* overrides until all callers migrate.
 export const DEFAULT_TIMEOUT_MS = Number(
   process.env.E2E_TIMEOUT_MS || process.env.SCREENSHOT_TIMEOUT_MS || 5000,
 );
