@@ -21,7 +21,7 @@ safe-outputs:
     title-prefix: "style(accessibility): "
     labels: [a11y, automated-analysis]
     assignees: [copilot]
-    max: 5
+    max: 15
 
 tools:
   playwright:
