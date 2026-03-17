@@ -324,23 +324,39 @@ Biblioteka can automatically move imported book files into a canonical `Author/T
 
 ### Enabling file organization
 
-Set the `organize_files` application setting to `"true"` via the API (admin required):
+> **Note:** There is currently no HTTP API endpoint for toggling `organize_files`. The setting is read directly from the `settings` database table. Enable it by inserting or updating the row directly:
+
+**SQLite:**
 
 ```bash
-curl -X PUT http://localhost:8080/api/settings/organize_files \
-  -H "Authorization: Bearer <admin-jwt>" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "true"}'
+sqlite3 /path/to/biblioteka.db \
+  "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('organize_files', 'true', datetime('now'));"
 ```
 
-Disable it again by setting the value to any other string (or deleting the setting):
+**PostgreSQL:**
+
+```sql
+INSERT INTO settings (key, value, updated_at)
+VALUES ('organize_files', 'true', NOW())
+ON CONFLICT (key) DO UPDATE SET value = 'true', updated_at = NOW();
+```
+
+To disable it, set the value to `'false'` (or any value other than `'true'`):
+
+**SQLite:**
 
 ```bash
-curl -X PUT http://localhost:8080/api/settings/organize_files \
-  -H "Authorization: Bearer <admin-jwt>" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "false"}'
+sqlite3 /path/to/biblioteka.db \
+  "UPDATE settings SET value = 'false', updated_at = datetime('now') WHERE key = 'organize_files';"
 ```
+
+**PostgreSQL:**
+
+```sql
+UPDATE settings SET value = 'false', updated_at = NOW() WHERE key = 'organize_files';
+```
+
+Changes take effect the next time a `process:file` job runs — no server restart is required.
 
 ### How it works
 
