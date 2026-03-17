@@ -55,6 +55,13 @@
   <Auth />
 {:else}
   <div class="min-h-screen bg-cream-50 dark:bg-ink-950 relative bg-texture">
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-accent-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
+    >
+      Skip to main content
+    </a>
+
     <Sidebar
       currentView={routerStore.currentView}
       onNavigate={(view) => routerStore.navigate(view)}
@@ -78,7 +85,7 @@
       >
     </div>
 
-    <main class="md:ml-64 p-4 md:p-8">
+    <main id="main-content" class="md:ml-64 p-4 md:p-8">
       <div class="max-w-6xl mx-auto animate-fade-in">
         {#if routerStore.currentView === "dashboard"}
           <Dashboard />
