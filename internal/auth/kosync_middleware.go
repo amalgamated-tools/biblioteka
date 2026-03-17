@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -64,9 +66,13 @@ func KOSyncHeaderAuthMiddleware(checker KOSyncCredentialChecker) func(http.Handl
 
 			cred, err := checker.GetKOSyncCredential(r.Context(), strings.ToLower(username))
 			if err != nil {
-				// Perform a dummy bcrypt comparison to prevent timing-based username enumeration.
-				_ = bcrypt.CompareHashAndPassword(dummyKOSyncBcryptHash, []byte(authKey))
-				slog.InfoContext(r.Context(), "KOSync: unknown username", slog.String(otelkeys.KOSyncUsername, username))
+				if errors.Is(err, sql.ErrNoRows) {
+					// Perform a dummy bcrypt comparison to prevent timing-based username enumeration.
+					_ = bcrypt.CompareHashAndPassword(dummyKOSyncBcryptHash, []byte(authKey))
+					slog.InfoContext(r.Context(), "KOSync: unknown username", slog.String(otelkeys.KOSyncUsername, username))
+				} else {
+					slog.ErrorContext(r.Context(), "KOSync: credential lookup failed", slog.Any(otelkeys.Error, err))
+				}
 				jsonError(w, http.StatusUnauthorized, "Unauthorized")
 				return
 			}

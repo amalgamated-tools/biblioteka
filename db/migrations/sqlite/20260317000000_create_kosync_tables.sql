@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS kosync_credentials (
     updated_at   DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_kosync_credentials_username ON kosync_credentials (LOWER(username));
 CREATE INDEX IF NOT EXISTS idx_kosync_credentials_user_id ON kosync_credentials (user_id);
 
 CREATE TABLE IF NOT EXISTS reading_progress (

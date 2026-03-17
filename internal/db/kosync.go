@@ -60,18 +60,10 @@ func (d *DB) UpsertKOSyncCredential(ctx context.Context, userID, username, passw
 		slog.String(otelkeys.KOSyncUsername, username),
 	)
 
-	var query string
-	if d.Dialect == DialectPostgres {
-		query = `INSERT INTO kosync_credentials (user_id, username, password_hash)
-			VALUES ($1, $2, $3)
-			ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = NOW()
-			RETURNING ` + kosyncCredentialColumns
-	} else {
-		query = `INSERT INTO kosync_credentials (user_id, username, password_hash)
-			VALUES ($1, $2, $3)
-			ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = datetime('now')
-			RETURNING ` + kosyncCredentialColumns
-	}
+	query := `INSERT INTO kosync_credentials (user_id, username, password_hash)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = ` + d.now() + `
+		RETURNING ` + kosyncCredentialColumns
 
 	cred, err := scanKOSyncCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
 	if err != nil && isKOSyncUsernameUniqueViolation(err) {
@@ -147,20 +139,11 @@ func (d *DB) UpsertReadingProgress(ctx context.Context, userID, document, progre
 		slog.String(otelkeys.Document, document),
 	)
 
-	var query string
-	if d.Dialect == DialectPostgres {
-		query = `INSERT INTO reading_progress (user_id, document, progress, percentage, device, device_id)
-			VALUES ($1, $2, $3, $4, $5, $6)
-			ON CONFLICT (user_id, document) DO UPDATE SET
-				progress = $3, percentage = $4, device = $5, device_id = $6, updated_at = NOW()
-			RETURNING ` + readingProgressColumns
-	} else {
-		query = `INSERT INTO reading_progress (user_id, document, progress, percentage, device, device_id)
-			VALUES ($1, $2, $3, $4, $5, $6)
-			ON CONFLICT (user_id, document) DO UPDATE SET
-				progress = $3, percentage = $4, device = $5, device_id = $6, updated_at = datetime('now')
-			RETURNING ` + readingProgressColumns
-	}
+	query := `INSERT INTO reading_progress (user_id, document, progress, percentage, device, device_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (user_id, document) DO UPDATE SET
+			progress = $3, percentage = $4, device = $5, device_id = $6, updated_at = ` + d.now() + `
+		RETURNING ` + readingProgressColumns
 
 	return scanReadingProgress(d.QueryRowContext(ctx, query, userID, document, progress, percentage, device, deviceID))
 }

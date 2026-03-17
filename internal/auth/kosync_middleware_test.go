@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +24,7 @@ func (m *mockKOSyncChecker) GetKOSyncCredential(_ context.Context, username stri
 	}
 	cred, ok := m.creds[username]
 	if !ok {
-		return nil, errors.New("not found")
+		return nil, sql.ErrNoRows
 	}
 	return cred, nil
 }
@@ -180,5 +181,28 @@ func TestKOSyncHeaderAuth_UsernameLowercased(t *testing.T) {
 	}
 	if gotUserID != "user-1" {
 		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "user-1")
+	}
+}
+
+func TestKOSyncHeaderAuth_DBError(t *testing.T) {
+	checker := &mockKOSyncChecker{err: errors.New("connection refused")}
+	mw := KOSyncHeaderAuthMiddleware(checker)
+
+	called := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/api/user/auth", nil)
+	r.Header.Set(kosyncAuthUserHeader, "alice")
+	r.Header.Set(kosyncAuthKeyHeader, "somekey")
+	w := httptest.NewRecorder()
+	mw(next).ServeHTTP(w, r)
+
+	if called {
+		t.Error("next handler should not have been called")
+	}
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
 	}
 }
