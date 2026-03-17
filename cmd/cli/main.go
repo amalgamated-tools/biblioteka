@@ -25,25 +25,35 @@ func main() {
 	cmd := os.Args[1]
 
 	var err error
-	switch cmd {
-	case "process-file":
-		if len(os.Args) < 3 {
-			fmt.Fprintf(os.Stderr, "Usage: %s process-file <file>\n", os.Args[0])
-			os.Exit(1)
+
+	// If there is an additional argument, or the first argument does not
+	// correspond to an existing path, treat it as a subcommand. Otherwise,
+	// fall back to the legacy `cli <file>` behavior even if the file name
+	// happens to match a reserved command.
+	if len(os.Args) >= 3 || !pathExists(cmd) {
+		switch cmd {
+		case "process-file":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: %s process-file <file>\n", os.Args[0])
+				os.Exit(1)
+			}
+			err = runProcessFile(ctx, os.Args[2])
+		case "scan-directory":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: %s scan-directory <directory> [library-id]\n", os.Args[0])
+				os.Exit(1)
+			}
+			libraryID := ""
+			if len(os.Args) >= 4 {
+				libraryID = os.Args[3]
+			}
+			err = runScanDirectory(ctx, os.Args[2], libraryID)
+		default:
+			// Backwards compatibility: treat first argument as a file path.
+			err = runProcessFile(ctx, cmd)
 		}
-		err = runProcessFile(ctx, os.Args[2])
-	case "scan-directory":
-		if len(os.Args) < 3 {
-			fmt.Fprintf(os.Stderr, "Usage: %s scan-directory <directory> [library-id]\n", os.Args[0])
-			os.Exit(1)
-		}
-		libraryID := ""
-		if len(os.Args) >= 4 {
-			libraryID = os.Args[3]
-		}
-		err = runScanDirectory(ctx, os.Args[2], libraryID)
-	default:
-		// Backwards compatibility: treat first argument as a file path.
+	} else {
+		// No additional arguments and the path exists: treat as `cli <file>`.
 		err = runProcessFile(ctx, cmd)
 	}
 
@@ -51,6 +61,16 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func pathExists(p string) bool {
+	if p == "" {
+		return false
+	}
+	if _, err := os.Stat(p); err != nil {
+		return !os.IsNotExist(err)
+	}
+	return true
 }
 
 func printUsage() {
@@ -114,20 +134,28 @@ func runScanDirectory(ctx context.Context, path string, libraryID string) error 
 
 	w, err := worker.New(redisURL)
 	if err != nil {
-		return fmt.Errorf("failed to connect to Redis: %w", err)
+		return fmt.Errorf("failed to configure Redis client: %w", err)
 	}
-	defer func() { _ = w.Close() }()
+	defer func() {
+		if cerr := w.Close(); cerr != nil {
+			slog.WarnContext(ctx, "failed to close worker", slog.Any(otelkeys.Error, cerr))
+		}
+	}()
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return fmt.Errorf("failed to resolve path %q: %w", path, err)
 	}
 
-	err = jobs.ScanDirectory(ctx, w, jobs.ScanPathPayload{
-		Path:        absPath,
-		LibraryID:   libraryID,
-		LibraryRoot: absPath,
-	})
+	payload := jobs.ScanPathPayload{
+		Path:      absPath,
+		LibraryID: libraryID,
+	}
+	if libraryID != "" {
+		payload.LibraryRoot = absPath
+	}
+
+	err = jobs.ScanDirectory(ctx, w, payload)
 	if err != nil {
 		return fmt.Errorf("error scanning directory %q: %w", absPath, err)
 	}
