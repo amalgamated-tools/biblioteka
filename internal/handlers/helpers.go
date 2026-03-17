@@ -95,13 +95,17 @@ func extractPathSegments(path, prefix string) (id, sub string, ok bool) {
 
 // requireAdmin checks whether the authenticated user is an admin and writes the
 // appropriate error response if not. It returns true when the caller is allowed
-// to proceed. A deleted user (stale JWT) receives a 401 response.
+// to proceed. A deleted user (stale JWT) receives a generic 401 response.
 func requireAdmin(d *db.DB, w http.ResponseWriter, r *http.Request) bool {
 	userID := auth.UserIDFromContext(r.Context())
 	isAdmin, err := d.IsAdmin(r.Context(), userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusUnauthorized, "user not found")
+			slog.WarnContext(r.Context(), "user not found during admin check",
+				slog.String(otelkeys.UserID, userID),
+				slog.Any(otelkeys.Error, err),
+			)
+			writeError(r.Context(), w, http.StatusUnauthorized, "authentication required")
 			return false
 		}
 		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
