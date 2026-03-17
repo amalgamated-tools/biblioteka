@@ -132,7 +132,7 @@ Directory names are sanitized (path separators, control characters, and leading 
 
 **Failure handling:**
 - If reorganization fails for any reason, the handler logs a warning and continues processing the file at its original path.
-- If the source file disappears during reorganization (indicating the file was already moved by a prior attempt), the job returns an error so asynq can retry.
+- If the source file is missing when the job starts (e.g. it was moved by a prior attempt that then failed before writing DB rows), the handler tries to locate the file at its expected reorganized path (`<library_root>/<Author>/<Title>/<filename>`). If found there and already indexed, the job skips without error. If found there but not yet indexed, the handler resumes processing from the new location. If the file cannot be found at either path, the job logs a warning and returns without error.
 - After a successful move, the handler checks whether the new path is already indexed before creating new database records, preventing duplicates from concurrent workers.
 
 See [Administration — File organization](administration.md#file-organization) for how to enable this feature.
