@@ -237,6 +237,10 @@ func (h *KOSyncHandler) putProgress(w http.ResponseWriter, r *http.Request) {
 		writeError(ctx, w, http.StatusBadRequest, "progress is required")
 		return
 	}
+	if req.Percentage < 0 || req.Percentage > 1 {
+		writeError(ctx, w, http.StatusBadRequest, "percentage must be between 0 and 1")
+		return
+	}
 
 	var device, deviceID *string
 	if req.Device != "" {
@@ -263,8 +267,8 @@ func (h *KOSyncHandler) getProgress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
 
-	document, ok := extractPathID(r.URL.Path, "/api/syncs/progress/")
-	if !ok {
+	document := strings.TrimPrefix(r.URL.Path, "/api/syncs/progress/")
+	if document == "" {
 		writeError(ctx, w, http.StatusBadRequest, "document identifier is required")
 		return
 	}
