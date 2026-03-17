@@ -91,7 +91,9 @@ Creates a `book` record and a `book_file` record in the database. The `process:f
 
 #### Path-based metadata
 
-When `library_root` is set in the payload, `internal/pathparser.ParseBookPath` extracts author, title, series name, series position, and publication year from the file's path relative to the library root. This runs for every file regardless of whether ExifTool is present.
+When `library_root` is set in the payload, `internal/pathparser.ParseBookPath` extracts author, title, series name, and series position from the file's path relative to the library root. This runs for every file regardless of whether ExifTool is present.
+
+> **Publication year note:** The parser also detects a trailing `(YYYY)` year in filenames and uses it to produce a clean title (e.g. `Frankenstein (2009)` → `Frankenstein`). The year value itself is **not** stored in `books.publication_date`; that field is only populated from embedded EPUB metadata.
 
 **Recognised directory layouts**
 
@@ -105,7 +107,7 @@ When `library_root` is set in the payload, `internal/pathparser.ParseBookPath` e
 
 Key rules applied by the parser:
 - **Leading series-position prefix** (`N. `) is stripped from the filename to produce the bare title.
-- **Trailing `(YYYY)`** is parsed as publication year and removed from the title.
+- **Trailing `(YYYY)`** is detected and removed from the title (e.g. `The Hobbit (1937)` → `The Hobbit`). The year is not stored as `publication_date`.
 - **Trailing ` - Author Name`** in filenames is stripped when the suffix looks like a personal name (two to four capitalised words, no digits). Single-word suffixes are kept to avoid corrupting subtitles.
 - A directory is treated as a **series** only when the filename has a leading series-position prefix **and** the directory name is not effectively the same as the parsed title (to avoid phantom series from Calibre-style `Author/Title/file.ext` layouts).
 - Paths outside `library_root` fall back to filename-only parsing.
@@ -219,7 +221,7 @@ internal/
   organize/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
   pathparser/
-    pathparser.go              # ParseBookPath: extracts author/title/series/year from directory structure
+    pathparser.go              # ParseBookPath: extracts author/title/series from directory structure; strips trailing year tokens from titles
   worker/
     worker.go                  # Worker struct: Register, Enqueue, Start, Close
 ```
