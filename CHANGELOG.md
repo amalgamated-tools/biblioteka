@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.0.7](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.6...v0.0.7) (2026-03-17)
+
+
+### Features
+
+* Add /api/version endpoint and display version in sidebar ([#167](https://github.com/amalgamated-tools/biblioteka/issues/167)) ([9b9b0cc](https://github.com/amalgamated-tools/biblioteka/commit/9b9b0cc7c4061fbbeb0f5b515503509db969c4c6))
+* Add `-mode` flag to run HTTP server and worker independently ([#158](https://github.com/amalgamated-tools/biblioteka/issues/158)) ([a87fae8](https://github.com/amalgamated-tools/biblioteka/commit/a87fae89cc315ce666f0aace346bd5495985f4ff))
+* add debug logs across the backend for improved observability ([2cdd6a0](https://github.com/amalgamated-tools/biblioteka/commit/2cdd6a0661dc91ffc747526ffda592f5e309211d))
+* add in favicon ([#140](https://github.com/amalgamated-tools/biblioteka/issues/140)) ([cb1b874](https://github.com/amalgamated-tools/biblioteka/commit/cb1b874e0c31699cfee37eb122b56a8673348989))
+* add library book listing functionality and update UI for viewing libraries ([#77](https://github.com/amalgamated-tools/biblioteka/issues/77)) ([12f439f](https://github.com/amalgamated-tools/biblioteka/commit/12f439fb8262528b674e54896223fcb7df39ae9b))
+* add OPDS 1.2 catalog server ([#114](https://github.com/amalgamated-tools/biblioteka/issues/114)) ([1372b33](https://github.com/amalgamated-tools/biblioteka/commit/1372b335dd8c74c1a60c4cddd8f70b250418478c))
+* add SMTP configuration and testing functionality ([#110](https://github.com/amalgamated-tools/biblioteka/issues/110)) ([e568195](https://github.com/amalgamated-tools/biblioteka/commit/e56819588ff2c2593ec4e2f4c8dee3e47c34b659))
+* audit log for all application changes ([#103](https://github.com/amalgamated-tools/biblioteka/issues/103)) ([dc89d5b](https://github.com/amalgamated-tools/biblioteka/commit/dc89d5b24c28c595527d27d4ff459771e8cce673))
+* **auth:** add admin middleware and HttpOnly auth cookies for browser UIs ([#82](https://github.com/amalgamated-tools/biblioteka/issues/82)) ([756b821](https://github.com/amalgamated-tools/biblioteka/commit/756b82129456cae6db6b48e2258c37e7b054b6ce))
+* **books:** Add paginated book list view with grid/table toggle ([#224](https://github.com/amalgamated-tools/biblioteka/issues/224)) ([19410bd](https://github.com/amalgamated-tools/biblioteka/commit/19410bd035b648a60c857c84e292cb27a7fa009a))
+* Extract metadata from files ([#193](https://github.com/amalgamated-tools/biblioteka/issues/193)) ([0fb9a33](https://github.com/amalgamated-tools/biblioteka/commit/0fb9a3380f91ab4e094d904a813fc4e766a5b2cf))
+* implement API key management with create, list, and delete functionalities ([#111](https://github.com/amalgamated-tools/biblioteka/issues/111)) ([1b957eb](https://github.com/amalgamated-tools/biblioteka/commit/1b957eb4ee3efa09db0af4762bbf95ec498fb60d))
+* let's process the metadata ([#218](https://github.com/amalgamated-tools/biblioteka/issues/218)) ([b8014d6](https://github.com/amalgamated-tools/biblioteka/commit/b8014d6b7cd15df15937a91690c52927ae88d709))
+* normalize book directory structures with path parsing ([#223](https://github.com/amalgamated-tools/biblioteka/issues/223)) ([6ad0d80](https://github.com/amalgamated-tools/biblioteka/commit/6ad0d80d2dabd8d4fb3fc5b3c0d482e6ce4c4e13))
+* swagger take 1 ([#61](https://github.com/amalgamated-tools/biblioteka/issues/61)) ([1dc2b02](https://github.com/amalgamated-tools/biblioteka/commit/1dc2b0203618457a0904f54f3149ced6edc867b3))
+
+
+### Bug Fixes
+
+* **auth:** ensure cookie-backed OIDC sessions survive page reload ([#242](https://github.com/amalgamated-tools/biblioteka/issues/242)) ([4966bee](https://github.com/amalgamated-tools/biblioteka/commit/4966beefb2a454ca4296a78f46331caea247db49))
+* correct daily-file-diet prompt to use allowed bash command format ([#187](https://github.com/amalgamated-tools/biblioteka/issues/187)) ([130f82d](https://github.com/amalgamated-tools/biblioteka/commit/130f82d85085840f3a74bd8908d95adbd9c77d68))
+* disable provenance attestations to resolve GHCR 403 on push ([#102](https://github.com/amalgamated-tools/biblioteka/issues/102)) ([5c53fdd](https://github.com/amalgamated-tools/biblioteka/commit/5c53fddb6baace00f156703c4635ea27b1646b67))
+* go fmt struct field alignment in mockEnqueuer ([f29b659](https://github.com/amalgamated-tools/biblioteka/commit/f29b659d728d4509a720d4fd545eadf3819743b6))
+* **libraries:** restrict CRUD to admin users ([#243](https://github.com/amalgamated-tools/biblioteka/issues/243)) ([05193f0](https://github.com/amalgamated-tools/biblioteka/commit/05193f07981fc93ef956fbc56060c60ecc845f53))
+* make sure releases work ([#124](https://github.com/amalgamated-tools/biblioteka/issues/124)) ([acf3222](https://github.com/amalgamated-tools/biblioteka/commit/acf32220027acc8f5390df5912147ff9bdf3ee78))
+* **oidc:** require email_verified claim before auto-linking ([#244](https://github.com/amalgamated-tools/biblioteka/issues/244)) ([9eecf7f](https://github.com/amalgamated-tools/biblioteka/commit/9eecf7fd3892051b43a82b2bda9371b15e584740))
+* remove piped grep command in daily-file-diet prompt to match allowed tool patterns ([#200](https://github.com/amalgamated-tools/biblioteka/issues/200)) ([7733e26](https://github.com/amalgamated-tools/biblioteka/commit/7733e264b2325702ebd35273d955dad227b1302c))
+* resolve docker-build workflow GHCR 403 after org transfer ([#150](https://github.com/amalgamated-tools/biblioteka/issues/150)) ([146efd3](https://github.com/amalgamated-tools/biblioteka/commit/146efd39c4a436dee161ac909b64260f7059a7eb))
+* use 'latest' copilot CLI version in agentic workflow lock files ([#136](https://github.com/amalgamated-tools/biblioteka/issues/136)) ([6a0a131](https://github.com/amalgamated-tools/biblioteka/commit/6a0a13148949e4969cb124745e3bb3e978727a7a))
+* use PAT for CLA Assistant to persist signatures ([#108](https://github.com/amalgamated-tools/biblioteka/issues/108)) ([05653e6](https://github.com/amalgamated-tools/biblioteka/commit/05653e6a3fb2cb4d559a056973732b8d9c39aa27))
+* use slog.DebugContext in handlers for request context propagation ([3dbde61](https://github.com/amalgamated-tools/biblioteka/commit/3dbde614eba6d074c11b0526ec1df8c01467c26d))
+
+
+### Miscellaneous Chores
+
+* release 0.0.2 ([#80](https://github.com/amalgamated-tools/biblioteka/issues/80)) ([b841de8](https://github.com/amalgamated-tools/biblioteka/commit/b841de8eb67d08481d52e392aae6624f4f5c7026))
+* release 0.0.3 ([85c0640](https://github.com/amalgamated-tools/biblioteka/commit/85c06409e9fce7c6954188b359f553b0ecfa004a))
+* release 0.0.4 ([21507df](https://github.com/amalgamated-tools/biblioteka/commit/21507dfb1fed062dcd20e99e27593ec1b825de5a))
+* release 0.0.5 ([cfbf45b](https://github.com/amalgamated-tools/biblioteka/commit/cfbf45b9b224406ddc2f51a23fa009085e083a7e))
+* release 0.0.6 ([2fc0dbe](https://github.com/amalgamated-tools/biblioteka/commit/2fc0dbe961f4b65b5affe93c9e98a8e11e88a4d0))
+* release 0.0.7 ([bfb147b](https://github.com/amalgamated-tools/biblioteka/commit/bfb147b8c2d44b2b4ee11f566d7031340c021a41))
+
 ## [0.0.6](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.5...v0.0.6) (2026-03-17)
 
 
