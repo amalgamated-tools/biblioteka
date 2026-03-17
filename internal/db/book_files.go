@@ -142,8 +142,8 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 
 	result := make(map[string][]BookFile, len(bookIDs))
 	for rows.Next() {
-		var bf BookFile
-		if err := rows.Scan(&bf.ID, &bf.BookID, &bf.FileType, &bf.FileName, &bf.FileSize, &bf.FileHash, &bf.FilePath, &bf.CreatedAt, &bf.UpdatedAt); err != nil {
+		bf, err := scanBookFile(rows)
+		if err != nil {
 			return nil, err
 		}
 		result[bf.BookID] = append(result[bf.BookID], bf)
