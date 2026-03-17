@@ -8,6 +8,19 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// prefixedScanner wraps a sql.Rows and prepends extra scan destinations
+// before delegating to a helper like scanAuthor. This lets batch queries
+// that select a leading book_id column reuse the same scan helper as
+// single-row queries.
+type prefixedScanner struct {
+	row    interface{ Scan(...any) error }
+	prefix []any
+}
+
+func (p prefixedScanner) Scan(dest ...any) error {
+	return p.row.Scan(append(p.prefix, dest...)...)
+}
+
 // BookSeriesEntry represents a book's membership in a series with its position.
 type BookSeriesEntry struct {
 	Series   Series   `json:"series"`
@@ -166,11 +179,11 @@ func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[stri
 	result := make(map[string][]Author, len(bookIDs))
 	for rows.Next() {
 		var bookID string
-		var a Author
-		if err := rows.Scan(&bookID, &a.ID, &a.Name, &a.GoodreadsID, &a.HardcoverID, &a.GoogleBooksID, &a.ImageURL, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		a, err := scanAuthor(prefixedScanner{row: rows, prefix: []any{&bookID}})
+		if err != nil {
 			return nil, err
 		}
-		result[bookID] = append(result[bookID], a)
+		result[bookID] = append(result[bookID], *a)
 	}
 	return result, rows.Err()
 }
