@@ -173,6 +173,8 @@ Begin your analysis now. Find the largest source file(s), assess if any need ref
 
 **Reminder**: You MUST call exactly one safe-output tool before finishing. If no file exceeds 500 lines, call `noop` with a status message. If a file exceeds 500 lines, call `create_issue`. Do NOT end without calling a safe-output tool.
 
+Example noop output:
+
 ```json
 {"noop": {"message": "No action needed: all non-test source files are below the 500-line threshold after checking the largest files."}}
 ```
