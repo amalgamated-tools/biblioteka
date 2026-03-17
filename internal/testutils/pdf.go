@@ -37,7 +37,8 @@ func MakeTestPDF(t *testing.T, path, title, author string, et *exiftool.Exiftool
 	// Use exiftool to write proper metadata into the PDF. If exiftool is not
 	// available in the environment, skip the test rather than failing.
 	if et == nil {
-		et, exerr := exiftool.NewExiftool()
+		var exerr error
+		et, exerr = exiftool.NewExiftool()
 		if exerr != nil {
 			t.Skipf("skipping PDF metadata test: exiftool not available: %v", exerr)
 		}
