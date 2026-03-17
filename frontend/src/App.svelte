@@ -57,7 +57,7 @@
   <div class="min-h-screen bg-cream-50 dark:bg-ink-950 relative bg-texture">
     <a
       href="#main-content"
-      on:click|preventDefault={() => document.getElementById("main-content")?.focus()}
+      onclick={(e: MouseEvent) => { e.preventDefault(); document.getElementById("main-content")?.focus(); }}
       class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-accent-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
     >
       Skip to main content
