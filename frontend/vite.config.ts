@@ -12,7 +12,7 @@ export default defineConfig({
     {
       name: "restore-gitkeep",
       closeBundle() {
-        writeFileSync(resolve(__dirname, "../internal/server/dist/.gitkeep"), "");
+        writeFileSync(new URL("../internal/server/dist/.gitkeep", import.meta.url), "");
       },
     },
   ],

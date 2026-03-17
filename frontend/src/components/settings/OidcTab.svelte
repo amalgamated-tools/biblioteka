@@ -20,6 +20,7 @@
     onOidcSaved,
   }: Props = $props();
 
+  // One-time initialisation – these props are not expected to change after mount.
   // svelte-ignore state_referenced_locally
   let oidcConfigured = $state(initialOidcConfigured);
   // svelte-ignore state_referenced_locally
