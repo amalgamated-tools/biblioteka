@@ -20,7 +20,6 @@ safe-outputs:
   create-issue:
     title-prefix: "style(accessibility): "
     labels: [a11y, automated-analysis]
-    assignees: [copilot]
     max: 15
 
 tools:
