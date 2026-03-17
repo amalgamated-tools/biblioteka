@@ -214,7 +214,7 @@ internal/
     process_file.go            # process:file handler
     scan_path.go               # scan:path handler + Enqueuer interface
     scan_libraries.go          # scan:library & scan:libraries handlers
-    book_processor.go          # ProcessBookFile: metadata extraction, path parsing, organization logic
+    process_book_file.go       # ProcessBookFile: metadata extraction, path parsing, organization logic
   organize/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
   pathparser/

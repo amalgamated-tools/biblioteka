@@ -35,10 +35,6 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 		}
 	}
 
-	return processFile(database, extractor)
-}
-
-func processFile(database *db.DB, extractor *metadata.Extractor) func(ctx context.Context, payload []byte) error {
 	return func(ctx context.Context, payload []byte) error {
 		var p ProcessFilePayload
 		if err := json.Unmarshal(payload, &p); err != nil {
