@@ -1061,7 +1061,20 @@ Get a single book with its full details: authors, series entries, and associated
       "updated_at": "2026-03-14T02:00:00Z"
     }
   ],
-  "series": [],
+  "series": [
+    {
+      "series": {
+        "id": "<id>",
+        "name": "Discworld",
+        "goodreads_id": null,
+        "hardcover_id": null,
+        "google_books_id": null,
+        "created_at": "2026-03-14T02:00:00Z",
+        "updated_at": "2026-03-14T02:00:00Z"
+      },
+      "position": 1
+    }
+  ],
   "files": [],
   "created_at": "2026-03-14T02:00:00Z",
   "updated_at": "2026-03-14T02:00:00Z"
@@ -1090,6 +1103,8 @@ Delete a book. Returns `204 No Content`.
 
 List the authors linked to a book.
 
+**Response body (`200`):** Array of [author objects](#post-apiauthors).
+
 ---
 
 ### `PUT /api/books/{id}/authors` 🔒
@@ -1107,6 +1122,34 @@ Replace the author list for a book.
 ### `GET /api/books/{id}/series` 🔒
 
 List the series entries linked to a book.
+
+**Response body (`200`):** Array of series entry objects.
+
+**Series entry object:**
+
+| Field      | Type         | Description |
+|------------|--------------|-------------|
+| `series`   | object       | The [series object](#post-apiseries) |
+| `position` | number\|null | Position of this book within the series (e.g. `1`, `2.5`); `null` when unordered |
+
+**Example:**
+
+```json
+[
+  {
+    "series": {
+      "id": "<id>",
+      "name": "Discworld",
+      "goodreads_id": null,
+      "hardcover_id": null,
+      "google_books_id": null,
+      "created_at": "2026-03-14T02:00:00Z",
+      "updated_at": "2026-03-14T02:00:00Z"
+    },
+    "position": 1
+  }
+]
+```
 
 ---
 
@@ -1129,6 +1172,8 @@ Replace the series entries for a book.
 ### `GET /api/books/{id}/files` 🔒
 
 List all files associated with a book.
+
+**Response body (`200`):** Array of [book-file objects](#get-apibookfilesid).
 
 ---
 
