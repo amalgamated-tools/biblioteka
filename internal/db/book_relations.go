@@ -18,7 +18,10 @@ type prefixedScanner struct {
 }
 
 func (p prefixedScanner) Scan(dest ...any) error {
-	return p.row.Scan(append(p.prefix, dest...)...)
+	all := make([]any, 0, len(p.prefix)+len(dest))
+	all = append(all, p.prefix...)
+	all = append(all, dest...)
+	return p.row.Scan(all...)
 }
 
 // BookSeriesEntry represents a book's membership in a series with its position.
