@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -37,7 +38,7 @@ func (d *DB) SetSetting(ctx context.Context, key, value string) error {
 func (d *DB) SetSettings(ctx context.Context, settings []Setting) error {
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("db: begin settings transaction: %w", err)
 	}
 	committed := false
 	defer func() {
@@ -52,12 +53,12 @@ func (d *DB) SetSettings(ctx context.Context, settings []Setting) error {
 	for _, setting := range settings {
 		slog.DebugContext(ctx, "db: saving setting", slog.String(otelkeys.Key, setting.Key))
 		if err := d.setSetting(ctx, tx, setting.Key, setting.Value); err != nil {
-			return err
+			return fmt.Errorf("db: saving setting %q: %w", setting.Key, err)
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return fmt.Errorf("db: commit settings transaction: %w", err)
 	}
 	committed = true
 	return nil

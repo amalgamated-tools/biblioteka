@@ -768,14 +768,14 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 		}
 	}
 
-	if _, err := h.DB.ExecContext(ctx, `
+	if _, err := h.DB.ExecContext(ctx, fmt.Sprintf(`
 		CREATE TRIGGER test_settings_fail_smtp_username_update
 		BEFORE UPDATE ON settings
-		WHEN NEW.key = 'smtp_username'
+		WHEN NEW.key = '%s'
 		BEGIN
 			SELECT RAISE(FAIL, 'forced smtp save failure');
 		END;
-	`); err != nil {
+	`, settingSMTPUsername)); err != nil {
 		t.Fatalf("create trigger: %v", err)
 	}
 	t.Cleanup(func() {
