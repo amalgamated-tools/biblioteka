@@ -17,8 +17,8 @@ network: defaults
 safe-outputs:
   mentions: false
   allowed-github-references: []
-  create_issue:
-    title_prefix: "style(accessibility): "
+  create-issue:
+    title-prefix: "style(accessibility): "
     labels: [a11y, automated-analysis]
     assignees: [copilot]
     max: 5
