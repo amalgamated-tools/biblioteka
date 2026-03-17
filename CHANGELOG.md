@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.0.6](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.5...v0.0.6) (2026-03-17)
+
+
+### Features
+
+* **books:** Add paginated book list view with grid/table toggle ([#224](https://github.com/amalgamated-tools/biblioteka/issues/224)) ([3264dab](https://github.com/amalgamated-tools/biblioteka/commit/3264dab8ae635626a1b8a375c11f6a031ff08187))
+* let's process the metadata ([#218](https://github.com/amalgamated-tools/biblioteka/issues/218)) ([924da03](https://github.com/amalgamated-tools/biblioteka/commit/924da034d0cae9f6dc9ba5fdc606f362e0b1e7e6))
+* normalize book directory structures with path parsing ([#223](https://github.com/amalgamated-tools/biblioteka/issues/223)) ([fa13322](https://github.com/amalgamated-tools/biblioteka/commit/fa13322c6efdb58a2bee7f8dc382a19a7f09a3d6))
+
+
+### Bug Fixes
+
+* **auth:** ensure cookie-backed OIDC sessions survive page reload ([#242](https://github.com/amalgamated-tools/biblioteka/issues/242)) ([7ee6ed4](https://github.com/amalgamated-tools/biblioteka/commit/7ee6ed4627c7829030903e96211c1f8d2a5f70a8))
+* **libraries:** restrict CRUD to admin users ([#243](https://github.com/amalgamated-tools/biblioteka/issues/243)) ([45c5552](https://github.com/amalgamated-tools/biblioteka/commit/45c5552dc0267f768ca127ddd55d2fa8240dc484))
+* **oidc:** require email_verified claim before auto-linking ([#244](https://github.com/amalgamated-tools/biblioteka/issues/244)) ([d62d9aa](https://github.com/amalgamated-tools/biblioteka/commit/d62d9aaa0798477aab4cacafc583f4c49dc04347))
+
+
+### Miscellaneous Chores
+
+* release 0.0.6 ([0449dc3](https://github.com/amalgamated-tools/biblioteka/commit/0449dc3ae165b3d01b3e310a4a14d8c830aa2f7c))
+
 ## [0.0.5](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.4...v0.0.5) (2026-03-16)
 
 
