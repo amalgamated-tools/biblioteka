@@ -405,6 +405,9 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Require verified email for normal login flow. The link flow (below)
 	// is initiated from an already-authenticated session, so it is exempt.
 	if linkUserID == "" && (claims.EmailVerified == nil || !*claims.EmailVerified) {
+		slog.WarnContext(r.Context(), "OIDC login rejected: email not verified by identity provider",
+			slog.String(otelkeys.Email, claims.Email),
+		)
 		writeError(r.Context(), w, http.StatusUnauthorized, "OIDC email must be verified by the identity provider")
 		return
 	}

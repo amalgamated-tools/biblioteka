@@ -427,12 +427,12 @@ func TestOIDCConsumeLinkNonce_Concurrent(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 // testOIDCProvider spins up a mock OIDC provider (discovery + JWKS + token
-// exchange) and returns an OIDCHandler wired to it. The signIDToken function
-// produces a signed JWT with the given claims map.
+// exchange) and returns an OIDCHandler wired to it. The setClaims function
+// controls the claims embedded in the ID token returned by the /token endpoint.
 type testOIDCProvider struct {
-	handler     *OIDCHandler
-	signIDToken func(claims map[string]interface{}) string
-	server      *httptest.Server
+	handler   *OIDCHandler
+	setClaims func(claims map[string]interface{})
+	server    *httptest.Server
 }
 
 func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
@@ -461,7 +461,7 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 		}},
 	}
 
-	// signIDToken produces a compact JWT from an arbitrary claims map.
+	// signToken produces a compact JWT from an arbitrary claims map.
 	signToken := func(claims map[string]interface{}) string {
 		t.Helper()
 		builder := josejwt.Signed(signer).Claims(claims)
@@ -556,16 +556,11 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 	}
 
 	tp := &testOIDCProvider{
-		handler:     h,
-		signIDToken: signToken,
-		server:      srv,
-	}
-
-	// setClaims lets each test control the ID token claims before making a
-	// Callback request.
-	tp.signIDToken = func(claims map[string]interface{}) string {
-		idTokenClaims = claims
-		return "" // not used directly; the /token endpoint builds the token
+		handler: h,
+		server:  srv,
+		setClaims: func(claims map[string]interface{}) {
+			idTokenClaims = claims
+		},
 	}
 
 	return tp
@@ -588,7 +583,7 @@ func TestOIDCCallback_EmailVerifiedTrue(t *testing.T) {
 	tp := newTestOIDCProvider(t)
 	h := tp.handler
 
-	tp.signIDToken(map[string]interface{}{
+	tp.setClaims(map[string]interface{}{
 		"sub":            "oidc-user-1",
 		"email":          "verified@example.com",
 		"name":           "Verified User",
@@ -612,7 +607,7 @@ func TestOIDCCallback_EmailVerifiedFalse(t *testing.T) {
 	tp := newTestOIDCProvider(t)
 	h := tp.handler
 
-	tp.signIDToken(map[string]interface{}{
+	tp.setClaims(map[string]interface{}{
 		"sub":            "oidc-user-2",
 		"email":          "unverified@example.com",
 		"name":           "Unverified User",
@@ -638,7 +633,7 @@ func TestOIDCCallback_EmailVerifiedMissing(t *testing.T) {
 	tp := newTestOIDCProvider(t)
 	h := tp.handler
 
-	tp.signIDToken(map[string]interface{}{
+	tp.setClaims(map[string]interface{}{
 		"sub":   "oidc-user-3",
 		"email": "noverify@example.com",
 		"name":  "No Verify User",
@@ -663,7 +658,7 @@ func TestOIDCCallback_LinkFlowBypassesEmailVerified(t *testing.T) {
 		t.Fatalf("CreateUser: %v", err)
 	}
 
-	tp.signIDToken(map[string]interface{}{
+	tp.setClaims(map[string]interface{}{
 		"sub":            "oidc-link-subject",
 		"email":          "linktarget@example.com",
 		"name":           "Link Target",
