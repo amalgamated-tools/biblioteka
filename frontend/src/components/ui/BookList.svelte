@@ -38,6 +38,11 @@
       }
       books = data.books;
       total = data.total;
+      // If offset is past the end (e.g., items deleted), clamp to the last valid page.
+      if (data.books.length === 0 && data.total > 0 && off > 0) {
+        offset = Math.floor(Math.max(0, data.total - 1) / size) * size;
+        return;
+      }
     } catch (e) {
       if (requestId !== currentRequestId) {
         return;
