@@ -6,7 +6,7 @@ import { resolve } from "path";
 import type { Plugin } from "vite";
 
 function restoreGitkeep(): Plugin {
-  let gitkeepPath: string;
+  let gitkeepPath: string | undefined;
   return {
     name: "restore-gitkeep",
     apply: "build",
@@ -14,7 +14,9 @@ function restoreGitkeep(): Plugin {
       gitkeepPath = resolve(config.build.outDir, ".gitkeep");
     },
     closeBundle() {
+      if (!gitkeepPath) return;
       writeFileSync(gitkeepPath, "");
+    },
     },
   };
 }
