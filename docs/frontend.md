@@ -49,7 +49,7 @@ frontend/
 
 ## Reactive stores
 
-All global state is managed through **Svelte 5 reactive class stores** in `frontend/src/stores/`. Each store is a class whose properties are declared with `$state` (for scalar values and nullable objects) or `$state.raw` (for array collections), and a singleton instance is exported for use throughout the application.
+All global state is managed through **Svelte 5 reactive class stores** in `frontend/src/stores/`. Each store is a class whose properties are declared with `$state` (for scalar values and nullable objects) or `$state.raw` (for array properties that are replaced wholesale on fetch), and a singleton instance is exported for use throughout the application.
 
 ### Pattern
 
@@ -59,7 +59,10 @@ import type { Foo } from "../types";
 import * as api from "../lib/api";
 
 class ExampleStore {
-  items: Foo[] = $state.raw([]);   // $state.raw for arrays — avoids deep-proxy overhead and suppresses Svelte's mutation warnings when the array is replaced wholesale
+  // $state.raw for arrays: tracks only the reference, not contents.
+  // Avoids deep-proxy overhead and suppresses Svelte's mutation warnings
+  // when the array is replaced wholesale.
+  items: Foo[] = $state.raw([]);
   loading = $state(false);
   loaded  = $state(false);
 
