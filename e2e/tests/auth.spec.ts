@@ -23,13 +23,15 @@ test.describe("Authentication flow", () => {
   });
 
   test("show validation and invalid credential errors", async ({ page }) => {
+    const validationUser = createTestUser({ displayName: "Validation User" });
+
     await openSignupForm(page);
 
     await page.getByRole("button", { name: "Create Account" }).click();
     await expect(getAuthErrorBanner(page)).toContainText("Please fill in all fields");
 
-    await page.locator("input#name").fill("Validation User");
-    await page.locator("input#email").fill(`validation-${Date.now()}@example.com`);
+    await page.locator("input#name").fill(validationUser.displayName);
+    await page.locator("input#email").fill(validationUser.email);
     await page.locator("input#password").fill("short");
     await page.getByRole("button", { name: "Create Account" }).click();
     await expect(getAuthErrorBanner(page)).toContainText(
