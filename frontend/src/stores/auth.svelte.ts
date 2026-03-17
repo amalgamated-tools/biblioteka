@@ -1,6 +1,5 @@
 import type { User } from "../types";
 import * as api from "../lib/api";
-import { ApiError } from "../lib/api";
 
 class AuthStore {
   user: User | null = $state(null);
@@ -36,7 +35,7 @@ class AuthStore {
       // Transient failures (network errors, 5xx) should not discard a
       // potentially valid token.
       const isAuthError =
-        err instanceof ApiError && (err.status === 401 || err.status === 404);
+        err instanceof api.ApiError && (err.status === 401 || err.status === 404);
       if (isAuthError && api.hasToken()) {
         api.clearToken();
         try {
