@@ -223,13 +223,13 @@ curl -X POST http://localhost:8080/api/libraries \
 
 ## Managing Libraries
 
-Libraries are global collections of filesystem paths. Any authenticated user can view libraries; only the background worker writes to them.
+Libraries are global collections of filesystem paths. Any authenticated user can view libraries; only **admins** can create, update, or delete them.
 
 ### Create a library
 
 ```bash
 curl -X POST http://localhost:8080/api/libraries \
-  -H "Authorization: Bearer <jwt>" \
+  -H "Authorization: Bearer <admin-jwt>" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Science Fiction",
@@ -248,9 +248,9 @@ curl -X POST http://localhost:8080/api/libraries \
 
 > **`organization_type`:** The only supported value is `"book_per_folder"`. Each immediate subdirectory under a library path is treated as a single book's folder.
 
-### Editing and deleting libraries
+### Edit and delete libraries
 
-Use `PUT /api/libraries/{id}` to update a library and `DELETE /api/libraries/{id}` to remove it. Deleting a library removes only the library record and its book associations — the underlying book, author, series, and book file records are not deleted.
+Use `PUT /api/libraries/{id}` to update a library and `DELETE /api/libraries/{id}` to remove it. Both operations require admin privileges. Deleting a library removes only the library record and its book associations — the underlying book, author, series, and book file records are not deleted.
 
 ---
 
