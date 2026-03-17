@@ -248,6 +248,8 @@ internal/
   handlers/        HTTP request handlers (books, authors, series, libraries, auth)
   jobs/            Background job handlers (scan:libraries, scan:library, scan:path, process:file)
   metadata/        EPUB/MOBI/PDF metadata extraction
+  organize/        File reorganization into canonical Author/Title/ directory structure
+  pathparser/      Path-based metadata extraction from directory layout (author, title, series, year)
   server/          Route registration, middleware setup, embedded frontend
   worker/          asynq worker setup
   otel/            OpenTelemetry tracing and structured logging setup
