@@ -68,7 +68,7 @@ Stores registered user accounts.
 
 ### `settings`
 
-Key-value store for runtime configuration. Currently used for OIDC provider settings and SMTP mail configuration.
+Key-value store for runtime configuration. Used for OIDC provider settings, SMTP mail configuration, and application-level feature flags (e.g. `organize_files`).
 
 | Column       | Type    | Nullable | Default  | Description             |
 |--------------|---------|----------|----------|-------------------------|
@@ -98,6 +98,12 @@ Key-value store for runtime configuration. Currently used for OIDC provider sett
 | `smtp_password`   | SMTP authentication password (stored as plaintext; never returned by the API) |
 | `smtp_from`       | Envelope `From` address for outgoing mail                        |
 | `smtp_tls`        | TLS mode: `none`, `starttls` (default), or `tls`                 |
+
+*Application settings:*
+
+| Key               | Description                                                                                          |
+|-------------------|------------------------------------------------------------------------------------------------------|
+| `organize_files`  | When `"true"`, the `process:file` job moves imported files into `<library_root>/<Author>/<Title>/`. No HTTP API endpoint exists yet — set directly in the database. See [File organization](administration.md#file-organization). |
 
 **Notes:**
 - Environment variables (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `SMTP_HOST`, etc.) take precedence over values stored in this table.
