@@ -277,6 +277,8 @@ curl -X PUT http://localhost:8080/api/config/oidc \
 
 The server immediately tests the issuer URL by performing OIDC discovery before saving. If discovery fails, the config is rejected with a `400` error.
 
+All four settings (`issuer_url`, `client_id`, `client_secret`, `redirect_uri`) are saved atomically in a single database transaction. If the write fails, none of the settings are changed — the configuration is never left in a partially-updated state.
+
 **Precedence:** Environment variables (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI`) always override database-stored settings. If environment variables are set, the runtime configuration UI will appear read-only.
 
 ---
@@ -311,6 +313,8 @@ curl -X POST http://localhost:8080/api/config/smtp/test \
 The test endpoint sends a short verification email to the authenticated admin's registered email address. It returns `200 OK` with a `{"message":"Test email sent to <email>"}` body on success, or a `4xx`/`5xx` error with `{"error":"…"}` on failure.
 
 **TLS modes:** `none` (plaintext), `starttls` (STARTTLS upgrade on port 587, default), or `tls` (implicit TLS on port 465).
+
+All six settings (`host`, `port`, `username`, `password`, `from`, `tls`) are saved atomically in a single database transaction. If the write fails, none of the settings are changed — the configuration is never left in a partially-updated state.
 
 **Precedence:** When the `SMTP_HOST` environment variable is set, all SMTP settings are read exclusively from environment variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS`) and the database values are ignored. The runtime configuration UI will appear read-only. When `SMTP_HOST` is unset (the default), the values stored in the database via the API or Settings UI are used.
 
