@@ -135,22 +135,17 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 	)
 
 	_, port, _ := net.SplitHostPort(params.Addr)
-	for k, v := range map[string]string{
-		settingSMTPHost:     host,
-		settingSMTPPort:     port,
-		settingSMTPUsername: username,
-		settingSMTPPassword: password,
-		settingSMTPFrom:     params.From,
-		settingSMTPTLS:      params.TLS,
-	} {
-		if err := h.DB.SetSetting(r.Context(), k, v); err != nil {
-			slog.ErrorContext(r.Context(), "failed to save SMTP setting",
-				slog.String(otelkeys.Key, k),
-				slog.Any(otelkeys.Error, err),
-			)
-			writeError(r.Context(), w, http.StatusInternalServerError, "failed to save SMTP configuration")
-			return
-		}
+	if err := h.DB.SetSettings(r.Context(), []db.Setting{
+		{Key: settingSMTPHost, Value: host},
+		{Key: settingSMTPPort, Value: port},
+		{Key: settingSMTPUsername, Value: username},
+		{Key: settingSMTPPassword, Value: password},
+		{Key: settingSMTPFrom, Value: params.From},
+		{Key: settingSMTPTLS, Value: params.TLS},
+	}); err != nil {
+		slog.ErrorContext(r.Context(), "failed to save SMTP configuration", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to save SMTP configuration")
+		return
 	}
 
 	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSMTPConfigUpdated, "config", "smtp", map[string]any{
