@@ -2,8 +2,6 @@
   import { onMount } from "svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { routerStore } from "../stores/router.svelte";
-  import * as api from "../lib/api";
-  import type { BookSummary } from "../types";
   import {
     Plus,
     Library as LibraryIcon,
@@ -13,10 +11,6 @@
   import LibraryForm from "./libraries/LibraryForm.svelte";
 
   let error: string | null = $state(null);
-
-  // Library view state
-  let viewBooks: BookSummary[] = $state([]);
-  let viewLoading = $state(false);
 
   // Determine mode from subPath: "new", "edit/{id}", "{id}" (view), or empty
   let mode: "create" | "edit" | "view" | "empty" = $derived.by(() => {
@@ -44,35 +38,6 @@
     return libraryStore.libraries.find((l) => l.id === viewId) ?? null;
   });
 
-  // Load books when viewing a library
-  $effect(() => {
-    error = null;
-    if (mode === "view" && viewId) {
-      loadLibraryBooks(viewId);
-    }
-  });
-
-  async function loadLibraryBooks(libraryId: string) {
-    viewBooks = [];
-    viewLoading = true;
-    error = null;
-    try {
-      const books = await api.listLibraryBooks(libraryId);
-      if (viewId === libraryId) {
-        viewBooks = books;
-      }
-    } catch (e) {
-      if (viewId === libraryId) {
-        error = e instanceof Error ? e.message : "Failed to load books";
-        viewBooks = [];
-      }
-    } finally {
-      if (viewId === libraryId) {
-        viewLoading = false;
-      }
-    }
-  }
-
   onMount(async () => {
     if (!libraryStore.loaded) {
       try {
@@ -93,8 +58,6 @@
     <LibraryView
       library={viewLibrary}
       libraryId={viewId}
-      books={viewBooks}
-      loading={viewLoading}
       {error}
     />
   {:else if mode === "create" || mode === "edit"}
