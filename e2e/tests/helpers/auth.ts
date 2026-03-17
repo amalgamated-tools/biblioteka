@@ -66,7 +66,7 @@ export async function signOut(page: Page): Promise<void> {
   await page.waitForSelector("input#email");
   await page.waitForSelector("input#password");
   await page.waitForFunction(() => localStorage.getItem("biblioteka_token") === null);
-  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("button", { name: "Login", exact: true })).toBeVisible();
 }
 
 export async function signIn(page: Page, email: string, password: string): Promise<void> {

@@ -1,0 +1,56 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e6]:
+      - img [ref=e8]
+      - generic [ref=e9]:
+        - heading "biblioteka" [level=1] [ref=e10]
+        - paragraph [ref=e11]: e2e-1773788851210-894v4h@example.com
+    - navigation [ref=e12]:
+      - generic [ref=e13]:
+        - paragraph [ref=e14]: Home
+        - button "Dashboard" [ref=e16]:
+          - img [ref=e17]
+          - text: Dashboard
+      - generic [ref=e19]:
+        - paragraph [ref=e20]: Libraries
+        - button "Create library" [ref=e21]:
+          - img [ref=e22]
+      - button "Settings" [ref=e25]:
+        - img [ref=e26]
+        - text: Settings
+    - paragraph [ref=e28]: vdev
+    - button "Logout" [ref=e30]:
+      - img [ref=e31]
+      - text: Logout
+  - main [ref=e32]:
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - heading "Create Library" [level=2] [ref=e37]
+        - button "Close form" [ref=e38]:
+          - img [ref=e39]
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]: Name
+          - textbox "Name" [ref=e43]:
+            - /placeholder: e.g. Fiction, Audiobooks
+        - generic [ref=e44]:
+          - generic [ref=e45]: Folders
+          - generic [ref=e47]:
+            - img [ref=e48]
+            - textbox "/path/to/books" [ref=e49]
+          - button "Add another folder" [ref=e50]:
+            - img [ref=e51]
+            - text: Add another folder
+        - paragraph [ref=e53]:
+          - img [ref=e54]
+          - text: "Organization: Book Per Folder"
+        - generic [ref=e55]:
+          - checkbox [ref=e57]
+          - generic [ref=e59]: Monitor for new content
+        - generic [ref=e61]:
+          - button "Create Library" [ref=e62]
+          - button "Cancel" [ref=e63]
+```
