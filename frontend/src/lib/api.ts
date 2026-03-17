@@ -7,11 +7,11 @@ import type {
   Series,
   SeriesInput,
   Book,
-  BookSummary,
   BookInput,
   BookSeriesEntry,
   BookFile,
   BookFileInput,
+  PaginatedBooks,
 } from "../types";
 
 const TOKEN_KEY = "biblioteka_token";
@@ -271,8 +271,15 @@ export async function deleteLibrary(id: string): Promise<void> {
   await request<void>("DELETE", `/api/libraries/${id}`);
 }
 
-export async function listLibraryBooks(libraryId: string): Promise<BookSummary[]> {
-  return request<BookSummary[]>("GET", `/api/libraries/${libraryId}/books`);
+export async function listLibraryBooks(
+  libraryId: string,
+  limit = 50,
+  offset = 0,
+): Promise<PaginatedBooks> {
+  return request<PaginatedBooks>(
+    "GET",
+    `/api/libraries/${libraryId}/books?limit=${limit}&offset=${offset}`,
+  );
 }
 
 // Authors
@@ -321,8 +328,8 @@ export async function deleteSeries(id: string): Promise<void> {
 
 // Books
 
-export async function listBooks(): Promise<BookSummary[]> {
-  return request<BookSummary[]>("GET", "/api/books");
+export async function listBooks(limit = 50, offset = 0): Promise<PaginatedBooks> {
+  return request<PaginatedBooks>("GET", `/api/books?limit=${limit}&offset=${offset}`);
 }
 
 export async function getBook(id: string): Promise<Book> {

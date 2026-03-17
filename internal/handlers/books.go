@@ -84,6 +84,13 @@ type bookSummaryDTO struct {
 	UpdatedAt       db.Timestamp `json:"updated_at"`
 }
 
+type bookListDTO struct {
+	Books  []bookSummaryDTO `json:"books"`
+	Total  int              `json:"total"`
+	Limit  int              `json:"limit"`
+	Offset int              `json:"offset"`
+}
+
 func toBookSummaryDTO(b *db.Book) bookSummaryDTO {
 	return bookSummaryDTO{
 		ID:              b.ID,
@@ -253,17 +260,25 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 // listBooks godoc
 //
 //	@Summary		List books
-//	@Description	Returns all books (summary without relations)
+//	@Description	Returns paginated books (summary without relations)
 //	@Tags			Books
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Failure		401	{object}	errorResponse
-//	@Success		200	{array}		bookSummaryDTO
-//	@Failure		500	{object}	errorResponse
+//	@Param			limit	query		int	false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int	false	"Number of items to skip (default 0)"
+//	@Success		200		{object}	bookListDTO
+//	@Failure		401		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
 //	@Router			/books [get]
 func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
-	slog.DebugContext(r.Context(), "listing books")
-	books, err := h.DB.ListBooks(r.Context())
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+
+	slog.DebugContext(r.Context(), "listing books",
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+
+	books, total, err := h.DB.ListBooksPaginated(r.Context(), limit, offset)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to list books", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list books")
@@ -277,7 +292,12 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 		dtos = append(dtos, toBookSummaryDTO(&books[i]))
 	}
 
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, bookListDTO{
+		Books:  dtos,
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
+	})
 }
 
 // createBook godoc

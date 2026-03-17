@@ -372,21 +372,28 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 // listLibraryBooks godoc
 //
 //	@Summary		List books in a library
-//	@Description	Returns all books belonging to a specific library
+//	@Description	Returns paginated books belonging to a specific library
 //	@Tags			Libraries
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Failure		401	{object}	errorResponse
-//	@Param			id	path		string	true	"Library ID"
-//	@Success		200	{array}		bookSummaryDTO
-//	@Failure		400	{object}	errorResponse
-//	@Failure		404	{object}	errorResponse
-//	@Failure		500	{object}	errorResponse
+//	@Param			id		path		string	true	"Library ID"
+//	@Param			limit	query		int		false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int		false	"Number of items to skip (default 0)"
+//	@Success		200		{object}	bookListDTO
+//	@Failure		401		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
 //	@Router			/libraries/{id}/books [get]
 func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "listing library books", slog.String(otelkeys.LibraryID, id))
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
 
-	books, err := h.DB.ListBooksByLibrary(r.Context(), id)
+	slog.DebugContext(r.Context(), "listing library books",
+		slog.String(otelkeys.LibraryID, id),
+		slog.Int(otelkeys.Limit, limit),
+		slog.Int(otelkeys.Offset, offset),
+	)
+
+	books, total, err := h.DB.ListBooksByLibraryPaginated(r.Context(), id, limit, offset)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to list library books",
 			slog.Any(otelkeys.Error, err),
@@ -396,7 +403,7 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 	}
 
 	// If no books found, check whether the library actually exists.
-	if len(books) == 0 {
+	if total == 0 {
 		_, err := h.DB.GetLibrary(r.Context(), id)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -418,7 +425,12 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 		dtos = append(dtos, toBookSummaryDTO(&books[i]))
 	}
 
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, bookListDTO{
+		Books:  dtos,
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
+	})
 }
 
 func validatePaths(paths []string) error {
