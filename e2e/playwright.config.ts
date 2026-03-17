@@ -34,10 +34,7 @@ export default defineConfig({
     timeout: 15_000,
     env: {
       PORT: String(testPort),
-      DATABASE_PATH: join(testTmpDir, "e2e.db"),
       JWT_SECRET: "e2e-test-jwt-secret",
-      STORAGE_TYPE: "local",
-      STORAGE_LOCAL_PATH: join(testTmpDir, "uploads"),
     },
   },
 });

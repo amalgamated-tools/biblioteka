@@ -53,10 +53,8 @@ test.describe("Authentication flow", () => {
     await expect(page.getByText("Get started with Biblioteka")).toBeVisible();
     await expect(page.getByText(testUser.email)).toBeVisible();
 
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS }),
-      page.locator('button#logout-button').click(),
-    ]);
+    await page.locator('button#logout-button').click();
+    await page.waitForSelector('button#login-btn', { timeout: NAVIGATION_TIMEOUT_MS });
     // --- Sign out ---
     await page.evaluate(() => {
       localStorage.removeItem('biblioteka_token');
@@ -72,8 +70,15 @@ test.describe("Authentication flow", () => {
     await page.waitForSelector('button#login-btn', { timeout: NAVIGATION_TIMEOUT_MS });
 
     // --- Login ---
+    await page.locator('button#login-btn').click();
+    await page.waitForSelector('input#email');
+    await page.waitForSelector('input#password');
     await page.locator('input#email').fill(testUser.email);
-
+    await page.locator('input#password').fill(testUser.password);
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS }),
+      page.locator('button[type="submit"]').click(),
+    ]);
 
     // Should land on dashboard again
     await expect(page).toHaveURL("/");
