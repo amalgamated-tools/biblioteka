@@ -11,6 +11,7 @@ test.describe("Account settings", () => {
   test("change password and use the new credentials", async ({ page }) => {
     const testUser = createTestUser({ displayName: "Settings Test User" });
     const newPassword = "updatedpassword456";
+    const tooShortPassword = "short";
 
     await signUp(page, testUser);
 
@@ -23,8 +24,8 @@ test.describe("Account settings", () => {
     await expect(page.getByText("Current password is required")).toBeVisible();
 
     await page.locator("#current-password").fill(testUser.password);
-    await page.locator("#new-password").fill("short");
-    await page.locator("#confirm-password").fill("short");
+    await page.locator("#new-password").fill(tooShortPassword);
+    await page.locator("#confirm-password").fill(tooShortPassword);
     await page.getByRole("button", { name: "Update Password" }).click();
     await expect(page.getByText("New password must be at least 6 characters")).toBeVisible();
 
