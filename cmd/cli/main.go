@@ -12,24 +12,55 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/worker"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <file>\n", os.Args[0])
+		printUsage()
 		os.Exit(1)
 	}
 
 	ctx := context.Background()
-	path := os.Args[1]
+	cmd := os.Args[1]
 
-	if err := run(ctx, path); err != nil {
+	var err error
+	switch cmd {
+	case "process-file":
+		if len(os.Args) < 3 {
+			fmt.Fprintf(os.Stderr, "Usage: %s process-file <file>\n", os.Args[0])
+			os.Exit(1)
+		}
+		err = runProcessFile(ctx, os.Args[2])
+	case "scan-directory":
+		if len(os.Args) < 3 {
+			fmt.Fprintf(os.Stderr, "Usage: %s scan-directory <directory> [library-id]\n", os.Args[0])
+			os.Exit(1)
+		}
+		libraryID := ""
+		if len(os.Args) >= 4 {
+			libraryID = os.Args[3]
+		}
+		err = runScanDirectory(ctx, os.Args[2], libraryID)
+	default:
+		// Backwards compatibility: treat first argument as a file path.
+		err = runProcessFile(ctx, cmd)
+	}
+
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, path string) error {
+func printUsage() {
+	fmt.Fprintf(os.Stderr, "Usage: %s <command> [arguments]\n\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Commands:\n")
+	fmt.Fprintf(os.Stderr, "  process-file <file>                    Process a single book file\n")
+	fmt.Fprintf(os.Stderr, "  scan-directory <directory> [library-id] Scan a directory and enqueue files for processing\n")
+}
+
+func runProcessFile(ctx context.Context, path string) error {
 	fileName := filepath.Base(path)
 	fileExt := filepath.Ext(path)
 	fileType := ""
@@ -72,5 +103,35 @@ func run(ctx context.Context, path string) error {
 	}
 
 	fmt.Printf("Successfully processed file: %s\n", path)
+	return nil
+}
+
+func runScanDirectory(ctx context.Context, path string, libraryID string) error {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisURL = "redis://localhost:6379"
+	}
+
+	w, err := worker.New(redisURL)
+	if err != nil {
+		return fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+	defer func() { _ = w.Close() }()
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("failed to resolve path %q: %w", path, err)
+	}
+
+	err = jobs.ScanDirectory(ctx, w, jobs.ScanPathPayload{
+		Path:        absPath,
+		LibraryID:   libraryID,
+		LibraryRoot: absPath,
+	})
+	if err != nil {
+		return fmt.Errorf("error scanning directory %q: %w", absPath, err)
+	}
+
+	fmt.Printf("Successfully scanned directory: %s\n", absPath)
 	return nil
 }
