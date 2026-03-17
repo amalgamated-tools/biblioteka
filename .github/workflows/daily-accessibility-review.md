@@ -75,11 +75,19 @@ steps:
       echo "Building and running the app in background..."
       PORT=3000 JWT_SECRET=github-actions ./biblioteka -mode server &
       echo "Waiting for server to be ready..."
+      server_ready=false
       for i in $(seq 1 30); do
         echo "Checking if server is up (attempt $i)..."
-        curl -sf http://localhost:3000/api/health && break
+        if curl -sf http://localhost:3000/api/health; then
+          server_ready=true
+          break
+        fi
         sleep 1
       done
+      if [ "$server_ready" = false ]; then
+        echo "Error: server did not become ready at http://localhost:3000/api/health within 30 seconds."
+        exit 1
+      fi
 source: githubnext/agentics/workflows/daily-accessibility-review.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
 engine: copilot
 ---

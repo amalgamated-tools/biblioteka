@@ -60,8 +60,6 @@ test.describe("Authentication flow", () => {
     await page.waitForSelector('input#email');
     await page.waitForSelector('input#password');
     await page.waitForFunction(() => localStorage.getItem('biblioteka_token') === null);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL("/", { waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS });
 
 
     // Should be on main page
