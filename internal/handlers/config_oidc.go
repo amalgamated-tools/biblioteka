@@ -40,7 +40,7 @@ type setOIDCConfigRequest struct {
 //	@Failure		500	{object}	errorResponse
 //	@Router			/config/oidc [get]
 func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
+	if !requireAdmin(h.DB, w, r) {
 		return
 	}
 

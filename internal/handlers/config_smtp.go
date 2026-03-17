@@ -63,7 +63,7 @@ func (h *ConfigHandler) HandleSMTPConfig(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *ConfigHandler) handleGetSMTPConfig(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
+	if !requireAdmin(h.DB, w, r) {
 		return
 	}
 
