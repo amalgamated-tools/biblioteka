@@ -345,7 +345,7 @@ func TestListLibraryBooks_Success(t *testing.T) {
 }
 
 func TestListLibraryBooks_PaginationValid(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, userID, _ := setupLibraryHandler(t)
 
 	// Create a library.
 	dir := t.TempDir()
@@ -399,7 +399,7 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 }
 
 func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, userID, _ := setupLibraryHandler(t)
 
 	// Create a library.
 	dir := t.TempDir()
@@ -453,7 +453,7 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 }
 
 func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, userID, _ := setupLibraryHandler(t)
 
 	// Create a library.
 	dir := t.TempDir()
