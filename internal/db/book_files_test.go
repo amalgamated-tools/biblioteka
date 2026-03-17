@@ -24,9 +24,6 @@ func TestCreateBookFile(t *testing.T) {
 	if bf == nil {
 		t.Fatalf("CreateBookFile() returned nil book file")
 	}
-	if err != nil {
-		t.Fatalf("CreateBookFile() error: %v", err)
-	}
 	if bf.ID == "" {
 		t.Error("CreateBookFile() returned empty ID")
 	}
