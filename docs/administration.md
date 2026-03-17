@@ -308,7 +308,7 @@ curl -X POST http://localhost:8080/api/config/smtp/test \
   -H "Authorization: Bearer <admin-jwt>"
 ```
 
-The test endpoint sends a short verification email to the `from` address. It returns `200 OK` with a `{"message":"…"}` body on success, or a `4xx`/`5xx` error with `{"error":"…"}` on failure.
+The test endpoint sends a short verification email to the authenticated admin's registered email address. It returns `200 OK` with a `{"message":"Test email sent to <email>"}` body on success, or a `4xx`/`5xx` error with `{"error":"…"}` on failure.
 
 **TLS modes:** `none` (plaintext), `starttls` (STARTTLS upgrade on port 587, default), or `tls` (implicit TLS on port 465).
 
