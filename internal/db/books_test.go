@@ -271,10 +271,23 @@ func TestSetBookAuthors_Replace(t *testing.T) {
 func TestSetBookSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	s, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
+	if book == nil {
+		t.Fatal("CreateBook() returned nil book")
+	}
 
-	err := d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: floatPtr(1)}})
+	s, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateSeries() error: %v", err)
+	}
+	if s == nil {
+		t.Fatal("CreateSeries() returned nil series")
+	}
+
+	err = d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: floatPtr(1)}})
 	if err != nil {
 		t.Fatalf("SetBookSeries() error: %v", err)
 	}
@@ -291,6 +304,70 @@ func TestSetBookSeries(t *testing.T) {
 	}
 	if entries[0].Position == nil || *entries[0].Position != 1 {
 		t.Errorf("Position = %v, want 1", entries[0].Position)
+	}
+}
+
+func TestGetAuthorsForBooks(t *testing.T) {
+	d := newTestDB(t)
+
+	book1, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() for book1 error: %v", err)
+	}
+	if book1 == nil {
+		t.Fatal("CreateBook() for book1 returned nil book")
+	}
+
+	book2, err := d.CreateBook(context.Background(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() for book2 error: %v", err)
+	}
+	if book2 == nil {
+		t.Fatal("CreateBook() for book2 returned nil book")
+	}
+
+	author1, err := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() for author1 error: %v", err)
+	}
+	if author1 == nil {
+		t.Fatal("CreateAuthor() for author1 returned nil author")
+	}
+
+	author2, err := d.CreateAuthor(context.Background(), "Robin Furth", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() for author2 error: %v", err)
+	}
+	if author2 == nil {
+		t.Fatal("CreateAuthor() for author2 returned nil author")
+	}
+
+	if err := d.SetBookAuthors(context.Background(), book1.ID, []string{author2.ID, author1.ID}); err != nil {
+		t.Fatalf("SetBookAuthors() for book1 error: %v", err)
+	}
+	if err := d.SetBookAuthors(context.Background(), book2.ID, []string{author1.ID}); err != nil {
+		t.Fatalf("SetBookAuthors() for book2 error: %v", err)
+	}
+
+	got, err := d.GetAuthorsForBooks(context.Background(), []string{book1.ID, book2.ID})
+	if err != nil {
+		t.Fatalf("GetAuthorsForBooks() error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("GetAuthorsForBooks() returned %d book entries, want 2", len(got))
+	}
+	if len(got[book1.ID]) != 2 {
+		t.Fatalf("GetAuthorsForBooks()[book1] returned %d authors, want 2", len(got[book1.ID]))
+	}
+	seen := map[string]bool{}
+	for _, author := range got[book1.ID] {
+		seen[author.ID] = true
+	}
+	if !seen[author1.ID] || !seen[author2.ID] {
+		t.Errorf("authors for book1 = %+v, want IDs %q and %q", got[book1.ID], author1.ID, author2.ID)
+	}
+	if len(got[book2.ID]) != 1 || got[book2.ID][0].ID != author1.ID {
+		t.Errorf("authors for book2 = %+v, want [%s]", got[book2.ID], author1.ID)
 	}
 }
 
