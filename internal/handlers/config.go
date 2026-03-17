@@ -111,7 +111,12 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String(otelkeys.UserID, userID), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(
+			r.Context(),
+			"failed to check admin status",
+			slog.String(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "internal server error")
 		return
 	}
