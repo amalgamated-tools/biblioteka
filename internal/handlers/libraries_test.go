@@ -41,20 +41,27 @@ func (m *mockEnqueuer) Enqueue(_ context.Context, name string, payload any) (str
 	return "mock-job-id", nil
 }
 
-func setupLibraryHandler(t *testing.T) (*LibraryHandler, string) {
+func setupLibraryHandler(t *testing.T) (*LibraryHandler, string, string) {
 	t.Helper()
 	d := newTestDB(t)
 	h := &LibraryHandler{DB: d}
 
-	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
+	admin, err := d.CreateUser(context.Background(), "Admin", "admin@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create user: %v", err)
+		t.Fatalf("create admin: %v", err)
 	}
-	return h, user.ID
+	if err := d.SetAdmin(context.Background(), admin.ID, true); err != nil {
+		t.Fatalf("set admin role: %v", err)
+	}
+	regular, err := d.CreateUser(context.Background(), "Regular", "regular@example.com", "password1")
+	if err != nil {
+		t.Fatalf("create regular user: %v", err)
+	}
+	return h, admin.ID, regular.ID
 }
 
 func TestCreateLibrary_ValidPath(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 
 	dir := t.TempDir()
 	body, _ := json.Marshal(libraryRequest{
@@ -63,7 +70,7 @@ func TestCreateLibrary_ValidPath(t *testing.T) {
 	})
 
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
@@ -85,7 +92,7 @@ func TestCreateLibrary_ValidPath(t *testing.T) {
 }
 
 func TestCreateLibrary_NonexistentPath(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 
 	body, _ := json.Marshal(libraryRequest{
 		Name:  "Books",
@@ -93,7 +100,7 @@ func TestCreateLibrary_NonexistentPath(t *testing.T) {
 	})
 
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
@@ -112,7 +119,7 @@ func TestCreateLibrary_NonexistentPath(t *testing.T) {
 }
 
 func TestCreateLibrary_PathIsFile(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "not-a-dir.txt")
@@ -126,7 +133,7 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 	})
 
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
@@ -145,7 +152,7 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 }
 
 func TestCreateLibrary_MixedValidAndInvalidPaths(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 
 	validDir := t.TempDir()
 	body, _ := json.Marshal(libraryRequest{
@@ -154,7 +161,7 @@ func TestCreateLibrary_MixedValidAndInvalidPaths(t *testing.T) {
 	})
 
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
@@ -165,7 +172,7 @@ func TestCreateLibrary_MixedValidAndInvalidPaths(t *testing.T) {
 }
 
 func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 	mock := &mockEnqueuer{}
 	h.Enqueuer = mock
 
@@ -176,7 +183,7 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 	})
 
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
@@ -201,7 +208,7 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 }
 
 func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 	mock := &mockEnqueuer{}
 	h.Enqueuer = mock
 
@@ -213,7 +220,7 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 	})
 
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
@@ -243,7 +250,7 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 }
 
 func TestCreateLibrary_EnqueueErrorDoesNotFailRequest(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 	mock := &mockEnqueuer{err: fmt.Errorf("redis unavailable")}
 	h.Enqueuer = mock
 
@@ -254,7 +261,7 @@ func TestCreateLibrary_EnqueueErrorDoesNotFailRequest(t *testing.T) {
 	})
 
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
@@ -265,7 +272,7 @@ func TestCreateLibrary_EnqueueErrorDoesNotFailRequest(t *testing.T) {
 }
 
 func TestCreateLibrary_NilEnqueuerDoesNotPanic(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 	// h.Enqueuer is nil by default from setupLibraryHandler
 
 	dir := t.TempDir()
@@ -275,7 +282,7 @@ func TestCreateLibrary_NilEnqueuerDoesNotPanic(t *testing.T) {
 	})
 
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 
 	h.HandleLibraries(w, r)
@@ -286,13 +293,13 @@ func TestCreateLibrary_NilEnqueuerDoesNotPanic(t *testing.T) {
 }
 
 func TestListLibraryBooks_Success(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 
 	// Create a library.
 	dir := t.TempDir()
 	body, _ := json.Marshal(libraryRequest{Name: "Fiction", Paths: []string{dir}})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 	if w.Code != http.StatusCreated {
@@ -314,7 +321,7 @@ func TestListLibraryBooks_Success(t *testing.T) {
 
 	// List books for the library.
 	r2 := httptest.NewRequest(http.MethodGet, "/api/libraries/"+lib.ID+"/books", nil)
-	r2 = withUserID(r2, userID)
+	r2 = withUserID(r2, adminID)
 	w2 := httptest.NewRecorder()
 	h.HandleLibrary(w2, r2)
 
@@ -335,10 +342,10 @@ func TestListLibraryBooks_Success(t *testing.T) {
 }
 
 func TestListLibraryBooks_NotFound(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/libraries/nonexistent-id/books", nil)
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibrary(w, r)
 
@@ -348,13 +355,13 @@ func TestListLibraryBooks_NotFound(t *testing.T) {
 }
 
 func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 
 	// Create a library first.
 	dir := t.TempDir()
 	body, _ := json.Marshal(libraryRequest{Name: "Fiction", Paths: []string{dir}})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 	if w.Code != http.StatusCreated {
@@ -367,7 +374,7 @@ func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
 
 	// POST to /books sub-resource should be method not allowed.
 	r2 := httptest.NewRequest(http.MethodPost, "/api/libraries/"+lib.ID+"/books", nil)
-	r2 = withUserID(r2, userID)
+	r2 = withUserID(r2, adminID)
 	w2 := httptest.NewRecorder()
 	h.HandleLibrary(w2, r2)
 
@@ -377,7 +384,7 @@ func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
 }
 
 func TestUpdateLibrary_NonexistentPath(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 
 	// Create a library with a valid path first.
 	dir := t.TempDir()
@@ -386,7 +393,7 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 		Paths: []string{dir},
 	})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 
@@ -405,7 +412,7 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 		Paths: []string{"/nonexistent/update/path"},
 	})
 	r2 := httptest.NewRequest(http.MethodPut, "/api/libraries/"+created.ID, bytes.NewReader(updateBody))
-	r2 = withUserID(r2, userID)
+	r2 = withUserID(r2, adminID)
 	w2 := httptest.NewRecorder()
 
 	h.HandleLibrary(w2, r2)
@@ -416,7 +423,7 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 }
 
 func TestUpdateLibrary_ValidPath(t *testing.T) {
-	h, userID := setupLibraryHandler(t)
+	h, adminID, _ := setupLibraryHandler(t)
 
 	dir1 := t.TempDir()
 	dir2 := t.TempDir()
@@ -427,7 +434,7 @@ func TestUpdateLibrary_ValidPath(t *testing.T) {
 		Paths: []string{dir1},
 	})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
-	r = withUserID(r, userID)
+	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 
@@ -446,12 +453,107 @@ func TestUpdateLibrary_ValidPath(t *testing.T) {
 		Paths: []string{dir2},
 	})
 	r2 := httptest.NewRequest(http.MethodPut, "/api/libraries/"+created.ID, bytes.NewReader(updateBody))
-	r2 = withUserID(r2, userID)
+	r2 = withUserID(r2, adminID)
 	w2 := httptest.NewRecorder()
 
 	h.HandleLibrary(w2, r2)
 
 	if w2.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+	}
+}
+
+func TestCreateLibrary_NonAdminForbidden(t *testing.T) {
+	h, _, regularID := setupLibraryHandler(t)
+
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{
+		Name:  "Books",
+		Paths: []string{dir},
+	})
+
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, regularID)
+	w := httptest.NewRecorder()
+
+	h.HandleLibraries(w, r)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+	}
+}
+
+func TestUpdateLibrary_NonAdminForbidden(t *testing.T) {
+	h, adminID, regularID := setupLibraryHandler(t)
+
+	// Create a library as admin first.
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{Name: "Books", Paths: []string{dir}})
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+	h.HandleLibraries(w, r)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("setup: status = %d; body: %s", w.Code, w.Body.String())
+	}
+	var created libraryDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	// Attempt update as regular user.
+	updateBody, _ := json.Marshal(libraryRequest{Name: "Updated", Paths: []string{dir}})
+	r2 := httptest.NewRequest(http.MethodPut, "/api/libraries/"+created.ID, bytes.NewReader(updateBody))
+	r2 = withUserID(r2, regularID)
+	w2 := httptest.NewRecorder()
+
+	h.HandleLibrary(w2, r2)
+
+	if w2.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusForbidden, w2.Body.String())
+	}
+}
+
+func TestDeleteLibrary_NonAdminForbidden(t *testing.T) {
+	h, adminID, regularID := setupLibraryHandler(t)
+
+	// Create a library as admin first.
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{Name: "Books", Paths: []string{dir}})
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+	h.HandleLibraries(w, r)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("setup: status = %d; body: %s", w.Code, w.Body.String())
+	}
+	var created libraryDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	// Attempt delete as regular user.
+	r2 := httptest.NewRequest(http.MethodDelete, "/api/libraries/"+created.ID, nil)
+	r2 = withUserID(r2, regularID)
+	w2 := httptest.NewRecorder()
+
+	h.HandleLibrary(w2, r2)
+
+	if w2.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusForbidden, w2.Body.String())
+	}
+}
+
+func TestListLibraries_NonAdminAllowed(t *testing.T) {
+	h, _, regularID := setupLibraryHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/libraries", nil)
+	r = withUserID(r, regularID)
+	w := httptest.NewRecorder()
+
+	h.HandleLibraries(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 }
