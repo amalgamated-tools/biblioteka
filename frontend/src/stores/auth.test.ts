@@ -32,14 +32,15 @@ describe("auth store", () => {
   });
 
   describe("init", () => {
-    it("sets loading to false when no token exists", async () => {
+    it("sets loading to false when no token and no cookie", async () => {
       vi.mocked(api.hasToken).mockReturnValue(false);
+      vi.mocked(api.getMe).mockRejectedValue(new Error("unauthorized"));
 
       await authStore.init();
 
       expect(authStore.loading).toBe(false);
       expect(authStore.user).toBeNull();
-      expect(api.getMe).not.toHaveBeenCalled();
+      expect(api.getMe).toHaveBeenCalledTimes(1);
     });
 
     it("fetches user when token exists", async () => {
@@ -62,14 +63,36 @@ describe("auth store", () => {
       expect(authStore.loading).toBe(false);
     });
 
-    it("clears token and sets user to null when getMe fails", async () => {
+    it("clears token and retries when getMe fails with token", async () => {
       vi.mocked(api.hasToken).mockReturnValue(true);
       vi.mocked(api.getMe).mockRejectedValue(new Error("unauthorized"));
 
       await authStore.init();
 
       expect(api.clearToken).toHaveBeenCalled();
+      expect(api.getMe).toHaveBeenCalledTimes(2);
       expect(authStore.user).toBeNull();
+      expect(authStore.loading).toBe(false);
+    });
+
+    it("authenticates via cookie on plain reload without token or URL marker", async () => {
+      vi.mocked(api.hasToken).mockReturnValue(false);
+      vi.mocked(api.getMe).mockResolvedValue({
+        id: "3",
+        email: "cookie@b.com",
+        oidc_linked: true,
+        is_admin: false,
+      });
+
+      await authStore.init();
+
+      expect(api.getMe).toHaveBeenCalledTimes(1);
+      expect(authStore.user).toEqual({
+        id: "3",
+        email: "cookie@b.com",
+        oidc_linked: true,
+        is_admin: false,
+      });
       expect(authStore.loading).toBe(false);
     });
 

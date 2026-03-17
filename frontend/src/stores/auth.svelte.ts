@@ -26,30 +26,20 @@ class AuthStore {
       window.history.replaceState({}, "", window.location.pathname);
     }
 
-    // Try to load the current user. Auth may come from a localStorage token
-    // (normal login/signup) or an HttpOnly cookie (OIDC callback).
-    if (api.hasToken()) {
-      try {
-        const u = await api.getMe();
-        this.user = u;
-      } catch {
-        // Token is present but invalid. Clear it and retry using only cookie-based auth.
+    // Always attempt to load the current user. Auth may come from a
+    // localStorage token (normal login/signup) or an HttpOnly cookie (OIDC).
+    try {
+      this.user = await api.getMe();
+    } catch {
+      // If a localStorage token was sent and rejected, clear it and
+      // retry — a valid HttpOnly cookie may still authenticate.
+      if (api.hasToken()) {
         api.clearToken();
         try {
-          const u = await api.getMe();
-          this.user = u;
+          this.user = await api.getMe();
         } catch {
           // Not authenticated via cookie either; stay logged out.
         }
-      }
-    } else if (oidcLogin || oidcLinked) {
-      // No localStorage token but an OIDC redirect marker is present —
-      // try cookie-based auth set during the OIDC callback.
-      try {
-        const u = await api.getMe();
-        this.user = u;
-      } catch {
-        // Not authenticated via cookie either; stay logged out.
       }
     }
     this.loading = false;
