@@ -769,7 +769,7 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 	}
 
 	if _, err := h.DB.ExecContext(ctx, `
-		CREATE TRIGGER settings_fail_smtp_username_update
+		CREATE TRIGGER test_settings_fail_smtp_username_update
 		BEFORE UPDATE ON settings
 		WHEN NEW.key = 'smtp_username'
 		BEGIN
@@ -778,6 +778,11 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 	`); err != nil {
 		t.Fatalf("create trigger: %v", err)
 	}
+	t.Cleanup(func() {
+		if _, err := h.DB.ExecContext(ctx, `DROP TRIGGER IF EXISTS test_settings_fail_smtp_username_update`); err != nil {
+			t.Fatalf("drop trigger: %v", err)
+		}
+	})
 
 	body := `{"host":"smtp.example.com","port":"465","username":"user@example.com","password":"secret","from":"noreply@example.com","tls":"tls"}`
 	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
