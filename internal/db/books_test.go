@@ -294,6 +294,39 @@ func TestSetBookSeries(t *testing.T) {
 	}
 }
 
+func TestGetAuthorsForBooks(t *testing.T) {
+	d := newTestDB(t)
+
+	book1, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book2, _ := d.CreateBook(context.Background(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	author1, _ := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	author2, _ := d.CreateAuthor(context.Background(), "Robin Furth", nil, nil, nil, nil)
+
+	if err := d.SetBookAuthors(context.Background(), book1.ID, []string{author2.ID, author1.ID}); err != nil {
+		t.Fatalf("SetBookAuthors() for book1 error: %v", err)
+	}
+	if err := d.SetBookAuthors(context.Background(), book2.ID, []string{author1.ID}); err != nil {
+		t.Fatalf("SetBookAuthors() for book2 error: %v", err)
+	}
+
+	got, err := d.GetAuthorsForBooks(context.Background(), []string{book1.ID, book2.ID})
+	if err != nil {
+		t.Fatalf("GetAuthorsForBooks() error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("GetAuthorsForBooks() returned %d book entries, want 2", len(got))
+	}
+	if len(got[book1.ID]) != 2 {
+		t.Fatalf("GetAuthorsForBooks()[book1] returned %d authors, want 2", len(got[book1.ID]))
+	}
+	if got[book1.ID][0].Name != "Robin Furth" {
+		t.Errorf("first author for book1 = %q, want %q", got[book1.ID][0].Name, "Robin Furth")
+	}
+	if len(got[book2.ID]) != 1 || got[book2.ID][0].ID != author1.ID {
+		t.Errorf("authors for book2 = %+v, want [%s]", got[book2.ID], author1.ID)
+	}
+}
+
 func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 	d := newTestDB(t)
 
