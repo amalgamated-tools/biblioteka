@@ -28,9 +28,6 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			return fmt.Errorf("unmarshal scan path payload: %w", err)
 		}
 
-		slog.DebugContext(ctx, "scan:path job received",
-			slog.String(otelkeys.Path, p.Path),
-		)
 		return ScanDirectory(ctx, enqueuer, p)
 	}
 }

@@ -25,6 +25,8 @@ type Enqueuer interface {
 	Enqueue(ctx context.Context, name string, payload any) (string, error)
 }
 
+// ScanDirectory walks p.Path recursively and enqueues a process:file job via
+// enqueuer for every supported ebook file (.epub, .mobi, .pdf, .azw3) found.
 func ScanDirectory(ctx context.Context, enqueuer Enqueuer, p ScanPathPayload) error {
 	if p.Path == "" {
 		return fmt.Errorf("scan path payload: path is required")
@@ -32,8 +34,12 @@ func ScanDirectory(ctx context.Context, enqueuer Enqueuer, p ScanPathPayload) er
 
 	slog.DebugContext(ctx, "scan:path job received", slog.String(otelkeys.Path, p.Path))
 
-	if _, err := os.Stat(p.Path); err != nil {
+	info, err := os.Stat(p.Path)
+	if err != nil {
 		return fmt.Errorf("scan path %s: %w", p.Path, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("scan path %s: not a directory", p.Path)
 	}
 
 	slog.InfoContext(ctx, "starting path scan", slog.String(otelkeys.Path, p.Path))
