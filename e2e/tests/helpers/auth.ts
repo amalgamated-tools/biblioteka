@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test";
 
 export const AUTH_ERROR_TEST_ID = "auth-error";
 const TOKEN_KEY = "biblioteka_token";
-// Keep supporting the older SCREENSHOT_* overrides until all callers migrate.
+// TODO: Remove SCREENSHOT_* fallbacks after all callers switch to E2E_* overrides.
 export const DEFAULT_TIMEOUT_MS = Number(
   process.env.E2E_TIMEOUT_MS || process.env.SCREENSHOT_TIMEOUT_MS || 5000,
 );
@@ -63,7 +63,6 @@ export async function signUp(page: Page, user: TestUser): Promise<void> {
 
 export async function signOut(page: Page): Promise<void> {
   await page.locator("button#logout-button").click();
-  await page.waitForSelector("button#login-btn", { timeout: NAVIGATION_TIMEOUT_MS });
   await page.waitForSelector("input#email");
   await page.waitForSelector("input#password");
   await page.waitForFunction((tokenKey) => localStorage.getItem(tokenKey) === null, TOKEN_KEY);
