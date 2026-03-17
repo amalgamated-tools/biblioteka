@@ -95,7 +95,9 @@ After the callback, the server sets a `biblioteka_token` session cookie and redi
 
 **Scopes requested:** `openid email profile`
 
-**Required claims:** `sub` (subject), `email`. The `name` claim is used when available; otherwise `email` is used as the display name.
+**Required claims:** `sub` (subject), `email`, `email_verified` (must be `true`). The `name` claim is used when available; otherwise `email` is used as the display name.
+
+> **Email verification:** Biblioteka rejects OIDC logins where `email_verified` is `false` or missing. This prevents an unverified (and potentially spoofed) email address from being automatically linked to an existing account. If your provider does not set `email_verified`, ensure it is configured to include and verify the claim before users can log in.
 
 ### Configuring OIDC
 
@@ -190,7 +192,9 @@ When you next visit `/api/auth/oidc/link` with the generated nonce, the server c
 - Each OIDC identity (`sub`) can be linked to at most one Biblioteka account.
 - An account can be linked to at most one OIDC identity at a time.
 
-If a user signs in via OIDC and no existing account has that `sub` claim, the server looks up by `email`. If an account with that email exists, the OIDC subject is automatically linked to it. Otherwise, a new account is created.
+If a user signs in via OIDC and no existing account has that `sub` claim, the server looks up by `email`. If an account with that email exists **and the identity provider has set `email_verified: true`**, the OIDC subject is automatically linked to it. Otherwise, a new account is created.
+
+> **Why `email_verified` is required for auto-linking:** Automatically tying an OIDC identity to an existing account based on email alone would allow a malicious (or misconfigured) provider to hijack an account by presenting an unverified email address. The `email_verified` check ensures the provider has confirmed ownership of the address. The manual link flow (initiated from within an authenticated session) is exempt from this requirement because the user's identity has already been established.
 
 ---
 

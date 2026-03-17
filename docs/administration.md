@@ -223,13 +223,13 @@ curl -X POST http://localhost:8080/api/libraries \
 
 ## Managing Libraries
 
-Libraries are global collections of filesystem paths. Any authenticated user can view libraries; only the background worker writes to them.
+Libraries are global collections of filesystem paths. Any authenticated user can view libraries; only **admins** can create, update, or delete them.
 
 ### Create a library
 
 ```bash
 curl -X POST http://localhost:8080/api/libraries \
-  -H "Authorization: Bearer <jwt>" \
+  -H "Authorization: Bearer <admin-jwt>" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Science Fiction",
@@ -248,9 +248,9 @@ curl -X POST http://localhost:8080/api/libraries \
 
 > **`organization_type`:** The only supported value is `"book_per_folder"`. Each immediate subdirectory under a library path is treated as a single book's folder.
 
-### Editing and deleting libraries
+### Edit and delete libraries
 
-Use `PUT /api/libraries/{id}` to update a library and `DELETE /api/libraries/{id}` to remove it. Deleting a library removes only the library record and its book associations — the underlying book, author, series, and book file records are not deleted.
+Use `PUT /api/libraries/{id}` to update a library and `DELETE /api/libraries/{id}` to remove it. Both operations require admin privileges. Deleting a library removes only the library record and its book associations — the underlying book, author, series, and book file records are not deleted.
 
 ---
 
@@ -315,6 +315,56 @@ The test endpoint sends a short verification email to the `from` address. It ret
 **Precedence:** When the `SMTP_HOST` environment variable is set, all SMTP settings are read exclusively from environment variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS`) and the database values are ignored. The runtime configuration UI will appear read-only. When `SMTP_HOST` is unset (the default), the values stored in the database via the API or Settings UI are used.
 
 See [API reference — SMTP config endpoints](api-reference.md#get-apiconfigsmtp--admin) for full request/response shapes.
+
+---
+
+## File Organization
+
+Biblioteka can automatically move imported book files into a canonical `Author/Title/` directory structure under each library root. This keeps your collection tidy and makes paths predictable.
+
+### Enabling file organization
+
+Set the `organize_files` application setting to `"true"` via the API (admin required):
+
+```bash
+curl -X PUT http://localhost:8080/api/settings/organize_files \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "true"}'
+```
+
+Disable it again by setting the value to any other string (or deleting the setting):
+
+```bash
+curl -X PUT http://localhost:8080/api/settings/organize_files \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "false"}'
+```
+
+### How it works
+
+When `organize_files` is `"true"` and a `process:file` job has a `library_root` in its payload, the handler moves each imported file to:
+
+```
+<library_root>/<Author>/<Title>/<filename>
+```
+
+The author and title come from embedded file metadata when available, falling back to values parsed from the file's existing directory structure (see [Path-based metadata](background-jobs.md#path-based-metadata)).
+
+**Behaviour details:**
+
+- Directory names are sanitized: path separators (`/`, `\`), control characters, colons, wildcards, and leading dots are removed.
+- The move uses `os.Rename` when source and destination are on the same filesystem. A copy-then-delete falls back for cross-filesystem moves; source file permissions and modification time are preserved.
+- Empty source directories left behind after a move are removed automatically (up to but not including the library root).
+- If a file already exists at the target path, the handler skips the move and logs a warning — it never silently overwrites existing files.
+- If reorganization fails for any reason, the handler logs a warning and continues processing the file at its original path. The import still completes; only the file location is affected.
+
+### Path-parsing and series inference
+
+Even when `organize_files` is disabled, Biblioteka parses each file's path relative to the library root to extract author, title, series, and publication year from the directory structure. This path-derived metadata supplements (but does not override) embedded file metadata.
+
+For full details on the supported directory layouts and precedence rules, see [Background Jobs — Path-based metadata](background-jobs.md#path-based-metadata).
 
 ---
 
