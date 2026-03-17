@@ -162,12 +162,15 @@ Metadata about book series, shared across all libraries.
 | Column           | Type    | Nullable | Default   | Description                   |
 |------------------|---------|----------|-----------|-------------------------------|
 | `id`             | TEXT    | NOT NULL | auto-gen  | Primary key                   |
-| `name`           | TEXT    | NOT NULL | —         | Series name (unique)          |
+| `name`           | TEXT    | NOT NULL | —         | Series name (unique, case-insensitive) |
 | `goodreads_id`   | TEXT    | NULL     | NULL      | Goodreads series ID           |
 | `hardcover_id`   | TEXT    | NULL     | NULL      | Hardcover series ID           |
 | `google_books_id`| TEXT    | NULL     | NULL      | Google Books series ID        |
 | `created_at`     | DATETIME| NOT NULL | `now()`   | Creation time                 |
 | `updated_at`     | DATETIME| NOT NULL | `now()`   | Last update time              |
+
+**Indexes:**
+- `UNIQUE(LOWER(name))` (`idx_series_name_ci`) — case-insensitive uniqueness; `"The Chronicles of Narnia"` and `"the chronicles of narnia"` are treated as the same series. Series records created by `process:file` (via path parsing) reuse existing records rather than creating duplicates.
 
 ---
 
@@ -266,6 +269,9 @@ Individual physical files (EPUB, MOBI, PDF, AZW3) linked to a book record.
 - Supported `file_type` values (matched by the scanner): `epub`, `mobi`, `pdf`, `azw3`.
 - Deleting a `book_file` record does **not** delete the file from disk.
 - A book can have multiple files of the same type (e.g. two different EPUB editions).
+
+**Indexes:**
+- `UNIQUE(file_path)` (`idx_book_files_file_path`) — each physical file path is indexed at most once. The `process:file` handler relies on this constraint to prevent duplicate `book_file` rows when a file is encountered again after Redis state is lost or when the same path is scanned from multiple library configurations.
 
 ---
 
