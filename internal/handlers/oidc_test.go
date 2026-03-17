@@ -2,13 +2,19 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/go-jose/go-jose/v4"
+	josejwt "github.com/go-jose/go-jose/v4/jwt"
 	"golang.org/x/oauth2"
 )
 
@@ -413,5 +419,267 @@ func TestOIDCConsumeLinkNonce_Concurrent(t *testing.T) {
 	}
 	if winners != 1 {
 		t.Fatalf("expected exactly 1 winner, got %d", winners)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Callback – email_verified enforcement
+// ---------------------------------------------------------------------------
+
+// testOIDCProvider spins up a mock OIDC provider (discovery + JWKS + token
+// exchange) and returns an OIDCHandler wired to it. The signIDToken function
+// produces a signed JWT with the given claims map.
+type testOIDCProvider struct {
+	handler     *OIDCHandler
+	signIDToken func(claims map[string]interface{}) string
+	server      *httptest.Server
+}
+
+func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
+	t.Helper()
+
+	// Generate an RSA key pair for signing ID tokens.
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("generate RSA key: %v", err)
+	}
+
+	signer, err := jose.NewSigner(
+		jose.SigningKey{Algorithm: jose.RS256, Key: rsaKey},
+		(&jose.SignerOptions{}).WithType("JWT").WithHeader("kid", "test-key"),
+	)
+	if err != nil {
+		t.Fatalf("create signer: %v", err)
+	}
+
+	jwks := jose.JSONWebKeySet{
+		Keys: []jose.JSONWebKey{{
+			Key:       rsaKey.Public(),
+			KeyID:     "test-key",
+			Algorithm: string(jose.RS256),
+			Use:       "sig",
+		}},
+	}
+
+	// signIDToken produces a compact JWT from an arbitrary claims map.
+	signToken := func(claims map[string]interface{}) string {
+		t.Helper()
+		builder := josejwt.Signed(signer).Claims(claims)
+		raw, err := builder.Serialize()
+		if err != nil {
+			t.Fatalf("sign id_token: %v", err)
+		}
+		return raw
+	}
+
+	// We need a placeholder for the server URL before starting it, because
+	// the token endpoint handler needs to produce tokens with the server's
+	// own URL as issuer. We solve this by capturing a pointer.
+	var serverURL string
+
+	// idTokenClaims is set per-test to control what the token endpoint returns.
+	var idTokenClaims map[string]interface{}
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"issuer":                                serverURL,
+			"authorization_endpoint":                serverURL + "/authorize",
+			"token_endpoint":                        serverURL + "/token",
+			"jwks_uri":                              serverURL + "/jwks",
+			"response_types_supported":              []string{"code"},
+			"subject_types_supported":               []string{"public"},
+			"id_token_signing_alg_values_supported": []string{"RS256"},
+		})
+	})
+
+	mux.HandleFunc("/jwks", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(jwks)
+	})
+
+	mux.HandleFunc("/token", func(w http.ResponseWriter, _ *http.Request) {
+		// Inject issuer and timing claims if not already present.
+		now := time.Now()
+		defaults := map[string]interface{}{
+			"iss": serverURL,
+			"aud": "test-client",
+			"iat": now.Unix(),
+			"exp": now.Add(time.Hour).Unix(),
+		}
+		merged := make(map[string]interface{})
+		for k, v := range defaults {
+			merged[k] = v
+		}
+		for k, v := range idTokenClaims {
+			merged[k] = v
+		}
+
+		idToken := signToken(merged)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "fake-access-token",
+			"token_type":   "Bearer",
+			"id_token":     idToken,
+		})
+	})
+
+	srv := httptest.NewServer(mux)
+	serverURL = srv.URL
+	t.Cleanup(srv.Close)
+
+	// Create a real OIDC provider pointing at our test server.
+	provider, err := oidc.NewProvider(t.Context(), srv.URL)
+	if err != nil {
+		t.Fatalf("oidc.NewProvider: %v", err)
+	}
+
+	d := newTestDB(t)
+	h := &OIDCHandler{
+		DB:       d,
+		JWT:      newTestJWT(t),
+		Provider: provider,
+		Config: oauth2.Config{
+			ClientID:     "test-client",
+			ClientSecret: "test-secret",
+			RedirectURL:  srv.URL + "/callback",
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  srv.URL + "/authorize",
+				TokenURL: srv.URL + "/token",
+			},
+			Scopes: []string{"openid", "email", "profile"},
+		},
+		SecureCookies: false,
+		linkNonces:    make(map[string]linkNonce),
+	}
+
+	tp := &testOIDCProvider{
+		handler:     h,
+		signIDToken: signToken,
+		server:      srv,
+	}
+
+	// setClaims lets each test control the ID token claims before making a
+	// Callback request.
+	tp.signIDToken = func(claims map[string]interface{}) string {
+		idTokenClaims = claims
+		return "" // not used directly; the /token endpoint builds the token
+	}
+
+	return tp
+}
+
+// callbackRequest builds a GET /callback request with valid state/verifier
+// cookies and optional link-user-id cookie.
+func callbackRequest(state, linkUserID string) *http.Request {
+	r := httptest.NewRequest(http.MethodGet,
+		fmt.Sprintf("/auth/oidc/callback?state=%s&code=test-code", state), nil)
+	r.AddCookie(&http.Cookie{Name: oidcStateCookieName, Value: state})
+	r.AddCookie(&http.Cookie{Name: oidcVerifierCookieName, Value: "test-verifier"})
+	if linkUserID != "" {
+		r.AddCookie(&http.Cookie{Name: oidcLinkUserIDCookieName, Value: linkUserID})
+	}
+	return r
+}
+
+func TestOIDCCallback_EmailVerifiedTrue(t *testing.T) {
+	tp := newTestOIDCProvider(t)
+	h := tp.handler
+
+	tp.signIDToken(map[string]interface{}{
+		"sub":            "oidc-user-1",
+		"email":          "verified@example.com",
+		"name":           "Verified User",
+		"email_verified": true,
+	})
+
+	w := httptest.NewRecorder()
+	h.Callback(w, callbackRequest("test-state", ""))
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
+	}
+	loc := resp.Header.Get("Location")
+	if loc != "/?oidc_login=1" {
+		t.Errorf("expected redirect to /?oidc_login=1, got %q", loc)
+	}
+}
+
+func TestOIDCCallback_EmailVerifiedFalse(t *testing.T) {
+	tp := newTestOIDCProvider(t)
+	h := tp.handler
+
+	tp.signIDToken(map[string]interface{}{
+		"sub":            "oidc-user-2",
+		"email":          "unverified@example.com",
+		"name":           "Unverified User",
+		"email_verified": false,
+	})
+
+	w := httptest.NewRecorder()
+	h.Callback(w, callbackRequest("test-state", ""))
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d; body: %s", w.Code, w.Body.String())
+	}
+	var body map[string]string
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body["error"] != "OIDC email must be verified by the identity provider" {
+		t.Errorf("unexpected error message: %q", body["error"])
+	}
+}
+
+func TestOIDCCallback_EmailVerifiedMissing(t *testing.T) {
+	tp := newTestOIDCProvider(t)
+	h := tp.handler
+
+	tp.signIDToken(map[string]interface{}{
+		"sub":   "oidc-user-3",
+		"email": "noverify@example.com",
+		"name":  "No Verify User",
+		// email_verified intentionally omitted
+	})
+
+	w := httptest.NewRecorder()
+	h.Callback(w, callbackRequest("test-state", ""))
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d; body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestOIDCCallback_LinkFlowBypassesEmailVerified(t *testing.T) {
+	tp := newTestOIDCProvider(t)
+	h := tp.handler
+
+	// Create a user to link to.
+	user, err := h.DB.CreateUser(t.Context(), "Link Target", "linktarget@example.com", "password123")
+	if err != nil {
+		t.Fatalf("CreateUser: %v", err)
+	}
+
+	tp.signIDToken(map[string]interface{}{
+		"sub":            "oidc-link-subject",
+		"email":          "linktarget@example.com",
+		"name":           "Link Target",
+		"email_verified": false,
+	})
+
+	w := httptest.NewRecorder()
+	h.Callback(w, callbackRequest("test-state", user.ID))
+
+	resp := w.Result()
+	// Link flow should succeed (redirect) even without email_verified.
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
+	}
+	loc := resp.Header.Get("Location")
+	if loc != "/?oidc_linked=true" {
+		t.Errorf("expected redirect to /?oidc_linked=true, got %q", loc)
 	}
 }
