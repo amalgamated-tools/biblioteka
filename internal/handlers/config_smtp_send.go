@@ -38,7 +38,8 @@ func newSMTPClientWithContext(ctx context.Context, conn net.Conn, host string) (
 	client, err := smtp.NewClient(conn, host)
 	if err != nil {
 		close(done)
-		conn.Close()
+		// Don't also call conn.Close() here; the goroutine (via done or ctx.Done())
+		// is responsible for closing conn and is guaranteed to do so exactly once.
 		return nil, nil, fmt.Errorf("SMTP client creation failed: %w", err)
 	}
 
