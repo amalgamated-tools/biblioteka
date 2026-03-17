@@ -38,6 +38,7 @@ const (
 	IssuerURL         string = "issuer_url"
 	Job               string = "job"
 	Key               string = "key"
+	KoboTokenID       string = "kobo_token_id"
 	Level             string = "level"
 	LibrariesEnqueued string = "libraries_enqueued"
 	LibraryID         string = "library_id"

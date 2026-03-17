@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"log/slog"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -283,4 +285,108 @@ func bookColumnsWithPrefix(prefix string) string {
 // SQLite also accepts dollar-sign placeholders.
 func dollarN(n int) string {
 	return "$" + strconv.Itoa(n)
+}
+
+
+// ListBooksModifiedSince returns up to limit books updated after since, ordered by
+// updated_at ascending so callers can track the high-water mark. When since is the
+// zero time all books are returned (initial sync).
+func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, limit int) ([]Book, error) {
+	slog.DebugContext(ctx, "db: listing books modified since",
+		slog.Int(otelkeys.Limit, limit),
+	)
+	orderBy := "ORDER BY updated_at ASC, rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY updated_at ASC, id ASC"
+	}
+	if since.IsZero() {
+		rows, err := d.QueryContext(ctx,
+			`SELECT `+bookColumns+` FROM books `+orderBy+` LIMIT $1`,
+			limit,
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		return scanBookRows(rows)
+	}
+
+	var sinceParam any
+	if d.Dialect == DialectPostgres {
+		sinceParam = since
+	} else {
+		// SQLite stores datetimes as "YYYY-MM-DD HH:MM:SS"; use matching format
+		// to ensure correct string-based datetime comparison.
+		sinceParam = since.UTC().Format("2006-01-02 15:04:05")
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookColumns+` FROM books WHERE updated_at > $1 `+orderBy+` LIMIT $2`,
+		sinceParam, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanBookRows(rows)
+}
+
+type bookRowScanner interface {
+	Next() bool
+	Scan(...any) error
+	Err() error
+}
+
+func scanBookRows(rows bookRowScanner) ([]Book, error) {
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, *b)
+	}
+	return books, rows.Err()
+}
+
+// GetSeriesForBooks returns series entries (with position) grouped by book ID for the given book IDs.
+func (d *DB) GetSeriesForBooks(ctx context.Context, bookIDs []string) (map[string][]BookSeriesEntry, error) {
+	if len(bookIDs) == 0 {
+		return nil, nil
+	}
+	slog.DebugContext(ctx, "db: batch fetching series for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
+
+	placeholders := make([]string, len(bookIDs))
+	args := make([]any, len(bookIDs))
+	for i, id := range bookIDs {
+		placeholders[i] = dollarN(i + 1)
+		args[i] = id
+	}
+
+	rows, err := d.QueryContext(ctx,
+		`SELECT bs.book_id, s.id, s.name, s.goodreads_id, s.hardcover_id, s.google_books_id, s.created_at, s.updated_at, bs.position
+		FROM series s INNER JOIN book_series bs ON bs.series_id = s.id
+		WHERE bs.book_id IN (`+strings.Join(placeholders, ",")+`)
+		ORDER BY s.name ASC`,
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string][]BookSeriesEntry, len(bookIDs))
+	for rows.Next() {
+		var bookID string
+		var entry BookSeriesEntry
+		if err := rows.Scan(&bookID, &entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position); err != nil {
+			return nil, err
+		}
+		result[bookID] = append(result[bookID], entry)
+	}
+	return result, rows.Err()
+}
+
+// bookFileColumnsWithPrefix returns book_files columns with a table alias prefix.
+func bookFileColumnsWithPrefix(prefix string) string {
+	return prefix + "id, " + prefix + "book_id, " + prefix + "file_type, " + prefix + "file_name, " + prefix + "file_size, " + prefix + "file_hash, " + prefix + "file_path, " + prefix + "created_at, " + prefix + "updated_at"
 }
