@@ -169,6 +169,21 @@ func copyFile(src, dst string) (err error) {
 	return nil
 }
 
+// TargetPath returns the canonical target file path that ReorganizeFile would
+// produce for the given inputs, without actually moving anything. Returns an
+// empty string if author or title is empty or sanitizes to empty.
+func TargetPath(filePath, libraryRoot, author, title string) string {
+	if author == "" || title == "" {
+		return ""
+	}
+	safeAuthor := sanitizeDirName(author)
+	safeTitle := sanitizeDirName(title)
+	if safeAuthor == "" || safeTitle == "" {
+		return ""
+	}
+	return filepath.Join(libraryRoot, safeAuthor, safeTitle, filepath.Base(filePath))
+}
+
 // sanitizeDirName cleans a string for use as a directory name.
 func sanitizeDirName(name string) string {
 	name = strings.TrimSpace(name)

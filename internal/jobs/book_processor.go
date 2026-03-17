@@ -98,33 +98,35 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 			if p.LibraryRoot != "" {
 				pathInfo := pathparser.ParseBookPath(p.Path, p.LibraryRoot)
 				if pathInfo.Author != "" && pathInfo.Title != "" {
-					candidatePath := filepath.Join(p.LibraryRoot, pathInfo.Author, pathInfo.Title, filepath.Base(p.Path))
-					if _, statErr := os.Stat(candidatePath); statErr == nil {
-						// Check if the reorganized path is already indexed.
-						if bf, dbErr := database.GetBookFileByPath(ctx, candidatePath); dbErr == nil {
-							slog.InfoContext(ctx, "reorganized path already indexed, skipping",
-								slog.String(otelkeys.Path, candidatePath),
-								slog.String(otelkeys.BookID, bf.BookID),
-							)
-							if p.LibraryID != "" {
-								if err := database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID); err != nil {
-									slog.WarnContext(ctx, "failed to add reorganized already-indexed book to library",
-										slog.Any(otelkeys.Error, err),
-										slog.String(otelkeys.Path, candidatePath),
-										slog.String(otelkeys.BookID, bf.BookID),
-									)
+					candidatePath := organize.TargetPath(p.Path, p.LibraryRoot, pathInfo.Author, pathInfo.Title)
+					if candidatePath != "" {
+						if _, statErr := os.Stat(candidatePath); statErr == nil {
+							// Check if the reorganized path is already indexed.
+							if bf, dbErr := database.GetBookFileByPath(ctx, candidatePath); dbErr == nil {
+								slog.InfoContext(ctx, "reorganized path already indexed, skipping",
+									slog.String(otelkeys.Path, candidatePath),
+									slog.String(otelkeys.BookID, bf.BookID),
+								)
+								if p.LibraryID != "" {
+									if err := database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID); err != nil {
+										slog.WarnContext(ctx, "failed to add reorganized already-indexed book to library",
+											slog.Any(otelkeys.Error, err),
+											slog.String(otelkeys.Path, candidatePath),
+											slog.String(otelkeys.BookID, bf.BookID),
+										)
+									}
 								}
+								return nil
 							}
-							return nil
+							// File exists at reorganized location but isn't indexed — update
+							// the payload path so processing continues from the new location.
+							slog.InfoContext(ctx, "source file moved by prior attempt, continuing from reorganized path",
+								slog.String(otelkeys.From, p.Path),
+								slog.String(otelkeys.To, candidatePath),
+							)
+							p.Path = candidatePath
+							goto pathResolved
 						}
-						// File exists at reorganized location but isn't indexed — update
-						// the payload path so processing continues from the new location.
-						slog.InfoContext(ctx, "source file moved by prior attempt, continuing from reorganized path",
-							slog.String(otelkeys.From, p.Path),
-							slog.String(otelkeys.To, candidatePath),
-						)
-						p.Path = candidatePath
-						goto pathResolved
 					}
 				}
 			}
@@ -273,9 +275,11 @@ pathResolved:
 		shouldOrganize := false
 		setting, settingErr := database.GetSetting(ctx, "organize_files")
 		if settingErr != nil {
-			slog.WarnContext(ctx, "could not read organize_files setting, skipping reorganization",
-				slog.Any(otelkeys.Error, settingErr),
-			)
+			if !errors.Is(settingErr, sql.ErrNoRows) {
+				slog.WarnContext(ctx, "could not read organize_files setting, skipping reorganization",
+					slog.Any(otelkeys.Error, settingErr),
+				)
+			}
 		} else if setting == "true" {
 			shouldOrganize = true
 		}
