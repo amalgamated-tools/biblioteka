@@ -178,16 +178,95 @@ const book = await api.createBook({ title: "Dune", … });
 
 Never call `fetch` directly from components or stores — always go through `api.ts`.
 
+## Reusable UI components
+
+The `frontend/src/components/ui/` directory contains generic, reusable components for use across any view.
+
+### `AlertBanner`
+
+Displays a dismissible styled alert.
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `variant` | `"error" \| "success"` | ✓ | Color scheme |
+| `children` | `Snippet` | ✓ | Message content (slot) |
+| `role` | `string` | | ARIA role override (defaults to `"alert"`) |
+| `class` | `string` | | Additional CSS classes |
+
+```svelte
+<AlertBanner variant="error">Failed to load books. Please try again.</AlertBanner>
+<AlertBanner variant="success">Settings saved.</AlertBanner>
+```
+
+### `BookCard`
+
+Renders a single book as a card with cover art (or a placeholder icon), title, and basic metadata. Intended for use inside a grid layout.
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `book` | `BookSummary` | ✓ | Book to display |
+
+```svelte
+<BookCard {book} />
+```
+
+### `BookList`
+
+A fully self-contained paginated book list. It handles loading, error display, empty states, page navigation, and a grid/table view toggle. The caller supplies a `fetchBooks` function that the component calls whenever the page or page size changes.
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `fetchBooks` | `(limit: number, offset: number) => Promise<PaginatedBooks>` | ✓ | — | Called on every page change to load a page of books |
+| `pageSize` | `number` | | `24` | Number of books per page (capped at `200`) |
+
+**When `fetchBooks` changes** (e.g., the user navigates to a different library), `BookList` automatically resets to page 1 and re-fetches.
+
+```svelte
+<script lang="ts">
+  import BookList from "./ui/BookList.svelte";
+  import * as api from "../lib/api";
+</script>
+
+<!-- All books -->
+<BookList fetchBooks={api.listBooks} />
+
+<!-- Books in a specific library -->
+<BookList fetchBooks={(limit, offset) => api.listLibraryBooks(libraryId, limit, offset)} />
+```
+
+The `fetchBooks` callback receives `limit` and `offset` values managed by `BookList`. It must return a `PaginatedBooks` object `{ books, total, limit, offset }` — the shape returned by `GET /api/books` and `GET /api/libraries/{id}/books`.
+
 ## TypeScript types
 
 TypeScript types are split between two files based on their purpose:
 
 | File | What goes here |
 |------|----------------|
-| `frontend/src/types.ts` | **Domain entity types** — interfaces for API resource models that are used across multiple components and stores (e.g. `Library`, `Author`, `Book`, `BookFile`). |
+| `frontend/src/types.ts` | **Domain entity types** — interfaces for API resource models that are used across multiple components and stores. |
 | `frontend/src/lib/api.ts` | **API-specific types** — request/response shapes tightly coupled to a single API module group (e.g. `ConfigStatus`, `OIDCConfig`, `SetOIDCConfigInput`, `AdminUser`). These may be imported into components that use the relevant API functions. |
 
 Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. If a type is shared across more than one component or store, move it to `types.ts`.
+
+### `types.ts` reference
+
+| Type | Description |
+|------|-------------|
+| `User` | Authenticated user (`id`, `email`, `oidc_linked`, `is_admin`) |
+| `Library` | Library record with `paths`, `organization_type`, `monitored` flag |
+| `LibraryInput` | Payload for creating or updating a library |
+| `Author` | Author with external IDs (`goodreads_id`, `hardcover_id`, `google_books_id`) and optional `image_url` |
+| `AuthorInput` | Payload for creating or updating an author |
+| `Series` | Series with external IDs |
+| `SeriesInput` | Payload for creating or updating a series |
+| `BookSeriesEntry` | Association between a book and a series: `{ series: Series, position: number \| null }` |
+| `BookFile` | Physical file attached to a book: path, format, size, hash |
+| `BookFileInput` | Payload for attaching a file to a book |
+| `BookSummary` | Lightweight book representation returned by list endpoints — no nested `authors`, `series`, or `files` arrays |
+| `Book` | Full book object extending `BookSummary` with `authors: Author[]`, `series: BookSeriesEntry[]`, `files: BookFile[]` |
+| `BookInput` | Payload for creating or updating a book |
+| `PaginatedBooks` | Paginated response wrapper: `{ books: BookSummary[], total: number, limit: number, offset: number }` |
+
+`BookSummary` is what `GET /api/books` and `GET /api/libraries/{id}/books` return per-item. `Book` (which extends `BookSummary`) is returned by `GET /api/books/{id}`, `POST /api/books`, etc. Use `BookSummary` when rendering lists (e.g., inside `BookCard`), and `Book` only when full relation data is needed.
 
 ## Adding a new store
 
@@ -203,6 +282,8 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 3. Add the route to the `valid` array in `RouterStore.currentView`.
 4. Import and render `<MyView />` in `App.svelte` inside the `{#if … }` routing block.
 5. Add a navigation entry in `Sidebar.svelte`.
+
+If the view needs to display a list of books, use the `BookList` component and pass it a `fetchBooks` callback (see [BookList](#booklist)).
 
 ## Settings component architecture
 
