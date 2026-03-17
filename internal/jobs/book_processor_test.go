@@ -361,3 +361,63 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 		t.Errorf("expected ISBN13 nil, got %v", books[0].ISBN13)
 	}
 }
+
+func TestProcessBookFile_OrganizeFiles(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor()
+	if err != nil {
+		t.Fatalf("new extractor: %v", err)
+	}
+	defer ext.Close()
+
+	// Enable file reorganization.
+	if err := database.SetSetting(context.Background(), "organize_files", "true"); err != nil {
+		t.Fatalf("set setting: %v", err)
+	}
+
+	// Create a library root with Author/Book.epub structure.
+	root := t.TempDir()
+	epubPath := filepath.Join(root, "The Great Gatsby.epub")
+	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+
+	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+		Path:        epubPath,
+		FileName:    "The Great Gatsby.epub",
+		FileType:    "epub",
+		FileSize:    1024,
+		LibraryRoot: root,
+	})
+	if err != nil {
+		t.Fatalf("ProcessBookFile() error: %v", err)
+	}
+
+	// Verify the original file was moved.
+	if _, err := os.Stat(epubPath); !os.IsNotExist(err) {
+		t.Error("expected original file to be removed after reorganization")
+	}
+
+	// Verify the file was moved to the expected Author/Title/ structure.
+	expectedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "The Great Gatsby.epub")
+	if _, err := os.Stat(expectedPath); err != nil {
+		t.Fatalf("expected reorganized file at %q, got error: %v", expectedPath, err)
+	}
+
+	// Verify book_files.file_path matches the new location.
+	books, err := database.ListBooks(context.Background())
+	if err != nil {
+		t.Fatalf("list books: %v", err)
+	}
+	if len(books) != 1 {
+		t.Fatalf("expected 1 book, got %d", len(books))
+	}
+	files, err := database.ListBookFiles(context.Background(), books[0].ID)
+	if err != nil {
+		t.Fatalf("list book files: %v", err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("expected 1 file, got %d", len(files))
+	}
+	if files[0].FilePath != expectedPath {
+		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
+	}
+}

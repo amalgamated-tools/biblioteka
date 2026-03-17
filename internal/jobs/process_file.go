@@ -16,15 +16,17 @@ const JobProcessFile = "process:file"
 
 // ProcessFilePayload is the JSON payload for the process:file job.
 type ProcessFilePayload struct {
-	Path     string `json:"path"`
-	FileName string `json:"file_name"`
-	FileType string `json:"file_type"`
-	FileSize int64  `json:"file_size"`
+	Path        string `json:"path"`
+	FileName    string `json:"file_name"`
+	FileType    string `json:"file_type"`
+	FileSize    int64  `json:"file_size"`
+	LibraryID   string `json:"library_id,omitempty"`
+	LibraryRoot string `json:"library_root,omitempty"`
 }
 
 // NewProcessFileHandler returns a worker.Func that extracts metadata for a file
 // and then creates a book and book_file record for it. The extracted metadata
-// can be used to populate or enrich the book fields (title, authors, etc.).
+// is used to populate the book fields (title, authors, series, etc.).
 func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(ctx context.Context, payload []byte) error {
 	if extractor == nil {
 		return func(ctx context.Context, payload []byte) error {

@@ -31,7 +31,9 @@ type Enqueuer interface {
 
 // ScanPathPayload is the JSON payload for the scan:path job.
 type ScanPathPayload struct {
-	Path string `json:"path"`
+	Path        string `json:"path"`
+	LibraryID   string `json:"library_id,omitempty"`
+	LibraryRoot string `json:"library_root,omitempty"`
 }
 
 // NewScanPathHandler returns a worker.Func that walks the given path and
@@ -54,6 +56,15 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 		}
 
 		slog.InfoContext(ctx, "starting path scan", slog.String(otelkeys.Path, p.Path))
+
+		libraryRootAbs := p.LibraryRoot
+		if p.LibraryRoot != "" {
+			if lrAbs, err := filepath.Abs(p.LibraryRoot); err == nil {
+				libraryRootAbs = lrAbs
+			} else {
+				libraryRootAbs = filepath.Clean(p.LibraryRoot)
+			}
+		}
 
 		var found int
 		err := filepath.WalkDir(p.Path, func(path string, d fs.DirEntry, err error) error {
@@ -99,10 +110,12 @@ func NewScanPathHandler(enqueuer Enqueuer) func(ctx context.Context, payload []b
 			}
 
 			_, err = enqueuer.Enqueue(ctx, JobProcessFile, ProcessFilePayload{
-				Path:     absPath,
-				FileName: filepath.Base(path),
-				FileType: fileType,
-				FileSize: info.Size(),
+				Path:        absPath,
+				FileName:    filepath.Base(path),
+				FileType:    fileType,
+				FileSize:    info.Size(),
+				LibraryID:   p.LibraryID,
+				LibraryRoot: libraryRootAbs,
 			})
 			if err != nil {
 				slog.WarnContext(ctx, "error enqueuing process:file job",

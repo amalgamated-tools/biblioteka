@@ -83,7 +83,7 @@ Creates a `book` record and a `book_file` record in the database. The `process:f
 | `Publisher` (when non-empty) | `books.publisher` | EPUB only |
 | `Language` (when non-empty) | `books.language` | EPUB only |
 | `PublicationDate` (when non-empty) | `books.publication_date` | EPUB only |
-| `Author` (when non-empty) | `authors` + `book_authors` join | Creates an author record if one with that name does not already exist, then links it to the book |
+| `Author` (when non-empty) | `authors` + `book_authors` join | The extracted name is whitespace-normalized (trimmed, internal runs collapsed). An existing author is looked up **case-insensitively** (`"J.R.R. Tolkien"` and `"j.r.r. tolkien"` match the same record). If no match is found, a new author record is created. If a concurrent worker creates the same author first, the handler retries the lookup rather than failing. If association fails after the book record is already committed, the failure is logged as a warning and does **not** fail the job (preventing duplicate book records on retry). |
 
 `Format` is extracted but stored on the `book_files` record via the `file_type` payload field, not from the extractor output directly. If ExifTool is absent or extraction fails for any other reason, the job logs a warning and falls back to the filename-derived title. See [docs/metadata.md](metadata.md) for extraction details. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
 
