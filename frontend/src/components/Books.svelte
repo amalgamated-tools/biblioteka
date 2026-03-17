@@ -3,9 +3,6 @@
   import BookList from "./ui/BookList.svelte";
   import * as api from "../lib/api";
 
-  function fetchBooks(limit: number, offset: number) {
-    return api.listBooks(limit, offset);
-  }
 </script>
 
 <div>
@@ -16,5 +13,5 @@
     <h1 class="text-3xl font-display font-bold text-ink-900 dark:text-cream-100">All Books</h1>
   </div>
 
-  <BookList {fetchBooks} />
+  <BookList fetchBooks={api.listBooks} />
 </div>

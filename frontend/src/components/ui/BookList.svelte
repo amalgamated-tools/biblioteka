@@ -17,7 +17,7 @@
   let books: BookSummary[] = $state([]);
   let total = $state(0);
   let offset = $state(0);
-  let loading = $state(false);
+  let loading = $state(true);
   let error: string | null = $state(null);
   let viewMode: "grid" | "table" = $state("grid");
   let currentRequestId = 0;
@@ -107,6 +107,7 @@
           : 'text-ink-400 hover:text-ink-600 dark:hover:text-ink-200'}"
         title="Grid view"
         aria-label="Grid view"
+        aria-pressed={viewMode === "grid"}
       >
         <LayoutGrid class="w-4 h-4" />
       </button>
@@ -117,6 +118,7 @@
           : 'text-ink-400 hover:text-ink-600 dark:hover:text-ink-200'}"
         title="Table view"
         aria-label="Table view"
+        aria-pressed={viewMode === "table"}
       >
         <List class="w-4 h-4" />
       </button>
