@@ -34,9 +34,7 @@ class AuthStore {
       // Only clear the localStorage token on auth rejection (401/404).
       // Transient failures (network errors, 5xx) should not discard a
       // potentially valid token.
-      const isAuthError =
-        err instanceof api.ApiError && (err.status === 401 || err.status === 404);
-      if (isAuthError && api.hasToken()) {
+      if (err instanceof api.ApiError && (err.status === 401 || err.status === 404) && api.hasToken()) {
         api.clearToken();
         try {
           this.user = await api.getMe();

@@ -38,7 +38,9 @@ describe("auth store", () => {
   describe("init", () => {
     it("sets loading to false when no token and no cookie", async () => {
       vi.mocked(api.hasToken).mockReturnValue(false);
-      vi.mocked(api.getMe).mockRejectedValue(new Error("unauthorized"));
+      vi.mocked(api.getMe).mockRejectedValue(
+        new api.ApiError("unauthorized", 401),
+      );
 
       await authStore.init();
 
