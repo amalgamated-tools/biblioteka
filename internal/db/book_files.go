@@ -146,7 +146,7 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 		if err != nil {
 			return nil, err
 		}
-		result[bf.BookID] = append(result[bf.BookID], bf)
+		result[bf.BookID] = append(result[bf.BookID], *bf)
 	}
 	return result, rows.Err()
 }
