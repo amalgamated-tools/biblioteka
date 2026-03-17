@@ -3,31 +3,25 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { writeFileSync } from "fs";
 import { resolve } from "path";
+import type { Plugin } from "vite";
 
-let gitkeepPath: string | null = null;
+function restoreGitkeep(): Plugin {
+  let gitkeepPath: string;
+  return {
+    name: "restore-gitkeep",
+    apply: "build",
+    configResolved(config) {
+      gitkeepPath = resolve(config.build.outDir, ".gitkeep");
+    },
+    closeBundle() {
+      writeFileSync(gitkeepPath, "");
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    svelte(),
-    tailwindcss(),
-    {
-      name: "restore-gitkeep",
-      configResolved(resolvedConfig) {
-        if (resolvedConfig.command === "build") {
-          gitkeepPath = resolve(resolvedConfig.build.outDir, ".gitkeep");
-        } else {
-          gitkeepPath = null;
-        }
-      },
-      closeBundle() {
-        if (!gitkeepPath) {
-          return;
-        }
-        writeFileSync(gitkeepPath, "");
-      },
-    },
-  ],
+  plugins: [svelte(), tailwindcss(), restoreGitkeep()],
   build: {
     outDir: "../internal/server/dist",
     emptyOutDir: true,

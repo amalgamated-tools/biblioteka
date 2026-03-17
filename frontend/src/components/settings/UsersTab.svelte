@@ -11,6 +11,8 @@
 
   let { cachedUsers, onUsersLoaded }: Props = $props();
 
+  // One-time initialisation – cachedUsers seeds the list; subsequent updates
+  // come from loadUsers() / toggleAdmin(), not from prop changes.
   // svelte-ignore state_referenced_locally
   let userList: AdminUser[] = $state.raw(cachedUsers);
   let usersLoading = $state(false);
