@@ -68,7 +68,7 @@ func ScanDirectory(ctx context.Context, enqueuer Enqueuer, p ScanPathPayload) er
 		}
 
 		if d.IsDir() {
-			slog.DebugContext(ctx, "scan:path skipping directory", slog.String(otelkeys.Path, path))
+			slog.DebugContext(ctx, "scan:path visiting directory", slog.String(otelkeys.Path, path))
 			return nil
 		}
 
@@ -114,7 +114,7 @@ func ScanDirectory(ctx context.Context, enqueuer Enqueuer, p ScanPathPayload) er
 
 		found++
 		slog.InfoContext(ctx, "enqueued file for processing",
-			slog.String(otelkeys.Type, fileType),
+			slog.String(otelkeys.FileType, fileType),
 			slog.String(otelkeys.Path, absPath),
 		)
 
