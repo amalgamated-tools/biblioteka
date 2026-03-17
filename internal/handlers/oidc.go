@@ -364,9 +364,10 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	// Extract claims
 	var claims struct {
-		Sub   string `json:"sub"`
-		Email string `json:"email"`
-		Name  string `json:"name"`
+		Sub           string `json:"sub"`
+		Email         string `json:"email"`
+		Name          string `json:"name"`
+		EmailVerified *bool  `json:"email_verified"`
 	}
 	if err := idToken.Claims(&claims); err != nil {
 		slog.ErrorContext(r.Context(), "failed to parse OIDC claims", slog.Any(otelkeys.Error, err))
@@ -400,6 +401,16 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   h.SecureCookies,
 	})
+
+	// Require verified email for normal login flow. The link flow (below)
+	// is initiated from an already-authenticated session, so it is exempt.
+	if linkUserID == "" && (claims.EmailVerified == nil || !*claims.EmailVerified) {
+		slog.WarnContext(r.Context(), "OIDC login rejected: email not verified by identity provider",
+			slog.String(otelkeys.Email, claims.Email),
+		)
+		writeError(r.Context(), w, http.StatusUnauthorized, "OIDC email must be verified by the identity provider")
+		return
+	}
 
 	// Handle link flow: attach OIDC subject to an existing authenticated user
 	if linkUserID != "" {
