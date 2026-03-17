@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"log/slog"
 	"net"
 	"net/http"
@@ -100,7 +102,19 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 
 	userID := auth.UserIDFromContext(r.Context())
 	slog.DebugContext(r.Context(), "fetching config status", slog.String(otelkeys.UserID, userID))
-	isAdmin, _ := h.DB.IsAdmin(r.Context(), userID)
+
+	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// User not found (e.g., stale JWT) — signal client to re-authenticate.
+			writeError(r.Context(), w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.String(otelkeys.UserID, userID))
+		writeError(r.Context(), w, http.StatusInternalServerError, "internal server error")
+		return
+	}
 
 	smtpCfg := h.resolveSMTPConfig(r.Context())
 	host := strings.TrimSpace(smtpCfg.Host)

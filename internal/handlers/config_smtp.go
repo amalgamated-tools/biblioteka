@@ -63,18 +63,7 @@ func (h *ConfigHandler) HandleSMTPConfig(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *ConfigHandler) handleGetSMTPConfig(w http.ResponseWriter, r *http.Request) {
-	userID := auth.UserIDFromContext(r.Context())
-	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status",
-			slog.String(otelkeys.UserID, userID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
-		return
-	}
-	if !isAdmin {
-		writeError(r.Context(), w, http.StatusForbidden, "only the admin user can view this setting")
+	if !h.requireAdmin(w, r) {
 		return
 	}
 

@@ -40,21 +40,12 @@ type setOIDCConfigRequest struct {
 //	@Failure		500	{object}	errorResponse
 //	@Router			/config/oidc [get]
 func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+
 	userID := auth.UserIDFromContext(r.Context())
 	slog.DebugContext(r.Context(), "fetching OIDC config", slog.String(otelkeys.UserID, userID))
-	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status",
-			slog.String(otelkeys.UserID, userID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
-		return
-	}
-	if !isAdmin {
-		writeError(r.Context(), w, http.StatusForbidden, "only the admin user can view this setting")
-		return
-	}
 
 	issuerURL, _ := h.DB.GetSetting(r.Context(), settingOIDCIssuerURL)
 	clientID, _ := h.DB.GetSetting(r.Context(), settingOIDCClientID)
