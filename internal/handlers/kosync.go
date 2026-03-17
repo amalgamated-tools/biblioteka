@@ -118,8 +118,7 @@ func (h *KOSyncHandler) upsertCredentials(w http.ResponseWriter, r *http.Request
 	// KOReader sends the hex-encoded MD5 digest of the plain password as x-auth-key.
 	// We therefore hash md5(password) with bcrypt so that the stored hash can be
 	// verified directly against the value KOReader sends.
-	md5Sum := md5.Sum([]byte(req.Password)) // #nosec G401 -- protocol requirement
-	md5Hex := hex.EncodeToString(md5Sum[:])
+	md5Hex := kosyncProtocolKey(req.Password)
 	hash, err := bcrypt.GenerateFromPassword([]byte(md5Hex), bcrypt.DefaultCost)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to hash KOSync password", slog.Any(otelkeys.Error, err))
@@ -301,4 +300,13 @@ func toKOSyncProgressResponse(p *db.ReadingProgress) kosyncProgressResponse {
 		resp.DeviceID = *p.DeviceID
 	}
 	return resp
+}
+
+// kosyncProtocolKey converts a plain-text credential into the hex-encoded MD5
+// digest that KOReader transmits as x-auth-key.  MD5 is mandated by the kosync
+// wire protocol; the returned value is always bcrypt-hashed before storage, so
+// MD5 is never the final layer of protection.
+func kosyncProtocolKey(plaintext string) string {
+	digest := md5.Sum([]byte(plaintext)) // #nosec G401 -- kosync protocol requirement
+	return hex.EncodeToString(digest[:])
 }
