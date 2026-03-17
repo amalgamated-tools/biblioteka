@@ -9,9 +9,21 @@ import (
 func TestCreateBookFile(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
+	if book == nil {
+		t.Fatalf("CreateBook() returned nil book")
+	}
 
 	bf, err := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024000, strPtr("abc123hash"), "/books/gunslinger.epub")
+	if err != nil {
+		t.Fatalf("CreateBookFile() error: %v", err)
+	}
+	if bf == nil {
+		t.Fatalf("CreateBookFile() returned nil book file")
+	}
 	if err != nil {
 		t.Fatalf("CreateBookFile() error: %v", err)
 	}
@@ -110,12 +122,26 @@ func TestDeleteBookFile_NotFound(t *testing.T) {
 func TestDeleteBook_CascadeFiles(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	bf, _ := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
+	if book == nil {
+		t.Fatalf("CreateBook() returned nil book")
+	}
+	bf, err := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	if err != nil {
+		t.Fatalf("CreateBookFile() error: %v", err)
+	}
+	if bf == nil {
+		t.Fatalf("CreateBookFile() returned nil book file")
+	}
 
-	_ = d.DeleteBook(context.Background(), book.ID)
+	if err := d.DeleteBook(context.Background(), book.ID); err != nil {
+		t.Fatalf("DeleteBook() error: %v", err)
+	}
 
-	_, err := d.GetBookFile(context.Background(), bf.ID)
+	_, err = d.GetBookFile(context.Background(), bf.ID)
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows after book delete (cascade), got %v", err)
 	}
@@ -124,12 +150,30 @@ func TestDeleteBook_CascadeFiles(t *testing.T) {
 func TestGetFilesForBooks(t *testing.T) {
 	d := newTestDB(t)
 
-	book1, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	book2, _ := d.CreateBook(context.Background(), "Wizard and Glass", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book1, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() for book1 error: %v", err)
+	}
+	if book1 == nil {
+		t.Fatalf("CreateBook() returned nil book1")
+	}
+	book2, err := d.CreateBook(context.Background(), "Wizard and Glass", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() for book2 error: %v", err)
+	}
+	if book2 == nil {
+		t.Fatalf("CreateBook() returned nil book2")
+	}
 
-	_, _ = d.CreateBookFile(context.Background(), book1.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
-	_, _ = d.CreateBookFile(context.Background(), book1.ID, "pdf", "gunslinger.pdf", 2048, nil, "/books/gunslinger.pdf")
-	_, _ = d.CreateBookFile(context.Background(), book2.ID, "epub", "wizard-and-glass.epub", 4096, nil, "/books/wizard-and-glass.epub")
+	if _, err = d.CreateBookFile(context.Background(), book1.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub"); err != nil {
+		t.Fatalf("CreateBookFile() for book1 epub error: %v", err)
+	}
+	if _, err = d.CreateBookFile(context.Background(), book1.ID, "pdf", "gunslinger.pdf", 2048, nil, "/books/gunslinger.pdf"); err != nil {
+		t.Fatalf("CreateBookFile() for book1 pdf error: %v", err)
+	}
+	if _, err = d.CreateBookFile(context.Background(), book2.ID, "epub", "wizard-and-glass.epub", 4096, nil, "/books/wizard-and-glass.epub"); err != nil {
+		t.Fatalf("CreateBookFile() for book2 epub error: %v", err)
+	}
 
 	got, err := d.GetFilesForBooks(context.Background(), []string{book1.ID, book2.ID})
 	if err != nil {
