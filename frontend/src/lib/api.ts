@@ -190,12 +190,17 @@ export async function getOidcConfig(): Promise<OIDCConfig> {
   return request<OIDCConfig>("GET", "/api/config/oidc");
 }
 
-export async function setOidcConfig(config: SetOIDCConfigInput): Promise<{ message: string }> {
+export async function setOidcConfig(
+  config: SetOIDCConfigInput,
+): Promise<{ message: string }> {
   return request<{ message: string }>("PUT", "/api/config/oidc", config);
 }
 
 export async function createOidcLinkNonce(): Promise<string> {
-  const data = await request<{ nonce: string }>("POST", "/api/auth/oidc/link-nonce");
+  const data = await request<{ nonce: string }>(
+    "POST",
+    "/api/auth/oidc/link-nonce",
+  );
   return data.nonce;
 }
 
@@ -226,7 +231,9 @@ export async function getSmtpConfig(): Promise<SMTPConfig> {
   return request<SMTPConfig>("GET", "/api/config/smtp");
 }
 
-export async function setSmtpConfig(config: SetSMTPConfigInput): Promise<{ message: string }> {
+export async function setSmtpConfig(
+  config: SetSMTPConfigInput,
+): Promise<{ message: string }> {
   return request<{ message: string }>("PUT", "/api/config/smtp", config);
 }
 
@@ -249,8 +256,13 @@ export async function listUsers(): Promise<AdminUser[]> {
   return request<AdminUser[]>("GET", "/api/admin/users");
 }
 
-export async function setUserAdmin(userId: string, isAdmin: boolean): Promise<{ message: string }> {
-  return request<{ message: string }>("PUT", `/api/admin/users/${userId}`, { is_admin: isAdmin });
+export async function setUserAdmin(
+  userId: string,
+  isAdmin: boolean,
+): Promise<{ message: string }> {
+  return request<{ message: string }>("PUT", `/api/admin/users/${userId}`, {
+    is_admin: isAdmin,
+  });
 }
 
 // Libraries
@@ -263,7 +275,10 @@ export async function createLibrary(input: LibraryInput): Promise<Library> {
   return request<Library>("POST", "/api/libraries", input);
 }
 
-export async function updateLibrary(id: string, input: LibraryInput): Promise<Library> {
+export async function updateLibrary(
+  id: string,
+  input: LibraryInput,
+): Promise<Library> {
   return request<Library>("PUT", `/api/libraries/${id}`, input);
 }
 
@@ -296,7 +311,10 @@ export async function createAuthor(input: AuthorInput): Promise<Author> {
   return request<Author>("POST", "/api/authors", input);
 }
 
-export async function updateAuthor(id: string, input: AuthorInput): Promise<Author> {
+export async function updateAuthor(
+  id: string,
+  input: AuthorInput,
+): Promise<Author> {
   return request<Author>("PUT", `/api/authors/${id}`, input);
 }
 
@@ -318,7 +336,10 @@ export async function createSeries(input: SeriesInput): Promise<Series> {
   return request<Series>("POST", "/api/series", input);
 }
 
-export async function updateSeries(id: string, input: SeriesInput): Promise<Series> {
+export async function updateSeries(
+  id: string,
+  input: SeriesInput,
+): Promise<Series> {
   return request<Series>("PUT", `/api/series/${id}`, input);
 }
 
@@ -328,8 +349,14 @@ export async function deleteSeries(id: string): Promise<void> {
 
 // Books
 
-export async function listBooks(limit = 50, offset = 0): Promise<PaginatedBooks> {
-  return request<PaginatedBooks>("GET", `/api/books?limit=${limit}&offset=${offset}`);
+export async function listBooks(
+  limit = 50,
+  offset = 0,
+): Promise<PaginatedBooks> {
+  return request<PaginatedBooks>(
+    "GET",
+    `/api/books?limit=${limit}&offset=${offset}`,
+  );
 }
 
 export async function getBook(id: string): Promise<Book> {
@@ -354,13 +381,20 @@ export async function getBookAuthors(bookId: string): Promise<Author[]> {
   return request<Author[]>("GET", `/api/books/${bookId}/authors`);
 }
 
-export async function setBookAuthors(bookId: string, authorIds: string[]): Promise<Author[]> {
-  return request<Author[]>("PUT", `/api/books/${bookId}/authors`, { author_ids: authorIds });
+export async function setBookAuthors(
+  bookId: string,
+  authorIds: string[],
+): Promise<Author[]> {
+  return request<Author[]>("PUT", `/api/books/${bookId}/authors`, {
+    author_ids: authorIds,
+  });
 }
 
 // Book Series
 
-export async function getBookSeries(bookId: string): Promise<BookSeriesEntry[]> {
+export async function getBookSeries(
+  bookId: string,
+): Promise<BookSeriesEntry[]> {
   return request<BookSeriesEntry[]>("GET", `/api/books/${bookId}/series`);
 }
 
@@ -368,7 +402,9 @@ export async function setBookSeries(
   bookId: string,
   entries: { series_id: string; position?: number }[],
 ): Promise<BookSeriesEntry[]> {
-  return request<BookSeriesEntry[]>("PUT", `/api/books/${bookId}/series`, { entries });
+  return request<BookSeriesEntry[]>("PUT", `/api/books/${bookId}/series`, {
+    entries,
+  });
 }
 
 // Book Files
@@ -377,7 +413,10 @@ export async function listBookFiles(bookId: string): Promise<BookFile[]> {
   return request<BookFile[]>("GET", `/api/books/${bookId}/files`);
 }
 
-export async function createBookFile(bookId: string, input: BookFileInput): Promise<BookFile> {
+export async function createBookFile(
+  bookId: string,
+  input: BookFileInput,
+): Promise<BookFile> {
   return request<BookFile>("POST", `/api/books/${bookId}/files`, input);
 }
 
@@ -407,7 +446,9 @@ export async function listAPIKeys(): Promise<APIKey[]> {
   return request<APIKey[]>("GET", "/api/api-keys");
 }
 
-export async function createAPIKey(name: string): Promise<APIKeyCreateResponse> {
+export async function createAPIKey(
+  name: string,
+): Promise<APIKeyCreateResponse> {
   return request<APIKeyCreateResponse>("POST", "/api/api-keys", { name });
 }
 

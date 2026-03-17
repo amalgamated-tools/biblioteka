@@ -1,10 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { authStore } from "../../stores/auth.svelte";
-  import {
-    changePassword,
-    createOidcLinkNonce,
-  } from "../../lib/api";
+  import { changePassword, createOidcLinkNonce } from "../../lib/api";
   import { Lock, Mail, Link } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
 
@@ -135,16 +132,17 @@
           </span>
         </div>
         <p class="text-xs text-ink-400 dark:text-ink-500 mt-2">
-          Your account is linked to your SSO provider. You can log in
-          with either your password or SSO.
+          Your account is linked to your SSO provider. You can log in with
+          either your password or SSO.
         </p>
       {:else}
         {#if authStore.oidcLinkError}
-          <AlertBanner variant="error" class="mb-4">{authStore.oidcLinkError}</AlertBanner>
+          <AlertBanner variant="error" class="mb-4"
+            >{authStore.oidcLinkError}</AlertBanner
+          >
         {/if}
         <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
-          Link your account to the SSO provider to enable single sign-on
-          login.
+          Link your account to the SSO provider to enable single sign-on login.
         </p>
         <button
           onclick={handleLinkSso}
@@ -224,7 +222,9 @@
       {/if}
 
       {#if passwordSuccess}
-        <AlertBanner variant="success">Password updated successfully</AlertBanner>
+        <AlertBanner variant="success"
+          >Password updated successfully</AlertBanner
+        >
       {/if}
 
       <button

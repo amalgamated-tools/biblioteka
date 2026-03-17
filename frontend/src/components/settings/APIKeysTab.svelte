@@ -241,8 +241,7 @@
               <tr
                 class="border-b border-ink-50 dark:border-ink-800 hover:bg-ink-50/50 dark:hover:bg-ink-800/50 transition-colors"
               >
-                <td
-                  class="py-3 text-ink-900 dark:text-cream-100 font-medium"
+                <td class="py-3 text-ink-900 dark:text-cream-100 font-medium"
                   >{key.name}</td
                 >
                 <td class="py-3">
