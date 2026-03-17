@@ -3,6 +3,8 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { writeFileSync } from "fs";
 
+let gitkeepPath: string | null = null;
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -10,8 +12,18 @@ export default defineConfig({
     tailwindcss(),
     {
       name: "restore-gitkeep",
+      configResolved(resolvedConfig) {
+        if (resolvedConfig.command === "build") {
+          gitkeepPath = resolve(resolvedConfig.build.outDir, ".gitkeep");
+        } else {
+          gitkeepPath = null;
+        }
+      },
       closeBundle() {
-        writeFileSync(new URL("../internal/server/dist/.gitkeep", import.meta.url), "");
+        if (!gitkeepPath) {
+          return;
+        }
+        writeFileSync(gitkeepPath, "");
       },
     },
   ],
