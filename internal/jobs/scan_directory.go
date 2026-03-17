@@ -54,7 +54,7 @@ func ScanDirectory(ctx context.Context, enqueuer Enqueuer, p ScanPathPayload) er
 	}
 
 	var found int
-	err := filepath.WalkDir(p.Path, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(p.Path, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			slog.WarnContext(ctx, "error accessing path",
 				slog.String(otelkeys.Path, path),

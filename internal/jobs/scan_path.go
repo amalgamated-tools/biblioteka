@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
-
-	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // JobScanPath is the registered name for the path-scanning job.
