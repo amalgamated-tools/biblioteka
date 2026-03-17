@@ -2,15 +2,19 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { authStore } from "./auth.svelte";
 import * as api from "../lib/api";
 
-vi.mock("../lib/api", () => ({
-  setToken: vi.fn(),
-  clearToken: vi.fn(),
-  hasToken: vi.fn(),
-  getMe: vi.fn(),
-  login: vi.fn(),
-  signup: vi.fn(),
-  logout: vi.fn(),
-}));
+vi.mock("../lib/api", async () => {
+  const actual = await vi.importActual<typeof import("../lib/api")>("../lib/api");
+  return {
+    ApiError: actual.ApiError,
+    setToken: vi.fn(),
+    clearToken: vi.fn(),
+    hasToken: vi.fn(),
+    getMe: vi.fn(),
+    login: vi.fn(),
+    signup: vi.fn(),
+    logout: vi.fn(),
+  };
+});
 
 describe("auth store", () => {
   beforeEach(() => {
@@ -32,14 +36,17 @@ describe("auth store", () => {
   });
 
   describe("init", () => {
-    it("sets loading to false when no token exists", async () => {
+    it("sets loading to false when no token and no cookie", async () => {
       vi.mocked(api.hasToken).mockReturnValue(false);
+      vi.mocked(api.getMe).mockRejectedValue(
+        new api.ApiError("unauthorized", 401),
+      );
 
       await authStore.init();
 
       expect(authStore.loading).toBe(false);
       expect(authStore.user).toBeNull();
-      expect(api.getMe).not.toHaveBeenCalled();
+      expect(api.getMe).toHaveBeenCalledTimes(1);
     });
 
     it("fetches user when token exists", async () => {
@@ -62,14 +69,74 @@ describe("auth store", () => {
       expect(authStore.loading).toBe(false);
     });
 
-    it("clears token and sets user to null when getMe fails", async () => {
+    it("clears token and retries when getMe returns 401 with token", async () => {
       vi.mocked(api.hasToken).mockReturnValue(true);
-      vi.mocked(api.getMe).mockRejectedValue(new Error("unauthorized"));
+      vi.mocked(api.getMe).mockRejectedValue(
+        new api.ApiError("unauthorized", 401),
+      );
 
       await authStore.init();
 
       expect(api.clearToken).toHaveBeenCalled();
+      expect(api.getMe).toHaveBeenCalledTimes(2);
       expect(authStore.user).toBeNull();
+      expect(authStore.loading).toBe(false);
+    });
+
+    it("clears stale token and authenticates via cookie on retry", async () => {
+      vi.mocked(api.hasToken).mockReturnValue(true);
+      vi.mocked(api.getMe)
+        .mockRejectedValueOnce(new api.ApiError("unauthorized", 401))
+        .mockResolvedValueOnce({
+          id: "4",
+          email: "oidc@b.com",
+          oidc_linked: true,
+          is_admin: false,
+        });
+
+      await authStore.init();
+
+      expect(api.clearToken).toHaveBeenCalled();
+      expect(api.getMe).toHaveBeenCalledTimes(2);
+      expect(authStore.user).toEqual({
+        id: "4",
+        email: "oidc@b.com",
+        oidc_linked: true,
+        is_admin: false,
+      });
+      expect(authStore.loading).toBe(false);
+    });
+
+    it("preserves token on transient network error", async () => {
+      vi.mocked(api.hasToken).mockReturnValue(true);
+      vi.mocked(api.getMe).mockRejectedValue(new Error("network error"));
+
+      await authStore.init();
+
+      expect(api.clearToken).not.toHaveBeenCalled();
+      expect(api.getMe).toHaveBeenCalledTimes(1);
+      expect(authStore.user).toBeNull();
+      expect(authStore.loading).toBe(false);
+    });
+
+    it("authenticates via cookie on plain reload without token or URL marker", async () => {
+      vi.mocked(api.hasToken).mockReturnValue(false);
+      vi.mocked(api.getMe).mockResolvedValue({
+        id: "3",
+        email: "cookie@b.com",
+        oidc_linked: true,
+        is_admin: false,
+      });
+
+      await authStore.init();
+
+      expect(api.getMe).toHaveBeenCalledTimes(1);
+      expect(authStore.user).toEqual({
+        id: "3",
+        email: "cookie@b.com",
+        oidc_linked: true,
+        is_admin: false,
+      });
       expect(authStore.loading).toBe(false);
     });
 
