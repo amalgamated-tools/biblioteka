@@ -21,6 +21,11 @@ func newSMTPClientWithContext(ctx context.Context, conn net.Conn, host string) (
 		return nil, nil, fmt.Errorf("failed to set connection deadline: %w", err)
 	}
 
+	if err := ctx.Err(); err != nil {
+		conn.Close()
+		return nil, nil, fmt.Errorf("context done before SMTP client creation: %w", err)
+	}
+
 	done := make(chan struct{})
 	go func(c net.Conn, done <-chan struct{}, ctx context.Context) {
 		select {
