@@ -49,7 +49,7 @@ Fetches all libraries from the database, filters to those with `monitored = true
 
 | | |
 |---|---|
-| **Source** | `internal/jobs/scan_libraries.go` — `NewScanLibraryHandler` |
+| **Source** | `internal/jobs/scan_library.go` — `NewScanLibraryHandler` |
 | **Trigger** | Enqueued by `scan:libraries`, or immediately when a library is created via the API |
 | **Payload** | `{ "library_id": "<uuid>", "paths": ["/books", "/more-books"] }` |
 
@@ -213,7 +213,8 @@ internal/
   jobs/
     process_file.go            # process:file handler
     scan_path.go               # scan:path handler + Enqueuer interface
-    scan_libraries.go          # scan:library & scan:libraries handlers
+    scan_libraries.go          # scan:libraries handler (scans all monitored libraries)
+    scan_library.go            # scan:library handler (scans a single library)
     process_book_file.go       # ProcessBookFile: metadata extraction, path parsing, organization logic
   organize/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
