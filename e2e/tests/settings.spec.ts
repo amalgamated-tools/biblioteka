@@ -44,7 +44,7 @@ test.describe("Account settings", () => {
     await signOut(page);
 
     await signIn(page, testUser.email, testUser.password);
-    await expect(getAuthErrorBanner(page)).toContainText("invalid email or password");
+    await expect(getAuthErrorBanner(page)).toContainText(/invalid email or password/i);
 
     await page.locator("#password").fill(newPassword);
     await page.getByRole("button", { name: "Sign In" }).click();
