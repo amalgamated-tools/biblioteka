@@ -197,7 +197,7 @@ The request must originate from the same origin as the server (the `Origin` or `
 
 ### `GET /api/auth/oidc/enabled`
 
-Returns whether OIDC login is currently configured and enabled.
+Returns whether OIDC login is currently configured and enabled. Also accepts `HEAD` (returns headers only, no body).
 
 **Response body (`200`):**
 
@@ -1117,6 +1117,8 @@ Replace the author list for a book.
 { "author_ids": ["<id>", "<id2>"] }
 ```
 
+**Response body (`200`):** Updated array of [author objects](#post-apiauthors) — identical to the response from `GET /api/books/{id}/authors`.
+
 ---
 
 ### `GET /api/books/{id}/series` 🔒
@@ -1166,6 +1168,8 @@ Replace the series entries for a book.
   ]
 }
 ```
+
+**Response body (`200`):** Updated array of series entry objects — identical to the response from `GET /api/books/{id}/series`.
 
 ---
 
