@@ -130,8 +130,6 @@ func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 	writeJSON(r.Context(), w, http.StatusOK, dtos)
 }
 
-// validateAndPrepareLibrary validates the library request fields and encodes paths to JSON.
-// It writes the appropriate error response and returns ("", false) on failure.
 // requireAdmin checks whether the authenticated user is an admin and writes the
 // appropriate error response if not. It returns true when the caller is allowed
 // to proceed.
