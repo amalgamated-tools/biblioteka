@@ -45,7 +45,7 @@ func NewScanLibraryHandler(enqueuer Enqueuer) func(ctx context.Context, payload 
 
 		var enqueued int
 		for _, path := range p.Paths {
-			if _, err := enqueuer.Enqueue(ctx, JobScanPath, ScanPathPayload{Path: path}); err != nil {
+			if _, err := enqueuer.Enqueue(ctx, JobScanPath, ScanPathPayload{Path: path, LibraryID: p.LibraryID, LibraryRoot: path}); err != nil {
 				slog.WarnContext(ctx, "failed to enqueue scan:path job",
 					slog.String(otelkeys.LibraryID, p.LibraryID),
 					slog.String(otelkeys.Path, path),
