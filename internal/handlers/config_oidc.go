@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/coreos/go-oidc/v3/oidc"
 )
@@ -127,20 +128,15 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	for k, v := range map[string]string{
-		settingOIDCIssuerURL:    issuerURL,
-		settingOIDCClientID:     clientID,
-		settingOIDCClientSecret: clientSecret,
-		settingOIDCRedirectURI:  redirectURI,
-	} {
-		if err := h.DB.SetSetting(r.Context(), k, v); err != nil {
-			slog.ErrorContext(r.Context(), "failed to save OIDC setting",
-				slog.String(otelkeys.Key, k),
-				slog.Any(otelkeys.Error, err),
-			)
-			writeError(r.Context(), w, http.StatusInternalServerError, "failed to save OIDC configuration")
-			return
-		}
+	if err := h.DB.SetSettings(r.Context(), []db.Setting{
+		{Key: settingOIDCIssuerURL, Value: issuerURL},
+		{Key: settingOIDCClientID, Value: clientID},
+		{Key: settingOIDCClientSecret, Value: clientSecret},
+		{Key: settingOIDCRedirectURI, Value: redirectURI},
+	}); err != nil {
+		slog.ErrorContext(r.Context(), "failed to save OIDC configuration", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to save OIDC configuration")
+		return
 	}
 
 	if h.OnOIDCConfigSet != nil {
