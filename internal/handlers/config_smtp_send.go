@@ -32,6 +32,7 @@ func newSMTPClientWithContext(ctx context.Context, conn net.Conn, host string) (
 		case <-ctx.Done():
 			c.Close()
 		case <-done:
+			c.Close()
 		}
 	}(conn, done, ctx)
 
