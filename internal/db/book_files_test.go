@@ -120,3 +120,31 @@ func TestDeleteBook_CascadeFiles(t *testing.T) {
 		t.Errorf("expected sql.ErrNoRows after book delete (cascade), got %v", err)
 	}
 }
+
+func TestGetFilesForBooks(t *testing.T) {
+	d := newTestDB(t)
+
+	book1, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book2, _ := d.CreateBook(context.Background(), "Wizard and Glass", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	_, _ = d.CreateBookFile(context.Background(), book1.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	_, _ = d.CreateBookFile(context.Background(), book1.ID, "pdf", "gunslinger.pdf", 2048, nil, "/books/gunslinger.pdf")
+	_, _ = d.CreateBookFile(context.Background(), book2.ID, "epub", "wizard-and-glass.epub", 4096, nil, "/books/wizard-and-glass.epub")
+
+	got, err := d.GetFilesForBooks(context.Background(), []string{book1.ID, book2.ID})
+	if err != nil {
+		t.Fatalf("GetFilesForBooks() error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("GetFilesForBooks() returned %d book entries, want 2", len(got))
+	}
+	if len(got[book1.ID]) != 2 {
+		t.Fatalf("GetFilesForBooks()[book1] returned %d files, want 2", len(got[book1.ID]))
+	}
+	if got[book1.ID][0].FileName != "gunslinger.epub" {
+		t.Errorf("first file for book1 = %q, want %q", got[book1.ID][0].FileName, "gunslinger.epub")
+	}
+	if len(got[book2.ID]) != 1 || got[book2.ID][0].FileName != "wizard-and-glass.epub" {
+		t.Errorf("files for book2 = %+v, want wizard-and-glass.epub", got[book2.ID])
+	}
+}
