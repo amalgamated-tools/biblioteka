@@ -74,10 +74,7 @@ test.describe("Authentication flow", () => {
     await page.waitForSelector('input#password');
     await page.locator('input#email').fill(testUser.email);
     await page.locator('input#password').fill(testUser.password);
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS }),
-      page.locator('button[type="submit"]').click(),
-    ]);
+    await page.locator('button[type="submit"]').click();
 
     // Should land on dashboard again
     await expect(page).toHaveURL("/");
