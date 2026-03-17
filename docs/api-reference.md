@@ -651,7 +651,7 @@ List all libraries.
 
 ---
 
-### `POST /api/libraries` 🔒
+### `POST /api/libraries` 🔒 **Admin**
 
 Create a library.
 
@@ -664,7 +664,7 @@ Create a library.
 | `organization_type` | string   |          | Currently only `"book_per_folder"` is supported (default). Each immediate subdirectory of a library path is treated as one book. |
 | `monitored`         | boolean  |          | Whether to auto-import new files |
 
-**Responses:** `201 Created` with the new library object, or `409 Conflict` if the name is taken.
+**Responses:** `201 Created` with the new library object, `403 Forbidden` if the caller is not an admin, or `409 Conflict` if the name is taken.
 
 > **Note:** On successful creation, the server asynchronously enqueues a `scan:library` job that then fans out a `scan:path` job for each configured path. Updating (`PUT`) a library does **not** trigger an automatic re-scan.
 
@@ -698,7 +698,7 @@ Get a single library by ID.
 
 ---
 
-### `PUT /api/libraries/{id}` 🔒
+### `PUT /api/libraries/{id}` 🔒 **Admin**
 
 Update a library. All fields are replaced (full update).
 
@@ -711,16 +711,24 @@ Update a library. All fields are replaced (full update).
 | Status | Meaning |
 |--------|---------|
 | `400` | Invalid request (malformed JSON or validation error such as missing name, invalid/non-existent/empty paths) |
+| `403` | Caller is not an admin |
 | `404` | Library not found |
 | `409` | A library with that name already exists |
 
 ---
 
-### `DELETE /api/libraries/{id}` 🔒
+### `DELETE /api/libraries/{id}` 🔒 **Admin**
 
 Delete a library. Returns `204 No Content`.
 
 > **Cascade:** Deleting a library also removes all `library_books` join entries for that library. Books themselves are **not** deleted — only their membership in this library. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `403` | Caller is not an admin |
+| `404` | Library not found |
 
 ---
 
