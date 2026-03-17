@@ -319,8 +319,12 @@ func TestGetAuthorsForBooks(t *testing.T) {
 	if len(got[book1.ID]) != 2 {
 		t.Fatalf("GetAuthorsForBooks()[book1] returned %d authors, want 2", len(got[book1.ID]))
 	}
-	if got[book1.ID][0].Name != "Robin Furth" {
-		t.Errorf("first author for book1 = %q, want %q", got[book1.ID][0].Name, "Robin Furth")
+	seen := map[string]bool{}
+	for _, author := range got[book1.ID] {
+		seen[author.ID] = true
+	}
+	if !seen[author1.ID] || !seen[author2.ID] {
+		t.Errorf("authors for book1 = %+v, want IDs %q and %q", got[book1.ID], author1.ID, author2.ID)
 	}
 	if len(got[book2.ID]) != 1 || got[book2.ID][0].ID != author1.ID {
 		t.Errorf("authors for book2 = %+v, want [%s]", got[book2.ID], author1.ID)
