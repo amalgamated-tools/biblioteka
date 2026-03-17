@@ -20,7 +20,9 @@
 </script>
 
 <div
-  class="px-4 py-3 rounded-xl text-sm animate-scale-in {styles[variant]} {extraClass ?? ''}"
+  class="px-4 py-3 rounded-xl text-sm animate-scale-in {styles[
+    variant
+  ]} {extraClass ?? ''}"
   role={role ?? (variant === "error" ? "alert" : "status")}
   data-testid={testId}
 >

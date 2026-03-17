@@ -1,12 +1,7 @@
 <script lang="ts">
   import { libraryStore } from "../../stores/libraries.svelte";
   import { routerStore } from "../../stores/router.svelte";
-  import {
-    Plus,
-    FolderOpen,
-    Trash2,
-    X,
-  } from "lucide-svelte";
+  import { Plus, FolderOpen, Trash2, X } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
 
   interface Props {
@@ -169,14 +164,15 @@
       <div class="space-y-2">
         {#each formPaths as entry, i (entry.id)}
           <div class="flex items-center gap-2">
-            <FolderOpen
-              class="w-4 h-4 text-ink-300 flex-shrink-0"
-            />
+            <FolderOpen class="w-4 h-4 text-ink-300 flex-shrink-0" />
             <input
               type="text"
               value={entry.value}
               oninput={(e) => {
-                formPaths[i] = { ...formPaths[i], value: e.currentTarget.value };
+                formPaths[i] = {
+                  ...formPaths[i],
+                  value: e.currentTarget.value,
+                };
               }}
               placeholder="/path/to/books"
               class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 font-mono text-sm transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"

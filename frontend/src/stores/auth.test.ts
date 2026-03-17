@@ -3,7 +3,8 @@ import { authStore } from "./auth.svelte";
 import * as api from "../lib/api";
 
 vi.mock("../lib/api", async () => {
-  const actual = await vi.importActual<typeof import("../lib/api")>("../lib/api");
+  const actual =
+    await vi.importActual<typeof import("../lib/api")>("../lib/api");
   return {
     ApiError: actual.ApiError,
     setToken: vi.fn(),
@@ -215,7 +216,12 @@ describe("auth store", () => {
     it("returns no error on success and sets user", async () => {
       vi.mocked(api.login).mockResolvedValue({
         token: "tok",
-        user: { id: "1", email: "a@b.com", oidc_linked: false, is_admin: false },
+        user: {
+          id: "1",
+          email: "a@b.com",
+          oidc_linked: false,
+          is_admin: false,
+        },
       });
 
       const result = await authStore.signIn("a@b.com", "password");
@@ -271,7 +277,12 @@ describe("auth store", () => {
   describe("signOut", () => {
     it("clears token and user", async () => {
       vi.mocked(api.logout).mockResolvedValue(undefined);
-      authStore.user = { id: "1", email: "a@b.com", oidc_linked: false, is_admin: false };
+      authStore.user = {
+        id: "1",
+        email: "a@b.com",
+        oidc_linked: false,
+        is_admin: false,
+      };
 
       await authStore.signOut();
 

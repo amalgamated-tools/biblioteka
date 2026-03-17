@@ -102,9 +102,7 @@
                 <td class="py-3 text-ink-900 dark:text-cream-100 font-medium"
                   >{u.name}</td
                 >
-                <td class="py-3 text-ink-500 dark:text-ink-400"
-                  >{u.email}</td
-                >
+                <td class="py-3 text-ink-500 dark:text-ink-400">{u.email}</td>
                 <td class="py-3">
                   <span
                     class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {u.oidc_linked
