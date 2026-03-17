@@ -378,7 +378,7 @@ The author and title come from embedded file metadata when available, falling ba
 
 ### Path-parsing and series inference
 
-Even when `organize_files` is disabled, Biblioteka parses each file's path relative to the library root to extract author, title, series, and publication year from the directory structure. This path-derived metadata supplements (but does not override) embedded file metadata.
+Even when `organize_files` is disabled, Biblioteka parses each file's path relative to the library root to extract author, title, and series from the directory structure. Trailing `(YYYY)` year tokens are stripped to keep titles clean (the year is not stored as `publication_date`). This path-derived metadata supplements (but does not override) embedded file metadata.
 
 For full details on the supported directory layouts and precedence rules, see [Background Jobs — Path-based metadata](background-jobs.md#path-based-metadata).
 

@@ -6,7 +6,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 
 - **Multi-format support** – EPUB, MOBI, AZW3, and PDF
 - **Metadata extraction** – title, author, ISBN, description, and publisher extracted automatically during library scans (EPUB natively; MOBI/AZW3/PDF via [ExifTool](https://exiftool.org/)); extracted authors are linked to book records automatically; standalone [`cmd/cli`](#cli-tool) tool available for manual import and inspection
-- **Path-based metadata** – when files are organized in `Author/Title/` or `Author - Title` directory layouts, Biblioteka automatically derives author, title, series name, series position, and publication year from the directory structure, supplementing any embedded file metadata
+- **Path-based metadata** – when files are organized in `Author/Title/` or `Author - Title` directory layouts, Biblioteka automatically derives author, title, series name, and series position from the directory structure, supplementing any embedded file metadata; trailing `(YYYY)` year tokens are also stripped to keep titles clean (the year is not stored as `publication_date`)
 - **File organisation** – optional `organize_files` setting moves imported files into a canonical `Author/Title/` directory structure under the library root; see [Administration → File organization](docs/administration.md#file-organization)
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
 - **Author & series tracking** – browse by author or series, with position numbers within each series
@@ -249,7 +249,7 @@ internal/
   jobs/            Background job handlers (scan:libraries, scan:library, scan:path, process:file)
   metadata/        EPUB/MOBI/PDF metadata extraction
   organize/        File reorganization into canonical Author/Title/ directory structure
-  pathparser/      Path-based metadata extraction from directory layout (author, title, series, year)
+  pathparser/      Path-based metadata extraction from directory layout (author, title, series)
   server/          Route registration, middleware setup, embedded frontend
   worker/          asynq worker setup
   otel/            OpenTelemetry tracing and structured logging setup
