@@ -73,7 +73,7 @@ steps:
       # including installing any necessary dependencies, and it should
       # start your app in server-only mode in the background (e.g., using `&` at the end of the command).
       echo "Building and running the app in background..."
-      PORT=8080 JWT_SECRET=github-actions ./biblioteka -mode server &
+      PORT=3000 JWT_SECRET=github-actions ./biblioteka -mode server &
 source: githubnext/agentics/workflows/daily-accessibility-review.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
 engine: copilot
 ---

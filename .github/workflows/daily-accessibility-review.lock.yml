@@ -29,7 +29,7 @@
 #
 # Source: githubnext/agentics/workflows/daily-accessibility-review.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"8db4482bb59367b0d5280d9b515381b6cfd55b91404131c591e66e4ad56ee723","compiler_version":"v0.60.0","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"fb5176abb7bb65b18f1cfcce12504ecb09aa03177121a73e8950127857cd3d2c","compiler_version":"v0.60.0","strict":true}
 
 name: "Daily Accessibility Review"
 "on":
@@ -297,7 +297,7 @@ jobs:
       - name: Build Go binary
         run: go build -o biblioteka ./cmd/server
       - name: Build and run app in background
-        run: "# This step should set up the runtime environment for your app, \n# including installing any necessary dependencies, and it should\n# start your app in the background (e.g., using `&` at the end of the command).\necho \"Building and running the app in background...\"\n./biblioteka &\n"
+        run: "# This step should set up the runtime environment for your app, \n# including installing any necessary dependencies, and it should\n# start your app in server-only mode in the background (e.g., using `&` at the end of the command).\necho \"Building and running the app in background...\"\nPORT=3000 JWT_SECRET=github-actions ./biblioteka -mode server &\n"
 
       - name: Configure Git credentials
         env:
