@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -50,24 +49,6 @@ func toAuditLogDTO(e *db.AuditLog) auditLogDTO {
 	}
 }
 
-// requireAdmin checks whether the authenticated user is an admin and writes the
-// appropriate error response if not. It returns true when the caller is allowed
-// to proceed.
-func (h *AuditLogHandler) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
-	userID := auth.UserIDFromContext(r.Context())
-	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
-		return false
-	}
-	if !isAdmin {
-		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
-		return false
-	}
-	return true
-}
-
 // HandleAuditLogs handles GET /api/audit-logs (admin only).
 // It accepts optional query parameters:
 //
@@ -93,7 +74,7 @@ func (h *AuditLogHandler) HandleAuditLogs(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if !h.requireAdmin(w, r) {
+	if !requireAdmin(h.DB, w, r) {
 		return
 	}
 
