@@ -49,7 +49,7 @@ frontend/
 
 ## Reactive stores
 
-All global state is managed through **Svelte 5 reactive class stores** in `frontend/src/stores/`. Each store is a class whose properties are declared with `$state` (or `$state.raw` for array collections), and a singleton instance is exported for use throughout the application.
+All global state is managed through **Svelte 5 reactive class stores** in `frontend/src/stores/`. Each store is a class whose properties are declared with `$state` (for scalar values and nullable objects) or `$state.raw` (for array properties that are replaced wholesale on fetch), and a singleton instance is exported for use throughout the application.
 
 ### Pattern
 
@@ -59,7 +59,10 @@ import type { Foo } from "../types";
 import * as api from "../lib/api";
 
 class ExampleStore {
-  items: Foo[] = $state.raw([]);   // $state.raw for arrays — avoids deep reactivity overhead
+  // $state.raw for arrays: tracks only the reference, not contents.
+  // Avoids deep-proxy overhead and suppresses Svelte's mutation warnings
+  // when the array is replaced wholesale.
+  items: Foo[] = $state.raw([]);
   loading = $state(false);
   loaded  = $state(false);
 
@@ -74,6 +77,9 @@ export const exampleStore = new ExampleStore();
 
 > **Why classes instead of writable stores?**  
 > Svelte 5 introduces fine-grained reactivity via `$state` runes. Using a class groups related state and methods together and makes the reactive surface explicit. It is the idiomatic Svelte 5 approach and replaces the `writable`/`readable` store API from Svelte 4.
+
+> **`$state` vs `$state.raw`**  
+> Use `$state` for scalar values (booleans, strings, numbers) and nullable object references (e.g. `user: User | null = $state(null)`). Use `$state.raw` for array properties that are replaced wholesale on every fetch — `$state.raw` tracks only the reference, not the contents of the array. This prevents Svelte from creating a deep reactive proxy over the list items, which avoids unnecessary overhead and eliminates the _"state mutated outside a reactive context"_ console warning that would appear when assigning a new array to a `$state`-annotated property from inside an `async` method.
 
 ### Available stores
 
@@ -192,7 +198,7 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 ## Adding a new store
 
 1. Create `frontend/src/stores/<name>.svelte.ts`.
-2. Define a class with `$state` / `$state.raw` properties.
+2. Define a class with `$state` / `$state.raw` properties. Use `$state.raw` for array properties and `$state` for scalars and nullable objects (see the [`$state` vs `$state.raw`](#reactive-stores) note above).
 3. Export a singleton: `export const myStore = new MyStore();`.
 4. Add an entry for the new store in the table above.
 
