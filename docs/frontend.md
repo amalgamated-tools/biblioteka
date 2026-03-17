@@ -40,6 +40,7 @@ frontend/
       ui/                 Generic reusable UI components
         AlertBanner.svelte   Dismissible alert / error banner
         BookCard.svelte      Card widget displaying a single book summary
+        BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
       api.ts            Centralised API client
@@ -82,7 +83,6 @@ export const exampleStore = new ExampleStore();
 | `router.svelte.ts` | `routerStore` | Hash-based navigation; current view and sub-path |
 | `theme.svelte.ts` | `themeStore` | Light / dark / auto theme preference; persisted to `localStorage` |
 | `libraries.svelte.ts` | `libraryStore` | Library CRUD; cached after first load |
-| `books.svelte.ts` | `bookStore` | Book CRUD; cached after first load |
 | `authors.svelte.ts` | `authorStore` | Author CRUD; cached after first load |
 | `series.svelte.ts` | `seriesStore` | Series CRUD; cached after first load |
 
