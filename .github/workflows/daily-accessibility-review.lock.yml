@@ -29,7 +29,7 @@
 #
 # Source: githubnext/agentics/workflows/daily-accessibility-review.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"fb5176abb7bb65b18f1cfcce12504ecb09aa03177121a73e8950127857cd3d2c","compiler_version":"v0.60.0","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"8c83d25e451beef329fedc57f31ee096f9116951e6d021841df758fca74d2c5d","compiler_version":"v0.60.0","strict":true}
 
 name: "Daily Accessibility Review"
 "on":
@@ -281,7 +281,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # fc06bc1257f339d1d5d8b3a19a8cae5388b55320
         with:
-          version: 10
+          version: 10.32.1
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
         working-directory: ./frontend
@@ -297,7 +297,7 @@ jobs:
       - name: Build Go binary
         run: go build -o biblioteka ./cmd/server
       - name: Build and run app in background
-        run: "# This step should set up the runtime environment for your app, \n# including installing any necessary dependencies, and it should\n# start your app in server-only mode in the background (e.g., using `&` at the end of the command).\necho \"Building and running the app in background...\"\nPORT=3000 JWT_SECRET=github-actions ./biblioteka -mode server &\n"
+        run: "# This step should set up the runtime environment for your app, \n# including installing any necessary dependencies, and it should\n# start your app in server-only mode in the background (e.g., using `&` at the end of the command).\necho \"Building and running the app in background...\"\nPORT=3000 JWT_SECRET=github-actions ./biblioteka -mode server &\necho \"Waiting for server to be ready...\"\nserver_ready=false\nfor i in $(seq 1 30); do\n  echo \"Checking if server is up (attempt $i)...\"\n  if curl -sf http://localhost:3000/api/health; then\n    server_ready=true\n    break\n  fi\n  sleep 1\ndone\nif [ \"$server_ready\" = false ]; then\n  echo \"Error: server did not become ready at http://localhost:3000/api/health within 30 seconds.\"\n  exit 1\nfi\n"
 
       - name: Configure Git credentials
         env:
