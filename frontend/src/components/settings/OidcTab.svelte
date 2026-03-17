@@ -20,10 +20,14 @@
     onOidcSaved,
   }: Props = $props();
 
+  // svelte-ignore state_referenced_locally
   let oidcConfigured = $state(initialOidcConfigured);
+  // svelte-ignore state_referenced_locally
   let oidcIssuerUrl = $state(initialIssuerUrl);
+  // svelte-ignore state_referenced_locally
   let oidcClientId = $state(initialClientId);
   let oidcClientSecret = $state("");
+  // svelte-ignore state_referenced_locally
   let oidcRedirectUri = $state(initialRedirectUri);
   let oidcError: string | null = $state(null);
   let oidcSuccess = $state(false);

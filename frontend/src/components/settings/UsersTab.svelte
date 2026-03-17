@@ -11,6 +11,7 @@
 
   let { cachedUsers, onUsersLoaded }: Props = $props();
 
+  // svelte-ignore state_referenced_locally
   let userList: AdminUser[] = $state.raw(cachedUsers);
   let usersLoading = $state(false);
   let usersError: string | null = $state(null);
