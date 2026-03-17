@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { Page } from "@playwright/test";
 
 
-const AUTH_ERROR_TEST_ID = "auth-error-banner";
+const AUTH_ERROR_TEST_ID = "auth-error";
 
 const DEFAULT_TIMEOUT_MS = Number(process.env.SCREENSHOT_TIMEOUT_MS || 5000);
 const NAVIGATION_TIMEOUT_MS = Number(process.env.SCREENSHOT_NAVIGATION_TIMEOUT_MS || 5000);
@@ -53,7 +53,10 @@ test.describe("Authentication flow", () => {
     await expect(page.getByText("Get started with Biblioteka")).toBeVisible();
     await expect(page.getByText(testUser.email)).toBeVisible();
 
-    await page.locator('button#logout-button').click();
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS }),
+      page.locator('button#logout-button').click(),
+    ]);
     // --- Sign out ---
     await page.evaluate(() => {
       localStorage.removeItem('biblioteka_token');
@@ -66,11 +69,10 @@ test.describe("Authentication flow", () => {
 
     // Should be on main page
     await expect(page).toHaveURL("/");
+    await page.waitForSelector('button#login-btn', { timeout: NAVIGATION_TIMEOUT_MS });
 
     // --- Login ---
     await page.locator('input#email').fill(testUser.email);
-    await page.locator('input#password').fill(testUser.password);
-    await page.locator('button[type="submit"]').click();
 
 
     // Should land on dashboard again

@@ -57,15 +57,15 @@ steps:
     working-directory: ./frontend
     run: pnpm run build
 
-      - name: Set up Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
-        with:
-          go-version: 1.26.1
-          cache: true
-          cache-dependency-path: go.sum
+  - name: Set up Go
+    uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+    with:
+      go-version: 1.26.1
+      cache: true
+      cache-dependency-path: go.sum
 
-      - name: Build Go binary
-        run: go build -o biblioteka ./cmd/server    
+  - name: Build Go binary
+    run: go build -o biblioteka ./cmd/server    
 
   - name: Build and run app in background
     run: |

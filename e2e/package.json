@@ -1,5 +1,5 @@
 {
-  "name": "enlace-e2e",
+  "name": "biblioteka-e2e",
   "private": true,
   "scripts": {
     "test": "playwright test"

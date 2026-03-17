@@ -29,7 +29,7 @@ export default defineConfig({
 
   webServer: {
     command: `../biblioteka -mode server`,
-    url: `http://localhost:${testPort}/health`,
+    url: `http://localhost:${testPort}/api/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 15_000,
     env: {
