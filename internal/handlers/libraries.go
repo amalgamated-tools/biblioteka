@@ -132,6 +132,24 @@ func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 
 // validateAndPrepareLibrary validates the library request fields and encodes paths to JSON.
 // It writes the appropriate error response and returns ("", false) on failure.
+// requireAdmin checks whether the authenticated user is an admin and writes the
+// appropriate error response if not. It returns true when the caller is allowed
+// to proceed.
+func (h *LibraryHandler) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+	userID := auth.UserIDFromContext(r.Context())
+	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
+		return false
+	}
+	if !isAdmin {
+		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
+		return false
+	}
+	return true
+}
+
 func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *libraryRequest) (pathsJSON string, ok bool) {
 	if req.Name == "" {
 		writeError(ctx, w, http.StatusBadRequest, "name is required")
@@ -169,6 +187,7 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Failure		401		{object}	errorResponse
+//	@Failure		403		{object}	errorResponse
 //	@Param			body	body		libraryRequest	true	"Library data"
 //	@Success		201		{object}	libraryDTO
 //	@Failure		400		{object}	errorResponse
@@ -176,6 +195,10 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 //	@Failure		500		{object}	errorResponse
 //	@Router			/libraries [post]
 func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+
 	var req libraryRequest
 	if !decodeJSON(r, w, &req) {
 		return
@@ -262,6 +285,7 @@ func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id s
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Failure		401		{object}	errorResponse
+//	@Failure		403		{object}	errorResponse
 //	@Param			id		path		string			true	"Library ID"
 //	@Param			body	body		libraryRequest	true	"Library data"
 //	@Success		200		{object}	libraryDTO
@@ -271,6 +295,10 @@ func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id s
 //	@Failure		500		{object}	errorResponse
 //	@Router			/libraries/{id} [put]
 func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, id string) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+
 	var req libraryRequest
 	if !decodeJSON(r, w, &req) {
 		return
@@ -318,6 +346,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 //	@Tags			Libraries
 //	@Security		BearerAuth
 //	@Failure		401	{object}	errorResponse
+//	@Failure		403	{object}	errorResponse
 //	@Param			id	path		string	true	"Library ID"
 //	@Success		204	"No Content"
 //	@Failure		400	{object}	errorResponse
@@ -325,6 +354,10 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 //	@Failure		500	{object}	errorResponse
 //	@Router			/libraries/{id} [delete]
 func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, id string) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+
 	slog.DebugContext(r.Context(), "deleting library", slog.String(otelkeys.LibraryID, id))
 
 	lib, err := h.DB.GetLibrary(r.Context(), id)
