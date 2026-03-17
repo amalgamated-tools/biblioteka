@@ -48,14 +48,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 
 	userID := auth.UserIDFromContext(r.Context())
 	slog.DebugContext(r.Context(), "admin listing users", slog.String(otelkeys.CallerID, userID))
-	isAdmin, err := h.DB.IsAdmin(r.Context(), userID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
-		return
-	}
-	if !isAdmin {
-		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
+	if !requireAdmin(h.DB, w, r) {
 		return
 	}
 

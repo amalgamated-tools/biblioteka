@@ -2,11 +2,15 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -87,4 +91,26 @@ func extractPathSegments(path, prefix string) (id, sub string, ok bool) {
 		return parts[0], "", true
 	}
 	return parts[0], parts[1], true
+}
+
+// requireAdmin checks whether the authenticated user is an admin and writes the
+// appropriate error response if not. It returns true when the caller is allowed
+// to proceed. A deleted user (stale JWT) receives a 401 response.
+func requireAdmin(d *db.DB, w http.ResponseWriter, r *http.Request) bool {
+	userID := auth.UserIDFromContext(r.Context())
+	isAdmin, err := d.IsAdmin(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(r.Context(), w, http.StatusUnauthorized, "user not found")
+			return false
+		}
+		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
+		return false
+	}
+	if !isAdmin {
+		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
+		return false
+	}
+	return true
 }
