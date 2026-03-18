@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
+  configureTimeouts,
   createTestUser,
   getAuthErrorBanner,
   openLoginForm,
@@ -11,9 +12,13 @@ import {
 
 test.describe("Authentication flow", () => {
   test("register, verify dashboard, sign out, login again", async ({ page }) => {
+    configureTimeouts(page);
     const testUser = createTestUser();
 
     await signUp(page, testUser);
+    await expect(page.getByText("Get started with Biblioteka")).toBeVisible();
+    await expect(page.getByText(testUser.email)).toBeVisible();
+
     await signOut(page);
     await signIn(page, testUser.email, testUser.password);
 
@@ -23,6 +28,7 @@ test.describe("Authentication flow", () => {
   });
 
   test("show validation and invalid credential errors", async ({ page }) => {
+    configureTimeouts(page);
     const validationUser = createTestUser({ displayName: "Validation User" });
     const missingUser = createTestUser({ displayName: "Missing User" });
     const wrongPassword = "wrongpass123";

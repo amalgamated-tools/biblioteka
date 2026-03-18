@@ -1,11 +1,15 @@
 import { expect, type Page } from "@playwright/test";
 
-export const AUTH_ERROR_TEST_ID = "auth-error";
+const AUTH_ERROR_TEST_ID = "auth-error";
 const TOKEN_KEY = "biblioteka_token";
-const DEFAULT_TIMEOUT_MS = Number(process.env.E2E_TIMEOUT_MS || 5000);
-const NAVIGATION_TIMEOUT_MS = Number(
-  process.env.E2E_NAVIGATION_TIMEOUT_MS || 5000,
-);
+const DEFAULT_TIMEOUT_MS = (() => {
+  const v = parseInt(process.env.E2E_TIMEOUT_MS ?? "", 10);
+  return Number.isFinite(v) ? v : 5000;
+})();
+const NAVIGATION_TIMEOUT_MS = (() => {
+  const v = parseInt(process.env.E2E_NAVIGATION_TIMEOUT_MS ?? "", 10);
+  return Number.isFinite(v) ? v : 5000;
+})();
 
 export interface TestUser {
   displayName: string;
@@ -28,9 +32,12 @@ export function getAuthErrorBanner(page: Page) {
   return page.getByTestId(AUTH_ERROR_TEST_ID);
 }
 
-export async function openAuthPage(page: Page): Promise<void> {
+export function configureTimeouts(page: Page): void {
   page.setDefaultTimeout(DEFAULT_TIMEOUT_MS);
   page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
+}
+
+export async function openAuthPage(page: Page): Promise<void> {
   await page.goto(`/`, {
     waitUntil: "networkidle",
     timeout: NAVIGATION_TIMEOUT_MS,
@@ -56,12 +63,12 @@ export async function signUp(page: Page, user: TestUser): Promise<void> {
   await page.locator("button[type='submit']").click();
 
   await expect(page).toHaveURL("/");
-  await expect(page.getByText("Get started with Biblioteka")).toBeVisible();
-  await expect(page.getByText(user.email)).toBeVisible();
 }
 
 export async function signOut(page: Page): Promise<void> {
   await page.locator("button#logout-button").click();
+  await page.waitForSelector("button#login-btn");
+  await page.locator("button#login-btn").click();
   await page.waitForSelector("input#email");
   await page.waitForSelector("input#password");
   await page.waitForFunction((tokenKey) => localStorage.getItem(tokenKey) === null, TOKEN_KEY);

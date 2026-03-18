@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
+  configureTimeouts,
   createTestUser,
   getAuthErrorBanner,
   signIn,
@@ -9,6 +10,7 @@ import {
 
 test.describe("Account settings", () => {
   test("change password and use the new credentials", async ({ page }) => {
+    configureTimeouts(page);
     const testUser = createTestUser({ displayName: "Settings Test User" });
     const oldPassword = testUser.password;
     const newPassword = "updatedpassword456";
@@ -50,9 +52,7 @@ test.describe("Account settings", () => {
     await signIn(page, testUser.email, oldPassword);
     await expect(getAuthErrorBanner(page)).toContainText(/invalid email or password/i);
 
-    await page.locator("input#email").fill(testUser.email);
-    await page.locator("input#password").fill(newPassword);
-    await page.locator("button[type='submit']").click();
+    await signIn(page, testUser.email, newPassword);
     await expect(page).toHaveURL("/");
     await expect(page.getByText(testUser.email)).toBeVisible();
   });
