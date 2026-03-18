@@ -10,6 +10,23 @@ export type AppView =
   | "libraries"
   | "settings";
 
+const viewTitles: Record<AppView, string> = {
+  dashboard: "Dashboard – biblioteka",
+  books: "All Books – biblioteka",
+  "my-library": "My Library – biblioteka",
+  libraries: "Libraries – biblioteka",
+  settings: "Settings – biblioteka",
+};
+
+const settingsSubTitles: Record<string, string> = {
+  account: "Account Settings – biblioteka",
+  preferences: "Preferences – biblioteka",
+  oidc: "SSO Settings – biblioteka",
+  smtp: "Email Settings – biblioteka",
+  users: "User Management – biblioteka",
+  "api-keys": "API Keys – biblioteka",
+};
+
 class RouterStore {
   hash = $state(getHash());
 
@@ -32,6 +49,15 @@ class RouterStore {
   subPath: string = $derived.by(() => {
     const parts = this.hash.split("/");
     return parts.length > 1 ? parts.slice(1).join("/") : "";
+  });
+
+  /** Page title reflecting the current view and settings sub-page */
+  pageTitle: string = $derived.by(() => {
+    if (this.currentView === "settings" && this.subPath) {
+      const subTitle = settingsSubTitles[this.subPath];
+      if (subTitle) return subTitle;
+    }
+    return viewTitles[this.currentView] ?? "biblioteka";
   });
 
   constructor() {
