@@ -427,6 +427,48 @@ The app shell uses semantic HTML5 landmark elements so screen readers can naviga
 | Primary content | `<main id="main-content">` | Target of the skip link |
 | Mobile header | `<div>` + hamburger `<button>` | Not a landmark; sits above `<main>` only on small screens |
 
+### `autocomplete` attributes on form inputs
+
+**WCAG criterion:** [1.3.5 Identify Input Purpose](https://www.w3.org/WAI/WCAG21/Understanding/identify-input-purpose.html) (Level AA, reaffirmed in WCAG 2.2)
+
+The `autocomplete` attribute tells browsers and password managers exactly what kind of data an input expects. Without it, autofill heuristics may fail, and assistive technologies cannot announce the field purpose reliably.
+
+**Password change form in `AccountTab.svelte`:**
+
+```svelte
+<input
+  id="current-password"
+  type="password"
+  bind:value={currentPassword}
+  autocomplete="current-password"
+  ...
+/>
+
+<input
+  id="new-password"
+  type="password"
+  bind:value={newPassword}
+  autocomplete="new-password"
+  ...
+/>
+
+<input
+  id="confirm-password"
+  type="password"
+  bind:value={confirmPassword}
+  autocomplete="new-password"
+  ...
+/>
+```
+
+| Input | `autocomplete` value | Why |
+|-------|----------------------|-----|
+| Current password | `current-password` | Lets password managers fill in the existing credential |
+| New password | `new-password` | Signals to password managers and browsers to offer a *generate* option, not autofill the current one |
+| Confirm new password | `new-password` | Matches the new-password intent; browsers typically suppress fill-in here automatically |
+
+**Rule for all new password inputs:** always set `autocomplete` to the appropriate [HTML autofill token](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofilling-form-controls:-the-autocomplete-attribute). For other personal-data inputs, consult the full autofill token list (e.g., `email`, `name`, `username`, `one-time-code`).
+
 ### Maintaining accessibility
 
 When editing the app shell or adding new persistent navigation elements:
@@ -434,7 +476,8 @@ When editing the app shell or adding new persistent navigation elements:
 1. Keep the skip link as the **first** child of the authenticated shell `<div>`.
 2. If you add a new persistent region that users must bypass, add an additional skip link or update the existing one.
 3. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
-4. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+4. Always set `autocomplete` on inputs that collect personal data or credentials (see the section above).
+5. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
 ### Accessibility tests
 
