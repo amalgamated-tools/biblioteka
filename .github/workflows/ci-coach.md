@@ -28,7 +28,7 @@ safe-outputs:
   create-pull-request:
     expires: 2d
     fallback-as-issue: true
-    title-prefix: "ci(ci-coach) "
+    title-prefix: "ci(ci-coach): "
     github-token-for-extra-empty-commit: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
 timeout-minutes: 30
 source: githubnext/agentics/workflows/ci-coach.md@b897c2f3e43bde9ff7923c8fa9211055b26e27cc
