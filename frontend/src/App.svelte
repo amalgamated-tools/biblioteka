@@ -29,6 +29,11 @@
     }
   });
 
+  // Update document title to reflect the current view (WCAG 2.4.2)
+  $effect(() => {
+    document.title = routerStore.pageTitle;
+  });
+
   // Close the mobile sidebar whenever the active view changes
   $effect(() => {
     void routerStore.currentView;
