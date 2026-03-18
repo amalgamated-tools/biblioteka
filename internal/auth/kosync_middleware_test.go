@@ -202,7 +202,7 @@ func TestKOSyncHeaderAuth_DBError(t *testing.T) {
 	if called {
 		t.Error("next handler should not have been called")
 	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusServiceUnavailable)
 	}
 }
