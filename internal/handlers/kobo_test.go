@@ -85,13 +85,13 @@ type testKoboTokenChecker struct {
 }
 
 func (c *testKoboTokenChecker) GetKoboTokenByToken(ctx context.Context, token string) (*auth.KoboTokenResult, error) {
-	t, err := c.db.GetKoboTokenByToken(ctx, token)
+	tokenHash := auth.HashKoboToken(token)
+	t, err := c.db.GetKoboTokenByHash(ctx, tokenHash)
 	if err != nil {
 		return nil, err
 	}
 	return &auth.KoboTokenResult{
 		UserID: t.UserID,
-		Token:  t.Token,
 	}, nil
 }
 

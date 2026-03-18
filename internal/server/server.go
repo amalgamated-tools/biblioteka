@@ -283,12 +283,12 @@ type koboDBAdapter struct {
 }
 
 func (a *koboDBAdapter) GetKoboTokenByToken(ctx context.Context, token string) (*auth.KoboTokenResult, error) {
-	t, err := a.db.GetKoboTokenByToken(ctx, token)
+	tokenHash := auth.HashKoboToken(token)
+	t, err := a.db.GetKoboTokenByHash(ctx, tokenHash)
 	if err != nil {
 		return nil, err
 	}
 	return &auth.KoboTokenResult{
 		UserID: t.UserID,
-		Token:  t.Token,
 	}, nil
 }

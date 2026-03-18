@@ -18,6 +18,29 @@ type koboTokenCreateRequest struct {
 	Name string `json:"name"`
 }
 
+type koboTokenDTO struct {
+	ID        string       `json:"id"`
+	UserID    string       `json:"user_id"`
+	Name      string       `json:"name"`
+	TokenHash string       `json:"token_hash"`
+	CreatedAt db.Timestamp `json:"created_at"`
+}
+
+type koboTokenCreateResponse struct {
+	koboTokenDTO
+	Token string `json:"token"`
+}
+
+func toKoboTokenDTO(token *db.KoboToken) koboTokenDTO {
+	return koboTokenDTO{
+		ID:        token.ID,
+		UserID:    token.UserID,
+		Name:      token.Name,
+		TokenHash: token.TokenHash,
+		CreatedAt: token.CreatedAt,
+	}
+}
+
 // HandleKoboTokens handles GET/POST /api/kobo/tokens.
 func (h *KoboHandler) HandleKoboTokens(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -56,7 +79,12 @@ func (h *KoboHandler) listKoboTokens(w http.ResponseWriter, r *http.Request) {
 	if tokens == nil {
 		tokens = []db.KoboToken{}
 	}
-	writeJSON(r.Context(), w, http.StatusOK, tokens)
+
+	dtos := make([]koboTokenDTO, 0, len(tokens))
+	for i := range tokens {
+		dtos = append(dtos, toKoboTokenDTO(&tokens[i]))
+	}
+	writeJSON(r.Context(), w, http.StatusOK, dtos)
 }
 
 func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
@@ -83,9 +111,10 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := hex.EncodeToString(raw)
+	tokenHash := auth.HashKoboToken(token)
 
 	userID := auth.UserIDFromContext(r.Context())
-	koboToken, err := h.DB.CreateKoboToken(r.Context(), userID, name, token)
+	koboToken, err := h.DB.CreateKoboToken(r.Context(), userID, name, tokenHash)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create kobo token", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create Kobo token")
@@ -98,7 +127,11 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
-	writeJSON(r.Context(), w, http.StatusCreated, koboToken)
+	resp := koboTokenCreateResponse{
+		koboTokenDTO: toKoboTokenDTO(koboToken),
+		Token:        token,
+	}
+	writeJSON(r.Context(), w, http.StatusCreated, resp)
 }
 
 func (h *KoboHandler) deleteKoboToken(w http.ResponseWriter, r *http.Request, id string) {

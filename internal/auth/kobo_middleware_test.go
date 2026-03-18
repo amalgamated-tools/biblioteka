@@ -23,7 +23,7 @@ func (m *mockKoboTokenChecker) GetKoboTokenByToken(_ context.Context, token stri
 func TestKoboTokenAuthMiddleware_ValidToken(t *testing.T) {
 	checker := &mockKoboTokenChecker{
 		tokens: map[string]*KoboTokenResult{
-			"abc123": {UserID: "user-1", Token: "abc123"},
+			"abc123": {UserID: "user-1"},
 		},
 	}
 
@@ -93,7 +93,7 @@ func TestKoboTokenAuthMiddleware_EmptyToken(t *testing.T) {
 func TestKoboTokenAuthMiddleware_TokenWithNoSubPath(t *testing.T) {
 	checker := &mockKoboTokenChecker{
 		tokens: map[string]*KoboTokenResult{
-			"abc123": {UserID: "user-1", Token: "abc123"},
+			"abc123": {UserID: "user-1"},
 		},
 	}
 

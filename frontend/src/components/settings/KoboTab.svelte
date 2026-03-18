@@ -8,7 +8,9 @@
   import { BookOpen, Copy, Trash2 } from "lucide-svelte";
   import { onDestroy } from "svelte";
 
-  let tokenList: KoboToken[] = $state.raw([]);
+  type KoboTokenDisplay = KoboToken & { token?: string };
+
+  let tokenList: KoboTokenDisplay[] = $state.raw([]);
   let tokensLoading = $state(false);
   let tokensError: string | null = $state(null);
   let newTokenName = $state("");
@@ -85,7 +87,8 @@
     }
   }
 
-  function syncURL(token: KoboToken): string {
+  function syncURL(token: KoboTokenDisplay): string | null {
+    if (!token.token) return null;
     return `${window.location.origin}/kobo/${token.token}/v1/initialization`;
   }
 
@@ -147,7 +150,8 @@
       <code class="px-1 py-0.5 bg-ink-100 dark:bg-ink-800 rounded text-xs"
         >Kobo eReader.conf</code
       >
-      to the sync URL shown next to each token.
+      to the sync URL shown when the token is created. Token values are only
+      shown once.
     </p>
 
     <form onsubmit={handleCreateToken} class="flex gap-3 mb-6">
@@ -210,22 +214,39 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <code
-                class="flex-1 px-3 py-2 bg-ink-50 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 rounded-lg text-xs font-mono text-ink-600 dark:text-ink-300 break-all"
-              >
-                {syncURL(token)}
-              </code>
-              <button
-                onclick={() => copyToClipboard(syncURL(token), token.id)}
-                title="Copy sync URL"
-                class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {copiedTokenId ===
-                token.id
-                  ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
-                  : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
-              >
-                <Copy class="w-4 h-4" />
-                {copiedTokenId === token.id ? "Copied" : "Copy"}
-              </button>
+              {@const url = syncURL(token)}
+              {#if url}
+                <code
+                  class="flex-1 px-3 py-2 bg-ink-50 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 rounded-lg text-xs font-mono text-ink-600 dark:text-ink-300 break-all"
+                >
+                  {url}
+                </code>
+                <button
+                  onclick={() => copyToClipboard(url, token.id)}
+                  title="Copy sync URL"
+                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {copiedTokenId ===
+                  token.id
+                    ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
+                    : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
+                >
+                  <Copy class="w-4 h-4" />
+                  {copiedTokenId === token.id ? "Copied" : "Copy"}
+                </button>
+              {:else}
+                <div
+                  class="flex-1 px-3 py-2 bg-ink-50 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 rounded-lg text-xs text-ink-500 dark:text-ink-400"
+                >
+                  Token hidden. Create a new token to get a fresh sync URL.
+                </div>
+                <button
+                  disabled
+                  title="Token value is only shown once"
+                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500 cursor-not-allowed"
+                >
+                  <Copy class="w-4 h-4" />
+                  Copy
+                </button>
+              {/if}
             </div>
           </div>
         {/each}
