@@ -18,7 +18,7 @@ safe-outputs:
   mentions: false
   allowed-github-references: []
   create-issue:
-    title-prefix: "style(accessibility): "
+    title-prefix: "fix(accessibility): "
     labels: [a11y, automated-analysis]
     max: 15
 
@@ -125,3 +125,4 @@ still contains a placeholder, then:
    - Any relevant code snippets that illustrate the issue
    - Recommendations for how to fix the issue, if possible
    - Screenshots or snapshots that illustrate the issue, if possible
+   - A notice that the PR should include a reference to the issue number, e.g., "Fixes #123"
