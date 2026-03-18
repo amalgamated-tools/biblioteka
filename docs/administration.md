@@ -312,6 +312,8 @@ curl -X POST http://localhost:8080/api/config/smtp/test \
 
 The test endpoint sends a short verification email to the authenticated admin's registered email address. It returns `200 OK` with a `{"message":"Test email sent to <email>"}` body on success, or a `4xx`/`5xx` error with `{"error":"…"}` on failure.
 
+All six SMTP fields are saved in a single database transaction. If the database write fails partway through, the entire update is rolled back and the previous configuration remains unchanged.
+
 **TLS modes:** `none` (plaintext), `starttls` (STARTTLS upgrade on port 587, default), or `tls` (implicit TLS on port 465).
 
 All six settings (`host`, `port`, `username`, `password`, `from`, `tls`) are saved atomically in a single database transaction. If the write fails, none of the settings are changed — the configuration is never left in a partially-updated state.
