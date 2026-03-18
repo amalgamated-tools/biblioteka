@@ -16,7 +16,7 @@ frontend/
     android-chrome-512x512.png  Android home-screen icon (512 × 512)
     site.webmanifest        PWA web app manifest (name, icons, theme colour)
   src/
-    App.svelte          Root component: auth gate + shell layout + routing; includes skip-to-main-content link (WCAG 2.4.1)
+    App.svelte          Root component: auth gate + shell layout + routing; includes skip-to-main-content link (WCAG 2.4.1) and dynamic document title updates (WCAG 2.4.2)
     main.ts             Entry point; mounts App and initialises the theme
     index.css           Tailwind CSS directives
     types.ts            Shared TypeScript interfaces for API entities
@@ -123,6 +123,7 @@ Client-side routing uses the browser's URL hash (`#`). No router library is need
 | `hash` | `string` | Raw hash value (e.g. `"settings/account"`) |
 | `currentView` | `AppView` | Top-level view segment (`"dashboard"` \| `"books"` \| `"my-library"` \| `"libraries"` \| `"settings"`) |
 | `subPath` | `string` | Sub-path after the first segment (e.g. `"account"`) |
+| `pageTitle` | `string` | Human-readable page title for the current view (e.g. `"Dashboard – biblioteka"`); used to update `document.title` on every navigation |
 | `navigate(path)` | `void` | Sets the hash and updates the store |
 
 **Navigating programmatically:**
@@ -372,9 +373,9 @@ Svelte 5 emits a `state_referenced_locally` warning for this pattern because the
 5. Add a navigation `<button>` in `Settings.svelte`'s sidebar `<nav>`, wrapped in `{#if isAdmin}` if the tab is admin-only.
 6. Update the table above.
 
-## Accessibility
+## Accessibility Patterns
 
-Biblioteka's frontend follows [WCAG 2.1](https://www.w3.org/TR/WCAG21/) guidelines. This section documents the accessibility patterns used in the app shell and how to maintain them when making changes.
+Biblioteka's frontend follows [WCAG 2.1](https://www.w3.org/TR/WCAG21/) guidelines. This section documents the accessibility patterns used across the app and how to maintain them when making changes.
 
 ### Skip-to-main-content link
 
@@ -417,6 +418,40 @@ Key details:
 
 **DOM ordering rule:** The skip link must be rendered **before** `<Sidebar />` in the template so it is the first element reached by the Tab key. Do not move it below the sidebar.
 
+### Page title on navigation
+
+**WCAG criterion:** [2.4.2 Page Titled](https://www.w3.org/WAI/WCAG21/Understanding/page-titled.html) (Level A)
+
+In a single-page application the browser does not perform a real page load on navigation, so `document.title` stays unchanged unless the application updates it explicitly. Screen readers and browser history both rely on meaningful, descriptive page titles to help users understand where they are.
+
+`routerStore` exposes a reactive `pageTitle` property derived from the current view and settings sub-path. `App.svelte` writes it to `document.title` via a Svelte `$effect`:
+
+```svelte
+<!-- App.svelte -->
+$effect(() => {
+  document.title = routerStore.pageTitle;
+});
+```
+
+`pageTitle` is built from two lookup tables defined in `router.svelte.ts`:
+
+| View / sub-path | Title |
+|-----------------|-------|
+| `dashboard` | `Dashboard – biblioteka` |
+| `books` | `All Books – biblioteka` |
+| `my-library` | `My Library – biblioteka` |
+| `libraries` | `Libraries – biblioteka` |
+| `settings` (no sub-path) | `Settings – biblioteka` |
+| `settings/account` | `Account Settings – biblioteka` |
+| `settings/preferences` | `Preferences – biblioteka` |
+| `settings/oidc` | `SSO Settings – biblioteka` |
+| `settings/smtp` | `Email Settings – biblioteka` |
+| `settings/users` | `User Management – biblioteka` |
+| `settings/api-keys` | `API Keys – biblioteka` |
+| Unknown hash | `biblioteka` |
+
+**When adding a new view or settings tab**, update both the corresponding union type (`AppView` or `SettingsSubPath`) and the matching title lookup table in `router.svelte.ts`. If you skip the lookup entry, `pageTitle` falls back to the top-level view title, which may be insufficiently descriptive.
+
 ### ARIA landmarks
 
 The app shell uses semantic HTML5 landmark elements so screen readers can navigate by region:
@@ -427,47 +462,99 @@ The app shell uses semantic HTML5 landmark elements so screen readers can naviga
 | Primary content | `<main id="main-content">` | Target of the skip link |
 | Mobile header | `<div>` + hamburger `<button>` | Not a landmark; sits above `<main>` only on small screens |
 
-### `autocomplete` attributes on form inputs
+### `aria-current` on active navigation buttons
 
-**WCAG criterion:** [1.3.5 Identify Input Purpose](https://www.w3.org/WAI/WCAG21/Understanding/identify-input-purpose.html) (Level AA, reaffirmed in WCAG 2.2)
+**WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
 
-The `autocomplete` attribute tells browsers and password managers exactly what kind of data an input expects. Without it, autofill heuristics may fail, and assistive technologies cannot announce the field purpose reliably.
+Navigation buttons that represent the currently active view must carry `aria-current="page"`. Without this attribute, keyboard and screen-reader users have no programmatic way to determine which section is active — they can only infer it from visual styling, which is inaccessible.
 
-**Password change form in `AccountTab.svelte`:**
+#### Sidebar navigation (`Sidebar.svelte`)
+
+Each top-level navigation button receives `aria-current` dynamically based on the `currentView` prop:
+
+```svelte
+<button
+  onclick={() => handleViewNavigate("dashboard")}
+  aria-current={currentView === "dashboard" ? "page" : undefined}
+  class="…"
+>
+  <LayoutDashboard class="w-5 h-5" />
+  Dashboard
+</button>
+```
+
+- Set `aria-current="page"` when the button represents the currently displayed view.
+- Pass `undefined` (not `false`) for inactive buttons — `undefined` omits the attribute entirely, which is the correct behaviour. Using `aria-current="false"` is valid but adds noise and can confuse some assistive technologies.
+
+#### Settings tab navigation (`Settings.svelte`)
+
+The same pattern applies to settings sub-tabs, where the active tab is determined from the current `settingsSubPath`:
+
+```svelte
+<button
+  onclick={() => navigateToSettings("account")}
+  aria-current={isActive ? "page" : undefined}
+  class="…"
+>
+  Account
+</button>
+```
+
+#### Rule for new navigation elements
+
+Whenever you add a button or link that acts as a navigation item pointing to a distinct view or sub-page, apply `aria-current={isActive ? "page" : undefined}`. Do **not** rely solely on CSS class changes to convey the active state.
+
+### Accessible labels for icon-only buttons and dynamic inputs
+
+**WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) / [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
+
+Buttons that render only an icon (no visible text) and form inputs that cannot be paired with a visible `<label>` element — for example, inputs inside dynamically repeated rows — must have an explicit accessible name.
+
+#### Icon-only buttons
+
+Use `aria-label` on any button whose only child is an icon component:
+
+```svelte
+<!-- Close button: renders only the X icon -->
+<button
+  onclick={navigateBack}
+  aria-label="Close form"
+>
+  <X class="w-5 h-5" />
+</button>
+
+<!-- Remove-folder button in a repeated list -->
+<button
+  type="button"
+  onclick={() => { formPaths = formPaths.filter((_, idx) => idx !== i); }}
+  aria-label="Remove folder"
+  disabled={saving}
+>
+  <X class="w-4 h-4" />
+</button>
+```
+
+Without `aria-label`, screen readers announce these buttons only by their SVG title or nothing at all, giving users no meaningful description of the action.
+
+#### Inputs in dynamic lists
+
+When a form field is repeated (e.g., a list of folder paths), there may be no single `<label>` element that can be associated with every input via `for`/`id`. Use `aria-label` directly on the `<input>` with a distinguishing index when there are multiple items:
 
 ```svelte
 <input
-  id="current-password"
-  type="password"
-  bind:value={currentPassword}
-  autocomplete="current-password"
-  ...
-/>
-
-<input
-  id="new-password"
-  type="password"
-  bind:value={newPassword}
-  autocomplete="new-password"
-  ...
-/>
-
-<input
-  id="confirm-password"
-  type="password"
-  bind:value={confirmPassword}
-  autocomplete="new-password"
-  ...
+  type="text"
+  aria-label={formPaths.length === 1 ? "Folder path" : `Folder path ${i + 1}`}
+  bind:value={entry.value}
 />
 ```
 
-| Input | `autocomplete` value | Why |
-|-------|----------------------|-----|
-| Current password | `current-password` | Lets password managers fill in the existing credential |
-| New password | `new-password` | Signals to password managers and browsers to offer a *generate* option, not autofill the current one |
-| Confirm new password | `new-password` | Matches the new-password intent; browsers typically suppress fill-in here automatically |
+When there is only one input in the list, omit the index to keep the label natural. When there are multiple inputs, append the 1-based position so screen reader users can distinguish them.
 
-**Rule for all new password inputs:** always set `autocomplete` to the appropriate [HTML autofill token](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofilling-form-controls:-the-autocomplete-attribute). For other personal-data inputs, consult the full autofill token list (e.g., `email`, `name`, `username`, `one-time-code`).
+#### Checklist
+
+- Every `<button>` that renders only an icon must have `aria-label` or `aria-labelledby`.
+- Every `<input>` and `<select>` must have either a linked `<label for="...">` or an `aria-label` / `aria-labelledby`.
+- `title` attributes are not a substitute for `aria-label`; they are advisory only and are not reliably announced.
 
 ### Maintaining accessibility
 
@@ -476,13 +563,99 @@ When editing the app shell or adding new persistent navigation elements:
 1. Keep the skip link as the **first** child of the authenticated shell `<div>`.
 2. If you add a new persistent region that users must bypass, add an additional skip link or update the existing one.
 3. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
-4. Always set `autocomplete` on inputs that collect personal data or credentials (see the section above).
-5. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+4. Every icon-only button must have `aria-label`; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only buttons and dynamic inputs](#accessible-labels-for-icon-only-buttons-and-dynamic-inputs) above.
+5. Navigation buttons that represent the active view or tab must carry `aria-current={isActive ? "page" : undefined}`. See [`aria-current` on active navigation buttons](#aria-current-on-active-navigation-buttons) above.
+6. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+
+### Form accessibility
+
+All form inputs must be programmatically associated with a visible label or carry a descriptive `aria-label`. `LibraryForm.svelte` serves as the canonical reference for these patterns.
+
+#### Explicit `<label for>` / `id` pairing
+
+Use an explicit `for`/`id` association for text inputs that have a visible label. This is the strongest and most broadly supported technique.
+
+```svelte
+<label for="lib-name" class="block text-sm font-medium …">Name</label>
+<input id="lib-name" type="text" bind:value={formName} … />
+```
+
+Screen readers will announce the label text whenever the input receives focus.
+
+#### Dynamic `aria-label` for repeated inputs
+
+When a form contains a variable-length list of inputs of the same type (e.g. multiple folder-path fields), use a dynamic `aria-label` that includes the item's position so screen-reader users can distinguish them.
+
+```svelte
+{#each formPaths as entry, i}
+  <input
+    aria-label={formPaths.length === 1 ? "Folder path" : `Folder path ${i + 1}`}
+    …
+  />
+{/each}
+```
+
+- Use the singular label (e.g. `"Folder path"`) when there is only one item — the ordinal is unnecessary and adds noise.
+- Use a 1-based counter (e.g. `"Folder path 1"`, `"Folder path 2"`) when there are multiple items.
+
+#### `aria-label` on icon-only buttons
+
+Buttons whose visible content is solely an icon (SVG) must carry an `aria-label` so assistive technologies announce an intelligible action name.
+
+```svelte
+<!-- Close / cancel button -->
+<button aria-label="Close form" onclick={navigateBack}>
+  <X class="w-5 h-5" />
+</button>
+
+<!-- Remove item button inside a list -->
+<button aria-label="Remove folder" …>
+  <X class="w-4 h-4" />
+</button>
+```
+
+When you add a new icon-only button, always supply an `aria-label`. `svelte-check` does **not** automatically detect missing labels on `<button>` elements, so this must be reviewed manually.
+
+#### `autocomplete` on credential inputs
+
+**WCAG criterion:** [1.3.5 Identify Input Purpose](https://www.w3.org/WAI/WCAG21/Understanding/identify-input-purpose.html) (Level AA)
+
+Password inputs must carry a valid `autocomplete` token so that password managers and autofill implementations can correctly identify the field's purpose. Without `autocomplete`, browsers may misclassify the fields, offer to save them as plain text, or fail to auto-fill them — degrading both usability and security.
+
+`settings/AccountTab.svelte` uses three password fields with the following tokens:
+
+```svelte
+<!-- Current/existing password -->
+<input type="password" autocomplete="current-password" … />
+
+<!-- New password (set or confirm) -->
+<input type="password" autocomplete="new-password" … />
+<input type="password" autocomplete="new-password" … />
+```
+
+| Token | When to use |
+|-------|-------------|
+| `current-password` | The user's existing credential (used for verification before allowing a change) |
+| `new-password` | A newly chosen password the user is setting or confirming |
+
+**Do not** leave `type="password"` inputs without `autocomplete`. Browsers may still infer the purpose, but the explicit attribute is required by WCAG 1.3.5 and ensures reliable cross-browser behaviour.
+
+#### Checklist for new forms
+
+When adding or editing a form component:
+
+1. Every `<input>`, `<select>`, and `<textarea>` has either a `<label for="…">` or an `aria-label`.
+2. `<label for>` values match the corresponding `id` exactly — a mismatch silently breaks the association.
+3. Icon-only buttons (`<button>` with SVG content and no text) carry an `aria-label`.
+4. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
+5. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
+6. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
 ### Accessibility tests
 
-`frontend/src/App.test.ts` contains a focused regression test that verifies:
+`frontend/src/App.test.ts` contains focused regression tests that verify:
 
+- `document.title` is set from `routerStore.pageTitle` on mount (WCAG 2.4.2).
 - The skip link exists and has the label _"Skip to main content"_.
 - The `<main>` landmark has `id="main-content"`.
 - The skip link appears **before** the sidebar in DOM order.
