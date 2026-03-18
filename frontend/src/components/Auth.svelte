@@ -68,7 +68,20 @@
   }
 </script>
 
-<div
+<a
+  href="#auth-main"
+  onclick={(e: MouseEvent) => {
+    e.preventDefault();
+    document.getElementById("auth-main")?.focus();
+  }}
+  class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-accent-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
+>
+  Skip to main content
+</a>
+
+<main
+  id="auth-main"
+  tabindex="-1"
   class="min-h-screen bg-cream-50 dark:bg-ink-950 flex items-center justify-center p-4 relative bg-texture"
 >
   <!-- Decorative background elements -->
@@ -81,7 +94,7 @@
     ></div>
   </div>
 
-  <main class="w-full max-w-md relative z-10 animate-fade-in-up">
+  <div class="w-full max-w-md relative z-10 animate-fade-in-up">
     <div class="text-center mb-8">
       <div
         class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl mb-4 shadow-lg shadow-accent-500/20 dark:shadow-accent-500/10"
@@ -282,5 +295,5 @@
         </form>
       </div>
     </div>
-  </main>
-</div>
+  </div>
+</main>
