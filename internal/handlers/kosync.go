@@ -104,8 +104,7 @@ func (h *KOSyncHandler) upsertCredentials(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	req.Username = strings.TrimSpace(req.Username)
-	req.Username = strings.ToLower(req.Username)
+	req.Username = strings.ToLower(strings.TrimSpace(req.Username))
 	if req.Username == "" {
 		writeError(ctx, w, http.StatusBadRequest, "username is required")
 		return
