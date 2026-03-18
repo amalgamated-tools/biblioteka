@@ -172,16 +172,15 @@
       {/if}
     </div>
 
-    <div>
-      <span
-        id="lib-folders-label"
+    <fieldset class="border-none p-0 m-0">
+      <legend
         class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-1.5"
-        >Folders <span class="text-danger-600" aria-hidden="true">*</span></span
+        >Folders <span class="text-danger-600" aria-hidden="true">*</span></legend
       >
       <div class="space-y-2">
         {#each formPaths as entry, i (entry.id)}
           <div class="flex items-center gap-2">
-            <FolderOpen class="w-4 h-4 text-ink-300 flex-shrink-0" />
+            <FolderOpen class="w-4 h-4 text-ink-300 flex-shrink-0" aria-hidden="true" />
             <input
               type="text"
               value={entry.value}
@@ -230,13 +229,13 @@
       {#if pathsError}
         <p id="lib-folders-error" role="alert" class="text-sm text-danger-600 dark:text-red-400 mt-1">{pathsError}</p>
       {/if}
-    </div>
+    </fieldset>
 
     <div>
       <p
         class="text-sm text-ink-400 dark:text-ink-400 mb-2 flex items-center gap-2"
       >
-        <FolderOpen class="w-4 h-4" />
+        <FolderOpen class="w-4 h-4" aria-hidden="true" />
         Organization: Book Per Folder
       </p>
     </div>

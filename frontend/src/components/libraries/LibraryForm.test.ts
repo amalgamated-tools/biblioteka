@@ -62,7 +62,7 @@ describe("LibraryForm accessibility", () => {
       nameLabel?.querySelector('span[aria-hidden="true"]'),
     ).toHaveTextContent("*");
 
-    const foldersLabel = container.querySelector("#lib-folders-label");
+    const foldersLabel = container.querySelector("fieldset legend");
     expect(
       foldersLabel?.querySelector('span[aria-hidden="true"]'),
     ).toHaveTextContent("*");
