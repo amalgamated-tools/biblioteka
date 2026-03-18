@@ -210,6 +210,7 @@
 
     {#if apiKeysError}
       <div
+        role="alert"
         class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm mb-4"
       >
         {apiKeysError}
@@ -229,11 +230,13 @@
             <tr
               class="text-left text-ink-400 dark:text-ink-400 border-b border-ink-100 dark:border-ink-800"
             >
-              <th class="pb-3 font-medium">Name</th>
-              <th class="pb-3 font-medium">Key</th>
-              <th class="pb-3 font-medium">Created</th>
-              <th class="pb-3 font-medium">Last Used</th>
-              <th class="pb-3 font-medium"></th>
+              <th scope="col" class="pb-3 font-medium">Name</th>
+              <th scope="col" class="pb-3 font-medium">Key</th>
+              <th scope="col" class="pb-3 font-medium">Created</th>
+              <th scope="col" class="pb-3 font-medium">Last Used</th>
+              <th scope="col" class="pb-3 font-medium">
+                <span class="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>

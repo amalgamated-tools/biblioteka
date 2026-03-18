@@ -161,14 +161,20 @@
           <tr
             class="border-b border-ink-100 dark:border-ink-800 text-left text-ink-400 dark:text-ink-500"
           >
-            <th class="px-4 py-3 font-medium">Title</th>
-            <th class="px-4 py-3 font-medium hidden sm:table-cell">Publisher</th
+            <th scope="col" class="px-4 py-3 font-medium">Title</th>
+            <th scope="col" class="px-4 py-3 font-medium hidden sm:table-cell"
+              >Publisher</th
             >
-            <th class="px-4 py-3 font-medium hidden md:table-cell">Language</th>
-            <th class="px-4 py-3 font-medium hidden md:table-cell text-right"
+            <th scope="col" class="px-4 py-3 font-medium hidden md:table-cell"
+              >Language</th
+            >
+            <th
+              scope="col"
+              class="px-4 py-3 font-medium hidden md:table-cell text-right"
               >Pages</th
             >
-            <th class="px-4 py-3 font-medium hidden lg:table-cell">Published</th
+            <th scope="col" class="px-4 py-3 font-medium hidden lg:table-cell"
+              >Published</th
             >
           </tr>
         </thead>
