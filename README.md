@@ -5,7 +5,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 ## Features
 
 - **Multi-format support** – EPUB, MOBI, AZW3, and PDF
-- **Metadata extraction** – title, author, ISBN, description, and publisher extracted automatically during library scans (EPUB natively; MOBI/AZW3/PDF via [ExifTool](https://exiftool.org/)); extracted authors are linked to book records automatically; standalone [`cmd/cli`](#cli-tool) tool available for manual import and inspection
+- **Metadata extraction** – title, author, ISBN, description, and publisher extracted automatically during library scans (EPUB natively; MOBI/AZW3/PDF via [ExifTool](https://exiftool.org/)); extracted authors are linked to book records automatically; standalone [`cmd/cli`](#cli-tool) tool available for manual import, directory scanning, and metadata inspection
 - **Path-based metadata** – when files are organized in `Author/Title/` or `Author - Title` directory layouts, Biblioteka automatically derives author, title, series name, and series position from the directory structure, supplementing any embedded file metadata; trailing `(YYYY)` year tokens are also stripped to keep titles clean (the year is not stored as `publication_date`)
 - **File organisation** – optional `organize_files` setting moves imported files into a canonical `Author/Title/` directory structure under the library root; see [Administration → File organization](docs/administration.md#file-organization)
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
@@ -213,26 +213,51 @@ cd frontend && pnpm run lint
 
 ## CLI Tool
 
-`cmd/cli` is a standalone utility that processes a single book file: it extracts metadata, stores a book record in the database, and creates an author record when one is found. It is useful for importing individual files and verifying metadata extraction outside of the server.
+`cmd/cli` is a standalone utility for importing book files and scanning directories. It is useful for importing individual files, verifying metadata extraction outside the server, or triggering a directory scan without starting the full server.
 
 ```bash
 # Build
 go build -o biblioteka-cli ./cmd/cli
+```
 
-# Usage
+### Commands
+
+#### `process-file` — import a single book file
+
+Extracts metadata from one file, stores a book record in the database, and creates an author record when one is found.
+
+```bash
+./biblioteka-cli process-file /path/to/book.epub
+./biblioteka-cli process-file /path/to/book.pdf
+```
+
+**Legacy shorthand** (backwards-compatible): passing a file path directly without a subcommand invokes `process-file`:
+
+```bash
 ./biblioteka-cli /path/to/book.epub
-./biblioteka-cli /path/to/book.pdf
 ```
-
-Example output:
-
-```
-Successfully processed file: /path/to/book.epub
-```
-
-> **Note:** The CLI uses the same database configuration as the server (environment variables). See [docs/metadata.md](docs/metadata.md) for the full list of extracted fields per format.
 
 > **Note:** PDF and MOBI/AZW3 metadata extraction requires [ExifTool](https://exiftool.org/) to be installed and available on `PATH`. EPUB extraction has no external dependencies.
+
+#### `scan-directory` — enqueue a directory for processing
+
+Recursively walks a directory and enqueues a `process:file` background job for every supported file (`.epub`, `.mobi`, `.pdf`, `.azw3`). Jobs are pushed to the Redis queue defined by `REDIS_URL` and processed by a running worker.
+
+```bash
+./biblioteka-cli scan-directory /path/to/library
+./biblioteka-cli scan-directory /path/to/library <library-id>
+```
+
+| Argument | Required | Description |
+|---|---|---|
+| `<directory>` | Yes | Path to the directory to scan (resolved to an absolute path) |
+| `<library-id>` | No | UUID of an existing library record to associate the imported books with |
+
+When `<library-id>` is supplied the directory is also used as the `library_root`, enabling [path-based metadata](docs/background-jobs.md#path-based-metadata) and [file reorganization](docs/background-jobs.md#file-reorganization) in the worker.
+
+**Requirements:** a Redis instance reachable at `REDIS_URL` (default `redis://localhost:6379`) and at least one worker process running to consume the enqueued jobs.
+
+> **Note:** The CLI uses the same database configuration as the server (environment variables). See [docs/metadata.md](docs/metadata.md) for the full list of extracted fields per format.
 
 See [docs/metadata.md](docs/metadata.md) for a full description of extracted fields, fallback behaviour, and how to extend the extractor.
 
