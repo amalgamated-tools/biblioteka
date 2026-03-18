@@ -68,11 +68,15 @@ export async function signOut(page: Page): Promise<void> {
   await expect(page.getByRole("button", { name: "Login", exact: true })).toBeVisible();
 }
 
-// Callers assert the expected post-login outcome because some tests expect failure.
-export async function signIn(page: Page, email: string, password: string): Promise<void> {
+export async function openLoginForm(page: Page): Promise<void> {
   await openAuthPage(page);
   await page.locator("button#login-btn").click();
   await page.waitForSelector("input#email");
+}
+
+// Callers assert the expected post-login outcome because some tests expect failure.
+// Expects the login form to already be visible (via openLoginForm or signOut).
+export async function signIn(page: Page, email: string, password: string): Promise<void> {
   await page.locator("input#email").fill(email);
   await page.locator("input#password").fill(password);
   await page.locator("button[type='submit']").click();

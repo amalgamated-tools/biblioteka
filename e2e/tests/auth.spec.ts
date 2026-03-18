@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import {
   createTestUser,
   getAuthErrorBanner,
+  openLoginForm,
   openSignupForm,
   signIn,
   signOut,
@@ -39,6 +40,7 @@ test.describe("Authentication flow", () => {
       "Password must be at least 6 characters",
     );
 
+    await openLoginForm(page);
     await signIn(page, missingUser.email, wrongPassword);
     await expect(getAuthErrorBanner(page)).toContainText(/invalid email or password/i);
     await expect(page.getByRole("button", { name: "Login", exact: true })).toBeVisible();
