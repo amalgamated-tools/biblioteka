@@ -370,6 +370,33 @@ Append-only record of create, update, and delete actions performed on entities.
 
 ---
 
+## Code Layout
+
+All database access lives in the `internal/db/` package. The books domain is split across several focused files; other entities each have their own file.
+
+| File | Responsibility |
+|------|----------------|
+| `db.go` | `DB` struct definition, `Timestamp` custom type, dialect constants (`DialectSQLite`, `DialectPostgres`) |
+| `setup.go` | `SetupDatabase`: opens the correct backend (SQLite or PostgreSQL), applies PRAGMAs, and runs embedded migrations |
+| `migrations.go` | Embedded migration runner used by `SetupDatabase` |
+| `books.go` | `Book` struct; core CRUD: `CreateBook`, `CreateBookWithFile`, `GetBook`, `ListBooks`, `ListBooksByLibrary[Paginated]`, `UpdateBook`, `DeleteBook`, `AddBookToLibrary`, `RemoveBookFromLibrary` |
+| `book_queries.go` | Additional book list/search queries: `ListBooksPaginated`, `ListRecentBooks`, `ListBooksByAuthor[Paginated]`, `ListBooksBySeries[Paginated]`, `SearchBooks` |
+| `book_relations.go` | Book–author and book–series associations: `GetBookAuthors`, `SetBookAuthors`, `GetBookSeries`, `SetBookSeries`, `GetAuthorsForBooks` |
+| `book_files.go` | `BookFile` struct; file lifecycle: `CreateBookFile`, `GetBookFile`, `ListBookFiles`, `GetBookFileByPath`, `DeleteBookFile`, `GetFilesForBooks` |
+| `authors.go` | `Author` struct; `CreateAuthor`, `GetAuthor[ByName]`, `ListAuthors[Paginated]`, `UpdateAuthor`, `FindOrCreateAuthor`, `DeleteAuthor` |
+| `series.go` | `Series` / `BookSeriesEntry` structs; `CreateSeries`, `GetSeries`, `ListSeries[Paginated]`, `UpdateSeries`, `FindOrCreateSeries`, `DeleteSeries` |
+| `libraries.go` | `Library` struct; `CreateLibrary`, `GetLibrary`, `ListLibraries`, `UpdateLibrary`, `DeleteLibrary` |
+| `settings.go` | `Setting` struct; `GetSetting`, `SetSetting`, `SetSettings` (transactional multi-key save) |
+| `users.go` | `User` struct; `CreateUser`, `CreateOIDCUser`, `GetUser*`, `LinkOIDCSubject`, `UpdatePassword`, `IsAdmin`, `SetAdmin`, `ListUsers` |
+| `api_keys.go` | `APIKey` struct; `CreateAPIKey`, `ListAPIKeys`, `GetAPIKey`, `DeleteAPIKey`, `GetAPIKeyByHash`, `TouchAPIKeyLastUsed`, `ValidateAPIKey` |
+| `opds_credentials.go` | `OPDSCredential` struct; `GetOPDSCredential*`, `UpsertOPDSCredential`, `DeleteOPDSCredential` |
+| `audit_logs.go` | `AuditLog` struct; `CreateAuditLog`, `ListAuditLogs` |
+| `sql_parser.go` | Internal helpers for parsing embedded SQL migration files |
+
+> The `books.go` split (PR [#318](https://github.com/amalgamated-tools/biblioteka/pull/318)) separated a previously oversized `books.go` file into the four focused files above (`books.go`, `book_queries.go`, `book_relations.go`, `book_files.go`). The public API surface of the `*DB` receiver is unchanged.
+
+---
+
 ## Running Migrations Manually
 
 Migrations run automatically at server startup. To trigger them without starting the full HTTP server, start the server normally and stop it immediately after the migrations log output — or use the `dbmate` CLI directly against the same database:
