@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"log/slog"
+	"math"
 	"net/http"
 	"strings"
 
@@ -261,7 +262,7 @@ func (h *KOSyncHandler) putProgress(w http.ResponseWriter, r *http.Request) {
 		writeError(ctx, w, http.StatusBadRequest, "progress value too long")
 		return
 	}
-	if req.Percentage < 0 || req.Percentage > 1 {
+	if req.Percentage < 0 || req.Percentage > 1 || math.IsNaN(req.Percentage) || math.IsInf(req.Percentage, 0) {
 		writeError(ctx, w, http.StatusBadRequest, "percentage must be between 0 and 1")
 		return
 	}

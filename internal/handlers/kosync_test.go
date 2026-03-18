@@ -209,8 +209,14 @@ func TestKOSyncCredentials_UsernameConflict(t *testing.T) {
 	d := newTestDB(t)
 	h := &KOSyncHandler{DB: d}
 
-	user1, _ := d.CreateUser(context.Background(), "User1", "u1@example.com", "pw")
-	user2, _ := d.CreateUser(context.Background(), "User2", "u2@example.com", "pw")
+	user1, err := d.CreateUser(context.Background(), "User1", "u1@example.com", "pw")
+	if err != nil {
+		t.Fatalf("create user1: %v", err)
+	}
+	user2, err := d.CreateUser(context.Background(), "User2", "u2@example.com", "pw")
+	if err != nil {
+		t.Fatalf("create user2: %v", err)
+	}
 
 	// user1 claims "shared"
 	body := `{"username":"shared","password":"secretpass"}`
@@ -442,8 +448,14 @@ func TestKOSyncProgress_IsolatedByUser(t *testing.T) {
 	d := newTestDB(t)
 	h := &KOSyncHandler{DB: d}
 
-	user1, _ := d.CreateUser(context.Background(), "User1", "u1@example.com", "pw")
-	user2, _ := d.CreateUser(context.Background(), "User2", "u2@example.com", "pw")
+	user1, err := d.CreateUser(context.Background(), "User1", "u1@example.com", "pw")
+	if err != nil {
+		t.Fatalf("create user1: %v", err)
+	}
+	user2, err := d.CreateUser(context.Background(), "User2", "u2@example.com", "pw")
+	if err != nil {
+		t.Fatalf("create user2: %v", err)
+	}
 
 	// user1 writes progress
 	putBody := `{"document":"shared-doc","progress":"/body/p[1]","percentage":0.1}`
