@@ -21,6 +21,8 @@ const (
 	AuditActionBookUpdated             = "book.updated"
 	AuditActionAPIKeyCreated           = "api_key.created"
 	AuditActionAPIKeyDeleted           = "api_key.deleted"
+	AuditActionKoboTokenCreated        = "kobo_token.created"
+	AuditActionKoboTokenDeleted        = "kobo_token.deleted"
 	AuditActionLibraryCreated          = "library.created"
 	AuditActionLibraryDeleted          = "library.deleted"
 	AuditActionLibraryUpdated          = "library.updated"
