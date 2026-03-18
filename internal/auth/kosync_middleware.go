@@ -70,10 +70,11 @@ func KOSyncHeaderAuthMiddleware(checker KOSyncCredentialChecker) func(http.Handl
 					// Perform a dummy bcrypt comparison to prevent timing-based username enumeration.
 					_ = bcrypt.CompareHashAndPassword(dummyKOSyncBcryptHash, []byte(authKey))
 					slog.InfoContext(r.Context(), "KOSync: unknown username", slog.String(otelkeys.KOSyncUsername, username))
+					jsonError(w, http.StatusUnauthorized, "Unauthorized")
 				} else {
 					slog.ErrorContext(r.Context(), "KOSync: credential lookup failed", slog.Any(otelkeys.Error, err))
+					jsonError(w, http.StatusServiceUnavailable, "Service temporarily unavailable")
 				}
-				jsonError(w, http.StatusUnauthorized, "Unauthorized")
 				return
 			}
 
