@@ -32,6 +32,7 @@ The following endpoints use a stricter JWT-only check and **do not accept API ke
 | `GET /api/admin/users`, `PUT /api/admin/users/{id}` | User management; admin only |
 | `GET /api/opds/credentials`, `PUT /api/opds/credentials`, `DELETE /api/opds/credentials` | Credential management requires a JWT |
 | `GET /api/api-keys`, `POST /api/api-keys`, `DELETE /api/api-keys/{id}` | API key management requires a JWT to prevent key self-escalation |
+| `GET /api/kobo/tokens`, `POST /api/kobo/tokens`, `DELETE /api/kobo/tokens/{id}` | Kobo token management requires a JWT to prevent token self-escalation |
 
 ---
 
@@ -628,6 +629,8 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `api_key.deleted`      | `api_key`     | API key revoked via `DELETE /api/api-keys/{id}` |
 | `opds_credential.updated` | `opds_credential` | OPDS credentials set via `PUT /api/opds/credentials` |
 | `opds_credential.deleted` | `opds_credential` | OPDS credentials removed via `DELETE /api/opds/credentials` |
+| `kobo_token.created`   | `kobo_token`  | Kobo sync token created via `POST /api/kobo/tokens` |
+| `kobo_token.deleted`   | `kobo_token`  | Kobo sync token revoked via `DELETE /api/kobo/tokens/{id}` |
 | `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
 | `smtp.config_updated`  | `config`      | SMTP settings saved via `PUT /api/config/smtp` |
@@ -1406,6 +1409,85 @@ Streams a book file to the client with the correct `Content-Type` and `Content-D
 |--------|-------------|
 | `200 OK` | File stream |
 | `404 Not Found` | File not found |
+
+---
+
+## Kobo Tokens
+
+Kobo sync tokens authenticate a Kobo e-reader device against the built-in Kobo device API served under `/kobo/<token>/`. Each token is scoped to a single user; multiple tokens can exist per user (one per device is recommended). See the [Kobo Sync guide](kobo.md) for setup instructions and a full feature overview.
+
+All three endpoints require a **JWT** — API keys are not accepted (see [JWT-only endpoints](#jwt-only-endpoints)).
+
+### `GET /api/kobo/tokens` 🔒 **JWT only**
+
+List all Kobo sync tokens for the authenticated user.
+
+**Response `200 OK`:**
+
+```json
+[
+  {
+    "id": "<id>",
+    "user_id": "<user_id>",
+    "name": "Kobo Libra 2",
+    "token_hash": "sha256hex...",
+    "created_at": "2026-03-17T12:00:00Z"
+  }
+]
+```
+
+Returns `[]` when no tokens exist.
+
+---
+
+### `POST /api/kobo/tokens` 🔒 **JWT only**
+
+Create a new Kobo sync token. The raw token is returned **only in this response** and is never retrievable again.
+
+**Request body:**
+
+| Field  | Type   | Required | Description                          |
+|--------|--------|----------|--------------------------------------|
+| `name` | string | ✓        | Human-readable label (max 100 chars) |
+
+**Response `201 Created`:**
+
+```json
+{
+  "id": "<id>",
+  "user_id": "<user_id>",
+  "name": "Kobo Libra 2",
+  "token_hash": "sha256hex...",
+  "created_at": "2026-03-17T12:00:00Z",
+  "token": "a3f8e1b2c4d5..."
+}
+```
+
+The `token` field is the raw value. Build the device sync URL as `https://<host>/kobo/<token>/`. The response also sets `Cache-Control: no-store` to prevent proxy or browser caching of the token.
+
+**Error responses:**
+
+| Status | Description |
+|--------|-------------|
+| `400 Bad Request` | `name` missing, empty, or exceeds 100 characters |
+| `401 Unauthorized` | Missing or invalid JWT |
+
+---
+
+### `DELETE /api/kobo/tokens/{id}` 🔒 **JWT only**
+
+Delete a Kobo sync token. The device using this token will receive `401` on its next sync.
+
+**Path parameters:** `{id}` — Kobo token resource ID.
+
+**Response:** `204 No Content`
+
+**Error responses:**
+
+| Status | Description |
+|--------|-------------|
+| `401 Unauthorized` | Missing or invalid JWT |
+| `404 Not Found` | Token not found or not owned by the authenticated user |
 
 ---
 
