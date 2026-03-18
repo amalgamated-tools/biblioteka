@@ -169,13 +169,7 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 //	@Success		200	{object}	oidcEnabledResponse
 //	@Router			/auth/oidc/enabled [get]
 func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet && r.Method != http.MethodHead {
-		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		if err := json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed"}); err != nil {
-			slog.ErrorContext(r.Context(), "failed to encode OIDC enabled method not allowed response", slog.Any(otelkeys.Error, err))
-		}
+	if !checkSystemEndpointMethod(w, r, "failed to encode OIDC enabled method not allowed response", http.MethodGet, http.MethodHead) {
 		return
 	}
 
@@ -212,18 +206,7 @@ type oidcEnabledResponse struct {
 //	@Success		200	{object}	healthResponse
 //	@Router			/health [get]
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet && r.Method != http.MethodHead {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		resp := map[string]string{
-			"error": "method not allowed",
-		}
-
-		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			slog.ErrorContext(r.Context(), "failed to encode health method not allowed response", slog.Any(otelkeys.Error, err))
-		}
+	if !checkSystemEndpointMethod(w, r, "failed to encode health method not allowed response", http.MethodGet, http.MethodHead) {
 		return
 	}
 
