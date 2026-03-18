@@ -9,6 +9,9 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 )
 
 // ---- Sync token round-trip tests ----
@@ -61,11 +64,35 @@ func setupKoboHandler(t *testing.T) (*KoboHandler, string) {
 	t.Helper()
 	d := newTestDB(t)
 	h := &KoboHandler{DB: d}
+	h.RegisterRoutes()
 	user, err := d.CreateUser(context.Background(), "Kobo User", "kobo@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
 	return h, user.ID
+}
+
+// koboDeviceHandler returns an http.Handler that composes the Kobo token auth
+// middleware with the handler's sub-mux, matching the production setup.
+func koboDeviceHandler(h *KoboHandler) http.Handler {
+	checker := &testKoboTokenChecker{db: h.DB}
+	return auth.KoboTokenAuthMiddleware(checker)(h)
+}
+
+// testKoboTokenChecker adapts the test DB to auth.KoboTokenChecker.
+type testKoboTokenChecker struct {
+	db *db.DB
+}
+
+func (c *testKoboTokenChecker) GetKoboTokenByToken(ctx context.Context, token string) (*auth.KoboTokenResult, error) {
+	t, err := c.db.GetKoboTokenByToken(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+	return &auth.KoboTokenResult{
+		UserID: t.UserID,
+		Token:  t.Token,
+	}, nil
 }
 
 func TestKoboTokenCreate_Success(t *testing.T) {
@@ -147,23 +174,9 @@ func TestKoboTokenDelete_NotFound(t *testing.T) {
 
 // ---- Kobo device API tests ----
 
-func TestHandleKobo_UnknownToken(t *testing.T) {
-	h, _ := setupKoboHandler(t)
-
-	r := httptest.NewRequest(http.MethodGet, "/kobo/badtoken/v1/initialization", nil)
-	w := httptest.NewRecorder()
-
-	h.HandleKobo(w, r)
-
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
-}
-
-func TestHandleKobo_Init(t *testing.T) {
-	h, userID := setupKoboHandler(t)
-
-	// Create a real token
+// createTestKoboToken is a helper that creates a token and returns the token value.
+func createTestKoboToken(t *testing.T, h *KoboHandler, userID string) string {
+	t.Helper()
 	body, _ := json.Marshal(koboTokenCreateRequest{Name: "test"})
 	rCreate := httptest.NewRequest(http.MethodPost, "/api/kobo/tokens", bytes.NewReader(body))
 	rCreate = withUserID(rCreate, userID)
@@ -174,13 +187,33 @@ func TestHandleKobo_Init(t *testing.T) {
 	}
 	var tok map[string]any
 	_ = json.Unmarshal(wCreate.Body.Bytes(), &tok)
-	tokenValue := tok["token"].(string)
+	return tok["token"].(string)
+}
+
+func TestHandleKobo_UnknownToken(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/badtoken/v1/initialization", nil)
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestHandleKobo_Init(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
 
 	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/initialization", nil)
 	r.Host = "localhost:8080"
 	w := httptest.NewRecorder()
 
-	h.HandleKobo(w, r)
+	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
@@ -207,22 +240,14 @@ func TestHandleKobo_Init(t *testing.T) {
 
 func TestHandleKobo_Sync_EmptyLibrary(t *testing.T) {
 	h, userID := setupKoboHandler(t)
-
-	// Create a real token
-	body, _ := json.Marshal(koboTokenCreateRequest{Name: "test"})
-	rCreate := httptest.NewRequest(http.MethodPost, "/api/kobo/tokens", bytes.NewReader(body))
-	rCreate = withUserID(rCreate, userID)
-	wCreate := httptest.NewRecorder()
-	h.HandleKoboTokens(wCreate, rCreate)
-	var tok map[string]any
-	_ = json.Unmarshal(wCreate.Body.Bytes(), &tok)
-	tokenValue := tok["token"].(string)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
 
 	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/sync", nil)
 	r.Host = "localhost:8080"
 	w := httptest.NewRecorder()
 
-	h.HandleKobo(w, r)
+	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
@@ -244,15 +269,8 @@ func TestHandleKobo_Sync_EmptyLibrary(t *testing.T) {
 
 func TestHandleKobo_Auth_Stub(t *testing.T) {
 	h, userID := setupKoboHandler(t)
-
-	body, _ := json.Marshal(koboTokenCreateRequest{Name: "test"})
-	rCreate := httptest.NewRequest(http.MethodPost, "/api/kobo/tokens", bytes.NewReader(body))
-	rCreate = withUserID(rCreate, userID)
-	wCreate := httptest.NewRecorder()
-	h.HandleKoboTokens(wCreate, rCreate)
-	var tok map[string]any
-	_ = json.Unmarshal(wCreate.Body.Bytes(), &tok)
-	tokenValue := tok["token"].(string)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
 
 	authBody := `{"UserKey":"testuserkey"}`
 	r := httptest.NewRequest(http.MethodPost, "/kobo/"+tokenValue+"/v1/auth/device",
@@ -260,7 +278,7 @@ func TestHandleKobo_Auth_Stub(t *testing.T) {
 	r.Host = "localhost:8080"
 	w := httptest.NewRecorder()
 
-	h.HandleKobo(w, r)
+	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
