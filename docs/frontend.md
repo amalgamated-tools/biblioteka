@@ -372,9 +372,9 @@ Svelte 5 emits a `state_referenced_locally` warning for this pattern because the
 5. Add a navigation `<button>` in `Settings.svelte`'s sidebar `<nav>`, wrapped in `{#if isAdmin}` if the tab is admin-only.
 6. Update the table above.
 
-## Accessibility
+## Accessibility Patterns
 
-Biblioteka's frontend follows [WCAG 2.1](https://www.w3.org/TR/WCAG21/) guidelines. This section documents the accessibility patterns used in the app shell and how to maintain them when making changes.
+Biblioteka's frontend follows [WCAG 2.1](https://www.w3.org/TR/WCAG21/) guidelines. This section documents the accessibility patterns used across the app and how to maintain them when making changes.
 
 ### Skip-to-main-content link
 
@@ -427,6 +427,58 @@ The app shell uses semantic HTML5 landmark elements so screen readers can naviga
 | Primary content | `<main id="main-content">` | Target of the skip link |
 | Mobile header | `<div>` + hamburger `<button>` | Not a landmark; sits above `<main>` only on small screens |
 
+### Accessible labels for icon-only buttons and dynamic inputs
+
+**WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) / [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
+
+Buttons that render only an icon (no visible text) and form inputs that cannot be paired with a visible `<label>` element — for example, inputs inside dynamically repeated rows — must have an explicit accessible name.
+
+#### Icon-only buttons
+
+Use `aria-label` on any button whose only child is an icon component:
+
+```svelte
+<!-- Close button: renders only the X icon -->
+<button
+  onclick={navigateBack}
+  aria-label="Close form"
+>
+  <X class="w-5 h-5" />
+</button>
+
+<!-- Remove-folder button in a repeated list -->
+<button
+  type="button"
+  onclick={() => { formPaths = formPaths.filter((_, idx) => idx !== i); }}
+  aria-label="Remove folder"
+  disabled={saving}
+>
+  <X class="w-4 h-4" />
+</button>
+```
+
+Without `aria-label`, screen readers announce these buttons only by their SVG title or nothing at all, giving users no meaningful description of the action.
+
+#### Inputs in dynamic lists
+
+When a form field is repeated (e.g., a list of folder paths), there may be no single `<label>` element that can be associated with every input via `for`/`id`. Use `aria-label` directly on the `<input>` with a distinguishing index when there are multiple items:
+
+```svelte
+<input
+  type="text"
+  aria-label={formPaths.length === 1 ? "Folder path" : `Folder path ${i + 1}`}
+  bind:value={entry.value}
+/>
+```
+
+When there is only one input in the list, omit the index to keep the label natural. When there are multiple inputs, append the 1-based position so screen reader users can distinguish them.
+
+#### Checklist
+
+- Every `<button>` that renders only an icon must have `aria-label` or `aria-labelledby`.
+- Every `<input>` and `<select>` must have either a linked `<label for="...">` or an `aria-label` / `aria-labelledby`.
+- `title` attributes are not a substitute for `aria-label`; they are advisory only and are not reliably announced.
+
 ### Maintaining accessibility
 
 When editing the app shell or adding new persistent navigation elements:
@@ -434,7 +486,67 @@ When editing the app shell or adding new persistent navigation elements:
 1. Keep the skip link as the **first** child of the authenticated shell `<div>`.
 2. If you add a new persistent region that users must bypass, add an additional skip link or update the existing one.
 3. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
-4. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+4. Every icon-only button must have `aria-label`; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only buttons and dynamic inputs](#accessible-labels-for-icon-only-buttons-and-dynamic-inputs) above.
+5. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+
+### Form accessibility
+
+All form inputs must be programmatically associated with a visible label or carry a descriptive `aria-label`. `LibraryForm.svelte` serves as the canonical reference for these patterns.
+
+#### Explicit `<label for>` / `id` pairing
+
+Use an explicit `for`/`id` association for text inputs that have a visible label. This is the strongest and most broadly supported technique.
+
+```svelte
+<label for="lib-name" class="block text-sm font-medium …">Name</label>
+<input id="lib-name" type="text" bind:value={formName} … />
+```
+
+Screen readers will announce the label text whenever the input receives focus.
+
+#### Dynamic `aria-label` for repeated inputs
+
+When a form contains a variable-length list of inputs of the same type (e.g. multiple folder-path fields), use a dynamic `aria-label` that includes the item's position so screen-reader users can distinguish them.
+
+```svelte
+{#each formPaths as entry, i}
+  <input
+    aria-label={formPaths.length === 1 ? "Folder path" : `Folder path ${i + 1}`}
+    …
+  />
+{/each}
+```
+
+- Use the singular label (e.g. `"Folder path"`) when there is only one item — the ordinal is unnecessary and adds noise.
+- Use a 1-based counter (e.g. `"Folder path 1"`, `"Folder path 2"`) when there are multiple items.
+
+#### `aria-label` on icon-only buttons
+
+Buttons whose visible content is solely an icon (SVG) must carry an `aria-label` so assistive technologies announce an intelligible action name.
+
+```svelte
+<!-- Close / cancel button -->
+<button aria-label="Close form" onclick={navigateBack}>
+  <X class="w-5 h-5" />
+</button>
+
+<!-- Remove item button inside a list -->
+<button aria-label="Remove folder" …>
+  <X class="w-4 h-4" />
+</button>
+```
+
+When you add a new icon-only button, always supply an `aria-label`. `svelte-check` does **not** automatically detect missing labels on `<button>` elements, so this must be reviewed manually.
+
+#### Checklist for new forms
+
+When adding or editing a form component:
+
+1. Every `<input>`, `<select>`, and `<textarea>` has either a `<label for="…">` or an `aria-label`.
+2. `<label for>` values match the corresponding `id` exactly — a mismatch silently breaks the association.
+3. Icon-only buttons (`<button>` with SVG content and no text) carry an `aria-label`.
+4. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
+5. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
 ### Accessibility tests
 
