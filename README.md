@@ -13,6 +13,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **User authentication** – JWT-based login, optional OpenID Connect (OIDC/SSO)
 - **API keys** – Long-lived tokens for programmatic and scripted access (prefix `bib_`); managed per-user via the Settings page or API
 - **OPDS 1.2 catalog** – Built-in OPDS server at `/opds` lets any compatible e-reader app (KOReader, Calibre, Moon+ Reader, …) browse and download books using Basic Auth credentials separate from your main account password
+- **Kobo e-reader sync** – Native Kobo device API at `/kobo/<token>/` syncs your library and reading progress to Kobo e-readers; create per-device tokens from **Settings → Kobo Sync** or via the API
 - **Background processing** – Redis-backed job queue scans paths and processes files asynchronously; includes a built-in [Asynqmon](https://github.com/hibiken/asynqmon) monitoring UI at `/asynqmon/`
 - **Two database backends** – SQLite (zero-config, default) or PostgreSQL
 - **Single binary** – Go backend embeds the Svelte frontend; one executable to deploy

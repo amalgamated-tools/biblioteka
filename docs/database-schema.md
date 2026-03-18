@@ -16,6 +16,8 @@ Biblioteka uses a **shared catalog** model. Books, libraries, authors, and serie
 | `libraries` | Global — all users | Paths scanned and books indexed are shared |
 | `api_keys` | Per-user | Each key is owned by the user who created it; scoped to that user's permissions |
 | `opds_credentials` | Per-user | One credential set per user; used only for OPDS Basic Auth |
+| `kobo_tokens` | Per-user | One or more sync tokens per user; each token authenticates a single Kobo device |
+| `kobo_reading_states` | Per-user | Reading progress reported by Kobo devices; one record per user–book pair |
 | `audit_logs` | Global record — admin read | Logs record which user performed each action |
 
 > **Note:** The `MyLibrary` view in the frontend is a planned feature (currently a placeholder) that will eventually let each user maintain a personal reading list independent of the shared catalog.
@@ -28,14 +30,14 @@ Biblioteka uses a **shared catalog** model. Books, libraries, authors, and serie
 users ────────────────────────────────────────────────┐
   │                                                    │ (audit trail)
   ├──── api_keys                  settings             ▼
-  │                                           audit_logs
-  └──── opds_credentials
-
-libraries ──── library_books ──── books ──── book_authors ──── authors
-                                    │
-                                    ├──── book_series ──── series
-                                    │
-                                    └──── book_files
+  ├──── opds_credentials                       audit_logs
+  ├──── kobo_tokens
+  └──── kobo_reading_states ─────────────── books ──── book_authors ──── authors
+                                               │
+libraries ──── library_books ─────────────────┤
+                                               ├──── book_series ──── series
+                                               │
+                                               └──── book_files
 ```
 
 ---
@@ -358,13 +360,65 @@ Append-only record of create, update, and delete actions performed on entities.
 
 ---
 
+### `kobo_tokens`
+
+Named sync tokens that authenticate a Kobo e-reader device. Each token grants access to one user's library via the `/kobo/<token>/` device API.
+
+| Column       | Type    | Nullable | Default  | Description                                              |
+|--------------|---------|----------|----------|----------------------------------------------------------|
+| `id`         | TEXT    | NOT NULL | auto-gen | Primary key                                              |
+| `user_id`    | TEXT    | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE                        |
+| `name`       | TEXT    | NOT NULL | —        | Human-readable label (max 100 chars)                    |
+| `token_hash` | TEXT    | NOT NULL | —        | SHA-256 hex digest of the raw token (raw token never stored) |
+| `created_at` | DATETIME| NOT NULL | `now()`  | When the token was created                               |
+
+**Indexes:**
+- `idx_kobo_tokens_user_id` — list all tokens for a user
+- `idx_kobo_tokens_hash` (unique) — fast lookup during device authentication
+
+**Notes:**
+- The raw token is a 32-byte cryptographically random value encoded as 64 hex characters.
+- Only the SHA-256 hash is stored. If a token is lost, the user must delete it and create a new one.
+- Deleting a user cascades and removes all their Kobo tokens.
+- See [Kobo Tokens API](kobo.md#kobo-tokens-api) for management endpoints.
+
+---
+
+### `kobo_reading_states`
+
+Tracks the reading progress a Kobo device has reported for each user–book pair. Updated each time the device syncs reading state.
+
+| Column            | Type    | Nullable | Default       | Description                                          |
+|-------------------|---------|----------|---------------|------------------------------------------------------|
+| `id`              | TEXT    | NOT NULL | auto-gen      | Primary key                                          |
+| `user_id`         | TEXT    | NOT NULL | —             | FK → `users.id` ON DELETE CASCADE                    |
+| `book_id`         | TEXT    | NOT NULL | —             | FK → `books.id` ON DELETE CASCADE                    |
+| `status`          | TEXT    | NOT NULL | `ReadyToRead` | `ReadyToRead`, `Reading`, or `Finished`              |
+| `percent_read`    | REAL    | NULL     | NULL          | Reading progress as a fraction (0.0–1.0)             |
+| `location_value`  | TEXT    | NULL     | NULL          | Kobo bookmark location value (CFI or similar)        |
+| `location_type`   | TEXT    | NULL     | NULL          | Kobo bookmark location type                          |
+| `location_source` | TEXT    | NULL     | NULL          | Kobo bookmark location source                        |
+| `created_at`      | DATETIME| NOT NULL | `now()`       | When the reading state was first created             |
+| `updated_at`      | DATETIME| NOT NULL | `now()`       | When the reading state was last updated              |
+
+**Indexes:**
+- `idx_kobo_reading_states_user_book` (unique) — enforces one state per user–book pair; used by the upsert
+- `idx_kobo_reading_states_user_updated` — efficient time-range queries during library sync
+
+**Notes:**
+- The `(user_id, book_id)` pair is unique; updates use `INSERT … ON CONFLICT DO UPDATE`.
+- Reading states are included in library sync responses when they were modified after the device's last sync token timestamp.
+- Deleting a user or book cascades and removes their reading states.
+
+---
+
 ## Cascade Deletion Summary
 
 | Deleted entity | Also deletes                                      |
 |----------------|---------------------------------------------------|
-| `users`        | `api_keys`, `opds_credentials` for that user     |
+| `users`        | `api_keys`, `opds_credentials`, `kobo_tokens`, `kobo_reading_states` for that user |
 | `libraries`    | `library_books` entries for that library          |
-| `books`        | `book_files`, `book_authors`, `book_series`, `library_books` entries for that book |
+| `books`        | `book_files`, `book_authors`, `book_series`, `library_books`, `kobo_reading_states` entries for that book |
 | `authors`      | `book_authors` entries for that author            |
 | `series`       | `book_series` entries for that series             |
 
@@ -390,6 +444,8 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `users.go` | `User` struct; `CreateUser`, `CreateOIDCUser`, `GetUser*`, `LinkOIDCSubject`, `UpdatePassword`, `IsAdmin`, `SetAdmin`, `ListUsers` |
 | `api_keys.go` | `APIKey` struct; `CreateAPIKey`, `ListAPIKeys`, `GetAPIKey`, `DeleteAPIKey`, `GetAPIKeyByHash`, `TouchAPIKeyLastUsed`, `ValidateAPIKey` |
 | `opds_credentials.go` | `OPDSCredential` struct; `GetOPDSCredential*`, `UpsertOPDSCredential`, `DeleteOPDSCredential` |
+| `kobo_tokens.go` | `KoboToken` struct; `CreateKoboToken`, `GetKoboToken`, `GetKoboTokenByHash`, `ListKoboTokens`, `DeleteKoboToken` |
+| `kobo_reading_states.go` | `KoboReadingState` struct; `GetKoboReadingState`, `UpsertKoboReadingState`, `ListKoboReadingStatesSince`, `GetReadingStatesForBooks` |
 | `audit_logs.go` | `AuditLog` struct; `CreateAuditLog`, `ListAuditLogs` |
 | `sql_parser.go` | Internal helpers for parsing embedded SQL migration files |
 
