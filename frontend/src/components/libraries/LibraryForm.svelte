@@ -326,7 +326,7 @@
         {#if showDeleteConfirm}
           <div
             role="alertdialog"
-            aria-modal="false"
+            aria-modal="true"
             aria-label="Confirm library deletion"
             aria-describedby="delete-confirm-msg"
             tabindex="-1"
@@ -349,7 +349,6 @@
               bind:this={cancelDeleteButton}
               type="button"
               onclick={closeDeleteConfirm}
-              disabled={saving}
               class="px-3 py-1.5 text-sm border border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-300 rounded-lg hover:bg-ink-50 dark:hover:bg-ink-800 transition-colors"
             >
               Cancel
