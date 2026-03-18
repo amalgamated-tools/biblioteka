@@ -114,14 +114,13 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 		slog.WarnContext(ctx, "failed to batch-load series for kobo sync", slog.Any(otelkeys.Error, err))
 	}
 
-	// Fetch reading states changed since last sync.
-	readingStates, err := h.DB.ListKoboReadingStatesSince(ctx, userID, syncToken.ReadingStateLastModified)
+	// Batch-load reading states for the current page's books.
+	readingStatesByBook, err := h.DB.GetReadingStatesForBooks(ctx, userID, bookIDs, syncToken.ReadingStateLastModified)
 	if err != nil {
-		slog.WarnContext(ctx, "failed to list reading states for kobo sync", slog.Any(otelkeys.Error, err))
+		slog.WarnContext(ctx, "failed to batch-load reading states for kobo sync", slog.Any(otelkeys.Error, err))
 	}
-	readingStatesByBook := make(map[string]*db.KoboReadingState, len(readingStates))
-	for i := range readingStates {
-		readingStatesByBook[readingStates[i].BookID] = &readingStates[i]
+	if readingStatesByBook == nil {
+		readingStatesByBook = make(map[string]*db.KoboReadingState)
 	}
 
 	base := schemeAndHost(r)

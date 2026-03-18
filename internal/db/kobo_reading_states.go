@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -107,6 +108,61 @@ func (d *DB) ListKoboReadingStatesSince(ctx context.Context, userID string, sinc
 	}
 	defer rows.Close()
 	return scanKoboReadingStateRows(rows)
+}
+
+// GetReadingStatesForBooks returns reading states for a user, scoped to the given
+// book IDs and optionally filtered to those updated after `since`. Results are
+// returned as a map keyed by book ID for easy lookup.
+func (d *DB) GetReadingStatesForBooks(ctx context.Context, userID string, bookIDs []string, since time.Time) (map[string]*KoboReadingState, error) {
+	if len(bookIDs) == 0 {
+		return nil, nil
+	}
+	slog.DebugContext(ctx, "db: batch fetching reading states for books",
+		slog.String(otelkeys.UserID, userID),
+		slog.Int(otelkeys.BookCount, len(bookIDs)),
+	)
+
+	// Build placeholders: $1 = userID, $2..$N+1 = bookIDs, $N+2 = since (if non-zero).
+	placeholders := make([]string, len(bookIDs))
+	args := make([]any, 0, len(bookIDs)+2)
+	args = append(args, userID)
+	for i, id := range bookIDs {
+		placeholders[i] = dollarN(i + 2)
+		args = append(args, id)
+	}
+
+	q := `SELECT ` + koboReadingStateColumns + ` FROM kobo_reading_states WHERE user_id = $1 AND book_id IN (` + strings.Join(placeholders, ",") + `)`
+
+	if !since.IsZero() {
+		sinceIdx := dollarN(len(bookIDs) + 2)
+		var sinceParam any
+		if d.Dialect == DialectPostgres {
+			sinceParam = since
+		} else {
+			sinceParam = since.UTC().Format("2006-01-02 15:04:05")
+		}
+		q += ` AND updated_at > ` + sinceIdx
+		args = append(args, sinceParam)
+	}
+
+	q += ` ORDER BY updated_at ASC`
+
+	rows, err := d.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	states, err := scanKoboReadingStateRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]*KoboReadingState, len(states))
+	for i := range states {
+		result[states[i].BookID] = &states[i]
+	}
+	return result, nil
 }
 
 type koboReadingStateScanner interface {
