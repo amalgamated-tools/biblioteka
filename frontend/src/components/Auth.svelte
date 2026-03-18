@@ -14,6 +14,7 @@
   let oidcEnabled = $state(false);
 
   function handleTabKeydown(event: KeyboardEvent) {
+    if (loading) return;
     if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
       event.preventDefault();
       isLogin = !isLogin;
@@ -131,6 +132,7 @@
           aria-selected={isLogin}
           aria-controls="login-panel"
           tabindex={isLogin ? 0 : -1}
+          disabled={loading}
           onclick={() => (isLogin = true)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
@@ -144,6 +146,7 @@
           aria-selected={!isLogin}
           aria-controls="signup-panel"
           tabindex={!isLogin ? 0 : -1}
+          disabled={loading}
           onclick={() => (isLogin = false)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {!isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
