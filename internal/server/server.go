@@ -73,10 +73,12 @@ type Server struct {
 	apiKeyHandler         *handlers.APIKeyHandler
 	opdsHandler           *handlers.OPDSHandler
 	opdsCredentialHandler *handlers.OPDSCredentialHandler
+	koboHandler           *handlers.KoboHandler
 	requireAuth           func(http.Handler) http.Handler
 	requireJWTAuth        func(http.Handler) http.Handler
 	requireAdmin          func(http.Handler) http.Handler
 	requireOPDSAuth       func(http.Handler) http.Handler
+	requireKoboAuth       func(http.Handler) http.Handler
 	authLimiter           *auth.RateLimiter
 	mux                   *http.ServeMux
 	httpServer            *http.Server
@@ -155,6 +157,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
 	s.opdsCredentialHandler = &handlers.OPDSCredentialHandler{DB: s.DB}
 	s.apiKeyHandler = &handlers.APIKeyHandler{DB: s.DB}
+	s.koboHandler = &handlers.KoboHandler{DB: s.DB}
+	s.koboHandler.RegisterRoutes()
+	s.requireKoboAuth = auth.KoboTokenAuthMiddleware(&koboDBAdapter{db: s.DB})
 	s.requireOPDSAuth = auth.OPDSBasicAuthMiddleware(&opdsDBAdapter{db: s.DB})
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
@@ -269,5 +274,21 @@ func (a *opdsDBAdapter) GetOPDSCredential(ctx context.Context, username string) 
 	return &auth.OPDSCredentialResult{
 		UserID:       cred.UserID,
 		PasswordHash: cred.PasswordHash,
+	}, nil
+}
+
+// koboDBAdapter bridges *db.DB to the auth.KoboTokenChecker interface.
+type koboDBAdapter struct {
+	db *db.DB
+}
+
+func (a *koboDBAdapter) GetKoboTokenByToken(ctx context.Context, token string) (*auth.KoboTokenResult, error) {
+	tokenHash := auth.HashKoboToken(token)
+	t, err := a.db.GetKoboTokenByHash(ctx, tokenHash)
+	if err != nil {
+		return nil, err
+	}
+	return &auth.KoboTokenResult{
+		UserID: t.UserID,
 	}, nil
 }

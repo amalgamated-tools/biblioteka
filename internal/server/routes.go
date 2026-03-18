@@ -75,6 +75,13 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/api-keys", s.requireJWTAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKeys)))
 	s.mux.Handle("/api/api-keys/", s.requireJWTAuth(http.HandlerFunc(s.apiKeyHandler.HandleAPIKey)))
 
+	// Kobo sync token management (JWT-only: same constraint as API keys)
+	s.mux.Handle("/api/kobo/tokens", s.requireJWTAuth(http.HandlerFunc(s.koboHandler.HandleKoboTokens)))
+	s.mux.Handle("/api/kobo/tokens/", s.requireJWTAuth(http.HandlerFunc(s.koboHandler.HandleKoboToken)))
+
+	// Kobo device API — token auth via middleware, sub-mux handles routing
+	s.mux.Handle("/kobo/", s.requireKoboAuth(s.koboHandler))
+
 	// Health check
 	s.mux.HandleFunc("/api/health", s.handleHealth)
 

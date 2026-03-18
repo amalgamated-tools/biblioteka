@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"log/slog"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -283,4 +285,106 @@ func bookColumnsWithPrefix(prefix string) string {
 // SQLite also accepts dollar-sign placeholders.
 func dollarN(n int) string {
 	return "$" + strconv.Itoa(n)
+}
+
+// ListBooksModifiedSince returns up to limit books updated after since, ordered by
+// updated_at ascending so callers can track the high-water mark. When since is the
+// zero time all books are returned (initial sync). For non-zero since values, callers
+// should also pass the last seen book ID as lastID to avoid skipping rows that share
+// the same updated_at across pages.
+func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, lastID string, limit int) ([]Book, error) {
+	slog.DebugContext(ctx, "db: listing books modified since",
+		slog.Int(otelkeys.Limit, limit),
+	)
+	// Use a stable, deterministic ordering that matches the tie-breaker used in the
+	// WHERE clause for pagination.
+	const orderBy = "ORDER BY updated_at ASC, id ASC"
+	if since.IsZero() {
+		rows, err := d.QueryContext(ctx,
+			`SELECT `+bookColumns+` FROM books `+orderBy+` LIMIT $1`,
+			limit,
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		return scanBookRows(rows)
+	}
+
+	var sinceParam any
+	if d.Dialect == DialectPostgres {
+		sinceParam = since
+	} else {
+		// SQLite stores datetimes as "YYYY-MM-DD HH:MM:SS"; use matching format
+		// to ensure correct string-based datetime comparison.
+		sinceParam = since.UTC().Format("2006-01-02 15:04:05")
+	}
+
+	// For incremental sync, include a tie-breaker on ID so that rows sharing the same
+	// updated_at value but appearing on different pages are not skipped.
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookColumns+` FROM books WHERE (updated_at > $1 OR (updated_at = $1 AND id > $2)) `+orderBy+` LIMIT $3`,
+		sinceParam, lastID, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanBookRows(rows)
+}
+
+type bookRowScanner interface {
+	Next() bool
+	Scan(...any) error
+	Err() error
+}
+
+func scanBookRows(rows bookRowScanner) ([]Book, error) {
+	var books []Book
+	for rows.Next() {
+		b, err := scanBook(rows)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, *b)
+	}
+	return books, rows.Err()
+}
+
+// GetSeriesForBooks returns series entries (with position) grouped by book ID for the given book IDs.
+func (d *DB) GetSeriesForBooks(ctx context.Context, bookIDs []string) (map[string][]BookSeriesEntry, error) {
+	if len(bookIDs) == 0 {
+		return nil, nil
+	}
+	slog.DebugContext(ctx, "db: batch fetching series for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
+
+	placeholders := make([]string, len(bookIDs))
+	args := make([]any, len(bookIDs))
+	for i, id := range bookIDs {
+		placeholders[i] = dollarN(i + 1)
+		args[i] = id
+	}
+
+	rows, err := d.QueryContext(ctx,
+		`SELECT bs.book_id, s.id, s.name, s.goodreads_id, s.hardcover_id, s.google_books_id, s.created_at, s.updated_at, bs.position
+		FROM series s INNER JOIN book_series bs ON bs.series_id = s.id
+		WHERE bs.book_id IN (`+strings.Join(placeholders, ",")+`)
+		ORDER BY s.name ASC`,
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string][]BookSeriesEntry, len(bookIDs))
+	for rows.Next() {
+		var bookID string
+		var entry BookSeriesEntry
+		if err := rows.Scan(&bookID, &entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position); err != nil {
+			return nil, err
+		}
+		result[bookID] = append(result[bookID], entry)
+	}
+	return result, rows.Err()
 }

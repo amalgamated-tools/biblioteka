@@ -456,6 +456,34 @@ export async function deleteAPIKey(id: string): Promise<void> {
   await request<void>("DELETE", `/api/api-keys/${id}`);
 }
 
+// Kobo Sync Tokens
+
+export interface KoboToken {
+  id: string;
+  user_id: string;
+  name: string;
+  token_hash: string;
+  created_at: string;
+}
+
+export async function listKoboTokens(): Promise<KoboToken[]> {
+  return request<KoboToken[]>("GET", "/api/kobo/tokens");
+}
+
+export interface KoboTokenCreateResponse extends KoboToken {
+  token: string;
+}
+
+export async function createKoboToken(
+  name: string,
+): Promise<KoboTokenCreateResponse> {
+  return request<KoboTokenCreateResponse>("POST", "/api/kobo/tokens", { name });
+}
+
+export async function deleteKoboToken(id: string): Promise<void> {
+  await request<void>("DELETE", `/api/kobo/tokens/${id}`);
+}
+
 // Version
 
 export async function getVersion(): Promise<string> {
