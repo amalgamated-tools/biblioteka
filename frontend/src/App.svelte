@@ -20,7 +20,11 @@
 
   // Redirect away from books view when no libraries exist
   $effect(() => {
-    if (routerStore.currentView === "books" && libraryStore.loaded && libraryStore.libraries.length === 0) {
+    if (
+      routerStore.currentView === "books" &&
+      libraryStore.loaded &&
+      libraryStore.libraries.length === 0
+    ) {
       routerStore.navigate("dashboard");
     }
   });
@@ -48,13 +52,26 @@
           <span class="text-white font-display text-2xl font-bold">B</span>
         </div>
       </div>
-      <p class="text-ink-400 dark:text-ink-300 font-body text-sm tracking-wide">Loading your library…</p>
+      <p class="text-ink-400 dark:text-ink-300 font-body text-sm tracking-wide">
+        Loading your library…
+      </p>
     </div>
   </div>
 {:else if !authStore.user}
   <Auth />
 {:else}
   <div class="min-h-screen bg-cream-50 dark:bg-ink-950 relative bg-texture">
+    <a
+      href="#main-content"
+      onclick={(e: MouseEvent) => {
+        e.preventDefault();
+        document.getElementById("main-content")?.focus();
+      }}
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-accent-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
+    >
+      Skip to main content
+    </a>
+
     <Sidebar
       currentView={routerStore.currentView}
       onNavigate={(view) => routerStore.navigate(view)}
@@ -73,12 +90,13 @@
       >
         <Menu class="w-6 h-6" />
       </button>
-      <span class="text-lg font-display font-bold text-ink-900 dark:text-cream-100"
+      <span
+        class="text-lg font-display font-bold text-ink-900 dark:text-cream-100"
         >biblioteka</span
       >
     </div>
 
-    <main class="md:ml-64 p-4 md:p-8">
+    <main id="main-content" tabindex="-1" class="md:ml-64 p-4 md:p-8">
       <div class="max-w-6xl mx-auto animate-fade-in">
         {#if routerStore.currentView === "dashboard"}
           <Dashboard />

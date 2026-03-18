@@ -55,8 +55,12 @@
 >
   <!-- Decorative background elements -->
   <div class="absolute inset-0 overflow-hidden pointer-events-none">
-    <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-accent-200/30 dark:bg-accent-800/10 blur-3xl"></div>
-    <div class="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-accent-100/40 dark:bg-accent-800/5 blur-3xl"></div>
+    <div
+      class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-accent-200/30 dark:bg-accent-800/10 blur-3xl"
+    ></div>
+    <div
+      class="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-accent-100/40 dark:bg-accent-800/5 blur-3xl"
+    ></div>
   </div>
 
   <div class="w-full max-w-md relative z-10 animate-fade-in-up">
@@ -66,7 +70,9 @@
       >
         <BookCheck class="w-8 h-8 text-white" />
       </div>
-      <h1 class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mb-2">
+      <h1
+        class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mb-2"
+      >
         biblioteka
       </h1>
       <p class="text-ink-400 dark:text-ink-400 font-body">
@@ -100,9 +106,7 @@
         </div>
       {/if}
 
-      <div
-        class="flex gap-1 mb-6 bg-cream-100 dark:bg-ink-800 rounded-xl p-1"
-      >
+      <div class="flex gap-1 mb-6 bg-cream-100 dark:bg-ink-800 rounded-xl p-1">
         <button
           id="login-btn"
           onclick={() => (isLogin = true)}
@@ -180,7 +184,9 @@
         </div>
 
         {#if error}
-          <AlertBanner variant="error" testId="auth-error" role="alert">{error}</AlertBanner>
+          <AlertBanner variant="error" testId="auth-error" role="alert"
+            >{error}</AlertBanner
+          >
         {/if}
 
         <button

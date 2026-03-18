@@ -15,8 +15,7 @@ function getSystemPrefersDark(): boolean {
 
 function applyTheme(preference: ThemePreference): void {
   const isDark =
-    preference === "dark" ||
-    (preference === "auto" && getSystemPrefersDark());
+    preference === "dark" || (preference === "auto" && getSystemPrefersDark());
 
   document.documentElement.classList.toggle("dark", isDark);
 }
