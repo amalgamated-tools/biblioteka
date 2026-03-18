@@ -661,7 +661,8 @@ When editing the app shell or adding new persistent navigation elements:
 6. Navigation buttons that represent the active view or tab must carry `aria-current={isActive ? "page" : undefined}`. See [`aria-current` on active navigation buttons](#aria-current-on-active-navigation-buttons) above.
 7. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
 8. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-9. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+9. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. See [Table accessibility](#table-accessibility) below.
+10. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
 ### Form accessibility
 
@@ -736,6 +737,67 @@ Password inputs must carry a valid `autocomplete` token so that password manager
 
 **Do not** leave `type="password"` inputs without `autocomplete`. Browsers may still infer the purpose, but the explicit attribute is required by WCAG 1.3.5 and ensures reliable cross-browser behaviour.
 
+#### `fieldset` and `legend` for grouped inputs
+
+**WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) (Level A)
+
+When a form contains a group of related inputs that share a common heading (e.g., a set of folder paths that all belong to "Folders"), wrap them in a `<fieldset>` with a `<legend>` instead of a plain `<div>` with a visual label. Screen readers announce the group's legend when focus enters any field inside it, giving users the context they need to understand the relationship.
+
+```svelte
+<fieldset class="border-none p-0 m-0">
+  <legend class="block text-sm font-medium …">
+    Folders <span aria-hidden="true">*</span>
+  </legend>
+  <div class="space-y-2">
+    {#each formPaths as entry, i (entry.id)}
+      <input
+        type="text"
+        aria-label={formPaths.length === 1 ? "Folder path" : `Folder path ${i + 1}`}
+        …
+      />
+    {/each}
+  </div>
+</fieldset>
+```
+
+- The `<legend>` text becomes the accessible name for the entire group; all inputs inside are announced in context of it.
+- Use `class="border-none p-0 m-0"` (or equivalent) to remove the browser's default `<fieldset>` border and padding while preserving the semantic grouping.
+- The required-field asterisk (`*`) should carry `aria-hidden="true"` on its containing `<span>` so screen readers do not announce "asterisk" mid-sentence — mark required fields with `aria-required="true"` on the `<input>` instead.
+
+#### `aria-describedby` for inline validation errors
+
+**WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) / [3.3.1 Error Identification](https://www.w3.org/WAI/WCAG21/Understanding/error-identification.html) (Levels A)
+
+When an input has an associated error message that appears inline below it, use `aria-describedby` to link the input to the error element. Without this link, screen reader users hear the input's label but not the error — they must navigate to the error paragraph separately.
+
+```svelte
+<input
+  id="lib-name"
+  type="text"
+  bind:value={formName}
+  aria-required="true"
+  aria-invalid={nameError ? true : undefined}
+  aria-describedby={nameError ? "lib-name-error" : undefined}
+/>
+{#if nameError}
+  <p id="lib-name-error" role="alert" class="text-sm text-danger-600 …">
+    {nameError}
+  </p>
+{/if}
+```
+
+**Key points:**
+
+| Attribute | Element | When to set |
+|-----------|---------|-------------|
+| `aria-invalid="true"` | `<input>` | When the field has a validation error |
+| `aria-describedby="<error-id>"` | `<input>` | When the error element is visible |
+| `id="<error-id>"` | Error `<p>` | Always — must match `aria-describedby` |
+| `role="alert"` | Error `<p>` | Makes the error message announce immediately when it appears |
+
+- Set `aria-invalid` and `aria-describedby` conditionally — only when the error is present. Passing `undefined` removes the attribute; passing `false` for `aria-invalid` is valid but adds noise and may confuse some screen readers.
+- For grouped inputs (e.g., folder paths sharing a single error), point every input's `aria-describedby` to the shared error element's `id`.
+
 #### `role="switch"` on toggle inputs
 
 **WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
@@ -767,12 +829,59 @@ When adding or editing a form component:
 
 1. Every `<input>`, `<select>`, and `<textarea>` has either a `<label for="…">` or an `aria-label`.
 2. `<label for>` values match the corresponding `id` exactly — a mismatch silently breaks the association.
-3. Icon-only buttons (`<button>` with SVG content and no text) carry an `aria-label`.
-4. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
-5. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
-6. Toggle switches (`<input type="checkbox">` styled as a switch) carry `role="switch"`.
-7. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-8. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+3. Related inputs that share a common heading are wrapped in a `<fieldset>` with a `<legend>`. See [`fieldset` and `legend` for grouped inputs](#fieldset-and-legend-for-grouped-inputs) above.
+4. Icon-only buttons (`<button>` with SVG content and no text) carry an `aria-label`.
+5. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
+6. Inputs with inline validation errors set `aria-invalid="true"` and `aria-describedby="<error-id>"` when the error is visible. See [`aria-describedby` for inline validation errors](#aria-describedby-for-inline-validation-errors) above.
+7. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
+8. Toggle switches (`<input type="checkbox">` styled as a switch) carry `role="switch"`.
+9. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
+10. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+
+### Table accessibility
+
+**WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) (Level A)
+
+Data tables must programmatically associate each header cell with the data cells it describes. Without this association, screen readers announce cell contents as isolated values with no column or row context.
+
+#### `scope` attribute on column headers
+
+Add `scope="col"` to every `<th>` that acts as a column header:
+
+```svelte
+<thead>
+  <tr>
+    <th scope="col">Title</th>
+    <th scope="col">Publisher</th>
+    <th scope="col">Language</th>
+    <th scope="col">Pages</th>
+  </tr>
+</thead>
+```
+
+When a `<th>` spans rows instead of columns (a row header), use `scope="row"`. For most flat, non-hierarchical tables in Biblioteka, `scope="col"` is sufficient.
+
+#### Accessible label for visual-only header cells
+
+An "Actions" column typically has no visible heading — its purpose is implied by the buttons in each row. A blank `<th>` is still announced by screen readers (often as an empty cell), which can be confusing. Use an `sr-only` span to provide a descriptive label that sighted users cannot see:
+
+```svelte
+<th scope="col">
+  <span class="sr-only">Actions</span>
+</th>
+```
+
+- Do **not** leave a `<th>` completely empty. An empty header cell gives screen-reader users no context for the column.
+- `sr-only` is a Tailwind utility (equivalent to `position: absolute; width: 1px; height: 1px; overflow: hidden; …`) that hides the text visually while keeping it in the accessibility tree.
+
+#### Checklist for new tables
+
+When adding a data table component:
+
+1. Every column `<th>` has `scope="col"`.
+2. Columns whose purpose is visually implied (e.g., "Actions") have `<span class="sr-only">Actions</span>` inside their `<th>`.
+3. If a `<th>` spans rows, it has `scope="row"`.
+4. Do not use `<td>` for header cells — use `<th scope="…">` so the relationship is semantically clear.
 
 ### Accessibility tests
 
