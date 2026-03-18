@@ -49,6 +49,7 @@ db/migrations/
 
 ### Error handling
 - Check every error explicitly with `if err != nil`.
+- Even in tests, we should check errors
 - Wrap errors with context: `fmt.Errorf("context: %w", err)`.
 
 ### HTTP handlers
