@@ -39,9 +39,9 @@ test.describe("Authentication flow", () => {
     await page.getByRole("button", { name: "Create Account" }).click();
     await expect(getAuthErrorBanner(page)).toContainText("Please fill in all fields");
 
-    await page.locator("input#name").fill(validationUser.displayName);
-    await page.locator("input#email").fill(validationUser.email);
-    await page.locator("input#password").fill("short");
+    await page.locator("input#signup-name").fill(validationUser.displayName);
+    await page.locator("input#signup-email").fill(validationUser.email);
+    await page.locator("input#signup-password").fill("short");
     await page.getByRole("button", { name: "Create Account" }).click();
     await expect(getAuthErrorBanner(page)).toContainText(
       "Password must be at least 6 characters",
@@ -76,10 +76,13 @@ test.describe("ARIA tabs accessibility", () => {
     await expect(signupTab).toHaveAttribute("tabindex", "-1");
 
     // Tabpanel points to the active tab
-    const panel = page.getByRole("tabpanel");
-    await expect(panel).toHaveAttribute("aria-labelledby", "login-tab");
-    await expect(panel).toHaveAttribute("id", "login-panel");
-    await expect(panel).toHaveAttribute("tabindex", "0");
+    const loginPanel = page.locator("#login-panel");
+    const signupPanel = page.locator("#signup-panel");
+    await expect(loginPanel).toHaveRole("tabpanel");
+    await expect(loginPanel).toHaveAttribute("aria-labelledby", "login-tab");
+    await expect(loginPanel).toHaveAttribute("tabindex", "0");
+    await expect(loginPanel).not.toHaveAttribute("hidden", "");
+    await expect(signupPanel).toHaveAttribute("hidden", "");
 
     // Switch to Sign Up
     await signupTab.click();
@@ -87,8 +90,8 @@ test.describe("ARIA tabs accessibility", () => {
     await expect(loginTab).toHaveAttribute("aria-selected", "false");
     await expect(signupTab).toHaveAttribute("tabindex", "0");
     await expect(loginTab).toHaveAttribute("tabindex", "-1");
-    await expect(panel).toHaveAttribute("aria-labelledby", "signup-tab");
-    await expect(panel).toHaveAttribute("id", "signup-panel");
+    await expect(signupPanel).not.toHaveAttribute("hidden", "");
+    await expect(loginPanel).toHaveAttribute("hidden", "");
   });
 
   test("arrow key navigation between tabs", async ({ page }) => {

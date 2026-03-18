@@ -153,18 +153,71 @@
         </button>
       </div>
 
-      <div id={isLogin ? 'login-panel' : 'signup-panel'} role="tabpanel" tabindex="0" aria-labelledby={isLogin ? 'login-tab' : 'signup-tab'}>
-      <form onsubmit={handleSubmit} class="space-y-4">
-        {#if !isLogin}
+      <div id="login-panel" role="tabpanel" tabindex="0" aria-labelledby="login-tab" hidden={!isLogin}>
+        <form onsubmit={handleSubmit} class="space-y-4">
           <div>
             <label
-              for="name"
+              for="login-email"
+              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+            >
+              Email
+            </label>
+            <input
+              id="login-email"
+              type="email"
+              bind:value={email}
+              autocomplete="email"
+              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              placeholder="you@example.com"
+              disabled={loading}
+            />
+          </div>
+
+          <div>
+            <label
+              for="login-password"
+              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+            >
+              Password
+            </label>
+            <input
+              id="login-password"
+              type="password"
+              bind:value={password}
+              autocomplete="current-password"
+              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              placeholder="••••••••"
+              disabled={loading}
+            />
+          </div>
+
+          {#if error}
+            <AlertBanner variant="error" testId="auth-error" role="alert"
+              >{error}</AlertBanner
+            >
+          {/if}
+
+          <button
+            type="submit"
+            disabled={loading}
+            class="w-full bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-accent-600/20 hover:shadow-lg hover:shadow-accent-600/30 active:scale-[0.98]"
+          >
+            {loading ? "Processing..." : "Sign In"}
+          </button>
+        </form>
+      </div>
+
+      <div id="signup-panel" role="tabpanel" tabindex="0" aria-labelledby="signup-tab" hidden={isLogin}>
+        <form onsubmit={handleSubmit} class="space-y-4">
+          <div>
+            <label
+              for="signup-name"
               class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
             >
               Name
             </label>
             <input
-              id="name"
+              id="signup-name"
               type="text"
               bind:value={name}
               autocomplete="name"
@@ -173,57 +226,57 @@
               disabled={loading}
             />
           </div>
-        {/if}
-        <div>
-          <label
-            for="email"
-            class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-          >
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            bind:value={email}
-            autocomplete="email"
-            class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
-            placeholder="you@example.com"
+
+          <div>
+            <label
+              for="signup-email"
+              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+            >
+              Email
+            </label>
+            <input
+              id="signup-email"
+              type="email"
+              bind:value={email}
+              autocomplete="email"
+              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              placeholder="you@example.com"
+              disabled={loading}
+            />
+          </div>
+
+          <div>
+            <label
+              for="signup-password"
+              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+            >
+              Password
+            </label>
+            <input
+              id="signup-password"
+              type="password"
+              bind:value={password}
+              autocomplete="new-password"
+              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              placeholder="••••••••"
+              disabled={loading}
+            />
+          </div>
+
+          {#if error}
+            <AlertBanner variant="error" testId="auth-error" role="alert"
+              >{error}</AlertBanner
+            >
+          {/if}
+
+          <button
+            type="submit"
             disabled={loading}
-          />
-        </div>
-
-        <div>
-          <label
-            for="password"
-            class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+            class="w-full bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-accent-600/20 hover:shadow-lg hover:shadow-accent-600/30 active:scale-[0.98]"
           >
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            bind:value={password}
-            autocomplete={isLogin ? "current-password" : "new-password"}
-            class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
-            placeholder="••••••••"
-            disabled={loading}
-          />
-        </div>
-
-        {#if error}
-          <AlertBanner variant="error" testId="auth-error" role="alert"
-            >{error}</AlertBanner
-          >
-        {/if}
-
-        <button
-          type="submit"
-          disabled={loading}
-          class="w-full bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-accent-600/20 hover:shadow-lg hover:shadow-accent-600/30 active:scale-[0.98]"
-        >
-          {loading ? "Processing..." : isLogin ? "Sign In" : "Create Account"}
-        </button>
-      </form>
+            {loading ? "Processing..." : "Create Account"}
+          </button>
+        </form>
       </div>
     </div>
   </div>

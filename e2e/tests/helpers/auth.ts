@@ -48,7 +48,7 @@ export async function openAuthPage(page: Page): Promise<void> {
 export async function openSignupForm(page: Page): Promise<void> {
   await openAuthPage(page);
   await page.getByRole("tab", { name: "Sign Up", exact: true }).click();
-  await page.waitForSelector("input#name");
+  await page.waitForSelector("input#signup-name");
   await page.waitForFunction(() => {
     const btn = document.querySelector('button[type="submit"]');
     return btn && btn.textContent?.trim() === "Create Account";
@@ -57,9 +57,9 @@ export async function openSignupForm(page: Page): Promise<void> {
 
 export async function signUp(page: Page, user: TestUser): Promise<void> {
   await openSignupForm(page);
-  await page.locator("input#name").fill(user.displayName);
-  await page.locator("input#email").fill(user.email);
-  await page.locator("input#password").fill(user.password);
+  await page.locator("input#signup-name").fill(user.displayName);
+  await page.locator("input#signup-email").fill(user.email);
+  await page.locator("input#signup-password").fill(user.password);
   await page.locator("button[type='submit']").click();
 
   await expect(page.getByText("Get started with Biblioteka")).toBeVisible();
@@ -69,8 +69,8 @@ export async function signOut(page: Page): Promise<void> {
   await page.locator("button#logout-button").click();
   await page.waitForSelector("button#login-tab");
   await page.locator("button#login-tab").click();
-  await page.waitForSelector("input#email");
-  await page.waitForSelector("input#password");
+  await page.waitForSelector("input#login-email");
+  await page.waitForSelector("input#login-password");
   await page.waitForFunction((tokenKey) => localStorage.getItem(tokenKey) === null, TOKEN_KEY);
   await expect(page.getByRole("tab", { name: "Login", exact: true })).toBeVisible();
 }
@@ -78,13 +78,13 @@ export async function signOut(page: Page): Promise<void> {
 export async function openLoginForm(page: Page): Promise<void> {
   await openAuthPage(page);
   await page.locator("button#login-tab").click();
-  await page.waitForSelector("input#email");
+  await page.waitForSelector("input#login-email");
 }
 
 // Callers assert the expected post-login outcome because some tests expect failure.
 // Expects the login form to already be visible (via openLoginForm or signOut).
 export async function signIn(page: Page, email: string, password: string): Promise<void> {
-  await page.locator("input#email").fill(email);
-  await page.locator("input#password").fill(password);
+  await page.locator("input#login-email").fill(email);
+  await page.locator("input#login-password").fill(password);
   await page.locator("button[type='submit']").click();
 }
