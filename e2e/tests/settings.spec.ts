@@ -30,11 +30,14 @@ test.describe("Account settings", () => {
     await page.getByRole("button", { name: "Update Password" }).click();
     await expect(page.getByText("New password must be at least 6 characters")).toBeVisible();
 
+    await page.locator("#current-password").fill(testUser.password);
     await page.locator("#new-password").fill(newPassword);
     await page.locator("#confirm-password").fill(`${newPassword}-mismatch`);
     await page.getByRole("button", { name: "Update Password" }).click();
     await expect(page.getByText("Passwords do not match")).toBeVisible();
 
+    await page.locator("#current-password").fill(testUser.password);
+    await page.locator("#new-password").fill(newPassword);
     await page.locator("#confirm-password").fill(newPassword);
     await page.getByRole("button", { name: "Update Password" }).click();
     await expect(page.getByText("Password updated successfully")).toBeVisible();
