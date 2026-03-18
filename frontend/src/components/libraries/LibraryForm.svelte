@@ -222,6 +222,7 @@
       <label class="relative inline-flex items-center gap-3 cursor-pointer">
         <input
           type="checkbox"
+          role="switch"
           bind:checked={formMonitored}
           class="sr-only peer"
           disabled={saving}
