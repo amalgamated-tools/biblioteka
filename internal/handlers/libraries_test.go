@@ -48,14 +48,14 @@ func setupLibraryHandler(t *testing.T) (*LibraryHandler, string, string) {
 
 	admin, err := d.CreateUser(context.Background(), "Admin", "admin@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create admin: %v", err)
+		failNowf(t, "create admin: %v", err)
 	}
 	if err := d.SetAdmin(context.Background(), admin.ID, true); err != nil {
-		t.Fatalf("set admin role: %v", err)
+		failNowf(t, "set admin role: %v", err)
 	}
 	regular, err := d.CreateUser(context.Background(), "Regular", "regular@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create regular user: %v", err)
+		failNowf(t, "create regular user: %v", err)
 	}
 	return h, admin.ID, regular.ID
 }
@@ -76,18 +76,18 @@ func TestCreateLibrary_ValidPath(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	var dto libraryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if dto.Name != "Books" {
-		t.Errorf("name = %q, want %q", dto.Name, "Books")
+		failf(t, "name = %q, want %q", dto.Name, "Books")
 	}
 	if len(dto.Paths) != 1 || dto.Paths[0] != dir {
-		t.Errorf("paths = %v, want [%s]", dto.Paths, dir)
+		failf(t, "paths = %v, want [%s]", dto.Paths, dir)
 	}
 }
 
@@ -106,15 +106,15 @@ func TestCreateLibrary_NonexistentPath(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 
 	var resp map[string]string
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if msg := resp["error"]; msg == "" {
-		t.Error("expected error message in response")
+		fail(t, "expected error message in response")
 	}
 }
 
@@ -124,7 +124,7 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "not-a-dir.txt")
 	if err := os.WriteFile(filePath, []byte("hello"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		failNowf(t, "write file: %v", err)
 	}
 
 	body, _ := json.Marshal(libraryRequest{
@@ -139,15 +139,15 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 
 	var resp map[string]string
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if msg := resp["error"]; msg != "path is not a folder: "+filePath {
-		t.Errorf("error = %q, want 'path is not a folder: %s'", msg, filePath)
+		failf(t, "error = %q, want 'path is not a folder: %s'", msg, filePath)
 	}
 }
 
@@ -167,7 +167,7 @@ func TestCreateLibrary_MixedValidAndInvalidPaths(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -189,21 +189,21 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	if len(mock.jobs) != 1 {
-		t.Fatalf("enqueued jobs = %d, want 1", len(mock.jobs))
+		failNowf(t, "enqueued jobs = %d, want 1", len(mock.jobs))
 	}
 	if mock.jobs[0].Name != jobs.JobScanLibrary {
-		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
+		failf(t, "job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
 	var p jobs.ScanLibraryPayload
 	if err := json.Unmarshal(mock.jobs[0].Payload, &p); err != nil {
-		t.Fatalf("unmarshal payload: %v", err)
+		failNowf(t, "unmarshal payload: %v", err)
 	}
 	if len(p.Paths) != 1 || p.Paths[0] != dir {
-		t.Errorf("job paths = %v, want [%s]", p.Paths, dir)
+		failf(t, "job paths = %v, want [%s]", p.Paths, dir)
 	}
 }
 
@@ -226,25 +226,25 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	if len(mock.jobs) != 1 {
-		t.Fatalf("enqueued jobs = %d, want 1", len(mock.jobs))
+		failNowf(t, "enqueued jobs = %d, want 1", len(mock.jobs))
 	}
 	if mock.jobs[0].Name != jobs.JobScanLibrary {
-		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
+		failf(t, "job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
 	var p jobs.ScanLibraryPayload
 	if err := json.Unmarshal(mock.jobs[0].Payload, &p); err != nil {
-		t.Fatalf("unmarshal payload: %v", err)
+		failNowf(t, "unmarshal payload: %v", err)
 	}
 	if len(p.Paths) != 2 {
-		t.Fatalf("job paths count = %d, want 2", len(p.Paths))
+		failNowf(t, "job paths count = %d, want 2", len(p.Paths))
 	}
 	for i, dir := range []string{dir1, dir2} {
 		if p.Paths[i] != dir {
-			t.Errorf("job paths[%d] = %q, want %q", i, p.Paths[i], dir)
+			failf(t, "job paths[%d] = %q, want %q", i, p.Paths[i], dir)
 		}
 	}
 }
@@ -267,7 +267,7 @@ func TestCreateLibrary_EnqueueErrorDoesNotFailRequest(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 }
 
@@ -288,7 +288,7 @@ func TestCreateLibrary_NilEnqueuerDoesNotPanic(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 }
 
@@ -303,20 +303,20 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "create library: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var lib libraryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		t.Fatalf("unmarshal library: %v", err)
+		failNowf(t, "unmarshal library: %v", err)
 	}
 
 	// Create a book and link it to the library.
 	book, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("create book: %v", err)
+		failNowf(t, "create book: %v", err)
 	}
 	if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
-		t.Fatalf("add book to library: %v", err)
+		failNowf(t, "add book to library: %v", err)
 	}
 
 	// List books for the library.
@@ -326,21 +326,21 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	h.HandleLibrary(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 
 	var resp bookListDTO
 	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal books: %v", err)
+		failNowf(t, "unmarshal books: %v", err)
 	}
 	if len(resp.Books) != 1 {
-		t.Fatalf("books count = %d, want 1", len(resp.Books))
+		failNowf(t, "books count = %d, want 1", len(resp.Books))
 	}
 	if resp.Books[0].Title != "The Gunslinger" {
-		t.Errorf("title = %q, want %q", resp.Books[0].Title, "The Gunslinger")
+		failf(t, "title = %q, want %q", resp.Books[0].Title, "The Gunslinger")
 	}
 	if resp.Total != 1 {
-		t.Errorf("total = %d, want 1", resp.Total)
+		failf(t, "total = %d, want 1", resp.Total)
 	}
 }
 
@@ -355,11 +355,11 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "create library: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var lib libraryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		t.Fatalf("unmarshal library: %v", err)
+		failNowf(t, "unmarshal library: %v", err)
 	}
 
 	// Create multiple books and link them to the library.
@@ -368,10 +368,10 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 		title := fmt.Sprintf("Book %d", i+1)
 		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
-			t.Fatalf("create book %d: %v", i+1, err)
+			failNowf(t, "create book %d: %v", i+1, err)
 		}
 		if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
-			t.Fatalf("add book %d to library: %v", i+1, err)
+			failNowf(t, "add book %d to library: %v", i+1, err)
 		}
 	}
 
@@ -382,19 +382,19 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 	h.HandleLibrary(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 
 	var resp bookListDTO
 	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal books: %v", err)
+		failNowf(t, "unmarshal books: %v", err)
 	}
 
 	if resp.Total != totalBooks {
-		t.Fatalf("total = %d, want %d", resp.Total, totalBooks)
+		failNowf(t, "total = %d, want %d", resp.Total, totalBooks)
 	}
 	if len(resp.Books) == 0 || len(resp.Books) > 2 {
-		t.Fatalf("books count = %d, want between 1 and 2", len(resp.Books))
+		failNowf(t, "books count = %d, want between 1 and 2", len(resp.Books))
 	}
 }
 
@@ -409,11 +409,11 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "create library: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var lib libraryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		t.Fatalf("unmarshal library: %v", err)
+		failNowf(t, "unmarshal library: %v", err)
 	}
 
 	// Create multiple books and link them to the library.
@@ -422,10 +422,10 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 		title := fmt.Sprintf("Invalid Book %d", i+1)
 		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
-			t.Fatalf("create book %d: %v", i+1, err)
+			failNowf(t, "create book %d: %v", i+1, err)
 		}
 		if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
-			t.Fatalf("add book %d to library: %v", i+1, err)
+			failNowf(t, "add book %d to library: %v", i+1, err)
 		}
 	}
 
@@ -436,19 +436,19 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 	h.HandleLibrary(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 
 	var resp bookListDTO
 	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal books: %v", err)
+		failNowf(t, "unmarshal books: %v", err)
 	}
 
 	if resp.Total != totalBooks {
-		t.Fatalf("total = %d, want %d", resp.Total, totalBooks)
+		failNowf(t, "total = %d, want %d", resp.Total, totalBooks)
 	}
 	if len(resp.Books) == 0 {
-		t.Fatalf("books count = %d, want > 0", len(resp.Books))
+		failNowf(t, "books count = %d, want > 0", len(resp.Books))
 	}
 }
 
@@ -463,11 +463,11 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "create library: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var lib libraryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		t.Fatalf("unmarshal library: %v", err)
+		failNowf(t, "unmarshal library: %v", err)
 	}
 
 	// Create several books and link them to the library.
@@ -476,10 +476,10 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 		title := fmt.Sprintf("Clamped Book %d", i+1)
 		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
-			t.Fatalf("create book %d: %v", i+1, err)
+			failNowf(t, "create book %d: %v", i+1, err)
 		}
 		if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
-			t.Fatalf("add book %d to library: %v", i+1, err)
+			failNowf(t, "add book %d to library: %v", i+1, err)
 		}
 	}
 
@@ -490,19 +490,19 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 	h.HandleLibrary(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 
 	var resp bookListDTO
 	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal books: %v", err)
+		failNowf(t, "unmarshal books: %v", err)
 	}
 
 	if resp.Total != totalBooks {
-		t.Fatalf("total = %d, want %d", resp.Total, totalBooks)
+		failNowf(t, "total = %d, want %d", resp.Total, totalBooks)
 	}
 	if len(resp.Books) != totalBooks {
-		t.Fatalf("books count = %d, want %d", len(resp.Books), totalBooks)
+		failNowf(t, "books count = %d, want %d", len(resp.Books), totalBooks)
 	}
 }
 
@@ -515,7 +515,7 @@ func TestListLibraryBooks_NotFound(t *testing.T) {
 	h.HandleLibrary(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
 	}
 }
 
@@ -530,11 +530,11 @@ func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "create library: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var lib libraryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		t.Fatalf("unmarshal library: %v", err)
+		failNowf(t, "unmarshal library: %v", err)
 	}
 
 	// POST to /books sub-resource should be method not allowed.
@@ -544,7 +544,7 @@ func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
 	h.HandleLibrary(w2, r2)
 
 	if w2.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusMethodNotAllowed, w2.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusMethodNotAllowed, w2.Body.String())
 	}
 }
 
@@ -563,12 +563,12 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failNowf(t, "setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	var created libraryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal created: %v", err)
+		failNowf(t, "unmarshal created: %v", err)
 	}
 
 	// Update with an invalid path.
@@ -583,7 +583,7 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 	h.HandleLibrary(w2, r2)
 
 	if w2.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusBadRequest, w2.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusBadRequest, w2.Body.String())
 	}
 }
 
@@ -604,12 +604,12 @@ func TestUpdateLibrary_ValidPath(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failNowf(t, "setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	var created libraryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 
 	// Update to dir2.
@@ -624,7 +624,7 @@ func TestUpdateLibrary_ValidPath(t *testing.T) {
 	h.HandleLibrary(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 }
 
@@ -644,7 +644,7 @@ func TestCreateLibrary_NonAdminForbidden(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
 	}
 }
 
@@ -659,11 +659,11 @@ func TestUpdateLibrary_NonAdminForbidden(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("setup: status = %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "setup: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var created libraryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 
 	// Attempt update as regular user.
@@ -675,7 +675,7 @@ func TestUpdateLibrary_NonAdminForbidden(t *testing.T) {
 	h.HandleLibrary(w2, r2)
 
 	if w2.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusForbidden, w2.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusForbidden, w2.Body.String())
 	}
 }
 
@@ -690,11 +690,11 @@ func TestDeleteLibrary_NonAdminForbidden(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("setup: status = %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "setup: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var created libraryDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 
 	// Attempt delete as regular user.
@@ -705,7 +705,7 @@ func TestDeleteLibrary_NonAdminForbidden(t *testing.T) {
 	h.HandleLibrary(w2, r2)
 
 	if w2.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusForbidden, w2.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusForbidden, w2.Body.String())
 	}
 }
 
@@ -719,6 +719,6 @@ func TestListLibraries_NonAdminAllowed(t *testing.T) {
 	h.HandleLibraries(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 }

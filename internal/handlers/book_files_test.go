@@ -14,7 +14,7 @@ func setupBookFileHandler(t *testing.T) (*BookFileHandler, string) {
 	h := &BookFileHandler{DB: d}
 	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create user: %v", err)
+		failNowf(t, "create user: %v", err)
 	}
 	return h, user.ID
 }
@@ -32,15 +32,15 @@ func TestGetBookFile_Handler(t *testing.T) {
 	h.HandleBookFile(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var dto bookFileDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if dto.FileName != "gunslinger.epub" {
-		t.Errorf("file_name = %q, want %q", dto.FileName, "gunslinger.epub")
+		failf(t, "file_name = %q, want %q", dto.FileName, "gunslinger.epub")
 	}
 }
 
@@ -54,7 +54,7 @@ func TestGetBookFile_NotFound(t *testing.T) {
 	h.HandleBookFile(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+		failf(t, "status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }
 
@@ -71,6 +71,6 @@ func TestDeleteBookFile_Handler(t *testing.T) {
 	h.HandleBookFile(w, r)
 
 	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
+		failf(t, "status = %d, want %d", w.Code, http.StatusNoContent)
 	}
 }

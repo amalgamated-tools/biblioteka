@@ -23,7 +23,7 @@ func newTestDB(t *testing.T) *db.DB {
 
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
-		t.Fatalf("newTestDB: open: %v", err)
+		failNowf(t, "newTestDB: open: %v", err)
 	}
 
 	if _, err := sqlDB.Exec(`
@@ -32,12 +32,12 @@ func newTestDB(t *testing.T) *db.DB {
 		PRAGMA foreign_keys = ON;
 	`); err != nil {
 		_ = sqlDB.Close()
-		t.Fatalf("newTestDB: pragmas: %v", err)
+		failNowf(t, "newTestDB: pragmas: %v", err)
 	}
 
 	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
 		_ = sqlDB.Close()
-		t.Fatalf("newTestDB: migrations: %v", err)
+		failNowf(t, "newTestDB: migrations: %v", err)
 	}
 
 	t.Cleanup(func() { _ = sqlDB.Close() })
@@ -48,7 +48,7 @@ func newTestJWT(t *testing.T) *auth.JWTManager {
 	t.Helper()
 	jm, err := auth.NewJWTManager("testsecret", time.Hour)
 	if err != nil {
-		t.Fatalf("newTestJWT: %v", err)
+		failNowf(t, "newTestJWT: %v", err)
 	}
 	return jm
 }
@@ -65,18 +65,18 @@ func TestHandleHealth_GET(t *testing.T) {
 	s.handleHealth(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
+		failNowf(t, "expected status 200, got %d", rec.Code)
 	}
 
 	var body healthResponse
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		failNowf(t, "decode body: %v", err)
 	}
 	if body.Status != "ok" {
-		t.Fatalf("expected status ok, got %q", body.Status)
+		failNowf(t, "expected status ok, got %q", body.Status)
 	}
 	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
-		t.Fatalf("expected Content-Type application/json, got %q", ct)
+		failNowf(t, "expected Content-Type application/json, got %q", ct)
 	}
 }
 
@@ -88,7 +88,7 @@ func TestHandleHealth_HEAD(t *testing.T) {
 	s.handleHealth(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
+		failNowf(t, "expected status 200, got %d", rec.Code)
 	}
 }
 
@@ -100,20 +100,20 @@ func TestHandleHealth_POST(t *testing.T) {
 	s.handleHealth(rec, req)
 
 	if rec.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("expected status 405, got %d", rec.Code)
+		failNowf(t, "expected status 405, got %d", rec.Code)
 	}
 
 	allow := rec.Header().Get("Allow")
 	if allow == "" {
-		t.Fatal("expected Allow header to be set")
+		failNow(t, "expected Allow header to be set")
 	}
 
 	var body map[string]string
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		failNowf(t, "decode body: %v", err)
 	}
 	if body["error"] != "method not allowed" {
-		t.Fatalf("expected error 'method not allowed', got %q", body["error"])
+		failNowf(t, "expected error 'method not allowed', got %q", body["error"])
 	}
 }
 
@@ -129,18 +129,18 @@ func TestHandleVersion_GET(t *testing.T) {
 	s.handleVersion(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
+		failNowf(t, "expected status 200, got %d", rec.Code)
 	}
 
 	var body versionResponse
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		failNowf(t, "decode body: %v", err)
 	}
 	if body.Version != "1.2.3" {
-		t.Fatalf("expected version 1.2.3, got %q", body.Version)
+		failNowf(t, "expected version 1.2.3, got %q", body.Version)
 	}
 	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
-		t.Fatalf("expected Content-Type application/json, got %q", ct)
+		failNowf(t, "expected Content-Type application/json, got %q", ct)
 	}
 }
 
@@ -152,7 +152,7 @@ func TestHandleVersion_HEAD(t *testing.T) {
 	s.handleVersion(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
+		failNowf(t, "expected status 200, got %d", rec.Code)
 	}
 }
 
@@ -164,20 +164,20 @@ func TestHandleVersion_POST(t *testing.T) {
 	s.handleVersion(rec, req)
 
 	if rec.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("expected status 405, got %d", rec.Code)
+		failNowf(t, "expected status 405, got %d", rec.Code)
 	}
 
 	allow := rec.Header().Get("Allow")
 	if allow == "" {
-		t.Fatal("expected Allow header to be set")
+		failNow(t, "expected Allow header to be set")
 	}
 
 	var body map[string]string
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		failNowf(t, "decode body: %v", err)
 	}
 	if body["error"] != "method not allowed" {
-		t.Fatalf("expected error 'method not allowed', got %q", body["error"])
+		failNowf(t, "expected error 'method not allowed', got %q", body["error"])
 	}
 }
 
@@ -189,15 +189,15 @@ func TestHandleVersion_EmptyVersion(t *testing.T) {
 	s.handleVersion(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
+		failNowf(t, "expected status 200, got %d", rec.Code)
 	}
 
 	var body versionResponse
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		failNowf(t, "decode body: %v", err)
 	}
 	if body.Version != "" {
-		t.Fatalf("expected empty version, got %q", body.Version)
+		failNowf(t, "expected empty version, got %q", body.Version)
 	}
 }
 
@@ -213,15 +213,15 @@ func TestHandleOIDCEnabled_NotConfigured(t *testing.T) {
 	s.handleOIDCEnabled(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
+		failNowf(t, "expected status 200, got %d", rec.Code)
 	}
 
 	var body oidcEnabledResponse
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		failNowf(t, "decode body: %v", err)
 	}
 	if body.Enabled {
-		t.Fatal("expected enabled=false when oidcHandler is nil")
+		failNow(t, "expected enabled=false when oidcHandler is nil")
 	}
 }
 
@@ -235,15 +235,15 @@ func TestHandleOIDCEnabled_Configured(t *testing.T) {
 	s.handleOIDCEnabled(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
+		failNowf(t, "expected status 200, got %d", rec.Code)
 	}
 
 	var body oidcEnabledResponse
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		failNowf(t, "decode body: %v", err)
 	}
 	if !body.Enabled {
-		t.Fatal("expected enabled=true when oidcHandler is non-nil")
+		failNow(t, "expected enabled=true when oidcHandler is non-nil")
 	}
 }
 
@@ -255,20 +255,20 @@ func TestHandleOIDCEnabled_MethodNotAllowed(t *testing.T) {
 	s.handleOIDCEnabled(rec, req)
 
 	if rec.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("expected status 405, got %d", rec.Code)
+		failNowf(t, "expected status 405, got %d", rec.Code)
 	}
 
 	allow := rec.Header().Get("Allow")
 	if allow == "" {
-		t.Fatal("expected Allow header to be set")
+		failNow(t, "expected Allow header to be set")
 	}
 
 	var body map[string]string
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		failNowf(t, "decode body: %v", err)
 	}
 	if body["error"] != "method not allowed" {
-		t.Fatalf("expected error 'method not allowed', got %q", body["error"])
+		failNowf(t, "expected error 'method not allowed', got %q", body["error"])
 	}
 }
 
@@ -288,7 +288,7 @@ func TestSwaggerSecurityHeaders_SetsHeaders(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
+		failNowf(t, "expected status 200, got %d", rec.Code)
 	}
 
 	checks := map[string]string{
@@ -299,7 +299,7 @@ func TestSwaggerSecurityHeaders_SetsHeaders(t *testing.T) {
 	for header, want := range checks {
 		got := rec.Header().Get(header)
 		if got != want {
-			t.Errorf("header %s: expected %q, got %q", header, want, got)
+			failf(t, "header %s: expected %q, got %q", header, want, got)
 		}
 	}
 }
@@ -318,11 +318,11 @@ func TestSwaggerSecurityHeaders_CrossOrigin(t *testing.T) {
 
 	vary := rec.Header().Get("Vary")
 	if vary != "Origin" {
-		t.Errorf("expected Vary: Origin, got %q", vary)
+		failf(t, "expected Vary: Origin, got %q", vary)
 	}
 
 	if acao := rec.Header().Get("Access-Control-Allow-Origin"); acao != "" {
-		t.Errorf("expected no Access-Control-Allow-Origin header, got %q", acao)
+		failf(t, "expected no Access-Control-Allow-Origin header, got %q", acao)
 	}
 }
 
@@ -340,19 +340,19 @@ func TestOIDCRoute_NotConfigured(t *testing.T) {
 	handler(rec, req)
 
 	if rec.Code != http.StatusNotFound {
-		t.Fatalf("expected status 404, got %d", rec.Code)
+		failNowf(t, "expected status 404, got %d", rec.Code)
 	}
 
 	var body map[string]string
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		failNowf(t, "decode body: %v", err)
 	}
 	if body["error"] != "OIDC not configured" {
-		t.Fatalf("expected error 'OIDC not configured', got %q", body["error"])
+		failNowf(t, "expected error 'OIDC not configured', got %q", body["error"])
 	}
 
 	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
-		t.Fatalf("expected Content-Type application/json, got %q", ct)
+		failNowf(t, "expected Content-Type application/json, got %q", ct)
 	}
 }
 
@@ -374,10 +374,10 @@ func TestOIDCRoute_Configured(t *testing.T) {
 	handler(rec, req)
 
 	if !called {
-		t.Fatal("expected the OIDC handler function to be called")
+		failNow(t, "expected the OIDC handler function to be called")
 	}
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
+		failNowf(t, "expected status 200, got %d", rec.Code)
 	}
 }
 
@@ -391,14 +391,14 @@ func TestNewServer_DefaultPort(t *testing.T) {
 
 	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm))
 	if err != nil {
-		t.Fatalf("NewServer: %v", err)
+		failNowf(t, "NewServer: %v", err)
 	}
 
 	if s.port != 8080 {
-		t.Fatalf("expected default port 8080, got %d", s.port)
+		failNowf(t, "expected default port 8080, got %d", s.port)
 	}
 	if s.Address != "0.0.0.0:8080" {
-		t.Fatalf("expected address 0.0.0.0:8080, got %s", s.Address)
+		failNowf(t, "expected address 0.0.0.0:8080, got %s", s.Address)
 	}
 }
 
@@ -408,14 +408,14 @@ func TestNewServer_WithPort(t *testing.T) {
 
 	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm), WithPort(9090))
 	if err != nil {
-		t.Fatalf("NewServer: %v", err)
+		failNowf(t, "NewServer: %v", err)
 	}
 
 	if s.port != 9090 {
-		t.Fatalf("expected port 9090, got %d", s.port)
+		failNowf(t, "expected port 9090, got %d", s.port)
 	}
 	if s.Address != "0.0.0.0:9090" {
-		t.Fatalf("expected address 0.0.0.0:9090, got %s", s.Address)
+		failNowf(t, "expected address 0.0.0.0:9090, got %s", s.Address)
 	}
 }
 
@@ -425,11 +425,11 @@ func TestNewServer_WithDB(t *testing.T) {
 
 	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm))
 	if err != nil {
-		t.Fatalf("NewServer: %v", err)
+		failNowf(t, "NewServer: %v", err)
 	}
 
 	if s.DB != d {
-		t.Fatal("expected DB to be the injected test database")
+		failNow(t, "expected DB to be the injected test database")
 	}
 }
 
@@ -439,10 +439,10 @@ func TestNewServer_WithJWTManager(t *testing.T) {
 
 	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm))
 	if err != nil {
-		t.Fatalf("NewServer: %v", err)
+		failNowf(t, "NewServer: %v", err)
 	}
 
 	if s.JWT != jm {
-		t.Fatal("expected JWT to be the injected test JWT manager")
+		failNow(t, "expected JWT to be the injected test JWT manager")
 	}
 }

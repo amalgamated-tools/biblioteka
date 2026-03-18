@@ -19,11 +19,11 @@ func setupAuditLogHandler(t *testing.T) (*AuditLogHandler, string, string) {
 
 	admin, err := d.CreateUser(context.Background(), "Admin", "admin@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create admin: %v", err)
+		failNowf(t, "create admin: %v", err)
 	}
 	regular, err := d.CreateUser(context.Background(), "Regular", "regular@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create regular user: %v", err)
+		failNowf(t, "create regular user: %v", err)
 	}
 	return h, admin.ID, regular.ID
 }
@@ -34,10 +34,10 @@ func TestHandleAuditLogs_AdminSuccess(t *testing.T) {
 	// Seed a couple of audit log entries.
 	ctx := context.Background()
 	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-1", nil); err != nil {
-		t.Fatalf("create audit log: %v", err)
+		failNowf(t, "create audit log: %v", err)
 	}
 	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionLibraryCreated, "library", "lib-1", nil); err != nil {
-		t.Fatalf("create audit log: %v", err)
+		failNowf(t, "create audit log: %v", err)
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs", nil)
@@ -47,19 +47,19 @@ func TestHandleAuditLogs_AdminSuccess(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	// CreateUser itself may generate audit entries; just verify we got at least 2 from our inserts.
 	if len(resp.Entries) < 2 {
-		t.Errorf("expected at least 2 entries, got %d", len(resp.Entries))
+		failf(t, "expected at least 2 entries, got %d", len(resp.Entries))
 	}
 	if resp.Total < 2 {
-		t.Errorf("expected total >= 2, got %d", resp.Total)
+		failf(t, "expected total >= 2, got %d", resp.Total)
 	}
 }
 
@@ -73,7 +73,7 @@ func TestHandleAuditLogs_NonAdminForbidden(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
 	}
 }
 
@@ -87,7 +87,7 @@ func TestHandleAuditLogs_MethodNotAllowed(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -101,18 +101,18 @@ func TestHandleAuditLogs_DefaultPagination(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Limit != 50 {
-		t.Errorf("limit = %d, want 50", resp.Limit)
+		failf(t, "limit = %d, want 50", resp.Limit)
 	}
 	if resp.Offset != 0 {
-		t.Errorf("offset = %d, want 0", resp.Offset)
+		failf(t, "offset = %d, want 0", resp.Offset)
 	}
 }
 
@@ -126,18 +126,18 @@ func TestHandleAuditLogs_CustomPagination(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Limit != 10 {
-		t.Errorf("limit = %d, want 10", resp.Limit)
+		failf(t, "limit = %d, want 10", resp.Limit)
 	}
 	if resp.Offset != 5 {
-		t.Errorf("offset = %d, want 5", resp.Offset)
+		failf(t, "offset = %d, want 5", resp.Offset)
 	}
 }
 
@@ -151,15 +151,15 @@ func TestHandleAuditLogs_LimitCappedAtMax(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Limit != 200 {
-		t.Errorf("limit = %d, want 200 (max)", resp.Limit)
+		failf(t, "limit = %d, want 200 (max)", resp.Limit)
 	}
 }
 
@@ -173,7 +173,7 @@ func TestHandleAuditLogs_InvalidLimit(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -187,7 +187,7 @@ func TestHandleAuditLogs_InvalidOffset(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -201,7 +201,7 @@ func TestHandleAuditLogs_NegativeOffset(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -217,15 +217,15 @@ func TestHandleAuditLogs_EmptyList(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if len(resp.Entries) != 0 {
-		t.Errorf("expected 0 entries, got %d", len(resp.Entries))
+		failf(t, "expected 0 entries, got %d", len(resp.Entries))
 	}
 }
 
@@ -235,7 +235,7 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 	meta := map[string]any{"title": "Go Programming", "isbn": "978-0-123"}
 	ctx := context.Background()
 	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-meta-1", meta); err != nil {
-		t.Fatalf("create audit log with metadata: %v", err)
+		failNowf(t, "create audit log with metadata: %v", err)
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs", nil)
@@ -245,12 +245,12 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 
 	// Find the entry we inserted with metadata.
@@ -259,23 +259,23 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 		if e.EntityID == "book-meta-1" {
 			found = true
 			if e.Metadata == nil {
-				t.Fatal("expected metadata to be non-nil")
+				failNow(t, "expected metadata to be non-nil")
 			}
 			var m map[string]any
 			if err := json.Unmarshal(e.Metadata, &m); err != nil {
-				t.Fatalf("unmarshal metadata: %v", err)
+				failNowf(t, "unmarshal metadata: %v", err)
 			}
 			if m["title"] != "Go Programming" {
-				t.Errorf("metadata title = %v, want %q", m["title"], "Go Programming")
+				failf(t, "metadata title = %v, want %q", m["title"], "Go Programming")
 			}
 			if m["isbn"] != "978-0-123" {
-				t.Errorf("metadata isbn = %v, want %q", m["isbn"], "978-0-123")
+				failf(t, "metadata isbn = %v, want %q", m["isbn"], "978-0-123")
 			}
 			break
 		}
 	}
 	if !found {
-		t.Error("audit log entry with entity_id=book-meta-1 not found")
+		fail(t, "audit log entry with entity_id=book-meta-1 not found")
 	}
 }
 
@@ -292,10 +292,10 @@ func TestToAuditLogDTO_NilMetadata(t *testing.T) {
 	dto := toAuditLogDTO(entry)
 
 	if dto.ID != "log-1" {
-		t.Errorf("ID = %q, want %q", dto.ID, "log-1")
+		failf(t, "ID = %q, want %q", dto.ID, "log-1")
 	}
 	if dto.Metadata != nil {
-		t.Errorf("Metadata = %s, want nil", string(dto.Metadata))
+		failf(t, "Metadata = %s, want nil", string(dto.Metadata))
 	}
 }
 
@@ -313,7 +313,7 @@ func TestToAuditLogDTO_EmptyMetadata(t *testing.T) {
 	dto := toAuditLogDTO(entry)
 
 	if dto.Metadata != nil {
-		t.Errorf("Metadata = %s, want nil for empty string", string(dto.Metadata))
+		failf(t, "Metadata = %s, want nil for empty string", string(dto.Metadata))
 	}
 }
 
@@ -331,27 +331,27 @@ func TestToAuditLogDTO_ValidMetadata(t *testing.T) {
 	dto := toAuditLogDTO(entry)
 
 	if dto.Metadata == nil {
-		t.Fatal("Metadata should not be nil")
+		failNow(t, "Metadata should not be nil")
 	}
 
 	var m map[string]any
 	if err := json.Unmarshal(dto.Metadata, &m); err != nil {
-		t.Fatalf("unmarshal metadata: %v", err)
+		failNowf(t, "unmarshal metadata: %v", err)
 	}
 	if m["title"] != "Test Book" {
-		t.Errorf("metadata title = %v, want %q", m["title"], "Test Book")
+		failf(t, "metadata title = %v, want %q", m["title"], "Test Book")
 	}
 	if m["pages"] != float64(42) {
-		t.Errorf("metadata pages = %v, want 42", m["pages"])
+		failf(t, "metadata pages = %v, want 42", m["pages"])
 	}
 	if dto.Action != db.AuditActionBookCreated {
-		t.Errorf("Action = %q, want %q", dto.Action, db.AuditActionBookCreated)
+		failf(t, "Action = %q, want %q", dto.Action, db.AuditActionBookCreated)
 	}
 	if dto.EntityType != "book" {
-		t.Errorf("EntityType = %q, want %q", dto.EntityType, "book")
+		failf(t, "EntityType = %q, want %q", dto.EntityType, "book")
 	}
 	if dto.EntityID != "book-3" {
-		t.Errorf("EntityID = %q, want %q", dto.EntityID, "book-3")
+		failf(t, "EntityID = %q, want %q", dto.EntityID, "book-3")
 	}
 }
 

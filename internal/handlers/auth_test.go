@@ -19,11 +19,11 @@ func newTestDB(t *testing.T) *db.DB {
 	t.Helper()
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
-		t.Fatalf("newTestDB: open: %v", err)
+		failNowf(t, "newTestDB: open: %v", err)
 	}
 	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
 		_ = sqlDB.Close()
-		t.Fatalf("newTestDB: migrations: %v", err)
+		failNowf(t, "newTestDB: migrations: %v", err)
 	}
 	t.Cleanup(func() { _ = sqlDB.Close() })
 	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
@@ -33,7 +33,7 @@ func newTestJWT(t *testing.T) *auth.JWTManager {
 	t.Helper()
 	jm, err := auth.NewJWTManager("testsecret", time.Hour)
 	if err != nil {
-		t.Fatalf("newTestJWT: %v", err)
+		failNowf(t, "newTestJWT: %v", err)
 	}
 	return jm
 }
@@ -56,17 +56,17 @@ func TestSignup_Success(t *testing.T) {
 	h.Signup(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 	var resp authResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Token == "" {
-		t.Error("expected non-empty token")
+		fail(t, "expected non-empty token")
 	}
 	if resp.User.Email != "alice@example.com" {
-		t.Errorf("email = %q, want %q", resp.User.Email, "alice@example.com")
+		failf(t, "email = %q, want %q", resp.User.Email, "alice@example.com")
 	}
 }
 
@@ -88,7 +88,7 @@ func TestSignup_MissingFields(t *testing.T) {
 			w := httptest.NewRecorder()
 			h.Signup(w, r)
 			if w.Code != http.StatusBadRequest {
-				t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+				failf(t, "status = %d, want %d", w.Code, http.StatusBadRequest)
 			}
 		})
 	}
@@ -105,7 +105,7 @@ func TestSignup_ShortPassword(t *testing.T) {
 	h.Signup(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+		failf(t, "status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
 
@@ -119,7 +119,7 @@ func TestSignup_DuplicateEmail(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("first signup failed: %s", w.Body.String())
+		failNowf(t, "first signup failed: %s", w.Body.String())
 	}
 
 	// Second signup with same email should fail
@@ -127,7 +127,7 @@ func TestSignup_DuplicateEmail(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.Signup(w2, r2)
 	if w2.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusConflict)
+		failf(t, "status = %d, want %d", w2.Code, http.StatusConflict)
 	}
 }
 
@@ -140,7 +140,7 @@ func TestSignup_InvalidBody(t *testing.T) {
 	h.Signup(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+		failf(t, "status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
 
@@ -153,7 +153,7 @@ func TestSignup_MethodNotAllowed(t *testing.T) {
 	h.Signup(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -166,7 +166,7 @@ func TestLogin_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("signup failed: %s", w.Body.String())
+		failNowf(t, "signup failed: %s", w.Body.String())
 	}
 
 	loginBody := `{"email":"bob@example.com","password":"secret123"}`
@@ -175,14 +175,14 @@ func TestLogin_Success(t *testing.T) {
 	h.Login(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 	var resp authResponse
 	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Token == "" {
-		t.Error("expected non-empty token")
+		fail(t, "expected non-empty token")
 	}
 }
 
@@ -201,7 +201,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 	h.Login(w2, r2)
 
 	if w2.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusUnauthorized)
+		failf(t, "status = %d, want %d", w2.Code, http.StatusUnauthorized)
 	}
 }
 
@@ -215,7 +215,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 	h.Login(w, r)
 
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+		failf(t, "status = %d, want %d", w.Code, http.StatusUnauthorized)
 	}
 }
 
@@ -229,7 +229,7 @@ func TestLogin_MissingFields(t *testing.T) {
 	h.Login(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+		failf(t, "status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
 
@@ -242,7 +242,7 @@ func TestLogin_MethodNotAllowed(t *testing.T) {
 	h.Login(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -264,14 +264,14 @@ func TestMe_Success(t *testing.T) {
 	h.Me(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 	var resp userDTO
 	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Email != "dave@example.com" {
-		t.Errorf("email = %q, want %q", resp.Email, "dave@example.com")
+		failf(t, "email = %q, want %q", resp.Email, "dave@example.com")
 	}
 }
 
@@ -285,7 +285,7 @@ func TestMe_UserNotFound(t *testing.T) {
 	h.Me(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+		failf(t, "status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }
 
@@ -298,7 +298,7 @@ func TestMe_MethodNotAllowed(t *testing.T) {
 	h.Me(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -322,7 +322,7 @@ func TestChangePassword_Success(t *testing.T) {
 	h.ChangePassword(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 
 	// Verify new password works at login
@@ -331,7 +331,7 @@ func TestChangePassword_Success(t *testing.T) {
 	w3 := httptest.NewRecorder()
 	h.Login(w3, r3)
 	if w3.Code != http.StatusOK {
-		t.Errorf("login with new password: status = %d, want %d", w3.Code, http.StatusOK)
+		failf(t, "login with new password: status = %d, want %d", w3.Code, http.StatusOK)
 	}
 }
 
@@ -353,7 +353,7 @@ func TestChangePassword_WrongCurrentPassword(t *testing.T) {
 	h.ChangePassword(w2, r2)
 
 	if w2.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusUnauthorized)
+		failf(t, "status = %d, want %d", w2.Code, http.StatusUnauthorized)
 	}
 }
 
@@ -375,7 +375,7 @@ func TestChangePassword_ShortNewPassword(t *testing.T) {
 	h.ChangePassword(w2, r2)
 
 	if w2.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusBadRequest)
+		failf(t, "status = %d, want %d", w2.Code, http.StatusBadRequest)
 	}
 }
 
@@ -397,7 +397,7 @@ func TestChangePassword_MissingFields(t *testing.T) {
 	h.ChangePassword(w2, r2)
 
 	if w2.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusBadRequest)
+		failf(t, "status = %d, want %d", w2.Code, http.StatusBadRequest)
 	}
 }
 
@@ -410,7 +410,7 @@ func TestChangePassword_MethodNotAllowed(t *testing.T) {
 	h.ChangePassword(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -429,19 +429,19 @@ func assertAuthCookie(t *testing.T, w *httptest.ResponseRecorder, wantValue bool
 		}
 	}
 	if found == nil {
-		t.Fatal("expected Set-Cookie header for auth cookie, but none found")
+		failNow(t, "expected Set-Cookie header for auth cookie, but none found")
 	}
 	if wantValue && found.Value == "" {
-		t.Error("expected non-empty cookie value")
+		fail(t, "expected non-empty cookie value")
 	}
 	if found.HttpOnly != true {
-		t.Error("expected HttpOnly to be true")
+		fail(t, "expected HttpOnly to be true")
 	}
 	if found.SameSite != http.SameSiteStrictMode {
-		t.Errorf("SameSite = %v, want StrictMode", found.SameSite)
+		failf(t, "SameSite = %v, want StrictMode", found.SameSite)
 	}
 	if found.Path != "/" {
-		t.Errorf("Path = %q, want %q", found.Path, "/")
+		failf(t, "Path = %q, want %q", found.Path, "/")
 	}
 }
 
@@ -457,7 +457,7 @@ func TestSignup_SetsCookie(t *testing.T) {
 	h.Signup(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 	assertAuthCookie(t, w, true)
 }
@@ -472,7 +472,7 @@ func TestLogin_SetsCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("signup failed: %s", w.Body.String())
+		failNowf(t, "signup failed: %s", w.Body.String())
 	}
 
 	loginBody := `{"email":"cookielogin@example.com","password":"secret123"}`
@@ -481,7 +481,7 @@ func TestLogin_SetsCookie(t *testing.T) {
 	h.Login(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 	assertAuthCookie(t, w2, true)
 }
@@ -496,7 +496,7 @@ func TestLogout_ClearsCookie(t *testing.T) {
 	h.Logout(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	cookies := w.Result().Cookies()
@@ -508,13 +508,13 @@ func TestLogout_ClearsCookie(t *testing.T) {
 		}
 	}
 	if found == nil {
-		t.Fatal("expected Set-Cookie header for auth cookie on logout, but none found")
+		failNow(t, "expected Set-Cookie header for auth cookie on logout, but none found")
 	}
 	if found.MaxAge != -1 {
-		t.Errorf("MaxAge = %d, want -1 (cookie deletion)", found.MaxAge)
+		failf(t, "MaxAge = %d, want -1 (cookie deletion)", found.MaxAge)
 	}
 	if found.Value != "" {
-		t.Errorf("cookie value = %q, want empty", found.Value)
+		failf(t, "cookie value = %q, want empty", found.Value)
 	}
 }
 
@@ -527,7 +527,7 @@ func TestLogout_MethodNotAllowed(t *testing.T) {
 	h.Logout(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -543,6 +543,6 @@ func TestMe_EmptyUserID(t *testing.T) {
 
 	// GetUserByID("") returns sql.ErrNoRows which the handler maps to 404.
 	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+		failf(t, "status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }

@@ -12,12 +12,12 @@ func newTestDB(t *testing.T) *DB {
 
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
-		t.Fatalf("newTestDB: open: %v", err)
+		failNowf(t, "newTestDB: open: %v", err)
 	}
 
 	if err := sqlDB.Ping(); err != nil {
 		_ = sqlDB.Close()
-		t.Fatalf("newTestDB: ping: %v", err)
+		failNowf(t, "newTestDB: ping: %v", err)
 	}
 
 	if _, err := sqlDB.Exec(`
@@ -26,14 +26,14 @@ func newTestDB(t *testing.T) *DB {
 		PRAGMA foreign_keys = ON;
 	`); err != nil {
 		_ = sqlDB.Close()
-		t.Fatalf("newTestDB: pragmas: %v", err)
+		failNowf(t, "newTestDB: pragmas: %v", err)
 	}
 
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
 
 	if err := runMigrations(t.Context(), d); err != nil {
 		_ = sqlDB.Close()
-		t.Fatalf("newTestDB: migrations: %v", err)
+		failNowf(t, "newTestDB: migrations: %v", err)
 	}
 
 	t.Cleanup(func() { _ = sqlDB.Close() })

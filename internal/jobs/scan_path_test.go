@@ -54,34 +54,34 @@ func TestScanPathHandler(t *testing.T) {
 
 	for name := range testFiles {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte("test content"), 0o644); err != nil {
-			t.Fatalf("write file %s: %v", name, err)
+			failNowf(t, "write file %s: %v", name, err)
 		}
 	}
 
 	// Create a subdirectory with another book
 	subdir := filepath.Join(dir, "subdir")
 	if err := os.MkdirAll(subdir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+		failNowf(t, "mkdir: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(subdir, "Nested.pdf"), []byte("nested content"), 0o644); err != nil {
-		t.Fatalf("write nested file: %v", err)
+		failNowf(t, "write nested file: %v", err)
 	}
 
 	// Run the handler
 	handler := NewScanPathHandler(mock)
 	payload, err := json.Marshal(ScanPathPayload{Path: dir})
 	if err != nil {
-		t.Fatalf("marshal payload: %v", err)
+		failNowf(t, "marshal payload: %v", err)
 	}
 
 	if err := handler(context.Background(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
+		failNowf(t, "handler: %v", err)
 	}
 
 	// 6 matching files: My Book.epub, Another Book.mobi, Third Book.pdf, Kindle Book.azw3, UPPERCASE.EPUB, MixedCase.Mobi
 	// Plus 1 nested: Nested.pdf = 7 total
 	if got := len(mock.jobs); got != 7 {
-		t.Errorf("expected 7 enqueued jobs, got %d", got)
+		failf(t, "expected 7 enqueued jobs, got %d", got)
 		for _, j := range mock.jobs {
 			t.Logf("  job: %s %s", j.Name, j.Payload.FileName)
 		}
@@ -90,13 +90,13 @@ func TestScanPathHandler(t *testing.T) {
 	// Verify all enqueued jobs target the process:file job
 	for _, j := range mock.jobs {
 		if j.Name != JobProcessFile {
-			t.Errorf("expected job name %q, got %q", JobProcessFile, j.Name)
+			failf(t, "expected job name %q, got %q", JobProcessFile, j.Name)
 		}
 		if j.Payload.Path == "" {
-			t.Error("enqueued job has empty path")
+			fail(t, "enqueued job has empty path")
 		}
 		if j.Payload.FileType == "" {
-			t.Error("enqueued job has empty file type")
+			fail(t, "enqueued job has empty file type")
 		}
 	}
 }
@@ -108,7 +108,7 @@ func TestScanPathHandler_EmptyPath(t *testing.T) {
 	payload, _ := json.Marshal(ScanPathPayload{Path: ""})
 	err := handler(context.Background(), payload)
 	if err == nil {
-		t.Fatal("expected error for empty path")
+		failNow(t, "expected error for empty path")
 	}
 }
 
@@ -119,7 +119,7 @@ func TestScanPathHandler_NonexistentPath(t *testing.T) {
 	payload, _ := json.Marshal(ScanPathPayload{Path: "/nonexistent/path/that/does/not/exist"})
 	err := handler(context.Background(), payload)
 	if err == nil {
-		t.Fatal("expected error for nonexistent path")
+		failNow(t, "expected error for nonexistent path")
 	}
 }
 
@@ -131,10 +131,10 @@ func TestScanPathHandler_EmptyDirectory(t *testing.T) {
 	payload, _ := json.Marshal(ScanPathPayload{Path: dir})
 
 	if err := handler(context.Background(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
+		failNowf(t, "handler: %v", err)
 	}
 
 	if len(mock.jobs) != 0 {
-		t.Errorf("expected 0 enqueued jobs, got %d", len(mock.jobs))
+		failf(t, "expected 0 enqueued jobs, got %d", len(mock.jobs))
 	}
 }

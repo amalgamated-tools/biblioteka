@@ -16,7 +16,7 @@ func setupOPDSCredentialHandler(t *testing.T) (*OPDSCredentialHandler, string) {
 
 	user, err := d.CreateUser(context.Background(), "TestUser", "test@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create user: %v", err)
+		failNowf(t, "create user: %v", err)
 	}
 	return h, user.ID
 }
@@ -31,7 +31,7 @@ func TestOPDSCredentials_MethodNotAllowed(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -45,7 +45,7 @@ func TestOPDSCredentials_GetNotFound(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
 	}
 }
 
@@ -60,14 +60,14 @@ func TestOPDSCredentials_PutSuccess(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp opdsCredentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Username != "myreader" {
-		t.Errorf("username = %q, want %q", resp.Username, "myreader")
+		failf(t, "username = %q, want %q", resp.Username, "myreader")
 	}
 }
 
@@ -82,7 +82,7 @@ func TestOPDSCredentials_GetAfterPut(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failNowf(t, "PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	// Now GET them.
@@ -92,14 +92,14 @@ func TestOPDSCredentials_GetAfterPut(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("GET status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "GET status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp opdsCredentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Username != "myreader" {
-		t.Errorf("username = %q, want %q", resp.Username, "myreader")
+		failf(t, "username = %q, want %q", resp.Username, "myreader")
 	}
 }
 
@@ -114,7 +114,7 @@ func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("first PUT status = %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "first PUT status = %d; body: %s", w.Code, w.Body.String())
 	}
 
 	// Update with new username.
@@ -125,14 +125,14 @@ func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("second PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "second PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp opdsCredentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Username != "newname" {
-		t.Errorf("username = %q, want %q", resp.Username, "newname")
+		failf(t, "username = %q, want %q", resp.Username, "newname")
 	}
 }
 
@@ -147,7 +147,7 @@ func TestOPDSCredentials_PutEmptyUsername(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -162,7 +162,7 @@ func TestOPDSCredentials_PutShortPassword(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -176,7 +176,7 @@ func TestOPDSCredentials_PutInvalidJSON(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -191,14 +191,14 @@ func TestOPDSCredentials_PutUsernameLowercased(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp opdsCredentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Username != "myreader" {
-		t.Errorf("username = %q, want %q (should be lowercased)", resp.Username, "myreader")
+		failf(t, "username = %q, want %q (should be lowercased)", resp.Username, "myreader")
 	}
 }
 
@@ -209,11 +209,11 @@ func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
 	ctx := context.Background()
 	user1, err := d.CreateUser(ctx, "User1", "user1@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create user1: %v", err)
+		failNowf(t, "create user1: %v", err)
 	}
 	user2, err := d.CreateUser(ctx, "User2", "user2@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create user2: %v", err)
+		failNowf(t, "create user2: %v", err)
 	}
 
 	// User1 creates credentials with username "reader".
@@ -224,7 +224,7 @@ func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("user1 PUT status = %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "user1 PUT status = %d; body: %s", w.Code, w.Body.String())
 	}
 
 	// User2 tries to use the same username.
@@ -235,7 +235,7 @@ func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusConflict {
-		t.Errorf("user2 PUT status = %d, want %d; body: %s", w.Code, http.StatusConflict, w.Body.String())
+		failf(t, "user2 PUT status = %d, want %d; body: %s", w.Code, http.StatusConflict, w.Body.String())
 	}
 }
 
@@ -250,7 +250,7 @@ func TestOPDSCredentials_DeleteSuccess(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("PUT status = %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "PUT status = %d; body: %s", w.Code, w.Body.String())
 	}
 
 	// Delete them.
@@ -260,7 +260,7 @@ func TestOPDSCredentials_DeleteSuccess(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusNoContent {
-		t.Errorf("DELETE status = %d, want %d; body: %s", w.Code, http.StatusNoContent, w.Body.String())
+		failf(t, "DELETE status = %d, want %d; body: %s", w.Code, http.StatusNoContent, w.Body.String())
 	}
 
 	// Verify they're gone.
@@ -270,7 +270,7 @@ func TestOPDSCredentials_DeleteSuccess(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("GET after DELETE status = %d, want %d", w.Code, http.StatusNotFound)
+		failf(t, "GET after DELETE status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }
 
@@ -284,7 +284,7 @@ func TestOPDSCredentials_DeleteNotFound(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
 	}
 }
 
@@ -299,13 +299,13 @@ func TestOPDSCredentials_PutUsernameTrimmed(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp opdsCredentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Username != "spacey" {
-		t.Errorf("username = %q, want %q (should be trimmed and lowercased)", resp.Username, "spacey")
+		failf(t, "username = %q, want %q (should be trimmed and lowercased)", resp.Username, "spacey")
 	}
 }

@@ -13,7 +13,7 @@ import (
 func TestProcessBookFile_NilDatabase(t *testing.T) {
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
@@ -23,7 +23,7 @@ func TestProcessBookFile_NilDatabase(t *testing.T) {
 		FileType: "epub",
 	})
 	if err == nil {
-		t.Fatal("expected error for nil database")
+		failNow(t, "expected error for nil database")
 	}
 }
 
@@ -36,7 +36,7 @@ func TestProcessBookFile_NilExtractor(t *testing.T) {
 		FileType: "epub",
 	})
 	if err == nil {
-		t.Fatal("expected error for nil extractor")
+		failNow(t, "expected error for nil extractor")
 	}
 }
 
@@ -44,7 +44,7 @@ func TestProcessBookFile_EmptyPath(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
@@ -54,7 +54,7 @@ func TestProcessBookFile_EmptyPath(t *testing.T) {
 		FileType: "epub",
 	})
 	if err == nil {
-		t.Fatal("expected error for empty path")
+		failNow(t, "expected error for empty path")
 	}
 }
 
@@ -62,7 +62,7 @@ func TestProcessBookFile_WhitespacePath(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
@@ -72,7 +72,7 @@ func TestProcessBookFile_WhitespacePath(t *testing.T) {
 		FileType: "epub",
 	})
 	if err == nil {
-		t.Fatal("expected error for whitespace-only path")
+		failNow(t, "expected error for whitespace-only path")
 	}
 }
 
@@ -80,7 +80,7 @@ func TestProcessBookFile_EmptyFileName(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
@@ -90,7 +90,7 @@ func TestProcessBookFile_EmptyFileName(t *testing.T) {
 		FileType: "epub",
 	})
 	if err == nil {
-		t.Fatal("expected error for empty file name")
+		failNow(t, "expected error for empty file name")
 	}
 }
 
@@ -98,7 +98,7 @@ func TestProcessBookFile_EmptyFileType(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
@@ -108,7 +108,7 @@ func TestProcessBookFile_EmptyFileType(t *testing.T) {
 		FileType: "",
 	})
 	if err == nil {
-		t.Fatal("expected error for empty file type")
+		failNow(t, "expected error for empty file type")
 	}
 }
 
@@ -116,7 +116,7 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
@@ -125,7 +125,7 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	path := filepath.Join(dir, "My Cool Book.pdf")
 	// Create an empty file so the path exists (extraction will fail but that's OK)
 	if err := os.WriteFile(path, []byte("not a real pdf"), 0644); err != nil {
-		t.Fatalf("write test file: %v", err)
+		failNowf(t, "write test file: %v", err)
 	}
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
@@ -135,19 +135,19 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 		FileSize: 14,
 	})
 	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
+		failNowf(t, "ProcessBookFile() error: %v", err)
 	}
 
 	books, err := database.ListBooks(context.Background())
 	if err != nil {
-		t.Fatalf("list books: %v", err)
+		failNowf(t, "list books: %v", err)
 	}
 	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
+		failNowf(t, "expected 1 book, got %d", len(books))
 	}
 	// Extension should be stripped since it matches fileType
 	if books[0].Title != "My Cool Book" {
-		t.Errorf("expected title %q, got %q", "My Cool Book", books[0].Title)
+		failf(t, "expected title %q, got %q", "My Cool Book", books[0].Title)
 	}
 }
 
@@ -155,14 +155,14 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "noext")
 	if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
-		t.Fatalf("write test file: %v", err)
+		failNowf(t, "write test file: %v", err)
 	}
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
@@ -172,19 +172,19 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 		FileSize: 7,
 	})
 	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
+		failNowf(t, "ProcessBookFile() error: %v", err)
 	}
 
 	books, err := database.ListBooks(context.Background())
 	if err != nil {
-		t.Fatalf("list books: %v", err)
+		failNowf(t, "list books: %v", err)
 	}
 	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
+		failNowf(t, "expected 1 book, got %d", len(books))
 	}
 	// No extension to strip, so title is the full filename
 	if books[0].Title != "noext" {
-		t.Errorf("expected title %q, got %q", "noext", books[0].Title)
+		failf(t, "expected title %q, got %q", "noext", books[0].Title)
 	}
 }
 
@@ -192,14 +192,14 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
 	// Pre-create the author
 	_, err = database.CreateAuthor(context.Background(), "F. Scott Fitzgerald", nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("create author: %v", err)
+		failNowf(t, "create author: %v", err)
 	}
 
 	dir := t.TempDir()
@@ -213,32 +213,32 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 		FileSize: 1024,
 	})
 	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
+		failNowf(t, "ProcessBookFile() error: %v", err)
 	}
 
 	// Should have reused the existing author, not created a duplicate
 	authors, err := database.ListAuthors(context.Background())
 	if err != nil {
-		t.Fatalf("list authors: %v", err)
+		failNowf(t, "list authors: %v", err)
 	}
 	if len(authors) != 1 {
-		t.Fatalf("expected 1 author (reused), got %d", len(authors))
+		failNowf(t, "expected 1 author (reused), got %d", len(authors))
 	}
 
 	// Verify the book is associated with the existing author
 	books, err := database.ListBooks(context.Background())
 	if err != nil {
-		t.Fatalf("list books: %v", err)
+		failNowf(t, "list books: %v", err)
 	}
 	bookAuthors, err := database.GetBookAuthors(context.Background(), books[0].ID)
 	if err != nil {
-		t.Fatalf("get book authors: %v", err)
+		failNowf(t, "get book authors: %v", err)
 	}
 	if len(bookAuthors) != 1 {
-		t.Fatalf("expected 1 book author, got %d", len(bookAuthors))
+		failNowf(t, "expected 1 book author, got %d", len(bookAuthors))
 	}
 	if bookAuthors[0].Name != "F. Scott Fitzgerald" {
-		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", bookAuthors[0].Name)
+		failf(t, "expected author %q, got %q", "F. Scott Fitzgerald", bookAuthors[0].Name)
 	}
 }
 
@@ -246,7 +246,7 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
@@ -262,28 +262,28 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 		FileSize: 512,
 	})
 	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
+		failNowf(t, "ProcessBookFile() error: %v", err)
 	}
 
 	// No author should be created
 	authors, err := database.ListAuthors(context.Background())
 	if err != nil {
-		t.Fatalf("list authors: %v", err)
+		failNowf(t, "list authors: %v", err)
 	}
 	if len(authors) != 0 {
-		t.Errorf("expected 0 authors, got %d", len(authors))
+		failf(t, "expected 0 authors, got %d", len(authors))
 	}
 
 	// Book should still be created
 	books, err := database.ListBooks(context.Background())
 	if err != nil {
-		t.Fatalf("list books: %v", err)
+		failNowf(t, "list books: %v", err)
 	}
 	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
+		failNowf(t, "expected 1 book, got %d", len(books))
 	}
 	if books[0].Title != "Anonymous Work" {
-		t.Errorf("expected title %q, got %q", "Anonymous Work", books[0].Title)
+		failf(t, "expected title %q, got %q", "Anonymous Work", books[0].Title)
 	}
 }
 
@@ -291,7 +291,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
@@ -299,7 +299,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "broken.epub")
 	if err := os.WriteFile(path, []byte("not a valid epub"), 0644); err != nil {
-		t.Fatalf("write broken.epub: %v", err)
+		failNowf(t, "write broken.epub: %v", err)
 	}
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
@@ -309,19 +309,19 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 		FileSize: 16,
 	})
 	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
+		failNowf(t, "ProcessBookFile() error: %v", err)
 	}
 
 	// Book should still be created with filename-derived title
 	books, err := database.ListBooks(context.Background())
 	if err != nil {
-		t.Fatalf("list books: %v", err)
+		failNowf(t, "list books: %v", err)
 	}
 	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
+		failNowf(t, "expected 1 book, got %d", len(books))
 	}
 	if books[0].Title != "broken" {
-		t.Errorf("expected title %q, got %q", "broken", books[0].Title)
+		failf(t, "expected title %q, got %q", "broken", books[0].Title)
 	}
 }
 
@@ -329,7 +329,7 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
@@ -344,21 +344,21 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 		FileSize: 1024,
 	})
 	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
+		failNowf(t, "ProcessBookFile() error: %v", err)
 	}
 
 	books, err := database.ListBooks(context.Background())
 	if err != nil {
-		t.Fatalf("list books: %v", err)
+		failNowf(t, "list books: %v", err)
 	}
 	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
+		failNowf(t, "expected 1 book, got %d", len(books))
 	}
 	if books[0].ISBN10 == nil || *books[0].ISBN10 != "0306406152" {
-		t.Errorf("expected ISBN10 %q, got %v", "0306406152", books[0].ISBN10)
+		failf(t, "expected ISBN10 %q, got %v", "0306406152", books[0].ISBN10)
 	}
 	if books[0].ISBN13 != nil {
-		t.Errorf("expected ISBN13 nil, got %v", books[0].ISBN13)
+		failf(t, "expected ISBN13 nil, got %v", books[0].ISBN13)
 	}
 }
 
@@ -366,13 +366,13 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
 	// Enable file reorganization.
 	if err := database.SetSetting(context.Background(), "organize_files", "true"); err != nil {
-		t.Fatalf("set setting: %v", err)
+		failNowf(t, "set setting: %v", err)
 	}
 
 	// Create a library root with Author/Book.epub structure.
@@ -388,36 +388,36 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 		LibraryRoot: root,
 	})
 	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
+		failNowf(t, "ProcessBookFile() error: %v", err)
 	}
 
 	// Verify the original file was moved.
 	if _, err := os.Stat(epubPath); !os.IsNotExist(err) {
-		t.Error("expected original file to be removed after reorganization")
+		fail(t, "expected original file to be removed after reorganization")
 	}
 
 	// Verify the file was moved to the expected Author/Title/ structure.
 	expectedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "The Great Gatsby.epub")
 	if _, err := os.Stat(expectedPath); err != nil {
-		t.Fatalf("expected reorganized file at %q, got error: %v", expectedPath, err)
+		failNowf(t, "expected reorganized file at %q, got error: %v", expectedPath, err)
 	}
 
 	// Verify book_files.file_path matches the new location.
 	books, err := database.ListBooks(context.Background())
 	if err != nil {
-		t.Fatalf("list books: %v", err)
+		failNowf(t, "list books: %v", err)
 	}
 	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
+		failNowf(t, "expected 1 book, got %d", len(books))
 	}
 	files, err := database.ListBookFiles(context.Background(), books[0].ID)
 	if err != nil {
-		t.Fatalf("list book files: %v", err)
+		failNowf(t, "list book files: %v", err)
 	}
 	if len(files) != 1 {
-		t.Fatalf("expected 1 file, got %d", len(files))
+		failNowf(t, "expected 1 file, got %d", len(files))
 	}
 	if files[0].FilePath != expectedPath {
-		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
+		failf(t, "expected file path %q, got %q", expectedPath, files[0].FilePath)
 	}
 }

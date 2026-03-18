@@ -25,10 +25,10 @@ func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusUnauthorized, w.Code)
 	}
 	assertJSONError(t, w.Body.Bytes(), "authentication required")
 }
@@ -48,10 +48,10 @@ func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusUnauthorized, w.Code)
 	}
 	// Non-Bearer auth header is treated as "no valid token found" since
 	// extractToken checks header then cookie fallback.
@@ -73,10 +73,10 @@ func TestMiddleware_InvalidToken(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusUnauthorized, w.Code)
 	}
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
@@ -98,10 +98,10 @@ func TestMiddleware_ValidToken(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusOK, w.Code)
 	}
 	if gotUserID != "user-abc" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "user-abc")
+		failf(t, "UserIDFromContext = %q, want %q", gotUserID, "user-abc")
 	}
 }
 
@@ -109,7 +109,7 @@ func TestUserIDFromContext_NotSet(t *testing.T) {
 	ctx := context.Background()
 	id := UserIDFromContext(ctx)
 	if id != "" {
-		t.Errorf("expected empty user ID, got %q", id)
+		failf(t, "expected empty user ID, got %q", id)
 	}
 }
 
@@ -118,7 +118,7 @@ func TestContextWithUserID(t *testing.T) {
 	ctx = ContextWithUserID(ctx, "test-user-123")
 	got := UserIDFromContext(ctx)
 	if got != "test-user-123" {
-		t.Errorf("UserIDFromContext() = %q, want %q", got, "test-user-123")
+		failf(t, "UserIDFromContext() = %q, want %q", got, "test-user-123")
 	}
 }
 
@@ -127,10 +127,10 @@ func assertJSONError(t *testing.T, body []byte, wantMsg string) {
 	t.Helper()
 	var resp map[string]string
 	if err := json.Unmarshal(body, &resp); err != nil {
-		t.Fatalf("failed to unmarshal response body: %v", err)
+		failNowf(t, "failed to unmarshal response body: %v", err)
 	}
 	if resp["error"] != wantMsg {
-		t.Errorf("error message = %q, want %q", resp["error"], wantMsg)
+		failf(t, "error message = %q, want %q", resp["error"], wantMsg)
 	}
 }
 
@@ -214,10 +214,10 @@ func TestExtractToken(t *testing.T) {
 			}
 			got, gotSource, _ := extractToken(r)
 			if got != tt.wantToken {
-				t.Errorf("extractToken() token = %q, want %q", got, tt.wantToken)
+				failf(t, "extractToken() token = %q, want %q", got, tt.wantToken)
 			}
 			if gotSource != tt.wantSource {
-				t.Errorf("extractToken() source = %v, want %v", gotSource, tt.wantSource)
+				failf(t, "extractToken() source = %v, want %v", gotSource, tt.wantSource)
 			}
 		})
 	}
@@ -242,10 +242,10 @@ func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusOK, w.Code)
 	}
 	if gotUserID != "cookie-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "cookie-user")
+		failf(t, "UserIDFromContext = %q, want %q", gotUserID, "cookie-user")
 	}
 }
 
@@ -264,10 +264,10 @@ func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusUnauthorized, w.Code)
 	}
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
@@ -291,7 +291,7 @@ func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if gotUserID != "header-user" {
-		t.Errorf("UserIDFromContext = %q, want %q (header should take precedence)", gotUserID, "header-user")
+		failf(t, "UserIDFromContext = %q, want %q (header should take precedence)", gotUserID, "header-user")
 	}
 }
 
@@ -325,10 +325,10 @@ func TestAdminMiddleware_NoToken(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusUnauthorized, w.Code)
 	}
 	assertJSONError(t, w.Body.Bytes(), "authentication required")
 }
@@ -349,10 +349,10 @@ func TestAdminMiddleware_InvalidToken(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusUnauthorized, w.Code)
 	}
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
@@ -375,10 +375,10 @@ func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called for non-admin")
+		fail(t, "next handler should not have been called for non-admin")
 	}
 	if w.Code != http.StatusForbidden {
-		t.Errorf("expected status %d, got %d", http.StatusForbidden, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusForbidden, w.Code)
 	}
 	assertJSONError(t, w.Body.Bytes(), "admin access required")
 }
@@ -401,10 +401,10 @@ func TestAdminMiddleware_AdminUser(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusOK, w.Code)
 	}
 	if gotUserID != "admin-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "admin-user")
+		failf(t, "UserIDFromContext = %q, want %q", gotUserID, "admin-user")
 	}
 }
 
@@ -426,10 +426,10 @@ func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusOK, w.Code)
 	}
 	if gotUserID != "admin-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "admin-user")
+		failf(t, "UserIDFromContext = %q, want %q", gotUserID, "admin-user")
 	}
 }
 
@@ -451,10 +451,10 @@ func TestAdminMiddleware_CheckerError(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called on checker error")
+		fail(t, "next handler should not have been called on checker error")
 	}
 	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusInternalServerError, w.Code)
 	}
 	assertJSONError(t, w.Body.Bytes(), "failed to verify permissions")
 }
@@ -506,14 +506,14 @@ func TestMiddleware_ValidAPIKey(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusOK, w.Code)
 	}
 	if gotUserID != "apikey-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "apikey-user")
+		failf(t, "UserIDFromContext = %q, want %q", gotUserID, "apikey-user")
 	}
 
 	if len(validator.touched) != 1 || validator.touched[0] != "key-1" {
-		t.Errorf("TouchAPIKeyLastUsed called with %v, want [key-1]", validator.touched)
+		failf(t, "TouchAPIKeyLastUsed called with %v, want [key-1]", validator.touched)
 	}
 }
 
@@ -535,10 +535,10 @@ func TestMiddleware_InvalidAPIKey(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusUnauthorized, w.Code)
 	}
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
@@ -565,10 +565,10 @@ func TestMiddleware_APIKeyViaCookieRejected(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called for API key via cookie")
+		fail(t, "next handler should not have been called for API key via cookie")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusUnauthorized, w.Code)
 	}
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
@@ -596,9 +596,9 @@ func TestAdminMiddleware_ValidAPIKey(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		failf(t, "expected status %d, got %d", http.StatusOK, w.Code)
 	}
 	if gotUserID != "admin-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "admin-user")
+		failf(t, "UserIDFromContext = %q, want %q", gotUserID, "admin-user")
 	}
 }

@@ -52,12 +52,12 @@ func TestOIDCLogin_Success(t *testing.T) {
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected status 302, got %d", resp.StatusCode)
+		failNowf(t, "expected status 302, got %d", resp.StatusCode)
 	}
 
 	loc := resp.Header.Get("Location")
 	if loc == "" {
-		t.Fatal("expected Location header to be set")
+		failNow(t, "expected Location header to be set")
 	}
 
 	var foundState, foundVerifier bool
@@ -66,26 +66,26 @@ func TestOIDCLogin_Success(t *testing.T) {
 		case oidcStateCookieName:
 			foundState = true
 			if c.Value == "" {
-				t.Error("state cookie value is empty")
+				fail(t, "state cookie value is empty")
 			}
 			if !c.HttpOnly {
-				t.Error("state cookie should be HttpOnly")
+				fail(t, "state cookie should be HttpOnly")
 			}
 		case oidcVerifierCookieName:
 			foundVerifier = true
 			if c.Value == "" {
-				t.Error("verifier cookie value is empty")
+				fail(t, "verifier cookie value is empty")
 			}
 			if !c.HttpOnly {
-				t.Error("verifier cookie should be HttpOnly")
+				fail(t, "verifier cookie should be HttpOnly")
 			}
 		}
 	}
 	if !foundState {
-		t.Error("state cookie not set")
+		fail(t, "state cookie not set")
 	}
 	if !foundVerifier {
-		t.Error("verifier cookie not set")
+		fail(t, "verifier cookie not set")
 	}
 }
 
@@ -97,7 +97,7 @@ func TestOIDCLogin_MethodNotAllowed(t *testing.T) {
 	h.Login(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("expected status 405, got %d", w.Code)
+		failNowf(t, "expected status 405, got %d", w.Code)
 	}
 }
 
@@ -110,7 +110,7 @@ func TestOIDCCreateLinkNonce_Success(t *testing.T) {
 
 	user, err := h.DB.CreateUser(context.Background(), "Alice", "alice@example.com", "password123")
 	if err != nil {
-		t.Fatalf("CreateUser: %v", err)
+		failNowf(t, "CreateUser: %v", err)
 	}
 
 	r := httptest.NewRequest(http.MethodPost, "/auth/oidc/link-nonce", nil)
@@ -119,15 +119,15 @@ func TestOIDCCreateLinkNonce_Success(t *testing.T) {
 	h.CreateLinkNonce(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", w.Code)
+		failNowf(t, "expected status 200, got %d", w.Code)
 	}
 
 	var body map[string]string
 	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode response: %v", err)
+		failNowf(t, "decode response: %v", err)
 	}
 	if body["nonce"] == "" {
-		t.Fatal("expected non-empty nonce in response")
+		failNow(t, "expected non-empty nonce in response")
 	}
 }
 
@@ -139,7 +139,7 @@ func TestOIDCCreateLinkNonce_MethodNotAllowed(t *testing.T) {
 	h.CreateLinkNonce(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("expected status 405, got %d", w.Code)
+		failNowf(t, "expected status 405, got %d", w.Code)
 	}
 }
 
@@ -148,7 +148,7 @@ func TestOIDCCreateLinkNonce_StoresNonce(t *testing.T) {
 
 	user, err := h.DB.CreateUser(context.Background(), "Bob", "bob@example.com", "password123")
 	if err != nil {
-		t.Fatalf("CreateUser: %v", err)
+		failNowf(t, "CreateUser: %v", err)
 	}
 
 	r := httptest.NewRequest(http.MethodPost, "/auth/oidc/link-nonce", nil)
@@ -158,7 +158,7 @@ func TestOIDCCreateLinkNonce_StoresNonce(t *testing.T) {
 
 	var body map[string]string
 	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode response: %v", err)
+		failNowf(t, "decode response: %v", err)
 	}
 	nonce := body["nonce"]
 
@@ -167,13 +167,13 @@ func TestOIDCCreateLinkNonce_StoresNonce(t *testing.T) {
 	h.linkNoncesMu.Unlock()
 
 	if !ok {
-		t.Fatal("nonce not found in linkNonces map")
+		failNow(t, "nonce not found in linkNonces map")
 	}
 	if entry.UserID != user.ID {
-		t.Errorf("expected UserID %q, got %q", user.ID, entry.UserID)
+		failf(t, "expected UserID %q, got %q", user.ID, entry.UserID)
 	}
 	if time.Until(entry.ExpiresAt) <= 0 {
-		t.Error("nonce should not already be expired")
+		fail(t, "nonce should not already be expired")
 	}
 }
 
@@ -193,7 +193,7 @@ func TestOIDCConsumeLinkNonce_Valid(t *testing.T) {
 
 	got := h.consumeLinkNonce("valid-nonce")
 	if got != "user-123" {
-		t.Fatalf("expected user ID %q, got %q", "user-123", got)
+		failNowf(t, "expected user ID %q, got %q", "user-123", got)
 	}
 }
 
@@ -202,7 +202,7 @@ func TestOIDCConsumeLinkNonce_InvalidNonce(t *testing.T) {
 
 	got := h.consumeLinkNonce("does-not-exist")
 	if got != "" {
-		t.Fatalf("expected empty string for invalid nonce, got %q", got)
+		failNowf(t, "expected empty string for invalid nonce, got %q", got)
 	}
 }
 
@@ -218,7 +218,7 @@ func TestOIDCConsumeLinkNonce_ExpiredNonce(t *testing.T) {
 
 	got := h.consumeLinkNonce("expired-nonce")
 	if got != "" {
-		t.Fatalf("expected empty string for expired nonce, got %q", got)
+		failNowf(t, "expected empty string for expired nonce, got %q", got)
 	}
 
 	// Verify the nonce was removed even though it was expired
@@ -226,7 +226,7 @@ func TestOIDCConsumeLinkNonce_ExpiredNonce(t *testing.T) {
 	_, exists := h.linkNonces["expired-nonce"]
 	h.linkNoncesMu.Unlock()
 	if exists {
-		t.Error("expired nonce should have been removed from the map")
+		fail(t, "expired nonce should have been removed from the map")
 	}
 }
 
@@ -242,12 +242,12 @@ func TestOIDCConsumeLinkNonce_DoubleConsume(t *testing.T) {
 
 	first := h.consumeLinkNonce("once-only")
 	if first != "user-789" {
-		t.Fatalf("first consume: expected %q, got %q", "user-789", first)
+		failNowf(t, "first consume: expected %q, got %q", "user-789", first)
 	}
 
 	second := h.consumeLinkNonce("once-only")
 	if second != "" {
-		t.Fatalf("second consume: expected empty string, got %q", second)
+		failNowf(t, "second consume: expected empty string, got %q", second)
 	}
 }
 
@@ -263,7 +263,7 @@ func TestOIDCLink_MissingNonce(t *testing.T) {
 	h.Link(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d", w.Code)
+		failNowf(t, "expected status 400, got %d", w.Code)
 	}
 }
 
@@ -275,7 +275,7 @@ func TestOIDCLink_InvalidNonce(t *testing.T) {
 	h.Link(w, r)
 
 	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status 401, got %d", w.Code)
+		failNowf(t, "expected status 401, got %d", w.Code)
 	}
 }
 
@@ -287,7 +287,7 @@ func TestOIDCLink_MethodNotAllowed(t *testing.T) {
 	h.Link(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("expected status 405, got %d", w.Code)
+		failNowf(t, "expected status 405, got %d", w.Code)
 	}
 }
 
@@ -297,7 +297,7 @@ func TestOIDCLink_AlreadyLinked(t *testing.T) {
 	// Create a user that already has an OIDC subject linked
 	user, err := h.DB.CreateOIDCUser(context.Background(), "Linked User", "linked@example.com", "existing-subject")
 	if err != nil {
-		t.Fatalf("CreateOIDCUser: %v", err)
+		failNowf(t, "CreateOIDCUser: %v", err)
 	}
 
 	// Seed a valid nonce for this user
@@ -313,7 +313,7 @@ func TestOIDCLink_AlreadyLinked(t *testing.T) {
 	h.Link(w, r)
 
 	if w.Code != http.StatusConflict {
-		t.Fatalf("expected status 409, got %d", w.Code)
+		failNowf(t, "expected status 409, got %d", w.Code)
 	}
 }
 
@@ -323,7 +323,7 @@ func TestOIDCLink_Success(t *testing.T) {
 	// Create a regular user (no OIDC subject)
 	user, err := h.DB.CreateUser(context.Background(), "Normal User", "normal@example.com", "password123")
 	if err != nil {
-		t.Fatalf("CreateUser: %v", err)
+		failNowf(t, "CreateUser: %v", err)
 	}
 
 	// Seed a valid nonce for this user
@@ -340,7 +340,7 @@ func TestOIDCLink_Success(t *testing.T) {
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected status 302, got %d", resp.StatusCode)
+		failNowf(t, "expected status 302, got %d", resp.StatusCode)
 	}
 
 	// Verify cookies are set
@@ -350,28 +350,28 @@ func TestOIDCLink_Success(t *testing.T) {
 		case oidcStateCookieName:
 			foundState = true
 			if c.Value == "" {
-				t.Error("state cookie value is empty")
+				fail(t, "state cookie value is empty")
 			}
 		case oidcVerifierCookieName:
 			foundVerifier = true
 			if c.Value == "" {
-				t.Error("verifier cookie value is empty")
+				fail(t, "verifier cookie value is empty")
 			}
 		case oidcLinkUserIDCookieName:
 			foundLinkUserID = true
 			if c.Value != user.ID {
-				t.Errorf("link user ID cookie: expected %q, got %q", user.ID, c.Value)
+				failf(t, "link user ID cookie: expected %q, got %q", user.ID, c.Value)
 			}
 		}
 	}
 	if !foundState {
-		t.Error("state cookie not set")
+		fail(t, "state cookie not set")
 	}
 	if !foundVerifier {
-		t.Error("verifier cookie not set")
+		fail(t, "verifier cookie not set")
 	}
 	if !foundLinkUserID {
-		t.Error("link user ID cookie not set")
+		fail(t, "link user ID cookie not set")
 	}
 
 	// Verify nonce was consumed
@@ -379,7 +379,7 @@ func TestOIDCLink_Success(t *testing.T) {
 	_, exists := h.linkNonces["good-nonce"]
 	h.linkNoncesMu.Unlock()
 	if exists {
-		t.Error("nonce should have been consumed")
+		fail(t, "nonce should have been consumed")
 	}
 }
 
@@ -418,7 +418,7 @@ func TestOIDCConsumeLinkNonce_Concurrent(t *testing.T) {
 		}
 	}
 	if winners != 1 {
-		t.Fatalf("expected exactly 1 winner, got %d", winners)
+		failNowf(t, "expected exactly 1 winner, got %d", winners)
 	}
 }
 
@@ -441,7 +441,7 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 	// Generate an RSA key pair for signing ID tokens.
 	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		t.Fatalf("generate RSA key: %v", err)
+		failNowf(t, "generate RSA key: %v", err)
 	}
 
 	signer, err := jose.NewSigner(
@@ -449,7 +449,7 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 		(&jose.SignerOptions{}).WithType("JWT").WithHeader("kid", "test-key"),
 	)
 	if err != nil {
-		t.Fatalf("create signer: %v", err)
+		failNowf(t, "create signer: %v", err)
 	}
 
 	jwks := jose.JSONWebKeySet{
@@ -467,7 +467,7 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 		builder := josejwt.Signed(signer).Claims(claims)
 		raw, err := builder.Serialize()
 		if err != nil {
-			t.Fatalf("sign id_token: %v", err)
+			failNowf(t, "sign id_token: %v", err)
 		}
 		return raw
 	}
@@ -533,7 +533,7 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 	// Create a real OIDC provider pointing at our test server.
 	provider, err := oidc.NewProvider(t.Context(), srv.URL)
 	if err != nil {
-		t.Fatalf("oidc.NewProvider: %v", err)
+		failNowf(t, "oidc.NewProvider: %v", err)
 	}
 
 	d := newTestDB(t)
@@ -595,11 +595,11 @@ func TestOIDCCallback_EmailVerifiedTrue(t *testing.T) {
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
+		failNowf(t, "expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
 	}
 	loc := resp.Header.Get("Location")
 	if loc != "/?oidc_login=1" {
-		t.Errorf("expected redirect to /?oidc_login=1, got %q", loc)
+		failf(t, "expected redirect to /?oidc_login=1, got %q", loc)
 	}
 }
 
@@ -618,14 +618,14 @@ func TestOIDCCallback_EmailVerifiedFalse(t *testing.T) {
 	h.Callback(w, callbackRequest("test-state", ""))
 
 	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status 401, got %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "expected status 401, got %d; body: %s", w.Code, w.Body.String())
 	}
 	var body map[string]string
 	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+		failNowf(t, "decode body: %v", err)
 	}
 	if body["error"] != "OIDC email must be verified by the identity provider" {
-		t.Errorf("unexpected error message: %q", body["error"])
+		failf(t, "unexpected error message: %q", body["error"])
 	}
 }
 
@@ -644,7 +644,7 @@ func TestOIDCCallback_EmailVerifiedMissing(t *testing.T) {
 	h.Callback(w, callbackRequest("test-state", ""))
 
 	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status 401, got %d; body: %s", w.Code, w.Body.String())
+		failNowf(t, "expected status 401, got %d; body: %s", w.Code, w.Body.String())
 	}
 }
 
@@ -655,7 +655,7 @@ func TestOIDCCallback_LinkFlowBypassesEmailVerified(t *testing.T) {
 	// Create a user to link to.
 	user, err := h.DB.CreateUser(t.Context(), "Link Target", "linktarget@example.com", "password123")
 	if err != nil {
-		t.Fatalf("CreateUser: %v", err)
+		failNowf(t, "CreateUser: %v", err)
 	}
 
 	tp.setClaims(map[string]interface{}{
@@ -671,10 +671,10 @@ func TestOIDCCallback_LinkFlowBypassesEmailVerified(t *testing.T) {
 	resp := w.Result()
 	// Link flow should succeed (redirect) even without email_verified.
 	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
+		failNowf(t, "expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
 	}
 	loc := resp.Header.Get("Location")
 	if loc != "/?oidc_linked=true" {
-		t.Errorf("expected redirect to /?oidc_linked=true, got %q", loc)
+		failf(t, "expected redirect to /?oidc_linked=true, got %q", loc)
 	}
 }

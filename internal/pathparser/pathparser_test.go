@@ -154,19 +154,19 @@ func TestParseBookPath(t *testing.T) {
 			}
 			got := ParseBookPath(tt.filePath, lr)
 			if got.Author != tt.want.Author {
-				t.Errorf("Author: got %q, want %q", got.Author, tt.want.Author)
+				failf(t, "Author: got %q, want %q", got.Author, tt.want.Author)
 			}
 			if got.Title != tt.want.Title {
-				t.Errorf("Title: got %q, want %q", got.Title, tt.want.Title)
+				failf(t, "Title: got %q, want %q", got.Title, tt.want.Title)
 			}
 			if got.SeriesName != tt.want.SeriesName {
-				t.Errorf("SeriesName: got %q, want %q", got.SeriesName, tt.want.SeriesName)
+				failf(t, "SeriesName: got %q, want %q", got.SeriesName, tt.want.SeriesName)
 			}
 			if !float64PtrEqual(got.SeriesPosition, tt.want.SeriesPosition) {
-				t.Errorf("SeriesPosition: got %s, want %s", fmtF64(got.SeriesPosition), fmtF64(tt.want.SeriesPosition))
+				failf(t, "SeriesPosition: got %s, want %s", fmtF64(got.SeriesPosition), fmtF64(tt.want.SeriesPosition))
 			}
 			if !intPtrEqual(got.Year, tt.want.Year) {
-				t.Errorf("Year: got %s, want %s", fmtInt(got.Year), fmtInt(tt.want.Year))
+				failf(t, "Year: got %s, want %s", fmtInt(got.Year), fmtInt(tt.want.Year))
 			}
 		})
 	}

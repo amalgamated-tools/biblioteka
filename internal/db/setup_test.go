@@ -63,7 +63,7 @@ func TestRemoveInlineComments(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := removeInlineComments(tt.input)
 			if result != tt.expected {
-				t.Errorf("removeInlineComments() = %q, want %q", result, tt.expected)
+				failf(t, "removeInlineComments() = %q, want %q", result, tt.expected)
 			}
 		})
 	}
@@ -148,14 +148,14 @@ CREATE INDEX IF NOT EXISTS goqite_queue_priority_created_idx ON goqite (queue, p
 		t.Run(tt.name, func(t *testing.T) {
 			result := splitStatements(tt.input)
 			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("splitStatements() = %v, want %v", result, tt.expected)
+				failf(t, "splitStatements() = %v, want %v", result, tt.expected)
 				for i := range result {
 					if i < len(tt.expected) {
 						if result[i] != tt.expected[i] {
-							t.Errorf("  [%d] got %q, want %q", i, result[i], tt.expected[i])
+							failf(t, "  [%d] got %q, want %q", i, result[i], tt.expected[i])
 						}
 					} else {
-						t.Errorf("  [%d] got %q (extra)", i, result[i])
+						failf(t, "  [%d] got %q (extra)", i, result[i])
 					}
 				}
 			}
@@ -217,7 +217,7 @@ DROP TABLE users;`,
 			result = strings.TrimSpace(result)
 			expected := strings.TrimSpace(tt.expected)
 			if result != expected {
-				t.Errorf("extractUpSQL() = %q, want %q", result, expected)
+				failf(t, "extractUpSQL() = %q, want %q", result, expected)
 			}
 		})
 	}

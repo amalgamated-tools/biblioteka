@@ -12,17 +12,17 @@ func Test_WriteJSON(t *testing.T) {
 	writeJSON(t.Context(), w, http.StatusOK, map[string]string{"key": "value"})
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		failf(t, "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	if ct := w.Header().Get("Content-Type"); ct != "application/json" {
-		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
+		failf(t, "Content-Type = %q, want %q", ct, "application/json")
 	}
 	var result map[string]string
 	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
+		failNowf(t, "failed to unmarshal: %v", err)
 	}
 	if result["key"] != "value" {
-		t.Errorf("key = %q, want %q", result["key"], "value")
+		failf(t, "key = %q, want %q", result["key"], "value")
 	}
 }
 
@@ -31,17 +31,17 @@ func Test_WriteError(t *testing.T) {
 	writeError(t.Context(), w, http.StatusBadRequest, "something went wrong")
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+		failf(t, "status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 	if ct := w.Header().Get("Content-Type"); ct != "application/json" {
-		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
+		failf(t, "Content-Type = %q, want %q", ct, "application/json")
 	}
 	var result map[string]string
 	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
+		failNowf(t, "failed to unmarshal: %v", err)
 	}
 	if result["error"] != "something went wrong" {
-		t.Errorf("error = %q, want %q", result["error"], "something went wrong")
+		failf(t, "error = %q, want %q", result["error"], "something went wrong")
 	}
 }
 
@@ -62,7 +62,7 @@ func Test_ValidatePassword(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := validatePassword(tt.password)
 			if got != tt.wantMsg {
-				t.Errorf("validatePassword(%q) = %q, want %q", tt.password, got, tt.wantMsg)
+				failf(t, "validatePassword(%q) = %q, want %q", tt.password, got, tt.wantMsg)
 			}
 		})
 	}
@@ -90,7 +90,7 @@ func Test_ExtractPathSegments(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotID, gotSub, gotOK := extractPathSegments(tt.path, tt.prefix)
 			if gotID != tt.wantID || gotSub != tt.wantSub || gotOK != tt.wantOK {
-				t.Errorf("extractPathSegments(%q, %q) = (%q, %q, %v), want (%q, %q, %v)",
+				failf(t, "extractPathSegments(%q, %q) = (%q, %q, %v), want (%q, %q, %v)",
 					tt.path, tt.prefix, gotID, gotSub, gotOK, tt.wantID, tt.wantSub, tt.wantOK)
 			}
 		})
@@ -117,7 +117,7 @@ func Test_ExtractPathID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotID, gotOK := extractPathID(tt.path, tt.prefix)
 			if gotID != tt.wantID || gotOK != tt.wantOK {
-				t.Errorf("extractPathID(%q, %q) = (%q, %v), want (%q, %v)",
+				failf(t, "extractPathID(%q, %q) = (%q, %v), want (%q, %v)",
 					tt.path, tt.prefix, gotID, gotOK, tt.wantID, tt.wantOK)
 			}
 		})

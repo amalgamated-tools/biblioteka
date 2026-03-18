@@ -10,15 +10,15 @@ func TestSetAndGetSetting(t *testing.T) {
 	d := newTestDB(t)
 
 	if err := d.SetSetting(context.Background(), "theme", "dark"); err != nil {
-		t.Fatalf("SetSetting() error: %v", err)
+		failNowf(t, "SetSetting() error: %v", err)
 	}
 
 	val, err := d.GetSetting(context.Background(), "theme")
 	if err != nil {
-		t.Fatalf("GetSetting() error: %v", err)
+		failNowf(t, "GetSetting() error: %v", err)
 	}
 	if val != "dark" {
-		t.Errorf("GetSetting() = %q, want %q", val, "dark")
+		failf(t, "GetSetting() = %q, want %q", val, "dark")
 	}
 }
 
@@ -27,7 +27,7 @@ func TestGetSetting_NotFound(t *testing.T) {
 
 	_, err := d.GetSetting(context.Background(), "nonexistent")
 	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
+		failf(t, "expected sql.ErrNoRows, got %v", err)
 	}
 }
 
@@ -39,9 +39,9 @@ func TestSetSetting_Upsert(t *testing.T) {
 
 	val, err := d.GetSetting(context.Background(), "color")
 	if err != nil {
-		t.Fatalf("GetSetting() error: %v", err)
+		failNowf(t, "GetSetting() error: %v", err)
 	}
 	if val != "red" {
-		t.Errorf("GetSetting() = %q, want %q after upsert", val, "red")
+		failf(t, "GetSetting() = %q, want %q after upsert", val, "red")
 	}
 }

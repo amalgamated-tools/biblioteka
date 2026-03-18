@@ -22,11 +22,11 @@ func setupConfigHandler(t *testing.T) (*ConfigHandler, string, string) {
 
 	admin, err := d.CreateUser(context.Background(), "Admin", "admin@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create admin: %v", err)
+		failNowf(t, "create admin: %v", err)
 	}
 	regular, err := d.CreateUser(context.Background(), "Regular", "regular@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create regular user: %v", err)
+		failNowf(t, "create regular user: %v", err)
 	}
 
 	h := &ConfigHandler{
@@ -48,17 +48,17 @@ func TestHandleConfigStatus_Success(t *testing.T) {
 	h.HandleConfigStatus(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp configStatusResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.OIDCConfigured {
-		t.Error("expected OIDCConfigured=false")
+		fail(t, "expected OIDCConfigured=false")
 	}
 	if !resp.IsAdmin {
-		t.Error("expected IsAdmin=true for admin user")
+		fail(t, "expected IsAdmin=true for admin user")
 	}
 }
 
@@ -72,14 +72,14 @@ func TestHandleConfigStatus_RegularUser(t *testing.T) {
 	h.HandleConfigStatus(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp configStatusResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.IsAdmin {
-		t.Error("expected IsAdmin=false for regular user")
+		fail(t, "expected IsAdmin=false for regular user")
 	}
 }
 
@@ -95,10 +95,10 @@ func TestHandleConfigStatus_WhenConfigured(t *testing.T) {
 
 	var resp configStatusResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if !resp.OIDCConfigured {
-		t.Error("expected OIDCConfigured=true")
+		fail(t, "expected OIDCConfigured=true")
 	}
 }
 
@@ -112,7 +112,7 @@ func TestHandleConfigStatus_MethodNotAllowed(t *testing.T) {
 	h.HandleConfigStatus(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -128,17 +128,17 @@ func TestHandleGetOIDCConfig_AdminNoSettings(t *testing.T) {
 	h.HandleGetOIDCConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp oidcConfigResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.IssuerURL != "" {
-		t.Errorf("IssuerURL = %q, want empty", resp.IssuerURL)
+		failf(t, "IssuerURL = %q, want empty", resp.IssuerURL)
 	}
 	if resp.ClientSecretSet {
-		t.Error("ClientSecretSet should be false when no secret is stored")
+		fail(t, "ClientSecretSet should be false when no secret is stored")
 	}
 }
 
@@ -158,23 +158,23 @@ func TestHandleGetOIDCConfig_AdminWithSettings(t *testing.T) {
 	h.HandleGetOIDCConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp oidcConfigResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.IssuerURL != "https://auth.example.com" {
-		t.Errorf("IssuerURL = %q, want %q", resp.IssuerURL, "https://auth.example.com")
+		failf(t, "IssuerURL = %q, want %q", resp.IssuerURL, "https://auth.example.com")
 	}
 	if resp.ClientID != "my-client-id" {
-		t.Errorf("ClientID = %q, want %q", resp.ClientID, "my-client-id")
+		failf(t, "ClientID = %q, want %q", resp.ClientID, "my-client-id")
 	}
 	if !resp.ClientSecretSet {
-		t.Error("ClientSecretSet should be true when secret is stored")
+		fail(t, "ClientSecretSet should be true when secret is stored")
 	}
 	if resp.RedirectURI != "https://app.example.com/callback" {
-		t.Errorf("RedirectURI = %q, want %q", resp.RedirectURI, "https://app.example.com/callback")
+		failf(t, "RedirectURI = %q, want %q", resp.RedirectURI, "https://app.example.com/callback")
 	}
 }
 
@@ -188,7 +188,7 @@ func TestHandleGetOIDCConfig_NonAdminForbidden(t *testing.T) {
 	h.HandleGetOIDCConfig(w, r)
 
 	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
 	}
 }
 
@@ -205,7 +205,7 @@ func TestHandleSetOIDCConfig_NonAdminForbidden(t *testing.T) {
 	h.HandleSetOIDCConfig(w, r)
 
 	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
 	}
 }
 
@@ -220,7 +220,7 @@ func TestHandleSetOIDCConfig_MissingIssuerURL(t *testing.T) {
 	h.HandleSetOIDCConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -235,7 +235,7 @@ func TestHandleSetOIDCConfig_MissingClientID(t *testing.T) {
 	h.HandleSetOIDCConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -250,7 +250,7 @@ func TestHandleSetOIDCConfig_MissingRedirectURI(t *testing.T) {
 	h.HandleSetOIDCConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -266,7 +266,7 @@ func TestHandleSetOIDCConfig_MissingSecretNoExisting(t *testing.T) {
 	h.HandleSetOIDCConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -280,7 +280,7 @@ func TestHandleSetOIDCConfig_InvalidJSON(t *testing.T) {
 	h.HandleSetOIDCConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -296,7 +296,7 @@ func TestHandleSetOIDCConfig_ProviderDiscoveryFailure(t *testing.T) {
 	h.HandleSetOIDCConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -333,28 +333,28 @@ func TestHandleSetOIDCConfig_ValidProviderSavesSettings(t *testing.T) {
 	h.HandleSetOIDCConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	// Verify settings were persisted
 	issuerURL, err := h.DB.GetSetting(context.Background(), settingOIDCIssuerURL)
 	if err != nil {
-		t.Fatalf("GetSetting(issuer_url) error: %v", err)
+		failNowf(t, "GetSetting(issuer_url) error: %v", err)
 	}
 	if issuerURL != oidcServer.URL {
-		t.Errorf("saved issuer_url = %q, want %q", issuerURL, oidcServer.URL)
+		failf(t, "saved issuer_url = %q, want %q", issuerURL, oidcServer.URL)
 	}
 
 	clientID, err := h.DB.GetSetting(context.Background(), settingOIDCClientID)
 	if err != nil {
-		t.Fatalf("GetSetting(client_id) error: %v", err)
+		failNowf(t, "GetSetting(client_id) error: %v", err)
 	}
 	if clientID != "my-client" {
-		t.Errorf("saved client_id = %q, want %q", clientID, "my-client")
+		failf(t, "saved client_id = %q, want %q", clientID, "my-client")
 	}
 
 	if !callbackCalled {
-		t.Error("expected OnOIDCConfigSet callback to be called")
+		fail(t, "expected OnOIDCConfigSet callback to be called")
 	}
 }
 
@@ -389,16 +389,16 @@ func TestHandleSetOIDCConfig_PreservesExistingSecret(t *testing.T) {
 	h.HandleSetOIDCConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	// The stored secret should still be the original one
 	secret, err := h.DB.GetSetting(context.Background(), settingOIDCClientSecret)
 	if err != nil {
-		t.Fatalf("GetSetting(client_secret): %v", err)
+		failNowf(t, "GetSetting(client_secret): %v", err)
 	}
 	if secret != "existing-secret" {
-		t.Errorf("client_secret = %q, want %q", secret, "existing-secret")
+		failf(t, "client_secret = %q, want %q", secret, "existing-secret")
 	}
 }
 
@@ -415,7 +415,7 @@ func TestHandleOIDCConfig_DispatchGet(t *testing.T) {
 
 	// GET dispatches to HandleGetOIDCConfig; admin user → 200
 	if w.Code != http.StatusOK {
-		t.Errorf("GET dispatch: status = %d, want %d", w.Code, http.StatusOK)
+		failf(t, "GET dispatch: status = %d, want %d", w.Code, http.StatusOK)
 	}
 }
 
@@ -429,7 +429,7 @@ func TestHandleOIDCConfig_DispatchMethodNotAllowed(t *testing.T) {
 	h.HandleOIDCConfig(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -448,10 +448,10 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 
 	var resp configStatusResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.SMTPConfigured {
-		t.Error("expected SMTPConfigured=false when only host is set")
+		fail(t, "expected SMTPConfigured=false when only host is set")
 	}
 
 	// Set from → now configured
@@ -463,10 +463,10 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 	h.HandleConfigStatus(w, r)
 
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if !resp.SMTPConfigured {
-		t.Error("expected SMTPConfigured=true when host and from are set")
+		fail(t, "expected SMTPConfigured=true when host and from are set")
 	}
 }
 
@@ -482,20 +482,20 @@ func TestHandleGetSMTPConfig_AdminNoSettings(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp smtpConfigResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Host != "" {
-		t.Errorf("Host = %q, want empty", resp.Host)
+		failf(t, "Host = %q, want empty", resp.Host)
 	}
 	if resp.PasswordSet {
-		t.Error("PasswordSet should be false when no password is stored")
+		fail(t, "PasswordSet should be false when no password is stored")
 	}
 	if resp.EnvOverride {
-		t.Error("EnvOverride should be false when no env vars are set")
+		fail(t, "EnvOverride should be false when no env vars are set")
 	}
 }
 
@@ -516,29 +516,29 @@ func TestHandleGetSMTPConfig_AdminWithSettings(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp smtpConfigResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Host != "smtp.example.com" {
-		t.Errorf("Host = %q, want %q", resp.Host, "smtp.example.com")
+		failf(t, "Host = %q, want %q", resp.Host, "smtp.example.com")
 	}
 	if resp.Port != "465" {
-		t.Errorf("Port = %q, want %q", resp.Port, "465")
+		failf(t, "Port = %q, want %q", resp.Port, "465")
 	}
 	if resp.Username != "user@example.com" {
-		t.Errorf("Username = %q, want %q", resp.Username, "user@example.com")
+		failf(t, "Username = %q, want %q", resp.Username, "user@example.com")
 	}
 	if !resp.PasswordSet {
-		t.Error("PasswordSet should be true when password is stored")
+		fail(t, "PasswordSet should be true when password is stored")
 	}
 	if resp.From != "noreply@example.com" {
-		t.Errorf("From = %q, want %q", resp.From, "noreply@example.com")
+		failf(t, "From = %q, want %q", resp.From, "noreply@example.com")
 	}
 	if resp.TLS != "tls" {
-		t.Errorf("TLS = %q, want %q", resp.TLS, "tls")
+		failf(t, "TLS = %q, want %q", resp.TLS, "tls")
 	}
 }
 
@@ -552,7 +552,7 @@ func TestHandleGetSMTPConfig_NonAdminForbidden(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
 	}
 }
 
@@ -569,20 +569,20 @@ func TestHandleGetSMTPConfig_EnvOverride(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp smtpConfigResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if resp.Host != "env-smtp.example.com" {
-		t.Errorf("Host = %q, want %q", resp.Host, "env-smtp.example.com")
+		failf(t, "Host = %q, want %q", resp.Host, "env-smtp.example.com")
 	}
 	if resp.From != "env@example.com" {
-		t.Errorf("From = %q, want %q", resp.From, "env@example.com")
+		failf(t, "From = %q, want %q", resp.From, "env@example.com")
 	}
 	if !resp.EnvOverride {
-		t.Error("EnvOverride should be true when SMTP_HOST env var is set")
+		fail(t, "EnvOverride should be true when SMTP_HOST env var is set")
 	}
 }
 
@@ -599,7 +599,7 @@ func TestHandleSetSMTPConfig_NonAdminForbidden(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
 	}
 }
 
@@ -614,7 +614,7 @@ func TestHandleSetSMTPConfig_MissingHost(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -629,7 +629,7 @@ func TestHandleSetSMTPConfig_MissingFrom(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -644,7 +644,7 @@ func TestHandleSetSMTPConfig_InvalidPort(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -659,7 +659,7 @@ func TestHandleSetSMTPConfig_InvalidTLS(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -673,7 +673,7 @@ func TestHandleSetSMTPConfig_InvalidJSON(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -688,40 +688,40 @@ func TestHandleSetSMTPConfig_Success(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	// Verify settings were persisted
 	host, err := h.DB.GetSetting(context.Background(), settingSMTPHost)
 	if err != nil {
-		t.Fatalf("GetSetting(smtp_host) error: %v", err)
+		failNowf(t, "GetSetting(smtp_host) error: %v", err)
 	}
 	if host != "smtp.example.com" {
-		t.Errorf("saved smtp_host = %q, want %q", host, "smtp.example.com")
+		failf(t, "saved smtp_host = %q, want %q", host, "smtp.example.com")
 	}
 
 	from, err := h.DB.GetSetting(context.Background(), settingSMTPFrom)
 	if err != nil {
-		t.Fatalf("GetSetting(smtp_from) error: %v", err)
+		failNowf(t, "GetSetting(smtp_from) error: %v", err)
 	}
 	if from != "noreply@example.com" {
-		t.Errorf("saved smtp_from = %q, want %q", from, "noreply@example.com")
+		failf(t, "saved smtp_from = %q, want %q", from, "noreply@example.com")
 	}
 
 	port, err := h.DB.GetSetting(context.Background(), settingSMTPPort)
 	if err != nil {
-		t.Fatalf("GetSetting(smtp_port) error: %v", err)
+		failNowf(t, "GetSetting(smtp_port) error: %v", err)
 	}
 	if port != "465" {
-		t.Errorf("saved smtp_port = %q, want %q", port, "465")
+		failf(t, "saved smtp_port = %q, want %q", port, "465")
 	}
 
 	pw, err := h.DB.GetSetting(context.Background(), settingSMTPPassword)
 	if err != nil {
-		t.Fatalf("GetSetting(smtp_password) error: %v", err)
+		failNowf(t, "GetSetting(smtp_password) error: %v", err)
 	}
 	if pw != "secret" {
-		t.Errorf("saved smtp_password = %q, want %q", pw, "secret")
+		failf(t, "saved smtp_password = %q, want %q", pw, "secret")
 	}
 }
 
@@ -736,17 +736,17 @@ func TestHandleSetSMTPConfig_DefaultsPortAndTLS(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	port, _ := h.DB.GetSetting(context.Background(), settingSMTPPort)
 	if port != "587" {
-		t.Errorf("default port = %q, want %q", port, "587")
+		failf(t, "default port = %q, want %q", port, "587")
 	}
 
 	tlsMode, _ := h.DB.GetSetting(context.Background(), settingSMTPTLS)
 	if tlsMode != "starttls" {
-		t.Errorf("default tls = %q, want %q", tlsMode, "starttls")
+		failf(t, "default tls = %q, want %q", tlsMode, "starttls")
 	}
 }
 
@@ -764,7 +764,7 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 	}
 	for _, setting := range existing {
 		if err := h.DB.SetSetting(ctx, setting.Key, setting.Value); err != nil {
-			t.Fatalf("SetSetting(%s): %v", setting.Key, err)
+			failNowf(t, "SetSetting(%s): %v", setting.Key, err)
 		}
 	}
 
@@ -776,11 +776,11 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 			SELECT RAISE(FAIL, 'forced smtp save failure');
 		END;
 	`, settingSMTPUsername)); err != nil {
-		t.Fatalf("create trigger: %v", err)
+		failNowf(t, "create trigger: %v", err)
 	}
 	t.Cleanup(func() {
 		if _, err := h.DB.ExecContext(ctx, `DROP TRIGGER IF EXISTS test_settings_fail_smtp_username_update`); err != nil {
-			t.Fatalf("drop trigger: %v", err)
+			failNowf(t, "drop trigger: %v", err)
 		}
 	})
 
@@ -792,16 +792,16 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusInternalServerError {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusInternalServerError, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusInternalServerError, w.Body.String())
 	}
 
 	for _, setting := range existing {
 		value, err := h.DB.GetSetting(ctx, setting.Key)
 		if err != nil {
-			t.Fatalf("GetSetting(%s): %v", setting.Key, err)
+			failNowf(t, "GetSetting(%s): %v", setting.Key, err)
 		}
 		if value != setting.Value {
-			t.Errorf("setting %s = %q, want %q after rollback", setting.Key, value, setting.Value)
+			failf(t, "setting %s = %q, want %q after rollback", setting.Key, value, setting.Value)
 		}
 	}
 }
@@ -818,7 +818,7 @@ func TestHandleSMTPConfig_DispatchMethodNotAllowed(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -834,7 +834,7 @@ func TestHandleSMTPTest_NonAdminForbidden(t *testing.T) {
 	h.HandleSMTPTest(w, r)
 
 	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
 	}
 }
 
@@ -848,7 +848,7 @@ func TestHandleSMTPTest_MethodNotAllowed(t *testing.T) {
 	h.HandleSMTPTest(w, r)
 
 	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+		failf(t, "status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -862,7 +862,7 @@ func TestHandleSMTPTest_NotConfigured(t *testing.T) {
 	h.HandleSMTPTest(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -884,15 +884,15 @@ func TestHandleSetSMTPConfig_PreservesExistingPassword(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	pw, err := h.DB.GetSetting(context.Background(), settingSMTPPassword)
 	if err != nil {
-		t.Fatalf("GetSetting(smtp_password): %v", err)
+		failNowf(t, "GetSetting(smtp_password): %v", err)
 	}
 	if pw != "existing-pw" {
-		t.Errorf("smtp_password = %q, want %q", pw, "existing-pw")
+		failf(t, "smtp_password = %q, want %q", pw, "existing-pw")
 	}
 }
 
@@ -908,7 +908,7 @@ func TestHandleSetSMTPConfig_UnauthenticatedSMTP(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 }
 
@@ -928,15 +928,15 @@ func TestHandleSetSMTPConfig_UnauthenticatedSMTP_ClearsExistingPassword(t *testi
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	pw, err := h.DB.GetSetting(context.Background(), settingSMTPPassword)
 	if err != nil {
-		t.Fatalf("GetSetting(smtp_password): %v", err)
+		failNowf(t, "GetSetting(smtp_password): %v", err)
 	}
 	if pw != "" {
-		t.Errorf("smtp_password = %q, want empty after switching to unauthenticated SMTP", pw)
+		failf(t, "smtp_password = %q, want empty after switching to unauthenticated SMTP", pw)
 	}
 }
 
@@ -952,7 +952,7 @@ func TestHandleSetSMTPConfig_UsernameWithoutPasswordFails(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -967,7 +967,7 @@ func TestHandleSetSMTPConfig_InvalidFromAddress(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -983,7 +983,7 @@ func TestHandleSetSMTPConfig_FromWithDisplayName(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
 	}
 }
 
@@ -1012,13 +1012,13 @@ func TestHandleSMTPTest_Success(t *testing.T) {
 	h.HandleSMTPTest(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	if calledFrom != "noreply@example.com" {
-		t.Errorf("sendMail from = %q, want %q", calledFrom, "noreply@example.com")
+		failf(t, "sendMail from = %q, want %q", calledFrom, "noreply@example.com")
 	}
 	if calledTo != "admin@example.com" {
-		t.Errorf("sendMail to = %q, want %q", calledTo, "admin@example.com")
+		failf(t, "sendMail to = %q, want %q", calledTo, "admin@example.com")
 	}
 }
 
@@ -1041,6 +1041,6 @@ func TestHandleSMTPTest_SendMailFailure(t *testing.T) {
 	h.HandleSMTPTest(w, r)
 
 	if w.Code != http.StatusBadGateway {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadGateway, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusBadGateway, w.Body.String())
 	}
 }

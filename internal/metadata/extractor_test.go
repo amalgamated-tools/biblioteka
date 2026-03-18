@@ -22,29 +22,29 @@ func TestExtractMetadata_NativeEPUB(t *testing.T) {
 
 	ext, err := NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
 	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
 	if err != nil {
-		t.Fatalf("extract: %v", err)
+		failNowf(t, "extract: %v", err)
 	}
 
 	if !meta.IsNative {
-		t.Error("expected IsNative to be true for EPUB")
+		fail(t, "expected IsNative to be true for EPUB")
 	}
 	if meta.Format != "EPUB" {
-		t.Errorf("expected format EPUB, got %q", meta.Format)
+		failf(t, "expected format EPUB, got %q", meta.Format)
 	}
 	if meta.Title != "The Great Gatsby" {
-		t.Errorf("expected title %q, got %q", "The Great Gatsby", meta.Title)
+		failf(t, "expected title %q, got %q", "The Great Gatsby", meta.Title)
 	}
 	if meta.Author != "F. Scott Fitzgerald" {
-		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", meta.Author)
+		failf(t, "expected author %q, got %q", "F. Scott Fitzgerald", meta.Author)
 	}
 	if meta.ISBN != "9780743273565" {
-		t.Errorf("expected ISBN %q, got %q", "9780743273565", meta.ISBN)
+		failf(t, "expected ISBN %q, got %q", "9780743273565", meta.ISBN)
 	}
 }
 
@@ -55,18 +55,18 @@ func TestExtractMetadata_EPUBWithISBN10(t *testing.T) {
 
 	ext, err := NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
 	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
 	if err != nil {
-		t.Fatalf("extract: %v", err)
+		failNowf(t, "extract: %v", err)
 	}
 
 	// Same goreader fix — ISBN-10 should now parse correctly
 	if meta.ISBN != "0743273567" {
-		t.Errorf("expected ISBN %q, got %q", "0743273567", meta.ISBN)
+		failf(t, "expected ISBN %q, got %q", "0743273567", meta.ISBN)
 	}
 }
 
@@ -77,17 +77,17 @@ func TestExtractMetadata_EPUBWithNoISBN(t *testing.T) {
 
 	ext, err := NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
 	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
 	if err != nil {
-		t.Fatalf("extract: %v", err)
+		failNowf(t, "extract: %v", err)
 	}
 
 	if meta.ISBN != "" {
-		t.Errorf("expected ISBN %q, got %q", "", meta.ISBN)
+		failf(t, "expected ISBN %q, got %q", "", meta.ISBN)
 	}
 }
 
@@ -98,20 +98,20 @@ func TestExtractMetadata_EPUBCaseInsensitive(t *testing.T) {
 
 	ext, err := NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
 	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
 	if err != nil {
-		t.Fatalf("extract: %v", err)
+		failNowf(t, "extract: %v", err)
 	}
 
 	if !meta.IsNative {
-		t.Error("expected .EPUB to use native parser")
+		fail(t, "expected .EPUB to use native parser")
 	}
 	if meta.Title != "Upper Case" {
-		t.Errorf("expected title %q, got %q", "Upper Case", meta.Title)
+		failf(t, "expected title %q, got %q", "Upper Case", meta.Title)
 	}
 }
 
@@ -121,7 +121,7 @@ func TestExtractMetadata_PDF(t *testing.T) {
 
 	ext, err := NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
@@ -129,20 +129,20 @@ func TestExtractMetadata_PDF(t *testing.T) {
 
 	meta, err := ext.ExtractMetadata(context.Background(), pdfPath)
 	if err != nil {
-		t.Fatalf("extract: %v", err)
+		failNowf(t, "extract: %v", err)
 	}
 
 	if meta.IsNative {
-		t.Error("expected IsNative to be false for PDF")
+		fail(t, "expected IsNative to be false for PDF")
 	}
 	if meta.Format != "PDF" {
-		t.Errorf("expected format PDF, got %q", meta.Format)
+		failf(t, "expected format PDF, got %q", meta.Format)
 	}
 	if meta.Title != "PDF Title" {
-		t.Errorf("expected title %q, got %q", "PDF Title", meta.Title)
+		failf(t, "expected title %q, got %q", "PDF Title", meta.Title)
 	}
 	if meta.Author != "PDF Author" {
-		t.Errorf("expected author %q, got %q", "PDF Author", meta.Author)
+		failf(t, "expected author %q, got %q", "PDF Author", meta.Author)
 	}
 }
 
@@ -153,25 +153,25 @@ func TestExtractMetadata_InvalidFile(t *testing.T) {
 
 	ext, err := NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
 	_, err = ext.ExtractMetadata(context.Background(), badPath)
 	if err == nil {
-		t.Fatal("expected error for invalid EPUB")
+		failNow(t, "expected error for invalid EPUB")
 	}
 }
 
 func TestExtractMetadata_NonexistentFile(t *testing.T) {
 	ext, err := NewExtractor()
 	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+		failNowf(t, "new extractor: %v", err)
 	}
 	defer ext.Close()
 
 	_, err = ext.ExtractMetadata(context.Background(), "/nonexistent/file.pdf")
 	if err == nil {
-		t.Fatal("expected error for nonexistent file")
+		failNow(t, "expected error for nonexistent file")
 	}
 }

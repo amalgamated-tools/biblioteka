@@ -10,10 +10,10 @@ func TestTimestamp_Scan_TimeValue(t *testing.T) {
 	now := time.Now().UTC()
 	var ts Timestamp
 	if err := ts.Scan(now); err != nil {
-		t.Fatalf("Scan(time.Time) error: %v", err)
+		failNowf(t, "Scan(time.Time) error: %v", err)
 	}
 	if !ts.Equal(now) {
-		t.Errorf("got %v, want %v", ts.Time, now)
+		failf(t, "got %v, want %v", ts.Time, now)
 	}
 }
 
@@ -22,10 +22,10 @@ func TestTimestamp_Scan_TimeWithTimezone(t *testing.T) {
 	est := time.Date(2026, 2, 24, 10, 30, 0, 0, loc)
 	var ts Timestamp
 	if err := ts.Scan(est); err != nil {
-		t.Fatalf("Scan(time.Time with timezone) error: %v", err)
+		failNowf(t, "Scan(time.Time with timezone) error: %v", err)
 	}
 	if !ts.Equal(est) {
-		t.Errorf("got %v, want %v", ts.Time, est)
+		failf(t, "got %v, want %v", ts.Time, est)
 	}
 }
 
@@ -33,10 +33,10 @@ func TestTimestamp_Scan_Nil(t *testing.T) {
 	var ts Timestamp
 	ts.Time = time.Now() // set non-zero first
 	if err := ts.Scan(nil); err != nil {
-		t.Fatalf("Scan(nil) error: %v", err)
+		failNowf(t, "Scan(nil) error: %v", err)
 	}
 	if !ts.IsZero() {
-		t.Errorf("expected zero time after scanning nil, got %v", ts.Time)
+		failf(t, "expected zero time after scanning nil, got %v", ts.Time)
 	}
 }
 
@@ -58,10 +58,10 @@ func TestTimestamp_Scan_StringFormats(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var ts Timestamp
 			if err := ts.Scan(tt.input); err != nil {
-				t.Fatalf("Scan(%q) error: %v", tt.input, err)
+				failNowf(t, "Scan(%q) error: %v", tt.input, err)
 			}
 			if ts.IsZero() {
-				t.Errorf("Scan(%q) produced zero time", tt.input)
+				failf(t, "Scan(%q) produced zero time", tt.input)
 			}
 		})
 	}
@@ -71,7 +71,7 @@ func TestTimestamp_Scan_InvalidString(t *testing.T) {
 	var ts Timestamp
 	err := ts.Scan("not-a-timestamp")
 	if err == nil {
-		t.Error("expected error for invalid string, got nil")
+		fail(t, "expected error for invalid string, got nil")
 	}
 }
 
@@ -79,25 +79,25 @@ func TestTimestamp_Scan_UnsupportedType(t *testing.T) {
 	var ts Timestamp
 	err := ts.Scan(12345)
 	if err == nil {
-		t.Error("expected error for unsupported type, got nil")
+		fail(t, "expected error for unsupported type, got nil")
 	}
 }
 
 func TestTimestamp_Scan_StringWithoutTimezoneIsUTC(t *testing.T) {
 	var ts Timestamp
 	if err := ts.Scan("2026-02-24 10:30:00"); err != nil {
-		t.Fatalf("Scan error: %v", err)
+		failNowf(t, "Scan error: %v", err)
 	}
 	if ts.Location() != time.UTC {
-		t.Errorf("expected UTC location, got %v", ts.Location())
+		failf(t, "expected UTC location, got %v", ts.Location())
 	}
 
 	var ts2 Timestamp
 	if err := ts2.Scan("2026-02-24T10:30:00"); err != nil {
-		t.Fatalf("Scan error: %v", err)
+		failNowf(t, "Scan error: %v", err)
 	}
 	if ts2.Location() != time.UTC {
-		t.Errorf("expected UTC location, got %v", ts2.Location())
+		failf(t, "expected UTC location, got %v", ts2.Location())
 	}
 }
 
@@ -105,11 +105,11 @@ func TestTimestamp_MarshalJSON_NonZero(t *testing.T) {
 	ts := Timestamp{time.Date(2026, 2, 24, 10, 30, 0, 0, time.UTC)}
 	data, err := json.Marshal(ts)
 	if err != nil {
-		t.Fatalf("MarshalJSON error: %v", err)
+		failNowf(t, "MarshalJSON error: %v", err)
 	}
 	want := `"2026-02-24T10:30:00Z"`
 	if string(data) != want {
-		t.Errorf("got %s, want %s", data, want)
+		failf(t, "got %s, want %s", data, want)
 	}
 }
 
@@ -117,22 +117,22 @@ func TestTimestamp_MarshalJSON_Zero(t *testing.T) {
 	var ts Timestamp
 	data, err := json.Marshal(ts)
 	if err != nil {
-		t.Fatalf("MarshalJSON error: %v", err)
+		failNowf(t, "MarshalJSON error: %v", err)
 	}
 	want := `""`
 	if string(data) != want {
-		t.Errorf("got %s, want %s", data, want)
+		failf(t, "got %s, want %s", data, want)
 	}
 }
 
 func TestTimestamp_UnmarshalJSON_Valid(t *testing.T) {
 	var ts Timestamp
 	if err := json.Unmarshal([]byte(`"2026-02-24T10:30:00Z"`), &ts); err != nil {
-		t.Fatalf("UnmarshalJSON error: %v", err)
+		failNowf(t, "UnmarshalJSON error: %v", err)
 	}
 	want := time.Date(2026, 2, 24, 10, 30, 0, 0, time.UTC)
 	if !ts.Equal(want) {
-		t.Errorf("got %v, want %v", ts.Time, want)
+		failf(t, "got %v, want %v", ts.Time, want)
 	}
 }
 
@@ -140,10 +140,10 @@ func TestTimestamp_UnmarshalJSON_Empty(t *testing.T) {
 	var ts Timestamp
 	ts.Time = time.Now()
 	if err := json.Unmarshal([]byte(`""`), &ts); err != nil {
-		t.Fatalf("UnmarshalJSON error: %v", err)
+		failNowf(t, "UnmarshalJSON error: %v", err)
 	}
 	if !ts.IsZero() {
-		t.Errorf("expected zero time for empty string, got %v", ts.Time)
+		failf(t, "expected zero time for empty string, got %v", ts.Time)
 	}
 }
 
@@ -151,10 +151,10 @@ func TestTimestamp_UnmarshalJSON_Null(t *testing.T) {
 	var ts Timestamp
 	ts.Time = time.Now()
 	if err := json.Unmarshal([]byte("null"), &ts); err != nil {
-		t.Fatalf("UnmarshalJSON error: %v", err)
+		failNowf(t, "UnmarshalJSON error: %v", err)
 	}
 	if !ts.IsZero() {
-		t.Errorf("expected zero time for null, got %v", ts.Time)
+		failf(t, "expected zero time for null, got %v", ts.Time)
 	}
 }
 
@@ -162,7 +162,7 @@ func TestTimestamp_UnmarshalJSON_Invalid(t *testing.T) {
 	var ts Timestamp
 	err := json.Unmarshal([]byte(`"not-a-timestamp"`), &ts)
 	if err == nil {
-		t.Error("expected error for invalid timestamp, got nil")
+		fail(t, "expected error for invalid timestamp, got nil")
 	}
 }
 
@@ -170,15 +170,15 @@ func TestTimestamp_JSONRoundTrip(t *testing.T) {
 	original := Timestamp{time.Date(2026, 6, 15, 14, 0, 0, 0, time.UTC)}
 	data, err := json.Marshal(original)
 	if err != nil {
-		t.Fatalf("Marshal error: %v", err)
+		failNowf(t, "Marshal error: %v", err)
 	}
 
 	var decoded Timestamp
 	if err := json.Unmarshal(data, &decoded); err != nil {
-		t.Fatalf("Unmarshal error: %v", err)
+		failNowf(t, "Unmarshal error: %v", err)
 	}
 
 	if !original.Equal(decoded.Time) {
-		t.Errorf("round-trip failed: got %v, want %v", decoded.Time, original.Time)
+		failf(t, "round-trip failed: got %v, want %v", decoded.Time, original.Time)
 	}
 }

@@ -12,7 +12,7 @@ func TestRateLimiter_AllowsInitialRequests(t *testing.T) {
 
 	for i := range 5 {
 		if !rl.allow("127.0.0.1") {
-			t.Errorf("request %d should have been allowed", i+1)
+			failf(t, "request %d should have been allowed", i+1)
 		}
 	}
 }
@@ -27,7 +27,7 @@ func TestRateLimiter_BlocksWhenBucketEmpty(t *testing.T) {
 	rl.allow("127.0.0.1")
 	// Third call: tokens=0 < 1, blocked.
 	if rl.allow("127.0.0.1") {
-		t.Error("request should have been blocked after bucket is empty")
+		fail(t, "request should have been blocked after bucket is empty")
 	}
 }
 
@@ -37,18 +37,18 @@ func TestRateLimiter_DifferentIPsAreIndependent(t *testing.T) {
 
 	// First call for each IP uses burst, so first call is always allowed
 	if !rl.allow("1.1.1.1") {
-		t.Error("first request from 1.1.1.1 should be allowed")
+		fail(t, "first request from 1.1.1.1 should be allowed")
 	}
 	if !rl.allow("2.2.2.2") {
-		t.Error("first request from 2.2.2.2 should be allowed")
+		fail(t, "first request from 2.2.2.2 should be allowed")
 	}
 
 	// Second calls should be blocked (tokens=0 after first call)
 	if rl.allow("1.1.1.1") {
-		t.Error("second request from 1.1.1.1 should be blocked")
+		fail(t, "second request from 1.1.1.1 should be blocked")
 	}
 	if rl.allow("2.2.2.2") {
-		t.Error("second request from 2.2.2.2 should be blocked")
+		fail(t, "second request from 2.2.2.2 should be blocked")
 	}
 }
 
@@ -58,7 +58,7 @@ func TestIpFromRequest_RemoteAddr(t *testing.T) {
 
 	ip := ipFromRequest(r)
 	if ip != "192.168.1.1" {
-		t.Errorf("ipFromRequest() = %q, want %q", ip, "192.168.1.1")
+		failf(t, "ipFromRequest() = %q, want %q", ip, "192.168.1.1")
 	}
 }
 
@@ -68,7 +68,7 @@ func TestIpFromRequest_XForwardedFor(t *testing.T) {
 
 	ip := ipFromRequest(r)
 	if ip != "10.0.0.1" {
-		t.Errorf("ipFromRequest() = %q, want %q", ip, "10.0.0.1")
+		failf(t, "ipFromRequest() = %q, want %q", ip, "10.0.0.1")
 	}
 }
 
@@ -78,7 +78,7 @@ func TestIpFromRequest_XForwardedFor_Single(t *testing.T) {
 
 	ip := ipFromRequest(r)
 	if ip != "10.0.0.2" {
-		t.Errorf("ipFromRequest() = %q, want %q", ip, "10.0.0.2")
+		failf(t, "ipFromRequest() = %q, want %q", ip, "10.0.0.2")
 	}
 }
 
@@ -97,7 +97,7 @@ func TestRateLimiter_Limit_BlockedRequest(t *testing.T) {
 	w1 := httptest.NewRecorder()
 	limited(w1, r1)
 	if w1.Code != http.StatusOK {
-		t.Errorf("first request: expected 200, got %d", w1.Code)
+		failf(t, "first request: expected 200, got %d", w1.Code)
 	}
 
 	// Second request: blocked
@@ -106,6 +106,6 @@ func TestRateLimiter_Limit_BlockedRequest(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	limited(w2, r2)
 	if w2.Code != http.StatusTooManyRequests {
-		t.Errorf("second request: expected 429, got %d", w2.Code)
+		failf(t, "second request: expected 429, got %d", w2.Code)
 	}
 }

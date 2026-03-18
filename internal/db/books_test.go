@@ -14,22 +14,22 @@ func TestCreateBook(t *testing.T) {
 
 	b, err := d.CreateBook(context.Background(), "The Gunslinger", strPtr("The first book"), nil, strPtr("1234567890"), nil, nil, nil, nil, strPtr("1982-06-10"), strPtr("Grant"), strPtr("en"), intPtr(224), nil)
 	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
+		failNowf(t, "CreateBook() error: %v", err)
 	}
 	if b.ID == "" {
-		t.Error("CreateBook() returned empty ID")
+		fail(t, "CreateBook() returned empty ID")
 	}
 	if b.Title != "The Gunslinger" {
-		t.Errorf("Title = %q, want %q", b.Title, "The Gunslinger")
+		failf(t, "Title = %q, want %q", b.Title, "The Gunslinger")
 	}
 	if b.ISBN10 == nil || *b.ISBN10 != "1234567890" {
-		t.Errorf("ISBN10 = %v, want %q", b.ISBN10, "1234567890")
+		failf(t, "ISBN10 = %v, want %q", b.ISBN10, "1234567890")
 	}
 	if b.NumPages == nil || *b.NumPages != 224 {
-		t.Errorf("NumPages = %v, want 224", b.NumPages)
+		failf(t, "NumPages = %v, want 224", b.NumPages)
 	}
 	if b.CreatedAt.IsZero() {
-		t.Error("CreatedAt is zero")
+		fail(t, "CreatedAt is zero")
 	}
 }
 
@@ -40,13 +40,13 @@ func TestGetBook(t *testing.T) {
 
 	found, err := d.GetBook(context.Background(), created.ID)
 	if err != nil {
-		t.Fatalf("GetBook() error: %v", err)
+		failNowf(t, "GetBook() error: %v", err)
 	}
 	if found.ID != created.ID {
-		t.Errorf("ID = %q, want %q", found.ID, created.ID)
+		failf(t, "ID = %q, want %q", found.ID, created.ID)
 	}
 	if found.Title != "The Gunslinger" {
-		t.Errorf("Title = %q, want %q", found.Title, "The Gunslinger")
+		failf(t, "Title = %q, want %q", found.Title, "The Gunslinger")
 	}
 }
 
@@ -55,7 +55,7 @@ func TestGetBook_NotFound(t *testing.T) {
 
 	_, err := d.GetBook(context.Background(), "nonexistent-id")
 	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
+		failf(t, "expected sql.ErrNoRows, got %v", err)
 	}
 }
 
@@ -67,13 +67,13 @@ func TestListBooks(t *testing.T) {
 
 	books, err := d.ListBooks(context.Background())
 	if err != nil {
-		t.Fatalf("ListBooks() error: %v", err)
+		failNowf(t, "ListBooks() error: %v", err)
 	}
 	if len(books) != 2 {
-		t.Fatalf("ListBooks() returned %d, want 2", len(books))
+		failNowf(t, "ListBooks() returned %d, want 2", len(books))
 	}
 	if books[0].Title != "A Game of Thrones" {
-		t.Errorf("first book Title = %q, want %q", books[0].Title, "A Game of Thrones")
+		failf(t, "first book Title = %q, want %q", books[0].Title, "A Game of Thrones")
 	}
 }
 
@@ -84,13 +84,13 @@ func TestUpdateBook(t *testing.T) {
 
 	updated, err := d.UpdateBook(context.Background(), created.ID, "The Gunslinger", strPtr("Revised edition"), nil, nil, nil, nil, nil, nil, nil, nil, strPtr("en"), intPtr(300), nil)
 	if err != nil {
-		t.Fatalf("UpdateBook() error: %v", err)
+		failNowf(t, "UpdateBook() error: %v", err)
 	}
 	if updated.Title != "The Gunslinger" {
-		t.Errorf("Title = %q, want %q", updated.Title, "The Gunslinger")
+		failf(t, "Title = %q, want %q", updated.Title, "The Gunslinger")
 	}
 	if updated.NumPages == nil || *updated.NumPages != 300 {
-		t.Errorf("NumPages = %v, want 300", updated.NumPages)
+		failf(t, "NumPages = %v, want 300", updated.NumPages)
 	}
 }
 
@@ -101,12 +101,12 @@ func TestDeleteBook(t *testing.T) {
 
 	err := d.DeleteBook(context.Background(), b.ID)
 	if err != nil {
-		t.Fatalf("DeleteBook() error: %v", err)
+		failNowf(t, "DeleteBook() error: %v", err)
 	}
 
 	_, err = d.GetBook(context.Background(), b.ID)
 	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
+		failf(t, "expected sql.ErrNoRows after delete, got %v", err)
 	}
 }
 
@@ -115,7 +115,7 @@ func TestDeleteBook_NotFound(t *testing.T) {
 
 	err := d.DeleteBook(context.Background(), "nonexistent-id")
 	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
+		failf(t, "expected sql.ErrNoRows, got %v", err)
 	}
 }
 
@@ -124,27 +124,27 @@ func TestAddBookToLibrary(t *testing.T) {
 
 	lib, err := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
 	if err != nil {
-		t.Fatalf("CreateLibrary() error: %v", err)
+		failNowf(t, "CreateLibrary() error: %v", err)
 	}
 	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
+		failNowf(t, "CreateBook() error: %v", err)
 	}
 
 	err = d.AddBookToLibrary(context.Background(), lib.ID, book.ID)
 	if err != nil {
-		t.Fatalf("AddBookToLibrary() error: %v", err)
+		failNowf(t, "AddBookToLibrary() error: %v", err)
 	}
 
 	books, err := d.ListBooksByLibrary(context.Background(), lib.ID)
 	if err != nil {
-		t.Fatalf("ListBooksByLibrary() error: %v", err)
+		failNowf(t, "ListBooksByLibrary() error: %v", err)
 	}
 	if len(books) != 1 {
-		t.Fatalf("ListBooksByLibrary() returned %d, want 1", len(books))
+		failNowf(t, "ListBooksByLibrary() returned %d, want 1", len(books))
 	}
 	if books[0].ID != book.ID {
-		t.Errorf("book ID = %q, want %q", books[0].ID, book.ID)
+		failf(t, "book ID = %q, want %q", books[0].ID, book.ID)
 	}
 }
 
@@ -153,56 +153,56 @@ func TestListBooksByLibraryPaginated(t *testing.T) {
 
 	lib, err := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
 	if err != nil {
-		t.Fatalf("CreateLibrary() error: %v", err)
+		failNowf(t, "CreateLibrary() error: %v", err)
 	}
 	b1, err := d.CreateBook(context.Background(), "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("CreateBook() for Alpha error: %v", err)
+		failNowf(t, "CreateBook() for Alpha error: %v", err)
 	}
 	b2, err := d.CreateBook(context.Background(), "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("CreateBook() for Beta error: %v", err)
+		failNowf(t, "CreateBook() for Beta error: %v", err)
 	}
 	b3, err := d.CreateBook(context.Background(), "Gamma", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("CreateBook() for Gamma error: %v", err)
+		failNowf(t, "CreateBook() for Gamma error: %v", err)
 	}
 	err = d.AddBookToLibrary(context.Background(), lib.ID, b1.ID)
 	if err != nil {
-		t.Fatalf("AddBookToLibrary() for Alpha error: %v", err)
+		failNowf(t, "AddBookToLibrary() for Alpha error: %v", err)
 	}
 	err = d.AddBookToLibrary(context.Background(), lib.ID, b2.ID)
 	if err != nil {
-		t.Fatalf("AddBookToLibrary() for Beta error: %v", err)
+		failNowf(t, "AddBookToLibrary() for Beta error: %v", err)
 	}
 	err = d.AddBookToLibrary(context.Background(), lib.ID, b3.ID)
 	if err != nil {
-		t.Fatalf("AddBookToLibrary() for Gamma error: %v", err)
+		failNowf(t, "AddBookToLibrary() for Gamma error: %v", err)
 	}
 
 	books, total, err := d.ListBooksByLibraryPaginated(context.Background(), lib.ID, 2, 0)
 	if err != nil {
-		t.Fatalf("ListBooksByLibraryPaginated() error: %v", err)
+		failNowf(t, "ListBooksByLibraryPaginated() error: %v", err)
 	}
 	if total != 3 {
-		t.Errorf("total = %d, want 3", total)
+		failf(t, "total = %d, want 3", total)
 	}
 	if len(books) != 2 {
-		t.Errorf("len(books) = %d, want 2", len(books))
+		failf(t, "len(books) = %d, want 2", len(books))
 	}
 	if books[0].Title != "Alpha" {
-		t.Errorf("first book = %q, want Alpha", books[0].Title)
+		failf(t, "first book = %q, want Alpha", books[0].Title)
 	}
 
 	books2, total2, err := d.ListBooksByLibraryPaginated(context.Background(), lib.ID, 2, 2)
 	if err != nil {
-		t.Fatalf("ListBooksByLibraryPaginated() page 2 error: %v", err)
+		failNowf(t, "ListBooksByLibraryPaginated() page 2 error: %v", err)
 	}
 	if total2 != 3 {
-		t.Errorf("total page 2 = %d, want 3", total2)
+		failf(t, "total page 2 = %d, want 3", total2)
 	}
 	if len(books2) != 1 {
-		t.Errorf("len(books) page 2 = %d, want 1", len(books2))
+		failf(t, "len(books) page 2 = %d, want 1", len(books2))
 	}
 }
 
@@ -215,12 +215,12 @@ func TestRemoveBookFromLibrary(t *testing.T) {
 
 	err := d.RemoveBookFromLibrary(context.Background(), lib.ID, book.ID)
 	if err != nil {
-		t.Fatalf("RemoveBookFromLibrary() error: %v", err)
+		failNowf(t, "RemoveBookFromLibrary() error: %v", err)
 	}
 
 	books, _ := d.ListBooksByLibrary(context.Background(), lib.ID)
 	if len(books) != 0 {
-		t.Errorf("ListBooksByLibrary() returned %d, want 0", len(books))
+		failf(t, "ListBooksByLibrary() returned %d, want 0", len(books))
 	}
 }
 
@@ -233,15 +233,15 @@ func TestSetBookAuthors(t *testing.T) {
 
 	err := d.SetBookAuthors(context.Background(), book.ID, []string{a1.ID, a2.ID})
 	if err != nil {
-		t.Fatalf("SetBookAuthors() error: %v", err)
+		failNowf(t, "SetBookAuthors() error: %v", err)
 	}
 
 	authors, err := d.GetBookAuthors(context.Background(), book.ID)
 	if err != nil {
-		t.Fatalf("GetBookAuthors() error: %v", err)
+		failNowf(t, "GetBookAuthors() error: %v", err)
 	}
 	if len(authors) != 2 {
-		t.Fatalf("GetBookAuthors() returned %d, want 2", len(authors))
+		failNowf(t, "GetBookAuthors() returned %d, want 2", len(authors))
 	}
 }
 
@@ -256,15 +256,15 @@ func TestSetBookAuthors_Replace(t *testing.T) {
 
 	err := d.SetBookAuthors(context.Background(), book.ID, []string{a2.ID})
 	if err != nil {
-		t.Fatalf("SetBookAuthors() replace error: %v", err)
+		failNowf(t, "SetBookAuthors() replace error: %v", err)
 	}
 
 	authors, _ := d.GetBookAuthors(context.Background(), book.ID)
 	if len(authors) != 1 {
-		t.Fatalf("GetBookAuthors() returned %d, want 1", len(authors))
+		failNowf(t, "GetBookAuthors() returned %d, want 1", len(authors))
 	}
 	if authors[0].ID != a2.ID {
-		t.Errorf("author ID = %q, want %q", authors[0].ID, a2.ID)
+		failf(t, "author ID = %q, want %q", authors[0].ID, a2.ID)
 	}
 }
 
@@ -273,37 +273,37 @@ func TestSetBookSeries(t *testing.T) {
 
 	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
+		failNowf(t, "CreateBook() error: %v", err)
 	}
 	if book == nil {
-		t.Fatal("CreateBook() returned nil book")
+		failNow(t, "CreateBook() returned nil book")
 	}
 
 	s, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 	if err != nil {
-		t.Fatalf("CreateSeries() error: %v", err)
+		failNowf(t, "CreateSeries() error: %v", err)
 	}
 	if s == nil {
-		t.Fatal("CreateSeries() returned nil series")
+		failNow(t, "CreateSeries() returned nil series")
 	}
 
 	err = d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: floatPtr(1)}})
 	if err != nil {
-		t.Fatalf("SetBookSeries() error: %v", err)
+		failNowf(t, "SetBookSeries() error: %v", err)
 	}
 
 	entries, err := d.GetBookSeries(context.Background(), book.ID)
 	if err != nil {
-		t.Fatalf("GetBookSeries() error: %v", err)
+		failNowf(t, "GetBookSeries() error: %v", err)
 	}
 	if len(entries) != 1 {
-		t.Fatalf("GetBookSeries() returned %d, want 1", len(entries))
+		failNowf(t, "GetBookSeries() returned %d, want 1", len(entries))
 	}
 	if entries[0].Series.ID != s.ID {
-		t.Errorf("series ID = %q, want %q", entries[0].Series.ID, s.ID)
+		failf(t, "series ID = %q, want %q", entries[0].Series.ID, s.ID)
 	}
 	if entries[0].Position == nil || *entries[0].Position != 1 {
-		t.Errorf("Position = %v, want 1", entries[0].Position)
+		failf(t, "Position = %v, want 1", entries[0].Position)
 	}
 }
 
@@ -312,62 +312,62 @@ func TestGetAuthorsForBooks(t *testing.T) {
 
 	book1, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("CreateBook() for book1 error: %v", err)
+		failNowf(t, "CreateBook() for book1 error: %v", err)
 	}
 	if book1 == nil {
-		t.Fatal("CreateBook() for book1 returned nil book")
+		failNow(t, "CreateBook() for book1 returned nil book")
 	}
 
 	book2, err := d.CreateBook(context.Background(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("CreateBook() for book2 error: %v", err)
+		failNowf(t, "CreateBook() for book2 error: %v", err)
 	}
 	if book2 == nil {
-		t.Fatal("CreateBook() for book2 returned nil book")
+		failNow(t, "CreateBook() for book2 returned nil book")
 	}
 
 	author1, err := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("CreateAuthor() for author1 error: %v", err)
+		failNowf(t, "CreateAuthor() for author1 error: %v", err)
 	}
 	if author1 == nil {
-		t.Fatal("CreateAuthor() for author1 returned nil author")
+		failNow(t, "CreateAuthor() for author1 returned nil author")
 	}
 
 	author2, err := d.CreateAuthor(context.Background(), "Robin Furth", nil, nil, nil, nil)
 	if err != nil {
-		t.Fatalf("CreateAuthor() for author2 error: %v", err)
+		failNowf(t, "CreateAuthor() for author2 error: %v", err)
 	}
 	if author2 == nil {
-		t.Fatal("CreateAuthor() for author2 returned nil author")
+		failNow(t, "CreateAuthor() for author2 returned nil author")
 	}
 
 	if err := d.SetBookAuthors(context.Background(), book1.ID, []string{author2.ID, author1.ID}); err != nil {
-		t.Fatalf("SetBookAuthors() for book1 error: %v", err)
+		failNowf(t, "SetBookAuthors() for book1 error: %v", err)
 	}
 	if err := d.SetBookAuthors(context.Background(), book2.ID, []string{author1.ID}); err != nil {
-		t.Fatalf("SetBookAuthors() for book2 error: %v", err)
+		failNowf(t, "SetBookAuthors() for book2 error: %v", err)
 	}
 
 	got, err := d.GetAuthorsForBooks(context.Background(), []string{book1.ID, book2.ID})
 	if err != nil {
-		t.Fatalf("GetAuthorsForBooks() error: %v", err)
+		failNowf(t, "GetAuthorsForBooks() error: %v", err)
 	}
 	if len(got) != 2 {
-		t.Fatalf("GetAuthorsForBooks() returned %d book entries, want 2", len(got))
+		failNowf(t, "GetAuthorsForBooks() returned %d book entries, want 2", len(got))
 	}
 	if len(got[book1.ID]) != 2 {
-		t.Fatalf("GetAuthorsForBooks()[book1] returned %d authors, want 2", len(got[book1.ID]))
+		failNowf(t, "GetAuthorsForBooks()[book1] returned %d authors, want 2", len(got[book1.ID]))
 	}
 	seen := map[string]bool{}
 	for _, author := range got[book1.ID] {
 		seen[author.ID] = true
 	}
 	if !seen[author1.ID] || !seen[author2.ID] {
-		t.Errorf("authors for book1 = %+v, want IDs %q and %q", got[book1.ID], author1.ID, author2.ID)
+		failf(t, "authors for book1 = %+v, want IDs %q and %q", got[book1.ID], author1.ID, author2.ID)
 	}
 	if len(got[book2.ID]) != 1 || got[book2.ID][0].ID != author1.ID {
-		t.Errorf("authors for book2 = %+v, want [%s]", got[book2.ID], author1.ID)
+		failf(t, "authors for book2 = %+v, want [%s]", got[book2.ID], author1.ID)
 	}
 }
 
@@ -386,11 +386,11 @@ func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 	// Author and series should still exist (only join table entries are cascaded)
 	_, err := d.GetAuthor(context.Background(), a.ID)
 	if err != nil {
-		t.Errorf("author should still exist after book delete, got: %v", err)
+		failf(t, "author should still exist after book delete, got: %v", err)
 	}
 	_, err = d.GetSeries(context.Background(), s.ID)
 	if err != nil {
-		t.Errorf("series should still exist after book delete, got: %v", err)
+		failf(t, "series should still exist after book delete, got: %v", err)
 	}
 }
 
@@ -417,47 +417,47 @@ func TestCreateBookWithFile(t *testing.T) {
 		"/books/the-gunslinger.epub",
 	)
 	if err != nil {
-		t.Fatalf("CreateBookWithFile() error: %v", err)
+		failNowf(t, "CreateBookWithFile() error: %v", err)
 	}
 	if b.ID == "" {
-		t.Error("book ID is empty")
+		fail(t, "book ID is empty")
 	}
 	if b.Title != "The Gunslinger" {
-		t.Errorf("Title = %q, want %q", b.Title, "The Gunslinger")
+		failf(t, "Title = %q, want %q", b.Title, "The Gunslinger")
 	}
 	if b.Description == nil || *b.Description != "The first book of the Dark Tower series" {
-		t.Errorf("Description = %v, want %q", b.Description, "The first book of the Dark Tower series")
+		failf(t, "Description = %v, want %q", b.Description, "The first book of the Dark Tower series")
 	}
 	if b.ISBN10 == nil || *b.ISBN10 != "1234567890" {
-		t.Errorf("ISBN10 = %v, want %q", b.ISBN10, "1234567890")
+		failf(t, "ISBN10 = %v, want %q", b.ISBN10, "1234567890")
 	}
 	if b.Publisher == nil || *b.Publisher != "Grant" {
-		t.Errorf("Publisher = %v, want %q", b.Publisher, "Grant")
+		failf(t, "Publisher = %v, want %q", b.Publisher, "Grant")
 	}
 	if b.PublicationDate == nil || *b.PublicationDate != "1982-06-10" {
-		t.Errorf("PublicationDate = %v, want %q", b.PublicationDate, "1982-06-10")
+		failf(t, "PublicationDate = %v, want %q", b.PublicationDate, "1982-06-10")
 	}
 	if b.Language == nil || *b.Language != "en" {
-		t.Errorf("Language = %v, want %q", b.Language, "en")
+		failf(t, "Language = %v, want %q", b.Language, "en")
 	}
 	if b.NumPages == nil || *b.NumPages != 224 {
-		t.Errorf("NumPages = %v, want 224", b.NumPages)
+		failf(t, "NumPages = %v, want 224", b.NumPages)
 	}
 
 	if bf.BookID != b.ID {
-		t.Errorf("BookFile.BookID = %q, want %q", bf.BookID, b.ID)
+		failf(t, "BookFile.BookID = %q, want %q", bf.BookID, b.ID)
 	}
 	if bf.FileType != "epub" {
-		t.Errorf("FileType = %q, want %q", bf.FileType, "epub")
+		failf(t, "FileType = %q, want %q", bf.FileType, "epub")
 	}
 	if bf.FileName != "the-gunslinger.epub" {
-		t.Errorf("FileName = %q, want %q", bf.FileName, "the-gunslinger.epub")
+		failf(t, "FileName = %q, want %q", bf.FileName, "the-gunslinger.epub")
 	}
 	if bf.FileSize != 4096 {
-		t.Errorf("FileSize = %d, want 4096", bf.FileSize)
+		failf(t, "FileSize = %d, want 4096", bf.FileSize)
 	}
 	if bf.FilePath != "/books/the-gunslinger.epub" {
-		t.Errorf("FilePath = %q, want %q", bf.FilePath, "/books/the-gunslinger.epub")
+		failf(t, "FilePath = %q, want %q", bf.FilePath, "/books/the-gunslinger.epub")
 	}
 }
 
@@ -475,7 +475,7 @@ func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
 		END;
 	`)
 	if err != nil {
-		t.Fatalf("failed to create trigger: %v", err)
+		failNowf(t, "failed to create trigger: %v", err)
 	}
 
 	_, _, err = d.CreateBookWithFile(
@@ -489,16 +489,16 @@ func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
 		"/books/orphan.epub",
 	)
 	if err == nil {
-		t.Fatal("expected error from failing book_files insert")
+		failNow(t, "expected error from failing book_files insert")
 	}
 
 	// Verify no book was committed
 	books, err := d.ListBooks(context.Background())
 	if err != nil {
-		t.Fatalf("ListBooks() error: %v", err)
+		failNowf(t, "ListBooks() error: %v", err)
 	}
 	if len(books) != 0 {
-		t.Errorf("expected 0 books after rollback, got %d", len(books))
+		failf(t, "expected 0 books after rollback, got %d", len(books))
 	}
 }
 
@@ -514,9 +514,9 @@ func TestDeleteLibrary_DoesNotDeleteBook(t *testing.T) {
 	// Book should still exist
 	found, err := d.GetBook(context.Background(), book.ID)
 	if err != nil {
-		t.Fatalf("book should still exist after library delete, got: %v", err)
+		failNowf(t, "book should still exist after library delete, got: %v", err)
 	}
 	if found.ID != book.ID {
-		t.Errorf("book ID = %q, want %q", found.ID, book.ID)
+		failf(t, "book ID = %q, want %q", found.ID, book.ID)
 	}
 }

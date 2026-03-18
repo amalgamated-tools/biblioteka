@@ -18,13 +18,13 @@ func TestRequestIDHandler_GeneratesID(t *testing.T) {
 	RequestIDHandler(next).ServeHTTP(w, r)
 
 	if gotID == "" {
-		t.Error("expected a non-empty request ID to be generated")
+		fail(t, "expected a non-empty request ID to be generated")
 	}
 	if w.Header().Get(RequestID) == "" {
-		t.Error("expected X-Request-ID response header to be set")
+		fail(t, "expected X-Request-ID response header to be set")
 	}
 	if w.Header().Get(RequestID) != gotID {
-		t.Errorf("response header X-Request-ID = %q, context request ID = %q; want them equal",
+		failf(t, "response header X-Request-ID = %q, context request ID = %q; want them equal",
 			w.Header().Get(RequestID), gotID)
 	}
 }
@@ -42,10 +42,10 @@ func TestRequestIDHandler_UsesExistingID(t *testing.T) {
 	RequestIDHandler(next).ServeHTTP(w, r)
 
 	if gotID != existingID {
-		t.Errorf("GetRequestID() = %q, want %q", gotID, existingID)
+		failf(t, "GetRequestID() = %q, want %q", gotID, existingID)
 	}
 	if w.Header().Get(RequestID) != existingID {
-		t.Errorf("response X-Request-ID = %q, want %q", w.Header().Get(RequestID), existingID)
+		failf(t, "response X-Request-ID = %q, want %q", w.Header().Get(RequestID), existingID)
 	}
 }
 
@@ -55,7 +55,7 @@ func TestWithRequestID(t *testing.T) {
 
 	got := GetRequestID(ctx)
 	if got != "test-id-123" {
-		t.Errorf("GetRequestID() = %q, want %q", got, "test-id-123")
+		failf(t, "GetRequestID() = %q, want %q", got, "test-id-123")
 	}
 }
 
@@ -67,7 +67,7 @@ func TestForward_SetsHeader(t *testing.T) {
 	Forward(r)
 
 	if r.Header.Get(RequestID) != "forwarded-id" {
-		t.Errorf("Header X-Request-ID = %q, want %q", r.Header.Get(RequestID), "forwarded-id")
+		failf(t, "Header X-Request-ID = %q, want %q", r.Header.Get(RequestID), "forwarded-id")
 	}
 }
 
@@ -78,7 +78,7 @@ func TestForward_NoIDDoesNothing(t *testing.T) {
 	Forward(r)
 
 	if r.Header.Get(RequestID) != "" {
-		t.Errorf("expected empty X-Request-ID header, got %q", r.Header.Get(RequestID))
+		failf(t, "expected empty X-Request-ID header, got %q", r.Header.Get(RequestID))
 	}
 }
 
@@ -94,10 +94,10 @@ func TestLoggingMiddleware_CallsNext(t *testing.T) {
 	LoggingMiddleware(next).ServeHTTP(w, r)
 
 	if !called {
-		t.Error("next handler was not called")
+		fail(t, "next handler was not called")
 	}
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		failf(t, "status = %d, want %d", w.Code, http.StatusOK)
 	}
 }
 
@@ -138,7 +138,7 @@ func TestLoggingMiddleware_PreservesStatus(t *testing.T) {
 	LoggingMiddleware(next).ServeHTTP(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+		failf(t, "status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }
 
@@ -152,7 +152,7 @@ func TestLoggingMiddleware_ImplicitOKOnWrite(t *testing.T) {
 	LoggingMiddleware(next).ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		failf(t, "status = %d, want %d", w.Code, http.StatusOK)
 	}
 }
 
@@ -165,10 +165,10 @@ func TestStatusRecorder_WriteHeader(t *testing.T) {
 	rec.WriteHeader(http.StatusCreated)
 
 	if rec.statusCode != http.StatusCreated {
-		t.Errorf("statusCode = %d, want %d", rec.statusCode, http.StatusCreated)
+		failf(t, "statusCode = %d, want %d", rec.statusCode, http.StatusCreated)
 	}
 	if w.Code != http.StatusCreated {
-		t.Errorf("underlying Code = %d, want %d", w.Code, http.StatusCreated)
+		failf(t, "underlying Code = %d, want %d", w.Code, http.StatusCreated)
 	}
 }
 
@@ -179,13 +179,13 @@ func TestStatusRecorder_WriteWithoutHeader(t *testing.T) {
 	n, err := rec.Write([]byte("data"))
 
 	if err != nil {
-		t.Fatalf("Write error: %v", err)
+		failNowf(t, "Write error: %v", err)
 	}
 	if n != 4 {
-		t.Errorf("Write returned %d, want 4", n)
+		failf(t, "Write returned %d, want 4", n)
 	}
 	if rec.statusCode != http.StatusOK {
-		t.Errorf("statusCode = %d, want %d", rec.statusCode, http.StatusOK)
+		failf(t, "statusCode = %d, want %d", rec.statusCode, http.StatusOK)
 	}
 }
 
@@ -197,7 +197,7 @@ func TestStatusRecorder_Flush_WithFlusher(t *testing.T) {
 	rec.Flush()
 
 	if !fr.flushed {
-		t.Error("expected Flush to be delegated to underlying flusher")
+		fail(t, "expected Flush to be delegated to underlying flusher")
 	}
 }
 
@@ -216,13 +216,13 @@ func TestStatusRecorder_Hijack_NotSupported(t *testing.T) {
 	conn, buf, err := rec.Hijack()
 
 	if conn != nil {
-		t.Error("expected nil conn")
+		fail(t, "expected nil conn")
 	}
 	if buf != nil {
-		t.Error("expected nil buf")
+		fail(t, "expected nil buf")
 	}
 	if !errors.Is(err, http.ErrNotSupported) {
-		t.Errorf("err = %v, want %v", err, http.ErrNotSupported)
+		failf(t, "err = %v, want %v", err, http.ErrNotSupported)
 	}
 }
 
@@ -233,6 +233,6 @@ func TestStatusRecorder_Push_NotSupported(t *testing.T) {
 	err := rec.Push("/resource", nil)
 
 	if !errors.Is(err, http.ErrNotSupported) {
-		t.Errorf("err = %v, want %v", err, http.ErrNotSupported)
+		failf(t, "err = %v, want %v", err, http.ErrNotSupported)
 	}
 }

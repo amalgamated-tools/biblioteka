@@ -43,22 +43,22 @@ func TestScanLibraryHandler(t *testing.T) {
 		Paths:     []string{"/books/fiction", "/books/scifi"},
 	})
 	if err := handler(context.Background(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
+		failNowf(t, "handler: %v", err)
 	}
 
 	if got := len(enq.jobs); got != 2 {
-		t.Fatalf("expected 2 enqueued jobs, got %d", got)
+		failNowf(t, "expected 2 enqueued jobs, got %d", got)
 	}
 	for i, want := range []string{"/books/fiction", "/books/scifi"} {
 		if enq.jobs[i].Name != JobScanPath {
-			t.Errorf("job[%d] name = %q, want %q", i, enq.jobs[i].Name, JobScanPath)
+			failf(t, "job[%d] name = %q, want %q", i, enq.jobs[i].Name, JobScanPath)
 		}
 		var p ScanPathPayload
 		if err := json.Unmarshal(enq.jobs[i].Payload, &p); err != nil {
-			t.Fatalf("unmarshal job[%d]: %v", i, err)
+			failNowf(t, "unmarshal job[%d]: %v", i, err)
 		}
 		if p.Path != want {
-			t.Errorf("job[%d] path = %q, want %q", i, p.Path, want)
+			failf(t, "job[%d] path = %q, want %q", i, p.Path, want)
 		}
 	}
 }
@@ -69,11 +69,11 @@ func TestScanLibraryHandler_EmptyPaths(t *testing.T) {
 
 	payload, _ := json.Marshal(ScanLibraryPayload{LibraryID: "lib1"})
 	if err := handler(context.Background(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
+		failNowf(t, "handler: %v", err)
 	}
 
 	if len(enq.jobs) != 0 {
-		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
+		failf(t, "expected 0 enqueued jobs, got %d", len(enq.jobs))
 	}
 }
 
@@ -86,11 +86,11 @@ func TestScanLibraryHandler_EnqueueError(t *testing.T) {
 		Paths:     []string{"/books/fiction", "/books/scifi"},
 	})
 	if err := handler(context.Background(), payload); err != nil {
-		t.Fatalf("handler should not fail on enqueue errors: %v", err)
+		failNowf(t, "handler should not fail on enqueue errors: %v", err)
 	}
 
 	if len(enq.jobs) != 0 {
-		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
+		failf(t, "expected 0 enqueued jobs, got %d", len(enq.jobs))
 	}
 }
 
@@ -100,7 +100,7 @@ func TestScanLibraryHandler_MissingLibraryID(t *testing.T) {
 
 	payload, _ := json.Marshal(ScanLibraryPayload{Paths: []string{"/books/fiction"}})
 	if err := handler(context.Background(), payload); err == nil {
-		t.Fatal("expected error when library_id is missing")
+		failNow(t, "expected error when library_id is missing")
 	}
 }
 
@@ -109,6 +109,6 @@ func TestScanLibraryHandler_InvalidPayload(t *testing.T) {
 	handler := NewScanLibraryHandler(enq)
 
 	if err := handler(context.Background(), []byte("not json")); err == nil {
-		t.Fatal("expected error for invalid payload")
+		failNow(t, "expected error for invalid payload")
 	}
 }

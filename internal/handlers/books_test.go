@@ -17,7 +17,7 @@ func setupBookHandler(t *testing.T) (*BookHandler, string) {
 	h := &BookHandler{DB: d}
 	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
 	if err != nil {
-		t.Fatalf("create user: %v", err)
+		failNowf(t, "create user: %v", err)
 	}
 	return h, user.ID
 }
@@ -33,24 +33,24 @@ func TestCreateBook_Handler(t *testing.T) {
 	h.HandleBooks(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	var dto bookDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if dto.Title != "The Gunslinger" {
-		t.Errorf("title = %q, want %q", dto.Title, "The Gunslinger")
+		failf(t, "title = %q, want %q", dto.Title, "The Gunslinger")
 	}
 	if dto.Authors == nil {
-		t.Error("authors should be empty array, not nil")
+		fail(t, "authors should be empty array, not nil")
 	}
 	if dto.Series == nil {
-		t.Error("series should be empty array, not nil")
+		fail(t, "series should be empty array, not nil")
 	}
 	if dto.Files == nil {
-		t.Error("files should be empty array, not nil")
+		fail(t, "files should be empty array, not nil")
 	}
 }
 
@@ -65,7 +65,7 @@ func TestCreateBook_MissingTitle(t *testing.T) {
 	h.HandleBooks(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+		failf(t, "status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
 
@@ -73,10 +73,10 @@ func TestListBooks_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		failNowf(t, "create book: %v", err)
 	}
 	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		failNowf(t, "create book: %v", err)
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books", nil)
@@ -86,24 +86,24 @@ func TestListBooks_Handler(t *testing.T) {
 	h.HandleBooks(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		failf(t, "status = %d, want %d", w.Code, http.StatusOK)
 	}
 
 	var resp bookListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if len(resp.Books) != 2 {
-		t.Errorf("len = %d, want 2", len(resp.Books))
+		failf(t, "len = %d, want 2", len(resp.Books))
 	}
 	if resp.Total != 2 {
-		t.Errorf("total = %d, want 2", resp.Total)
+		failf(t, "total = %d, want 2", resp.Total)
 	}
 	if resp.Limit != 50 {
-		t.Errorf("limit = %d, want 50", resp.Limit)
+		failf(t, "limit = %d, want 50", resp.Limit)
 	}
 	if resp.Offset != 0 {
-		t.Errorf("offset = %d, want 0", resp.Offset)
+		failf(t, "offset = %d, want 0", resp.Offset)
 	}
 }
 
@@ -112,10 +112,10 @@ func TestListBooks_InvalidLimitOffset_NonInt(t *testing.T) {
 
 	// Seed some data
 	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		failNowf(t, "create book: %v", err)
 	}
 	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		failNowf(t, "create book: %v", err)
 	}
 
 	// Provide non-integer limit/offset; handler should fall back to defaults.
@@ -126,26 +126,26 @@ func TestListBooks_InvalidLimitOffset_NonInt(t *testing.T) {
 	h.HandleBooks(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp bookListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 
 	if len(resp.Books) != 2 {
-		t.Errorf("len = %d, want 2", len(resp.Books))
+		failf(t, "len = %d, want 2", len(resp.Books))
 	}
 	if resp.Total != 2 {
-		t.Errorf("total = %d, want 2", resp.Total)
+		failf(t, "total = %d, want 2", resp.Total)
 	}
 	// Invalid values should cause defaults to be used.
 	if resp.Limit != 50 {
-		t.Errorf("limit = %d, want 50 (default)", resp.Limit)
+		failf(t, "limit = %d, want 50 (default)", resp.Limit)
 	}
 	if resp.Offset != 0 {
-		t.Errorf("offset = %d, want 0 (default)", resp.Offset)
+		failf(t, "offset = %d, want 0 (default)", resp.Offset)
 	}
 }
 
@@ -153,10 +153,10 @@ func TestListBooks_NegativeLimitOffset(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		failNowf(t, "create book: %v", err)
 	}
 	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		failNowf(t, "create book: %v", err)
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books?limit=-5&offset=-10", nil)
@@ -166,33 +166,33 @@ func TestListBooks_NegativeLimitOffset(t *testing.T) {
 	h.HandleBooks(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp bookListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 
 	if len(resp.Books) != 2 {
-		t.Errorf("len = %d, want 2", len(resp.Books))
+		failf(t, "len = %d, want 2", len(resp.Books))
 	}
 	if resp.Total != 2 {
-		t.Errorf("total = %d, want 2", resp.Total)
+		failf(t, "total = %d, want 2", resp.Total)
 	}
 
 	// Negative values should be clamped to safe non-negative values.
 	if resp.Limit <= 0 {
-		t.Errorf("limit = %d, want > 0 after clamping", resp.Limit)
+		failf(t, "limit = %d, want > 0 after clamping", resp.Limit)
 	}
 	if resp.Offset < 0 {
-		t.Errorf("offset = %d, want >= 0 after clamping", resp.Offset)
+		failf(t, "offset = %d, want >= 0 after clamping", resp.Offset)
 	}
 	if resp.Limit == -5 {
-		t.Errorf("limit should not echo negative input; got %d", resp.Limit)
+		failf(t, "limit should not echo negative input; got %d", resp.Limit)
 	}
 	if resp.Offset == -10 {
-		t.Errorf("offset should not echo negative input; got %d", resp.Offset)
+		failf(t, "offset should not echo negative input; got %d", resp.Offset)
 	}
 }
 
@@ -200,10 +200,10 @@ func TestListBooks_MaxLimitClamping(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		failNowf(t, "create book: %v", err)
 	}
 	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		failNowf(t, "create book: %v", err)
 	}
 
 	// Request an absurdly large limit; handler should clamp to a maximum.
@@ -214,27 +214,27 @@ func TestListBooks_MaxLimitClamping(t *testing.T) {
 	h.HandleBooks(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failNowf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp bookListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 
 	if len(resp.Books) != 2 {
-		t.Errorf("len = %d, want 2", len(resp.Books))
+		failf(t, "len = %d, want 2", len(resp.Books))
 	}
 	if resp.Total != 2 {
-		t.Errorf("total = %d, want 2", resp.Total)
+		failf(t, "total = %d, want 2", resp.Total)
 	}
 
 	// We don't assert the exact max, only that the requested huge limit was clamped.
 	if resp.Limit == 999999 {
-		t.Errorf("limit should be clamped below requested huge value; got %d", resp.Limit)
+		failf(t, "limit should be clamped below requested huge value; got %d", resp.Limit)
 	}
 	if resp.Limit < len(resp.Books) {
-		t.Errorf("limit = %d, want >= number of returned books (%d)", resp.Limit, len(resp.Books))
+		failf(t, "limit = %d, want >= number of returned books (%d)", resp.Limit, len(resp.Books))
 	}
 }
 
@@ -250,7 +250,7 @@ func TestGetBook_Handler(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 }
 
@@ -264,7 +264,7 @@ func TestGetBook_NotFound(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+		failf(t, "status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }
 
@@ -280,7 +280,7 @@ func TestDeleteBook_Handler(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
+		failf(t, "status = %d, want %d", w.Code, http.StatusNoContent)
 	}
 }
 
@@ -299,7 +299,7 @@ func TestBookAuthors_Handler(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	// Get authors
@@ -310,18 +310,18 @@ func TestBookAuthors_Handler(t *testing.T) {
 	h.HandleBookRoutes(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Errorf("GET status = %d, want %d", w2.Code, http.StatusOK)
+		failf(t, "GET status = %d, want %d", w2.Code, http.StatusOK)
 	}
 
 	var authors []authorDTO
 	if err := json.Unmarshal(w2.Body.Bytes(), &authors); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if len(authors) != 1 {
-		t.Fatalf("len = %d, want 1", len(authors))
+		failNowf(t, "len = %d, want 1", len(authors))
 	}
 	if authors[0].Name != "Stephen King" {
-		t.Errorf("name = %q, want %q", authors[0].Name, "Stephen King")
+		failf(t, "name = %q, want %q", authors[0].Name, "Stephen King")
 	}
 }
 
@@ -342,7 +342,7 @@ func TestBookSeries_Handler(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		failf(t, "PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	// Get series
@@ -353,18 +353,18 @@ func TestBookSeries_Handler(t *testing.T) {
 	h.HandleBookRoutes(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Errorf("GET status = %d, want %d", w2.Code, http.StatusOK)
+		failf(t, "GET status = %d, want %d", w2.Code, http.StatusOK)
 	}
 
 	var entries []bookSeriesEntryDTO
 	if err := json.Unmarshal(w2.Body.Bytes(), &entries); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if len(entries) != 1 {
-		t.Fatalf("len = %d, want 1", len(entries))
+		failNowf(t, "len = %d, want 1", len(entries))
 	}
 	if entries[0].Series.Name != "The Dark Tower" {
-		t.Errorf("series name = %q, want %q", entries[0].Series.Name, "The Dark Tower")
+		failf(t, "series name = %q, want %q", entries[0].Series.Name, "The Dark Tower")
 	}
 }
 
@@ -387,7 +387,7 @@ func TestBookFiles_Handler(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Errorf("POST status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		failf(t, "POST status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	// List files
@@ -398,14 +398,14 @@ func TestBookFiles_Handler(t *testing.T) {
 	h.HandleBookRoutes(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Errorf("GET status = %d, want %d", w2.Code, http.StatusOK)
+		failf(t, "GET status = %d, want %d", w2.Code, http.StatusOK)
 	}
 
 	var files []bookFileDTO
 	if err := json.Unmarshal(w2.Body.Bytes(), &files); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		failNowf(t, "unmarshal: %v", err)
 	}
 	if len(files) != 1 {
-		t.Fatalf("len = %d, want 1", len(files))
+		failNowf(t, "len = %d, want 1", len(files))
 	}
 }

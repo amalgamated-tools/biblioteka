@@ -17,13 +17,13 @@ CREATE TABLE foo (id int)`
 	stmts := splitStatements(sql)
 
 	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %v", len(stmts), stmts)
+		failNowf(t, "expected 2 statements, got %d: %v", len(stmts), stmts)
 	}
 	if !strings.Contains(stmts[0], "notify_change") {
-		t.Errorf("first statement should contain the full function body, got: %s", stmts[0])
+		failf(t, "first statement should contain the full function body, got: %s", stmts[0])
 	}
 	if !strings.Contains(stmts[1], "foo") {
-		t.Errorf("second statement should be CREATE TABLE, got: %s", stmts[1])
+		failf(t, "second statement should be CREATE TABLE, got: %s", stmts[1])
 	}
 }
 
@@ -38,7 +38,7 @@ SELECT 1`
 	stmts := splitStatements(sql)
 
 	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %v", len(stmts), stmts)
+		failNowf(t, "expected 2 statements, got %d: %v", len(stmts), stmts)
 	}
 }
 
@@ -49,7 +49,7 @@ func TestSplitStatements_CreateTableWithTriggerColumnName(t *testing.T) {
 	stmts := splitStatements(sql)
 
 	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %v", len(stmts), stmts)
+		failNowf(t, "expected 2 statements, got %d: %v", len(stmts), stmts)
 	}
 }
 
@@ -59,7 +59,7 @@ func TestSplitStatements_CreateIndexNotTrigger(t *testing.T) {
 	stmts := splitStatements(sql)
 
 	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %v", len(stmts), stmts)
+		failNowf(t, "expected 2 statements, got %d: %v", len(stmts), stmts)
 	}
 }
 
@@ -70,10 +70,10 @@ SELECT 1`
 	stmts := splitStatements(sql)
 
 	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %v", len(stmts), stmts)
+		failNowf(t, "expected 2 statements, got %d: %v", len(stmts), stmts)
 	}
 	if !strings.Contains(stmts[0], "my_trigger") {
-		t.Errorf("first statement should contain trigger, got: %s", stmts[0])
+		failf(t, "first statement should contain trigger, got: %s", stmts[0])
 	}
 }
 
@@ -87,7 +87,7 @@ $$ LANGUAGE plpgsql`
 	result := removeInlineComments(sql)
 
 	if !strings.Contains(result, "-- this is inside dollar quotes") {
-		t.Errorf("comment inside dollar-quoted string should be preserved, got: %s", result)
+		failf(t, "comment inside dollar-quoted string should be preserved, got: %s", result)
 	}
 }
 
@@ -97,9 +97,9 @@ func TestRemoveInlineComments_StripsOutsideDollarQuotes(t *testing.T) {
 	result := removeInlineComments(sql)
 
 	if strings.Contains(result, "outside comment") {
-		t.Errorf("comment outside dollar quotes should be removed, got: %s", result)
+		failf(t, "comment outside dollar quotes should be removed, got: %s", result)
 	}
 	if !strings.Contains(result, "SELECT 1") || !strings.Contains(result, "SELECT 2") {
-		t.Errorf("SQL statements should be preserved, got: %s", result)
+		failf(t, "SQL statements should be preserved, got: %s", result)
 	}
 }

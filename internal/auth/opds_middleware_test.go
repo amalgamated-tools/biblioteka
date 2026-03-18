@@ -32,7 +32,7 @@ func newOPDSCheckerWithUser(t *testing.T, username, password, userID string) *mo
 	t.Helper()
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 	if err != nil {
-		t.Fatalf("bcrypt hash: %v", err)
+		failNowf(t, "bcrypt hash: %v", err)
 	}
 	return &mockOPDSChecker{
 		creds: map[string]*OPDSCredentialResult{
@@ -55,16 +55,16 @@ func TestOPDSBasicAuth_MissingCredentials(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+		failf(t, "status = %d, want %d", w.Code, http.StatusUnauthorized)
 	}
 	if got := w.Header().Get("WWW-Authenticate"); got != `Basic realm="Biblioteka OPDS"` {
-		t.Errorf("WWW-Authenticate = %q, want %q", got, `Basic realm="Biblioteka OPDS"`)
+		failf(t, "WWW-Authenticate = %q, want %q", got, `Basic realm="Biblioteka OPDS"`)
 	}
 	if !strings.Contains(w.Body.String(), "authentication required") {
-		t.Errorf("body should contain 'authentication required', got %q", w.Body.String())
+		failf(t, "body should contain 'authentication required', got %q", w.Body.String())
 	}
 }
 
@@ -83,13 +83,13 @@ func TestOPDSBasicAuth_UnknownUsername(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+		failf(t, "status = %d, want %d", w.Code, http.StatusUnauthorized)
 	}
 	if !strings.Contains(w.Body.String(), "invalid credentials") {
-		t.Errorf("body should contain 'invalid credentials', got %q", w.Body.String())
+		failf(t, "body should contain 'invalid credentials', got %q", w.Body.String())
 	}
 }
 
@@ -108,13 +108,13 @@ func TestOPDSBasicAuth_WrongPassword(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+		failf(t, "status = %d, want %d", w.Code, http.StatusUnauthorized)
 	}
 	if !strings.Contains(w.Body.String(), "invalid credentials") {
-		t.Errorf("body should contain 'invalid credentials', got %q", w.Body.String())
+		failf(t, "body should contain 'invalid credentials', got %q", w.Body.String())
 	}
 }
 
@@ -133,10 +133,10 @@ func TestOPDSBasicAuth_Success(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		failf(t, "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	if gotUserID != "user-1" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "user-1")
+		failf(t, "UserIDFromContext = %q, want %q", gotUserID, "user-1")
 	}
 }
 
@@ -155,10 +155,10 @@ func TestOPDSBasicAuth_UsernameLowercased(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		failf(t, "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	if gotUserID != "user-1" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "user-1")
+		failf(t, "UserIDFromContext = %q, want %q", gotUserID, "user-1")
 	}
 }
 
@@ -177,10 +177,10 @@ func TestOPDSBasicAuth_EmptyUsername(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	if called {
-		t.Error("next handler should not have been called")
+		fail(t, "next handler should not have been called")
 	}
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+		failf(t, "status = %d, want %d", w.Code, http.StatusUnauthorized)
 	}
 }
 
@@ -196,10 +196,10 @@ func TestOPDSBasicAuth_XMLErrorResponse(t *testing.T) {
 
 	ct := w.Header().Get("Content-Type")
 	if !strings.Contains(ct, "application/atom+xml") {
-		t.Errorf("Content-Type = %q, want atom+xml", ct)
+		failf(t, "Content-Type = %q, want atom+xml", ct)
 	}
 	body := w.Body.String()
 	if !strings.Contains(body, "<feed") {
-		t.Errorf("body should contain XML feed element, got %q", body)
+		failf(t, "body should contain XML feed element, got %q", body)
 	}
 }

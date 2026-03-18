@@ -47,12 +47,12 @@ func TestScanLibrariesHandler(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	if err := handler(context.Background(), nil); err != nil {
-		t.Fatalf("handler: %v", err)
+		failNowf(t, "handler: %v", err)
 	}
 
 	// Expect 2 scan:library jobs (lib1 and lib2; lib3 is not monitored)
 	if got := len(enq.jobs); got != 2 {
-		t.Fatalf("expected 2 enqueued jobs, got %d", got)
+		failNowf(t, "expected 2 enqueued jobs, got %d", got)
 	}
 
 	wantJobs := map[string][]string{
@@ -61,20 +61,20 @@ func TestScanLibrariesHandler(t *testing.T) {
 	}
 	for _, j := range enq.jobs {
 		if j.Name != JobScanLibrary {
-			t.Errorf("expected job name %q, got %q", JobScanLibrary, j.Name)
+			failf(t, "expected job name %q, got %q", JobScanLibrary, j.Name)
 		}
 		var p ScanLibraryPayload
 		if err := json.Unmarshal(j.Payload, &p); err != nil {
-			t.Errorf("unmarshal payload: %v", err)
+			failf(t, "unmarshal payload: %v", err)
 			continue
 		}
 		wantPaths, ok := wantJobs[p.LibraryID]
 		if !ok {
-			t.Errorf("unexpected library_id %q", p.LibraryID)
+			failf(t, "unexpected library_id %q", p.LibraryID)
 			continue
 		}
 		if !slices.Equal(p.Paths, wantPaths) {
-			t.Errorf("library %q paths = %v, want %v", p.LibraryID, p.Paths, wantPaths)
+			failf(t, "library %q paths = %v, want %v", p.LibraryID, p.Paths, wantPaths)
 		}
 	}
 }
@@ -89,11 +89,11 @@ func TestScanLibrariesHandler_NoMonitoredLibraries(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	if err := handler(context.Background(), nil); err != nil {
-		t.Fatalf("handler: %v", err)
+		failNowf(t, "handler: %v", err)
 	}
 
 	if len(enq.jobs) != 0 {
-		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
+		failf(t, "expected 0 enqueued jobs, got %d", len(enq.jobs))
 	}
 }
 
@@ -103,11 +103,11 @@ func TestScanLibrariesHandler_EmptyLibraryList(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	if err := handler(context.Background(), nil); err != nil {
-		t.Fatalf("handler: %v", err)
+		failNowf(t, "handler: %v", err)
 	}
 
 	if len(enq.jobs) != 0 {
-		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
+		failf(t, "expected 0 enqueued jobs, got %d", len(enq.jobs))
 	}
 }
 
@@ -117,7 +117,7 @@ func TestScanLibrariesHandler_ListError(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	if err := handler(context.Background(), nil); err == nil {
-		t.Fatal("expected error when ListLibraries fails")
+		failNow(t, "expected error when ListLibraries fails")
 	}
 }
 
@@ -142,12 +142,12 @@ func TestScanLibrariesHandler_InvalidPaths(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	if err := handler(context.Background(), nil); err != nil {
-		t.Fatalf("handler should not fail on one bad library: %v", err)
+		failNowf(t, "handler should not fail on one bad library: %v", err)
 	}
 
 	// Only the good library should produce a job
 	if got := len(enq.jobs); got != 1 {
-		t.Errorf("expected 1 enqueued job, got %d", got)
+		failf(t, "expected 1 enqueued job, got %d", got)
 	}
 }
 
@@ -167,6 +167,6 @@ func TestScanLibrariesHandler_EnqueueError(t *testing.T) {
 	handler := NewScanLibrariesHandler(lister, enq)
 	// Enqueue errors should be logged but not cause the handler to fail
 	if err := handler(context.Background(), nil); err != nil {
-		t.Fatalf("handler should not fail on enqueue errors: %v", err)
+		failNowf(t, "handler should not fail on enqueue errors: %v", err)
 	}
 }
