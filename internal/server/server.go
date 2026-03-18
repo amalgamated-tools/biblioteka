@@ -74,11 +74,13 @@ type Server struct {
 	opdsHandler           *handlers.OPDSHandler
 	opdsCredentialHandler *handlers.OPDSCredentialHandler
 	koboHandler           *handlers.KoboHandler
+	kosyncHandler         *handlers.KOSyncHandler
 	requireAuth           func(http.Handler) http.Handler
 	requireJWTAuth        func(http.Handler) http.Handler
 	requireAdmin          func(http.Handler) http.Handler
 	requireOPDSAuth       func(http.Handler) http.Handler
 	requireKoboAuth       func(http.Handler) http.Handler
+	requireKOSyncAuth     func(http.Handler) http.Handler
 	authLimiter           *auth.RateLimiter
 	mux                   *http.ServeMux
 	httpServer            *http.Server
@@ -156,11 +158,13 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
 	s.opdsCredentialHandler = &handlers.OPDSCredentialHandler{DB: s.DB}
+	s.kosyncHandler = &handlers.KOSyncHandler{DB: s.DB}
 	s.apiKeyHandler = &handlers.APIKeyHandler{DB: s.DB}
 	s.koboHandler = &handlers.KoboHandler{DB: s.DB}
 	s.koboHandler.RegisterRoutes()
 	s.requireKoboAuth = auth.KoboTokenAuthMiddleware(&koboDBAdapter{db: s.DB})
 	s.requireOPDSAuth = auth.OPDSBasicAuthMiddleware(&opdsDBAdapter{db: s.DB})
+	s.requireKOSyncAuth = auth.KOSyncHeaderAuthMiddleware(&kosyncDBAdapter{db: s.DB})
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
@@ -290,5 +294,21 @@ func (a *koboDBAdapter) GetKoboTokenByToken(ctx context.Context, token string) (
 	}
 	return &auth.KoboTokenResult{
 		UserID: t.UserID,
+	}, nil
+}
+
+// kosyncDBAdapter bridges *db.DB to the auth.KOSyncCredentialChecker interface.
+type kosyncDBAdapter struct {
+	db *db.DB
+}
+
+func (a *kosyncDBAdapter) GetKOSyncCredential(ctx context.Context, username string) (*auth.KOSyncCredentialResult, error) {
+	cred, err := a.db.GetKOSyncCredentialByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	return &auth.KOSyncCredentialResult{
+		UserID:       cred.UserID,
+		PasswordHash: cred.PasswordHash,
 	}, nil
 }
