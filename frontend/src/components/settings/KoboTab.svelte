@@ -191,6 +191,7 @@
     {:else}
       <div class="space-y-3">
         {#each tokenList as token (token.id)}
+          {@const url = syncURL(token)}
           <div
             class="border border-ink-100 dark:border-ink-800 rounded-xl p-4 flex flex-col gap-2 hover:bg-ink-50/50 dark:hover:bg-ink-800/30 transition-colors"
           >
@@ -214,7 +215,6 @@
             </div>
 
             <div class="flex items-center gap-2">
-              {@const url = syncURL(token)}
               {#if url}
                 <code
                   class="flex-1 px-3 py-2 bg-ink-50 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 rounded-lg text-xs font-mono text-ink-600 dark:text-ink-300 break-all"
