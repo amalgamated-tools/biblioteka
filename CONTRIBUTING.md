@@ -110,12 +110,45 @@ To re-run only failed tests or a specific file:
 ```bash
 # Run a specific test file
 pnpm exec playwright test tests/auth.spec.ts
+pnpm exec playwright test tests/settings.spec.ts
 
 # Run in headed mode to watch the browser
 pnpm exec playwright test --headed
 ```
 
 > **Note:** When `CI=true` (set automatically in GitHub Actions), Playwright always starts a fresh server. Locally, it reuses a running server on port `3847` if one is already available.
+
+#### E2E test helpers (`e2e/tests/helpers/auth.ts`)
+
+Shared auth utilities live in `e2e/tests/helpers/auth.ts`. Import them in any spec that needs authentication instead of duplicating login/signup logic.
+
+| Export | Description |
+|--------|-------------|
+| `createTestUser(overrides?)` | Returns a `TestUser` with a unique email, default display name, and password. Pass `overrides` to customise individual fields. |
+| `configureTimeouts(page)` | Sets `page.setDefaultTimeout` and `page.setDefaultNavigationTimeout` from `E2E_TIMEOUT_MS` / `E2E_NAVIGATION_TIMEOUT_MS` env vars (defaults: 5 000 ms each). Call this at the top of every test or `test.beforeEach`. |
+| `openAuthPage(page)` | Navigates to `/` and waits for the login button to appear. |
+| `openSignupForm(page)` | Calls `openAuthPage`, then clicks "Sign Up" and waits for the registration form. |
+| `openLoginForm(page)` | Calls `openAuthPage`, then clicks the login button and waits for email/password inputs. |
+| `signUp(page, user)` | Completes the sign-up flow for a `TestUser` and waits for the authenticated home screen. |
+| `signIn(page, email, password)` | Fills and submits the login form. **Does not assert success** — callers must check the expected outcome (some tests deliberately sign in with bad credentials). |
+| `signOut(page)` | Clicks the logout button and waits for the login screen and `localStorage` token removal. |
+| `getAuthErrorBanner(page)` | Returns the Playwright locator for the auth error banner (`data-testid="auth-error"`). |
+
+**Usage example:**
+
+```typescript
+import { test, expect } from "@playwright/test";
+import { configureTimeouts, createTestUser, signUp, signOut, signIn } from "./helpers/auth";
+
+test("login with wrong password shows error", async ({ page }) => {
+  configureTimeouts(page);
+  const user = createTestUser();
+  await signUp(page, user);
+  await signOut(page);
+  await signIn(page, user.email, "wrong-password");
+  await expect(getAuthErrorBanner(page)).toContainText(/invalid email or password/i);
+});
+```
 
 #### Test helpers (`internal/testutils`)
 
