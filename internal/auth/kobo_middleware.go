@@ -85,7 +85,9 @@ func KoboTokenAuthMiddleware(checker KoboTokenChecker) func(http.Handler) http.H
 			r = r.WithContext(ctx)
 
 			// Rewrite path so the sub-mux dispatches on the stripped path.
+			// Rewrite path so the sub-mux dispatches on the stripped path.
 			r.URL.Path = subPath
+			r.URL.RawPath = ""
 
 			next.ServeHTTP(w, r)
 		})

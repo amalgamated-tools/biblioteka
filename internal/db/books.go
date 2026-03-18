@@ -289,15 +289,16 @@ func dollarN(n int) string {
 
 // ListBooksModifiedSince returns up to limit books updated after since, ordered by
 // updated_at ascending so callers can track the high-water mark. When since is the
-// zero time all books are returned (initial sync).
-func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, limit int) ([]Book, error) {
+// zero time all books are returned (initial sync). For non-zero since values, callers
+// should also pass the last seen book ID as lastID to avoid skipping rows that share
+// the same updated_at across pages.
+func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, lastID string, limit int) ([]Book, error) {
 	slog.DebugContext(ctx, "db: listing books modified since",
 		slog.Int(otelkeys.Limit, limit),
 	)
-	orderBy := "ORDER BY updated_at ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY updated_at ASC, id ASC"
-	}
+	// Use a stable, deterministic ordering that matches the tie-breaker used in the
+	// WHERE clause for pagination.
+	const orderBy = "ORDER BY updated_at ASC, id ASC"
 	if since.IsZero() {
 		rows, err := d.QueryContext(ctx,
 			`SELECT `+bookColumns+` FROM books `+orderBy+` LIMIT $1`,
@@ -318,9 +319,12 @@ func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, limit 
 		// to ensure correct string-based datetime comparison.
 		sinceParam = since.UTC().Format("2006-01-02 15:04:05")
 	}
+
+	// For incremental sync, include a tie-breaker on ID so that rows sharing the same
+	// updated_at value but appearing on different pages are not skipped.
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+bookColumns+` FROM books WHERE updated_at > $1 `+orderBy+` LIMIT $2`,
-		sinceParam, limit,
+		`SELECT `+bookColumns+` FROM books WHERE (updated_at > $1 OR (updated_at = $1 AND id > $2)) `+orderBy+` LIMIT $3`,
+		sinceParam, lastID, limit,
 	)
 	if err != nil {
 		return nil, err
