@@ -16,7 +16,7 @@ frontend/
     android-chrome-512x512.png  Android home-screen icon (512 × 512)
     site.webmanifest        PWA web app manifest (name, icons, theme colour)
   src/
-    App.svelte          Root component: auth gate + shell layout + routing
+    App.svelte          Root component: auth gate + shell layout + routing; includes skip-to-main-content link (WCAG 2.4.1)
     main.ts             Entry point; mounts App and initialises the theme
     index.css           Tailwind CSS directives
     types.ts            Shared TypeScript interfaces for API entities
@@ -371,6 +371,83 @@ Svelte 5 emits a `state_referenced_locally` warning for this pattern because the
 4. Import and render `<MyTab />` inside the `{#if activeTab === "my-tab"}` block in `Settings.svelte`.
 5. Add a navigation `<button>` in `Settings.svelte`'s sidebar `<nav>`, wrapped in `{#if isAdmin}` if the tab is admin-only.
 6. Update the table above.
+
+## Accessibility
+
+Biblioteka's frontend follows [WCAG 2.1](https://www.w3.org/TR/WCAG21/) guidelines. This section documents the accessibility patterns used in the app shell and how to maintain them when making changes.
+
+### Skip-to-main-content link
+
+**WCAG criterion:** [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html) (Level A)
+
+The authenticated app shell (`App.svelte`) includes a skip link as the **first focusable element** in the DOM. It allows keyboard and screen-reader users to jump past the persistent navigation sidebar directly to the main content area without tabbing through every nav item on every page load.
+
+**Implementation in `App.svelte`:**
+
+```svelte
+<!-- First focusable element inside the authenticated shell -->
+<a
+  href="#main-content"
+  onclick={(e: MouseEvent) => {
+    e.preventDefault();
+    document.getElementById("main-content")?.focus();
+  }}
+  class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100]
+         focus:rounded-xl focus:bg-accent-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
+>
+  Skip to main content
+</a>
+
+<!-- … Sidebar … -->
+
+<main id="main-content" tabindex="-1" class="md:ml-64 p-4 md:p-8">
+  <!-- page content -->
+</main>
+```
+
+Key details:
+
+| Element | Attribute / class | Purpose |
+|---------|-------------------|---------|
+| `<a href="#main-content">` | — | Standard skip link; navigates to the `main` landmark |
+| `<a>` | `onclick` handler | Calls `focus()` programmatically so the browser moves keyboard focus, not just scroll position |
+| `<a>` | `sr-only focus:not-sr-only` | Visually hidden at rest; fully visible when focused — keeps the default chrome clean while remaining reachable by keyboard |
+| `<main>` | `id="main-content"` | Stable anchor target for the skip link |
+| `<main>` | `tabindex="-1"` | Allows `element.focus()` to land on the `<main>` element even though it is not natively focusable |
+
+**DOM ordering rule:** The skip link must be rendered **before** `<Sidebar />` in the template so it is the first element reached by the Tab key. Do not move it below the sidebar.
+
+### ARIA landmarks
+
+The app shell uses semantic HTML5 landmark elements so screen readers can navigate by region:
+
+| Landmark | Element | Notes |
+|----------|---------|-------|
+| Main navigation | `<aside>` (inside `Sidebar.svelte`) | Desktop persistent sidebar |
+| Primary content | `<main id="main-content">` | Target of the skip link |
+| Mobile header | `<div>` + hamburger `<button>` | Not a landmark; sits above `<main>` only on small screens |
+
+### Maintaining accessibility
+
+When editing the app shell or adding new persistent navigation elements:
+
+1. Keep the skip link as the **first** child of the authenticated shell `<div>`.
+2. If you add a new persistent region that users must bypass, add an additional skip link or update the existing one.
+3. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
+4. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+
+### Accessibility tests
+
+`frontend/src/App.test.ts` contains a focused regression test that verifies:
+
+- The skip link exists and has the label _"Skip to main content"_.
+- The `<main>` landmark has `id="main-content"`.
+- The skip link appears **before** the sidebar in DOM order.
+- Clicking the skip link moves keyboard focus to `<main>`.
+
+Keep this test green. If you restructure `App.svelte`, update the test to match.
+
+---
 
 ## Build configuration (`vite.config.ts`)
 
