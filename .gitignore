@@ -17,6 +17,8 @@ db/biblioteka.db*
 coverage.out
 node_modules/
 .pnpm-store/
+e2e/test-results/
+e2e/playwright-report/
 
 .env
 

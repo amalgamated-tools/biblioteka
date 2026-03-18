@@ -66,4 +66,33 @@ describe("router store", () => {
     setHash("#/books");
     expect(routerStore.currentView).toBe("books");
   });
+
+  describe("pageTitle", () => {
+    it.each([
+      ["#dashboard", "Dashboard – biblioteka"],
+      ["#books", "All Books – biblioteka"],
+      ["#my-library", "My Library – biblioteka"],
+      ["#libraries", "Libraries – biblioteka"],
+      ["#settings", "Settings – biblioteka"],
+      ["#settings/account", "Account Settings – biblioteka"],
+      ["#settings/preferences", "Preferences – biblioteka"],
+      ["#settings/oidc", "SSO Settings – biblioteka"],
+      ["#settings/smtp", "Email Settings – biblioteka"],
+      ["#settings/users", "User Management – biblioteka"],
+      ["#settings/api-keys", "API Keys – biblioteka"],
+    ])("returns '%s' for hash %s", (hash, expected) => {
+      setHash(hash);
+      expect(routerStore.pageTitle).toBe(expected);
+    });
+
+    it("falls back to 'Settings – biblioteka' for unknown settings sub-path", () => {
+      setHash("#settings/unknown");
+      expect(routerStore.pageTitle).toBe("Settings – biblioteka");
+    });
+
+    it("falls back to 'biblioteka' for invalid hash", () => {
+      setHash("#invalid-page");
+      expect(routerStore.pageTitle).toBe("biblioteka");
+    });
+  });
 });
