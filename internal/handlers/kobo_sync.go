@@ -18,6 +18,7 @@ const koboSyncPageSize = 100
 // koboSyncToken tracks the high-water marks for the Kobo sync.
 type koboSyncToken struct {
 	BooksLastModified        time.Time
+	BooksLastID              string
 	ReadingStateLastModified time.Time
 }
 
@@ -44,6 +45,9 @@ func parseKoboSyncToken(header string) koboSyncToken {
 			result.BooksLastModified = t
 		}
 	}
+	if s, ok := payload.Data["BooksLastID"].(string); ok {
+		result.BooksLastID = s
+	}
 	if s, ok := payload.Data["ReadingStateLastModified"].(string); ok {
 		if t, err := time.Parse(time.RFC3339, s); err == nil {
 			result.ReadingStateLastModified = t
@@ -57,6 +61,7 @@ func encodeKoboSyncToken(tok koboSyncToken) string {
 		Version: "1-0-0",
 		Data: map[string]any{
 			"BooksLastModified":        tok.BooksLastModified.UTC().Format(time.RFC3339),
+			"BooksLastID":              tok.BooksLastID,
 			"ReadingStateLastModified": tok.ReadingStateLastModified.UTC().Format(time.RFC3339),
 		},
 	}
@@ -74,7 +79,7 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 	slog.InfoContext(ctx, "kobo library sync request", slog.String(otelkeys.UserID, userID))
 
 	// Fetch one more than the page size to detect whether there are more results.
-	books, err := h.DB.ListBooksModifiedSince(ctx, syncToken.BooksLastModified, koboSyncPageSize+1)
+	books, err := h.DB.ListBooksModifiedSince(ctx, syncToken.BooksLastModified, syncToken.BooksLastID, koboSyncPageSize+1)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to list books for kobo sync", slog.Any(otelkeys.Error, err))
 		writeKoboJSON(w, http.StatusInternalServerError, []any{})
@@ -117,6 +122,7 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 
 	base := schemeAndHost(r)
 	var newBooksLastModified time.Time
+	var newBooksLastID string
 	newReadingStateLastModified := syncToken.ReadingStateLastModified
 
 	syncResults := make([]any, 0, len(books))
@@ -131,8 +137,9 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 		// Always advance the high-water mark so that books without downloadable
 		// files do not stall pagination — otherwise the next sync would receive
 		// the same page again if all its books were file-less.
-		if bk.UpdatedAt.After(newBooksLastModified) {
+		if bk.UpdatedAt.After(newBooksLastModified) || (bk.UpdatedAt.Equal(newBooksLastModified) && bk.ID > newBooksLastID) {
 			newBooksLastModified = bk.UpdatedAt.Time
+			newBooksLastID = bk.ID
 		}
 
 		if len(downloadURLs) == 0 {
@@ -163,10 +170,12 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 
 	newSyncToken := koboSyncToken{
 		BooksLastModified:        syncToken.BooksLastModified,
+		BooksLastID:              syncToken.BooksLastID,
 		ReadingStateLastModified: newReadingStateLastModified,
 	}
-	if newBooksLastModified.After(syncToken.BooksLastModified) {
+	if newBooksLastModified.After(syncToken.BooksLastModified) || (newBooksLastModified.Equal(syncToken.BooksLastModified) && newBooksLastID > syncToken.BooksLastID) {
 		newSyncToken.BooksLastModified = newBooksLastModified
+		newSyncToken.BooksLastID = newBooksLastID
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

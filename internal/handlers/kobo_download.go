@@ -3,8 +3,8 @@ package handlers
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log/slog"
+	"mime"
 	"net/http"
 	"os"
 	"strings"
@@ -64,6 +64,6 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", target.FileName))
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": target.FileName}))
 	http.ServeContent(w, r, target.FileName, stat.ModTime(), f)
 }

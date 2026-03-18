@@ -90,18 +90,7 @@
   }
 
   async function copyToClipboard(text: string, tokenId: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    }
+    await navigator.clipboard.writeText(text);
     copiedTokenId = tokenId;
     if (copiedTimeout !== null) clearTimeout(copiedTimeout);
     copiedTimeout = window.setTimeout(() => {
