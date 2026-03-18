@@ -462,6 +462,48 @@ The app shell uses semantic HTML5 landmark elements so screen readers can naviga
 | Primary content | `<main id="main-content">` | Target of the skip link |
 | Mobile header | `<div>` + hamburger `<button>` | Not a landmark; sits above `<main>` only on small screens |
 
+### `aria-current` on active navigation buttons
+
+**WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
+
+Navigation buttons that represent the currently active view must carry `aria-current="page"`. Without this attribute, keyboard and screen-reader users have no programmatic way to determine which section is active — they can only infer it from visual styling, which is inaccessible.
+
+#### Sidebar navigation (`Sidebar.svelte`)
+
+Each top-level navigation button receives `aria-current` dynamically based on the `currentView` prop:
+
+```svelte
+<button
+  onclick={() => handleViewNavigate("dashboard")}
+  aria-current={currentView === "dashboard" ? "page" : undefined}
+  class="…"
+>
+  <LayoutDashboard class="w-5 h-5" />
+  Dashboard
+</button>
+```
+
+- Set `aria-current="page"` when the button represents the currently displayed view.
+- Pass `undefined` (not `false`) for inactive buttons — `undefined` omits the attribute entirely, which is the correct behaviour. Using `aria-current="false"` is valid but adds noise and can confuse some assistive technologies.
+
+#### Settings tab navigation (`Settings.svelte`)
+
+The same pattern applies to settings sub-tabs, where the active tab is determined from the current `settingsSubPath`:
+
+```svelte
+<button
+  onclick={() => navigateToSettings("account")}
+  aria-current={isActive ? "page" : undefined}
+  class="…"
+>
+  Account
+</button>
+```
+
+#### Rule for new navigation elements
+
+Whenever you add a button or link that acts as a navigation item pointing to a distinct view or sub-page, apply `aria-current={isActive ? "page" : undefined}`. Do **not** rely solely on CSS class changes to convey the active state.
+
 ### Accessible labels for icon-only buttons and dynamic inputs
 
 **WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) / [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
@@ -522,7 +564,8 @@ When editing the app shell or adding new persistent navigation elements:
 2. If you add a new persistent region that users must bypass, add an additional skip link or update the existing one.
 3. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
 4. Every icon-only button must have `aria-label`; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only buttons and dynamic inputs](#accessible-labels-for-icon-only-buttons-and-dynamic-inputs) above.
-5. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+5. Navigation buttons that represent the active view or tab must carry `aria-current={isActive ? "page" : undefined}`. See [`aria-current` on active navigation buttons](#aria-current-on-active-navigation-buttons) above.
+6. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
 ### Form accessibility
 
@@ -573,6 +616,30 @@ Buttons whose visible content is solely an icon (SVG) must carry an `aria-label`
 
 When you add a new icon-only button, always supply an `aria-label`. `svelte-check` does **not** automatically detect missing labels on `<button>` elements, so this must be reviewed manually.
 
+#### `autocomplete` on credential inputs
+
+**WCAG criterion:** [1.3.5 Identify Input Purpose](https://www.w3.org/WAI/WCAG21/Understanding/identify-input-purpose.html) (Level AA)
+
+Password inputs must carry a valid `autocomplete` token so that password managers and autofill implementations can correctly identify the field's purpose. Without `autocomplete`, browsers may misclassify the fields, offer to save them as plain text, or fail to auto-fill them — degrading both usability and security.
+
+`settings/AccountTab.svelte` uses three password fields with the following tokens:
+
+```svelte
+<!-- Current/existing password -->
+<input type="password" autocomplete="current-password" … />
+
+<!-- New password (set or confirm) -->
+<input type="password" autocomplete="new-password" … />
+<input type="password" autocomplete="new-password" … />
+```
+
+| Token | When to use |
+|-------|-------------|
+| `current-password` | The user's existing credential (used for verification before allowing a change) |
+| `new-password` | A newly chosen password the user is setting or confirming |
+
+**Do not** leave `type="password"` inputs without `autocomplete`. Browsers may still infer the purpose, but the explicit attribute is required by WCAG 1.3.5 and ensures reliable cross-browser behaviour.
+
 #### Checklist for new forms
 
 When adding or editing a form component:
@@ -581,7 +648,8 @@ When adding or editing a form component:
 2. `<label for>` values match the corresponding `id` exactly — a mismatch silently breaks the association.
 3. Icon-only buttons (`<button>` with SVG content and no text) carry an `aria-label`.
 4. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
-5. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+5. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
+6. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
 ### Accessibility tests
 
