@@ -60,8 +60,8 @@ func (d *DB) UpsertKOSyncCredential(ctx context.Context, userID, username, passw
 		slog.String(otelkeys.KOSyncUsername, username),
 	)
 
-	query := `INSERT INTO kosync_credentials (user_id, username, password_hash)
-		VALUES ($1, $2, $3)
+	query := `INSERT INTO kosync_credentials (user_id, username, password_hash, updated_at)
+		VALUES ($1, $2, $3, ` + d.now() + `)
 		ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = ` + d.now() + `
 		RETURNING ` + kosyncCredentialColumns
 
