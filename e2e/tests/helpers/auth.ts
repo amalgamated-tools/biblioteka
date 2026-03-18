@@ -42,7 +42,7 @@ export async function openAuthPage(page: Page): Promise<void> {
     waitUntil: "networkidle",
     timeout: NAVIGATION_TIMEOUT_MS,
   });
-  await page.waitForSelector("button#login-btn");
+  await page.waitForSelector("button#login-tab");
 }
 
 export async function openSignupForm(page: Page): Promise<void> {
@@ -67,8 +67,8 @@ export async function signUp(page: Page, user: TestUser): Promise<void> {
 
 export async function signOut(page: Page): Promise<void> {
   await page.locator("button#logout-button").click();
-  await page.waitForSelector("button#login-btn");
-  await page.locator("button#login-btn").click();
+  await page.waitForSelector("button#login-tab");
+  await page.locator("button#login-tab").click();
   await page.waitForSelector("input#email");
   await page.waitForSelector("input#password");
   await page.waitForFunction((tokenKey) => localStorage.getItem(tokenKey) === null, TOKEN_KEY);
@@ -77,7 +77,7 @@ export async function signOut(page: Page): Promise<void> {
 
 export async function openLoginForm(page: Page): Promise<void> {
   await openAuthPage(page);
-  await page.locator("button#login-btn").click();
+  await page.locator("button#login-tab").click();
   await page.waitForSelector("input#email");
 }
 
