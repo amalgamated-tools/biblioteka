@@ -68,59 +68,21 @@ describe("router store", () => {
   });
 
   describe("pageTitle", () => {
-    it("returns 'Dashboard – biblioteka' for dashboard", () => {
-      setHash("#dashboard");
-      expect(routerStore.pageTitle).toBe("Dashboard – biblioteka");
-    });
-
-    it("returns 'All Books – biblioteka' for books", () => {
-      setHash("#books");
-      expect(routerStore.pageTitle).toBe("All Books – biblioteka");
-    });
-
-    it("returns 'My Library – biblioteka' for my-library", () => {
-      setHash("#my-library");
-      expect(routerStore.pageTitle).toBe("My Library – biblioteka");
-    });
-
-    it("returns 'Libraries – biblioteka' for libraries", () => {
-      setHash("#libraries");
-      expect(routerStore.pageTitle).toBe("Libraries – biblioteka");
-    });
-
-    it("returns 'Settings – biblioteka' for settings without sub-path", () => {
-      setHash("#settings");
-      expect(routerStore.pageTitle).toBe("Settings – biblioteka");
-    });
-
-    it("returns 'Account Settings – biblioteka' for settings/account", () => {
-      setHash("#settings/account");
-      expect(routerStore.pageTitle).toBe("Account Settings – biblioteka");
-    });
-
-    it("returns 'Preferences – biblioteka' for settings/preferences", () => {
-      setHash("#settings/preferences");
-      expect(routerStore.pageTitle).toBe("Preferences – biblioteka");
-    });
-
-    it("returns 'SSO Settings – biblioteka' for settings/oidc", () => {
-      setHash("#settings/oidc");
-      expect(routerStore.pageTitle).toBe("SSO Settings – biblioteka");
-    });
-
-    it("returns 'Email Settings – biblioteka' for settings/smtp", () => {
-      setHash("#settings/smtp");
-      expect(routerStore.pageTitle).toBe("Email Settings – biblioteka");
-    });
-
-    it("returns 'User Management – biblioteka' for settings/users", () => {
-      setHash("#settings/users");
-      expect(routerStore.pageTitle).toBe("User Management – biblioteka");
-    });
-
-    it("returns 'API Keys – biblioteka' for settings/api-keys", () => {
-      setHash("#settings/api-keys");
-      expect(routerStore.pageTitle).toBe("API Keys – biblioteka");
+    it.each([
+      ["#dashboard", "Dashboard – biblioteka"],
+      ["#books", "All Books – biblioteka"],
+      ["#my-library", "My Library – biblioteka"],
+      ["#libraries", "Libraries – biblioteka"],
+      ["#settings", "Settings – biblioteka"],
+      ["#settings/account", "Account Settings – biblioteka"],
+      ["#settings/preferences", "Preferences – biblioteka"],
+      ["#settings/oidc", "SSO Settings – biblioteka"],
+      ["#settings/smtp", "Email Settings – biblioteka"],
+      ["#settings/users", "User Management – biblioteka"],
+      ["#settings/api-keys", "API Keys – biblioteka"],
+    ])("returns '%s' for hash %s", (hash, expected) => {
+      setHash(hash);
+      expect(routerStore.pageTitle).toBe(expected);
     });
 
     it("falls back to 'Settings – biblioteka' for unknown settings sub-path", () => {
@@ -128,9 +90,9 @@ describe("router store", () => {
       expect(routerStore.pageTitle).toBe("Settings – biblioteka");
     });
 
-    it("falls back to 'Dashboard – biblioteka' for invalid hash", () => {
+    it("falls back to 'biblioteka' for invalid hash", () => {
       setHash("#invalid-page");
-      expect(routerStore.pageTitle).toBe("Dashboard – biblioteka");
+      expect(routerStore.pageTitle).toBe("biblioteka");
     });
   });
 });

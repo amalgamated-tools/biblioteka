@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/svelte";
+import { describe, expect, it, vi, afterEach } from "vitest";
+import { tick } from "svelte";
+import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
 
 vi.mock("./stores/auth.svelte", () => ({
   authStore: {
@@ -36,6 +37,16 @@ vi.mock("lucide-svelte", () => ({ Menu: () => {} }));
 import App from "./App.svelte";
 
 describe("App", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("sets document.title from routerStore.pageTitle on mount", async () => {
+    render(App);
+    await tick();
+    expect(document.title).toBe("Dashboard – biblioteka");
+  });
+
   it("provides a functional skip link that moves focus to the main content", async () => {
     const { container } = render(App);
 
