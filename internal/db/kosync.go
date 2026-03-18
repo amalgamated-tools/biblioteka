@@ -139,8 +139,8 @@ func (d *DB) UpsertReadingProgress(ctx context.Context, userID, document, progre
 		slog.String(otelkeys.Document, document),
 	)
 
-	query := `INSERT INTO reading_progress (user_id, document, progress, percentage, device, device_id)
-		VALUES ($1, $2, $3, $4, $5, $6)
+	query := `INSERT INTO reading_progress (user_id, document, progress, percentage, device, device_id, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, ` + d.now() + `)
 		ON CONFLICT (user_id, document) DO UPDATE SET
 			progress = $3, percentage = $4, device = $5, device_id = $6, updated_at = ` + d.now() + `
 		RETURNING ` + readingProgressColumns
