@@ -220,6 +220,13 @@ func (h *KOSyncHandler) HandleKOSyncProgress(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// Maximum lengths for KOSync progress fields to prevent abuse.
+const (
+	maxDocumentLen = 1024
+	maxProgressLen = 4096
+	maxDeviceLen   = 256
+)
+
 func (h *KOSyncHandler) putProgress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
@@ -233,12 +240,28 @@ func (h *KOSyncHandler) putProgress(w http.ResponseWriter, r *http.Request) {
 		writeError(ctx, w, http.StatusBadRequest, "document is required")
 		return
 	}
+	if len(req.Document) > maxDocumentLen {
+		writeError(ctx, w, http.StatusBadRequest, "document identifier too long")
+		return
+	}
 	if req.Progress == "" {
 		writeError(ctx, w, http.StatusBadRequest, "progress is required")
 		return
 	}
+	if len(req.Progress) > maxProgressLen {
+		writeError(ctx, w, http.StatusBadRequest, "progress value too long")
+		return
+	}
 	if req.Percentage < 0 || req.Percentage > 1 {
 		writeError(ctx, w, http.StatusBadRequest, "percentage must be between 0 and 1")
+		return
+	}
+	if len(req.Device) > maxDeviceLen {
+		writeError(ctx, w, http.StatusBadRequest, "device name too long")
+		return
+	}
+	if len(req.DeviceID) > maxDeviceLen {
+		writeError(ctx, w, http.StatusBadRequest, "device ID too long")
 		return
 	}
 
