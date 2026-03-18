@@ -25,7 +25,7 @@
     <div
       class="aspect-[2/3] bg-ink-100 dark:bg-ink-800 flex items-center justify-center"
     >
-      <BookOpen class="w-10 h-10 text-ink-300 dark:text-ink-600" />
+      <BookOpen class="w-10 h-10 text-ink-500 dark:text-ink-600" />
     </div>
   {/if}
   <div class="p-3">
@@ -36,7 +36,7 @@
       {book.title}
     </h3>
     {#if book.publisher}
-      <p class="text-xs text-ink-400 dark:text-ink-500 truncate mt-0.5">
+      <p class="text-xs text-ink-600 dark:text-ink-500 truncate mt-0.5">
         {book.publisher}
       </p>
     {/if}

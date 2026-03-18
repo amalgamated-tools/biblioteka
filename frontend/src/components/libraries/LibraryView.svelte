@@ -33,7 +33,7 @@
     </h1>
     <button
       onclick={() => routerStore.navigate(`libraries/edit/${libraryId}`)}
-      class="ml-auto text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
+      class="ml-auto text-ink-600 hover:text-ink-800 dark:hover:text-ink-200 transition-colors"
       title="Library settings"
       aria-label="Library settings"
     >

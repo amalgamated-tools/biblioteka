@@ -95,7 +95,7 @@
     class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800"
   >
     <div class="text-center py-8">
-      <p class="text-ink-400 dark:text-ink-400">Loading books...</p>
+      <p class="text-ink-600 dark:text-ink-400">Loading books...</p>
     </div>
   </div>
 {:else if total === 0}
@@ -104,8 +104,8 @@
   >
     <div class="text-center py-8">
       <BookOpen class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4" />
-      <p class="text-ink-400 dark:text-ink-400 text-lg">No books yet.</p>
-      <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
+      <p class="text-ink-600 dark:text-ink-400 text-lg">No books yet.</p>
+      <p class="text-ink-500 dark:text-ink-500 text-sm mt-1">
         Books will appear here once they are added to your libraries.
       </p>
     </div>
@@ -113,7 +113,7 @@
 {:else}
   <!-- Toolbar -->
   <div class="flex items-center justify-between mb-4">
-    <p class="text-sm text-ink-400 dark:text-ink-500">
+    <p class="text-sm text-ink-600 dark:text-ink-500">
       Showing {rangeStart}–{rangeEnd} of {total} books
     </p>
     <div class="flex items-center gap-1">
@@ -121,7 +121,7 @@
         onclick={() => (viewMode = "grid")}
         class="p-2 rounded-lg transition-colors {viewMode === 'grid'
           ? 'bg-accent-100 dark:bg-accent-800/20 text-accent-600 dark:text-accent-400'
-          : 'text-ink-400 hover:text-ink-600 dark:hover:text-ink-200'}"
+          : 'text-ink-600 hover:text-ink-800 dark:hover:text-ink-200'}"
         title="Grid view"
         aria-label="Grid view"
         aria-pressed={viewMode === "grid"}
@@ -132,7 +132,7 @@
         onclick={() => (viewMode = "table")}
         class="p-2 rounded-lg transition-colors {viewMode === 'table'
           ? 'bg-accent-100 dark:bg-accent-800/20 text-accent-600 dark:text-accent-400'
-          : 'text-ink-400 hover:text-ink-600 dark:hover:text-ink-200'}"
+          : 'text-ink-600 hover:text-ink-800 dark:hover:text-ink-200'}"
         title="Table view"
         aria-label="Table view"
         aria-pressed={viewMode === "table"}
@@ -159,7 +159,7 @@
       <table class="w-full text-sm">
         <thead>
           <tr
-            class="border-b border-ink-100 dark:border-ink-800 text-left text-ink-400 dark:text-ink-500"
+            class="border-b border-ink-100 dark:border-ink-800 text-left text-ink-600 dark:text-ink-500"
           >
             <th scope="col" class="px-4 py-3 font-medium">Title</th>
             <th scope="col" class="px-4 py-3 font-medium hidden sm:table-cell"
@@ -197,7 +197,7 @@
                       class="w-8 h-12 bg-ink-100 dark:bg-ink-800 rounded flex items-center justify-center"
                     >
                       <BookOpen
-                        class="w-4 h-4 text-ink-300 dark:text-ink-600"
+                        class="w-4 h-4 text-ink-500 dark:text-ink-600"
                       />
                     </div>
                   {/if}
@@ -244,7 +244,7 @@
         disabled={currentPage <= 1}
         class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-200 dark:border-ink-700 transition-colors
           {currentPage <= 1
-          ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
+          ? 'text-ink-500 dark:text-ink-600 cursor-not-allowed'
           : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
       >
         <ChevronLeft class="w-4 h-4" />
@@ -258,7 +258,7 @@
         disabled={currentPage >= totalPages}
         class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-200 dark:border-ink-700 transition-colors
           {currentPage >= totalPages
-          ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
+          ? 'text-ink-500 dark:text-ink-600 cursor-not-allowed'
           : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
       >
         Next

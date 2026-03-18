@@ -37,7 +37,7 @@
             </button>
           {/each}
         </div>
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-2">
+        <p class="text-xs text-ink-600 dark:text-ink-500 mt-2">
           Choose how you prefer biblioteka to appear
         </p>
       </fieldset>

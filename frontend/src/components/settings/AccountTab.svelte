@@ -105,7 +105,7 @@
           disabled
           class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl bg-ink-50 dark:bg-ink-800 text-ink-500 dark:text-ink-400 cursor-not-allowed"
         />
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+        <p class="text-xs text-ink-600 dark:text-ink-500 mt-1">
           Contact support to change your email address
         </p>
       </div>
@@ -131,7 +131,7 @@
             SSO Connected
           </span>
         </div>
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-2">
+        <p class="text-xs text-ink-600 dark:text-ink-500 mt-2">
           Your account is linked to your SSO provider. You can log in with
           either your password or SSO.
         </p>

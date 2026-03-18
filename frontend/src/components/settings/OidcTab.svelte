@@ -149,7 +149,7 @@
           placeholder="https://auth.example.com"
           disabled={oidcLoading}
         />
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+        <p class="text-xs text-ink-600 dark:text-ink-500 mt-1">
           The OIDC provider's issuer URL (must support
           .well-known/openid-configuration)
         </p>
@@ -190,7 +190,7 @@
           disabled={oidcLoading}
         />
         {#if oidcConfigured}
-          <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+          <p class="text-xs text-ink-600 dark:text-ink-500 mt-1">
             Leave blank to keep the existing secret
           </p>
         {/if}
@@ -211,7 +211,7 @@
           placeholder="http://localhost:8080/api/auth/oidc/callback"
           disabled={oidcLoading}
         />
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+        <p class="text-xs text-ink-600 dark:text-ink-500 mt-1">
           Must match the redirect URI registered with your OIDC provider
         </p>
       </div>

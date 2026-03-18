@@ -73,7 +73,7 @@
     </h2>
 
     {#if usersLoading}
-      <p class="text-ink-400 dark:text-ink-400">Loading users...</p>
+      <p class="text-ink-600 dark:text-ink-400">Loading users...</p>
     {:else if usersError}
       <div
         class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm"
@@ -85,7 +85,7 @@
         <table class="w-full text-sm">
           <thead>
             <tr
-              class="text-left text-ink-400 dark:text-ink-400 border-b border-ink-100 dark:border-ink-800"
+              class="text-left text-ink-600 dark:text-ink-400 border-b border-ink-100 dark:border-ink-800"
             >
               <th class="pb-3 font-medium">Name</th>
               <th class="pb-3 font-medium">Email</th>
@@ -131,7 +131,7 @@
                     </button>
                   {/if}
                 </td>
-                <td class="py-3 text-ink-400 dark:text-ink-500"
+                <td class="py-3 text-ink-600 dark:text-ink-500"
                   >{new Date(u.created_at).toLocaleDateString()}</td
                 >
               </tr>

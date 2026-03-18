@@ -218,9 +218,9 @@
     {/if}
 
     {#if apiKeysLoading}
-      <p class="text-ink-400 dark:text-ink-400">Loading API keys...</p>
+      <p class="text-ink-600 dark:text-ink-400">Loading API keys...</p>
     {:else if apiKeyList.length === 0}
-      <p class="text-sm text-ink-400 dark:text-ink-500">
+      <p class="text-sm text-ink-600 dark:text-ink-500">
         No API keys yet. Create one above to get started.
       </p>
     {:else}
@@ -228,7 +228,7 @@
         <table class="w-full text-sm">
           <thead>
             <tr
-              class="text-left text-ink-400 dark:text-ink-400 border-b border-ink-100 dark:border-ink-800"
+              class="text-left text-ink-600 dark:text-ink-400 border-b border-ink-100 dark:border-ink-800"
             >
               <th scope="col" class="pb-3 font-medium">Name</th>
               <th scope="col" class="pb-3 font-medium">Key</th>
@@ -254,10 +254,10 @@
                     {key.key_prefix}...
                   </code>
                 </td>
-                <td class="py-3 text-ink-400 dark:text-ink-500"
+                <td class="py-3 text-ink-600 dark:text-ink-500"
                   >{new Date(key.created_at).toLocaleDateString()}</td
                 >
-                <td class="py-3 text-ink-400 dark:text-ink-500">
+                <td class="py-3 text-ink-600 dark:text-ink-500">
                   {key.last_used_at
                     ? new Date(key.last_used_at).toLocaleDateString()
                     : "Never"}

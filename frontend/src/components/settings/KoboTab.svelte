@@ -183,9 +183,9 @@
     {/if}
 
     {#if tokensLoading}
-      <p class="text-ink-400 dark:text-ink-400">Loading Kobo tokens...</p>
+      <p class="text-ink-600 dark:text-ink-400">Loading Kobo tokens...</p>
     {:else if tokenList.length === 0}
-      <p class="text-sm text-ink-400 dark:text-ink-500">
+      <p class="text-sm text-ink-600 dark:text-ink-500">
         No Kobo tokens yet. Create one above to get started.
       </p>
     {:else}
@@ -201,7 +201,7 @@
                 >{token.name}</span
               >
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="text-xs text-ink-400 dark:text-ink-500"
+                <span class="text-xs text-ink-600 dark:text-ink-500"
                   >Created {new Date(token.created_at).toLocaleDateString()}</span
                 >
                 <button
@@ -241,7 +241,7 @@
                 <button
                   disabled
                   title="Token value is only shown once"
-                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500 cursor-not-allowed"
+                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-500 cursor-not-allowed"
                 >
                   <Copy class="w-4 h-4" />
                   Copy

@@ -215,7 +215,7 @@
     >
       Settings
     </h1>
-    <p class="text-sm text-ink-400 dark:text-ink-400">
+    <p class="text-sm text-ink-600 dark:text-ink-400">
       Manage your account and preferences
     </p>
   </div>
@@ -242,7 +242,7 @@
           <div class="hidden sm:flex items-center gap-2 px-4 pt-3 pb-1">
             <hr class="flex-1 border-ink-200 dark:border-ink-700" />
             <span
-              class="text-xs font-medium uppercase text-ink-400 dark:text-ink-500"
+              class="text-xs font-medium uppercase text-ink-600 dark:text-ink-500"
               >Admin</span
             >
             <hr class="flex-1 border-ink-200 dark:border-ink-700" />
@@ -454,7 +454,7 @@
                     disabled={smtpLoading}
                   />
                   {#if smtpPasswordSet}
-                    <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+                    <p class="text-xs text-ink-600 dark:text-ink-500 mt-1">
                       Leave blank to keep the existing password
                     </p>
                   {/if}
@@ -476,7 +476,7 @@
                   placeholder="noreply@example.com"
                   disabled={smtpLoading || smtpEnvOverride}
                 />
-                <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+                <p class="text-xs text-ink-600 dark:text-ink-500 mt-1">
                   The email address that outgoing messages will be sent from
                 </p>
               </div>

@@ -138,7 +138,7 @@
     </h2>
     <button
       onclick={navigateBack}
-      class="text-ink-300 hover:text-ink-500 dark:hover:text-ink-200 transition-colors"
+      class="text-ink-500 hover:text-ink-700 dark:hover:text-ink-200 transition-colors"
       aria-label="Close form"
     >
       <X class="w-5 h-5" />
@@ -161,7 +161,7 @@
         type="text"
         bind:value={formName}
         placeholder="e.g. Fiction, Audiobooks"
-        class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+        class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all placeholder:text-ink-500 dark:placeholder:text-ink-500"
         disabled={saving}
         aria-required="true"
         aria-invalid={nameError ? true : undefined}
@@ -180,7 +180,7 @@
       <div class="space-y-2">
         {#each formPaths as entry, i (entry.id)}
           <div class="flex items-center gap-2">
-            <FolderOpen class="w-4 h-4 text-ink-300 flex-shrink-0" aria-hidden="true" />
+            <FolderOpen class="w-4 h-4 text-ink-500 flex-shrink-0" aria-hidden="true" />
             <input
               type="text"
               value={entry.value}
@@ -192,7 +192,7 @@
               }}
               aria-label={formPaths.length === 1 ? "Folder path" : `Folder path ${i + 1}`}
               placeholder="/path/to/books"
-              class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 font-mono text-sm transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 font-mono text-sm transition-all placeholder:text-ink-500 dark:placeholder:text-ink-500"
               disabled={saving}
               aria-required="true"
               aria-invalid={pathsError ? true : undefined}
@@ -204,7 +204,7 @@
                 onclick={() => {
                   formPaths = formPaths.filter((_, idx) => idx !== i);
                 }}
-                class="p-2 text-ink-300 hover:text-danger-600 transition-colors"
+                class="p-2 text-ink-500 hover:text-danger-600 transition-colors"
                 title="Remove folder"
                 aria-label="Remove folder"
                 disabled={saving}
@@ -233,7 +233,7 @@
 
     <div>
       <p
-        class="text-sm text-ink-400 dark:text-ink-400 mb-2 flex items-center gap-2"
+        class="text-sm text-ink-600 dark:text-ink-400 mb-2 flex items-center gap-2"
       >
         <FolderOpen class="w-4 h-4" aria-hidden="true" />
         Organization: Book Per Folder
