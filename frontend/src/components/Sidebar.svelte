@@ -100,6 +100,7 @@
       <div class="space-y-0.5">
         <button
           onclick={() => handleViewNavigate("dashboard")}
+          aria-current={currentView === "dashboard" ? "page" : undefined}
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
           'dashboard'
             ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
@@ -111,6 +112,7 @@
         {#if libraryStore.libraries.length > 0}
           <button
             onclick={() => handleViewNavigate("books")}
+            aria-current={currentView === "books" ? "page" : undefined}
             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
             'books'
               ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
@@ -171,6 +173,7 @@
       <div class="space-y-0.5">
         <button
           onclick={() => handleViewNavigate("settings")}
+          aria-current={currentView === "settings" ? "page" : undefined}
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
           'settings'
             ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
