@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS kosync_credentials (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_kosync_credentials_username ON kosync_credentials (LOWER(username));
-CREATE INDEX IF NOT EXISTS idx_kosync_credentials_user_id ON kosync_credentials (user_id);
 
 CREATE TABLE IF NOT EXISTS reading_progress (
     id         TEXT             PRIMARY KEY DEFAULT gen_random_uuid()::text,
