@@ -156,15 +156,15 @@
       />
     </div>
 
-    <div>
-      <span
+    <fieldset class="border-none p-0 m-0">
+      <legend
         class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-1.5"
-        >Folders</span
+        >Folders</legend
       >
       <div class="space-y-2">
         {#each formPaths as entry, i (entry.id)}
           <div class="flex items-center gap-2">
-            <FolderOpen class="w-4 h-4 text-ink-300 flex-shrink-0" />
+            <FolderOpen class="w-4 h-4 text-ink-300 flex-shrink-0" aria-hidden="true" />
             <input
               type="text"
               value={entry.value}
@@ -207,13 +207,13 @@
         <Plus class="w-3.5 h-3.5" />
         Add another folder
       </button>
-    </div>
+    </fieldset>
 
     <div>
       <p
         class="text-sm text-ink-400 dark:text-ink-400 mb-2 flex items-center gap-2"
       >
-        <FolderOpen class="w-4 h-4" />
+        <FolderOpen class="w-4 h-4" aria-hidden="true" />
         Organization: Book Per Folder
       </p>
     </div>
