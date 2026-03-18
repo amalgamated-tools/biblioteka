@@ -90,13 +90,44 @@
   }
 
   async function copyToClipboard(text: string, tokenId: string) {
-    await navigator.clipboard.writeText(text);
-    copiedTokenId = tokenId;
-    if (copiedTimeout !== null) clearTimeout(copiedTimeout);
-    copiedTimeout = window.setTimeout(() => {
-      copiedTokenId = null;
-      copiedTimeout = null;
-    }, 2000);
+    tokensError = null;
+
+    try {
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.clipboard &&
+        typeof navigator.clipboard.writeText === "function"
+      ) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for browsers/contexts without the async Clipboard API
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const successful = document.execCommand("copy");
+        document.body.removeChild(textarea);
+
+        if (!successful) {
+          throw new Error("clipboard copy command was rejected");
+        }
+      }
+
+      copiedTokenId = tokenId;
+      if (copiedTimeout !== null) clearTimeout(copiedTimeout);
+      copiedTimeout = window.setTimeout(() => {
+        copiedTokenId = null;
+        copiedTimeout = null;
+      }, 2000);
+    } catch (err) {
+      tokensError =
+        err instanceof Error
+          ? `Failed to copy to clipboard: ${err.message}`
+          : "Failed to copy to clipboard. Your browser may not support clipboard access.";
+    }
   }
 </script>
 

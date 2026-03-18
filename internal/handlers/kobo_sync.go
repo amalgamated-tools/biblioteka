@@ -41,7 +41,7 @@ func parseKoboSyncToken(header string) koboSyncToken {
 	}
 	var result koboSyncToken
 	if s, ok := payload.Data["BooksLastModified"].(string); ok {
-		if t, err := time.Parse(time.RFC3339, s); err == nil {
+		if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
 			result.BooksLastModified = t
 		}
 	}
@@ -49,7 +49,7 @@ func parseKoboSyncToken(header string) koboSyncToken {
 		result.BooksLastID = s
 	}
 	if s, ok := payload.Data["ReadingStateLastModified"].(string); ok {
-		if t, err := time.Parse(time.RFC3339, s); err == nil {
+		if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
 			result.ReadingStateLastModified = t
 		}
 	}
@@ -60,12 +60,16 @@ func encodeKoboSyncToken(tok koboSyncToken) string {
 	payload := koboSyncTokenPayload{
 		Version: "1-0-0",
 		Data: map[string]any{
-			"BooksLastModified":        tok.BooksLastModified.UTC().Format(time.RFC3339),
+			"BooksLastModified":        tok.BooksLastModified.UTC().Format(time.RFC3339Nano),
 			"BooksLastID":              tok.BooksLastID,
-			"ReadingStateLastModified": tok.ReadingStateLastModified.UTC().Format(time.RFC3339),
+			"ReadingStateLastModified": tok.ReadingStateLastModified.UTC().Format(time.RFC3339Nano),
 		},
 	}
-	b, _ := json.Marshal(payload)
+	b, err := json.Marshal(payload)
+	if err != nil {
+		// Return an empty string so callers can safely omit the sync token header on failure.
+		return ""
+	}
 	return base64.StdEncoding.EncodeToString(b)
 }
 
@@ -76,7 +80,7 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 	tokenValue := auth.KoboTokenFromContext(ctx)
 
 	syncToken := parseKoboSyncToken(r.Header.Get("x-kobo-synctoken"))
-	slog.InfoContext(ctx, "kobo library sync request", slog.String(otelkeys.UserID, userID))
+	slog.DebugContext(ctx, "kobo library sync request", slog.String(otelkeys.UserID, userID))
 
 	// Fetch one more than the page size to detect whether there are more results.
 	books, err := h.DB.ListBooksModifiedSince(ctx, syncToken.BooksLastModified, syncToken.BooksLastID, koboSyncPageSize+1)

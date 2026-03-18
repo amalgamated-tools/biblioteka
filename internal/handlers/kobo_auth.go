@@ -23,9 +23,15 @@ func (h *KoboHandler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	buf := make([]byte, 24)
-	_, _ = rand.Read(buf)
+	if _, err := rand.Read(buf); err != nil {
+		writeError(r.Context(), w, http.StatusInternalServerError, "internal error")
+		return
+	}
 	accessToken := base64.StdEncoding.EncodeToString(buf)
-	_, _ = rand.Read(buf)
+	if _, err := rand.Read(buf); err != nil {
+		writeError(r.Context(), w, http.StatusInternalServerError, "internal error")
+		return
+	}
 	refreshToken := base64.StdEncoding.EncodeToString(buf)
 
 	writeKoboJSON(w, http.StatusOK, map[string]any{
@@ -40,7 +46,9 @@ func (h *KoboHandler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 // koboRandomUUID generates a random UUID v4-like string.
 func koboRandomUUID() string {
 	b := make([]byte, 16)
-	_, _ = rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		return ""
+	}
 	b[6] = (b[6] & 0x0f) | 0x40
 	b[8] = (b[8] & 0x3f) | 0x80
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])

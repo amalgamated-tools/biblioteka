@@ -110,6 +110,14 @@ func (h *KoboHandler) updateBookState(w http.ResponseWriter, r *http.Request, us
 
 	state, err := h.DB.UpsertKoboReadingState(r.Context(), userID, bookID, status, percentRead, locationValue, locationType, locationSource)
 	if err != nil {
+		// Treat missing books (e.g., foreign key violations or not-found translations) as a 404-style response
+		if errors.Is(err, sql.ErrNoRows) ||
+			strings.Contains(err.Error(), "FOREIGN KEY constraint failed") ||
+			strings.Contains(err.Error(), "violates foreign key constraint") {
+			writeKoboJSON(w, http.StatusNotFound, map[string]any{"RequestResult": "NotFound"})
+			return
+		}
+
 		slog.ErrorContext(r.Context(), "failed to upsert kobo reading state", slog.Any(otelkeys.Error, err))
 		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{"RequestResult": "ServerError"})
 		return
