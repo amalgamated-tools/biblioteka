@@ -109,6 +109,10 @@ func (h *KOSyncHandler) upsertCredentials(w http.ResponseWriter, r *http.Request
 		writeError(ctx, w, http.StatusBadRequest, "username is required")
 		return
 	}
+	if len(req.Username) > maxUsernameLen {
+		writeError(ctx, w, http.StatusBadRequest, "username too long")
+		return
+	}
 
 	if msg := validatePassword(req.Password); msg != "" {
 		writeError(ctx, w, http.StatusBadRequest, msg)
@@ -286,13 +290,13 @@ func (h *KOSyncHandler) putProgress(w http.ResponseWriter, r *http.Request) {
 	writeJSON(ctx, w, http.StatusOK, toKOSyncProgressResponse(p))
 }
 
-func (h *KOSyncHandler) getProgress(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userID := auth.UserIDFromContext(ctx)
-
 	document, ok := extractPathID(r.URL.Path, "/api/syncs/progress/")
 	if !ok {
 		writeError(ctx, w, http.StatusBadRequest, "document identifier is required")
+		return
+	}
+	if len(document) > maxDocumentLen {
+		writeError(ctx, w, http.StatusBadRequest, "document identifier too long")
 		return
 	}
 
