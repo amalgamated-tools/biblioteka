@@ -57,7 +57,7 @@ class RouterStore {
       const subTitle = settingsSubTitles[this.subPath];
       if (subTitle) return subTitle;
     }
-    return viewTitles[this.currentView] ?? viewTitles.dashboard;
+    return viewTitles[this.currentView];
   });
 
   constructor() {
