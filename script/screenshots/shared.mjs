@@ -37,7 +37,7 @@ async function openAuthPage(page) {
         waitUntil: 'networkidle',
         timeout: NAVIGATION_TIMEOUT_MS,
     });
-    await page.waitForSelector('button#login-btn');
+    await page.waitForSelector('button#login-tab');
 }
 
 async function openSignupForm(page) {
@@ -52,8 +52,8 @@ async function openSignupForm(page) {
 
 async function waitForSignupTab(page) {
     await page.waitForFunction(() => {
-        const signupBtn = document.querySelector('button#signup-btn');
-        const loginBtn = document.querySelector('button#login-btn');
+        const signupBtn = document.querySelector('button#signup-tab');
+        const loginBtn = document.querySelector('button#login-tab');
         return (
             signupBtn &&
             loginBtn &&
@@ -72,7 +72,7 @@ async function logoutIfNeeded(page) {
         waitUntil: 'networkidle',
         timeout: NAVIGATION_TIMEOUT_MS,
     });
-    await page.waitForSelector('button#login-btn');
+    await page.waitForSelector('button#login-tab');
 }
 
 async function loginAsDemo(page) {
@@ -167,7 +167,7 @@ export async function runVariant({ theme, mobile }) {
         await openAuthPage(page);
         await setTheme(page, theme);
         await page.reload({ waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS });
-        await page.waitForSelector('button#login-btn');
+        await page.waitForSelector('button#login-tab');
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('login', variantName)) });
 
         console.log(`Capturing signup (${variantName})...`);
