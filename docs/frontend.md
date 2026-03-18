@@ -31,7 +31,7 @@ frontend/
       libraries/          Reusable sub-components for the Libraries view
         LibraryForm.svelte   Create / edit library form
         LibraryView.svelte   Library detail with book listing
-      settings/           Sub-components for the Settings page (one per tab)
+      settings/           Tab sub-components for the Settings page (five of six tabs; the SMTP admin tab is inline in Settings.svelte — see Settings component architecture below)
         AccountTab.svelte       Account & password management; OIDC linking
         APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix)
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
