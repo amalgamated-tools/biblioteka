@@ -1,9 +1,20 @@
 ---
 description: Performs critical code review with a focus on edge cases, potential bugs, and code quality issues
 on:
-  slash_command:
-    name: grumpy
-    events: [pull_request_comment, pull_request_review_comment]
+  # slash_command:
+  #   name: grumpy
+  #   events: [pull_request_comment, pull_request_review_comment]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'frontend/**'
+      - 'db/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.golangci.yml'
+      - '.github/workflows/test.yml'    
 permissions:
   contents: read
   pull-requests: read
