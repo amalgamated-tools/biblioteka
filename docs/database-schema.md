@@ -205,6 +205,9 @@ Core book metadata. All fields except `title` are optional.
 | `created_at`      | DATETIME| NOT NULL | `now()`  | Creation time                          |
 | `updated_at`      | DATETIME| NOT NULL | `now()`  | Last update time                       |
 
+**Indexes:**
+- `idx_books_updated_at_id` — composite index on `(updated_at, id)` for efficient cursor-based pagination; used by the Kobo library sync endpoint to order and page through books by modification time.
+
 **Notes:**
 - Books are global (not scoped per user).
 - When a book file is first discovered by the background scanner, a book record is created automatically with the filename (minus extension) as the `title`. Other fields can be filled in via the API.
@@ -369,16 +372,16 @@ Named sync tokens that authenticate a Kobo e-reader device. Each token grants ac
 | `id`         | TEXT    | NOT NULL | auto-gen | Primary key                                              |
 | `user_id`    | TEXT    | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE                        |
 | `name`       | TEXT    | NOT NULL | —        | Human-readable label (max 100 chars)                    |
-| `token_hash` | TEXT    | NOT NULL | —        | SHA-256 hex digest of the raw token (raw token never stored) |
+| `token_hash` | TEXT    | NULL     | NULL     | SHA-256 hex digest of the raw token; `NULL` only on pre-migration rows (always set for new tokens) |
 | `created_at` | DATETIME| NOT NULL | `now()`  | When the token was created                               |
 
 **Indexes:**
 - `idx_kobo_tokens_user_id` — list all tokens for a user
-- `idx_kobo_tokens_hash` (unique) — fast lookup during device authentication
+- `idx_kobo_tokens_token_hash` (unique) — fast lookup during device authentication
 
 **Notes:**
 - The raw token is a 32-byte cryptographically random value encoded as 64 hex characters.
-- Only the SHA-256 hash is stored. If a token is lost, the user must delete it and create a new one.
+- Only the SHA-256 hash is stored. If a token URL is lost, the user must delete it and create a new one.
 - Deleting a user cascades and removes all their Kobo tokens.
 - See [Kobo Tokens API](kobo.md#kobo-tokens-api) for management endpoints.
 
