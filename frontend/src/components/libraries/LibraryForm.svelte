@@ -20,6 +20,8 @@
   ]);
   let formMonitored = $state(false);
   let formError: string | null = $state(null);
+  let nameError: string | null = $state(null);
+  let pathsError: string | null = $state(null);
   let showDeleteConfirm = $state(false);
 
   // React to mode/editId changes to populate form
@@ -30,6 +32,8 @@
       formPaths = [{ id: nextPathId++, value: "" }];
       formMonitored = false;
       formError = null;
+      nameError = null;
+      pathsError = null;
       showDeleteConfirm = false;
     } else if (mode === "edit" && editId) {
       const lib = libraryStore.libraries.find((l) => l.id === editId);
@@ -42,6 +46,8 @@
             : [{ id: nextPathId++, value: "" }];
         formMonitored = lib.monitored;
         formError = null;
+        nameError = null;
+        pathsError = null;
         showDeleteConfirm = false;
       } else {
         editingId = null;
@@ -49,6 +55,8 @@
         formPaths = [{ id: nextPathId++, value: "" }];
         formMonitored = false;
         formError = "Library not found";
+        nameError = null;
+        pathsError = null;
         showDeleteConfirm = false;
       }
     }
@@ -65,10 +73,12 @@
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
     formError = null;
+    nameError = null;
+    pathsError = null;
 
     const name = formName.trim();
     if (!name) {
-      formError = "Name is required";
+      nameError = "Name is required";
       return;
     }
 
@@ -77,7 +87,7 @@
       .filter((p) => p.length > 0);
 
     if (paths.length === 0) {
-      formError = "At least one folder is required";
+      pathsError = "At least one folder is required";
       return;
     }
 
@@ -144,7 +154,7 @@
       <label
         for="lib-name"
         class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-1.5"
-        >Name</label
+        >Name <span class="text-danger-600" aria-hidden="true">*</span></label
       >
       <input
         id="lib-name"
@@ -153,13 +163,19 @@
         placeholder="e.g. Fiction, Audiobooks"
         class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
         disabled={saving}
+        aria-required="true"
+        aria-invalid={nameError ? true : undefined}
+        aria-describedby={nameError ? "lib-name-error" : undefined}
       />
+      {#if nameError}
+        <p id="lib-name-error" role="alert" class="text-sm text-danger-600 dark:text-red-400 mt-1">{nameError}</p>
+      {/if}
     </div>
 
     <fieldset class="border-none p-0 m-0">
       <legend
         class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-1.5"
-        >Folders</legend
+        >Folders <span class="text-danger-600" aria-hidden="true">*</span></legend
       >
       <div class="space-y-2">
         {#each formPaths as entry, i (entry.id)}
@@ -178,6 +194,9 @@
               placeholder="/path/to/books"
               class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 font-mono text-sm transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
               disabled={saving}
+              aria-required="true"
+              aria-invalid={pathsError ? true : undefined}
+              aria-describedby={pathsError ? "lib-folders-error" : undefined}
             />
             {#if formPaths.length > 1}
               <button
@@ -207,6 +226,9 @@
         <Plus class="w-3.5 h-3.5" />
         Add another folder
       </button>
+      {#if pathsError}
+        <p id="lib-folders-error" role="alert" class="text-sm text-danger-600 dark:text-red-400 mt-1">{pathsError}</p>
+      {/if}
     </fieldset>
 
     <div>
