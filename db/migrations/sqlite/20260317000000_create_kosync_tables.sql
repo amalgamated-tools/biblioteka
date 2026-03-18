@@ -2,12 +2,13 @@
 CREATE TABLE IF NOT EXISTS kosync_credentials (
     id           TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     user_id      TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    username     TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    username     TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     created_at   DATETIME NOT NULL DEFAULT (datetime('now')),
     updated_at   DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_kosync_credentials_username ON kosync_credentials (LOWER(username));
 CREATE INDEX IF NOT EXISTS idx_kosync_credentials_user_id ON kosync_credentials (user_id);
 
 CREATE TABLE IF NOT EXISTS reading_progress (
