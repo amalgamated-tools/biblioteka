@@ -62,7 +62,7 @@ export async function signUp(page: Page, user: TestUser): Promise<void> {
   await page.locator("input#password").fill(user.password);
   await page.locator("button[type='submit']").click();
 
-  await expect(page).toHaveURL("/");
+  await expect(page.getByText("Get started with Biblioteka")).toBeVisible();
 }
 
 export async function signOut(page: Page): Promise<void> {
