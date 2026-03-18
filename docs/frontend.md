@@ -21,7 +21,7 @@ frontend/
     index.css           Tailwind CSS directives
     types.ts            Shared TypeScript interfaces for API entities
     components/         Page-level Svelte components (PascalCase)
-      Auth.svelte         Login and signup forms
+      Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6) so the pre-authentication page has a navigable primary content region for screen readers
       Books.svelte        Book listing and detail view
       Dashboard.svelte    Home screen; library overview
       Libraries.svelte    Library management view
@@ -454,13 +454,38 @@ $effect(() => {
 
 ### ARIA landmarks
 
-The app shell uses semantic HTML5 landmark elements so screen readers can navigate by region:
+The app uses semantic HTML5 landmark elements so screen readers can navigate by region.
+
+#### Authenticated app shell (`App.svelte`)
 
 | Landmark | Element | Notes |
 |----------|---------|-------|
 | Main navigation | `<aside>` (inside `Sidebar.svelte`) | Desktop persistent sidebar |
 | Primary content | `<main id="main-content">` | Target of the skip link |
 | Mobile header | `<div>` + hamburger `<button>` | Not a landmark; sits above `<main>` only on small screens |
+
+#### Login / signup page (`Auth.svelte`)
+
+The unauthenticated page renders without the app shell, so it provides its own `<main>` landmark:
+
+```svelte
+<div class="min-h-screen …">
+  <!-- Decorative background elements (no landmark role) -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">…</div>
+
+  <main class="w-full max-w-md …">
+    <!-- logo, heading, login/signup form -->
+  </main>
+</div>
+```
+
+| Landmark | Element | Notes |
+|----------|---------|-------|
+| Primary content | `<main>` (in `Auth.svelte`) | Wraps the entire login/signup card; ensures screen readers have a `<main>` landmark before authentication |
+
+**Why this matters:** The WCAG [1.3.6 Identify Purpose](https://www.w3.org/WAI/WCAG21/Understanding/identify-purpose.html) guideline and best practice require every page to expose its primary content inside a `<main>` landmark so assistive-technology users can jump directly to it. Without `<main>`, the login page would be a flat, undifferentiated document from a screen reader's perspective.
+
+> **Rule:** Every page — authenticated or not — must contain exactly one `<main>` landmark. For the authenticated shell, `<main id="main-content">` lives in `App.svelte`. For the pre-auth login page, `<main>` lives in `Auth.svelte`.
 
 ### `aria-current` on active navigation buttons
 
@@ -562,11 +587,12 @@ When editing the app shell or adding new persistent navigation elements:
 
 1. Keep the skip link as the **first** child of the authenticated shell `<div>`.
 2. If you add a new persistent region that users must bypass, add an additional skip link or update the existing one.
-3. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
-4. Every icon-only button must have `aria-label`; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only buttons and dynamic inputs](#accessible-labels-for-icon-only-buttons-and-dynamic-inputs) above.
-5. Navigation buttons that represent the active view or tab must carry `aria-current={isActive ? "page" : undefined}`. See [`aria-current` on active navigation buttons](#aria-current-on-active-navigation-buttons) above.
-6. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
-7. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+3. Every page — authenticated or not — must contain exactly one `<main>` landmark. For the authenticated shell this is `<main id="main-content">` in `App.svelte`; for the pre-auth login/signup page this is `<main>` in `Auth.svelte`. Do not remove or replace these elements with a generic `<div>`.
+4. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
+5. Every icon-only button must have `aria-label`; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only buttons and dynamic inputs](#accessible-labels-for-icon-only-buttons-and-dynamic-inputs) above.
+6. Navigation buttons that represent the active view or tab must carry `aria-current={isActive ? "page" : undefined}`. See [`aria-current` on active navigation buttons](#aria-current-on-active-navigation-buttons) above.
+7. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
+8. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
 ### Form accessibility
 
