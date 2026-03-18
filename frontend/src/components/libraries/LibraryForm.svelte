@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import { libraryStore } from "../../stores/libraries.svelte";
   import { routerStore } from "../../stores/router.svelte";
   import { Plus, FolderOpen, Trash2, X } from "lucide-svelte";
@@ -23,6 +24,9 @@
   let nameError: string | null = $state(null);
   let pathsError: string | null = $state(null);
   let showDeleteConfirm = $state(false);
+  let deleteTriggerButton = $state<HTMLButtonElement | null>(null);
+  let confirmDeleteButton = $state<HTMLButtonElement | null>(null);
+  let cancelDeleteButton = $state<HTMLButtonElement | null>(null);
 
   // React to mode/editId changes to populate form
   $effect(() => {
@@ -126,6 +130,44 @@
     } finally {
       saving = false;
     }
+  }
+
+  async function openDeleteConfirm() {
+    showDeleteConfirm = true;
+    await tick();
+    confirmDeleteButton?.focus();
+  }
+
+  function closeDeleteConfirm() {
+    showDeleteConfirm = false;
+    deleteTriggerButton?.focus();
+  }
+
+  function handleDeleteConfirmKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeDeleteConfirm();
+      return;
+    }
+
+    if (e.key !== "Tab") {
+      return;
+    }
+
+    const focusableButtons = [confirmDeleteButton, cancelDeleteButton].filter(
+      (button): button is HTMLButtonElement => button !== null,
+    );
+    if (focusableButtons.length === 0) {
+      return;
+    }
+
+    e.preventDefault();
+    const activeElement = document.activeElement as HTMLButtonElement | null;
+    const activeIndex = focusableButtons.indexOf(activeElement ?? focusableButtons[0]);
+    const nextIndex =
+      (activeIndex + (e.shiftKey ? -1 : 1) + focusableButtons.length) %
+      focusableButtons.length;
+    focusableButtons[nextIndex].focus();
   }
 </script>
 
@@ -282,30 +324,42 @@
       </div>
       {#if mode === "edit"}
         {#if showDeleteConfirm}
-          <div class="flex items-center gap-2 animate-scale-in">
-            <span class="text-sm text-danger-600 dark:text-red-400"
+          <div
+            role="alertdialog"
+            aria-modal="false"
+            aria-label="Confirm library deletion"
+            aria-describedby="delete-confirm-msg"
+            tabindex="-1"
+            onkeydown={handleDeleteConfirmKeydown}
+            class="flex items-center gap-2 animate-scale-in"
+          >
+            <span id="delete-confirm-msg" class="text-sm text-danger-600 dark:text-red-400"
               >Delete this library?</span
             >
             <button
+              bind:this={confirmDeleteButton}
               type="button"
               onclick={handleDelete}
               disabled={saving}
               class="px-3 py-1.5 text-sm bg-danger-600 text-white rounded-lg hover:bg-danger-700 transition-colors disabled:opacity-50"
             >
-              Yes
+              Yes, delete library
             </button>
             <button
+              bind:this={cancelDeleteButton}
               type="button"
-              onclick={() => (showDeleteConfirm = false)}
+              onclick={closeDeleteConfirm}
+              disabled={saving}
               class="px-3 py-1.5 text-sm border border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-300 rounded-lg hover:bg-ink-50 dark:hover:bg-ink-800 transition-colors"
             >
-              No
+              Cancel
             </button>
           </div>
         {:else}
           <button
+            bind:this={deleteTriggerButton}
             type="button"
-            onclick={() => (showDeleteConfirm = true)}
+            onclick={openDeleteConfirm}
             class="inline-flex items-center gap-1.5 text-sm text-danger-600 hover:text-danger-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
             disabled={saving}
           >
