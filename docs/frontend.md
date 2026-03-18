@@ -565,7 +565,8 @@ When editing the app shell or adding new persistent navigation elements:
 3. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
 4. Every icon-only button must have `aria-label`; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only buttons and dynamic inputs](#accessible-labels-for-icon-only-buttons-and-dynamic-inputs) above.
 5. Navigation buttons that represent the active view or tab must carry `aria-current={isActive ? "page" : undefined}`. See [`aria-current` on active navigation buttons](#aria-current-on-active-navigation-buttons) above.
-6. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+6. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
+7. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
 ### Form accessibility
 
@@ -640,6 +641,31 @@ Password inputs must carry a valid `autocomplete` token so that password manager
 
 **Do not** leave `type="password"` inputs without `autocomplete`. Browsers may still infer the purpose, but the explicit attribute is required by WCAG 1.3.5 and ensures reliable cross-browser behaviour.
 
+#### `role="switch"` on toggle inputs
+
+**WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
+
+A visually styled toggle switch implemented with `<input type="checkbox">` does not automatically communicate its "switch" semantics to assistive technologies. Screen readers announce it as a plain checkbox, which is misleading when the control represents a binary on/off state rather than a multi-select option.
+
+Add `role="switch"` to any `<input type="checkbox">` that renders as a toggle:
+
+```svelte
+<input
+  type="checkbox"
+  role="switch"
+  bind:checked={formMonitored}
+  class="sr-only peer"
+/>
+```
+
+With `role="switch"`, assistive technologies announce the control as a _switch_ and report its state as _on_ or _off_ (rather than _checked_ or _unchecked_), which is the semantically correct announcement for a toggle.
+
+**Guidelines:**
+
+- Apply `role="switch"` whenever a `<input type="checkbox">` is styled to look like a toggle switch.
+- The control must still have an accessible name — either via a paired `<label>` element (preferred) or `aria-label`.
+- Do **not** use `role="switch"` on checkboxes that genuinely represent a tri-state or multi-select option; use plain `type="checkbox"` there.
+
 #### Checklist for new forms
 
 When adding or editing a form component:
@@ -649,7 +675,8 @@ When adding or editing a form component:
 3. Icon-only buttons (`<button>` with SVG content and no text) carry an `aria-label`.
 4. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
 5. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
-6. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+6. Toggle switches (`<input type="checkbox">` styled as a switch) carry `role="switch"`.
+7. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
 ### Accessibility tests
 
