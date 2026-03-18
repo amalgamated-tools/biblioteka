@@ -331,21 +331,25 @@
               {/if}
             </div>
 
-            {#if smtpTestMessage}
-              <div
-                class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
-              >
-                {smtpTestMessage}
-              </div>
-            {/if}
+            <div aria-live="polite" aria-atomic="true">
+              {#if smtpTestMessage}
+                <div
+                  role="status"
+                  class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
+                >
+                  {smtpTestMessage}
+                </div>
+              {/if}
 
-            {#if smtpTestError}
-              <div
-                class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
-              >
-                {smtpTestError}
-              </div>
-            {/if}
+              {#if smtpTestError}
+                <div
+                  role="alert"
+                  class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
+                >
+                  {smtpTestError}
+                </div>
+              {/if}
+            </div>
 
             <div class="mb-4">
               <div class="flex items-center gap-2 text-sm">
@@ -500,21 +504,25 @@
                 </select>
               </div>
 
-              {#if smtpError}
-                <div
-                  class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
-                >
-                  {smtpError}
-                </div>
-              {/if}
+              <div aria-live="polite" aria-atomic="true">
+                {#if smtpError}
+                  <div
+                    role="alert"
+                    class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
+                  >
+                    {smtpError}
+                  </div>
+                {/if}
 
-              {#if smtpSuccessMessage}
-                <div
-                  class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
-                >
-                  {smtpSuccessMessage}
-                </div>
-              {/if}
+                {#if smtpSuccessMessage}
+                  <div
+                    role="status"
+                    class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
+                  >
+                    {smtpSuccessMessage}
+                  </div>
+                {/if}
+              </div>
 
               {#if !smtpEnvOverride}
                 <button
