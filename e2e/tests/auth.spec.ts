@@ -49,6 +49,6 @@ test.describe("Authentication flow", () => {
     await openLoginForm(page);
     await signIn(page, missingUser.email, wrongPassword);
     await expect(getAuthErrorBanner(page)).toContainText(/invalid email or password/i);
-    await expect(page.getByRole("button", { name: "Login", exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Login", exact: true })).toBeVisible();
   });
 });
