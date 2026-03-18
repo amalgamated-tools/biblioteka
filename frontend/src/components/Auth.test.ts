@@ -1,10 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/svelte";
-
-describe("Auth", () => {
-  afterEach(cleanup);
-
-  it("has a main landmark region", () => {
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/svelte";
 
 vi.mock("../stores/auth.svelte", () => ({
   authStore: {
