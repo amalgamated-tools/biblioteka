@@ -77,7 +77,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// KOReader kosync-compatible progress sync endpoints.
 	// POST /api/user/create — KOReader always tries to register; we return 409 so
 	// it falls through to /api/user/auth.  Users set up credentials via the web UI.
-	s.mux.HandleFunc("/api/user/create", s.kosyncHandler.HandleKOSyncUserCreate)
+	s.mux.HandleFunc("/api/user/create", s.authLimiter.Limit(s.kosyncHandler.HandleKOSyncUserCreate))
 	// GET /api/user/auth — verified by the KOSync header auth middleware.
 	s.mux.HandleFunc("/api/user/auth", s.authLimiter.Limit(s.requireKOSyncAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncUserAuth)).ServeHTTP))
 	// PUT /api/syncs/progress and GET /api/syncs/progress/{document}.

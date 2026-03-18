@@ -250,6 +250,10 @@ func (h *KOSyncHandler) putProgress(w http.ResponseWriter, r *http.Request) {
 		writeError(ctx, w, http.StatusBadRequest, "document is required")
 		return
 	}
+	if strings.Contains(req.Document, "/") {
+		writeError(ctx, w, http.StatusBadRequest, "document identifier must not contain '/'")
+		return
+	}
 	if len(req.Document) > maxDocumentLen {
 		writeError(ctx, w, http.StatusBadRequest, "document identifier too long")
 		return

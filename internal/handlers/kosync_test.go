@@ -367,6 +367,21 @@ func TestKOSyncProgress_Put_MissingProgress(t *testing.T) {
 	}
 }
 
+func TestKOSyncProgress_Put_DocumentContainsSlash(t *testing.T) {
+	h, userID := setupKOSyncHandler(t)
+
+	body := `{"document":"path/to/doc","progress":"/body/p[1]","percentage":0.1}`
+	r := httptest.NewRequest(http.MethodPut, "/api/syncs/progress", bytes.NewBufferString(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleKOSyncProgress(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
 func TestKOSyncProgress_Get_Success(t *testing.T) {
 	h, userID := setupKOSyncHandler(t)
 
