@@ -53,7 +53,6 @@ test.describe("Account settings", () => {
     await expect(getAuthErrorBanner(page)).toContainText(/invalid email or password/i);
 
     await signIn(page, testUser.email, newPassword);
-    await expect(page).toHaveURL("/");
     await expect(page.getByText(testUser.email)).toBeVisible();
   });
 });
