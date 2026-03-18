@@ -57,5 +57,14 @@ describe("Sidebar heading semantics", () => {
 
     expect(container.querySelectorAll("h1")).toHaveLength(0);
     expect(container).toHaveTextContent("biblioteka");
+
+    const brandLabel = container.querySelector("span.text-lg.font-display");
+    expect(brandLabel).not.toBeNull();
+    expect(brandLabel).toHaveClass(
+      "text-lg",
+      "font-display",
+      "font-bold",
+      "tracking-tight",
+    );
   });
 });
