@@ -16,7 +16,7 @@ frontend/
     android-chrome-512x512.png  Android home-screen icon (512 × 512)
     site.webmanifest        PWA web app manifest (name, icons, theme colour)
   src/
-    App.svelte          Root component: auth gate + shell layout + routing; includes skip-to-main-content link (WCAG 2.4.1)
+    App.svelte          Root component: auth gate + shell layout + routing; includes skip-to-main-content link (WCAG 2.4.1) and dynamic document title updates (WCAG 2.4.2)
     main.ts             Entry point; mounts App and initialises the theme
     index.css           Tailwind CSS directives
     types.ts            Shared TypeScript interfaces for API entities
@@ -123,6 +123,7 @@ Client-side routing uses the browser's URL hash (`#`). No router library is need
 | `hash` | `string` | Raw hash value (e.g. `"settings/account"`) |
 | `currentView` | `AppView` | Top-level view segment (`"dashboard"` \| `"books"` \| `"my-library"` \| `"libraries"` \| `"settings"`) |
 | `subPath` | `string` | Sub-path after the first segment (e.g. `"account"`) |
+| `pageTitle` | `string` | Human-readable page title for the current view (e.g. `"Dashboard – biblioteka"`); used to update `document.title` on every navigation |
 | `navigate(path)` | `void` | Sets the hash and updates the store |
 
 **Navigating programmatically:**
@@ -417,6 +418,40 @@ Key details:
 
 **DOM ordering rule:** The skip link must be rendered **before** `<Sidebar />` in the template so it is the first element reached by the Tab key. Do not move it below the sidebar.
 
+### Page title on navigation
+
+**WCAG criterion:** [2.4.2 Page Titled](https://www.w3.org/WAI/WCAG21/Understanding/page-titled.html) (Level A)
+
+In a single-page application the browser does not perform a real page load on navigation, so `document.title` stays unchanged unless the application updates it explicitly. Screen readers and browser history both rely on meaningful, descriptive page titles to help users understand where they are.
+
+`routerStore` exposes a reactive `pageTitle` property derived from the current view and settings sub-path. `App.svelte` writes it to `document.title` via a Svelte `$effect`:
+
+```svelte
+<!-- App.svelte -->
+$effect(() => {
+  document.title = routerStore.pageTitle;
+});
+```
+
+`pageTitle` is built from two lookup tables defined in `router.svelte.ts`:
+
+| View / sub-path | Title |
+|-----------------|-------|
+| `dashboard` | `Dashboard – biblioteka` |
+| `books` | `All Books – biblioteka` |
+| `my-library` | `My Library – biblioteka` |
+| `libraries` | `Libraries – biblioteka` |
+| `settings` (no sub-path) | `Settings – biblioteka` |
+| `settings/account` | `Account Settings – biblioteka` |
+| `settings/preferences` | `Preferences – biblioteka` |
+| `settings/oidc` | `SSO Settings – biblioteka` |
+| `settings/smtp` | `Email Settings – biblioteka` |
+| `settings/users` | `User Management – biblioteka` |
+| `settings/api-keys` | `API Keys – biblioteka` |
+| Unknown hash | `biblioteka` |
+
+**When adding a new view or settings tab**, update both the corresponding union type (`AppView` or `SettingsSubPath`) and the matching title lookup table in `router.svelte.ts`. If you skip the lookup entry, `pageTitle` falls back to the top-level view title, which may be insufficiently descriptive.
+
 ### ARIA landmarks
 
 The app shell uses semantic HTML5 landmark elements so screen readers can navigate by region:
@@ -550,8 +585,9 @@ When adding or editing a form component:
 
 ### Accessibility tests
 
-`frontend/src/App.test.ts` contains a focused regression test that verifies:
+`frontend/src/App.test.ts` contains focused regression tests that verify:
 
+- `document.title` is set from `routerStore.pageTitle` on mount (WCAG 2.4.2).
 - The skip link exists and has the label _"Skip to main content"_.
 - The `<main>` landmark has `id="main-content"`.
 - The skip link appears **before** the sidebar in DOM order.
