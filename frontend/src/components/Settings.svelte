@@ -9,7 +9,20 @@
     testSmtpConfig,
     type AdminUser,
   } from "../lib/api";
-  import { Mail, Palette, Shield, Users, Send, KeyRound } from "lucide-svelte";
+  import {
+    Mail,
+    Palette,
+    Shield,
+    Users,
+    Send,
+    KeyRound,
+  } from "lucide-svelte";
+
+  const userTabs: { key: string; label: string; icon: typeof Mail }[] = [
+    { key: "account", label: "Account", icon: Mail },
+    { key: "api-keys", label: "API Keys", icon: KeyRound },
+    { key: "preferences", label: "Preferences", icon: Palette },
+  ];
   import AccountTab from "./settings/AccountTab.svelte";
   import OidcTab from "./settings/OidcTab.svelte";
   import UsersTab from "./settings/UsersTab.svelte";
@@ -214,36 +227,19 @@
       <nav
         class="flex sm:flex-col gap-2 sm:gap-1 overflow-x-auto sm:overflow-x-visible"
       >
-        <button
-          onclick={() => routerStore.navigate("settings/account")}
-          class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
-          'account'
-            ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-            : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
-        >
-          <Mail class="w-5 h-5" />
-          Account
-        </button>
-        <button
-          onclick={() => routerStore.navigate("settings/api-keys")}
-          class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
-          'api-keys'
-            ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-            : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
-        >
-          <KeyRound class="w-5 h-5" />
-          API Keys
-        </button>
-        <button
-          onclick={() => routerStore.navigate("settings/preferences")}
-          class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
-          'preferences'
-            ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-            : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
-        >
-          <Palette class="w-5 h-5" />
-          Preferences
-        </button>
+        {#each userTabs as tab}
+          {@const isActive = activeTab === tab.key}
+          <a
+            href="#settings/{tab.key}"
+            aria-current={isActive ? "page" : undefined}
+            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isActive
+              ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
+              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+          >
+            <tab.icon class="w-5 h-5" />
+            {tab.label}
+          </a>
+        {/each}
         {#if isAdmin}
           <div class="hidden sm:flex items-center gap-2 px-4 pt-3 pb-1">
             <hr class="flex-1 border-ink-200 dark:border-ink-700" />
@@ -256,36 +252,39 @@
           <div
             class="sm:hidden w-px bg-ink-200 dark:bg-ink-700 self-stretch my-1"
           ></div>
-          <button
-            onclick={() => routerStore.navigate("settings/oidc")}
-            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
-            'oidc'
+          {@const isOidcActive = activeTab === "oidc"}
+          <a
+            href="#settings/oidc"
+            aria-current={isOidcActive ? "page" : undefined}
+            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isOidcActive
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
               : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
           >
             <Shield class="w-5 h-5" />
             OIDC / SSO
-          </button>
-          <button
-            onclick={() => routerStore.navigate("settings/smtp")}
-            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
-            'smtp'
+          </a>
+          {@const isSmtpActive = activeTab === "smtp"}
+          <a
+            href="#settings/smtp"
+            aria-current={isSmtpActive ? "page" : undefined}
+            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isSmtpActive
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
               : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
           >
             <Send class="w-5 h-5" />
             Email / SMTP
-          </button>
-          <button
-            onclick={() => routerStore.navigate("settings/users")}
-            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
-            'users'
+          </a>
+          {@const isUsersActive = activeTab === "users"}
+          <a
+            href="#settings/users"
+            aria-current={isUsersActive ? "page" : undefined}
+            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isUsersActive
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
               : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
           >
             <Users class="w-5 h-5" />
             Users
-          </button>
+          </a>
         {/if}
       </nav>
     </aside>
