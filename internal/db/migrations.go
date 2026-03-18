@@ -125,5 +125,9 @@ func runMigrations(ctx context.Context, d *DB) error {
 		slog.InfoContext(ctx, "Migration applied", slog.String(otelkeys.Version, version))
 	}
 
+	if err := backfillKoboTokenHashes(ctx, d); err != nil {
+		return fmt.Errorf("failed to backfill kobo token hashes: %w", err)
+	}
+
 	return nil
 }

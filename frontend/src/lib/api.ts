@@ -462,7 +462,7 @@ export interface KoboToken {
   id: string;
   user_id: string;
   name: string;
-  token: string;
+  token_hash: string;
   created_at: string;
 }
 
@@ -470,8 +470,14 @@ export async function listKoboTokens(): Promise<KoboToken[]> {
   return request<KoboToken[]>("GET", "/api/kobo/tokens");
 }
 
-export async function createKoboToken(name: string): Promise<KoboToken> {
-  return request<KoboToken>("POST", "/api/kobo/tokens", { name });
+export interface KoboTokenCreateResponse extends KoboToken {
+  token: string;
+}
+
+export async function createKoboToken(
+  name: string,
+): Promise<KoboTokenCreateResponse> {
+  return request<KoboTokenCreateResponse>("POST", "/api/kobo/tokens", { name });
 }
 
 export async function deleteKoboToken(id: string): Promise<void> {
