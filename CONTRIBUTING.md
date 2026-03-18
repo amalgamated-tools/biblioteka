@@ -270,6 +270,39 @@ build ──► e2e (Playwright / Chromium)
 
 On completion, the `playwright-report/` artifact is uploaded and retained for **7 days**, giving you screenshots and traces for any failures.
 
+### Automated agentic workflows
+
+Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that run on a schedule or in response to events. They analyze the codebase, find issues, and open pull requests or GitHub issues automatically. You do not need to trigger them manually.
+
+| Workflow | Trigger | Output |
+|---|---|---|
+| **Daily Accessibility Review** | Every 3 hours | GitHub issues labeled `a11y`, `automated-analysis` |
+| **Code Simplifier** | Daily | Pull requests simplifying recently changed code |
+| **Issue Triage** | On every new issue | Applies type/priority labels, flags duplicates, asks clarifying questions |
+| **Daily File Diet** | On demand | GitHub issues for source files that exceed healthy size thresholds |
+| **CI Coach** | Daily | Workflow optimization suggestions |
+| **Daily Repo Chronicle** | Weekdays at 4 PM UTC | Narrative summary of daily repository activity |
+| **Weekly Repo Map** | Mondays | ASCII file-tree visualization of the repository |
+
+#### Daily Accessibility Review
+
+The `daily-accessibility-review` workflow (`daily-accessibility-review.md`) runs every three hours. It:
+
+1. Builds the full application and starts the HTTP server with `-mode server`.
+2. Uses Playwright to navigate the live app and check for [WCAG 2.2](https://www.w3.org/TR/WCAG22/) violations.
+3. Reviews source code for additional accessibility issues.
+4. Opens GitHub issues for any problems found, labeled `a11y` and `automated-analysis`.
+
+When you are assigned an `a11y`-labeled issue, refer to the WCAG criterion cited in the issue body and the [Accessibility patterns](docs/frontend.md#accessibility-patterns) section in the frontend docs for implementation guidance. Close the issue with a commit that includes `Fixes #<issue-number>`.
+
+#### Code Simplifier
+
+The `code-simplifier` workflow runs daily and creates pull requests that simplify recently changed Go and TypeScript code. Review these PRs the same way you would a human-authored PR; merge if the simplification is correct and reject if it changes behavior.
+
+#### Issue Triage
+
+The `issue-triage` workflow fires on every newly opened issue. It applies conventional-commit type labels (e.g. `bug`, `feat`), detects duplicates, and posts clarifying questions when the issue description is unclear. Labels applied by triage are informational — override them if they are wrong.
+
 ## Commit Messages
 
 This project follows the [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) specification for all commit messages and pull request titles.
