@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
-	"errors"
 	"log/slog"
 	"mime"
 	"net/http"
@@ -26,10 +24,6 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 
 	files, err := h.DB.ListBookFiles(r.Context(), bookID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeKoboJSON(w, http.StatusNotFound, map[string]any{})
-			return
-		}
 		slog.ErrorContext(r.Context(), "failed to list book files for kobo download", slog.Any(otelkeys.Error, err))
 		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
 		return
