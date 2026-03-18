@@ -55,30 +55,16 @@ func (d *DB) UpsertKoboReadingState(ctx context.Context, userID, bookID, status 
 		slog.String(otelkeys.Status, status),
 	)
 
-	var q string
-	if d.Dialect == DialectPostgres {
-		q = `INSERT INTO kobo_reading_states (user_id, book_id, status, percent_read, location_value, location_type, location_source)
-		     VALUES ($1, $2, $3, $4, $5, $6, $7)
-		     ON CONFLICT (user_id, book_id) DO UPDATE SET
-		         status = EXCLUDED.status,
-		         percent_read = EXCLUDED.percent_read,
-		         location_value = EXCLUDED.location_value,
-		         location_type = EXCLUDED.location_type,
-		         location_source = EXCLUDED.location_source,
-		         updated_at = NOW()
-		     RETURNING ` + koboReadingStateColumns
-	} else {
-		q = `INSERT INTO kobo_reading_states (user_id, book_id, status, percent_read, location_value, location_type, location_source)
-		     VALUES ($1, $2, $3, $4, $5, $6, $7)
-		     ON CONFLICT (user_id, book_id) DO UPDATE SET
-		         status = excluded.status,
-		         percent_read = excluded.percent_read,
-		         location_value = excluded.location_value,
-		         location_type = excluded.location_type,
-		         location_source = excluded.location_source,
-		         updated_at = datetime('now')
-		     RETURNING ` + koboReadingStateColumns
-	}
+	q := `INSERT INTO kobo_reading_states (user_id, book_id, status, percent_read, location_value, location_type, location_source)
+	      VALUES ($1, $2, $3, $4, $5, $6, $7)
+	      ON CONFLICT (user_id, book_id) DO UPDATE SET
+	          status = EXCLUDED.status,
+	          percent_read = EXCLUDED.percent_read,
+	          location_value = EXCLUDED.location_value,
+	          location_type = EXCLUDED.location_type,
+	          location_source = EXCLUDED.location_source,
+	          updated_at = ` + d.now() + `
+	      RETURNING ` + koboReadingStateColumns
 
 	return scanKoboReadingState(d.QueryRowContext(ctx, q,
 		userID, bookID, status, percentRead, locationValue, locationType, locationSource,

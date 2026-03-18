@@ -79,11 +79,11 @@ func schemeAndHost(r *http.Request) string {
 		scheme = "https"
 	}
 	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
+		normalized := strings.ToLower(strings.TrimSpace(proto))
+		if normalized == "http" || normalized == "https" {
+			scheme = normalized
+		}
 	}
 	host := r.Host
-	if fwd := r.Header.Get("X-Forwarded-Host"); fwd != "" {
-		host = fwd
-	}
 	return scheme + "://" + host
 }
