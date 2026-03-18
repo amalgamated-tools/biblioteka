@@ -268,7 +268,7 @@ func (h *KOSyncHandler) getProgress(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(ctx)
 
 	document := strings.TrimPrefix(r.URL.Path, "/api/syncs/progress/")
-	if document == "" {
+	if document == "" || document == r.URL.Path {
 		writeError(ctx, w, http.StatusBadRequest, "document identifier is required")
 		return
 	}
