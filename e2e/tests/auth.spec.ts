@@ -3,6 +3,7 @@ import {
   configureTimeouts,
   createTestUser,
   getAuthErrorBanner,
+  openAuthPage,
   openLoginForm,
   openSignupForm,
   signIn,
@@ -38,9 +39,9 @@ test.describe("Authentication flow", () => {
     await page.getByRole("button", { name: "Create Account" }).click();
     await expect(getAuthErrorBanner(page)).toContainText("Please fill in all fields");
 
-    await page.locator("input#name").fill(validationUser.displayName);
-    await page.locator("input#email").fill(validationUser.email);
-    await page.locator("input#password").fill("short");
+    await page.locator("input#signup-name").fill(validationUser.displayName);
+    await page.locator("input#signup-email").fill(validationUser.email);
+    await page.locator("input#signup-password").fill("short");
     await page.getByRole("button", { name: "Create Account" }).click();
     await expect(getAuthErrorBanner(page)).toContainText(
       "Password must be at least 6 characters",
@@ -49,6 +50,72 @@ test.describe("Authentication flow", () => {
     await openLoginForm(page);
     await signIn(page, missingUser.email, wrongPassword);
     await expect(getAuthErrorBanner(page)).toContainText(/invalid email or password/i);
-    await expect(page.getByRole("button", { name: "Login", exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Login", exact: true })).toBeVisible();
+  });
+});
+
+test.describe("ARIA tabs accessibility", () => {
+  test("tab roles, aria-selected, and tabpanel relationship", async ({ page }) => {
+    configureTimeouts(page);
+    await openAuthPage(page);
+
+    const loginTab = page.locator("#login-tab");
+    const signupTab = page.locator("#signup-tab");
+
+    // Both buttons have role=tab
+    await expect(loginTab).toHaveRole("tab");
+    await expect(signupTab).toHaveRole("tab");
+
+    // Tablist has aria-label
+    await expect(page.getByRole("tablist")).toHaveAttribute("aria-label", "Authentication method");
+
+    // Login is active by default
+    await expect(loginTab).toHaveAttribute("aria-selected", "true");
+    await expect(signupTab).toHaveAttribute("aria-selected", "false");
+    await expect(loginTab).toHaveAttribute("tabindex", "0");
+    await expect(signupTab).toHaveAttribute("tabindex", "-1");
+
+    // Tabpanel points to the active tab
+    const loginPanel = page.locator("#login-panel");
+    const signupPanel = page.locator("#signup-panel");
+    await expect(loginPanel).toHaveRole("tabpanel");
+    await expect(loginPanel).toHaveAttribute("aria-labelledby", "login-tab");
+    await expect(loginPanel).toHaveAttribute("tabindex", "0");
+    await expect(loginPanel).not.toHaveAttribute("hidden", "");
+    await expect(signupPanel).toHaveAttribute("hidden", "");
+
+    // Switch to Sign Up
+    await signupTab.click();
+    await expect(signupTab).toHaveAttribute("aria-selected", "true");
+    await expect(loginTab).toHaveAttribute("aria-selected", "false");
+    await expect(signupTab).toHaveAttribute("tabindex", "0");
+    await expect(loginTab).toHaveAttribute("tabindex", "-1");
+    await expect(signupPanel).not.toHaveAttribute("hidden", "");
+    await expect(loginPanel).toHaveAttribute("hidden", "");
+  });
+
+  test("arrow key navigation between tabs", async ({ page }) => {
+    configureTimeouts(page);
+    await openAuthPage(page);
+
+    const loginTab = page.locator("#login-tab");
+    const signupTab = page.locator("#signup-tab");
+
+    // Focus the login tab and press ArrowRight to move to signup
+    await loginTab.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(signupTab).toBeFocused();
+    await expect(signupTab).toHaveAttribute("aria-selected", "true");
+
+    // Press ArrowLeft to go back to login
+    await page.keyboard.press("ArrowLeft");
+    await expect(loginTab).toBeFocused();
+    await expect(loginTab).toHaveAttribute("aria-selected", "true");
+
+    // Home goes to first tab, End goes to last tab
+    await page.keyboard.press("End");
+    await expect(signupTab).toBeFocused();
+    await page.keyboard.press("Home");
+    await expect(loginTab).toBeFocused();
   });
 });

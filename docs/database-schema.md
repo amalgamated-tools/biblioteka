@@ -205,6 +205,9 @@ Core book metadata. All fields except `title` are optional.
 | `created_at`      | DATETIME| NOT NULL | `now()`  | Creation time                          |
 | `updated_at`      | DATETIME| NOT NULL | `now()`  | Last update time                       |
 
+**Indexes:**
+- `idx_books_updated_at_id` — composite index on `(updated_at, id)` for efficient cursor-based pagination; used by the Kobo library sync endpoint to order and page through books by modification time.
+
 **Notes:**
 - Books are global (not scoped per user).
 - When a book file is first discovered by the background scanner, a book record is created automatically with the filename (minus extension) as the `title`. Other fields can be filled in via the API.
@@ -369,16 +372,16 @@ Named sync tokens that authenticate a Kobo e-reader device. Each token grants ac
 | `id`         | TEXT    | NOT NULL | auto-gen | Primary key                                              |
 | `user_id`    | TEXT    | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE                        |
 | `name`       | TEXT    | NOT NULL | —        | Human-readable label (max 100 chars)                    |
-| `token_hash` | TEXT    | NOT NULL | —        | SHA-256 hex digest of the raw token (raw token never stored) |
+| `token_hash` | TEXT    | NULL     | NULL     | SHA-256 hex digest of the raw token; `NULL` only on pre-migration rows (always set for new tokens) |
 | `created_at` | DATETIME| NOT NULL | `now()`  | When the token was created                               |
 
 **Indexes:**
 - `idx_kobo_tokens_user_id` — list all tokens for a user
-- `idx_kobo_tokens_hash` (unique) — fast lookup during device authentication
+- `idx_kobo_tokens_token_hash` (unique) — fast lookup during device authentication
 
 **Notes:**
 - The raw token is a 32-byte cryptographically random value encoded as 64 hex characters.
-- Only the SHA-256 hash is stored. If a token is lost, the user must delete it and create a new one.
+- Only the SHA-256 hash is stored. If a token URL is lost, the user must delete it and create a new one.
 - Deleting a user cascades and removes all their Kobo tokens.
 - See [Kobo Tokens API](kobo.md#kobo-tokens-api) for management endpoints.
 
@@ -412,11 +415,60 @@ Tracks the reading progress a Kobo device has reported for each user–book pair
 
 ---
 
+### `kosync_credentials`
+
+Stores KOReader [kosync](https://github.com/koreader/koreader-sync-server)-compatible credentials for each Biblioteka user. Each user may have at most one KOSync credential set. These credentials are used exclusively by the KOReader Progress sync plugin and are independent of the user's main Biblioteka login.
+
+| Column          | Type     | Nullable | Default    | Description                                                      |
+|-----------------|----------|----------|------------|------------------------------------------------------------------|
+| `id`            | TEXT     | NOT NULL | auto-gen   | Primary key                                                      |
+| `user_id`       | TEXT     | NOT NULL | —          | FK → `users.id` ON DELETE CASCADE (unique — one credential per user) |
+| `username`      | TEXT     | NOT NULL | —          | KOSync username chosen by the user (case-insensitive, globally unique) |
+| `password_hash` | TEXT     | NOT NULL | —          | `bcrypt(md5_hex(password))` — never the raw password             |
+| `created_at`    | DATETIME | NOT NULL | `now()`    | When the credential was created                                  |
+| `updated_at`    | DATETIME | NOT NULL | `now()`    | When the credential was last changed                             |
+
+**Indexes:**
+- `idx_kosync_credentials_username` (unique) — enforces globally unique usernames (case-insensitive)
+
+**Notes:**
+- The password is stored as `bcrypt(md5_hex(password))`. KOReader transmits the hex-encoded MD5 of the user's password as the `x-auth-key` header; by pre-hashing with MD5, Biblioteka can verify it directly against the stored bcrypt hash without storing the plaintext MD5.
+- Deleting a user cascades and removes their KOSync credentials.
+
+---
+
+### `reading_progress`
+
+Stores KOReader reading progress for each user–document pair. The `document` field is the opaque identifier KOReader generates from a book's file hash or path.
+
+| Column       | Type     | Nullable | Default  | Description                                                      |
+|--------------|----------|----------|----------|------------------------------------------------------------------|
+| `id`         | TEXT     | NOT NULL | auto-gen | Primary key                                                      |
+| `user_id`    | TEXT     | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE                                |
+| `document`   | TEXT     | NOT NULL | —        | Opaque KOReader document identifier (file hash or path)          |
+| `progress`   | TEXT     | NOT NULL | —        | KOReader position string (e.g. `"1/3/4/5/6/7/8"`)               |
+| `percentage` | REAL     | NOT NULL | `0`      | Reading percentage in the range `[0, 1]`                         |
+| `device`     | TEXT     | NULL     | NULL     | Name of the device that last updated this record (optional)      |
+| `device_id`  | TEXT     | NULL     | NULL     | Identifier of the device that last updated this record (optional)|
+| `created_at` | DATETIME | NOT NULL | `now()`  | When the progress record was first created                       |
+| `updated_at` | DATETIME | NOT NULL | `now()`  | When the progress record was last updated                        |
+
+**Indexes:**
+- `idx_reading_progress_user_document` (unique) — enforces one record per user–document pair; used by the upsert
+- `idx_reading_progress_user_id` — fast user-scoped lookups
+
+**Notes:**
+- The `(user_id, document)` pair is unique; updates use `INSERT … ON CONFLICT DO UPDATE`.
+- Progress records are not linked to the `books` table — KOReader identifiers are opaque and may not correspond to a book in the library.
+- Deleting a user cascades and removes their reading progress.
+
+---
+
 ## Cascade Deletion Summary
 
 | Deleted entity | Also deletes                                      |
 |----------------|---------------------------------------------------|
-| `users`        | `api_keys`, `opds_credentials`, `kobo_tokens`, `kobo_reading_states` for that user |
+| `users`        | `api_keys`, `opds_credentials`, `kobo_tokens`, `kobo_reading_states`, `kosync_credentials`, `reading_progress` for that user |
 | `libraries`    | `library_books` entries for that library          |
 | `books`        | `book_files`, `book_authors`, `book_series`, `library_books`, `kobo_reading_states` entries for that book |
 | `authors`      | `book_authors` entries for that author            |
@@ -446,6 +498,7 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `opds_credentials.go` | `OPDSCredential` struct; `GetOPDSCredential*`, `UpsertOPDSCredential`, `DeleteOPDSCredential` |
 | `kobo_tokens.go` | `KoboToken` struct; `CreateKoboToken`, `GetKoboToken`, `GetKoboTokenByHash`, `ListKoboTokens`, `DeleteKoboToken` |
 | `kobo_reading_states.go` | `KoboReadingState` struct; `GetKoboReadingState`, `UpsertKoboReadingState`, `ListKoboReadingStatesSince`, `GetReadingStatesForBooks` |
+| `kosync.go` | `KOSyncCredential` struct; `GetKOSyncCredentialByUserID`, `GetKOSyncCredentialByUsername`, `UpsertKOSyncCredential`, `DeleteKOSyncCredential`; `ReadingProgress` struct; `GetReadingProgress`, `UpsertReadingProgress` |
 | `audit_logs.go` | `AuditLog` struct; `CreateAuditLog`, `ListAuditLogs` |
 | `sql_parser.go` | Internal helpers for parsing embedded SQL migration files |
 
