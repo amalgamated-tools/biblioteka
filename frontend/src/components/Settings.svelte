@@ -216,6 +216,7 @@
       >
         <button
           onclick={() => routerStore.navigate("settings/account")}
+          aria-current={activeTab === "account" ? "page" : undefined}
           class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
           'account'
             ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
@@ -226,6 +227,7 @@
         </button>
         <button
           onclick={() => routerStore.navigate("settings/api-keys")}
+          aria-current={activeTab === "api-keys" ? "page" : undefined}
           class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
           'api-keys'
             ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
@@ -236,6 +238,7 @@
         </button>
         <button
           onclick={() => routerStore.navigate("settings/preferences")}
+          aria-current={activeTab === "preferences" ? "page" : undefined}
           class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
           'preferences'
             ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
@@ -258,6 +261,7 @@
           ></div>
           <button
             onclick={() => routerStore.navigate("settings/oidc")}
+            aria-current={activeTab === "oidc" ? "page" : undefined}
             class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
             'oidc'
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
@@ -268,6 +272,7 @@
           </button>
           <button
             onclick={() => routerStore.navigate("settings/smtp")}
+            aria-current={activeTab === "smtp" ? "page" : undefined}
             class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
             'smtp'
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
@@ -278,6 +283,7 @@
           </button>
           <button
             onclick={() => routerStore.navigate("settings/users")}
+            aria-current={activeTab === "users" ? "page" : undefined}
             class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
             'users'
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
