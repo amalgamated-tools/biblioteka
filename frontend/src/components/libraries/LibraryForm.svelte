@@ -174,6 +174,7 @@
                   value: e.currentTarget.value,
                 };
               }}
+              aria-label={formPaths.length === 1 ? "Folder path" : `Folder path ${i + 1}`}
               placeholder="/path/to/books"
               class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 font-mono text-sm transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
               disabled={saving}
@@ -218,7 +219,7 @@
     </div>
 
     <div class="flex items-center gap-3">
-      <label class="relative inline-flex items-center cursor-pointer">
+      <label class="relative inline-flex items-center gap-3 cursor-pointer">
         <input
           type="checkbox"
           bind:checked={formMonitored}
@@ -228,10 +229,10 @@
         <div
           class="w-11 h-6 bg-ink-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent-500 dark:bg-ink-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-ink-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-ink-600 peer-checked:bg-accent-600"
         ></div>
+        <span class="text-sm text-ink-600 dark:text-ink-300"
+          >Monitor for new content</span
+        >
       </label>
-      <span class="text-sm text-ink-600 dark:text-ink-300"
-        >Monitor for new content</span
-      >
     </div>
 
     <div class="flex items-center justify-between pt-2">
