@@ -216,7 +216,7 @@
       >
         <button
           onclick={() => routerStore.navigate("settings/account")}
-          aria-current={activeTab === "account" ? "page" : undefined}
+          aria-current={activeTab === "account" ? true : undefined}
           class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {activeTab ===
           'account'
             ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
