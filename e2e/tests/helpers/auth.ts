@@ -2,14 +2,9 @@ import { expect, type Page } from "@playwright/test";
 
 export const AUTH_ERROR_TEST_ID = "auth-error";
 const TOKEN_KEY = "biblioteka_token";
-// TODO: Remove SCREENSHOT_* fallbacks after all callers switch to E2E_* overrides.
-export const DEFAULT_TIMEOUT_MS = Number(
-  process.env.E2E_TIMEOUT_MS || process.env.SCREENSHOT_TIMEOUT_MS || 5000,
-);
-export const NAVIGATION_TIMEOUT_MS = Number(
-  process.env.E2E_NAVIGATION_TIMEOUT_MS ||
-    process.env.SCREENSHOT_NAVIGATION_TIMEOUT_MS ||
-    5000,
+const DEFAULT_TIMEOUT_MS = Number(process.env.E2E_TIMEOUT_MS || 5000);
+const NAVIGATION_TIMEOUT_MS = Number(
+  process.env.E2E_NAVIGATION_TIMEOUT_MS || 5000,
 );
 
 export interface TestUser {
@@ -72,6 +67,8 @@ export async function signOut(page: Page): Promise<void> {
 // Callers assert the expected post-login outcome because some tests expect failure.
 export async function signIn(page: Page, email: string, password: string): Promise<void> {
   await openAuthPage(page);
+  await page.locator("button#login-btn").click();
+  await page.waitForSelector("input#email");
   await page.locator("input#email").fill(email);
   await page.locator("input#password").fill(password);
   await page.locator("button[type='submit']").click();
