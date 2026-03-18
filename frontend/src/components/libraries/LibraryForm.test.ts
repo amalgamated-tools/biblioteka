@@ -68,6 +68,23 @@ describe("LibraryForm accessibility", () => {
     ).toHaveTextContent("*");
   });
 
+  it("uses accessible placeholder contrast classes for text inputs", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const nameInput = container.querySelector("#lib-name") as HTMLInputElement;
+    const folderInput = container.querySelector(
+      'input[aria-label="Folder path"]',
+    ) as HTMLInputElement;
+
+    expect(nameInput.className).toContain("placeholder:text-ink-400");
+    expect(nameInput.className).not.toContain("placeholder:text-ink-300");
+    expect(folderInput.className).toContain("placeholder:text-ink-400");
+    expect(folderInput.className).not.toContain("placeholder:text-ink-300");
+  });
+
   it("shows inline name error with aria-invalid when submitting empty name", async () => {
     const { container } = render(LibraryForm, {
       props: { mode: "create", editId: "" },

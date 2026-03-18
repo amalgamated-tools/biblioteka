@@ -69,7 +69,7 @@
           Add A Library
         </button>
       {:else}
-        <p class="text-ink-400 dark:text-ink-400">
+        <p class="text-ink-400 dark:text-ink-300">
           Select a library from the sidebar or create a new one.
         </p>
       {/if}

@@ -95,7 +95,7 @@
     class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800"
   >
     <div class="text-center py-8">
-      <p class="text-ink-400 dark:text-ink-400">Loading books...</p>
+      <p class="text-ink-400 dark:text-ink-300">Loading books...</p>
     </div>
   </div>
 {:else if total === 0}
@@ -104,8 +104,8 @@
   >
     <div class="text-center py-8">
       <BookOpen class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4" />
-      <p class="text-ink-400 dark:text-ink-400 text-lg">No books yet.</p>
-      <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
+      <p class="text-ink-400 dark:text-ink-300 text-lg">No books yet.</p>
+      <p class="text-ink-400 dark:text-ink-500 text-sm mt-1">
         Books will appear here once they are added to your libraries.
       </p>
     </div>
@@ -210,22 +210,22 @@
                 </div>
               </td>
               <td
-                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden sm:table-cell truncate max-w-[200px]"
+                class="px-4 py-3 text-ink-500 dark:text-ink-300 hidden sm:table-cell truncate max-w-[200px]"
               >
                 {book.publisher ?? "—"}
               </td>
               <td
-                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden md:table-cell"
+                class="px-4 py-3 text-ink-500 dark:text-ink-300 hidden md:table-cell"
               >
                 {book.language ?? "—"}
               </td>
               <td
-                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden md:table-cell text-right"
+                class="px-4 py-3 text-ink-500 dark:text-ink-300 hidden md:table-cell text-right"
               >
                 {book.num_pages ?? "—"}
               </td>
               <td
-                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden lg:table-cell"
+                class="px-4 py-3 text-ink-500 dark:text-ink-300 hidden lg:table-cell"
               >
                 {book.publication_date ?? "—"}
               </td>
@@ -250,7 +250,7 @@
         <ChevronLeft class="w-4 h-4" />
         Previous
       </button>
-      <span class="text-sm text-ink-500 dark:text-ink-400">
+      <span class="text-sm text-ink-500 dark:text-ink-300">
         Page {currentPage} of {totalPages}
       </span>
       <button

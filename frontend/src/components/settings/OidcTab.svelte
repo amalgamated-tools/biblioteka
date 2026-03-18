@@ -128,7 +128,7 @@
       </div>
     </div>
 
-    <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
       Configure an OpenID Connect (OIDC) provider to enable Single Sign-On.
       Users will be able to log in using your identity provider.
     </p>

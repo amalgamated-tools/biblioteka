@@ -93,7 +93,7 @@
       >
         biblioteka
       </h1>
-      <p class="text-ink-400 dark:text-ink-400 font-body">
+      <p class="text-ink-400 dark:text-ink-300 font-body">
         Your personal digital library
       </p>
     </div>
@@ -117,7 +117,7 @@
           </div>
           <div class="relative flex justify-center text-sm">
             <span
-              class="px-3 bg-white dark:bg-ink-900 text-ink-400 dark:text-ink-400"
+              class="px-3 bg-white dark:bg-ink-900 text-ink-400 dark:text-ink-300"
               >or</span
             >
           </div>
@@ -136,7 +136,7 @@
           onclick={() => (isLogin = true)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
-            : 'text-ink-400 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'}"
+            : 'text-ink-400 dark:text-ink-300 hover:text-ink-700 dark:hover:text-ink-200'}"
         >
           Login
         </button>
@@ -150,7 +150,7 @@
           onclick={() => (isLogin = false)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {!isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
-            : 'text-ink-400 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'}"
+            : 'text-ink-400 dark:text-ink-300 hover:text-ink-700 dark:hover:text-ink-200'}"
         >
           Sign Up
         </button>
@@ -170,7 +170,7 @@
               type="email"
               bind:value={email}
               autocomplete="email"
-              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-400 dark:placeholder:text-ink-500"
               placeholder="you@example.com"
               disabled={loading}
             />
@@ -188,7 +188,7 @@
               type="password"
               bind:value={password}
               autocomplete="current-password"
-              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-400 dark:placeholder:text-ink-500"
               placeholder="••••••••"
               disabled={loading}
             />
@@ -224,7 +224,7 @@
               type="text"
               bind:value={name}
               autocomplete="name"
-              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-400 dark:placeholder:text-ink-500"
               placeholder="Your name"
               disabled={loading}
             />
@@ -242,7 +242,7 @@
               type="email"
               bind:value={email}
               autocomplete="email"
-              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-400 dark:placeholder:text-ink-500"
               placeholder="you@example.com"
               disabled={loading}
             />
@@ -260,7 +260,7 @@
               type="password"
               bind:value={password}
               autocomplete="new-password"
-              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-400 dark:placeholder:text-ink-500"
               placeholder="••••••••"
               disabled={loading}
             />

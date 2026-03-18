@@ -26,4 +26,18 @@ describe("Auth", () => {
     const main = screen.getByRole("main");
     expect(main).toBeInTheDocument();
   });
+
+  it("uses accessible placeholder contrast classes", () => {
+    const { container } = render(Auth);
+
+    const inputs = Array.from(
+      container.querySelectorAll("input[placeholder]"),
+    ) as HTMLInputElement[];
+
+    expect(inputs.length).toBeGreaterThan(0);
+    for (const input of inputs) {
+      expect(input.className).toContain("placeholder:text-ink-400");
+      expect(input.className).not.toContain("placeholder:text-ink-300");
+    }
+  });
 });

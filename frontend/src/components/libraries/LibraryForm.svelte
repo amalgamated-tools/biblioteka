@@ -161,7 +161,7 @@
         type="text"
         bind:value={formName}
         placeholder="e.g. Fiction, Audiobooks"
-        class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+        class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all placeholder:text-ink-400 dark:placeholder:text-ink-500"
         disabled={saving}
         aria-required="true"
         aria-invalid={nameError ? true : undefined}
@@ -192,7 +192,7 @@
               }}
               aria-label={formPaths.length === 1 ? "Folder path" : `Folder path ${i + 1}`}
               placeholder="/path/to/books"
-              class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 font-mono text-sm transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 font-mono text-sm transition-all placeholder:text-ink-400 dark:placeholder:text-ink-500"
               disabled={saving}
               aria-required="true"
               aria-invalid={pathsError ? true : undefined}
@@ -233,7 +233,7 @@
 
     <div>
       <p
-        class="text-sm text-ink-400 dark:text-ink-400 mb-2 flex items-center gap-2"
+        class="text-sm text-ink-400 dark:text-ink-300 mb-2 flex items-center gap-2"
       >
         <FolderOpen class="w-4 h-4" aria-hidden="true" />
         Organization: Book Per Folder

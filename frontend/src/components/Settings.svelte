@@ -215,7 +215,7 @@
     >
       Settings
     </h1>
-    <p class="text-sm text-ink-400 dark:text-ink-400">
+    <p class="text-sm text-ink-400 dark:text-ink-300">
       Manage your account and preferences
     </p>
   </div>
@@ -232,7 +232,7 @@
             aria-current={isActive ? "page" : undefined}
             class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isActive
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-ink-800'}"
           >
             <tab.icon class="w-5 h-5" />
             {tab.label}
@@ -256,7 +256,7 @@
             aria-current={isOidcActive ? "page" : undefined}
             class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isOidcActive
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-ink-800'}"
           >
             <Shield class="w-5 h-5" />
             OIDC / SSO
@@ -267,7 +267,7 @@
             aria-current={isSmtpActive ? "page" : undefined}
             class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isSmtpActive
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-ink-800'}"
           >
             <Send class="w-5 h-5" />
             Email / SMTP
@@ -278,7 +278,7 @@
             aria-current={isUsersActive ? "page" : undefined}
             class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isUsersActive
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-ink-800'}"
           >
             <Users class="w-5 h-5" />
             Users
@@ -368,7 +368,7 @@
               </div>
             </div>
 
-            <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
+            <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
               Configure SMTP settings to enable email notifications from
               Biblioteka.
             </p>

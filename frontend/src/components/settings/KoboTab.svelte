@@ -144,7 +144,7 @@
       <BookOpen class="w-5 h-5 text-accent-600" />
       Kobo Sync
     </h2>
-    <p class="text-sm text-ink-500 dark:text-ink-400 mb-6">
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-6">
       Sync your library to a Kobo e-reader. Create a token below, then set the
       <strong>API endpoint</strong> in your Kobo's
       <code class="px-1 py-0.5 bg-ink-100 dark:bg-ink-800 rounded text-xs"
@@ -183,7 +183,7 @@
     {/if}
 
     {#if tokensLoading}
-      <p class="text-ink-400 dark:text-ink-400">Loading Kobo tokens...</p>
+      <p class="text-ink-400 dark:text-ink-300">Loading Kobo tokens...</p>
     {:else if tokenList.length === 0}
       <p class="text-sm text-ink-400 dark:text-ink-500">
         No Kobo tokens yet. Create one above to get started.
@@ -234,7 +234,7 @@
                 </button>
               {:else}
                 <div
-                  class="flex-1 px-3 py-2 bg-ink-50 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 rounded-lg text-xs text-ink-500 dark:text-ink-400"
+                  class="flex-1 px-3 py-2 bg-ink-50 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 rounded-lg text-xs text-ink-500 dark:text-ink-300"
                 >
                   Token hidden. Create a new token to get a fresh sync URL.
                 </div>
@@ -255,7 +255,7 @@
   </div>
 
   <div
-    class="border-t border-ink-100 dark:border-ink-800 pt-4 text-sm text-ink-500 dark:text-ink-400 space-y-2"
+    class="border-t border-ink-100 dark:border-ink-800 pt-4 text-sm text-ink-500 dark:text-ink-300 space-y-2"
   >
     <p class="font-medium text-ink-700 dark:text-ink-300">Setup instructions</p>
     <ol class="list-decimal list-inside space-y-1">
