@@ -277,6 +277,8 @@ curl -X PUT http://localhost:8080/api/config/oidc \
 
 The server immediately tests the issuer URL by performing OIDC discovery before saving. If discovery fails, the config is rejected with a `400` error.
 
+All four OIDC fields are saved in a single database transaction. If the database write fails partway through, the entire update is rolled back and the previous configuration remains unchanged.
+
 **Precedence:** Environment variables (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI`) always override database-stored settings. If environment variables are set, the runtime configuration UI will appear read-only.
 
 ---
@@ -309,6 +311,8 @@ curl -X POST http://localhost:8080/api/config/smtp/test \
 ```
 
 The test endpoint sends a short verification email to the authenticated admin's registered email address. It returns `200 OK` with a `{"message":"Test email sent to <email>"}` body on success, or a `4xx`/`5xx` error with `{"error":"…"}` on failure.
+
+All six SMTP fields are saved in a single database transaction. If the database write fails partway through, the entire update is rolled back and the previous configuration remains unchanged.
 
 **TLS modes:** `none` (plaintext), `starttls` (STARTTLS upgrade on port 587, default), or `tls` (implicit TLS on port 465).
 
