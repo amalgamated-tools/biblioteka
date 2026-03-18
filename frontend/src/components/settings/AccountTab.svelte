@@ -177,6 +177,7 @@
           id="current-password"
           type="password"
           bind:value={currentPassword}
+          autocomplete="current-password"
           class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
           placeholder="••••••••"
           disabled={passwordLoading}
@@ -194,6 +195,7 @@
           id="new-password"
           type="password"
           bind:value={newPassword}
+          autocomplete="new-password"
           class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
           placeholder="••••••••"
           disabled={passwordLoading}
@@ -211,6 +213,7 @@
           id="confirm-password"
           type="password"
           bind:value={confirmPassword}
+          autocomplete="new-password"
           class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
           placeholder="••••••••"
           disabled={passwordLoading}
