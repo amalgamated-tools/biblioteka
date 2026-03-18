@@ -391,6 +391,8 @@ Return the current OIDC configuration. The `client_secret` value is never return
 
 Save OIDC provider settings. The server performs OIDC discovery on the `issuer_url` before saving. If `client_secret` is omitted, the existing stored secret is preserved; however, a `client_secret` **must** be supplied the first time OIDC is configured (when no secret is yet stored).
 
+All four fields (`issuer_url`, `client_id`, `client_secret`, `redirect_uri`) are written in a single database transaction — either every field is saved or none are. If the database write fails mid-way, the entire update is rolled back and the previous configuration remains intact.
+
 **Request body:**
 
 | Field           | Type   | Required | Description |
@@ -445,6 +447,8 @@ Return the current SMTP configuration. The `password` value is never returned; `
 ### `PUT /api/config/smtp` 🔒 **Admin** · **JWT only**
 
 Save SMTP server settings. If `password` is omitted while `username` is supplied and matches the currently stored username, the existing password is preserved. Setting `username` to an empty string clears both the stored username and password.
+
+All six fields (`host`, `port`, `username`, `password`, `from`, `tls`) are written in a single database transaction — either every field is saved or none are. If the database write fails mid-way, the entire update is rolled back and the previous configuration remains intact.
 
 **Request body:**
 

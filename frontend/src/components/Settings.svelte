@@ -16,7 +16,13 @@
   import PreferencesTab from "./settings/PreferencesTab.svelte";
   import APIKeysTab from "./settings/APIKeysTab.svelte";
 
-  type SettingsTab = "account" | "preferences" | "oidc" | "smtp" | "users" | "api-keys";
+  type SettingsTab =
+    | "account"
+    | "preferences"
+    | "oidc"
+    | "smtp"
+    | "users"
+    | "api-keys";
   const validTabs: SettingsTab[] = [
     "account",
     "preferences",
@@ -433,29 +439,29 @@
               </div>
 
               {#if !smtpEnvOverride}
-              <div>
-                <label
-                  for="smtp-password"
-                  class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-                >
-                  Password
-                </label>
-                <input
-                  id="smtp-password"
-                  type="password"
-                  bind:value={smtpPassword}
-                  class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
-                  placeholder={smtpPasswordSet
-                    ? "Enter new password to update"
-                    : "Enter your SMTP password"}
-                  disabled={smtpLoading}
-                />
-                {#if smtpPasswordSet}
-                  <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
-                    Leave blank to keep the existing password
-                  </p>
-                {/if}
-              </div>
+                <div>
+                  <label
+                    for="smtp-password"
+                    class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+                  >
+                    Password
+                  </label>
+                  <input
+                    id="smtp-password"
+                    type="password"
+                    bind:value={smtpPassword}
+                    class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+                    placeholder={smtpPasswordSet
+                      ? "Enter new password to update"
+                      : "Enter your SMTP password"}
+                    disabled={smtpLoading}
+                  />
+                  {#if smtpPasswordSet}
+                    <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+                      Leave blank to keep the existing password
+                    </p>
+                  {/if}
+                </div>
               {/if}
 
               <div>
@@ -514,17 +520,17 @@
               {/if}
 
               {#if !smtpEnvOverride}
-              <button
-                type="submit"
-                disabled={smtpLoading}
-                class="w-full px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
-              >
-                {smtpLoading
-                  ? "Saving..."
-                  : smtpConfigured
-                    ? "Update Configuration"
-                    : "Save Configuration"}
-              </button>
+                <button
+                  type="submit"
+                  disabled={smtpLoading}
+                  class="w-full px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
+                >
+                  {smtpLoading
+                    ? "Saving..."
+                    : smtpConfigured
+                      ? "Update Configuration"
+                      : "Save Configuration"}
+                </button>
               {/if}
             </form>
           </div>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -30,6 +31,11 @@ func scanBookFile(row interface{ Scan(...any) error }) (*BookFile, error) {
 		return nil, err
 	}
 	return &bf, nil
+}
+
+// bookFileColumnsWithPrefix returns book_files columns with a table alias prefix.
+func bookFileColumnsWithPrefix(prefix string) string {
+	return prefix + "id, " + prefix + "book_id, " + prefix + "file_type, " + prefix + "file_name, " + prefix + "file_size, " + prefix + "file_hash, " + prefix + "file_path, " + prefix + "created_at, " + prefix + "updated_at"
 }
 
 // CreateBookFile inserts a new book file record and returns it.
@@ -105,4 +111,42 @@ func (d *DB) DeleteBookFile(ctx context.Context, id string) error {
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+// GetFilesForBooks returns book files grouped by book ID for the given book IDs.
+func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string][]BookFile, error) {
+	if len(bookIDs) == 0 {
+		return nil, nil
+	}
+	slog.DebugContext(ctx, "db: batch fetching files for books", slog.Int(otelkeys.BookCount, len(bookIDs)))
+
+	placeholders := make([]string, len(bookIDs))
+	args := make([]any, len(bookIDs))
+	for i, id := range bookIDs {
+		placeholders[i] = dollarN(i + 1)
+		args[i] = id
+	}
+
+	orderBy := "ORDER BY bf.file_name ASC, bf.rowid ASC"
+	if d.Dialect == DialectPostgres {
+		orderBy = "ORDER BY bf.file_name ASC, bf.id ASC"
+	}
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+bookFileColumnsWithPrefix("bf.")+` FROM book_files bf WHERE bf.book_id IN (`+strings.Join(placeholders, ",")+`) `+orderBy,
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string][]BookFile, len(bookIDs))
+	for rows.Next() {
+		bf, err := scanBookFile(rows)
+		if err != nil {
+			return nil, err
+		}
+		result[bf.BookID] = append(result[bf.BookID], *bf)
+	}
+	return result, rows.Err()
 }

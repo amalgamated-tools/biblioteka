@@ -9,7 +9,12 @@
     initialIssuerUrl?: string;
     initialClientId?: string;
     initialRedirectUri?: string;
-    onOidcSaved: (config: { configured: boolean; issuerUrl: string; clientId: string; redirectUri: string }) => void;
+    onOidcSaved: (config: {
+      configured: boolean;
+      issuerUrl: string;
+      clientId: string;
+      redirectUri: string;
+    }) => void;
   }
 
   let {
@@ -124,9 +129,8 @@
     </div>
 
     <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
-      Configure an OpenID Connect (OIDC) provider to enable Single
-      Sign-On. Users will be able to log in using your identity
-      provider.
+      Configure an OpenID Connect (OIDC) provider to enable Single Sign-On.
+      Users will be able to log in using your identity provider.
     </p>
 
     <form onsubmit={handleOidcSave} class="space-y-4">
@@ -217,7 +221,9 @@
       {/if}
 
       {#if oidcSuccess}
-        <AlertBanner variant="success">OIDC configuration saved successfully</AlertBanner>
+        <AlertBanner variant="success"
+          >OIDC configuration saved successfully</AlertBanner
+        >
       {/if}
 
       <button
