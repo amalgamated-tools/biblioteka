@@ -191,7 +191,7 @@
             />
           </div>
 
-          {#if error}
+          {#if error && isLogin}
             <AlertBanner variant="error" testId="auth-error" role="alert"
               >{error}</AlertBanner
             >
@@ -263,7 +263,7 @@
             />
           </div>
 
-          {#if error}
+          {#if error && !isLogin}
             <AlertBanner variant="error" testId="auth-error" role="alert"
               >{error}</AlertBanner
             >
