@@ -436,6 +436,65 @@ When editing the app shell or adding new persistent navigation elements:
 3. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
 4. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
+### Form accessibility
+
+All form inputs must be programmatically associated with a visible label or carry a descriptive `aria-label`. `LibraryForm.svelte` serves as the canonical reference for these patterns.
+
+#### Explicit `<label for>` / `id` pairing
+
+Use an explicit `for`/`id` association for text inputs that have a visible label. This is the strongest and most broadly supported technique.
+
+```svelte
+<label for="lib-name" class="block text-sm font-medium …">Name</label>
+<input id="lib-name" type="text" bind:value={formName} … />
+```
+
+Screen readers will announce the label text whenever the input receives focus.
+
+#### Dynamic `aria-label` for repeated inputs
+
+When a form contains a variable-length list of inputs of the same type (e.g. multiple folder-path fields), use a dynamic `aria-label` that includes the item's position so screen-reader users can distinguish them.
+
+```svelte
+{#each formPaths as entry, i}
+  <input
+    aria-label={formPaths.length === 1 ? "Folder path" : `Folder path ${i + 1}`}
+    …
+  />
+{/each}
+```
+
+- Use the singular label (e.g. `"Folder path"`) when there is only one item — the ordinal is unnecessary and adds noise.
+- Use a 1-based counter (e.g. `"Folder path 1"`, `"Folder path 2"`) when there are multiple items.
+
+#### `aria-label` on icon-only buttons
+
+Buttons whose visible content is solely an icon (SVG) must carry an `aria-label` so assistive technologies announce an intelligible action name.
+
+```svelte
+<!-- Close / cancel button -->
+<button aria-label="Close form" onclick={navigateBack}>
+  <X class="w-5 h-5" />
+</button>
+
+<!-- Remove item button inside a list -->
+<button aria-label="Remove folder" …>
+  <X class="w-4 h-4" />
+</button>
+```
+
+When you add a new icon-only button, always supply an `aria-label`. `svelte-check` does **not** automatically detect missing labels on `<button>` elements, so this must be reviewed manually.
+
+#### Checklist for new forms
+
+When adding or editing a form component:
+
+1. Every `<input>`, `<select>`, and `<textarea>` has either a `<label for="…">` or an `aria-label`.
+2. `<label for>` values match the corresponding `id` exactly — a mismatch silently breaks the association.
+3. Icon-only buttons (`<button>` with SVG content and no text) carry an `aria-label`.
+4. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
+5. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+
 ### Accessibility tests
 
 `frontend/src/App.test.ts` contains a focused regression test that verifies:
