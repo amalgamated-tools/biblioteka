@@ -49,7 +49,7 @@ test.describe("Account settings", () => {
 
     await page.locator("input#email").fill(testUser.email);
     await page.locator("input#password").fill(newPassword);
-    await page.getByRole("button", { name: "Login", exact: true }).click();
+    await page.locator("button[type='submit']").click();
     await expect(page).toHaveURL("/");
     await expect(page.getByText(testUser.email)).toBeVisible();
   });
