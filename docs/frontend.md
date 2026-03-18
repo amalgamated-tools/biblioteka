@@ -427,6 +427,40 @@ The app shell uses semantic HTML5 landmark elements so screen readers can naviga
 | Primary content | `<main id="main-content">` | Target of the skip link |
 | Mobile header | `<div>` + hamburger `<button>` | Not a landmark; sits above `<main>` only on small screens |
 
+### Navigation state indicator (`aria-current`)
+
+**WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
+
+Interactive navigation elements must expose their current-page or current-step state to assistive technologies. Biblioteka uses `aria-current="page"` on navigation buttons to mark the active destination in both the global sidebar and the Settings tab strip.
+
+**Pattern (from `Sidebar.svelte` and `Settings.svelte`):**
+
+```svelte
+<button
+  aria-current={currentView === "books" ? "page" : undefined}
+  onclick={() => navigate("books")}
+>
+  Books
+</button>
+```
+
+Key details:
+
+| Value | When to use |
+|-------|-------------|
+| `"page"` | The button represents the currently-displayed page or view |
+| `undefined` | The button is not the active destination — omitting the attribute keeps the DOM clean |
+
+- Set `aria-current` to `"page"` when the button's view is active; set it to `undefined` (not `false` or `""`) otherwise.
+- Screen readers announce the active item as _"current page"_, allowing users to orient themselves without examining visual styling.
+- CSS selectors (`[aria-current="page"]`) may be used to style the active item — this keeps state and styling in sync with a single source of truth.
+
+**Checklist when adding a new navigation button:**
+
+1. Add `aria-current={<condition> ? "page" : undefined}` to every navigation `<button>` in a nav group.
+2. Ensure the condition is derived from the same reactive value (`currentView`, `isActive`, etc.) that drives other active-state UI changes.
+3. Keep the value as `"page"` for page/view navigation; use `"step"` for multi-step wizards and `"location"` for breadcrumb links.
+
 ### Maintaining accessibility
 
 When editing the app shell or adding new persistent navigation elements:
@@ -494,6 +528,45 @@ When adding or editing a form component:
 3. Icon-only buttons (`<button>` with SVG content and no text) carry an `aria-label`.
 4. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
 5. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+
+### Password input `autocomplete`
+
+**WCAG criterion:** [1.3.5 Identify Input Purpose](https://www.w3.org/WAI/WCAG21/Understanding/identify-input-purpose.html) (Level AA)
+
+Password fields must carry the correct `autocomplete` attribute so browsers and password managers can autofill them correctly and assistive technologies can communicate their purpose.
+
+**Pattern (from `AccountTab.svelte`):**
+
+```svelte
+<!-- Current password — lets password managers fill the stored credential -->
+<input
+  id="current-password"
+  type="password"
+  autocomplete="current-password"
+  bind:value={currentPassword}
+/>
+
+<!-- New / confirm-new password — signals a new credential is being created -->
+<input
+  id="new-password"
+  type="password"
+  autocomplete="new-password"
+  bind:value={newPassword}
+/>
+<input
+  id="confirm-password"
+  type="password"
+  autocomplete="new-password"
+  bind:value={confirmPassword}
+/>
+```
+
+| Value | When to use |
+|-------|-------------|
+| `"current-password"` | The user is entering their existing password (login or verification) |
+| `"new-password"` | The user is creating or updating a password |
+
+Omitting `autocomplete` (or using `autocomplete="off"`) forces users to type passwords manually and breaks password-manager integration. Always specify one of the values above on every password `<input>`.
 
 ### Accessibility tests
 
