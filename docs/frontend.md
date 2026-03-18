@@ -21,7 +21,7 @@ frontend/
     index.css           Tailwind CSS directives
     types.ts            Shared TypeScript interfaces for API entities
     components/         Page-level Svelte components (PascalCase)
-      Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6) so the pre-authentication page has a navigable primary content region for screen readers
+      Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
       Books.svelte        Book listing and detail view
       Dashboard.svelte    Home screen; library overview
       Libraries.svelte    Library management view
@@ -487,6 +487,74 @@ The unauthenticated page renders without the app shell, so it provides its own `
 
 > **Rule:** Every page — authenticated or not — must contain exactly one `<main>` landmark. For the authenticated shell, `<main id="main-content">` lives in `App.svelte`. For the pre-auth login page, `<main>` lives in `Auth.svelte`.
 
+#### ARIA tab widget — Login/Sign Up toggle (`Auth.svelte`)
+
+**WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
+
+The Login/Sign Up toggle implements the [ARIA tab widget pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) so that screen readers announce it as a labelled tab bar, not a pair of plain buttons.
+
+```svelte
+<!-- Tab bar: groups and labels the widget -->
+<div
+  role="tablist"
+  aria-label="Authentication method"
+  onkeydown={handleTabKeydown}
+>
+  <button
+    id="login-tab"
+    role="tab"
+    aria-selected={isLogin}
+    aria-controls="login-panel"
+    tabindex={isLogin ? 0 : -1}
+  >Login</button>
+
+  <button
+    id="signup-tab"
+    role="tab"
+    aria-selected={!isLogin}
+    aria-controls="signup-panel"
+    tabindex={!isLogin ? 0 : -1}
+  >Sign Up</button>
+</div>
+
+<!-- Panels: one per tab -->
+<div id="login-panel"  role="tabpanel" tabindex="0" aria-labelledby="login-tab"  hidden={!isLogin}>
+  <!-- login form -->
+</div>
+<div id="signup-panel" role="tabpanel" tabindex="0" aria-labelledby="signup-tab" hidden={isLogin}>
+  <!-- sign-up form -->
+</div>
+```
+
+**Key attributes:**
+
+| Attribute | Element | Purpose |
+|-----------|---------|---------|
+| `role="tablist"` | Container `<div>` | Groups tab buttons into a single widget |
+| `aria-label="Authentication method"` | Container `<div>` | Gives the tablist an accessible name announced by screen readers |
+| `role="tab"` | Each `<button>` | Declares the button as a tab control |
+| `aria-selected` | Each tab | `true` on the active tab; `false` on inactive tabs |
+| `aria-controls` | Each tab | Associates the tab with its panel via the panel's `id` |
+| `tabindex={isActive ? 0 : -1}` | Each tab | Implements the **roving tabindex** (see below) |
+| `role="tabpanel"` | Each form panel | Declares the container as a tab panel |
+| `aria-labelledby` | Each panel | Links the panel back to its controlling tab |
+| `tabindex="0"` | Each panel | Makes the panel itself focusable so keyboard users can reach its content |
+| `hidden` | Inactive panel | Hides the inactive panel from both display and the accessibility tree |
+
+**Roving tabindex:**
+Only the active tab sits in the natural tab order (`tabindex="0"`); inactive tabs are removed from it (`tabindex="-1"`) but remain focusable programmatically. This means `Tab` enters the tab bar once and then moves directly to the active panel's content — inactive tabs are skipped, matching the expected [APG tab pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) behaviour.
+
+**Keyboard navigation (`handleTabKeydown`):**
+
+| Key | Action |
+|-----|--------|
+| `ArrowRight` / `ArrowLeft` | Move focus to the next / previous tab and activate it |
+| `Home` | Move focus and activation to the first tab (Login) |
+| `End` | Move focus and activation to the last tab (Sign Up) |
+
+**Why `hidden` instead of Svelte `{#if}`:**
+The `hidden` HTML attribute is used on inactive panels rather than Svelte's `{#if}` block. Both panels stay in the DOM, so `aria-controls` references always point to a valid element. Removing a panel with `{#if}` would leave a dangling `aria-controls` reference and break the ARIA association.
+
 ### `aria-current` on active navigation buttons
 
 **WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
@@ -592,7 +660,8 @@ When editing the app shell or adding new persistent navigation elements:
 5. Every icon-only button must have `aria-label`; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only buttons and dynamic inputs](#accessible-labels-for-icon-only-buttons-and-dynamic-inputs) above.
 6. Navigation buttons that represent the active view or tab must carry `aria-current={isActive ? "page" : undefined}`. See [`aria-current` on active navigation buttons](#aria-current-on-active-navigation-buttons) above.
 7. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
-8. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+8. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
+9. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
 ### Form accessibility
 
@@ -702,7 +771,8 @@ When adding or editing a form component:
 4. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
 5. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
 6. Toggle switches (`<input type="checkbox">` styled as a switch) carry `role="switch"`.
-7. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+7. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
+8. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
 ### Accessibility tests
 
