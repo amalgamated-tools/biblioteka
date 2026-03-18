@@ -169,6 +169,10 @@ func (h *KOSyncHandler) deleteCredentials(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := h.DB.DeleteKOSyncCredential(ctx, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(ctx, w, http.StatusNotFound, "no KOSync credentials configured")
+			return
+		}
 		slog.ErrorContext(ctx, "failed to delete KOSync credentials", slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to delete credentials")
 		return
@@ -229,6 +233,7 @@ const (
 	maxDocumentLen = 1024
 	maxProgressLen = 4096
 	maxDeviceLen   = 256
+	maxUsernameLen = 256
 )
 
 func (h *KOSyncHandler) putProgress(w http.ResponseWriter, r *http.Request) {
@@ -289,6 +294,10 @@ func (h *KOSyncHandler) putProgress(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(ctx, w, http.StatusOK, toKOSyncProgressResponse(p))
 }
+
+func (h *KOSyncHandler) getProgress(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := auth.UserIDFromContext(ctx)
 
 	document, ok := extractPathID(r.URL.Path, "/api/syncs/progress/")
 	if !ok {
