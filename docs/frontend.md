@@ -21,7 +21,7 @@ frontend/
     index.css           Tailwind CSS directives
     types.ts            Shared TypeScript interfaces for API entities
     components/         Page-level Svelte components (PascalCase)
-      Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6) so the pre-authentication page has a navigable primary content region for screen readers
+      Auth.svelte         Login and signup forms; includes a skip-to-main-content bypass link (WCAG 2.4.1) and wraps all form content in a focusable `<main id="auth-main" tabindex="-1">` landmark (WCAG 1.3.6)
       Books.svelte        Book listing and detail view
       Dashboard.svelte    Home screen; library overview
       Libraries.svelte    Library management view

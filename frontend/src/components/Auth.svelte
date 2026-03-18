@@ -66,14 +66,16 @@
 
     loading = false;
   }
+
+  function handleSkipToMain(event: MouseEvent) {
+    event.preventDefault();
+    document.getElementById("auth-main")?.focus();
+  }
 </script>
 
 <a
   href="#auth-main"
-  onclick={(e: MouseEvent) => {
-    e.preventDefault();
-    document.getElementById("auth-main")?.focus();
-  }}
+  onclick={handleSkipToMain}
   class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-accent-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
 >
   Skip to main content
