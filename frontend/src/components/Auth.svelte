@@ -13,6 +13,23 @@
   let loading = $state(false);
   let oidcEnabled = $state(false);
 
+  function handleTabKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      isLogin = !isLogin;
+      const nextId = isLogin ? 'login-tab' : 'signup-tab';
+      document.getElementById(nextId)?.focus();
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      isLogin = true;
+      document.getElementById('login-tab')?.focus();
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      isLogin = false;
+      document.getElementById('signup-tab')?.focus();
+    }
+  }
+
   onMount(async () => {
     try {
       oidcEnabled = await getOidcEnabled();
@@ -106,12 +123,14 @@
         </div>
       {/if}
 
-      <div role="tablist" class="flex gap-1 mb-6 bg-cream-100 dark:bg-ink-800 rounded-xl p-1">
+      <!-- svelte-ignore a11y_interactive_supports_focus -->
+      <div role="tablist" aria-label="Authentication method" onkeydown={handleTabKeydown} class="flex gap-1 mb-6 bg-cream-100 dark:bg-ink-800 rounded-xl p-1">
         <button
           id="login-tab"
           role="tab"
           aria-selected={isLogin}
-          aria-controls="auth-form"
+          aria-controls="login-panel"
+          tabindex={isLogin ? 0 : -1}
           onclick={() => (isLogin = true)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
@@ -123,7 +142,8 @@
           id="signup-tab"
           role="tab"
           aria-selected={!isLogin}
-          aria-controls="auth-form"
+          aria-controls="signup-panel"
+          tabindex={!isLogin ? 0 : -1}
           onclick={() => (isLogin = false)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {!isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
@@ -133,7 +153,7 @@
         </button>
       </div>
 
-      <div id="auth-form" role="tabpanel" aria-labelledby={isLogin ? 'login-tab' : 'signup-tab'}>
+      <div id={isLogin ? 'login-panel' : 'signup-panel'} role="tabpanel" tabindex="0" aria-labelledby={isLogin ? 'login-tab' : 'signup-tab'}>
       <form onsubmit={handleSubmit} class="space-y-4">
         {#if !isLogin}
           <div>
