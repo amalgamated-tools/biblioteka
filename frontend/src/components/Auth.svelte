@@ -63,7 +63,7 @@
     ></div>
   </div>
 
-  <div class="w-full max-w-md relative z-10 animate-fade-in-up">
+  <main class="w-full max-w-md relative z-10 animate-fade-in-up">
     <div class="text-center mb-8">
       <div
         class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl mb-4 shadow-lg shadow-accent-500/20 dark:shadow-accent-500/10"
@@ -198,5 +198,5 @@
         </button>
       </form>
     </div>
-  </div>
+  </main>
 </div>
