@@ -213,7 +213,7 @@
       <p
         class="text-sm text-ink-400 dark:text-ink-400 mb-2 flex items-center gap-2"
       >
-        <FolderOpen class="w-4 h-4" />
+        <FolderOpen class="w-4 h-4" aria-hidden="true" />
         Organization: Book Per Folder
       </p>
     </div>
