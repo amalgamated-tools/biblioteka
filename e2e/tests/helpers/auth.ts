@@ -47,7 +47,7 @@ export async function openAuthPage(page: Page): Promise<void> {
 
 export async function openSignupForm(page: Page): Promise<void> {
   await openAuthPage(page);
-  await page.getByRole("button", { name: "Sign Up", exact: true }).click();
+  await page.getByRole("tab", { name: "Sign Up", exact: true }).click();
   await page.waitForSelector("input#name");
   await page.waitForFunction(() => {
     const btn = document.querySelector('button[type="submit"]');
@@ -72,7 +72,7 @@ export async function signOut(page: Page): Promise<void> {
   await page.waitForSelector("input#email");
   await page.waitForSelector("input#password");
   await page.waitForFunction((tokenKey) => localStorage.getItem(tokenKey) === null, TOKEN_KEY);
-  await expect(page.getByRole("button", { name: "Login", exact: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Login", exact: true })).toBeVisible();
 }
 
 export async function openLoginForm(page: Page): Promise<void> {
