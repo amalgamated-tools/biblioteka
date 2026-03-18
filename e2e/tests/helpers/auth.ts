@@ -42,6 +42,10 @@ export async function openSignupForm(page: Page): Promise<void> {
   await openAuthPage(page);
   await page.getByRole("button", { name: "Sign Up", exact: true }).click();
   await page.waitForSelector("input#name");
+  await page.waitForFunction(() => {
+    const btn = document.querySelector('button[type="submit"]');
+    return btn && btn.textContent?.trim() === "Create Account";
+  });
 }
 
 export async function signUp(page: Page, user: TestUser): Promise<void> {
