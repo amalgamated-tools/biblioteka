@@ -50,7 +50,8 @@ export async function openSignupForm(page: Page): Promise<void> {
   await page.getByRole("tab", { name: "Sign Up", exact: true }).click();
   await page.waitForSelector("input#signup-name");
   await page.waitForFunction(() => {
-    const btn = document.querySelector('button[type="submit"]');
+    const panel = document.querySelector('#signup-panel:not([hidden])');
+    const btn = panel?.querySelector('button[type="submit"]');
     return btn && btn.textContent?.trim() === "Create Account";
   });
 }
@@ -60,7 +61,7 @@ export async function signUp(page: Page, user: TestUser): Promise<void> {
   await page.locator("input#signup-name").fill(user.displayName);
   await page.locator("input#signup-email").fill(user.email);
   await page.locator("input#signup-password").fill(user.password);
-  await page.locator("button[type='submit']").click();
+  await page.locator("#signup-panel button[type='submit']").click();
 
   await expect(page.getByText("Get started with Biblioteka")).toBeVisible();
 }
@@ -86,5 +87,5 @@ export async function openLoginForm(page: Page): Promise<void> {
 export async function signIn(page: Page, email: string, password: string): Promise<void> {
   await page.locator("input#login-email").fill(email);
   await page.locator("input#login-password").fill(password);
-  await page.locator("button[type='submit']").click();
+  await page.locator("#login-panel button[type='submit']").click();
 }
