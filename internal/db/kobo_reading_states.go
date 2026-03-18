@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -30,7 +31,7 @@ func scanKoboReadingState(row interface{ Scan(...any) error }) (*KoboReadingStat
 	err := row.Scan(&s.ID, &s.UserID, &s.BookID, &s.Status, &s.PercentRead,
 		&s.LocationValue, &s.LocationType, &s.LocationSource, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scan kobo reading state: %w", err)
 	}
 	return &s, nil
 }
@@ -42,10 +43,14 @@ func (d *DB) GetKoboReadingState(ctx context.Context, userID, bookID string) (*K
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.BookID, bookID),
 	)
-	return scanKoboReadingState(d.QueryRowContext(ctx,
+	state, err := scanKoboReadingState(d.QueryRowContext(ctx,
 		`SELECT `+koboReadingStateColumns+` FROM kobo_reading_states WHERE user_id = $1 AND book_id = $2`,
 		userID, bookID,
 	))
+	if err != nil {
+		return nil, fmt.Errorf("get kobo reading state: %w", err)
+	}
+	return state, nil
 }
 
 // UpsertKoboReadingState creates or updates the reading state for a user+book pair.
@@ -67,9 +72,13 @@ func (d *DB) UpsertKoboReadingState(ctx context.Context, userID, bookID, status 
 	          updated_at = ` + d.now() + `
 	      RETURNING ` + koboReadingStateColumns
 
-	return scanKoboReadingState(d.QueryRowContext(ctx, q,
+	state, err := scanKoboReadingState(d.QueryRowContext(ctx, q,
 		userID, bookID, status, percentRead, locationValue, locationType, locationSource,
 	))
+	if err != nil {
+		return nil, fmt.Errorf("upsert kobo reading state: %w", err)
+	}
+	return state, nil
 }
 
 // ListKoboReadingStatesSince returns reading states updated after the given time for a user.
@@ -85,10 +94,14 @@ func (d *DB) ListKoboReadingStatesSince(ctx context.Context, userID string, sinc
 			userID,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("query kobo reading states: %w", err)
 		}
 		defer rows.Close()
-		return scanKoboReadingStateRows(rows)
+		states, err := scanKoboReadingStateRows(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan kobo reading states: %w", err)
+		}
+		return states, nil
 	}
 
 	var sinceParam any
@@ -104,10 +117,14 @@ func (d *DB) ListKoboReadingStatesSince(ctx context.Context, userID string, sinc
 		userID, sinceParam,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query kobo reading states since: %w", err)
 	}
 	defer rows.Close()
-	return scanKoboReadingStateRows(rows)
+	states, err := scanKoboReadingStateRows(rows)
+	if err != nil {
+		return nil, fmt.Errorf("scan kobo reading states since: %w", err)
+	}
+	return states, nil
 }
 
 // GetReadingStatesForBooks returns reading states for a user, scoped to the given
@@ -149,13 +166,13 @@ func (d *DB) GetReadingStatesForBooks(ctx context.Context, userID string, bookID
 
 	rows, err := d.QueryContext(ctx, q, args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query reading states for books: %w", err)
 	}
 	defer rows.Close()
 
 	states, err := scanKoboReadingStateRows(rows)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scan reading states for books: %w", err)
 	}
 
 	result := make(map[string]*KoboReadingState, len(states))
@@ -176,9 +193,12 @@ func scanKoboReadingStateRows(rows koboReadingStateScanner) ([]KoboReadingState,
 	for rows.Next() {
 		s, err := scanKoboReadingState(rows)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("scan kobo reading state row: %w", err)
 		}
 		states = append(states, *s)
 	}
-	return states, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate kobo reading state rows: %w", err)
+	}
+	return states, nil
 }

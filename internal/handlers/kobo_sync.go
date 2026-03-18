@@ -107,7 +107,9 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 	}
 	filesByBook, err := h.DB.GetFilesForBooks(ctx, bookIDs)
 	if err != nil {
-		slog.WarnContext(ctx, "failed to batch-load files for kobo sync", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to batch-load files for kobo sync", slog.Any(otelkeys.Error, err))
+		writeKoboJSON(w, http.StatusInternalServerError, []any{})
+		return
 	}
 	seriesByBook, err := h.DB.GetSeriesForBooks(ctx, bookIDs)
 	if err != nil {

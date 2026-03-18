@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // HandleInit handles GET /v1/initialization.
@@ -98,5 +100,7 @@ func (h *KoboHandler) HandleInit(w http.ResponseWriter, r *http.Request) {
 	// x-kobo-apitoken is required by Kobo devices; "e30=" is base64("{}")
 	w.Header().Set("x-kobo-apitoken", "e30=")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]any{"Resources": resources})
+	if err := json.NewEncoder(w).Encode(map[string]any{"Resources": resources}); err != nil {
+		slog.ErrorContext(r.Context(), "failed to encode kobo init response", slog.Any(otelkeys.Error, err))
+	}
 }

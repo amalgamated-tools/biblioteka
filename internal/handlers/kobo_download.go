@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log/slog"
 	"mime"
 	"net/http"
@@ -47,7 +48,11 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 			slog.String(otelkeys.Path, target.FilePath),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeKoboJSON(w, http.StatusNotFound, map[string]any{})
+		if errors.Is(err, os.ErrNotExist) {
+			writeKoboJSON(w, http.StatusNotFound, map[string]any{})
+		} else {
+			writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
+		}
 		return
 	}
 	defer f.Close()
