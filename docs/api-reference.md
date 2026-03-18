@@ -33,6 +33,7 @@ The following endpoints use a stricter JWT-only check and **do not accept API ke
 | `GET /api/opds/credentials`, `PUT /api/opds/credentials`, `DELETE /api/opds/credentials` | Credential management requires a JWT |
 | `GET /api/api-keys`, `POST /api/api-keys`, `DELETE /api/api-keys/{id}` | API key management requires a JWT to prevent key self-escalation |
 | `GET /api/kobo/tokens`, `POST /api/kobo/tokens`, `DELETE /api/kobo/tokens/{id}` | Kobo token management requires a JWT to prevent token self-escalation |
+| `GET /api/kosync/credentials`, `PUT /api/kosync/credentials`, `DELETE /api/kosync/credentials` | KOSync credential management requires a JWT |
 
 ---
 
@@ -70,7 +71,7 @@ The version is also displayed in the application sidebar so users can confirm wh
 
 ## Auth
 
-> **Rate limiting:** The signup, login, logout, and all OIDC auth endpoints (`/api/auth/oidc/login`, `/api/auth/oidc/callback`, `/api/auth/oidc/link`) are protected by a per-IP token-bucket rate limiter (5 requests/second, burst of 10). Exceeding the limit returns `429 Too Many Requests`.
+> **Rate limiting:** The signup, login, logout, all OIDC auth endpoints (`/api/auth/oidc/login`, `/api/auth/oidc/callback`, `/api/auth/oidc/link`), and the KOReader kosync protocol endpoints (`/api/user/create`, `/api/user/auth`, `/api/syncs/progress`) are protected by a per-IP token-bucket rate limiter (5 requests/second, burst of 10). Exceeding the limit returns `429 Too Many Requests`.
 
 ### `POST /api/auth/signup`
 
@@ -631,6 +632,8 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `opds_credential.deleted` | `opds_credential` | OPDS credentials removed via `DELETE /api/opds/credentials` |
 | `kobo_token.created`   | `kobo_token`  | Kobo sync token created via `POST /api/kobo/tokens` |
 | `kobo_token.deleted`   | `kobo_token`  | Kobo sync token revoked via `DELETE /api/kobo/tokens/{id}` |
+| `kosync_credential.updated` | `kosync_credential` | KOSync credentials set or updated via `PUT /api/kosync/credentials` |
+| `kosync_credential.deleted` | `kosync_credential` | KOSync credentials removed via `DELETE /api/kosync/credentials` |
 | `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
 | `smtp.config_updated`  | `config`      | SMTP settings saved via `PUT /api/config/smtp` |
@@ -1488,6 +1491,143 @@ Delete a Kobo sync token. The device using this token will receive `401` on its 
 |--------|-------------|
 | `401 Unauthorized` | Missing or invalid JWT |
 | `404 Not Found` | Token not found or not owned by the authenticated user |
+
+---
+
+## KOReader / KOSync
+
+Biblioteka implements the [kosync](https://github.com/koreader/koreader-sync-server) protocol so that [KOReader](https://koreader.rocks/) can back up and synchronise reading positions to your self-hosted server. See the [KOReader Sync guide](koreader.md) for setup instructions.
+
+### Credential management (JWT-protected)
+
+These endpoints require a **JWT** (not an API key) and manage the separate KOSync username and password used by KOReader.
+
+#### `GET /api/kosync/credentials` 🔒 **JWT only**
+
+Returns the current user's KOSync credentials (username and timestamps; the password hash is never returned).
+
+**Response `200 OK`:**
+
+```json
+{
+  "username": "mykosynuser",
+  "created_at": "2026-03-17T12:00:00Z",
+  "updated_at": "2026-03-17T12:00:00Z"
+}
+```
+
+**Error responses:**
+
+| Status | Description |
+|--------|-------------|
+| `401 Unauthorized` | Missing or invalid JWT |
+| `404 Not Found` | No KOSync credentials configured yet |
+
+---
+
+#### `PUT /api/kosync/credentials` 🔒 **JWT only**
+
+Create or update the current user's KOSync credentials.
+
+**Request body:**
+
+| Field      | Type   | Required | Description |
+|------------|--------|----------|-------------|
+| `username` | string | ✓ | KOSync username (max 256 chars, case-insensitive, globally unique) |
+| `password` | string | ✓ | KOSync password (min 6 chars) |
+
+**Response `200 OK`:** Same shape as `GET /api/kosync/credentials`.
+
+**Error responses:**
+
+| Status | Description |
+|--------|-------------|
+| `400 Bad Request` | Missing/empty `username` or `password`, or fails validation |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `409 Conflict` | Username already taken by another Biblioteka user |
+
+---
+
+#### `DELETE /api/kosync/credentials` 🔒 **JWT only**
+
+Delete the current user's KOSync credentials. KOReader sync will return `401` after this.
+
+**Response:** `204 No Content`
+
+**Error responses:**
+
+| Status | Description |
+|--------|-------------|
+| `401 Unauthorized` | Missing or invalid JWT |
+| `404 Not Found` | No KOSync credentials configured |
+
+---
+
+### Protocol endpoints (kosync-compatible)
+
+These endpoints are called automatically by KOReader using `x-auth-user` and `x-auth-key` headers (not JWT or API key). They are rate-limited to 5 req/s per IP (burst 10).
+
+#### `POST /api/user/create`
+
+KOReader always attempts registration before authentication. Biblioteka always returns `409 Conflict` because account creation is managed through the web UI. KOReader treats `409` as "account already exists" and proceeds to the auth step.
+
+---
+
+#### `GET /api/user/auth`
+
+Verify KOSync credentials. Returns `{"authorized":"OK"}` if the `x-auth-user` / `x-auth-key` headers are valid.
+
+**Response `200 OK`:**
+
+```json
+{ "authorized": "OK" }
+```
+
+---
+
+#### `PUT /api/syncs/progress`
+
+Save or update reading progress for a document.
+
+**Request body:**
+
+| Field        | Type   | Required | Description |
+|--------------|--------|----------|-------------|
+| `document`   | string | ✓ | KOReader document identifier (no `/` characters, max 1024 chars) |
+| `progress`   | string | ✓ | KOReader position string (max 4096 chars) |
+| `percentage` | number | ✓ | Reading percentage in `[0, 1]` |
+| `device`     | string |   | Device name (max 256 chars) |
+| `device_id`  | string |   | Device identifier (max 256 chars) |
+
+**Response `200 OK`:**
+
+```json
+{
+  "document": "mybook-abc123",
+  "progress": "1/3/4/5/6/7/8",
+  "percentage": 0.42,
+  "device": "Kindle Paperwhite",
+  "device_id": "abc123",
+  "timestamp": 1742220000
+}
+```
+
+`timestamp` is a Unix epoch second.
+
+---
+
+#### `GET /api/syncs/progress/{document}`
+
+Retrieve the latest reading progress for a document.
+
+**Response `200 OK`:** Same shape as the `PUT` response above.
+
+**Error responses:**
+
+| Status | Description |
+|--------|-------------|
+| `401 Unauthorized` | Missing or invalid `x-auth-user` / `x-auth-key` |
+| `404 Not Found` | No progress stored for this document |
 
 ---
 
