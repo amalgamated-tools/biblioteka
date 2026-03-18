@@ -52,7 +52,6 @@
         });
     }
   });
-  
 
   async function handleLogout() {
     await authStore.signOut();
@@ -82,7 +81,9 @@
         <BookCheck class="w-5 h-5 text-white" />
       </div>
       <div>
-        <h1 class="text-lg font-display font-bold tracking-tight">biblioteka</h1>
+        <h1 class="text-lg font-display font-bold tracking-tight">
+          biblioteka
+        </h1>
         <p class="text-xs text-ink-400 truncate">{authStore.user?.email}</p>
       </div>
     </div>
@@ -147,7 +148,9 @@
               onclick={() => handleSidebarNavigate(`libraries/${lib.id}`)}
               class="flex items-center gap-3 flex-1 min-w-0"
             >
-              <Library class="w-4 h-4 flex-shrink-0 text-ink-500 group-hover:text-accent-400 transition-colors" />
+              <Library
+                class="w-4 h-4 flex-shrink-0 text-ink-500 group-hover:text-accent-400 transition-colors"
+              />
               <span class="truncate flex-1 text-left">{lib.name}</span>
             </button>
             <button
@@ -180,7 +183,9 @@
     </div>
   </nav>
   <div class="px-5 py-2 border-t border-ink-800/60">
-    <p class="text-[10px] text-ink-600 text-center tracking-wider uppercase">{version ? `v${version}` : ""}</p>
+    <p class="text-[10px] text-ink-600 text-center tracking-wider uppercase">
+      {version ? `v${version}` : ""}
+    </p>
   </div>
 
   <div class="px-3 py-4 border-t border-ink-800/60">

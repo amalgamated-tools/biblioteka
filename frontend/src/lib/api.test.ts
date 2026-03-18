@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type Mock,
+} from "vitest";
 import {
   setToken,
   clearToken,
@@ -39,7 +47,7 @@ function mockFetchResponse(
     text: vi.fn().mockResolvedValue(JSON.stringify(body)),
   } as unknown as Response;
 
-  (fetchMock).mockResolvedValue(response);
+  fetchMock.mockResolvedValue(response);
   return response;
 }
 
@@ -87,12 +95,18 @@ describe("ApiError", () => {
 describe("request (via API functions)", () => {
   beforeEach(() => {
     localStorage.clear();
-    fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
   });
 
   it("sends Authorization header when token is set", async () => {
     setToken("my-token");
-    mockFetchResponse({ id: "1", email: "a@b.com", oidc_linked: false, is_admin: false });
+    mockFetchResponse({
+      id: "1",
+      email: "a@b.com",
+      oidc_linked: false,
+      is_admin: false,
+    });
 
     await getMe();
 
@@ -107,7 +121,12 @@ describe("request (via API functions)", () => {
   });
 
   it("does not send Authorization header when no token", async () => {
-    mockFetchResponse({ id: "1", email: "a@b.com", oidc_linked: false, is_admin: false });
+    mockFetchResponse({
+      id: "1",
+      email: "a@b.com",
+      oidc_linked: false,
+      is_admin: false,
+    });
 
     await getMe();
 
@@ -123,7 +142,7 @@ describe("request (via API functions)", () => {
 
     await signup("Test", "a@b.com", "pass123");
 
-    const [, options] = (fetchMock).mock.calls[0];
+    const [, options] = fetchMock.mock.calls[0];
     expect(options.method).toBe("POST");
     expect(JSON.parse(options.body)).toEqual({
       name: "Test",
@@ -141,10 +160,12 @@ describe("request (via API functions)", () => {
       json: vi.fn().mockResolvedValue({ error: "Invalid credentials" }),
       text: vi.fn(),
     } as unknown as Response;
-    (fetchMock).mockResolvedValue(resp);
+    fetchMock.mockResolvedValue(resp);
 
     await expect(login("a@b.com", "wrong")).rejects.toThrow(ApiError);
-    await expect(login("a@b.com", "wrong")).rejects.toThrow("Invalid credentials");
+    await expect(login("a@b.com", "wrong")).rejects.toThrow(
+      "Invalid credentials",
+    );
   });
 
   it("throws ApiError on non-OK response with text body", async () => {
@@ -157,7 +178,7 @@ describe("request (via API functions)", () => {
       json: vi.fn(),
       text: vi.fn().mockResolvedValue("something broke"),
     } as unknown as Response;
-    (fetchMock).mockResolvedValue(resp);
+    fetchMock.mockResolvedValue(resp);
 
     try {
       await getMe();
@@ -178,7 +199,7 @@ describe("request (via API functions)", () => {
       json: vi.fn().mockResolvedValue({}),
       text: vi.fn(),
     } as unknown as Response;
-    (fetchMock).mockResolvedValue(resp);
+    fetchMock.mockResolvedValue(resp);
 
     try {
       await getMe();
@@ -197,7 +218,7 @@ describe("request (via API functions)", () => {
       json: vi.fn().mockRejectedValue(new SyntaxError("bad json")),
       text: vi.fn().mockResolvedValue("raw error text"),
     } as unknown as Response;
-    (fetchMock).mockResolvedValue(resp);
+    fetchMock.mockResolvedValue(resp);
 
     try {
       await getMe();
@@ -210,11 +231,15 @@ describe("request (via API functions)", () => {
 describe("Auth API functions", () => {
   beforeEach(() => {
     localStorage.clear();
-    fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
   });
 
   it("signup stores token and returns result", async () => {
-    const authResp = { token: "new-token", user: { id: "1", email: "a@b.com" } };
+    const authResp = {
+      token: "new-token",
+      user: { id: "1", email: "a@b.com" },
+    };
     mockFetchResponse(authResp);
 
     const result = await signup("Name", "a@b.com", "pass");
@@ -223,7 +248,10 @@ describe("Auth API functions", () => {
   });
 
   it("login stores token and returns result", async () => {
-    const authResp = { token: "login-token", user: { id: "2", email: "b@c.com" } };
+    const authResp = {
+      token: "login-token",
+      user: { id: "2", email: "b@c.com" },
+    };
     mockFetchResponse(authResp);
 
     const result = await login("b@c.com", "pass");
@@ -237,7 +265,7 @@ describe("Auth API functions", () => {
     const result = await getOidcEnabled();
     expect(result).toBe(true);
 
-    const [url, options] = (fetchMock).mock.calls[0];
+    const [url, options] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/auth/oidc/enabled");
     expect(options.method).toBe("GET");
   });
@@ -262,7 +290,7 @@ describe("Auth API functions", () => {
 
     await changePassword("old", "new");
 
-    const [url, options] = (fetchMock).mock.calls[0];
+    const [url, options] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/auth/password");
     expect(options.method).toBe("PUT");
     expect(JSON.parse(options.body)).toEqual({
@@ -275,7 +303,8 @@ describe("Auth API functions", () => {
 describe("Config API", () => {
   beforeEach(() => {
     localStorage.clear();
-    fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
   });
 
   it("getConfigStatus calls GET /api/config/status", async () => {
@@ -286,17 +315,27 @@ describe("Config API", () => {
   });
 
   it("getOidcConfig calls GET /api/config/oidc", async () => {
-    mockFetchResponse({ issuer_url: "https://issuer", client_id: "id", client_secret_set: false, redirect_uri: "" });
+    mockFetchResponse({
+      issuer_url: "https://issuer",
+      client_id: "id",
+      client_secret_set: false,
+      redirect_uri: "",
+    });
     const result = await getOidcConfig();
     expect(result.issuer_url).toBe("https://issuer");
   });
 
   it("setOidcConfig sends PUT with config", async () => {
-    const config = { issuer_url: "https://issuer", client_id: "id", client_secret: "secret", redirect_uri: "http://redirect" };
+    const config = {
+      issuer_url: "https://issuer",
+      client_id: "id",
+      client_secret: "secret",
+      redirect_uri: "http://redirect",
+    };
     mockFetchResponse({ message: "ok" });
     await setOidcConfig(config);
 
-    const [url, options] = (fetchMock).mock.calls[0];
+    const [url, options] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/config/oidc");
     expect(options.method).toBe("PUT");
   });
@@ -311,11 +350,14 @@ describe("Config API", () => {
 describe("Admin API", () => {
   beforeEach(() => {
     localStorage.clear();
-    fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
   });
 
   it("listUsers calls GET /api/admin/users", async () => {
-    mockFetchResponse([{ id: "1", name: "Admin", email: "a@b.com", is_admin: true }]);
+    mockFetchResponse([
+      { id: "1", name: "Admin", email: "a@b.com", is_admin: true },
+    ]);
     const result = await listUsers();
     expect(result).toHaveLength(1);
     expect(result[0].is_admin).toBe(true);
@@ -325,7 +367,7 @@ describe("Admin API", () => {
     mockFetchResponse({ message: "ok" });
     await setUserAdmin("user-1", true);
 
-    const [url, options] = (fetchMock).mock.calls[0];
+    const [url, options] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/admin/users/user-1");
     expect(options.method).toBe("PUT");
     expect(JSON.parse(options.body)).toEqual({ is_admin: true });

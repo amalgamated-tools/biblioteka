@@ -1,6 +1,12 @@
 <script lang="ts">
   import type { BookSummary, PaginatedBooks } from "../../types";
-  import { BookOpen, LayoutGrid, List, ChevronLeft, ChevronRight } from "lucide-svelte";
+  import {
+    BookOpen,
+    LayoutGrid,
+    List,
+    ChevronLeft,
+    ChevronRight,
+  } from "lucide-svelte";
   import AlertBanner from "./AlertBanner.svelte";
   import BookCard from "./BookCard.svelte";
 
@@ -13,7 +19,9 @@
 
   let { fetchBooks, pageSize = 24 }: Props = $props();
 
-  let effectivePageSize = $derived(Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE)));
+  let effectivePageSize = $derived(
+    Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE)),
+  );
   let books: BookSummary[] = $state([]);
   let total = $state(0);
   let offset = $state(0);
@@ -83,13 +91,17 @@
 {#if error}
   <AlertBanner variant="error" class="mb-4">{error}</AlertBanner>
 {:else if loading}
-  <div class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800">
+  <div
+    class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800"
+  >
     <div class="text-center py-8">
       <p class="text-ink-400 dark:text-ink-400">Loading books...</p>
     </div>
   </div>
 {:else if total === 0}
-  <div class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800">
+  <div
+    class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800"
+  >
     <div class="text-center py-8">
       <BookOpen class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4" />
       <p class="text-ink-400 dark:text-ink-400 text-lg">No books yet.</p>
@@ -132,27 +144,39 @@
 
   <!-- Grid View -->
   {#if viewMode === "grid"}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+    >
       {#each books as book (book.id)}
         <BookCard {book} />
       {/each}
     </div>
   {:else}
     <!-- Table View -->
-    <div class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden">
+    <div
+      class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden"
+    >
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-ink-100 dark:border-ink-800 text-left text-ink-400 dark:text-ink-500">
+          <tr
+            class="border-b border-ink-100 dark:border-ink-800 text-left text-ink-400 dark:text-ink-500"
+          >
             <th class="px-4 py-3 font-medium">Title</th>
-            <th class="px-4 py-3 font-medium hidden sm:table-cell">Publisher</th>
+            <th class="px-4 py-3 font-medium hidden sm:table-cell">Publisher</th
+            >
             <th class="px-4 py-3 font-medium hidden md:table-cell">Language</th>
-            <th class="px-4 py-3 font-medium hidden md:table-cell text-right">Pages</th>
-            <th class="px-4 py-3 font-medium hidden lg:table-cell">Published</th>
+            <th class="px-4 py-3 font-medium hidden md:table-cell text-right"
+              >Pages</th
+            >
+            <th class="px-4 py-3 font-medium hidden lg:table-cell">Published</th
+            >
           </tr>
         </thead>
         <tbody>
           {#each books as book (book.id)}
-            <tr class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors">
+            <tr
+              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors"
+            >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                   {#if book.cover_image_url}
@@ -163,25 +187,40 @@
                       loading="lazy"
                     />
                   {:else}
-                    <div class="w-8 h-12 bg-ink-100 dark:bg-ink-800 rounded flex items-center justify-center">
-                      <BookOpen class="w-4 h-4 text-ink-300 dark:text-ink-600" />
+                    <div
+                      class="w-8 h-12 bg-ink-100 dark:bg-ink-800 rounded flex items-center justify-center"
+                    >
+                      <BookOpen
+                        class="w-4 h-4 text-ink-300 dark:text-ink-600"
+                      />
                     </div>
                   {/if}
-                  <span class="font-medium text-ink-900 dark:text-cream-100 truncate max-w-xs" title={book.title}>
+                  <span
+                    class="font-medium text-ink-900 dark:text-cream-100 truncate max-w-xs"
+                    title={book.title}
+                  >
                     {book.title}
                   </span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden sm:table-cell truncate max-w-[200px]">
+              <td
+                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden sm:table-cell truncate max-w-[200px]"
+              >
                 {book.publisher ?? "—"}
               </td>
-              <td class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden md:table-cell">
+              <td
+                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden md:table-cell"
+              >
                 {book.language ?? "—"}
               </td>
-              <td class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden md:table-cell text-right">
+              <td
+                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden md:table-cell text-right"
+              >
                 {book.num_pages ?? "—"}
               </td>
-              <td class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden lg:table-cell">
+              <td
+                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden lg:table-cell"
+              >
                 {book.publication_date ?? "—"}
               </td>
             </tr>
@@ -199,8 +238,8 @@
         disabled={currentPage <= 1}
         class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-200 dark:border-ink-700 transition-colors
           {currentPage <= 1
-            ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
-            : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
+          ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
+          : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
       >
         <ChevronLeft class="w-4 h-4" />
         Previous
@@ -213,8 +252,8 @@
         disabled={currentPage >= totalPages}
         class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-200 dark:border-ink-700 transition-colors
           {currentPage >= totalPages
-            ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
-            : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
+          ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
+          : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
       >
         Next
         <ChevronRight class="w-4 h-4" />

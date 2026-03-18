@@ -18,7 +18,6 @@ safe-outputs:
     expires: 2d
     title-prefix: "chore(file-diet): "
     labels: [refactoring, code-health, automated-analysis]
-    assignees: copilot
     max: 1
 
 tools:

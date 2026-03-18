@@ -2,10 +2,7 @@
   import { onMount } from "svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { routerStore } from "../stores/router.svelte";
-  import {
-    Plus,
-    Library as LibraryIcon,
-  } from "lucide-svelte";
+  import { Plus, Library as LibraryIcon } from "lucide-svelte";
   import AlertBanner from "./ui/AlertBanner.svelte";
   import LibraryView from "./libraries/LibraryView.svelte";
   import LibraryForm from "./libraries/LibraryForm.svelte";
@@ -55,18 +52,14 @@
   {/if}
 
   {#if mode === "view"}
-    <LibraryView
-      library={viewLibrary}
-      libraryId={viewId}
-      {error}
-    />
+    <LibraryView library={viewLibrary} libraryId={viewId} {error} />
   {:else if mode === "create" || mode === "edit"}
     <LibraryForm {mode} {editId} />
   {:else}
-    <div class="flex flex-col items-center justify-center py-24 animate-fade-in">
-      <LibraryIcon
-        class="w-16 h-16 text-ink-200 dark:text-ink-700 mb-6"
-      />
+    <div
+      class="flex flex-col items-center justify-center py-24 animate-fade-in"
+    >
+      <LibraryIcon class="w-16 h-16 text-ink-200 dark:text-ink-700 mb-6" />
       {#if libraryStore.libraries.length === 0}
         <button
           onclick={() => routerStore.navigate("libraries/new")}
