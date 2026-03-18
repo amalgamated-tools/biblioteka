@@ -87,6 +87,19 @@ func (h *KoboHandler) updateBookState(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
+	if _, err := h.DB.GetBook(r.Context(), bookID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeKoboJSON(w, http.StatusNotFound, map[string]any{"RequestResult": "NotFound"})
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to fetch book for kobo state update",
+			slog.String(otelkeys.ID, bookID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{"RequestResult": "ServerError"})
+		return
+	}
+
 	rs := req.ReadingStates[0]
 
 	status := "ReadyToRead"

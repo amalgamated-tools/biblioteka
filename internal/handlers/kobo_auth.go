@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -23,33 +24,46 @@ func (h *KoboHandler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	buf := make([]byte, 24)
-	if _, err := rand.Read(buf); err != nil {
-		writeError(r.Context(), w, http.StatusInternalServerError, "internal error")
+	if n, err := rand.Read(buf); err != nil {
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate auth response")
+		return
+	} else if n != len(buf) {
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate auth response")
 		return
 	}
 	accessToken := base64.StdEncoding.EncodeToString(buf)
-	if _, err := rand.Read(buf); err != nil {
-		writeError(r.Context(), w, http.StatusInternalServerError, "internal error")
+	if n, err := rand.Read(buf); err != nil {
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate auth response")
+		return
+	} else if n != len(buf) {
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate auth response")
 		return
 	}
 	refreshToken := base64.StdEncoding.EncodeToString(buf)
+	trackingID, err := koboRandomUUID()
+	if err != nil {
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate auth response")
+		return
+	}
 
 	writeKoboJSON(w, http.StatusOK, map[string]any{
 		"AccessToken":  accessToken,
 		"RefreshToken": refreshToken,
 		"TokenType":    "Bearer",
-		"TrackingId":   koboRandomUUID(),
+		"TrackingId":   trackingID,
 		"UserKey":      userKey,
 	})
 }
 
 // koboRandomUUID generates a random UUID v4-like string.
-func koboRandomUUID() string {
+func koboRandomUUID() (string, error) {
 	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return ""
+	if n, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate tracking id: %w", err)
+	} else if n != len(b) {
+		return "", fmt.Errorf("generate tracking id: %w", io.ErrUnexpectedEOF)
 	}
 	b[6] = (b[6] & 0x0f) | 0x40
 	b[8] = (b[8] & 0x3f) | 0x80
-	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:]), nil
 }
