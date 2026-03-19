@@ -83,19 +83,19 @@ Creates a `book` record and a `book_file` record in the database. The `process:f
 |----------------|-----------|-------|
 | `Title` | `books.title` | Falls back to path-derived title, then filename without extension |
 | `ISBN` (10 or 13 digits) | `books.isbn_10` / `books.isbn_13` | Not stored when absent |
-| `Description` (when non-empty) | `books.description` | EPUB only |
-| `Publisher` (when non-empty) | `books.publisher` | EPUB only |
-| `Language` (when non-empty) | `books.language` | EPUB only |
-| `PublicationDate` (when non-empty) | `books.publication_date` | EPUB only |
+| `Description` (when non-empty) | `books.description` | Availability depends on format; see [metadata.md](metadata.md) |
+| `Publisher` (when non-empty) | `books.publisher` | Availability depends on format; see [metadata.md](metadata.md) |
+| `Language` (when non-empty) | `books.language` | Availability depends on format; see [metadata.md](metadata.md) |
+| `PublicationDate` (when non-empty) | `books.publication_date` | ExifTool's `YYYY:MM:DD` format is normalized to `YYYY-MM-DD`; availability depends on format |
 | `Author` (when non-empty) | `authors` + `book_authors` join | The extracted name is whitespace-normalized (trimmed, internal runs collapsed). An existing author is looked up **case-insensitively** (`"J.R.R. Tolkien"` and `"j.r.r. tolkien"` match the same record). If no match is found, a new author record is created. If a concurrent worker creates the same author first, the handler retries the lookup rather than failing. If association fails after the book record is already committed, the failure is logged as a warning and does **not** fail the job (preventing duplicate book records on retry). Falls back to path-derived author when the embedded value is absent or `"Unknown"`. |
 
-`Format` is extracted but stored on the `book_files` record via the `file_type` payload field, not from the extractor output directly. If ExifTool is absent or extraction fails for any other reason, the job logs a warning and falls back to the filename-derived title. See [docs/metadata.md](metadata.md) for extraction details. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
+`Format` is extracted but stored on the `book_files` record via the `file_type` payload field, not from the extractor output directly. When ExifTool is absent, the job logs at `DEBUG` level and falls back to the filename-derived title; other extraction failures are logged at `WARN` level. See [docs/metadata.md](metadata.md) for extraction details. Use the standalone [`cmd/cli`](../README.md#cli-tool) tool to inspect metadata from individual files.
 
 #### Path-based metadata
 
 When `library_root` is set in the payload, `internal/pathparser.ParseBookPath` extracts author, title, series name, and series position from the file's path relative to the library root. This runs for every file regardless of whether ExifTool is present.
 
-> **Publication year note:** The parser also detects a trailing `(YYYY)` year in filenames and uses it to produce a clean title (e.g. `Frankenstein (2009)` → `Frankenstein`). The year value itself is **not** stored in `books.publication_date`; that field is only populated from embedded EPUB metadata.
+> **Publication year note:** The parser also detects a trailing `(YYYY)` year in filenames and uses it to produce a clean title (e.g. `Frankenstein (2009)` → `Frankenstein`). The year value itself is **not** stored in `books.publication_date`; that field is only populated from embedded file metadata extracted by ExifTool.
 
 **Recognised directory layouts**
 
