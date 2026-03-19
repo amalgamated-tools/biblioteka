@@ -22,19 +22,27 @@
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"42d4ca7c90606079f2fea24a853e8a8e6dee21f8dfc03792e9e82886c997456b","compiler_version":"v0.60.0","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"3c2a00d8028a9f027f4e9567d61c4d7adb9e1448d629c380850d7e9de4722665","compiler_version":"v0.60.0","strict":true}
 
 name: "greptile-labeler"
 "on":
+  issue_comment:
+    types:
+    - created
+    - edited
   pull_request:
     types:
     - opened
     - synchronize
+  pull_request_review_comment:
+    types:
+    - created
+    - edited
 
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}"
+  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
   cancel-in-progress: true
 
 run-name: "greptile-labeler"
@@ -129,6 +137,7 @@ jobs:
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
+          GH_AW_IS_PR_COMMENT: ${{ github.event.issue.pull_request && 'true' || '' }}
         run: |
           bash /opt/gh-aw/actions/create_prompt_first.sh
           {
@@ -173,6 +182,9 @@ jobs:
           
           GH_AW_PROMPT_EOF
           cat "/opt/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
+          if [ "$GITHUB_EVENT_NAME" = "issue_comment" ] && [ -n "$GH_AW_IS_PR_COMMENT" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review_comment" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review" ]; then
+            cat "/opt/gh-aw/prompts/pr_context_prompt.md"
+          fi
           cat << 'GH_AW_PROMPT_EOF'
           </system>
           GH_AW_PROMPT_EOF
@@ -202,6 +214,7 @@ jobs:
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
+          GH_AW_IS_PR_COMMENT: ${{ github.event.issue.pull_request && 'true' || '' }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: ${{ needs.pre_activation.outputs.activated }}
         with:
           script: |
@@ -222,6 +235,7 @@ jobs:
                 GH_AW_GITHUB_REPOSITORY: process.env.GH_AW_GITHUB_REPOSITORY,
                 GH_AW_GITHUB_RUN_ID: process.env.GH_AW_GITHUB_RUN_ID,
                 GH_AW_GITHUB_WORKSPACE: process.env.GH_AW_GITHUB_WORKSPACE,
+                GH_AW_IS_PR_COMMENT: process.env.GH_AW_IS_PR_COMMENT,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED
               }
             });
