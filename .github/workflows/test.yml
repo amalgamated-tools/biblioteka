@@ -90,10 +90,14 @@ jobs:
       - name: Check formatting
         working-directory: ./frontend
         run: |
-          pnpm run format --check || {
+          pnpm exec prettier --check . || {
             echo "Frontend files are not formatted. Please run 'pnpm run format'"
             exit 1
           }
+
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: pnpm run lint
 
       - name: Run frontend tests
         working-directory: ./frontend
@@ -160,7 +164,7 @@ jobs:
       - name: Download exiftool for tests
         run: |
           sudo apt-get update
-          sudo apt-get install -y exiftool
+          sudo apt-get install -y --no-install-recommends exiftool
 
       - name: Run Go tests
         run: go test -v ./...
