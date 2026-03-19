@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"log/slog"
 	"net/http"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -126,22 +125,4 @@ func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, f
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(buf.Bytes())
-}
-
-// coverMIMEType returns the MIME type for a cover image URL based on its extension.
-func coverMIMEType(imageURL string) string {
-	switch strings.ToLower(path.Ext(imageURL)) {
-	case ".png":
-		return "image/png"
-	case ".webp":
-		return "image/webp"
-	case ".avif":
-		return "image/avif"
-	case ".gif":
-		return "image/gif"
-	case ".svg":
-		return "image/svg+xml"
-	default:
-		return "image/jpeg"
-	}
 }

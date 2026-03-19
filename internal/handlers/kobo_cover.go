@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"log/slog"
@@ -34,6 +35,12 @@ func (h *KoboHandler) HandleCoverImage(w http.ResponseWriter, r *http.Request) {
 	}
 	if book.CoverImageURL == nil || *book.CoverImageURL == "" {
 		http.NotFound(w, r)
+		return
+	}
+
+	if contentType, data, err := decodeDataURL(*book.CoverImageURL); err == nil {
+		w.Header().Set("Content-Type", contentType)
+		http.ServeContent(w, r, "cover", book.UpdatedAt.Time, bytes.NewReader(data))
 		return
 	}
 

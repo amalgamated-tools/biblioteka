@@ -3,9 +3,11 @@ package testutils
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	"os"
+	pathpkg "path"
 	"strings"
 	"testing"
 )
@@ -82,6 +84,15 @@ type EPUBOptions struct {
 	Publisher       string
 	PublicationDate string // e.g. "1925-04-10"
 	Language        string // defaults to "en" if empty
+	CoverImageData  []byte
+	CoverImageHref  string
+	CoverMediaType  string
+}
+
+var tinyPNG, _ = base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+lmRcAAAAASUVORK5CYII=")
+
+func TinyPNG() []byte {
+	return append([]byte(nil), tinyPNG...)
 }
 
 // MakeTestEPUBWithOptions creates a minimal valid EPUB file with full metadata control.
@@ -145,6 +156,27 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
 	escapedIdentifier := xmlEscape(identifier)
 	escapedLang := xmlEscape(lang)
 
+	manifestItems := []string{
+		`    <item id="chapter1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>`,
+	}
+
+	if len(opts.CoverImageData) > 0 {
+		coverHref := opts.CoverImageHref
+		if coverHref == "" {
+			coverHref = "images/cover.png"
+		}
+		coverMediaType := opts.CoverMediaType
+		if coverMediaType == "" {
+			coverMediaType = "image/png"
+		}
+		extraMeta += `
+    <meta name="cover" content="cover-image"/>`
+		manifestItems = append([]string{
+			`    <item id="cover-image" href="` + xmlEscape(coverHref) + `" media-type="` + xmlEscape(coverMediaType) + `"/>`,
+		}, manifestItems...)
+		writeZipFileBytes(t, w, pathpkg.Join("OEBPS", coverHref), opts.CoverImageData)
+	}
+
 	writeZipFile(t, w, "OEBPS/content.opf", `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
@@ -154,7 +186,7 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
     <dc:language>`+escapedLang+`</dc:language>`+extraMeta+`
   </metadata>
   <manifest>
-    <item id="chapter1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+`+strings.Join(manifestItems, "\n")+`
   </manifest>
   <spine>
     <itemref idref="chapter1"/>
@@ -181,6 +213,17 @@ func writeZipFile(t *testing.T, w *zip.Writer, name, content string) {
 		t.Fatalf("create %s: %v", name, err)
 	}
 	if _, err := fw.Write([]byte(content)); err != nil {
+		t.Fatalf("write %s: %v", name, err)
+	}
+}
+
+func writeZipFileBytes(t *testing.T, w *zip.Writer, name string, content []byte) {
+	t.Helper()
+	fw, err := w.Create(name)
+	if err != nil {
+		t.Fatalf("create %s: %v", name, err)
+	}
+	if _, err := fw.Write(content); err != nil {
 		t.Fatalf("write %s: %v", name, err)
 	}
 }

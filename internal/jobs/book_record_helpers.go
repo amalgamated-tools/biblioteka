@@ -125,6 +125,10 @@ func createBookRecord(ctx context.Context, database *db.DB, title string, meta *
 		if meta.Description != "" {
 			description = &meta.Description
 		}
+		if meta.CoverImageURL != "" {
+			v := meta.CoverImageURL
+			coverImageURL = &v
+		}
 		if meta.ISBN != "" {
 			if normalizedISBN := metadata.NormalizeISBN(meta.ISBN); normalizedISBN != "" {
 				switch len(normalizedISBN) {

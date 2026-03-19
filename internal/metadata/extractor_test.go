@@ -1,9 +1,13 @@
 package metadata
 
 import (
+	"bytes"
+	"context"
+	"encoding/base64"
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
@@ -70,6 +74,40 @@ func TestExtractMetadata_EPUB(t *testing.T) {
 	}
 	if meta.PublicationDate != "1925-04-10" {
 		t.Errorf("expected publication date %q, got %q", "1925-04-10", meta.PublicationDate)
+	}
+	if meta.CoverImageURL != "" {
+		t.Errorf("expected empty cover image url, got %q", meta.CoverImageURL)
+	}
+}
+
+func TestExtractMetadata_EPUBCoverImage(t *testing.T) {
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "test.epub")
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "Covered Book", "Author", "urn:isbn:9780743273565", testutils.EPUBOptions{
+		CoverImageData: testutils.TinyPNG(),
+		CoverImageHref: "images/cover.png",
+		CoverMediaType: "image/png",
+	})
+
+	ext := requireExifTool(t)
+	defer ext.Close()
+
+	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+
+	if !strings.HasPrefix(meta.CoverImageURL, "data:image/png;base64,") {
+		t.Fatalf("expected PNG data URL, got %q", meta.CoverImageURL)
+	}
+
+	encoded := strings.TrimPrefix(meta.CoverImageURL, "data:image/png;base64,")
+	got, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		t.Fatalf("decode cover image: %v", err)
+	}
+	if !bytes.Equal(got, testutils.TinyPNG()) {
+		t.Fatal("decoded cover bytes did not match source image")
 	}
 }
 
