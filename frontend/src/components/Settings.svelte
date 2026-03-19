@@ -228,8 +228,9 @@
   </div>
 
   <div class="flex gap-6">
-    <aside class="w-full sm:w-48 flex-shrink-0">
+    <div class="w-full sm:w-48 flex-shrink-0">
       <nav
+        aria-label="Settings sections"
         class="flex sm:flex-col gap-2 sm:gap-1 overflow-x-auto sm:overflow-x-visible"
       >
         {#each userTabs as tab (tab.key)}
@@ -292,7 +293,7 @@
           </a>
         {/if}
       </nav>
-    </aside>
+    </div>
 
     <section class="flex-1">
       {#if activeTab === "account"}
