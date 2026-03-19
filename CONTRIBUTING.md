@@ -290,7 +290,19 @@ Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: '
 
 ### E2E workflow (`.github/workflows/e2etest.yml`)
 
-The E2E workflow runs on every push and pull request targeting `main` or `develop`. It builds the full application and then executes the Playwright test suite:
+The E2E workflow runs on pushes and pull requests targeting `main` or `develop`, but only when the following paths are modified:
+
+| Path pattern | What it covers |
+|---|---|
+| `cmd/**` | Server and CLI entry points |
+| `internal/**` | All backend packages |
+| `frontend/**` | Svelte SPA and its tests |
+| `db/**` | Migrations and schema |
+| `e2e/**` | Playwright test files |
+| `go.mod`, `go.sum` | Go module changes |
+| `.github/workflows/e2etest.yml` | Workflow file itself |
+
+It builds the full application and then executes the Playwright test suite:
 
 ```
 build ──► e2e (Playwright / Chromium)
@@ -302,6 +314,8 @@ build ──► e2e (Playwright / Chromium)
 | `e2e` | `build` | Downloads the binary, installs Playwright + Chromium, runs `pnpm test` against a live server on port `3847` |
 
 On completion, the `playwright-report/` artifact is uploaded and retained for **7 days**, giving you screenshots and traces for any failures.
+
+> **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the E2E workflow. If you need E2E tests to run on a docs-only PR, trigger the workflow manually via **Actions → E2E Tests → Run workflow**.
 
 ### Automated agentic workflows
 
