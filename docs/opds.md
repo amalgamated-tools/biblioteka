@@ -84,6 +84,29 @@ Supported MIME types:
 
 > **Note on scanner support:** The library scanner automatically imports only `.epub`, `.mobi`, `.azw3`, and `.pdf` files. The additional formats listed above (`.cbz`, `.cbr`, `.fb2`, `.txt`, `.djvu`) are served correctly by the OPDS download endpoint if the corresponding `book_file` records exist in the database, but they are not picked up by the background scanner. To make non-scanned formats available in your catalog, create the book and book_file records manually via the [API](api-reference.md#post-apibooksidfiles-).
 
+### Cover images
+
+When a book has a `cover_image_url` set, each OPDS feed entry includes an image link so that compliant clients can display the cover art:
+
+```xml
+<link rel="http://opds-spec.org/image"
+      href="https://example.com/cover.jpg"
+      type="image/jpeg"/>
+```
+
+The MIME type is inferred from the URL's file extension:
+
+| Extension | MIME type |
+|-----------|-----------|
+| `.jpg` / `.jpeg` (default) | `image/jpeg` |
+| `.png` | `image/png` |
+| `.webp` | `image/webp` |
+| `.avif` | `image/avif` |
+| `.gif` | `image/gif` |
+| `.svg` | `image/svg+xml` |
+
+Set the `cover_image_url` field on a book record via `PUT /api/books/{id}` (see [API Reference](api-reference.md)) to enable cover art in your OPDS client.
+
 ---
 
 ## Managing OPDS credentials via the API
