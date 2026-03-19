@@ -16,7 +16,7 @@ Biblioteka stores one progress record per `(user, document)` pair in the `readin
 
 ### 1. Create KOSync credentials
 
-Open **Settings → KOReader Sync** in the Biblioteka web UI, enter a username and password, and save. You can also manage credentials via the API (see [KOSync Credentials API](#kosync-credentials-api) below).
+Create your KOSync credentials via the API (see [KOSync Credentials API](#kosync-credentials-api) below). There is no Settings UI tab for KOReader Sync — credentials are managed exclusively through the API.
 
 > **Important:** KOSync credentials are separate from your Biblioteka login. Choose a unique username (it must not already be taken by another Biblioteka user) and a strong password.
 
@@ -31,7 +31,7 @@ Open **Settings → KOReader Sync** in the Biblioteka web UI, enter a username a
    | **Username** | The KOSync username you created in step 1 |
    | **Password** | The KOSync password you created in step 1 |
 
-3. Tap **Register** — Biblioteka always returns `409 Conflict` here because account creation is managed through the web UI. KOReader treats `409` as "account already exists" and automatically proceeds to the login step.
+3. Tap **Register** — Biblioteka always returns `409 Conflict` here because account creation is managed through the API (not via a web form). KOReader treats `409` as "account already exists" and automatically proceeds to the login step.
 4. Tap **Login** to authenticate. KOReader will confirm with a ✓ tick if successful.
 
 ### 3. Sync reading progress
@@ -204,7 +204,7 @@ KOSync credential changes are recorded in the [audit log](api-reference.md#get-a
 **KOReader shows "Login failed"**
 
 - Confirm the custom sync server URL is correct (`https://<your-host>`) — no trailing slash or path.
-- Verify the username and password in **Settings → KOReader Sync** in the Biblioteka web UI.
+- Verify the username and password by calling `GET /api/kosync/credentials` with a Biblioteka JWT. See [KOSync Credentials API](#kosync-credentials-api).
 - Try deleting and recreating your credentials, then reconnecting KOReader.
 
 **Progress is not syncing across devices**
@@ -215,4 +215,4 @@ KOSync credential changes are recorded in the [audit log](api-reference.md#get-a
 
 **I forgot my KOSync password**
 
-You cannot retrieve a KOSync password. Go to **Settings → KOReader Sync** in Biblioteka, update your credentials with a new password, then update the password in KOReader's Progress sync settings.
+You cannot retrieve a KOSync password. Use `PUT /api/kosync/credentials` (see [KOSync Credentials API](#kosync-credentials-api)) to update your credentials with a new password, then update the password in KOReader's Progress sync settings.
