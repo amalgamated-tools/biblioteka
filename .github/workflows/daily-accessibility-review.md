@@ -21,7 +21,7 @@ safe-outputs:
     title-prefix: "fix(accessibility): "
     labels: [a11y, automated-analysis]
     max: 15
-    expires: 7
+    expires: 7d
     group: true
     close-older-issues: true
 
