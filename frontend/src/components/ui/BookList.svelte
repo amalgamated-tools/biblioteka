@@ -65,8 +65,8 @@
 
   // Reset offset when the data source or page size changes
   $effect(() => {
-    fetchBooks;
-    effectivePageSize;
+    void fetchBooks;
+    void effectivePageSize;
     offset = 0;
   });
 

@@ -80,8 +80,7 @@ class RouterStore {
   pageTitle: string = $derived.by(() => {
     if (!this.isKnownView) return "biblioteka";
     if (this.currentView === "settings" && this.subPath) {
-      const subTitle =
-        settingsSubTitles[this.subPath as SettingsSubPath];
+      const subTitle = settingsSubTitles[this.subPath as SettingsSubPath];
       if (subTitle) return subTitle;
     }
     return viewTitles[this.currentView];

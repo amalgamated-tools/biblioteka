@@ -32,7 +32,14 @@
   import APIKeysTab from "./settings/APIKeysTab.svelte";
   import KoboTab from "./settings/KoboTab.svelte";
 
-  type SettingsTab = "account" | "preferences" | "oidc" | "smtp" | "users" | "api-keys" | "kobo";
+  type SettingsTab =
+    | "account"
+    | "preferences"
+    | "oidc"
+    | "smtp"
+    | "users"
+    | "api-keys"
+    | "kobo";
   const validTabs: SettingsTab[] = [
     "account",
     "preferences",
@@ -225,7 +232,7 @@
       <nav
         class="flex sm:flex-col gap-2 sm:gap-1 overflow-x-auto sm:overflow-x-visible"
       >
-        {#each userTabs as tab}
+        {#each userTabs as tab (tab.key)}
           {@const isActive = activeTab === tab.key}
           <a
             href="#settings/{tab.key}"
