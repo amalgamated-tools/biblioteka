@@ -95,9 +95,7 @@ describe("LibraryForm accessibility", () => {
     await tick();
 
     // Fill in the name so we get past the name validation
-    const nameInput = container.querySelector(
-      "#lib-name",
-    ) as HTMLInputElement;
+    const nameInput = container.querySelector("#lib-name") as HTMLInputElement;
     await fireEvent.input(nameInput, { target: { value: "My Library" } });
 
     const form = container.querySelector("form")!;

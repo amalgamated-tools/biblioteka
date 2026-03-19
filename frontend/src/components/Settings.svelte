@@ -32,7 +32,14 @@
   import APIKeysTab from "./settings/APIKeysTab.svelte";
   import KoboTab from "./settings/KoboTab.svelte";
 
-  type SettingsTab = "account" | "preferences" | "oidc" | "smtp" | "users" | "api-keys" | "kobo";
+  type SettingsTab =
+    | "account"
+    | "preferences"
+    | "oidc"
+    | "smtp"
+    | "users"
+    | "api-keys"
+    | "kobo";
   const validTabs: SettingsTab[] = [
     "account",
     "preferences",
