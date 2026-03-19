@@ -81,7 +81,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	// Register job handlers and schedules only when this instance processes jobs
 	if runWorker {
 		// Set up the metadata Extractor, which reads metadata from uploaded files (using ExifTool when available).
-		extractor, err := metadata.NewExtractor()
+		extractor, err := metadata.NewExtractor(cancelCtx)
 		if err != nil {
 			slog.ErrorContext(cancelCtx, "failed to setup metadata extractor", slog.Any(otelkeys.Error, err))
 			return fmt.Errorf("failed to setup metadata extractor: %w", err)

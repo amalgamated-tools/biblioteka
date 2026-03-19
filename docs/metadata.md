@@ -1,71 +1,51 @@
 # Metadata Extraction
 
-Biblioteka can extract metadata — title, author, ISBN, format — from book files using two complementary code paths:
+Biblioteka extracts metadata — title, author, ISBN, description, publisher, language, publication date — from book files using [ExifTool](https://exiftool.org/).
 
-| Path | Formats | External dependency |
-|------|---------|---------------------|
-| **Native EPUB** | `.epub` | None |
-| **ExifTool** | `.mobi`, `.azw3`, `.pdf` | [ExifTool](https://exiftool.org/) must be on `PATH` |
+| Supported formats | External dependency |
+|-------------------|---------------------|
+| `.epub`, `.mobi`, `.azw3`, `.pdf` | [ExifTool](https://exiftool.org/) must be on `PATH` |
 
 The extractor is implemented in [`internal/metadata/extractor.go`](../internal/metadata/extractor.go) and exposed to end users via the standalone [`cmd/cli`](../cmd/cli/main.go) utility.
 
-> **Import pipeline status:** Automatic metadata extraction is **now active** in the `process:file` background job (since v0.0.5). When a file is imported during a library scan, the extractor runs and populates the book record with `Title`, `ISBN` (stored as ISBN-10 or ISBN-13), `Description`, and `Publisher` (EPUB only) when the extracted value is non-empty. If extraction fails (for example, because ExifTool is not installed), the job falls back to deriving the book title from the filename. Author records are also created automatically from extracted author metadata and linked to the imported book.
+> **Import pipeline status:** Automatic metadata extraction is **now active** in the `process:file` background job (since v0.0.5). When a file is imported during a library scan, the extractor runs and populates the book record with `Title`, `ISBN` (stored as ISBN-10 or ISBN-13), `Description`, `Publisher`, `Language`, and `PublicationDate` when the extracted value is non-empty. If extraction fails (for example, because ExifTool is not installed), the job falls back to deriving the book title from the filename. Author records are also created automatically from extracted author metadata and linked to the imported book.
 
 ---
 
 ## Extracted fields
 
-| Field | EPUB (native) | MOBI / AZW3 / PDF (ExifTool) | Notes |
-|-------|:---:|:---:|-------|
-| `Title` | ✓ | ✓ | Falls back to filename (without extension) when the ExifTool path cannot find a `Title` tag |
-| `Author` | ✓ | ✓ | Returns `""` when not found; no author record is created for an empty author |
-| `ISBN` | ✓ | ✓ | Returns `""` when no valid 10- or 13-digit identifier is present; MOBI files also try an `Identifier` tag as a fallback |
-| `Format` | ✓ | ✓ | Uppercase file extension (e.g. `"EPUB"`, `"PDF"`) |
-| `IsNative` | `true` | `false` | Indicates whether the native EPUB parser was used |
-| `Publisher` | ✓ | ✗ | Extracted from `<dc:publisher>` in EPUB OPF; not available for ExifTool-based formats |
-| `Description` | ✓ | ✗ | Extracted from `<dc:description>` in EPUB OPF; not available for ExifTool-based formats |
-| `Language` | ✓ | ✗ | Extracted from `<dc:language>` in EPUB OPF; not available for ExifTool-based formats |
-| `PublicationDate` | ✓ | ✗ | Extracted from the `<dc:date event="publication">` element in EPUB OPF; not available for ExifTool-based formats |
+| Field | Notes |
+|-------|-------|
+| `Title` | Falls back to filename (without extension) when ExifTool cannot find a `Title` tag |
+| `Author` | Tries `Author` tag first, then `Creator` (used by EPUBs). Returns `""` when not found; no author record is created for an empty author |
+| `ISBN` | Tries `ISBN` tag first, then `Identifier` tag. Normalized via `NormalizeISBN` (strips `urn:isbn:`/`isbn:` prefixes, validates as 10 or 13 digits). Returns `""` when no valid identifier is present |
+| `Format` | Uppercase file extension (e.g. `"EPUB"`, `"PDF"`) |
+| `Description` | From ExifTool `Description` tag; availability depends on the file format and its embedded metadata |
+| `Publisher` | From ExifTool `Publisher` tag |
+| `Language` | From ExifTool `Language` tag |
+| `PublicationDate` | From ExifTool `PublicationDate` tag; normalized from ExifTool's `YYYY:MM:DD` format to `YYYY-MM-DD` |
 
 ---
 
-## EPUB extraction (native)
+## ExifTool tag mapping
 
-EPUB files are parsed directly using the [`goreader/epub`](https://github.com/taylorskalyo/goreader) library — no external process is required.
-
-The extractor reads the first OPF rootfile inside the ZIP container and maps:
-
-| OPF field | `BookMetadata` field |
-|-----------|---------------------|
-| `<dc:title>` | `Title` |
-| `<dc:creator>` | `Author` |
-| `<dc:publisher>` | `Publisher` |
-| `<dc:description>` | `Description` |
-| `<dc:language>` | `Language` |
-| `<dc:date event="publication">` | `PublicationDate` |
-| `<dc:identifier>` | `ISBN` (cleaned of `urn:isbn:` / `isbn:` prefixes; validated as 10 or 13 digits) |
-
----
-
-## ExifTool extraction (MOBI, AZW3, PDF)
-
-Non-EPUB formats are handled by spawning [ExifTool](https://exiftool.org/) as a subprocess and reading the returned tag map.
-
-Tag mapping:
+All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-open subprocess via the [`go-exiftool`](https://github.com/barasher/go-exiftool) library.
 
 | ExifTool tag | `BookMetadata` field | Fallback |
 |--------------|---------------------|----------|
 | `Title` | `Title` | Filename stem |
-| `Author` | `Author` | `""` (empty; no author record created) |
-| `ISBN` | `ISBN` | `Identifier` tag, then `""` (empty) |
+| `Author`, `Creator` | `Author` | `""` (empty; no author record created) |
+| `ISBN`, `Identifier` | `ISBN` | `""` (empty; normalized and validated) |
+| `Description` | `Description` | `""` |
+| `Publisher` | `Publisher` | `""` |
+| `Language` | `Language` | `""` |
+| `PublicationDate` | `PublicationDate` | `""` |
 
-When ExifTool is **not installed**, `NewExtractor()` still returns a valid `*Extractor` (with a warning logged), but calling `ExtractMetadata` on a non-EPUB file returns an error:
+When ExifTool is **not installed**, `NewExtractor()` still returns a valid `*Extractor` (with a warning logged), but calling `ExtractMetadata` on any file returns an error:
 
 ```
 exiftool is not available on this system
 ```
-
-EPUB extraction continues to work without ExifTool.
 
 ### Installing ExifTool
 
@@ -112,7 +92,7 @@ Extracts metadata from one file, stores a book and book_file record in the datab
 Successfully processed file: /path/to/book.epub
 ```
 
-> **Note:** When ExifTool is not installed, PDF and MOBI/AZW3 imports still succeed. The book title falls back to the filename (without extension), and no author, ISBN, description, or other metadata is populated. Install ExifTool to enable richer metadata extraction for these formats.
+> **Note:** When ExifTool is not installed, imports still succeed but metadata is derived from the filename only. Install ExifTool to enable full metadata extraction (title, author, ISBN, etc.).
 
 ### `scan-directory` — enqueue a directory for processing
 
@@ -136,10 +116,9 @@ When `<library-id>` is supplied the directory is also used as the `library_root`
 
 ## What's next
 
-The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) extracts and stores `Title`, `ISBN`, `Description`, `Publisher`, `Language`, `PublicationDate` (EPUB only), and links extracted `Author` names to book records. Planned future improvements include:
+The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) extracts and stores `Title`, `ISBN`, `Description`, `Publisher`, `Language`, `PublicationDate`, and links extracted `Author` names to book records. Planned future improvements include:
 
-1. **Publisher, Language, and PublicationDate for ExifTool formats** — extract and store these fields for MOBI, AZW3, and PDF files.
-2. **Cover image** — populate `cover_image_url` for formats that embed cover art.
+1. **Cover image** — populate `cover_image_url` for formats that embed cover art.
 
 Use `cmd/cli` to import a single file and verify what Biblioteka extracts before a full library scan.
 
@@ -150,7 +129,6 @@ Use `cmd/cli` to import a single file and verify what Biblioteka extracts before
 To add support for a new field or format:
 
 1. Edit [`internal/metadata/extractor.go`](../internal/metadata/extractor.go).
-2. For EPUB: extend `extractNativeEpub` to read the relevant OPF element.
-3. For ExifTool-based formats: add the appropriate `book.GetString("<TagName>")` call in `extractExif`.
-4. Add or extend tests in `internal/metadata/extractor_test.go`.
-5. Update the [Extracted fields](#extracted-fields) table in this document.
+2. Add the appropriate `getStringOr` call in `extractExif` for the new ExifTool tag.
+3. Add or extend tests in `internal/metadata/extractor_test.go`.
+4. Update the [Extracted fields](#extracted-fields) table in this document.

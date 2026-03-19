@@ -161,10 +161,11 @@ jobs:
 
       - run: go version
 
-      - name: Download exiftool for tests
+      - name: Install exiftool
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends exiftool
+          sudo apt-get install -y libimage-exiftool-perl
+          exiftool -ver
 
       - name: Run Go tests
         run: go test -v ./...
