@@ -221,7 +221,10 @@ internal/
     scan_libraries.go          # scan:libraries handler (scans all monitored libraries)
     scan_library.go            # scan:library handler (scans a single library)
     process_file.go            # process:file handler — deserializes payload, delegates to ProcessBookFile
-    process_book_file.go       # ProcessBookFile public entry point + private helpers: validatePayload, resolveSourcePath, checkDuplicate, deriveTitle, extractBookMetadata, resolveAuthorAndTitle, maybeReorganizeFile, createBookRecord, linkBookAssociations
+    process_book_file.go       # ProcessBookFile public entry point
+    book_metadata_helpers.go   # deriveTitle, extractBookMetadata, resolveAuthorAndTitle
+    book_path_helpers.go       # validatePayload, resolveSourcePath, checkDuplicate, bookFileLookupFunc
+    book_record_helpers.go     # maybeReorganizeFile, createBookRecord, linkBookAssociations
   organize/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
   pathparser/
