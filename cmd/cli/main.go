@@ -105,7 +105,7 @@ func runProcessFile(ctx context.Context, path string) error {
 	}
 	defer func() { _ = database.Close() }()
 
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create metadata extractor: %w", err)
 	}

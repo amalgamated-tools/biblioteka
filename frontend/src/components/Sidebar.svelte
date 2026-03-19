@@ -90,7 +90,10 @@
     </div>
   </div>
 
-  <nav aria-label="Primary navigation" class="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
+  <nav
+    aria-label="Primary navigation"
+    class="flex-1 px-3 py-4 space-y-6 overflow-y-auto"
+  >
     <!-- Home group -->
     <div>
       <p
