@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.1.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.7...v0.1.0) (2026-03-19)
+
+
+### Features
+
+* **cli:** add scan-directory command to invoke jobs.ScanDirectory ([#321](https://github.com/amalgamated-tools/biblioteka/issues/321)) ([311533e](https://github.com/amalgamated-tools/biblioteka/commit/311533e38ea2a21d13a42d99f94bd7b5cd0cfa6e))
+* implement ScanDirectory function for path scanning and job enqueuing ([#305](https://github.com/amalgamated-tools/biblioteka/issues/305)) ([5ce9b8c](https://github.com/amalgamated-tools/biblioteka/commit/5ce9b8c34dfbdf9f249ba4983956451c7359be15))
+* Kobo e-reader sync integration ([#313](https://github.com/amalgamated-tools/biblioteka/issues/313)) ([0750122](https://github.com/amalgamated-tools/biblioteka/commit/07501225715e7a4da42e1cca5de27320272ab845))
+* KOReader kosync-compatible reading progress sync ([#314](https://github.com/amalgamated-tools/biblioteka/issues/314)) ([bb8890f](https://github.com/amalgamated-tools/biblioteka/commit/bb8890f697a55c0a1b9b5104d4c8e93ecd50ebf8))
+* we don't need the extra indirection ([#264](https://github.com/amalgamated-tools/biblioteka/issues/264)) ([4f28c96](https://github.com/amalgamated-tools/biblioteka/commit/4f28c964181d405851e1fe1d6ef13af4a9155045))
+
+
+### Bug Fixes
+
+* **accessibility:** add accessible labels to library form inputs ([#339](https://github.com/amalgamated-tools/biblioteka/issues/339)) ([b292e44](https://github.com/amalgamated-tools/biblioteka/commit/b292e442b6900f846123bb9294a318622807c1af))
+* **accessibility:** Add ARIA tab semantics to Login/Sign Up toggle buttons ([#360](https://github.com/amalgamated-tools/biblioteka/issues/360)) ([6daadfb](https://github.com/amalgamated-tools/biblioteka/commit/6daadfbfa87802a3471d486e04c1e7bf034d0758))
+* **accessibility:** add aria-current to active navigation buttons ([#338](https://github.com/amalgamated-tools/biblioteka/issues/338)) ([7b504e1](https://github.com/amalgamated-tools/biblioteka/commit/7b504e1d6ebe89f1929035da0e7340e01c065973))
+* **accessibility:** add aria-label to icon-only "Create library" button (WCAG 4.1.2) ([#485](https://github.com/amalgamated-tools/biblioteka/issues/485)) ([fc99bdb](https://github.com/amalgamated-tools/biblioteka/commit/fc99bdb63be737d35d739bafd481eb8cb11975ff))
+* **accessibility:** add aria-label to unlabelled landmark regions (WCAG 4.1.2) ([#484](https://github.com/amalgamated-tools/biblioteka/issues/484)) ([9172c80](https://github.com/amalgamated-tools/biblioteka/commit/9172c801bd38760fe6761a01af3e681cfd3d67ab))
+* **accessibility:** add autocomplete attributes to password inputs in Account Settings ([#342](https://github.com/amalgamated-tools/biblioteka/issues/342)) ([c793573](https://github.com/amalgamated-tools/biblioteka/commit/c7935732f5562fd009770cf5a3b7c2b4c43edcad))
+* **accessibility:** Add main landmark region to login page ([#358](https://github.com/amalgamated-tools/biblioteka/issues/358)) ([903a27e](https://github.com/amalgamated-tools/biblioteka/commit/903a27e4b094ba120b2a5531b45c006c102439f9))
+* **accessibility:** add role="switch" to LibraryForm monitor toggle ([#361](https://github.com/amalgamated-tools/biblioteka/issues/361)) ([58a077c](https://github.com/amalgamated-tools/biblioteka/commit/58a077c0ec42f69f117609f0658c8374a8823e24))
+* **accessibility:** add scope attribute to table headers and accessible label for actions column ([#402](https://github.com/amalgamated-tools/biblioteka/issues/402)) ([6e1fe87](https://github.com/amalgamated-tools/biblioteka/commit/6e1fe87d2fea23ae09c5cebf8268f4ed592dc351))
+* **accessibility:** associate form validation errors with specific inputs in LibraryForm ([#403](https://github.com/amalgamated-tools/biblioteka/issues/403)) ([9ca05e7](https://github.com/amalgamated-tools/biblioteka/commit/9ca05e756fa6b5c65a079e5591d1661ef840057c))
+* **accessibility:** LibraryForm: use fieldset/legend for folder paths group ([#401](https://github.com/amalgamated-tools/biblioteka/issues/401)) ([c885e79](https://github.com/amalgamated-tools/biblioteka/commit/c885e79f9d82a62b5d790b83fd2bab6e3f5226e9))
+* **accessibility:** update document.title on SPA navigation (WCAG 2.4.2) ([#341](https://github.com/amalgamated-tools/biblioteka/issues/341)) ([c0c919b](https://github.com/amalgamated-tools/biblioteka/commit/c0c919b02384b35d3574df33e5e896a5b67c2f14))
+* accessiblle ([af164f8](https://github.com/amalgamated-tools/biblioteka/commit/af164f84bd0a7491c54b5c03b25a1dd6bfb371fe))
+* Add Greptile labeler workflow and clean up code ([#432](https://github.com/amalgamated-tools/biblioteka/issues/432)) ([6592d2d](https://github.com/amalgamated-tools/biblioteka/commit/6592d2d56bad9fd04013c40af07e7bed86a6b4d3))
+* **ci:** restore Daily File Diet agent execution ([#265](https://github.com/amalgamated-tools/biblioteka/issues/265)) ([9eff0af](https://github.com/amalgamated-tools/biblioteka/commit/9eff0af02f48e9d6dbf3c09e1bb9d3a7961c709d))
+* **code-simplifier:** refactor: simplify kosync handler and system endpoint method checks ([#412](https://github.com/amalgamated-tools/biblioteka/issues/412)) ([d178c86](https://github.com/amalgamated-tools/biblioteka/commit/d178c86438cb54e5f8563614cc3bf9d60fe868af))
+* **code-simplifier:** refactor(e2e): simplify auth spec imports and fix comment placement ([#306](https://github.com/amalgamated-tools/biblioteka/issues/306)) ([2789b4d](https://github.com/amalgamated-tools/biblioteka/commit/2789b4da5ae17428bb5af3064b0077f36ed11047))
+* **config:** make multi-setting saves atomic ([#319](https://github.com/amalgamated-tools/biblioteka/issues/319)) ([706335f](https://github.com/amalgamated-tools/biblioteka/commit/706335fe6ffb687ec50b2389eb57d06956a09421))
+* **frontend:** add skip-to-main-content link to app shell ([#316](https://github.com/amalgamated-tools/biblioteka/issues/316)) ([e706b6a](https://github.com/amalgamated-tools/biblioteka/commit/e706b6a73a7c6699b98595ba2aadc86b65f0e003))
+* **frontend:** suppress Svelte state warnings and restore .gitkeep after build ([#285](https://github.com/amalgamated-tools/biblioteka/issues/285)) ([231cb84](https://github.com/amalgamated-tools/biblioteka/commit/231cb84ad9153824504c7ced71f938cf41c35589))
+* improve greptile-labeler workflow prompt and suppress transient failure issues ([#435](https://github.com/amalgamated-tools/biblioteka/issues/435)) ([9f9c58d](https://github.com/amalgamated-tools/biblioteka/commit/9f9c58d2c8a3e84c4d3560024238767e6c3d6108))
+* install gh-aw extension inline before downloading logs in portfolio-analyst ([#460](https://github.com/amalgamated-tools/biblioteka/issues/460)) ([71a04d9](https://github.com/amalgamated-tools/biblioteka/commit/71a04d9a175f71ba9c1f1db2872d6f691c2207a6))
+
 ## [0.0.7](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.6...v0.0.7) (2026-03-17)
 
 
