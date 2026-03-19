@@ -111,6 +111,28 @@ func TestExtractMetadata_EPUBCoverImage(t *testing.T) {
 	}
 }
 
+func TestReadEPUBArchiveFile_OversizedCover(t *testing.T) {
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "large-cover.epub")
+
+	// Create an EPUB whose cover image exceeds the 20 MB cap.
+	oversized := make([]byte, 20<<20+1) // 20 MB + 1 byte
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "Big Cover", "Author", "urn:isbn:0000000000", testutils.EPUBOptions{
+		CoverImageData: oversized,
+		CoverImageHref: "images/cover.png",
+		CoverMediaType: "image/png",
+	})
+
+	ref := epubCoverRef{Href: "images/cover.png", MIMEType: "image/png"}
+	_, _, err := readEPUBArchiveFile(epubPath, ref)
+	if err == nil {
+		t.Fatal("expected error for oversized cover, got nil")
+	}
+	if !strings.Contains(err.Error(), "exceeds") {
+		t.Errorf("expected error about exceeding limit, got: %v", err)
+	}
+}
+
 func TestExtractMetadata_EPUBWithISBN10(t *testing.T) {
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "test.epub")

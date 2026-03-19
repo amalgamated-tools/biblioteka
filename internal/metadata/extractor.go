@@ -242,9 +242,13 @@ func readEPUBArchiveFile(filePath string, ref epubCoverRef) ([]byte, string, err
 	}
 	defer rc.Close()
 
-	coverBytes, err := io.ReadAll(io.LimitReader(rc, 20<<20)) // 20 MB cap
+	const maxCoverBytes = 20 << 20 // 20 MB
+	coverBytes, err := io.ReadAll(io.LimitReader(rc, int64(maxCoverBytes)+1))
 	if err != nil {
 		return nil, "", fmt.Errorf("read cover asset %q: %w", file.Name, err)
+	}
+	if len(coverBytes) > maxCoverBytes {
+		return nil, "", fmt.Errorf("cover asset %q exceeds %d-byte limit", file.Name, maxCoverBytes)
 	}
 
 	mimeType := strings.TrimSpace(ref.MIMEType)
@@ -311,7 +315,7 @@ func findArchiveFile(files []*zip.File, candidates []string) *zip.File {
 	for _, candidate := range candidates {
 		for _, file := range files {
 			name := cleanArchivePath(file.Name)
-			if name == candidate || strings.HasSuffix(name, "/"+candidate) {
+			if name == candidate {
 				return file
 			}
 		}
