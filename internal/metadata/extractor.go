@@ -242,7 +242,7 @@ func readEPUBArchiveFile(filePath string, ref epubCoverRef) ([]byte, string, err
 	}
 	defer rc.Close()
 
-	coverBytes, err := io.ReadAll(rc)
+	coverBytes, err := io.ReadAll(io.LimitReader(rc, 20<<20)) // 20 MB cap
 	if err != nil {
 		return nil, "", fmt.Errorf("read cover asset %q: %w", file.Name, err)
 	}
@@ -293,7 +293,7 @@ func archiveCandidates(rootFilePath, href string) []string {
 	}
 
 	seen := make(map[string]struct{}, len(candidates))
-	unique := candidates[:0]
+	unique := make([]string, 0, len(candidates))
 	for _, candidate := range candidates {
 		if candidate == "" {
 			continue

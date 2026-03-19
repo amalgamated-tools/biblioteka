@@ -38,9 +38,18 @@ func (h *KoboHandler) HandleCoverImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if contentType, data, err := decodeDataURL(*book.CoverImageURL); err == nil {
+	contentType, data, err := decodeDataURL(*book.CoverImageURL)
+	if err == nil {
 		w.Header().Set("Content-Type", contentType)
 		http.ServeContent(w, r, "cover", book.UpdatedAt.Time, bytes.NewReader(data))
+		return
+	}
+	if !errors.Is(err, errNotDataURL) {
+		slog.WarnContext(r.Context(), "malformed data URL for cover image",
+			slog.String(otelkeys.BookID, bookID),
+			slog.Any(otelkeys.Error, err),
+		)
+		http.Error(w, "invalid cover image", http.StatusInternalServerError)
 		return
 	}
 
