@@ -3,8 +3,26 @@ name: E2E Tests
 on:
   push:
     branches: [main, develop]
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'frontend/**'
+      - 'db/**'
+      - 'e2e/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/e2etest.yml'
   pull_request:
     branches: [main, develop]
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'frontend/**'
+      - 'db/**'
+      - 'e2e/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/e2etest.yml'
 
 permissions:
   contents: read
@@ -13,18 +31,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - name: Set up Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
-        with:
-          node-version: "20"
 
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
         with:
           version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        with:
+          node-version: "20"
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install frontend dependencies
         working-directory: ./frontend
@@ -55,6 +76,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     name: Playwright
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
@@ -66,15 +88,17 @@ jobs:
       - name: Make binary executable
         run: chmod +x ./biblioteka
 
-      - name: Set up Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
-        with:
-          node-version: "20"
-
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
         with:
           version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        with:
+          node-version: "20"
+          cache: 'pnpm'
+          cache-dependency-path: e2e/pnpm-lock.yaml
 
       - name: Install e2e dependencies
         working-directory: ./e2e
