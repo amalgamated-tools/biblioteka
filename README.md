@@ -120,7 +120,7 @@ Biblioteka includes a built-in [OPDS 1.2](https://specs.opds.io/opds-1.2) catalo
 
 - **URL:** `/opds` (e.g. `http://localhost:8080/opds`)
 - **Authentication:** HTTP Basic Auth using a per-user OPDS credential — separate from your main account password.
-- **Manage credentials:** via the `PUT /api/opds/credentials` endpoint (API-only; there is no Settings UI for OPDS credentials).
+- **Manage credentials:** via `GET /api/opds/credentials` (check current credentials), `PUT /api/opds/credentials` (set or update), and `DELETE /api/opds/credentials` (remove) — all API-only; there is no Settings UI for OPDS credentials.
 
 See [docs/opds.md](docs/opds.md) for the full setup guide, catalog structure, and supported OPDS clients.
 
