@@ -766,7 +766,7 @@ When a form contains a group of related inputs that share a common heading (e.g.
 
 #### `aria-describedby` for inline validation errors
 
-**WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) / [3.3.1 Error Identification](https://www.w3.org/WAI/WCAG21/Understanding/error-identification.html) (Levels A)
+**WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) / [3.3.1 Error Identification](https://www.w3.org/WAI/WCAG21/Understanding/error-identification.html) (Level A)
 
 When an input has an associated error message that appears inline below it, use `aria-describedby` to link the input to the error element. Without this link, screen reader users hear the input's label but not the error — they must navigate to the error paragraph separately.
 
