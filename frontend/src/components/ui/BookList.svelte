@@ -88,6 +88,10 @@
   }
 </script>
 
+<div role="status" aria-live="polite" aria-atomic="true" class="sr-only">
+  {#if loading}Loading books...{/if}
+</div>
+
 {#if error}
   <AlertBanner variant="error" class="mb-4">{error}</AlertBanner>
 {:else if loading}
@@ -97,7 +101,7 @@
     class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800"
   >
     <div class="text-center py-8">
-      <p role="status" class="text-ink-400 dark:text-ink-400">Loading books...</p>
+      <p class="text-ink-400 dark:text-ink-400">Loading books...</p>
     </div>
   </div>
 {:else if total === 0}

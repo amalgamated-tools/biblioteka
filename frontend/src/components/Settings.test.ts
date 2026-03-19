@@ -70,7 +70,10 @@ describe("Settings accessibility", () => {
 
     expect(
       container.querySelectorAll('[aria-live="polite"][aria-atomic="true"]'),
-    ).toHaveLength(2);
+    ).toHaveLength(2); // one for smtpTestMessage, one for smtpSuccessMessage
+    expect(
+      container.querySelectorAll('[aria-live="assertive"][aria-atomic="true"]'),
+    ).toHaveLength(2); // one for smtpTestError, one for smtpError
 
     const form = container.querySelector("form");
     expect(form).toBeInTheDocument();
