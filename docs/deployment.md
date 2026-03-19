@@ -45,6 +45,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:-}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
     depends_on:
       - redis
 ```
@@ -108,6 +110,7 @@ Before going live, verify each item:
 - [ ] **PostgreSQL backups** — if using PostgreSQL, schedule regular `pg_dump` backups of the `biblioteka` database.
 - [ ] **SQLite backups** — if using SQLite, back up the Docker volume (`biblioteka-data`) or the `*.db` file.
 - [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to keep anonymous telemetry disabled (default). Set to `true` to enable it.
+- [ ] **SMTP** — if you want email delivery (e.g., password-reset or notification features), set `SMTP_HOST`, `SMTP_FROM`, and any other `SMTP_*` variables. These can be passed via a `.env` file or exported in your shell before running `docker compose up`.
 
 ## Environment Variables
 
