@@ -31,9 +31,10 @@ frontend/
       libraries/          Reusable sub-components for the Libraries view
         LibraryForm.svelte   Create / edit library form
         LibraryView.svelte   Library detail with book listing
-      settings/           Tab sub-components for the Settings page (five of six tabs; the SMTP admin tab is inline in Settings.svelte — see Settings component architecture below)
+      settings/           Tab sub-components for the Settings page (the SMTP admin tab is inline in Settings.svelte — see Settings component architecture below)
         AccountTab.svelte       Account & password management; OIDC linking
         APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix)
+        KoboTab.svelte          Kobo sync token management; displays setup instructions
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
         PreferencesTab.svelte   Display theme selection
         UsersTab.svelte         Admin: user list and admin-role toggling
@@ -150,6 +151,7 @@ Views that need their own internal navigation use `routerStore.subPath`. The con
 | `settings` | `users` | User management tab (admin) |
 | `settings` | `preferences` | Appearance preferences tab |
 | `settings` | `api-keys` | API keys management tab (all users) |
+| `settings` | `kobo` | Kobo sync token management tab (all users) |
 
 **Example — navigating to a library's book list:**
 
@@ -337,6 +339,7 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 |-----------|-------|------------|----------------|
 | `AccountTab.svelte` | `settings/account` | All users | Change password; link OIDC account |
 | `APIKeysTab.svelte` | `settings/api-keys` | All users | Create and revoke long-lived API keys (`bib_` prefix) |
+| `KoboTab.svelte` | `settings/kobo` | All users | Create and revoke Kobo sync tokens; copy device sync URL |
 | `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
 | *(inline in `Settings.svelte`)* | `settings/smtp` | Admins only | Configure SMTP mail server |
@@ -371,7 +374,8 @@ Svelte 5 emits a `state_referenced_locally` warning for this pattern because the
 3. Add `"my-tab"` to the `SettingsTab` union type and `validTabs` array in `Settings.svelte`.
 4. Import and render `<MyTab />` inside the `{#if activeTab === "my-tab"}` block in `Settings.svelte`.
 5. Add a navigation `<button>` in `Settings.svelte`'s sidebar `<nav>`, wrapped in `{#if isAdmin}` if the tab is admin-only.
-6. Update the table above.
+6. Add `"my-tab"` to the `SettingsSubPath` union type **and** the `settingsSubTitles` record in `frontend/src/stores/router.svelte.ts`. This ensures the browser tab title is set correctly (e.g., `My Tab – biblioteka`). If you skip this step, the title falls back to the top-level `Settings – biblioteka`.
+7. Update the tables above and in the [Page titles](#page-titles) section.
 
 ## Accessibility Patterns
 
@@ -448,6 +452,7 @@ $effect(() => {
 | `settings/smtp` | `Email Settings – biblioteka` |
 | `settings/users` | `User Management – biblioteka` |
 | `settings/api-keys` | `API Keys – biblioteka` |
+| `settings/kobo` | `Kobo Sync – biblioteka` |
 | Unknown hash | `biblioteka` |
 
 **When adding a new view or settings tab**, update both the corresponding union type (`AppView` or `SettingsSubPath`) and the matching title lookup table in `router.svelte.ts`. If you skip the lookup entry, `pageTitle` falls back to the top-level view title, which may be insufficiently descriptive.
