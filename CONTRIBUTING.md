@@ -183,6 +183,27 @@ make run
 make clean
 ```
 
+### IDE and Editor Support
+
+#### VS Code
+
+The repository includes a `.vscode/launch.json` with three ready-to-use **Run and Debug** configurations (`Ctrl+Shift+D` / `⇧⌘D`):
+
+| Configuration | Binary | What it does |
+|---|---|---|
+| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans the sample `books/` directory and imports all supported files |
+| **Run CLI (File)** | `cmd/cli/main.go` | Runs `process-file` against `books/Alice's Adventures in Wonderland by Lewis Carroll.epub` |
+| **Run Server** | `cmd/server/main.go` | Starts the Biblioteka HTTP server |
+
+All three configurations load environment variables from `.env` in the workspace root. Copy `.env.sample` to `.env` and fill in the required values before launching:
+
+```bash
+cp .env.sample .env
+# Edit .env with your local values (DATABASE_URL, REDIS_URL, JWT_SECRET, …)
+```
+
+> **Sample books**: Two EPUB files in `books/` serve as realistic test data for the CLI configurations. They are version-controlled so the "Run CLI" launch configs work out of the box without any setup.
+
 ### Frontend (from `frontend/`)
 
 ```bash
