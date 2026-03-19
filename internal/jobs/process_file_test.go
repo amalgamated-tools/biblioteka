@@ -42,7 +42,7 @@ func newTestDB(t *testing.T) *db.DB {
 
 func TestProcessFileHandler(t *testing.T) {
 	database := newTestDB(t)
-	extractor, err := metadata.NewExtractor()
+	extractor, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestProcessFileHandler(t *testing.T) {
 
 func TestProcessFileHandler_MetadataFields(t *testing.T) {
 	database := newTestDB(t)
-	extractor, err := metadata.NewExtractor()
+	extractor, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
@@ -192,7 +192,7 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 
 func TestProcessFileHandler_EmptyPath(t *testing.T) {
 	database := newTestDB(t)
-	extractor, err := metadata.NewExtractor()
+	extractor, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestProcessFileHandler_EmptyPath(t *testing.T) {
 
 func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	database := newTestDB(t)
-	extractor, err := metadata.NewExtractor()
+	extractor, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 
 func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 	database := newTestDB(t)
-	extractor, err := metadata.NewExtractor()
+	extractor, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
@@ -348,7 +348,7 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 
 func TestProcessFileHandler_DuplicateSkipped(t *testing.T) {
 	database := newTestDB(t)
-	extractor, err := metadata.NewExtractor()
+	extractor, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
