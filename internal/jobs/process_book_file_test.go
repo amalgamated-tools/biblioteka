@@ -2,10 +2,13 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 )
@@ -467,5 +470,37 @@ func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.
 	}
 	if files[0].FilePath != reorganizedPath {
 		t.Errorf("expected file path %q, got %q", reorganizedPath, files[0].FilePath)
+	}
+}
+
+func TestResolveCandidateBookFilePath_ReturnsErrorWhenLookupFails(t *testing.T) {
+	originalPath := "/library/F. Scott Fitzgerald - The Great Gatsby.epub"
+	candidatePath := "/library/F. Scott Fitzgerald/The Great Gatsby/F. Scott Fitzgerald - The Great Gatsby.epub"
+	lookupErr := errors.New("db unavailable")
+
+	resolvedPath, skip, err := resolveCandidateBookFilePath(
+		context.Background(),
+		nil,
+		originalPath,
+		candidatePath,
+		"",
+		func(path string) (*db.BookFile, bool, error) {
+			if path != candidatePath {
+				t.Fatalf("lookup path = %q, want %q", path, candidatePath)
+			}
+			return nil, false, lookupErr
+		},
+	)
+	if err == nil {
+		t.Fatal("expected error when reorganized path lookup fails")
+	}
+	if resolvedPath != "" {
+		t.Fatalf("resolved path = %q, want empty", resolvedPath)
+	}
+	if skip {
+		t.Fatal("expected skip to be false on lookup error")
+	}
+	if !strings.Contains(err.Error(), candidatePath) {
+		t.Fatalf("expected error to mention reorganized path %q, got %v", candidatePath, err)
 	}
 }
