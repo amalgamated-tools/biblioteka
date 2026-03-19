@@ -92,7 +92,7 @@ Extracts metadata from one file, stores a book and book_file record in the datab
 Successfully processed file: /path/to/book.epub
 ```
 
-> **Note:** When ExifTool is not installed, imports will fail with an error. Install ExifTool to enable metadata extraction.
+> **Note:** When ExifTool is not installed, imports still succeed but metadata is derived from the filename only. Install ExifTool to enable full metadata extraction (title, author, ISBN, etc.).
 
 ### `scan-directory` — enqueue a directory for processing
 
