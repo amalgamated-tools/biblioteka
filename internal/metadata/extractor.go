@@ -145,7 +145,6 @@ func NormalizeISBN(raw string) string {
 	s = strings.TrimSpace(s)
 	s = strings.ReplaceAll(s, "-", "")
 	s = strings.ReplaceAll(s, " ", "")
-	s = strings.TrimSpace(s)
 
 	switch len(s) {
 	case 10:
