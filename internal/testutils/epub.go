@@ -89,7 +89,15 @@ type EPUBOptions struct {
 	CoverMediaType  string
 }
 
-var tinyPNG, _ = base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+lmRcAAAAASUVORK5CYII=")
+var tinyPNG []byte
+
+func init() {
+	var err error
+	tinyPNG, err = base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+lmRcAAAAASUVORK5CYII=")
+	if err != nil {
+		panic("testutils: invalid tinyPNG base64 constant: " + err.Error())
+	}
+}
 
 func TinyPNG() []byte {
 	return append([]byte(nil), tinyPNG...)

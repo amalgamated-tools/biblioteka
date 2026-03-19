@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/url"
 	"path"
 	"strings"
 )
@@ -15,7 +16,12 @@ func coverMIMEType(imageURL string) string {
 		return mimeType
 	}
 
-	switch strings.ToLower(path.Ext(imageURL)) {
+	extSource := imageURL
+	if u, err := url.Parse(imageURL); err == nil {
+		extSource = u.Path
+	}
+
+	switch strings.ToLower(path.Ext(extSource)) {
 	case ".png":
 		return "image/png"
 	case ".webp":
