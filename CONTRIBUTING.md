@@ -17,7 +17,7 @@ Your signature is recorded once and applies to all future contributions.
 - Go 1.26+
 - Node.js 22+ with [pnpm](https://pnpm.io/)
 - Redis (for background jobs)
-- [ExifTool](https://exiftool.org/) (optional; used for metadata extraction across all supported formats — EPUB, MOBI, AZW3, PDF; imports succeed without it but metadata is derived from filenames only)
+- [ExifTool](https://exiftool.org/) (optional; used for metadata extraction across all supported formats — EPUB, MOBI, AZW3, PDF; imports succeed without it but metadata is derived from filename/path-derived metadata only)
 - Docker (optional, for running the full stack locally)
 
 ### Installing Tools with mise
