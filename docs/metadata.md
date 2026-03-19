@@ -82,33 +82,55 @@ The Dockerfiles included in this repository already install ExifTool.
 
 ## CLI tool
 
-`cmd/cli` is a standalone wrapper around the book-processing pipeline, useful for importing a single file and inspecting the result outside of the server. It extracts metadata, stores a book and book_file record in the configured database, and creates an author record if one is found.
+`cmd/cli` is a standalone utility for importing book files and scanning directories outside of the running server. It is useful for importing individual files, verifying metadata extraction, or triggering a directory scan without starting the full server.
 
 ```bash
 # Build
 go build -o biblioteka-cli ./cmd/cli
-
-# Usage
-./biblioteka-cli /path/to/book.epub
-./biblioteka-cli /path/to/book.mobi
-./biblioteka-cli /path/to/book.pdf
 ```
 
-**Example output (successful import):**
+> **Note:** The CLI requires a database to be configured via the same environment variables as the server (see [deployment.md](deployment.md)).
+
+### `process-file` — import a single book file
+
+Extracts metadata from one file, stores a book and book_file record in the database, and creates an author record when one is found. Records are written directly to the database rather than going through the background job queue.
+
+```bash
+./biblioteka-cli process-file /path/to/book.epub
+./biblioteka-cli process-file /path/to/book.pdf
+```
+
+**Legacy shorthand** (backwards-compatible): passing a file path directly without a subcommand invokes `process-file`:
+
+```bash
+./biblioteka-cli /path/to/book.epub
+```
+
+**Example output:**
 
 ```
 Successfully processed file: /path/to/book.epub
 ```
 
-**Example output (PDF without ExifTool):**
-
-```
-Successfully processed file: /path/to/book.pdf
-```
-
 > **Note:** When ExifTool is not installed, PDF and MOBI/AZW3 imports still succeed. The book title falls back to the filename (without extension), and no author, ISBN, description, or other metadata is populated. Install ExifTool to enable richer metadata extraction for these formats.
 
-> **Note:** The CLI requires a database to be configured via the same environment variables as the server (see [deployment.md](deployment.md)). It inserts records directly into the database rather than going through the background job queue.
+### `scan-directory` — enqueue a directory for processing
+
+Recursively walks a directory and enqueues a `process:file` background job for every supported file (`.epub`, `.mobi`, `.pdf`, `.azw3`). Jobs are pushed to the Redis queue defined by `REDIS_URL` and processed by a running worker.
+
+```bash
+./biblioteka-cli scan-directory /path/to/library
+./biblioteka-cli scan-directory /path/to/library <library-id>
+```
+
+| Argument | Required | Description |
+|---|---|---|
+| `<directory>` | Yes | Path to the directory to scan (resolved to an absolute path) |
+| `<library-id>` | No | UUID of an existing library record to associate the imported books with |
+
+When `<library-id>` is supplied the directory is also used as the `library_root`, enabling [path-based metadata](background-jobs.md#path-based-metadata) and [file reorganization](background-jobs.md#file-reorganization) in the worker.
+
+**Requirements:** a Redis instance reachable at `REDIS_URL` (default `redis://localhost:6379`) and at least one worker process running to consume the enqueued jobs.
 
 ---
 

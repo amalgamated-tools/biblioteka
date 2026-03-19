@@ -110,8 +110,8 @@ When `library_root` is set in the payload, `internal/pathparser.ParseBookPath` e
 Key rules applied by the parser:
 - **Leading series-position prefix** (`N. `) is stripped from the filename to produce the bare title.
 - **Trailing `(YYYY)`** is detected and removed from the title (e.g. `The Hobbit (1937)` → `The Hobbit`). The year is not stored as `publication_date`.
-- **Trailing ` - Author Name`** in filenames is stripped when the suffix looks like a personal name (two to four capitalised words, no digits). Single-word suffixes are kept to avoid corrupting subtitles.
-- A directory is treated as a **series** only when the filename has a leading series-position prefix **and** the directory name is not effectively the same as the parsed title (to avoid phantom series from Calibre-style `Author/Title/file.ext` layouts).
+- **Trailing ` - Author Name`** in filenames is stripped when the suffix looks like a personal name: two to four words, every word starting with an uppercase letter, no digits, and not beginning with a common English article (`a`, `an`, `the`). This prevents subtitle fragments like `A Novel`, `An Unabridged`, or `The Remake` from being mistakenly removed. Single-word suffixes (e.g. `Unabridged`) are always kept.
+- A directory is treated as a **series** only when the filename has a leading series-position prefix **and** the directory name is not effectively the same as the parsed title (to avoid phantom series from Calibre-style `Author/Title/file.ext` layouts). The comparison is case-insensitive and ignores all non-alphanumeric characters, so `Star Wars: Episode IV` and `Star Wars Episode IV` are considered identical.
 - Paths outside `library_root` fall back to filename-only parsing.
 
 **Metadata precedence** (highest to lowest):
