@@ -885,7 +885,11 @@ When adding a data table component:
 
 ### Accessibility tests
 
-`frontend/src/App.test.ts` contains focused regression tests that verify:
+Accessibility regressions are locked in by dedicated test files. Keep all of these tests green. If you restructure a component, update its test to match.
+
+#### `App.test.ts`
+
+`frontend/src/App.test.ts` verifies the authenticated shell:
 
 - `document.title` is set from `routerStore.pageTitle` on mount (WCAG 2.4.2).
 - The skip link exists and has the label _"Skip to main content"_.
@@ -893,7 +897,16 @@ When adding a data table component:
 - The skip link appears **before** the sidebar in DOM order.
 - Clicking the skip link moves keyboard focus to `<main>`.
 
-Keep this test green. If you restructure `App.svelte`, update the test to match.
+#### `Auth.test.ts`
+
+`frontend/src/components/Auth.test.ts` verifies the ARIA tab widget on the login/signup page (WCAG 4.1.2). It uses `@testing-library/user-event` to simulate real browser interactions and `await tick()` to flush Svelte 5 reactivity before asserting. Three tests are included:
+
+1. **`has a main landmark region`** — asserts the login page exposes a `<main>` landmark (WCAG 1.3.6).
+2. **`renders tab buttons with correct ARIA attributes`** — asserts the `role="tablist"` container is present and that each tab carries the correct `aria-selected` and `aria-controls` attributes on initial render.
+3. **`renders tab panels with correct ARIA attributes`** — asserts both `role="tabpanel"` elements (including the hidden one) carry the correct `aria-labelledby` back-reference.
+4. **`switches ARIA state when the Sign Up tab is clicked`** — simulates a user click on the Sign Up tab and verifies that `aria-selected` values update reactively and the Sign Up panel loses its `hidden` attribute.
+
+> **Testing note:** Each test wraps `render(Auth)` in an `async renderAuth()` helper that calls `await tick()` after mounting. This is necessary because Svelte 5 defers reactive updates; without the tick the DOM may not reflect the initial `$state` values when the first `expect` runs. The `afterEach(cleanup)` guard ensures the JSDOM is cleared between tests to prevent state bleed.
 
 ---
 
