@@ -2,10 +2,14 @@ package jobs
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 )
@@ -471,12 +475,6 @@ func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.
 }
 
 func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
-	// This test verifies that resolveSourcePath properly surfaces DB errors
-	// when looking up the candidate reorganized path, rather than silently
-	// falling through to "continue from reorganized path".
-	//
-	// We verify this indirectly through ProcessBookFile since resolveSourcePath
-	// is unexported. A DB error during candidate lookup should propagate up.
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor()
 	if err != nil {
@@ -494,12 +492,21 @@ func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 	}
 	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
-	// Close the database to force subsequent lookups, including the candidate
-	// reorganized path lookup in resolveSourcePath, to return a non-sql.ErrNoRows
-	// error (e.g., "database is closed"). That error should propagate up.
-	if err := database.Close(); err != nil {
-		t.Fatalf("close database: %v", err)
+	candidateLookupErr := errors.New("candidate lookup failed")
+	originalLookup := lookupBookFileByPath
+	lookupBookFileByPath = func(ctx context.Context, database *db.DB, path string) (*db.BookFile, error) {
+		switch path {
+		case originalPath:
+			return nil, sql.ErrNoRows
+		case reorganizedPath:
+			return nil, candidateLookupErr
+		default:
+			return originalLookup(ctx, database, path)
+		}
 	}
+	t.Cleanup(func() {
+		lookupBookFileByPath = originalLookup
+	})
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:        originalPath,
@@ -510,5 +517,8 @@ func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatalf("expected ProcessBookFile() to return an error when candidate lookup fails due to DB error")
+	}
+	if !strings.Contains(err.Error(), candidateLookupErr.Error()) {
+		t.Fatalf("expected error to include %q, got %v", candidateLookupErr.Error(), err)
 	}
 }

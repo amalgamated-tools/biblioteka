@@ -17,6 +17,10 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/pathparser"
 )
 
+var lookupBookFileByPath = func(ctx context.Context, database *db.DB, path string) (*db.BookFile, error) {
+	return database.GetBookFileByPath(ctx, path)
+}
+
 // ProcessBookFile orchestrates the complete processing of a single book file:
 // validation, deduplication, metadata extraction, file reorganization, and
 // database record creation.
@@ -164,7 +168,7 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 	}
 
 	// File does not exist — check if it was already indexed at the original path.
-	bf, dbErr := database.GetBookFileByPath(ctx, p.Path)
+	bf, dbErr := lookupBookFileByPath(ctx, database, p.Path)
 	if dbErr != nil && !errors.Is(dbErr, sql.ErrNoRows) {
 		wrappedErr := fmt.Errorf("process book file: get book file by path %q: %w", p.Path, dbErr)
 		slog.ErrorContext(ctx, "book processing failed: error looking up book file by path",
@@ -198,7 +202,7 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 			if candidatePath != "" {
 				if _, candidateStatErr := os.Stat(candidatePath); candidateStatErr == nil {
 					// Check if the reorganized path is already indexed.
-					bf, dbErr := database.GetBookFileByPath(ctx, candidatePath)
+					bf, dbErr := lookupBookFileByPath(ctx, database, candidatePath)
 					if dbErr != nil && !errors.Is(dbErr, sql.ErrNoRows) {
 						wrappedErr := fmt.Errorf("process book file: get book file by path %q: %w", candidatePath, dbErr)
 						slog.ErrorContext(ctx, "book processing failed: error looking up reorganized book file by path",
