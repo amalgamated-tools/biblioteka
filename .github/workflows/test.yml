@@ -162,9 +162,17 @@ jobs:
       - run: go version
 
       - name: Download exiftool for tests
+        env:
+          EXIFTOOL_VERSION: "13.25"
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends exiftool
+          sudo apt-get install -y --no-install-recommends libarchive-zip-perl
+          curl -fsSL "https://github.com/exiftool/exiftool/archive/refs/tags/${EXIFTOOL_VERSION}.tar.gz" -o /tmp/exiftool.tar.gz
+          tar -xzf /tmp/exiftool.tar.gz -C /tmp
+          sudo cp -r "/tmp/exiftool-${EXIFTOOL_VERSION}/lib/" /usr/share/perl5/
+          sudo cp "/tmp/exiftool-${EXIFTOOL_VERSION}/exiftool" /usr/local/bin/exiftool
+          sudo chmod +x /usr/local/bin/exiftool
+          exiftool -ver
 
       - name: Run Go tests
         run: go test -v ./...
