@@ -232,7 +232,7 @@
       <nav
         class="flex sm:flex-col gap-2 sm:gap-1 overflow-x-auto sm:overflow-x-visible"
       >
-        {#each userTabs as tab}
+        {#each userTabs as tab (tab.key)}
           {@const isActive = activeTab === tab.key}
           <a
             href="#settings/{tab.key}"
