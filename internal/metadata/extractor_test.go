@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,6 +17,19 @@ func (e *Extractor) exiftool() *exiftool.Exiftool {
 	return e.et
 }
 
+// requireExifTool creates an Extractor and skips the test if ExifTool is not installed.
+func requireExifTool(t *testing.T) *Extractor {
+	t.Helper()
+	ext, err := NewExtractor()
+	if err != nil {
+		t.Fatalf("new extractor: %v", err)
+	}
+	if ext.exiftool() == nil {
+		t.Skip("exiftool not available, skipping")
+	}
+	return ext
+}
+
 func TestExtractMetadata_EPUB(t *testing.T) {
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "test.epub")
@@ -26,10 +40,7 @@ func TestExtractMetadata_EPUB(t *testing.T) {
 		Language:        "en",
 	})
 
-	ext, err := NewExtractor()
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	ext := requireExifTool(t)
 	defer ext.Close()
 
 	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
@@ -68,10 +79,7 @@ func TestExtractMetadata_EPUBWithISBN10(t *testing.T) {
 	epubPath := filepath.Join(dir, "test.epub")
 	testutils.MakeTestEPUB(t, epubPath, "Short Book", "Jane Doe", "isbn:0743273567")
 
-	ext, err := NewExtractor()
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	ext := requireExifTool(t)
 	defer ext.Close()
 
 	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
@@ -89,10 +97,7 @@ func TestExtractMetadata_EPUBWithNoISBN(t *testing.T) {
 	epubPath := filepath.Join(dir, "test.epub")
 	testutils.MakeTestEPUB(t, epubPath, "No ISBN Book", "Author", "some-random-uuid-1234")
 
-	ext, err := NewExtractor()
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	ext := requireExifTool(t)
 	defer ext.Close()
 
 	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
@@ -110,10 +115,7 @@ func TestExtractMetadata_EPUBCaseInsensitive(t *testing.T) {
 	epubPath := filepath.Join(dir, "test.EPUB")
 	testutils.MakeTestEPUB(t, epubPath, "Upper Case", "Author", "urn:isbn:9780743273565")
 
-	ext, err := NewExtractor()
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	ext := requireExifTool(t)
 	defer ext.Close()
 
 	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
@@ -130,10 +132,7 @@ func TestExtractMetadata_PDF(t *testing.T) {
 	dir := t.TempDir()
 	pdfPath := filepath.Join(dir, "test.pdf")
 
-	ext, err := NewExtractor()
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	ext := requireExifTool(t)
 	defer ext.Close()
 
 	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author", ext.exiftool())
@@ -157,12 +156,11 @@ func TestExtractMetadata_PDF(t *testing.T) {
 func TestExtractMetadata_InvalidFile(t *testing.T) {
 	dir := t.TempDir()
 	badPath := filepath.Join(dir, "bad.epub")
-	os.WriteFile(badPath, []byte("not a real epub"), 0o644)
-
-	ext, err := NewExtractor()
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
+	if err := os.WriteFile(badPath, []byte("not a real epub"), 0o644); err != nil {
+		t.Fatalf("write test file: %v", err)
 	}
+
+	ext := requireExifTool(t)
 	defer ext.Close()
 
 	// ExifTool processes the file without error — it just won't find book metadata.
@@ -177,14 +175,40 @@ func TestExtractMetadata_InvalidFile(t *testing.T) {
 }
 
 func TestExtractMetadata_NonexistentFile(t *testing.T) {
-	ext, err := NewExtractor()
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	ext := requireExifTool(t)
 	defer ext.Close()
 
-	_, err = ext.ExtractMetadata(context.Background(), "/nonexistent/file.pdf")
+	_, err := ext.ExtractMetadata(context.Background(), "/nonexistent/file.pdf")
 	if err == nil {
 		t.Fatal("expected error for nonexistent file")
+	}
+}
+
+func TestExtractMetadata_Unavailable(t *testing.T) {
+	// An extractor with nil et should return ErrExifToolUnavailable.
+	ext := &Extractor{}
+	_, err := ext.ExtractMetadata(context.Background(), "/any/file.epub")
+	if !errors.Is(err, ErrExifToolUnavailable) {
+		t.Fatalf("expected ErrExifToolUnavailable, got %v", err)
+	}
+}
+
+func TestNormalizeExifDate(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"1925:04:10", "1925-04-10"},
+		{"1925:04:10 00:00:00", "1925-04-10"},
+		{"2021:01:15 10:20:30+05:00", "2021-01-15"},
+		{"1925-04-10", "1925-04-10"}, // already normalized (no colons at 4,7)
+		{"short", "short"},           // too short
+		{"", ""},                     // empty
+	}
+	for _, tt := range tests {
+		got := normalizeExifDate(tt.input)
+		if got != tt.want {
+			t.Errorf("normalizeExifDate(%q) = %q, want %q", tt.input, got, tt.want)
+		}
 	}
 }
