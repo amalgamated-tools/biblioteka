@@ -150,8 +150,8 @@
       <code class="px-1 py-0.5 bg-ink-100 dark:bg-ink-800 rounded text-xs"
         >Kobo eReader.conf</code
       >
-      to the sync URL shown when the token is created. Token values are only
-      shown once.
+      to the sync URL shown when the token is created. Token values are only shown
+      once.
     </p>
 
     <form onsubmit={handleCreateToken} class="flex gap-3 mb-6">
@@ -202,7 +202,9 @@
               >
               <div class="flex items-center gap-2 flex-shrink-0">
                 <span class="text-xs text-ink-400 dark:text-ink-500"
-                  >Created {new Date(token.created_at).toLocaleDateString()}</span
+                  >Created {new Date(
+                    token.created_at,
+                  ).toLocaleDateString()}</span
                 >
                 <button
                   onclick={() => handleDeleteToken(token.id, token.name)}
