@@ -314,19 +314,17 @@ func extractBookMetadata(ctx context.Context, extractor *metadata.Extractor, pat
 		return nil
 	}
 
-	slog.DebugContext(ctx, "metadata extracted successfully",
-		slog.String(otelkeys.Path, path),
-		slog.String(otelkeys.Title, initialTitle),
-	)
-
 	// Normalize ISBN in-place for downstream consumers.
 	if meta.ISBN != "" {
 		if normalized := metadata.NormalizeISBN(meta.ISBN); normalized != "" {
 			meta.ISBN = normalized
+		} else {
+			meta.ISBN = ""
 		}
 	}
 
-	slog.DebugContext(ctx, "metadata extracted",
+	slog.DebugContext(ctx, "metadata extracted successfully",
+		slog.String(otelkeys.Path, path),
 		slog.String(otelkeys.Title, meta.Title),
 		slog.String(otelkeys.Format, meta.Format),
 		slog.Any(otelkeys.BookMetadata, meta),
@@ -457,13 +455,7 @@ func createBookRecord(ctx context.Context, database *db.DB, title string, meta *
 			description = &meta.Description
 		}
 		if meta.ISBN != "" {
-			normalizedISBN, err := metadata.NormalizeISBN(meta.ISBN)
-			if err != nil {
-				slog.DebugContext(ctx, "skipping invalid ISBN in metadata",
-					slog.String(otelkeys.Path, filePath),
-					slog.Any(otelkeys.Error, err),
-				)
-			} else {
+			if normalizedISBN := metadata.NormalizeISBN(meta.ISBN); normalizedISBN != "" {
 				switch len(normalizedISBN) {
 				case 10:
 					v := normalizedISBN
