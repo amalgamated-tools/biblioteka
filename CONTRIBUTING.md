@@ -17,7 +17,7 @@ Your signature is recorded once and applies to all future contributions.
 - Go 1.26+
 - Node.js 22+ with [pnpm](https://pnpm.io/)
 - Redis (for background jobs)
-- [ExifTool](https://exiftool.org/) (optional; only needed for PDF and MOBI/AZW3 metadata extraction)
+- [ExifTool](https://exiftool.org/) (optional; used for metadata extraction across all supported formats — EPUB, MOBI, AZW3, PDF; imports succeed without it but metadata is derived from filename/path-derived metadata only)
 - Docker (optional, for running the full stack locally)
 
 ### Installing Tools with mise
@@ -58,7 +58,7 @@ internal/
   db/                # Database abstraction (SQLite/Postgres), CRUD operations
   handlers/          # HTTP request handlers
   jobs/              # Background job definitions
-  metadata/          # EPUB/MOBI/PDF metadata extraction
+  metadata/          # EPUB/MOBI/AZW3/PDF metadata extraction via ExifTool
   server/            # HTTP server setup, routing, embedded frontend
   worker/            # asynq-based background job processing
   otel/              # Logging and tracing setup
