@@ -137,6 +137,7 @@
           onclick={() => handleSidebarNavigate("libraries/new")}
           class="text-ink-500 hover:text-accent-400 transition-colors"
           title="Create library"
+          aria-label="Create library"
         >
           <Plus class="w-4 h-4" />
         </button>
