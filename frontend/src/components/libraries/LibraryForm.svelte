@@ -126,7 +126,7 @@
       routerStore.navigate("libraries");
     } catch (e) {
       formError = e instanceof Error ? e.message : "Failed to delete library";
-      showDeleteConfirm = false;
+      await closeDeleteConfirm();
     } finally {
       saving = false;
     }
@@ -138,8 +138,9 @@
     confirmDeleteButton?.focus();
   }
 
-  function closeDeleteConfirm() {
+  async function closeDeleteConfirm() {
     showDeleteConfirm = false;
+    await tick();
     deleteTriggerButton?.focus();
   }
 
@@ -155,7 +156,7 @@
     }
 
     const focusableButtons = [confirmDeleteButton, cancelDeleteButton].filter(
-      (button): button is HTMLButtonElement => button !== null,
+      (button): button is HTMLButtonElement => button !== null && !button.disabled,
     );
     if (focusableButtons.length === 0) {
       return;

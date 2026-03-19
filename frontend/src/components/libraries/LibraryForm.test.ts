@@ -222,4 +222,71 @@ describe("LibraryForm accessibility", () => {
     await fireEvent.keyDown(deleteConfirm, { key: "Tab", shiftKey: true });
     expect(confirmButton).toHaveFocus();
   });
+
+  it("returns focus to delete trigger when canceling the confirmation", async () => {
+    libraryStore.libraries = [
+      {
+        id: "lib-1",
+        name: "Library",
+        paths: ["/books"],
+        organization_type: "book_per_folder",
+        monitored: false,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+
+    render(LibraryForm, {
+      props: { mode: "edit", editId: "lib-1" },
+    });
+    await tick();
+
+    const deleteTrigger = screen.getByRole("button", { name: "Delete Library" });
+    await fireEvent.click(deleteTrigger);
+    await tick();
+
+    const deleteConfirm = screen.getByRole("alertdialog", {
+      name: "Confirm library deletion",
+    });
+    const cancelButton = within(deleteConfirm).getByRole("button", {
+      name: "Cancel",
+    });
+
+    await fireEvent.click(cancelButton);
+    await tick();
+
+    expect(screen.getByRole("button", { name: "Delete Library" })).toHaveFocus();
+  });
+
+  it("returns focus to delete trigger when dismissing with Escape", async () => {
+    libraryStore.libraries = [
+      {
+        id: "lib-1",
+        name: "Library",
+        paths: ["/books"],
+        organization_type: "book_per_folder",
+        monitored: false,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+
+    render(LibraryForm, {
+      props: { mode: "edit", editId: "lib-1" },
+    });
+    await tick();
+
+    const deleteTrigger = screen.getByRole("button", { name: "Delete Library" });
+    await fireEvent.click(deleteTrigger);
+    await tick();
+
+    const deleteConfirm = screen.getByRole("alertdialog", {
+      name: "Confirm library deletion",
+    });
+
+    await fireEvent.keyDown(deleteConfirm, { key: "Escape" });
+    await tick();
+
+    expect(screen.getByRole("button", { name: "Delete Library" })).toHaveFocus();
+  });
 });
