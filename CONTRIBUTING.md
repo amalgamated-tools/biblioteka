@@ -215,7 +215,6 @@ The repository also includes a `.vscode/settings.json` with workspace-wide edito
 
 This means that when you save a `.go` file, VS Code will automatically format it and run a fast lint pass. Run `make lint` (or `golangci-lint run ./...`) for the complete linter output before opening a pull request.
 
-
 ### Frontend (from `frontend/`)
 
 ```bash
