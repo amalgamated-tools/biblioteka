@@ -88,7 +88,7 @@ Supported MIME types:
 
 When a book has a cover image set, each acquisition feed entry includes a `rel="http://opds-spec.org/image"` link pointing to the cover URL. OPDS clients that support cover art (such as KOReader, Moon+ Reader, and PocketBook) will fetch and display the cover while browsing the catalog.
 
-The `Content-Type` of the cover link is inferred from the image URL's file extension:
+The `Content-Type` of the cover link is inferred from the image URL's file extension. Biblioteka inspects the trailing portion of the URL, so the URL must literally end with the extension (for example, `https://example.com/covers/1234.png` or `https://example.com/covers/1234.png?size=200` where the path still ends in `.png`). If the extension is unknown, missing, or cannot be cleanly parsed (for example, because query parameters or fragments are included in what looks like the extension), the type falls back to `image/jpeg`.
 
 | Extension | MIME type |
 |-----------|-----------|
@@ -97,7 +97,7 @@ The `Content-Type` of the cover link is inferred from the image URL's file exten
 | `.avif` | `image/avif` |
 | `.gif` | `image/gif` |
 | `.svg` | `image/svg+xml` |
-| other (including `.jpg` / `.jpeg`) | `image/jpeg` |
+| other (including `.jpg` / `.jpeg`, unknown/missing extensions, or URLs where the extension is obscured by query strings/fragments) | `image/jpeg` |
 
 Entries for books without a cover image omit the image link entirely.
 
