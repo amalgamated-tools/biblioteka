@@ -2,6 +2,10 @@
 on:
   pull_request:
     types: [opened, synchronize]
+  pull_request_review_comment:
+    types: [created, edited]
+  issue_comment:
+    types: [created, edited]
 permissions:
       contents: read
       issues: read
