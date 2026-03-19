@@ -139,7 +139,7 @@
           title="Create library"
           aria-label="Create library"
         >
-          <Plus class="w-4 h-4" />
+          <Plus class="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
       <div class="space-y-0.5">
