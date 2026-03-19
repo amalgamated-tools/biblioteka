@@ -71,6 +71,7 @@ jobs:
         with:
           name: biblioteka-binary
           path: biblioteka
+          retention-days: 7
 
   e2e:
     needs: build
