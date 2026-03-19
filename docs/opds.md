@@ -206,7 +206,7 @@ Authentication errors also include a `WWW-Authenticate: Basic realm="Biblioteka 
 
 ## Code architecture (for contributors)
 
-The OPDS handler is implemented across four focused files under `internal/handlers/`:
+OPDS-related code is split across five files under `internal/handlers/`:
 
 | File | Responsibility |
 |------|---------------|
@@ -214,5 +214,8 @@ The OPDS handler is implemented across four focused files under `internal/handle
 | `opds_feeds.go` | One function per feed endpoint: `rootFeed`, `allBooks`, `recentBooks`, `authorsFeed`, `authorBooks`, `seriesFeed`, `seriesBooks`, `searchResults` |
 | `opds_helpers.go` | Low-level helpers: XML serialisation (`writeOPDSFeed`, `writeOPDSError`), URL utilities (`opdsBaseURL`, `parsePage`), pagination link generation (`paginationLinks`), and MIME detection (`coverMIMEType`, `fileTypeMIME`) |
 | `opds_types.go` | XML struct definitions (`opdsFeed`, `opdsEntry`, `opdsLink`, …), namespace constants, and link-relation constants (`relSelf`, `relAcquisition`, …) |
+| `opds_credentials.go` | `OPDSCredentialHandler` struct and `HandleOPDSCredentials` dispatcher (GET / PUT / DELETE) for the JSON REST API at `/api/opds/credentials`; handles bcrypt hashing and username-uniqueness enforcement |
 
 `HandleOPDS` performs path-based dispatch using `strings.TrimPrefix` / `strings.HasPrefix`; there is no router framework. Feed functions each call `writeOPDSFeed` or `writeOPDSError` as their final step, which handles XML serialisation and response headers.
+
+> **Note:** `opds_credentials.go` serves a separate handler struct (`OPDSCredentialHandler`) registered under the JSON API (`/api/opds/…`), while the four feed files (`opds.go`, `opds_feeds.go`, `opds_helpers.go`, `opds_types.go`) together form the OPDS feed server (`OPDSHandler`) registered under `/opds`.
