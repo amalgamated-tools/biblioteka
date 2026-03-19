@@ -59,7 +59,7 @@ func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*BookMeta
 	return e.extractExif(ctx, path)
 }
 
-func (e *Extractor) extractExif(_ context.Context, path string) (*BookMetadata, error) {
+func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -68,6 +68,10 @@ func (e *Extractor) extractExif(_ context.Context, path string) (*BookMetadata, 
 		return nil, fmt.Errorf("no metadata found for %s", path)
 	}
 	if results[0].Err != nil {
+		slog.WarnContext(ctx, "exiftool extraction error",
+			slog.String(otelkeys.Path, path),
+			slog.Any(otelkeys.Error, results[0].Err),
+		)
 		return nil, fmt.Errorf("failed to extract metadata for %s: %w", path, results[0].Err)
 	}
 	book := results[0]
@@ -116,7 +120,7 @@ func getStringOr(fm *exiftool.FileMetadata, tag string, fallback string) string 
 // normalizeExifDate converts ExifTool's "YYYY:MM:DD" date format to "YYYY-MM-DD".
 func normalizeExifDate(s string) string {
 	if len(s) >= 10 && s[4] == ':' && s[7] == ':' {
-		return s[:4] + "-" + s[5:7] + "-" + s[8:]
+		return s[:4] + "-" + s[5:7] + "-" + s[8:10]
 	}
 	return s
 }
