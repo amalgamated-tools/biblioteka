@@ -133,7 +133,7 @@ Directory names are sanitized (path separators, control characters, and leading 
 **Failure handling:**
 - If reorganization fails for most reasons (e.g. permissions, cross-device copy errors), the handler logs a warning, cleans up any partial copy created at the destination, and continues processing the file at its original path.
 - If the source file disappears *during* reorganization (i.e. `os.IsNotExist` is returned by the move/copy step), the job returns an error so that asynq can retry it rather than committing a `book_files` row pointing at a non-existent path.
-- If the source file is missing when the job starts, the handler first checks whether the original path is already indexed in the database. If it is, the job skips without error (and, if a `library_id` is present, attempts to link the book to that library). If the original path is not in the database, the handler then tries to locate the file at its expected reorganized path (`<library_root>/<Author>/<Title>/<filename>`). If found there and already indexed, the job skips without error. If found there but not yet indexed, the handler resumes processing from that new location. If the file cannot be found at either location, the job logs a warning and returns without error.
+- If the source file is missing when the job starts, the handler first checks whether the original path is already indexed in the database. If it is, the job skips without error (and, if a `library_id` is present, attempts to link the book to that library). If the original path is not in the database, the handler then tries to locate the file at its expected reorganized path (`<library_root>/<Author>/<Title>/<filename>`). If found there and already indexed, the job skips without error. If found there but not yet indexed, the handler resumes processing from that new location. If the file cannot be found at either location, the job logs a warning and returns without error. A database error (other than "not found") at any of these lookup steps is propagated as a hard error so that asynq retries the job rather than silently dropping it.
 - After a successful move, the handler checks whether the new path is already indexed before creating new database records, preventing duplicates from concurrent workers.
 
 See [Administration — File organization](administration.md#file-organization) for how to enable this feature.
@@ -220,8 +220,8 @@ internal/
     scan_path.go               # scan:path handler (NewScanPathHandler → ScanDirectory)
     scan_libraries.go          # scan:libraries handler (scans all monitored libraries)
     scan_library.go            # scan:library handler (scans a single library)
-    process_file.go            # process:file handler
-    process_book_file.go       # ProcessBookFile: metadata extraction, path parsing, organization logic
+    process_file.go            # process:file handler — deserializes payload, delegates to ProcessBookFile
+    process_book_file.go       # ProcessBookFile public entry point + private helpers: validatePayload, resolveSourcePath, checkDuplicate, deriveTitle, extractBookMetadata, resolveAuthorAndTitle, maybeReorganizeFile, createBookRecord, linkBookAssociations
   organize/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
   pathparser/
