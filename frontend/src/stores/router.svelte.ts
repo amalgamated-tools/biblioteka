@@ -16,7 +16,8 @@ export type SettingsSubPath =
   | "oidc"
   | "smtp"
   | "users"
-  | "api-keys";
+  | "api-keys"
+  | "kobo";
 
 const APP_TITLE_SUFFIX = " – biblioteka";
 
@@ -35,6 +36,7 @@ const settingsSubTitles: Record<SettingsSubPath, string> = {
   smtp: `Email Settings${APP_TITLE_SUFFIX}`,
   users: `User Management${APP_TITLE_SUFFIX}`,
   "api-keys": `API Keys${APP_TITLE_SUFFIX}`,
+  kobo: `Kobo Sync${APP_TITLE_SUFFIX}`,
 };
 
 class RouterStore {
