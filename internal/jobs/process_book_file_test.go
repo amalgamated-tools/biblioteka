@@ -493,30 +493,26 @@ func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
 	candidateLookupErr := errors.New("candidate lookup failed")
-	originalLookup := lookupBookFileByPath
-	lookupBookFileByPath = func(ctx context.Context, database *db.DB, path string) (*db.BookFile, error) {
+	lookup := func(ctx context.Context, database *db.DB, path string) (*db.BookFile, error) {
 		switch path {
 		case originalPath:
 			return nil, sql.ErrNoRows
 		case reorganizedPath:
 			return nil, candidateLookupErr
 		default:
-			return originalLookup(ctx, database, path)
+			return database.GetBookFileByPath(ctx, path)
 		}
 	}
-	t.Cleanup(func() {
-		lookupBookFileByPath = originalLookup
-	})
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = processBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:        originalPath,
 		FileName:    filepath.Base(originalPath),
 		FileType:    "epub",
 		FileSize:    1024,
 		LibraryRoot: root,
-	})
+	}, lookup)
 	if err == nil {
-		t.Fatalf("expected ProcessBookFile() to return an error when candidate lookup fails due to DB error")
+		t.Fatalf("expected processBookFile() to return an error when candidate lookup fails due to DB error")
 	}
 	if !strings.Contains(err.Error(), candidateLookupErr.Error()) {
 		t.Fatalf("expected error to include %q, got %v", candidateLookupErr.Error(), err)

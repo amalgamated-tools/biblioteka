@@ -17,7 +17,11 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/pathparser"
 )
 
-var lookupBookFileByPath = func(ctx context.Context, database *db.DB, path string) (*db.BookFile, error) {
+// bookFileLookupFunc looks up a book file record by its path.
+type bookFileLookupFunc func(ctx context.Context, database *db.DB, path string) (*db.BookFile, error)
+
+// defaultBookFileLookup is the production implementation that queries the database.
+func defaultBookFileLookup(ctx context.Context, database *db.DB, path string) (*db.BookFile, error) {
 	return database.GetBookFileByPath(ctx, path)
 }
 
@@ -25,6 +29,10 @@ var lookupBookFileByPath = func(ctx context.Context, database *db.DB, path strin
 // validation, deduplication, metadata extraction, file reorganization, and
 // database record creation.
 func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, p ProcessFilePayload) error {
+	return processBookFile(ctx, database, extractor, p, defaultBookFileLookup)
+}
+
+func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, p ProcessFilePayload, lookup bookFileLookupFunc) error {
 	if database == nil {
 		err := fmt.Errorf("process book file: database is nil")
 		slog.ErrorContext(ctx, "book processing failed: database is nil",
@@ -45,7 +53,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		return err
 	}
 
-	resolvedPath, skip, err := resolveSourcePath(ctx, database, p)
+	resolvedPath, skip, err := resolveSourcePath(ctx, database, p, lookup)
 	if err != nil {
 		return err
 	}
@@ -54,7 +62,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	}
 	p.Path = resolvedPath
 
-	alreadyIndexed, err := checkDuplicate(ctx, database, p.Path, p.LibraryID)
+	alreadyIndexed, err := checkDuplicate(ctx, database, p.Path, p.LibraryID, lookup)
 	if err != nil {
 		return err
 	}
@@ -79,7 +87,7 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	authorName, title := resolveAuthorAndTitle(meta, pathInfo, title)
 
-	filePath, skip, err := maybeReorganizeFile(ctx, database, p.Path, p.LibraryRoot, authorName, title, p.LibraryID)
+	filePath, skip, err := maybeReorganizeFile(ctx, database, p.Path, p.LibraryRoot, authorName, title, p.LibraryID, lookup)
 	if err != nil {
 		return err
 	}
@@ -153,7 +161,7 @@ func validatePayload(ctx context.Context, p ProcessFilePayload) error {
 // to recover from a prior processing attempt that moved the file but failed to
 // commit DB records. Returns the resolved path, whether processing should be
 // skipped, and any hard error.
-func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayload) (string, bool, error) {
+func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayload, lookup bookFileLookupFunc) (string, bool, error) {
 	_, statErr := os.Stat(p.Path)
 	if statErr == nil {
 		return p.Path, false, nil
@@ -168,7 +176,7 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 	}
 
 	// File does not exist — check if it was already indexed at the original path.
-	bf, dbErr := lookupBookFileByPath(ctx, database, p.Path)
+	bf, dbErr := lookup(ctx, database, p.Path)
 	if dbErr != nil && !errors.Is(dbErr, sql.ErrNoRows) {
 		wrappedErr := fmt.Errorf("process book file: get book file by path %q: %w", p.Path, dbErr)
 		slog.ErrorContext(ctx, "book processing failed: error looking up book file by path",
@@ -202,7 +210,7 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 			if candidatePath != "" {
 				if _, candidateStatErr := os.Stat(candidatePath); candidateStatErr == nil {
 					// Check if the reorganized path is already indexed.
-					bf, dbErr := lookupBookFileByPath(ctx, database, candidatePath)
+					bf, dbErr := lookup(ctx, database, candidatePath)
 					if dbErr != nil && !errors.Is(dbErr, sql.ErrNoRows) {
 						wrappedErr := fmt.Errorf("process book file: get book file by path %q: %w", candidatePath, dbErr)
 						slog.ErrorContext(ctx, "book processing failed: error looking up reorganized book file by path",
@@ -246,8 +254,8 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 
 // checkDuplicate returns true if the file at the given path is already indexed.
 // When already indexed, it best-effort links the existing book to libraryID.
-func checkDuplicate(ctx context.Context, database *db.DB, path, libraryID string) (bool, error) {
-	bookFile, err := database.GetBookFileByPath(ctx, path)
+func checkDuplicate(ctx context.Context, database *db.DB, path, libraryID string, lookup bookFileLookupFunc) (bool, error) {
+	bookFile, err := lookup(ctx, database, path)
 	if err == nil {
 		slog.InfoContext(ctx, "file already indexed, skipping full processing",
 			slog.String(otelkeys.Path, path),
@@ -368,7 +376,7 @@ func resolveAuthorAndTitle(meta *metadata.BookMetadata, pathInfo pathparser.Path
 // maybeReorganizeFile moves the file into an Author/Title/ directory structure
 // when the organize_files setting is enabled. Returns the final file path,
 // whether processing should be skipped, and any hard error.
-func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, libraryRoot, author, title, libraryID string) (string, bool, error) {
+func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, libraryRoot, author, title, libraryID string, lookup bookFileLookupFunc) (string, bool, error) {
 	if libraryRoot == "" || author == "" || title == "" {
 		return filePath, false, nil
 	}
@@ -391,28 +399,45 @@ func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, library
 
 	newPath, reorgErr := organize.ReorganizeFile(filePath, libraryRoot, author, title)
 	if reorgErr != nil {
-		slog.WarnContext(ctx, "failed to reorganize file, using original path",
+		slog.WarnContext(ctx, "reorganize file encountered an error",
 			slog.String(otelkeys.Path, filePath),
 			slog.Any(otelkeys.Error, reorgErr),
 		)
-		// If the source file disappeared between the initial stat and
-		// this reorganization attempt, abort processing so we do not
-		// create a book_files row pointing at a non-existent path.
+
 		if os.IsNotExist(reorgErr) {
-			return "", false, fmt.Errorf("source file missing during reorganize: %w", reorgErr)
-		}
-		// If the error came from a failed Remove after a successful copy,
-		// an orphaned copy may exist at newPath. Remove it so the next
-		// scan does not index it as a separate book.
-		if newPath != "" && newPath != filePath {
-			if rmErr := os.Remove(newPath); rmErr != nil && !os.IsNotExist(rmErr) {
-				slog.WarnContext(ctx, "could not remove orphaned copy after reorganize failure",
-					slog.String(otelkeys.Path, newPath),
-					slog.Any(otelkeys.Error, rmErr),
-				)
+			// If ReorganizeFile returned a newPath and it exists on disk,
+			// the copy succeeded but the cleanup remove of the original
+			// failed with a not-exist error. Continue from newPath.
+			if newPath != "" && newPath != filePath {
+				if _, statErr := os.Stat(newPath); statErr == nil {
+					slog.InfoContext(ctx, "reorganize partially succeeded, continuing from new path",
+						slog.String(otelkeys.From, filePath),
+						slog.String(otelkeys.To, newPath),
+						slog.Any(otelkeys.Error, reorgErr),
+					)
+					// Fall through to the success path below.
+					reorgErr = nil
+				}
+			}
+			// Source file truly disappeared and no successful copy exists.
+			if reorgErr != nil {
+				return "", false, fmt.Errorf("source file missing during reorganize: %w", reorgErr)
 			}
 		}
-		return filePath, false, nil
+
+		// For non-not-exist errors, clean up any orphaned copy and
+		// fall back to the original path.
+		if reorgErr != nil {
+			if newPath != "" && newPath != filePath {
+				if rmErr := os.Remove(newPath); rmErr != nil && !os.IsNotExist(rmErr) {
+					slog.WarnContext(ctx, "could not remove orphaned copy after reorganize failure",
+						slog.String(otelkeys.Path, newPath),
+						slog.Any(otelkeys.Error, rmErr),
+					)
+				}
+			}
+			return filePath, false, nil
+		}
 	}
 
 	if newPath != filePath {
@@ -423,7 +448,7 @@ func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, library
 
 		// Re-check for duplicates at the new path — another worker may
 		// have already indexed the reorganized location.
-		if existingBF, err := database.GetBookFileByPath(ctx, newPath); err == nil {
+		if existingBF, err := lookup(ctx, database, newPath); err == nil {
 			slog.InfoContext(ctx, "reorganized path already indexed, skipping",
 				slog.String(otelkeys.Path, newPath),
 			)
