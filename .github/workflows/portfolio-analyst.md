@@ -23,7 +23,11 @@ steps:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     run: |
       mkdir -p /tmp/portfolio-logs
-      ./gh-aw logs --start-date -30d -c 5000 -o /tmp/portfolio-logs --json > /tmp/portfolio-logs/summary.json
+      # Install gh-aw extension if not already available
+      if ! gh extension list 2>/dev/null | grep -q "github/gh-aw"; then
+        gh extension install github/gh-aw
+      fi
+      gh aw logs --start-date -30d -c 5000 -o /tmp/portfolio-logs --json > /tmp/portfolio-logs/summary.json
 safe-outputs:
   create-discussion:
     title-prefix: "[portfolio] "

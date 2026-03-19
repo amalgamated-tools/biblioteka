@@ -2,10 +2,14 @@ package jobs
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 )
@@ -419,5 +423,98 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	}
 	if files[0].FilePath != expectedPath {
 		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
+	}
+}
+
+func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor()
+	if err != nil {
+		t.Fatalf("new extractor: %v", err)
+	}
+	defer ext.Close()
+
+	root := t.TempDir()
+	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
+	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
+
+	if err := os.MkdirAll(filepath.Dir(reorganizedPath), 0o755); err != nil {
+		t.Fatalf("mkdir reorganized dir: %v", err)
+	}
+	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+
+	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+		Path:        originalPath,
+		FileName:    filepath.Base(originalPath),
+		FileType:    "epub",
+		FileSize:    1024,
+		LibraryRoot: root,
+	})
+	if err != nil {
+		t.Fatalf("ProcessBookFile() error: %v", err)
+	}
+
+	books, err := database.ListBooks(context.Background())
+	if err != nil {
+		t.Fatalf("list books: %v", err)
+	}
+	if len(books) != 1 {
+		t.Fatalf("expected 1 book, got %d", len(books))
+	}
+
+	files, err := database.ListBookFiles(context.Background(), books[0].ID)
+	if err != nil {
+		t.Fatalf("list book files: %v", err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("expected 1 file, got %d", len(files))
+	}
+	if files[0].FilePath != reorganizedPath {
+		t.Errorf("expected file path %q, got %q", reorganizedPath, files[0].FilePath)
+	}
+}
+
+func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor()
+	if err != nil {
+		t.Fatalf("new extractor: %v", err)
+	}
+	defer ext.Close()
+
+	root := t.TempDir()
+	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
+	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
+
+	// Create the file at the reorganized location only (source is "missing").
+	if err := os.MkdirAll(filepath.Dir(reorganizedPath), 0o755); err != nil {
+		t.Fatalf("mkdir reorganized dir: %v", err)
+	}
+	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+
+	candidateLookupErr := errors.New("candidate lookup failed")
+	lookup := func(ctx context.Context, database *db.DB, path string) (*db.BookFile, error) {
+		switch path {
+		case originalPath:
+			return nil, sql.ErrNoRows
+		case reorganizedPath:
+			return nil, candidateLookupErr
+		default:
+			return database.GetBookFileByPath(ctx, path)
+		}
+	}
+
+	err = processBookFile(context.Background(), database, ext, ProcessFilePayload{
+		Path:        originalPath,
+		FileName:    filepath.Base(originalPath),
+		FileType:    "epub",
+		FileSize:    1024,
+		LibraryRoot: root,
+	}, lookup)
+	if err == nil {
+		t.Fatalf("expected processBookFile() to return an error when candidate lookup fails due to DB error")
+	}
+	if !strings.Contains(err.Error(), candidateLookupErr.Error()) {
+		t.Fatalf("expected error to include %q, got %v", candidateLookupErr.Error(), err)
 	}
 }
