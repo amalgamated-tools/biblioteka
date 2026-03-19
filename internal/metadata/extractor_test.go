@@ -15,6 +15,7 @@ import (
 func (e *Extractor) exiftool() *exiftool.Exiftool {
 	return e.et
 }
+
 func TestExtractMetadata_NativeEPUB(t *testing.T) {
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "test.epub")
