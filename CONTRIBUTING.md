@@ -297,24 +297,28 @@ The test workflow (`.github/workflows/test.yml`) runs on pushes and pull request
 
 ### Job structure
 
-The workflow runs four jobs. `frontend-build` and `frontend-checks` start in parallel at the beginning of every run:
+The workflow runs six jobs. All four leaf jobs start in parallel at the beginning of every run:
 
 ```
-frontend-build ──┬──► go-tests
-                 │
-frontend-checks ─┤
-                 │
+frontend-build ──┐
                  └──► frontend-all (gate)
+frontend-checks ─┘
+
+go-lint ──┐
+          └──► go-all (gate)
+go-test ──┘
 ```
 
 | Job | Depends on | What it does |
 |---|---|---|
-| `frontend-build` | — | Installs pnpm deps (cached), runs `pnpm run build`, uploads the `dist` artifact |
-| `frontend-checks` | — | Installs pnpm deps (cached), runs TypeScript check, Prettier format check, and frontend unit tests |
-| `go-tests` | `frontend-build` | Downloads `dist`, runs golangci-lint, `go test -v ./...`, and Go format check |
+| `frontend-build` | — | Installs pnpm deps (cached), runs `pnpm run build` |
+| `frontend-checks` | — | Installs pnpm deps (cached), runs TypeScript check (`pnpm run check`), Prettier format check, ESLint (`pnpm run lint`), and frontend unit tests |
 | `frontend-all` | `frontend-build` + `frontend-checks` | Gate job — fails the run if either frontend job failed |
+| `go-lint` | — | Runs golangci-lint and Go format check (`gofmt`) |
+| `go-test` | — | Installs `exiftool`, runs `go test -v ./...` |
+| `go-all` | `go-lint` + `go-test` | Gate job — fails the run if either Go job failed |
 
-Because `frontend-checks` and `go-tests` run in parallel, total CI time is roughly `max(frontend-checks, go-tests)` rather than their sum.
+All six jobs run fully in parallel (the two gate jobs wait for their pair). Total CI time is roughly `max(frontend-build, frontend-checks, go-lint, go-test)`.
 
 Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: 'pnpm'`, keyed on `frontend/pnpm-lock.yaml`) to avoid re-downloading the dependency tree on every run.
 

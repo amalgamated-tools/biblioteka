@@ -168,19 +168,29 @@
         aria-describedby={nameError ? "lib-name-error" : undefined}
       />
       {#if nameError}
-        <p id="lib-name-error" role="alert" class="text-sm text-danger-600 dark:text-red-400 mt-1">{nameError}</p>
+        <p
+          id="lib-name-error"
+          role="alert"
+          class="text-sm text-danger-600 dark:text-red-400 mt-1"
+        >
+          {nameError}
+        </p>
       {/if}
     </div>
 
     <fieldset class="border-none p-0 m-0">
       <legend
         class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-1.5"
-        >Folders <span class="text-danger-600" aria-hidden="true">*</span></legend
+        >Folders <span class="text-danger-600" aria-hidden="true">*</span
+        ></legend
       >
       <div class="space-y-2">
         {#each formPaths as entry, i (entry.id)}
           <div class="flex items-center gap-2">
-            <FolderOpen class="w-4 h-4 text-ink-300 flex-shrink-0" aria-hidden="true" />
+            <FolderOpen
+              class="w-4 h-4 text-ink-300 flex-shrink-0"
+              aria-hidden="true"
+            />
             <input
               type="text"
               value={entry.value}
@@ -190,7 +200,9 @@
                   value: e.currentTarget.value,
                 };
               }}
-              aria-label={formPaths.length === 1 ? "Folder path" : `Folder path ${i + 1}`}
+              aria-label={formPaths.length === 1
+                ? "Folder path"
+                : `Folder path ${i + 1}`}
               placeholder="/path/to/books"
               class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 font-mono text-sm transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
               disabled={saving}
@@ -227,7 +239,13 @@
         Add another folder
       </button>
       {#if pathsError}
-        <p id="lib-folders-error" role="alert" class="text-sm text-danger-600 dark:text-red-400 mt-1">{pathsError}</p>
+        <p
+          id="lib-folders-error"
+          role="alert"
+          class="text-sm text-danger-600 dark:text-red-400 mt-1"
+        >
+          {pathsError}
+        </p>
       {/if}
     </fieldset>
 

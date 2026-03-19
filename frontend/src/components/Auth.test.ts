@@ -79,7 +79,7 @@ describe("Auth", () => {
     expect(signupTab).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Login" })).toHaveAttribute(
       "aria-selected",
-      "false"
+      "false",
     );
 
     const panels = screen.getAllByRole("tabpanel", { hidden: true });
