@@ -286,7 +286,7 @@
           </a>
         {/if}
       </nav>
-    </aside>
+    </div>
 
     <section class="flex-1">
       {#if activeTab === "account"}

@@ -69,7 +69,6 @@
 {/if}
 
 <aside
-<aside
   aria-label="Main menu"
   class="fixed inset-y-0 left-0 z-50 w-64 bg-ink-950 text-white flex flex-col transition-transform duration-200 ease-in-out {open
     ? 'translate-x-0'
