@@ -121,6 +121,30 @@ func TestKoboTokenCreate_Success(t *testing.T) {
 	}
 }
 
+func TestHandleCoverImage_DataURL(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+	cover := "data:image/png;base64," + base64.StdEncoding.EncodeToString([]byte("cover-bytes"))
+	book, err := h.DB.CreateBook(context.Background(), "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &cover)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleCoverImage(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if got := w.Header().Get("Content-Type"); got != "image/png" {
+		t.Fatalf("content-type = %q, want %q", got, "image/png")
+	}
+	if body := w.Body.String(); body != "cover-bytes" {
+		t.Fatalf("body = %q, want %q", body, "cover-bytes")
+	}
+}
+
 func TestKoboTokenCreate_EmptyName(t *testing.T) {
 	h, userID := setupKoboHandler(t)
 
