@@ -777,6 +777,7 @@ func TestCoverMIMEType(t *testing.T) {
 		{"https://example.com/cover.gif", "image/gif"},
 		{"https://example.com/cover.svg", "image/svg+xml"},
 		{"https://example.com/cover.avif", "image/avif"},
+		{"data:image/png;base64,AAAA", "image/png"},
 		{"https://example.com/cover", "image/jpeg"}, // no extension defaults to jpeg
 	}
 

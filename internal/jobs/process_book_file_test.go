@@ -246,6 +246,44 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 	}
 }
 
+func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	if err != nil {
+		t.Fatalf("new extractor: %v", err)
+	}
+	defer ext.Close()
+
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "covered.epub")
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "Covered Book", "Author", "urn:isbn:9780743273565", testutils.EPUBOptions{
+		CoverImageData: testutils.TinyPNG(),
+		CoverImageHref: "images/cover.png",
+		CoverMediaType: "image/png",
+	})
+
+	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+		Path:     epubPath,
+		FileName: "covered.epub",
+		FileType: "epub",
+		FileSize: 1024,
+	})
+	if err != nil {
+		t.Fatalf("ProcessBookFile() error: %v", err)
+	}
+
+	books, err := database.ListBooks(context.Background())
+	if err != nil {
+		t.Fatalf("list books: %v", err)
+	}
+	if len(books) != 1 {
+		t.Fatalf("expected 1 book, got %d", len(books))
+	}
+	if books[0].CoverImageURL == nil || !strings.HasPrefix(*books[0].CoverImageURL, "data:image/png;base64,") {
+		t.Fatalf("expected embedded cover data URL, got %#v", books[0].CoverImageURL)
+	}
+}
+
 func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
