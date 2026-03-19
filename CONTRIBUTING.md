@@ -183,6 +183,27 @@ make run
 make clean
 ```
 
+### IDE and Editor Support
+
+#### VS Code
+
+The repository includes a `.vscode/launch.json` with three ready-to-use **Run and Debug** configurations (`Ctrl+Shift+D` / `⇧⌘D`):
+
+| Configuration | Binary | What it does |
+|---|---|---|
+| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans the sample `books/` directory and imports all supported files |
+| **Run CLI (File)** | `cmd/cli/main.go` | Runs `process-file` against `books/Alice's Adventures in Wonderland by Lewis Carroll.epub` |
+| **Run Server** | `cmd/server/main.go` | Starts the Biblioteka HTTP server |
+
+All three configurations load environment variables from `.env` in the workspace root. Copy `.env.sample` to `.env` and fill in the required values before launching:
+
+```bash
+cp .env.sample .env
+# Edit .env with your local values (DATABASE_URL, REDIS_URL, JWT_SECRET, …)
+```
+
+> **Sample books**: Two EPUB files in `books/` serve as realistic test data for the CLI configurations. They are version-controlled so the "Run CLI" launch configs work out of the box without any setup.
+
 ### Frontend (from `frontend/`)
 
 ```bash
@@ -337,10 +358,6 @@ Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that ru
 | **Artifacts Summary** | Sundays at ~06:00 UTC | GitHub Discussion in "artifacts" category with Actions artifact usage summary |
 | **Daily Malicious Code Scan** | Daily | Code scanning alerts for suspicious patterns in recent code changes |
 | **CI Failure Doctor** | On CI workflow failure | GitHub issues labeled `cookie` with root-cause analysis and recommended fixes |
-| **Portfolio Analyst** | Mondays at ~09:00 UTC | GitHub Discussion in "audits" category with workflow cost and reliability analysis |
-| **Static Analysis Report** | Daily | GitHub Discussion in "security" category with security scan results |
-| **Artifacts Summary** | Sundays at ~06:00 UTC | GitHub Discussion in "artifacts" category with Actions artifact usage summary |
-| **Daily Malicious Code Scan** | Daily | Code scanning alerts for suspicious patterns in recent code changes |
 
 #### Daily Accessibility Review
 
@@ -398,22 +415,6 @@ If the CI run **succeeds**, the workflow calls `noop` and exits without creating
 
 When you see a `[CI Failure Doctor]` issue, follow the recommended actions listed in the issue body before marking it as resolved.
 
-#### Portfolio Analyst
-
-The `portfolio-analyst` workflow runs every Monday at approximately 09:00 UTC. It downloads up to 30 days of agentic workflow logs and analyzes them for cost reduction opportunities (targeting 20%+ savings) and reliability improvements. Results are published as a GitHub Discussion in the **audits** category. Previous discussions from this workflow are closed automatically when a new one is created. You do not need to act on these discussions unless you want to adjust a workflow configuration.
-
-#### Static Analysis Report
-
-The `static-analysis-report` workflow runs daily. It scans agentic workflow files for security vulnerabilities using [zizmor](https://github.com/woodruffw/zizmor), [poutine](https://github.com/boostsecurityio/poutine), and [actionlint](https://github.com/rhysd/actionlint). Findings are posted as a GitHub Discussion in the **security** category. The workflow closes its previous discussion when it opens a new one to keep the list tidy.
-
-#### Artifacts Summary
-
-The `artifacts-summary` workflow runs every Sunday at approximately 06:00 UTC. It generates a report of GitHub Actions artifact usage (names, sizes, retention policies) across all workflows in the repository. The report is published as a GitHub Discussion in the **artifacts** category. Use it to identify large or stale artifacts that could be cleaned up to reduce storage costs.
-
-#### Daily Malicious Code Scan
-
-The `daily-malicious-code-scan` workflow runs daily. It reviews code changes from the previous three days for suspicious patterns that could indicate a malicious agentic threat — for example, credential exfiltration, supply-chain tampering, or obfuscated command execution. Confirmed findings are reported as code scanning alerts visible under **Security → Code scanning**. If you receive an alert from this workflow, treat it as a high-priority security event and investigate promptly.
-
 ### Slash-command workflows
 
 These workflows are triggered manually by posting a slash command in a PR or issue comment. They do not run automatically.
@@ -439,11 +440,11 @@ The workflow validates that the commit exists and is an ancestor of `HEAD`, then
 
 - Files added, modified, deleted, and renamed since that commit.
 - Per-author contribution counts and the overall commit timeline.
-- Lines added and removed, broken down by file type.
-- Functional areas affected (packages, configuration, tests, CI, documentation).
-- Associated pull requests and referenced issues.
+- Functional areas touched (inferred from directory structure).
+- Associated pull requests and issues.
+- Line-level stats (insertions/deletions per file).
 
-Results are posted as a new **Discussion** in the `dev` category with the title `Changes Analysis: Since commit <short-SHA> - <date>`.
+Results are published as a new Discussion in the **dev** category. The workflow does not close previous discussions, so each run produces an independent report.
 
 ## Commit Messages
 
