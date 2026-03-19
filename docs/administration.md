@@ -143,6 +143,10 @@ curl "http://localhost:8080/api/audit-logs?limit=50&offset=50" \
 | `api_key.deleted`      | `api_key`     | `name`                                           | `DELETE /api/api-keys/{id}`             |
 | `opds_credential.updated` | `opds_credential` | `username`                               | `PUT /api/opds/credentials`             |
 | `opds_credential.deleted` | `opds_credential` | `username`                               | `DELETE /api/opds/credentials`          |
+| `kobo_token.created`   | `kobo_token`  | `name`                                           | `POST /api/kobo/tokens`                 |
+| `kobo_token.deleted`   | `kobo_token`  | `name`                                           | `DELETE /api/kobo/tokens/{id}`          |
+| `kosync_credential.updated` | `kosync_credential` | `username`                           | `PUT /api/kosync/credentials`           |
+| `kosync_credential.deleted` | `kosync_credential` | `username`                           | `DELETE /api/kosync/credentials`        |
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
 
 **Notes:**
