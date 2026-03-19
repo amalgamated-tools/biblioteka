@@ -223,7 +223,7 @@ internal/
     process_file.go            # process:file handler — deserializes payload, delegates to ProcessBookFile
     process_book_file.go       # ProcessBookFile public entry point
     book_metadata_helpers.go   # deriveTitle, extractBookMetadata, resolveAuthorAndTitle
-    book_path_helpers.go       # validatePayload, resolveSourcePath, checkDuplicate, bookFileLookupFunc
+    book_path_helpers.go       # validatePayload, resolveSourcePath, checkDuplicate, defaultBookFileLookup (bookFileLookupFunc type)
     book_record_helpers.go     # maybeReorganizeFile, createBookRecord, linkBookAssociations
   organize/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
