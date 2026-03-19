@@ -69,6 +69,7 @@
 {/if}
 
 <aside
+  aria-label="Main menu"
   class="fixed inset-y-0 left-0 z-50 w-64 bg-ink-950 text-white flex flex-col transition-transform duration-200 ease-in-out {open
     ? 'translate-x-0'
     : '-translate-x-full'} md:translate-x-0"
@@ -89,7 +90,7 @@
     </div>
   </div>
 
-  <nav class="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
+  <nav aria-label="Primary navigation" class="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
     <!-- Home group -->
     <div>
       <p
@@ -137,8 +138,9 @@
           onclick={() => handleSidebarNavigate("libraries/new")}
           class="text-ink-500 hover:text-accent-400 transition-colors"
           title="Create library"
+          aria-label="Create library"
         >
-          <Plus class="w-4 h-4" />
+          <Plus class="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
       <div class="space-y-0.5">

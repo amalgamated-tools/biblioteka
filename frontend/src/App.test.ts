@@ -5,7 +5,12 @@ import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
 vi.mock("./stores/auth.svelte", () => ({
   authStore: {
     loading: false,
-    user: { id: "1", email: "test@example.com", oidc_linked: false, is_admin: false },
+    user: {
+      id: "1",
+      email: "test@example.com",
+      oidc_linked: false,
+      is_admin: false,
+    },
     init: vi.fn(),
   },
 }));

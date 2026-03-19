@@ -28,10 +28,10 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  e2e:
     runs-on: ubuntu-latest
-    name: Build
-    timeout-minutes: 20
+    name: E2E Tests
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
@@ -45,8 +45,9 @@ jobs:
         with:
           node-version: "20"
           cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
+          cache-dependency-path: |
+            frontend/pnpm-lock.yaml
+            e2e/pnpm-lock.yaml
       - name: Install frontend dependencies
         working-directory: ./frontend
         run: pnpm install --frozen-lockfile
@@ -64,41 +65,6 @@ jobs:
 
       - name: Build Go binary
         run: go build -o biblioteka ./cmd/server
-
-      # We only upload the biblioteka binary because the frontend assets are already included in the binary via go:embed, so we don't need to upload the entire frontend build output.  
-      - name: Upload binary
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: biblioteka-binary
-          path: biblioteka
-
-  e2e:
-    needs: build
-    runs-on: ubuntu-latest
-    name: Playwright
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: biblioteka-binary
-          path: .
-
-      - name: Make binary executable
-        run: chmod +x ./biblioteka
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
-        with:
-          version: 10.32.1
-
-      - name: Set up Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
-        with:
-          node-version: "20"
-          cache: 'pnpm'
-          cache-dependency-path: e2e/pnpm-lock.yaml
 
       - name: Install e2e dependencies
         working-directory: ./e2e

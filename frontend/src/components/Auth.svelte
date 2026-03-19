@@ -15,19 +15,19 @@
 
   function handleTabKeydown(event: KeyboardEvent) {
     if (loading) return;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+    if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
       event.preventDefault();
       isLogin = !isLogin;
-      const nextId = isLogin ? 'login-tab' : 'signup-tab';
+      const nextId = isLogin ? "login-tab" : "signup-tab";
       document.getElementById(nextId)?.focus();
-    } else if (event.key === 'Home') {
+    } else if (event.key === "Home") {
       event.preventDefault();
       isLogin = true;
-      document.getElementById('login-tab')?.focus();
-    } else if (event.key === 'End') {
+      document.getElementById("login-tab")?.focus();
+    } else if (event.key === "End") {
       event.preventDefault();
       isLogin = false;
-      document.getElementById('signup-tab')?.focus();
+      document.getElementById("signup-tab")?.focus();
     }
   }
 
@@ -125,7 +125,12 @@
       {/if}
 
       <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div role="tablist" aria-label="Authentication method" onkeydown={handleTabKeydown} class="flex gap-1 mb-6 bg-cream-100 dark:bg-ink-800 rounded-xl p-1">
+      <div
+        role="tablist"
+        aria-label="Authentication method"
+        onkeydown={handleTabKeydown}
+        class="flex gap-1 mb-6 bg-cream-100 dark:bg-ink-800 rounded-xl p-1"
+      >
         <button
           id="login-tab"
           role="tab"
@@ -156,7 +161,13 @@
         </button>
       </div>
 
-      <div id="login-panel" role="tabpanel" tabindex="0" aria-labelledby="login-tab" hidden={!isLogin}>
+      <div
+        id="login-panel"
+        role="tabpanel"
+        tabindex="0"
+        aria-labelledby="login-tab"
+        hidden={!isLogin}
+      >
         <form onsubmit={handleSubmit} class="space-y-4">
           <div>
             <label
@@ -210,7 +221,13 @@
         </form>
       </div>
 
-      <div id="signup-panel" role="tabpanel" tabindex="0" aria-labelledby="signup-tab" hidden={isLogin}>
+      <div
+        id="signup-panel"
+        role="tabpanel"
+        tabindex="0"
+        aria-labelledby="signup-tab"
+        hidden={isLogin}
+      >
         <form onsubmit={handleSubmit} class="space-y-4">
           <div>
             <label
