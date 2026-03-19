@@ -53,9 +53,17 @@ func decodeDataURL(raw string) (string, []byte, error) {
 		mimeType = "text/plain;charset=US-ASCII"
 	}
 
+	const maxDecodedBytes = 20 << 20 // 20 MB
+	if base64.StdEncoding.DecodedLen(len(payload)) > maxDecodedBytes+1 {
+		return "", nil, fmt.Errorf("data URL payload exceeds %d-byte limit", maxDecodedBytes)
+	}
+
 	data, err := base64.StdEncoding.DecodeString(payload)
 	if err != nil {
 		return "", nil, fmt.Errorf("decode data URL payload: %w", err)
+	}
+	if len(data) > maxDecodedBytes {
+		return "", nil, fmt.Errorf("data URL payload exceeds %d-byte limit", maxDecodedBytes)
 	}
 
 	return mimeType, data, nil

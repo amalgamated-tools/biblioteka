@@ -69,9 +69,9 @@ func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*BookMeta
 
 func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	results := e.et.ExtractMetadata(path)
+	e.mu.Unlock()
+
 	if len(results) == 0 {
 		return nil, fmt.Errorf("no metadata found for %s", path)
 	}
@@ -186,7 +186,7 @@ func findEPUBCoverRef(book *exiftool.FileMetadata) (epubCoverRef, bool) {
 				Href:     strings.TrimSpace(href),
 				MIMEType: strings.TrimSpace(itemAt(manifestMIMETypes, i)),
 			}
-			if ref.Href != "" {
+			if ref.Href != "" && isLikelyImage(ref.Href, ref.MIMEType) {
 				return ref, true
 			}
 		}
@@ -228,11 +228,14 @@ func readEPUBArchiveFile(filePath string, ref epubCoverRef) ([]byte, string, err
 	}
 	defer reader.Close()
 
-	rootFilePath, _ := readEPUBRootFilePath(reader.File)
+	rootFilePath, rootErr := readEPUBRootFilePath(reader.File)
 	candidates := archiveCandidates(rootFilePath, ref.Href)
 
 	file := findArchiveFile(reader.File, candidates)
 	if file == nil {
+		if rootErr != nil {
+			return nil, "", fmt.Errorf("cover asset %q not found in archive (failed to determine EPUB root file path): %w", ref.Href, rootErr)
+		}
 		return nil, "", fmt.Errorf("cover asset %q not found in archive", ref.Href)
 	}
 
@@ -274,8 +277,9 @@ func readEPUBRootFilePath(files []*zip.File) (string, error) {
 	}
 	defer rc.Close()
 
+	const maxContainerXMLBytes = 1 << 20 // 1 MB
 	var doc epubContainer
-	if err := xml.NewDecoder(rc).Decode(&doc); err != nil {
+	if err := xml.NewDecoder(io.LimitReader(rc, maxContainerXMLBytes)).Decode(&doc); err != nil {
 		return "", fmt.Errorf("decode container.xml: %w", err)
 	}
 	if len(doc.Rootfiles) == 0 {
