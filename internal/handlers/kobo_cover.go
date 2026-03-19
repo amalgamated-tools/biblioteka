@@ -40,6 +40,14 @@ func (h *KoboHandler) HandleCoverImage(w http.ResponseWriter, r *http.Request) {
 
 	contentType, data, err := decodeDataURL(*book.CoverImageURL)
 	if err == nil {
+		if !strings.HasPrefix(contentType, "image/") {
+			slog.WarnContext(r.Context(), "cover image data URL has non-image content type",
+				slog.String(otelkeys.BookID, bookID),
+				slog.String("content_type", contentType),
+			)
+			http.Error(w, "invalid cover image", http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Content-Type", contentType)
 		http.ServeContent(w, r, "cover", book.UpdatedAt.Time, bytes.NewReader(data))
 		return
