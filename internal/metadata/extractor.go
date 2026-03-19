@@ -33,10 +33,10 @@ type Extractor struct {
 	et *exiftool.Exiftool
 }
 
-func NewExtractor() (*Extractor, error) {
+func NewExtractor(ctx context.Context) (*Extractor, error) {
 	et, err := exiftool.NewExiftool()
 	if err != nil {
-		slog.WarnContext(context.Background(), "exiftool not available; all metadata extraction disabled — only filename-derived metadata will be used", slog.Any(otelkeys.Error, err))
+		slog.WarnContext(ctx, "exiftool not available; all metadata extraction disabled — only filename-derived metadata will be used", slog.Any(otelkeys.Error, err))
 		return &Extractor{}, nil
 	}
 	return &Extractor{et: et}, nil

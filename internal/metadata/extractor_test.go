@@ -20,7 +20,7 @@ func (e *Extractor) exiftool() *exiftool.Exiftool {
 // requireExifTool creates an Extractor and skips the test if ExifTool is not installed.
 func requireExifTool(t *testing.T) *Extractor {
 	t.Helper()
-	ext, err := NewExtractor()
+	ext, err := NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}

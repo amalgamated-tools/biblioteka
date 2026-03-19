@@ -15,7 +15,7 @@ import (
 )
 
 func TestProcessBookFile_NilDatabase(t *testing.T) {
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -46,7 +46,7 @@ func TestProcessBookFile_NilExtractor(t *testing.T) {
 
 func TestProcessBookFile_EmptyPath(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestProcessBookFile_EmptyPath(t *testing.T) {
 
 func TestProcessBookFile_WhitespacePath(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestProcessBookFile_WhitespacePath(t *testing.T) {
 
 func TestProcessBookFile_EmptyFileName(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestProcessBookFile_EmptyFileName(t *testing.T) {
 
 func TestProcessBookFile_EmptyFileType(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestProcessBookFile_EmptyFileType(t *testing.T) {
 
 func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -157,7 +157,7 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 
 func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -194,7 +194,7 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 
 func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -248,7 +248,7 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 
 func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -293,7 +293,7 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 
 func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -331,7 +331,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 
 func TestProcessBookFile_ISBN10(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -368,7 +368,7 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 
 func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -428,7 +428,7 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 
 func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
@@ -476,7 +476,7 @@ func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.
 
 func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 	database := newTestDB(t)
-	ext, err := metadata.NewExtractor()
+	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
