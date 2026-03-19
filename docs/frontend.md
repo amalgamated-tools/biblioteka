@@ -27,7 +27,7 @@ frontend/
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
-      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version
+      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; contains icon-only action buttons (Create library, Library settings) with `aria-label` and `aria-hidden="true"` on their icons (WCAG 4.1.2)
       libraries/          Reusable sub-components for the Libraries view
         LibraryForm.svelte   Create / edit library form
         LibraryView.svelte   Library detail with book listing
@@ -610,15 +610,23 @@ Buttons that render only an icon (no visible text) and form inputs that cannot b
 
 #### Icon-only buttons
 
-Use `aria-label` on any button whose only child is an icon component:
+Use `aria-label` on any button whose only child is an icon component. Add `aria-hidden="true"` on the icon element itself so screen readers announce only the button's label and do not also read out the SVG's internal title or path description:
 
 ```svelte
+<!-- Sidebar: "Create library" — navigates to the new-library form -->
+<button
+  onclick={() => handleSidebarNavigate("libraries/new")}
+  aria-label="Create library"
+>
+  <Plus class="w-4 h-4" aria-hidden="true" />
+</button>
+
 <!-- Close button: renders only the X icon -->
 <button
   onclick={navigateBack}
   aria-label="Close form"
 >
-  <X class="w-5 h-5" />
+  <X class="w-5 h-5" aria-hidden="true" />
 </button>
 
 <!-- Remove-folder button in a repeated list -->
@@ -628,11 +636,11 @@ Use `aria-label` on any button whose only child is an icon component:
   aria-label="Remove folder"
   disabled={saving}
 >
-  <X class="w-4 h-4" />
+  <X class="w-4 h-4" aria-hidden="true" />
 </button>
 ```
 
-Without `aria-label`, screen readers announce these buttons only by their SVG title or nothing at all, giving users no meaningful description of the action.
+Without `aria-label`, screen readers announce these buttons only by their SVG title or nothing at all, giving users no meaningful description of the action. Without `aria-hidden="true"` on the icon, some screen readers may announce both the button label **and** the SVG's internal title, causing a duplicate or confusing announcement.
 
 #### Inputs in dynamic lists
 
@@ -651,6 +659,7 @@ When there is only one input in the list, omit the index to keep the label natur
 #### Checklist
 
 - Every `<button>` that renders only an icon must have `aria-label` or `aria-labelledby`.
+- Icon elements inside labeled buttons must carry `aria-hidden="true"` to prevent duplicate announcements.
 - Every `<input>` and `<select>` must have either a linked `<label for="...">` or an `aria-label` / `aria-labelledby`.
 - `title` attributes are not a substitute for `aria-label`; they are advisory only and are not reliably announced.
 
@@ -662,7 +671,7 @@ When editing the app shell or adding new persistent navigation elements:
 2. If you add a new persistent region that users must bypass, add an additional skip link or update the existing one.
 3. Every page — authenticated or not — must contain exactly one `<main>` landmark. For the authenticated shell this is `<main id="main-content">` in `App.svelte`; for the pre-auth login/signup page this is `<main>` in `Auth.svelte`. Do not remove or replace these elements with a generic `<div>`.
 4. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
-5. Every icon-only button must have `aria-label`; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only buttons and dynamic inputs](#accessible-labels-for-icon-only-buttons-and-dynamic-inputs) above.
+5. Every icon-only button must have `aria-label`; the icon element inside the button must carry `aria-hidden="true"` to suppress redundant announcements; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only buttons and dynamic inputs](#accessible-labels-for-icon-only-buttons-and-dynamic-inputs) above.
 6. Navigation buttons that represent the active view or tab must carry `aria-current={isActive ? "page" : undefined}`. See [`aria-current` on active navigation buttons](#aria-current-on-active-navigation-buttons) above.
 7. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
 8. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
@@ -702,21 +711,21 @@ When a form contains a variable-length list of inputs of the same type (e.g. mul
 
 #### `aria-label` on icon-only buttons
 
-Buttons whose visible content is solely an icon (SVG) must carry an `aria-label` so assistive technologies announce an intelligible action name.
+Buttons whose visible content is solely an icon (SVG) must carry an `aria-label` so assistive technologies announce an intelligible action name. The icon itself must also carry `aria-hidden="true"` to prevent screen readers from reading both the button label and the SVG's internal title.
 
 ```svelte
 <!-- Close / cancel button -->
 <button aria-label="Close form" onclick={navigateBack}>
-  <X class="w-5 h-5" />
+  <X class="w-5 h-5" aria-hidden="true" />
 </button>
 
 <!-- Remove item button inside a list -->
 <button aria-label="Remove folder" …>
-  <X class="w-4 h-4" />
+  <X class="w-4 h-4" aria-hidden="true" />
 </button>
 ```
 
-When you add a new icon-only button, always supply an `aria-label`. `svelte-check` does **not** automatically detect missing labels on `<button>` elements, so this must be reviewed manually.
+When you add a new icon-only button, always supply both `aria-label` on the `<button>` and `aria-hidden="true"` on the icon component. `svelte-check` does **not** automatically detect missing labels or missing `aria-hidden` on `<button>` elements, so this must be reviewed manually.
 
 #### `autocomplete` on credential inputs
 
