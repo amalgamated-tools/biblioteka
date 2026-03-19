@@ -63,6 +63,21 @@ All paginated feeds return **50 entries per page**. Use the `?page=N` query para
 
 Send a GET request to `/opds/search?q=<query>` to search books by title, author, or description. The search endpoint is also advertised in the root feed as an OpenSearch description document, so compliant clients can discover it automatically.
 
+### Cover images
+
+When a book has a cover image, each acquisition-feed entry includes a `rel="http://opds-spec.org/image"` link so that OPDS clients can display thumbnails. The `type` attribute reflects the image's extension:
+
+| Extension | MIME type |
+|-----------|-----------|
+| `.jpg` / `.jpeg` (default) | `image/jpeg` |
+| `.png` | `image/png` |
+| `.webp` | `image/webp` |
+| `.avif` | `image/avif` |
+| `.gif` | `image/gif` |
+| `.svg` | `image/svg+xml` |
+
+Cover images are served from the URL stored in the book's `cover_image_url` field. If no cover image is set, the link is omitted.
+
 ### File downloads
 
 Each book entry in an acquisition feed contains one `rel="http://opds-spec.org/acquisition"` link per available file format. The link points to `/opds/download/{file-id}`. The server streams the file with a correct `Content-Type` and `Content-Disposition: attachment` header.
