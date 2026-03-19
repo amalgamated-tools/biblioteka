@@ -2,6 +2,32 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Run CLI Process File",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "cmd/cli/main.go",
+            "args": [
+                "process-file",
+                "/Users/veverkap/Code/personal/books/pg1342-images.epub"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "showLog": true
+        },
+        {
+            "name": "Run CLI Scan Directory",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "cmd/cli/main.go",
+            "args": [
+                "scan-directory",
+                "/Users/veverkap/Code/personal/books"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "showLog": true
+        },
+        {
             "name": "Run Server",
             "type": "go",
             "request": "launch",
