@@ -46,6 +46,7 @@ google_books_id TEXT,
 created_at DATETIME NOT NULL DEFAULT (datetime('now')),
 updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
+CREATE UNIQUE INDEX idx_series_name_ci ON series (LOWER(name));
 CREATE TABLE books (
 id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
 title TEXT NOT NULL,
@@ -64,6 +65,7 @@ cover_image_url TEXT,
 created_at DATETIME NOT NULL DEFAULT (datetime('now')),
 updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
+CREATE INDEX idx_books_updated_at_id ON books (updated_at, id);
 CREATE TABLE library_books (
 library_id TEXT NOT NULL REFERENCES libraries(id) ON DELETE CASCADE,
 book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
@@ -98,6 +100,7 @@ created_at DATETIME NOT NULL DEFAULT (datetime('now')),
 updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX idx_book_files_book_id ON book_files(book_id);
+CREATE UNIQUE INDEX idx_book_files_file_path ON book_files(file_path);
 CREATE TABLE audit_logs (
 id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
 user_id TEXT,
@@ -131,6 +134,53 @@ updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX idx_opds_credentials_username ON opds_credentials (LOWER(username));
 CREATE INDEX idx_opds_credentials_user_id ON opds_credentials (user_id);
+CREATE TABLE kobo_tokens (
+id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+name TEXT NOT NULL,
+token TEXT NOT NULL,
+token_hash TEXT,
+created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX idx_kobo_tokens_token ON kobo_tokens (token);
+CREATE UNIQUE INDEX idx_kobo_tokens_token_hash ON kobo_tokens (token_hash);
+CREATE INDEX idx_kobo_tokens_user_id ON kobo_tokens (user_id);
+CREATE TABLE kosync_credentials (
+id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+username TEXT NOT NULL,
+password_hash TEXT NOT NULL,
+created_at DATETIME NOT NULL DEFAULT (datetime('now')),
+updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX idx_kosync_credentials_username ON kosync_credentials (LOWER(username));
+CREATE TABLE reading_progress (
+id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+document TEXT NOT NULL,
+progress TEXT NOT NULL,
+percentage REAL NOT NULL DEFAULT 0,
+device TEXT,
+device_id TEXT,
+created_at DATETIME NOT NULL DEFAULT (datetime('now')),
+updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX idx_reading_progress_user_document ON reading_progress (user_id, document);
+CREATE INDEX idx_reading_progress_user_id ON reading_progress (user_id);
+CREATE TABLE kobo_reading_states (
+id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+status TEXT NOT NULL DEFAULT 'ReadyToRead',
+percent_read REAL,
+location_value TEXT,
+location_type TEXT,
+location_source TEXT,
+created_at DATETIME NOT NULL DEFAULT (datetime('now')),
+updated_at DATETIME NOT NULL DEFAULT (datetime('now')),
+UNIQUE (user_id, book_id)
+);
+CREATE INDEX idx_kobo_reading_states_user_updated ON kobo_reading_states (user_id, updated_at);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20260214235631_create_users_table'),
@@ -149,4 +199,11 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260314000000_create_audit_logs_table'),
   ('20260315000000_create_api_keys_table'),
   ('20260315000000_create_opds_credentials_table'),
-  ('20260316000000_author_name_ci_unique');
+  ('20260316000000_author_name_ci_unique'),
+  ('20260316000000_add_unique_file_path_index'),
+  ('20260316000001_series_name_ci_unique'),
+  ('20260317000000_create_kobo_tokens_table'),
+  ('20260317000000_create_kosync_tables'),
+  ('20260317000001_create_kobo_reading_states_table'),
+  ('20260317000002_add_books_updated_at_index'),
+  ('20260317010000_add_kobo_token_hash');
