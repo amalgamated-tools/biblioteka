@@ -14,7 +14,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **API keys** – Long-lived tokens for programmatic and scripted access (prefix `bib_`); managed per-user via the Settings page or API
 - **OPDS 1.2 catalog** – Built-in OPDS server at `/opds` lets any compatible e-reader app (KOReader, Calibre, Moon+ Reader, …) browse and download books using Basic Auth credentials separate from your main account password
 - **Kobo e-reader sync** – Native Kobo device API at `/kobo/<token>/` syncs your library and reading progress to Kobo e-readers; create per-device tokens from **Settings → Kobo Sync** or via the API
-- **KOReader reading progress sync** – [kosync](https://github.com/koreader/koreader-sync-server)-compatible API at `/api/syncs/progress` syncs reading positions from KOReader to Biblioteka; set up dedicated KOSync credentials from **Settings → KOReader Sync** or via the API
+- **KOReader reading progress sync** – [kosync](https://github.com/koreader/koreader-sync-server)-compatible API at `/api/syncs/progress` syncs reading positions from KOReader to Biblioteka; set up dedicated KOSync credentials via the API
 - **Background processing** – Redis-backed job queue scans paths and processes files asynchronously; includes a built-in [Asynqmon](https://github.com/hibiken/asynqmon) monitoring UI at `/asynqmon/`
 - **Two database backends** – SQLite (zero-config, default) or PostgreSQL
 - **Single binary** – Go backend embeds the Svelte frontend; one executable to deploy
@@ -120,7 +120,7 @@ Biblioteka includes a built-in [OPDS 1.2](https://specs.opds.io/opds-1.2) catalo
 
 - **URL:** `/opds` (e.g. `http://localhost:8080/opds`)
 - **Authentication:** HTTP Basic Auth using a per-user OPDS credential — separate from your main account password.
-- **Manage credentials:** via the Settings page or the `PUT /api/opds/credentials` endpoint.
+- **Manage credentials:** via the `PUT /api/opds/credentials` endpoint (API-only; there is no Settings UI for OPDS credentials).
 
 See [docs/opds.md](docs/opds.md) for the full setup guide, catalog structure, and supported OPDS clients.
 
@@ -129,7 +129,7 @@ See [docs/opds.md](docs/opds.md) for the full setup guide, catalog structure, an
 Biblioteka exposes a [kosync](https://github.com/koreader/koreader-sync-server)-compatible API so that [KOReader](https://koreader.rocks/) can sync reading positions to your self-hosted server.
 
 - **API base:** `/api/syncs/progress`
-- **Authentication:** KOSync credentials (username + password) managed separately from your main account via **Settings → KOReader Sync** or the API.
+- **Authentication:** KOSync credentials (username + password) managed separately from your main account via the API (see [docs/koreader.md](docs/koreader.md)).
 
 See [docs/koreader.md](docs/koreader.md) for the full setup guide and API reference.
 
