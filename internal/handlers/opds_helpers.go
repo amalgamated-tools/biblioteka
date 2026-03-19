@@ -120,8 +120,9 @@ func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, f
 	enc.Indent("", "  ")
 	if err := enc.Encode(feed); err != nil {
 		slog.ErrorContext(r.Context(), "OPDS: failed to encode feed", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to encode feed")
+		writeOPDSError(r, w, http.StatusInternalServerError, contentType, "urn:biblioteka:opds:error", "failed to encode feed")
 		return
+	}
 	}
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(http.StatusOK)
