@@ -368,6 +368,8 @@ Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that ru
 | **Static Analysis Report** | Daily | GitHub Discussion in "security" category with security scan results |
 | **Artifacts Summary** | Sundays at ~06:00 UTC | GitHub Discussion in "artifacts" category with Actions artifact usage summary |
 | **Daily Malicious Code Scan** | Daily | Code scanning alerts for suspicious patterns in recent code changes |
+| **CI Failure Doctor** | On CI workflow failure | GitHub issues labeled `cookie` with root-cause analysis and recommended fixes |
+
 
 #### Daily Accessibility Review
 
@@ -412,6 +414,20 @@ The `artifacts-summary` workflow runs every Sunday at approximately 06:00 UTC. I
 
 The `daily-malicious-code-scan` workflow runs daily. It reviews code changes from the previous three days for suspicious patterns that could indicate a malicious agentic threat — for example, credential exfiltration, supply-chain tampering, or obfuscated command execution. Confirmed findings are reported as code scanning alerts visible under **Security → Code scanning**. If you receive an alert from this workflow, treat it as a high-priority security event and investigate promptly.
 
+#### CI Failure Doctor
+
+The `ci-doctor` workflow fires automatically whenever the **CI** workflow completes with a `failure` or `cancelled` conclusion. It:
+
+1. Downloads logs and artifacts from the failed run and pre-locates error lines using grep heuristics.
+2. Analyses the root cause by inspecting job logs, test output, and historical failure patterns stored in the Actions cache.
+3. Opens a GitHub issue labeled `cookie` with a title prefix of `[CI Failure Doctor]`. The issue includes an executive summary, root-cause analysis, reproduction steps, recommended fixes, prevention strategies, and AI self-improvement instructions.
+4. Closes older duplicate `[CI Failure Doctor]` issues from the same failure pattern to keep the issue tracker tidy.
+
+If the CI run **succeeds**, the workflow calls `noop` and exits without creating an issue.
+
+When you see a `[CI Failure Doctor]` issue, follow the recommended actions listed in the issue body before marking it as resolved.
+
+
 ### Slash-command workflows
 
 These workflows are triggered manually by posting a slash command in a PR or issue comment. They do not run automatically.
@@ -420,6 +436,28 @@ These workflows are triggered manually by posting a slash command in a PR or iss
 |---|---|---|
 | `/grumpy` | PR comment or review comment | Performs a critical code review focused on edge cases, potential bugs, and code quality. Posts up to 5 inline review comments. |
 | `/q` | Issue or PR comment | Answers questions about the codebase, analyzes agentic workflow performance, and can open pull requests with workflow optimizations. Also triggered by a 🚀 reaction on a comment. |
+
+### On-demand workflows
+
+These workflows are triggered manually from the **Actions** tab in GitHub. They do not run automatically.
+
+#### Commit Changes Analyzer
+
+The `commit-changes-analyzer` workflow generates a detailed developer-focused report of every change made to the repository since a specified commit. To run it:
+
+1. Go to **Actions → Commit Changes Analyzer → Run workflow**.
+2. Paste a full GitHub commit URL into the `commit_url` field (for example, `https://github.com/amalgamated-tools/biblioteka/commit/abc1234`).
+3. Click **Run workflow**.
+
+The workflow validates that the commit exists and is an ancestor of `HEAD`, then collects:
+
+- Files added, modified, deleted, and renamed since that commit.
+- Per-author contribution counts and the overall commit timeline.
+- Functional areas touched (inferred from directory structure).
+- Associated pull requests and issues.
+- Line-level stats (insertions/deletions per file).
+
+Results are published as a new Discussion in the **dev** category. The workflow does not close previous discussions, so each run produces an independent report.
 
 ## Commit Messages
 
