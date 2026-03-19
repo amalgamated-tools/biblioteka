@@ -457,11 +457,21 @@ func createBookRecord(ctx context.Context, database *db.DB, title string, meta *
 			description = &meta.Description
 		}
 		if meta.ISBN != "" {
-			switch len(meta.ISBN) {
-			case 10:
-				isbn10 = &meta.ISBN
-			case 13:
-				isbn13 = &meta.ISBN
+			normalizedISBN, err := metadata.NormalizeISBN(meta.ISBN)
+			if err != nil {
+				slog.DebugContext(ctx, "skipping invalid ISBN in metadata",
+					slog.String(otelkeys.Path, filePath),
+					slog.Any(otelkeys.Error, err),
+				)
+			} else {
+				switch len(normalizedISBN) {
+				case 10:
+					v := normalizedISBN
+					isbn10 = &v
+				case 13:
+					v := normalizedISBN
+					isbn13 = &v
+				}
 			}
 		}
 		if meta.PublicationDate != "" {
