@@ -124,7 +124,7 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "My Cool Book.pdf")
 	// Create an empty file so the path exists (extraction will fail but that's OK)
-	if err := os.WriteFile(path, []byte("not a real pdf"), 0644); err != nil {
+	if err := os.WriteFile(path, []byte("not a real pdf"), 0o644); err != nil {
 		t.Fatalf("write test file: %v", err)
 	}
 
@@ -161,7 +161,7 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "noext")
-	if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
+	if err := os.WriteFile(path, []byte("content"), 0o644); err != nil {
 		t.Fatalf("write test file: %v", err)
 	}
 
@@ -298,7 +298,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	// Create a file that isn't a valid EPUB — extraction will fail
 	dir := t.TempDir()
 	path := filepath.Join(dir, "broken.epub")
-	if err := os.WriteFile(path, []byte("not a valid epub"), 0644); err != nil {
+	if err := os.WriteFile(path, []byte("not a valid epub"), 0o644); err != nil {
 		t.Fatalf("write broken.epub: %v", err)
 	}
 

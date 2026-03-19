@@ -177,7 +177,6 @@ func TestStatusRecorder_WriteWithoutHeader(t *testing.T) {
 	rec := &statusRecorder{ResponseWriter: w}
 
 	n, err := rec.Write([]byte("data"))
-
 	if err != nil {
 		t.Fatalf("Write error: %v", err)
 	}

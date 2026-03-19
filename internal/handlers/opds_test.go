@@ -585,7 +585,7 @@ func TestDownload_Success(t *testing.T) {
 	// Create a temp file to serve.
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.epub")
-	if err := os.WriteFile(filePath, []byte("fake epub content"), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte("fake epub content"), 0o644); err != nil {
 		t.Fatalf("write temp file: %v", err)
 	}
 
@@ -645,7 +645,7 @@ func TestDownload_UnknownFileType(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.xyz")
-	if err := os.WriteFile(filePath, []byte("data"), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte("data"), 0o644); err != nil {
 		t.Fatalf("write temp file: %v", err)
 	}
 
