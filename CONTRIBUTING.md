@@ -204,6 +204,18 @@ cp .env.sample .env
 
 > **Sample books**: Two EPUB files in `books/` serve as realistic test data for the CLI configurations. They are version-controlled so the "Run CLI" launch configs work out of the box without any setup.
 
+The repository also includes a `.vscode/settings.json` with workspace-wide editor settings for the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.Go):
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `go.lintTool` | `golangci-lint` | Uses golangci-lint instead of the default `staticcheck` |
+| `go.lintFlags` | `["--fast"]` | Runs a faster subset of linters on save; the full suite (`make lint`) runs in CI |
+| `go.lintOnSave` | `workspace` | Lints all packages in the workspace on every save |
+| `editor.formatOnSave` | `true` | Auto-formats Go files on save (equivalent to `go fmt`) |
+
+This means that when you save a `.go` file, VS Code will automatically format it and run a fast lint pass. Run `make lint` (or `golangci-lint run ./...`) for the complete linter output before opening a pull request.
+
+
 ### Frontend (from `frontend/`)
 
 ```bash
@@ -359,6 +371,7 @@ Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that ru
 | **Daily Malicious Code Scan** | Daily | Code scanning alerts for suspicious patterns in recent code changes |
 | **CI Failure Doctor** | On CI workflow failure | GitHub issues labeled `cookie` with root-cause analysis and recommended fixes |
 
+
 #### Daily Accessibility Review
 
 The `daily-accessibility-review` workflow (`daily-accessibility-review.md`) runs every three hours. It:
@@ -414,6 +427,7 @@ The `ci-doctor` workflow fires automatically whenever the **CI** workflow comple
 If the CI run **succeeds**, the workflow calls `noop` and exits without creating an issue.
 
 When you see a `[CI Failure Doctor]` issue, follow the recommended actions listed in the issue body before marking it as resolved.
+
 
 ### Slash-command workflows
 
