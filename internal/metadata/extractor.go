@@ -11,7 +11,6 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/barasher/go-exiftool"
-	"github.com/taylorskalyo/goreader/epub"
 )
 
 var ErrExifToolUnavailable = errors.New("exiftool is not available on this system")
@@ -21,7 +20,6 @@ type BookMetadata struct {
 	Description     string
 	Format          string
 	ISBN            string
-	IsNative        bool
 	Language        string
 	PublicationDate string
 	Publisher       string
@@ -55,54 +53,13 @@ func (e *Extractor) Close() {
 }
 
 func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*BookMetadata, error) {
-	ext := strings.ToLower(filepath.Ext(path))
-	// 1. Try Native EPUB parsing first (Zero-dependency, Very Fast)
-	if ext == ".epub" {
-		return e.extractNativeEpub(ctx, path)
-	}
-
 	if e.et == nil {
 		return nil, ErrExifToolUnavailable
 	}
 	return e.extractExif(ctx, path)
 }
 
-func (e *Extractor) extractNativeEpub(ctx context.Context, path string) (*BookMetadata, error) {
-	slog.DebugContext(ctx, "extracting metadata via native EPUB parser", slog.String(otelkeys.Path, path))
-	rc, err := epub.OpenReader(path)
-	if err != nil {
-		return nil, err
-	}
-	defer rc.Close()
-
-	if len(rc.Rootfiles) == 0 {
-		return nil, fmt.Errorf("epub file %s contains no rootfiles", path)
-	}
-
-	book := rc.Rootfiles[0]
-	var publicationDate string
-	// if the book has a slice of Dates, we want to find one where the Event attribute is "publication"
-	for _, d := range book.Dates {
-		if d.Event == "publication" {
-			publicationDate = d.Date
-			break
-		}
-	}
-
-	return &BookMetadata{
-		Author:          book.Creator,
-		Description:     book.Description,
-		Format:          "EPUB",
-		ISBN:            findISBN(book),
-		IsNative:        true,
-		Language:        book.Language,
-		PublicationDate: publicationDate,
-		Publisher:       book.Publisher,
-		Title:           book.Title,
-	}, nil
-}
-
-func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
+func (e *Extractor) extractExif(_ context.Context, path string) (*BookMetadata, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -114,34 +71,54 @@ func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata
 		return nil, fmt.Errorf("failed to extract metadata for %s: %w", path, results[0].Err)
 	}
 	book := results[0]
-	// ExifTool normalization: mapping various tags to our struct
-	title, err := book.GetString("Title")
-	if err != nil {
-		slog.WarnContext(ctx, "title not found in metadata, using filename as fallback", slog.String(otelkeys.Path, path))
+
+	title := getStringOr(&book, "Title", "")
+	if title == "" {
 		title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 	}
-	author, err := book.GetString("Author")
-	if err != nil {
-		slog.WarnContext(ctx, "author not found in metadata", slog.String(otelkeys.Path, path))
-		author = ""
-	}
-	isbn, err := book.GetString("ISBN")
-	if err != nil {
-		slog.WarnContext(ctx, "ISBN not found in metadata", slog.String(otelkeys.Path, path))
-		isbn, err = book.GetString("Identifier") // Fallback for many MOBI files
-		if err != nil {
-			slog.WarnContext(ctx, "Identifier not found in metadata", slog.String(otelkeys.Path, path))
-			isbn = ""
-		}
+
+	// ExifTool uses "Author" for most formats but "Creator" for EPUBs.
+	author := getStringOr(&book, "Author", "")
+	if author == "" {
+		author = getStringOr(&book, "Creator", "")
 	}
 
+	isbn := getStringOr(&book, "ISBN", "")
+	if isbn == "" {
+		isbn = getStringOr(&book, "Identifier", "")
+	}
+	isbn = NormalizeISBN(isbn)
+
+	pubDate := getStringOr(&book, "PublicationDate", "")
+	pubDate = normalizeExifDate(pubDate)
+
 	return &BookMetadata{
-		Title:    title,
-		Author:   author,
-		ISBN:     isbn,
-		Format:   strings.ToUpper(strings.TrimPrefix(filepath.Ext(path), ".")),
-		IsNative: false,
+		Title:           title,
+		Author:          author,
+		Description:     getStringOr(&book, "Description", ""),
+		ISBN:            isbn,
+		Format:          strings.ToUpper(strings.TrimPrefix(filepath.Ext(path), ".")),
+		Language:        getStringOr(&book, "Language", ""),
+		PublicationDate: pubDate,
+		Publisher:       getStringOr(&book, "Publisher", ""),
 	}, nil
+}
+
+// getStringOr extracts a string tag from an exiftool result, returning fallback if not found.
+func getStringOr(fm *exiftool.FileMetadata, tag string, fallback string) string {
+	v, err := fm.GetString(tag)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+// normalizeExifDate converts ExifTool's "YYYY:MM:DD" date format to "YYYY-MM-DD".
+func normalizeExifDate(s string) string {
+	if len(s) >= 10 && s[4] == ':' && s[7] == ':' {
+		return s[:4] + "-" + s[5:7] + "-" + s[8:]
+	}
+	return s
 }
 
 // NormalizeISBN strips common prefixes (urn:isbn:, isbn:), whitespace, hyphens,
@@ -195,9 +172,4 @@ func NormalizeISBN(raw string) string {
 	default:
 		return ""
 	}
-}
-
-// findISBN searches the Identifier field for a valid ISBN pattern
-func findISBN(book *epub.Rootfile) string {
-	return NormalizeISBN(book.Identifier.Content)
 }
