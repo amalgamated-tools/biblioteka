@@ -330,6 +330,8 @@ Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that ru
 | **CI Coach** | Daily | Workflow optimization suggestions |
 | **Daily Repo Chronicle** | Weekdays at 4 PM UTC | Narrative summary of daily repository activity |
 | **Weekly Repo Map** | Mondays | ASCII file-tree visualization of the repository |
+| **Greptile Labeler** | On PR open, update, or new PR comment | Adds or removes the `greptile-changes` label based on Greptile bot activity |
+| **Update Docs** | On push to `main` | Draft pull requests with documentation updates for code changes |
 
 #### Daily Accessibility Review
 
@@ -349,6 +351,23 @@ The `code-simplifier` workflow runs daily and creates pull requests that simplif
 #### Issue Triage
 
 The `issue-triage` workflow fires on every newly opened issue. It applies conventional-commit type labels (e.g. `bug`, `feat`), detects duplicates, and posts clarifying questions when the issue description is unclear. Labels applied by triage are informational — override them if they are wrong.
+
+#### Greptile Labeler
+
+The `greptile-labeler` workflow fires whenever a pull request is opened, updated (new commit pushed), or receives a new comment. It scans PR review threads and comments for activity from the **Greptile** bot. If Greptile has commented, the workflow adds the `greptile-changes` label to the PR. If Greptile has not commented (or its comments were removed), the label is removed. You may see this label appear or disappear automatically as you push commits or as Greptile completes its review.
+
+#### Update Docs
+
+The `update-docs` workflow runs on every push to `main`. It examines the diff, identifies new or changed APIs, functions, configuration, and other user-visible behaviour, and opens a draft pull request with the corresponding documentation updates. If documentation is already up to date, it does nothing. Merge or close these PRs as you would any human-authored documentation PR.
+
+### Slash-command workflows
+
+These workflows are triggered manually by posting a slash command in a PR or issue comment. They do not run automatically.
+
+| Slash command | Where | What it does |
+|---|---|---|
+| `/grumpy` | PR comment or review comment | Performs a critical code review focused on edge cases, potential bugs, and code quality. Posts up to 5 inline review comments. |
+| `/q` | Issue or PR comment | Answers questions about the codebase, analyzes agentic workflow performance, and can open pull requests with workflow optimizations. Also triggered by a 🚀 reaction on a comment. |
 
 ## Commit Messages
 
