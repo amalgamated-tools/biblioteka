@@ -63,21 +63,6 @@ All paginated feeds return **50 entries per page**. Use the `?page=N` query para
 
 Send a GET request to `/opds/search?q=<query>` to search books by title, author, or description. The search endpoint is also advertised in the root feed as an OpenSearch description document, so compliant clients can discover it automatically.
 
-### Cover images
-
-When a book has a cover image, each acquisition-feed entry includes a `rel="http://opds-spec.org/image"` link so that OPDS clients can display thumbnails. The `type` attribute reflects the image's extension:
-
-| Extension | MIME type |
-|-----------|-----------|
-| `.jpg` / `.jpeg` (default) | `image/jpeg` |
-| `.png` | `image/png` |
-| `.webp` | `image/webp` |
-| `.avif` | `image/avif` |
-| `.gif` | `image/gif` |
-| `.svg` | `image/svg+xml` |
-
-Cover images are served from the URL stored in the book's `cover_image_url` field. If no cover image is set, the link is omitted.
-
 ### File downloads
 
 Each book entry in an acquisition feed contains one `rel="http://opds-spec.org/acquisition"` link per available file format. The link points to `/opds/download/{file-id}`. The server streams the file with a correct `Content-Type` and `Content-Disposition: attachment` header.
@@ -103,7 +88,16 @@ Supported MIME types:
 
 When a book has a cover image set, each acquisition feed entry includes a `rel="http://opds-spec.org/image"` link pointing to the cover URL. OPDS clients that support cover art (such as KOReader, Moon+ Reader, and PocketBook) will fetch and display the cover while browsing the catalog.
 
-The `Content-Type` of the cover link is inferred from the image URL's file extension. Biblioteka inspects the trailing portion of the URL, so the URL must literally end with the extension (for example, `https://example.com/covers/1234.png` or `https://example.com/covers/1234.png?size=200` where the path still ends in `.png`). If the extension is unknown, missing, or cannot be cleanly parsed (for example, because query parameters or fragments are included in what looks like the extension), the type falls back to `image/jpeg`.
+The `Content-Type` of the cover link is inferred from the image URL's file extension using Go's `path.Ext`, which operates on the full URL string. The URL must end cleanly with the file extension — query parameters or fragments that follow the extension prevent correct detection, because `path.Ext` includes them in the result (e.g. `path.Ext("cover.png?size=200")` returns `.png?size=200`, not `.png`).
+
+| URL example | Detected MIME type |
+|-------------|-------------------|
+| `https://example.com/covers/1234.png` | `image/png` |
+| `https://example.com/covers/1234.png?size=200` | `image/jpeg` (falls back — query string appended to extension) |
+| `https://example.com/covers/1234.jpg` | `image/jpeg` |
+| `https://example.com/covers/1234` | `image/jpeg` (falls back — no extension) |
+
+If the extension is unknown or missing, the type falls back to `image/jpeg`.
 
 | Extension | MIME type |
 |-----------|-----------|
@@ -206,3 +200,19 @@ Authentication errors also include a `WWW-Authenticate: Basic realm="Biblioteka 
 1. Open the app → *Library → Network → OPDS Catalog → Add*.
 2. Set the URL to `https://<your-host>/opds`.
 3. Enter your OPDS username and password.
+
+
+---
+
+## Code architecture (for contributors)
+
+The OPDS handler is implemented across four focused files under `internal/handlers/`:
+
+| File | Responsibility |
+|------|---------------|
+| `opds.go` | `OPDSHandler` struct, `HandleOPDS` URL dispatcher, `downloadFile`, and `bookEntries` (batch-loading authors and files per book) |
+| `opds_feeds.go` | One function per feed endpoint: `rootFeed`, `allBooks`, `recentBooks`, `authorsFeed`, `authorBooks`, `seriesFeed`, `seriesBooks`, `searchResults` |
+| `opds_helpers.go` | Low-level helpers: XML serialisation (`writeOPDSFeed`, `writeOPDSError`), URL utilities (`opdsBaseURL`, `parsePage`), pagination link generation (`paginationLinks`), and MIME detection (`coverMIMEType`, `fileTypeMIME`) |
+| `opds_types.go` | XML struct definitions (`opdsFeed`, `opdsEntry`, `opdsLink`, …), namespace constants, and link-relation constants (`relSelf`, `relAcquisition`, …) |
+
+`HandleOPDS` performs path-based dispatch using `strings.TrimPrefix` / `strings.HasPrefix`; there is no router framework. Feed functions each call `writeOPDSFeed` or `writeOPDSError` as their final step, which handles XML serialisation and response headers.
