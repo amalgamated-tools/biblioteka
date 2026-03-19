@@ -494,8 +494,13 @@ func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 	}
 	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
-	// Process should succeed — the source is missing but the file exists at
-	// the reorganized location and is not yet indexed, so it should be indexed.
+	// Close the database to force subsequent lookups, including the candidate
+	// reorganized path lookup in resolveSourcePath, to return a non-sql.ErrNoRows
+	// error (e.g., "database is closed"). That error should propagate up.
+	if err := database.Close(); err != nil {
+		t.Fatalf("close database: %v", err)
+	}
+
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:        originalPath,
 		FileName:    filepath.Base(originalPath),
@@ -503,16 +508,7 @@ func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 		FileSize:    1024,
 		LibraryRoot: root,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
-
-	// Verify the book was created from the reorganized path.
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
+	if err == nil {
+		t.Fatalf("expected ProcessBookFile() to return an error when candidate lookup fails due to DB error")
 	}
 }
