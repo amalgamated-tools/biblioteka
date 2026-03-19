@@ -7,7 +7,7 @@ description: |
   continuously throughout the development cycle.
 
 on:
-  schedule: every 3h
+  schedule: every 24h
   workflow_dispatch:
 
 permissions: read-all
@@ -21,6 +21,9 @@ safe-outputs:
     title-prefix: "fix(accessibility): "
     labels: [a11y, automated-analysis]
     max: 15
+    expires: 7
+    group: true
+    close-older-issues: true
 
 tools:
   playwright:

@@ -123,7 +123,6 @@ func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, f
 		writeOPDSError(r, w, http.StatusInternalServerError, contentType, "urn:biblioteka:opds:error", "failed to encode feed")
 		return
 	}
-	}
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(buf.Bytes())
