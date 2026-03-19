@@ -337,6 +337,10 @@ Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that ru
 | **Artifacts Summary** | Sundays at ~06:00 UTC | GitHub Discussion in "artifacts" category with Actions artifact usage summary |
 | **Daily Malicious Code Scan** | Daily | Code scanning alerts for suspicious patterns in recent code changes |
 | **CI Failure Doctor** | On CI workflow failure | GitHub issues labeled `cookie` with root-cause analysis and recommended fixes |
+| **Portfolio Analyst** | Mondays at ~09:00 UTC | GitHub Discussion in "audits" category with workflow cost and reliability analysis |
+| **Static Analysis Report** | Daily | GitHub Discussion in "security" category with security scan results |
+| **Artifacts Summary** | Sundays at ~06:00 UTC | GitHub Discussion in "artifacts" category with Actions artifact usage summary |
+| **Daily Malicious Code Scan** | Daily | Code scanning alerts for suspicious patterns in recent code changes |
 
 #### Daily Accessibility Review
 
@@ -393,6 +397,22 @@ The `ci-doctor` workflow fires automatically whenever the **CI** workflow comple
 If the CI run **succeeds**, the workflow calls `noop` and exits without creating an issue.
 
 When you see a `[CI Failure Doctor]` issue, follow the recommended actions listed in the issue body before marking it as resolved.
+
+#### Portfolio Analyst
+
+The `portfolio-analyst` workflow runs every Monday at approximately 09:00 UTC. It downloads up to 30 days of agentic workflow logs and analyzes them for cost reduction opportunities (targeting 20%+ savings) and reliability improvements. Results are published as a GitHub Discussion in the **audits** category. Previous discussions from this workflow are closed automatically when a new one is created. You do not need to act on these discussions unless you want to adjust a workflow configuration.
+
+#### Static Analysis Report
+
+The `static-analysis-report` workflow runs daily. It scans agentic workflow files for security vulnerabilities using [zizmor](https://github.com/woodruffw/zizmor), [poutine](https://github.com/boostsecurityio/poutine), and [actionlint](https://github.com/rhysd/actionlint). Findings are posted as a GitHub Discussion in the **security** category. The workflow closes its previous discussion when it opens a new one to keep the list tidy.
+
+#### Artifacts Summary
+
+The `artifacts-summary` workflow runs every Sunday at approximately 06:00 UTC. It generates a report of GitHub Actions artifact usage (names, sizes, retention policies) across all workflows in the repository. The report is published as a GitHub Discussion in the **artifacts** category. Use it to identify large or stale artifacts that could be cleaned up to reduce storage costs.
+
+#### Daily Malicious Code Scan
+
+The `daily-malicious-code-scan` workflow runs daily. It reviews code changes from the previous three days for suspicious patterns that could indicate a malicious agentic threat — for example, credential exfiltration, supply-chain tampering, or obfuscated command execution. Confirmed findings are reported as code scanning alerts visible under **Security → Code scanning**. If you receive an alert from this workflow, treat it as a high-priority security event and investigate promptly.
 
 ### Slash-command workflows
 
