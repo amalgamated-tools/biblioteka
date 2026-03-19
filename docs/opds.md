@@ -98,7 +98,8 @@ The MIME type is inferred from the URL's file extension:
 
 | Extension | MIME type |
 |-----------|-----------|
-| `.jpg` / `.jpeg` (default) | `image/jpeg` |
+| `.jpg` / `.jpeg` | `image/jpeg` |
+| any other / unknown extension | `image/jpeg` (default fallback) |
 | `.png` | `image/png` |
 | `.webp` | `image/webp` |
 | `.avif` | `image/avif` |
