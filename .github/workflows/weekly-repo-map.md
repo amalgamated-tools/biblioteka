@@ -20,7 +20,7 @@ safe-outputs:
     max: 1
     close-older-issues: true
   noop:
-timeout-minutes: 10
+timeout-minutes: 20
 strict: true
 source: githubnext/agentics/workflows/weekly-repo-map.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
 ---
