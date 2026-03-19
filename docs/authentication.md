@@ -282,7 +282,7 @@ To manage keys programmatically, see the [API Keys endpoints](api-reference.md#a
 
 ## Rate Limiting
 
-Signup, login, and all OIDC endpoints are protected by a per-IP token-bucket rate limiter:
+Signup, login, logout, all OIDC auth endpoints (`/api/auth/oidc/login`, `/api/auth/oidc/callback`, `/api/auth/oidc/link`), the KOReader/KOSync protocol endpoints (`/api/user/create`, `/api/user/auth`, `/api/syncs/progress`), and the SMTP test endpoint (`POST /api/config/smtp/test`) are protected by a per-IP token-bucket rate limiter:
 
 | Parameter | Value |
 |-----------|-------|
