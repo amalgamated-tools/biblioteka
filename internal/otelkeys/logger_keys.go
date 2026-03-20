@@ -17,6 +17,7 @@ const (
 	Concurrency       string = "concurrency"
 	ContentType       string = "content_type"
 	Count             string = "count"
+	CoverID           string = "cover_id"
 	Description       string = "description"
 	Document          string = "document"
 	Duration          string = "duration"
