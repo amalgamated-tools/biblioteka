@@ -54,7 +54,7 @@ db/migrations/
 
 ### HTTP handlers
 - Each domain has a handler struct (e.g., `BookHandler`) that holds `*db.DB` and other dependencies.
-- Register routes in `internal/server/server.go` on the standard `http.ServeMux` — do not introduce a router framework.
+- Register routes in `internal/server/routes.go` on the standard `http.ServeMux` — do not introduce a router framework.
 - Use `writeJSON(r.Context(), w, status, data)` and `writeError(r.Context(), w, status, message)` from `internal/handlers/helpers.go` for all responses.
 - Extract resource IDs from paths with `extractPathID(r.URL.Path, "/api/books/")` — there are no named URL parameters.
 
