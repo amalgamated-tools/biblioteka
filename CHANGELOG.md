@@ -11,7 +11,7 @@
 * Kobo e-reader sync integration ([#313](https://github.com/amalgamated-tools/biblioteka/issues/313)) ([0750122](https://github.com/amalgamated-tools/biblioteka/commit/07501225715e7a4da42e1cca5de27320272ab845))
 * KOReader kosync-compatible reading progress sync ([#314](https://github.com/amalgamated-tools/biblioteka/issues/314)) ([bb8890f](https://github.com/amalgamated-tools/biblioteka/commit/bb8890f697a55c0a1b9b5104d4c8e93ecd50ebf8))
 * update metadata extraction documentation and improve ExifTool integration ([#491](https://github.com/amalgamated-tools/biblioteka/issues/491)) ([b6dc3b0](https://github.com/amalgamated-tools/biblioteka/commit/b6dc3b0c98a24f9393657b3581855f0ee4c52651))
-* we don't need the extra indirection ([#264](https://github.com/amalgamated-tools/biblioteka/issues/264)) ([4f28c96](https://github.com/amalgamated-tools/biblioteka/commit/4f28c964181d405851e1fe1d6ef13af4a9155045))
+* **internal:** simplify implementation by removing an unnecessary level of indirection (no user-visible change) ([#264](https://github.com/amalgamated-tools/biblioteka/issues/264)) ([4f28c96](https://github.com/amalgamated-tools/biblioteka/commit/4f28c964181d405851e1fe1d6ef13af4a9155045))
 
 
 ### Bug Fixes
@@ -28,7 +28,7 @@
 * **accessibility:** associate form validation errors with specific inputs in LibraryForm ([#403](https://github.com/amalgamated-tools/biblioteka/issues/403)) ([9ca05e7](https://github.com/amalgamated-tools/biblioteka/commit/9ca05e756fa6b5c65a079e5591d1661ef840057c))
 * **accessibility:** LibraryForm: use fieldset/legend for folder paths group ([#401](https://github.com/amalgamated-tools/biblioteka/issues/401)) ([c885e79](https://github.com/amalgamated-tools/biblioteka/commit/c885e79f9d82a62b5d790b83fd2bab6e3f5226e9))
 * **accessibility:** update document.title on SPA navigation (WCAG 2.4.2) ([#341](https://github.com/amalgamated-tools/biblioteka/issues/341)) ([c0c919b](https://github.com/amalgamated-tools/biblioteka/commit/c0c919b02384b35d3574df33e5e896a5b67c2f14))
-* accessiblle ([af164f8](https://github.com/amalgamated-tools/biblioteka/commit/af164f84bd0a7491c54b5c03b25a1dd6bfb371fe))
+* accessible ([af164f8](https://github.com/amalgamated-tools/biblioteka/commit/af164f84bd0a7491c54b5c03b25a1dd6bfb371fe))
 * Add Greptile labeler workflow and clean up code ([#432](https://github.com/amalgamated-tools/biblioteka/issues/432)) ([6592d2d](https://github.com/amalgamated-tools/biblioteka/commit/6592d2d56bad9fd04013c40af07e7bed86a6b4d3))
 * **ci:** restore Daily File Diet agent execution ([#265](https://github.com/amalgamated-tools/biblioteka/issues/265)) ([9eff0af](https://github.com/amalgamated-tools/biblioteka/commit/9eff0af02f48e9d6dbf3c09e1bb9d3a7961c709d))
 * **code-simplifier:** refactor: simplify kosync handler and system endpoint method checks ([#412](https://github.com/amalgamated-tools/biblioteka/issues/412)) ([d178c86](https://github.com/amalgamated-tools/biblioteka/commit/d178c86438cb54e5f8563614cc3bf9d60fe868af))
