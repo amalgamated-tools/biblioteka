@@ -1417,25 +1417,6 @@ Streams a book file to the client with the correct `Content-Type` and `Content-D
 
 ### `GET /opds/covers/{bookID}` — Book cover image
 
-Serves the cover image for a book. For books imported from EPUB files, the cover is extracted automatically and stored as a `data:` URL; this endpoint decodes and streams the image bytes with the correct `Content-Type`. For books with a plain HTTPS cover URL, the endpoint issues a `307 Temporary Redirect` to that URL.
-
-**Path parameters:** `{bookID}` — book resource ID
-
-**Responses:**
-
-| Status | Description |
-|--------|-------------|
-| `200 OK` | Image stream (for `data:` URLs); `Content-Type` is the sniffed or declared image MIME type |
-| `307 Temporary Redirect` | Redirect to a plain HTTPS cover URL |
-| `404 Not Found` | Book not found or no cover image set |
-| `500 Internal Server Error` | Cover data is present but not a valid image |
-
-See [Cover images](opds.md#cover-images) in the OPDS guide for MIME-type detection rules and details on the `data:` URL content-sniffing behaviour.
-
----
-
-### `GET /opds/covers/{bookID}` — Book cover image
-
 Serve a book's cover image. When the stored `cover_image_url` is a `data:` URL (as set automatically for EPUB files during import), the endpoint decodes the base64 payload and streams the image bytes with the correct `Content-Type`. When it is a plain `https://` URL the client receives a `307` redirect. OPDS clients encounter this URL through the `rel="http://opds-spec.org/image"` link in acquisition feed entries and do not need to construct it manually.
 
 **Path parameters:** `{bookID}` — book resource ID
@@ -1450,6 +1431,8 @@ Serve a book's cover image. When the stored `cover_image_url` is a `data:` URL (
 | `307 Temporary Redirect` | Cover URL is a plain HTTP/HTTPS URL; client is redirected there |
 | `404 Not Found` | Book not found or no cover image set |
 | `500 Internal Server Error` | Stored data URL is malformed or its payload is not a valid image |
+
+See [Cover images](opds.md#cover-images) in the OPDS guide for MIME-type detection rules and details on the `data:` URL content-sniffing behaviour.
 
 ---
 
