@@ -163,11 +163,19 @@ func (h *OPDSHandler) serveCover(w http.ResponseWriter, r *http.Request, bookID 
 	if err == nil {
 		if len(data) > 0 {
 			sniffed := http.DetectContentType(data)
-			if !strings.HasPrefix(sniffed, "image/") {
+			declaredIsImage := strings.HasPrefix(contentType, "image/")
+			sniffedIsImage := strings.HasPrefix(sniffed, "image/")
+			switch {
+			case sniffedIsImage:
+				// Trust the sniffed image type when it is also an image.
+				contentType = sniffed
+			case declaredIsImage:
+				// Trust the declared image MIME type even if sniffing disagrees
+				// (e.g. SVG detected as text/xml or application/octet-stream).
+			default:
 				http.Error(w, "invalid cover image", http.StatusInternalServerError)
 				return
 			}
-			contentType = sniffed
 		}
 		if !strings.HasPrefix(contentType, "image/") {
 			http.Error(w, "invalid cover image", http.StatusInternalServerError)
