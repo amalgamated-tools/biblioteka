@@ -117,6 +117,7 @@ Every database query that reads or writes user-owned data **must** filter by `us
 - Manage reactive state in Svelte stores under `src/stores/`.
 - Style with Tailwind CSS utility classes — no component library.
 - Component files are PascalCase `.svelte`; store files are lowercase `.ts`.
+- Run `pnpm run lint` (ESLint) and `pnpm run check` (svelte-check) before committing frontend changes.
 - Run `pnpm run lint` (ESLint) and `pnpm run check` (svelte-check) before committing frontend code.
 
 ## Testing
