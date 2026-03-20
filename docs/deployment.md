@@ -110,7 +110,18 @@ Before going live, verify each item:
 - [ ] **PostgreSQL backups** — if using PostgreSQL, schedule regular `pg_dump` backups of the `biblioteka` database.
 - [ ] **SQLite backups** — if using SQLite, back up the Docker volume (`biblioteka-data`) or the `*.db` file.
 - [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to keep anonymous telemetry disabled (default). Set to `true` to enable it.
-- [ ] **SMTP** — if you want email delivery (e.g., password-reset or notification features), set `SMTP_HOST`, `SMTP_FROM`, and any other `SMTP_*` variables. These can be passed via a `.env` file or exported in your shell before running `docker compose up`.
+- [ ] **SMTP** — if you want email delivery, configure the variables below (or use the admin UI under *Settings → Email*). Environment variables take precedence over UI settings when `SMTP_HOST` is set; unset `SMTP_HOST` to switch back to UI-managed config.
+
+  | Variable | Default | Notes |
+  |----------|---------|-------|
+  | `SMTP_HOST` | *(empty)* | Hostname or IP of the SMTP server. When set, all `SMTP_*` env vars override database-stored settings (UI becomes read-only) |
+  | `SMTP_PORT` | `587` | Server port |
+  | `SMTP_TLS` | `starttls` | TLS mode: `none`, `starttls`, or `tls`. Authenticated SMTP (`SMTP_USERNAME` set) without TLS is only permitted for loopback addresses |
+  | `SMTP_USERNAME` | *(empty)* | Auth username; leave empty for unauthenticated relay |
+  | `SMTP_PASSWORD` | *(empty)* | Auth password; required when `SMTP_USERNAME` is set |
+  | `SMTP_FROM` | *(empty)* | Envelope `From` address (e.g. `biblioteka@example.com`); required when `SMTP_HOST` is set |
+
+  These can be passed via a `.env` file or exported in your shell before running `docker compose up`.
 
 ## Environment Variables
 
