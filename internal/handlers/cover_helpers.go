@@ -1,15 +1,14 @@
 package handlers
 
 import (
-	"encoding/base64"
-	"errors"
-	"fmt"
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/amalgamated-tools/biblioteka/internal/coverutil"
 )
 
-var errNotDataURL = errors.New("not a data URL")
+var errNotDataURL = coverutil.ErrNotDataURL
 
 func coverMIMEType(imageURL string) string {
 	if mimeType, ok := dataURLMIMEType(imageURL); ok && strings.HasPrefix(mimeType, "image/") {
@@ -38,35 +37,7 @@ func coverMIMEType(imageURL string) string {
 }
 
 func decodeDataURL(raw string) (string, []byte, error) {
-	meta, payload, ok := strings.Cut(raw, ",")
-	if !ok || !strings.HasPrefix(meta, "data:") {
-		return "", nil, errNotDataURL
-	}
-
-	header := strings.TrimPrefix(meta, "data:")
-	if !strings.HasSuffix(header, ";base64") {
-		return "", nil, fmt.Errorf("unsupported data URL encoding")
-	}
-
-	mimeType := strings.TrimSuffix(header, ";base64")
-	if mimeType == "" {
-		mimeType = "text/plain;charset=US-ASCII"
-	}
-
-	const maxDecodedBytes = 20 << 20 // 20 MB
-	if base64.StdEncoding.DecodedLen(len(payload)) > maxDecodedBytes+2 {
-		return "", nil, fmt.Errorf("data URL payload exceeds %d-byte limit", maxDecodedBytes)
-	}
-
-	data, err := base64.StdEncoding.DecodeString(payload)
-	if err != nil {
-		return "", nil, fmt.Errorf("decode data URL payload: %w", err)
-	}
-	if len(data) > maxDecodedBytes {
-		return "", nil, fmt.Errorf("data URL payload exceeds %d-byte limit", maxDecodedBytes)
-	}
-
-	return mimeType, data, nil
+	return coverutil.DecodeDataURL(raw)
 }
 
 func dataURLMIMEType(raw string) (string, bool) {
