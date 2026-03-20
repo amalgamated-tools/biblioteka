@@ -12,14 +12,15 @@ import (
 
 // OPFData holds the metadata fields to write into a metadata.opf file.
 type OPFData struct {
-	Title       string
-	Author      string
-	ISBN        string
-	Language    string
-	Date        string
-	Publisher   string
-	Description string
-	HasCover    bool
+	Title          string
+	Author         string
+	ISBN           string
+	Language       string
+	Date           string
+	Publisher      string
+	Description    string
+	CoverFilename  string // e.g. "cover.jpg", "cover.png"; empty means no cover
+	CoverMediaType string // e.g. "image/jpeg", "image/png"
 }
 
 // WriteOPF generates an OPF 2.0 metadata file and writes it to metadata.opf in dir.
@@ -140,7 +141,7 @@ func marshalOPF(data OPFData) ([]byte, error) {
 		return nil, err
 	}
 
-	if data.HasCover {
+	if data.CoverFilename != "" {
 		metaEl := xml.StartElement{
 			Name: xml.Name{Local: "meta"},
 			Attr: []xml.Attr{
@@ -160,7 +161,7 @@ func marshalOPF(data OPFData) ([]byte, error) {
 		return nil, err
 	}
 
-	if data.HasCover {
+	if data.CoverFilename != "" {
 		manifestStart := xml.StartElement{Name: xml.Name{Local: "manifest"}}
 		if err := enc.EncodeToken(manifestStart); err != nil {
 			return nil, err
@@ -169,8 +170,8 @@ func marshalOPF(data OPFData) ([]byte, error) {
 			Name: xml.Name{Local: "item"},
 			Attr: []xml.Attr{
 				{Name: xml.Name{Local: "id"}, Value: "cover-image"},
-				{Name: xml.Name{Local: "href"}, Value: "cover.jpg"},
-				{Name: xml.Name{Local: "media-type"}, Value: "image/jpeg"},
+				{Name: xml.Name{Local: "href"}, Value: data.CoverFilename},
+				{Name: xml.Name{Local: "media-type"}, Value: data.CoverMediaType},
 			},
 		}
 		if err := enc.EncodeToken(item); err != nil {

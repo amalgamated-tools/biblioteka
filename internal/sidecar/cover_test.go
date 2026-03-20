@@ -13,8 +13,15 @@ func TestWriteCover_ValidDataURL(t *testing.T) {
 	encoded := base64.StdEncoding.EncodeToString(imageData)
 	dataURL := "data:image/jpeg;base64," + encoded
 
-	if err := WriteCover(dir, dataURL); err != nil {
+	filename, mimeType, err := WriteCover(dir, dataURL)
+	if err != nil {
 		t.Fatalf("WriteCover: %v", err)
+	}
+	if filename != "cover.jpg" {
+		t.Errorf("filename = %q, want %q", filename, "cover.jpg")
+	}
+	if mimeType != "image/jpeg" {
+		t.Errorf("mimeType = %q, want %q", mimeType, "image/jpeg")
 	}
 
 	written, err := os.ReadFile(filepath.Join(dir, "cover.jpg"))
@@ -32,25 +39,79 @@ func TestWriteCover_ValidDataURL(t *testing.T) {
 	}
 }
 
-func TestWriteCover_PNGDataURL_WritesAsJPG(t *testing.T) {
+func TestWriteCover_PNGDataURL_WritesAsPNG(t *testing.T) {
 	dir := t.TempDir()
 	imageData := []byte{0x89, 0x50, 0x4E, 0x47}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
 	dataURL := "data:image/png;base64," + encoded
 
-	if err := WriteCover(dir, dataURL); err != nil {
+	filename, mimeType, err := WriteCover(dir, dataURL)
+	if err != nil {
 		t.Fatalf("WriteCover: %v", err)
 	}
+	if filename != "cover.png" {
+		t.Errorf("filename = %q, want %q", filename, "cover.png")
+	}
+	if mimeType != "image/png" {
+		t.Errorf("mimeType = %q, want %q", mimeType, "image/png")
+	}
 
-	// Should still be named cover.jpg regardless of source format.
-	if _, err := os.Stat(filepath.Join(dir, "cover.jpg")); err != nil {
-		t.Errorf("cover.jpg not found: %v", err)
+	if _, err := os.Stat(filepath.Join(dir, "cover.png")); err != nil {
+		t.Errorf("cover.png not found: %v", err)
+	}
+}
+
+func TestWriteCover_WebPDataURL(t *testing.T) {
+	dir := t.TempDir()
+	imageData := []byte{0x52, 0x49, 0x46, 0x46}
+	encoded := base64.StdEncoding.EncodeToString(imageData)
+	dataURL := "data:image/webp;base64," + encoded
+
+	filename, mimeType, err := WriteCover(dir, dataURL)
+	if err != nil {
+		t.Fatalf("WriteCover: %v", err)
+	}
+	if filename != "cover.webp" {
+		t.Errorf("filename = %q, want %q", filename, "cover.webp")
+	}
+	if mimeType != "image/webp" {
+		t.Errorf("mimeType = %q, want %q", mimeType, "image/webp")
+	}
+}
+
+func TestWriteCover_AVIFDataURL(t *testing.T) {
+	dir := t.TempDir()
+	imageData := []byte{0x00, 0x00, 0x00, 0x1C}
+	encoded := base64.StdEncoding.EncodeToString(imageData)
+	dataURL := "data:image/avif;base64," + encoded
+
+	filename, mimeType, err := WriteCover(dir, dataURL)
+	if err != nil {
+		t.Fatalf("WriteCover: %v", err)
+	}
+	if filename != "cover.avif" {
+		t.Errorf("filename = %q, want %q", filename, "cover.avif")
+	}
+	if mimeType != "image/avif" {
+		t.Errorf("mimeType = %q, want %q", mimeType, "image/avif")
+	}
+}
+
+func TestWriteCover_UnsupportedFormat(t *testing.T) {
+	dir := t.TempDir()
+	imageData := []byte{0x47, 0x49, 0x46, 0x38}
+	encoded := base64.StdEncoding.EncodeToString(imageData)
+	dataURL := "data:image/gif;base64," + encoded
+
+	_, _, err := WriteCover(dir, dataURL)
+	if err == nil {
+		t.Fatal("expected error for unsupported image format")
 	}
 }
 
 func TestWriteCover_InvalidDataURL(t *testing.T) {
 	dir := t.TempDir()
-	err := WriteCover(dir, "https://example.com/image.jpg")
+	_, _, err := WriteCover(dir, "https://example.com/image.jpg")
 	if err == nil {
 		t.Fatal("expected error for non-data URL")
 	}
@@ -67,7 +128,7 @@ func TestWriteCover_OverwritesExisting(t *testing.T) {
 
 	imageData := []byte{0xFF, 0xD8}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
-	if err := WriteCover(dir, "data:image/jpeg;base64,"+encoded); err != nil {
+	if _, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded); err != nil {
 		t.Fatalf("WriteCover: %v", err)
 	}
 
