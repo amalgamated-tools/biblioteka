@@ -70,7 +70,7 @@ db/migrations/
 ### HTTP handlers
 
 - Each domain has a handler struct (e.g., `BookHandler`) that holds `*db.DB` and other dependencies.
-- Register routes in `internal/server/server.go` on the standard `http.ServeMux` — do not introduce a router framework.
+- Register routes in `internal/server/routes.go` (via `(*Server).setupRoutes`) on the standard `http.ServeMux` — do not introduce a router framework.
 - Use `writeJSON(r.Context(), w, status, data)` and `writeError(r.Context(), w, status, message)` from `internal/handlers/helpers.go` for all responses.
 - Extract resource IDs with `extractPathID(r.URL.Path, "/api/books/")` — there are no named URL parameters.
 
@@ -90,7 +90,7 @@ Every database query that reads or writes user-owned data **must** filter by `us
 
 ### Dependencies
 
-- Avoid adding new dependencies. The project values minimal dependencies.
+- Avoid adding new dependencies. Discuss in an issue first — the project values minimal dependencies.
 - Never edit `*.gen.go` files by hand; regenerate with `go generate ./...`.
 
 ## Database Conventions
