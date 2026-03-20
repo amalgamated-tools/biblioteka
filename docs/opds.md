@@ -95,7 +95,7 @@ For non-EPUB formats (PDF, MOBI, AZW3), cover art is not yet extracted automatic
 
 The `Content-Type` of the cover link is inferred differently depending on how the URL is stored:
 
-- **`data:` URLs** (set automatically for EPUBs): the MIME type is read directly from the `data:` header (e.g. `image/jpeg`, `image/png`). Content-sniffing is applied to pick the most specific type when the sniffed and declared types both indicate an image.
+- **`data:` URLs** (set automatically for EPUBs): the MIME type is read directly from the `data:` header (e.g. `image/jpeg`, `image/png`). Content-sniffing is then applied: the sniffed type is used whenever it identifies the bytes as an image, taking precedence over the declared type; if sniffing does not identify the bytes as an image but the declared type is an image (e.g. SVG detected as `text/xml`), the declared type is used instead.
 - **Plain HTTPS URLs**: the MIME type is inferred from the URL's path component using `url.Parse` + `path.Ext`. Query parameters and fragments do **not** interfere with detection because the parser strips them before extracting the extension.
 
 | URL example | Detected MIME type |
