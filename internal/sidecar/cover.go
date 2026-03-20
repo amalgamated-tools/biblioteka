@@ -27,6 +27,16 @@ func WriteCover(dir string, coverDataURL string) (filename, mimeType string, err
 	}
 	filename = "cover" + ext
 	path := filepath.Join(dir, filename)
+
+	// Remove any previously written cover files to avoid orphans when formats change.
+	for _, oldExt := range []string{".jpg", ".png", ".webp", ".avif"} {
+		oldPath := filepath.Join(dir, "cover"+oldExt)
+		if oldPath == path {
+			continue
+		}
+		_ = os.Remove(oldPath) // best-effort cleanup
+	}
+
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return "", "", fmt.Errorf("write %s: %w", filename, err)
 	}
