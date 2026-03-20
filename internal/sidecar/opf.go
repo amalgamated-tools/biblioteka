@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/google/uuid"
 )
 
 // OPFData holds the metadata fields to write into a metadata.opf file.
@@ -83,21 +85,42 @@ func marshalOPF(data OPFData) ([]byte, error) {
 	if err := writeDCElement("title", data.Title); err != nil {
 		return nil, err
 	}
-	if err := writeDCElement("creator", data.Author); err != nil {
-		return nil, err
-	}
-	if data.ISBN != "" {
+	if data.Author != "" {
 		s := xml.StartElement{
-			Name: xml.Name{Local: "dc:identifier"},
+			Name: xml.Name{Local: "dc:creator"},
 			Attr: []xml.Attr{
-				{Name: xml.Name{Local: "id"}, Value: "uid"},
-				{Name: xml.Name{Local: "opf:scheme"}, Value: "ISBN"},
+				{Name: xml.Name{Local: "opf:role"}, Value: "aut"},
 			},
 		}
 		if err := enc.EncodeToken(s); err != nil {
 			return nil, err
 		}
-		if err := enc.EncodeToken(xml.CharData([]byte(data.ISBN))); err != nil {
+		if err := enc.EncodeToken(xml.CharData([]byte(data.Author))); err != nil {
+			return nil, err
+		}
+		if err := enc.EncodeToken(s.End()); err != nil {
+			return nil, err
+		}
+	}
+
+	identifierValue := data.ISBN
+	identifierScheme := "ISBN"
+	if identifierValue == "" {
+		identifierValue = uuid.NewString()
+		identifierScheme = "UUID"
+	}
+	{
+		s := xml.StartElement{
+			Name: xml.Name{Local: "dc:identifier"},
+			Attr: []xml.Attr{
+				{Name: xml.Name{Local: "id"}, Value: "uid"},
+				{Name: xml.Name{Local: "opf:scheme"}, Value: identifierScheme},
+			},
+		}
+		if err := enc.EncodeToken(s); err != nil {
+			return nil, err
+		}
+		if err := enc.EncodeToken(xml.CharData([]byte(identifierValue))); err != nil {
 			return nil, err
 		}
 		if err := enc.EncodeToken(s.End()); err != nil {
