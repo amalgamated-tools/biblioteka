@@ -164,13 +164,14 @@ jobs:
       - name: Cache exiftool apt package
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
         with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-apt-exiftool-v1
+          path: ${{ runner.temp }}/apt-cache
+          key: ${{ runner.os }}-apt-exiftool-${{ hashFiles('.github/workflows/test.yml') }}
 
       - name: Install exiftool
         run: |
+          mkdir -p "${{ runner.temp }}/apt-cache"
           sudo apt-get update -qq
-          sudo apt-get install -y -q libimage-exiftool-perl
+          sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q libimage-exiftool-perl
           exiftool -ver
 
       - name: Run Go tests
