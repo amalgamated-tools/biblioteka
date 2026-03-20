@@ -10,6 +10,10 @@ import (
 	"github.com/google/uuid"
 )
 
+// bibliotekaNamespace is a fixed, application-specific namespace UUID for
+// deriving deterministic v5 UUIDs from book metadata.
+var bibliotekaNamespace = uuid.MustParse("a5d3b2e1-7f4c-4e8a-9d6b-1c2e3f4a5b6d")
+
 // OPFData holds the metadata fields to write into a metadata.opf file.
 type OPFData struct {
 	Title          string
@@ -25,6 +29,10 @@ type OPFData struct {
 
 // WriteOPF generates an OPF 2.0 metadata file and writes it to metadata.opf in dir.
 func WriteOPF(dir string, data OPFData) error {
+	if (data.CoverFilename == "") != (data.CoverMediaType == "") {
+		return fmt.Errorf("WriteOPF: CoverFilename and CoverMediaType must both be set or both be empty")
+	}
+
 	xmlBytes, err := marshalOPF(data)
 	if err != nil {
 		return fmt.Errorf("marshal OPF: %w", err)
@@ -55,7 +63,7 @@ func marshalOPF(data OPFData) ([]byte, error) {
 	}
 
 	if err := enc.EncodeToken(start); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("encode package start: %w", err)
 	}
 
 	metaStart := xml.StartElement{
@@ -66,7 +74,7 @@ func marshalOPF(data OPFData) ([]byte, error) {
 		},
 	}
 	if err := enc.EncodeToken(metaStart); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("encode metadata start: %w", err)
 	}
 
 	writeDCElement := func(name, value string) error {
@@ -75,12 +83,15 @@ func marshalOPF(data OPFData) ([]byte, error) {
 		}
 		s := xml.StartElement{Name: xml.Name{Local: "dc:" + name}}
 		if err := enc.EncodeToken(s); err != nil {
-			return err
+			return fmt.Errorf("encode dc:%s start: %w", name, err)
 		}
 		if err := enc.EncodeToken(xml.CharData(value)); err != nil {
-			return err
+			return fmt.Errorf("encode dc:%s value: %w", name, err)
 		}
-		return enc.EncodeToken(s.End())
+		if err := enc.EncodeToken(s.End()); err != nil {
+			return fmt.Errorf("encode dc:%s end: %w", name, err)
+		}
+		return nil
 	}
 
 	if err := writeDCElement("title", data.Title); err != nil {
@@ -94,13 +105,13 @@ func marshalOPF(data OPFData) ([]byte, error) {
 			},
 		}
 		if err := enc.EncodeToken(s); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode dc:creator start: %w", err)
 		}
 		if err := enc.EncodeToken(xml.CharData([]byte(data.Author))); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode dc:creator value: %w", err)
 		}
 		if err := enc.EncodeToken(s.End()); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode dc:creator end: %w", err)
 		}
 	}
 
@@ -110,8 +121,8 @@ func marshalOPF(data OPFData) ([]byte, error) {
 		// Derive a stable, deterministic UUID from available metadata so that
 		// the identifier does not change across repeated OPF writes for the
 		// same book when ISBN is missing.
-		stableKey := fmt.Sprintf("%s|%s|%s|%s", data.Title, data.Author, data.Publisher, data.Date)
-		u := uuid.NewSHA1(uuid.NameSpaceURL, []byte(stableKey))
+		stableKey := fmt.Sprintf("%s\x00%s\x00%s\x00%s", data.Title, data.Author, data.Publisher, data.Date)
+		u := uuid.NewSHA1(bibliotekaNamespace, []byte(stableKey))
 		identifierValue = u.String()
 		identifierScheme = "UUID"
 	}
@@ -124,13 +135,13 @@ func marshalOPF(data OPFData) ([]byte, error) {
 			},
 		}
 		if err := enc.EncodeToken(s); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode dc:identifier start: %w", err)
 		}
 		if err := enc.EncodeToken(xml.CharData([]byte(identifierValue))); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode dc:identifier value: %w", err)
 		}
 		if err := enc.EncodeToken(s.End()); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode dc:identifier end: %w", err)
 		}
 	}
 	if err := writeDCElement("language", data.Language); err != nil {
@@ -155,21 +166,21 @@ func marshalOPF(data OPFData) ([]byte, error) {
 			},
 		}
 		if err := enc.EncodeToken(metaEl); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode cover meta: %w", err)
 		}
 		if err := enc.EncodeToken(metaEl.End()); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode cover meta end: %w", err)
 		}
 	}
 
 	if err := enc.EncodeToken(metaStart.End()); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("encode metadata end: %w", err)
 	}
 
 	if data.CoverFilename != "" {
 		manifestStart := xml.StartElement{Name: xml.Name{Local: "manifest"}}
 		if err := enc.EncodeToken(manifestStart); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode manifest start: %w", err)
 		}
 		item := xml.StartElement{
 			Name: xml.Name{Local: "item"},
@@ -180,22 +191,22 @@ func marshalOPF(data OPFData) ([]byte, error) {
 			},
 		}
 		if err := enc.EncodeToken(item); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode manifest item: %w", err)
 		}
 		if err := enc.EncodeToken(item.End()); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode manifest item end: %w", err)
 		}
 		if err := enc.EncodeToken(manifestStart.End()); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("encode manifest end: %w", err)
 		}
 	}
 
 	if err := enc.EncodeToken(start.End()); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("encode package end: %w", err)
 	}
 
 	if err := enc.Flush(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("flush OPF XML: %w", err)
 	}
 
 	return buf.Bytes(), nil
