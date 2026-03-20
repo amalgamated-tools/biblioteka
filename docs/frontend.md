@@ -27,16 +27,17 @@ frontend/
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
-      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; contains icon-only action buttons (Create library, Library settings) with `aria-label` and `aria-hidden="true"` on their icons (WCAG 4.1.2)
+      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; icon-only action links (Create library, Library settings) carry `aria-label` and `aria-hidden="true"` on their icons (WCAG 4.1.2)
       libraries/          Reusable sub-components for the Libraries view
         LibraryForm.svelte   Create / edit library form
         LibraryView.svelte   Library detail with book listing
-      settings/           Tab sub-components for the Settings page (the SMTP admin tab is inline in Settings.svelte — see Settings component architecture below)
+      settings/           Tab sub-components for the Settings page (see Settings component architecture below)
         AccountTab.svelte       Account & password management; OIDC linking
         APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix)
         KoboTab.svelte          Kobo sync token management; displays setup instructions
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
         PreferencesTab.svelte   Display theme selection
+        SmtpTab.svelte          Admin: SMTP mail server configuration
         UsersTab.svelte         Admin: user list and admin-role toggling
       ui/                 Generic reusable UI components
         AlertBanner.svelte   Dismissible alert / error banner
@@ -342,10 +343,32 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 | `KoboTab.svelte` | `settings/kobo` | All users | Create and revoke Kobo sync tokens; copy device sync URL |
 | `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
-| *(inline in `Settings.svelte`)* | `settings/smtp` | Admins only | Configure SMTP mail server |
+| `SmtpTab.svelte` | `settings/smtp` | Admins only | Configure SMTP mail server |
 | `UsersTab.svelte` | `settings/users` | Admins only | List users; toggle admin role |
 
-`Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data. The SMTP tab is the exception: its state and logic live directly in `Settings.svelte` rather than in a dedicated sub-component.
+`Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data.
+
+### SmtpTab (`settings/smtp`)
+
+`SmtpTab.svelte` renders a form for configuring the outgoing mail server. It is only shown to admin users.
+
+**Form fields:**
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| Host | Yes | Hostname or IP of the SMTP server |
+| Port | Yes | Defaults to `587` |
+| TLS Mode | Yes | Dropdown: `STARTTLS` (default), `TLS`, or `None`. Authenticated SMTP without TLS is blocked for non-loopback servers |
+| Username | No | Leave empty for unauthenticated relay |
+| Password | Conditional | Required when Username is set. Leave blank on update to keep the existing password |
+| From Address | Yes | Envelope `From` address; must be a valid email |
+
+**Key behaviours:**
+
+- **Status badge** — Shows *Configured* (green) or *Not configured* (grey) based on whether a complete SMTP config exists in the database.
+- **Test Email button** — Visible only when the server is configured. Sends a test message to the authenticated user's email address. Subject to rate-limiting (one send per minute).
+- **Environment-variable override banner** — When `SMTP_HOST` is set as a server environment variable, a blue informational banner replaces the form: *"SMTP is configured via environment variables and cannot be changed here."* The tab becomes read-only. To use the UI instead, unset `SMTP_HOST` from the environment and restart the server.
+- **Password preservation** — On save, leaving the password field blank preserves the existing stored credential; fill it only to change it.
 
 ### One-time prop initialisation (`svelte-ignore state_referenced_locally`)
 
@@ -373,7 +396,7 @@ Svelte 5 emits a `state_referenced_locally` warning for this pattern because the
 2. Define an `interface Props { … }` and use `$props()` for any data the tab needs from `Settings.svelte`.
 3. Add `"my-tab"` to the `SettingsTab` union type and `validTabs` array in `Settings.svelte`.
 4. Import and render `<MyTab />` inside the `{#if activeTab === "my-tab"}` block in `Settings.svelte`.
-5. Add a navigation `<button>` in `Settings.svelte`'s sidebar `<nav>`, wrapped in `{#if isAdmin}` if the tab is admin-only.
+5. Add a navigation `<a href="#settings/my-tab">` link in `Settings.svelte`'s sidebar `<nav>`, wrapped in `{#if isAdmin}` if the tab is admin-only.
 6. Add `"my-tab"` to the `SettingsSubPath` union type **and** the `settingsSubTitles` record in `frontend/src/stores/router.svelte.ts`. This ensures the browser tab title is set correctly (e.g., `My Tab – biblioteka`). If you skip this step, the title falls back to the top-level `Settings – biblioteka`.
 7. Update the tables above and in the [Page titles](#page-titles) section.
 
@@ -560,66 +583,68 @@ Only the active tab sits in the natural tab order (`tabindex="0"`); inactive tab
 **Why `hidden` instead of Svelte `{#if}`:**
 The `hidden` HTML attribute is used on inactive panels rather than Svelte's `{#if}` block. Both panels stay in the DOM, so `aria-controls` references always point to a valid element. Removing a panel with `{#if}` would leave a dangling `aria-controls` reference and break the ARIA association.
 
-### `aria-current` on active navigation buttons
+### `aria-current` on active navigation links
 
 **WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
 
-Navigation buttons that represent the currently active view must carry `aria-current="page"`. Without this attribute, keyboard and screen-reader users have no programmatic way to determine which section is active — they can only infer it from visual styling, which is inaccessible.
+Navigation links that represent the currently active view must carry `aria-current="page"`. Without this attribute, keyboard and screen-reader users have no programmatic way to determine which section is active — they can only infer it from visual styling, which is inaccessible.
 
 #### Sidebar navigation (`Sidebar.svelte`)
 
-Each top-level navigation button receives `aria-current` dynamically based on the `currentView` prop:
+Each top-level navigation link receives `aria-current` dynamically based on the `currentView` prop:
 
 ```svelte
-<button
-  onclick={() => handleViewNavigate("dashboard")}
+<a
+  href="#dashboard"
   aria-current={currentView === "dashboard" ? "page" : undefined}
   class="…"
+  onclick={onClose}
 >
   <LayoutDashboard class="w-5 h-5" />
   Dashboard
-</button>
+</a>
 ```
 
-- Set `aria-current="page"` when the button represents the currently displayed view.
-- Pass `undefined` (not `false`) for inactive buttons — `undefined` omits the attribute entirely, which is the correct behaviour. Using `aria-current="false"` is valid but adds noise and can confuse some assistive technologies.
+- Set `aria-current="page"` when the link represents the currently displayed view.
+- Pass `undefined` (not `false`) for inactive links — `undefined` omits the attribute entirely, which is the correct behaviour. Using `aria-current="false"` is valid but adds noise and can confuse some assistive technologies.
 
 #### Settings tab navigation (`Settings.svelte`)
 
 The same pattern applies to settings sub-tabs, where the active tab is determined from the current `settingsSubPath`:
 
 ```svelte
-<button
-  onclick={() => navigateToSettings("account")}
+<a
+  href="#settings/account"
   aria-current={isActive ? "page" : undefined}
   class="…"
 >
   Account
-</button>
+</a>
 ```
 
 #### Rule for new navigation elements
 
-Whenever you add a button or link that acts as a navigation item pointing to a distinct view or sub-page, apply `aria-current={isActive ? "page" : undefined}`. Do **not** rely solely on CSS class changes to convey the active state.
+Whenever you add a navigation link that points to a distinct view or sub-page, apply `aria-current={isActive ? "page" : undefined}`. Do **not** rely solely on CSS class changes to convey the active state.
 
-### Accessible labels for icon-only buttons and dynamic inputs
+### Accessible labels for icon-only controls
 
 **WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) / [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
 
-Buttons that render only an icon (no visible text) and form inputs that cannot be paired with a visible `<label>` element — for example, inputs inside dynamically repeated rows — must have an explicit accessible name.
+Buttons and links that render only an icon (no visible text) and form inputs that cannot be paired with a visible `<label>` element — for example, inputs inside dynamically repeated rows — must have an explicit accessible name.
 
-#### Icon-only buttons
+#### Icon-only links and buttons
 
-Use `aria-label` on any button whose only child is an icon component. Add `aria-hidden="true"` on the icon element itself so screen readers announce only the button's label and do not also read out the SVG's internal title or path description:
+Use `aria-label` on any `<a>` or `<button>` whose only child is an icon component. Add `aria-hidden="true"` on the icon element itself so screen readers announce only the control's label and do not also read out the SVG's internal title or path description:
 
 ```svelte
 <!-- Sidebar: "Create library" — navigates to the new-library form -->
-<button
-  onclick={() => handleSidebarNavigate("libraries/new")}
+<a
+  href="#libraries/new"
   aria-label="Create library"
+  onclick={onClose}
 >
   <Plus class="w-4 h-4" aria-hidden="true" />
-</button>
+</a>
 
 <!-- Close button: renders only the X icon -->
 <button
@@ -640,7 +665,7 @@ Use `aria-label` on any button whose only child is an icon component. Add `aria-
 </button>
 ```
 
-Without `aria-label`, screen readers announce these buttons only by their SVG title or nothing at all, giving users no meaningful description of the action. Without `aria-hidden="true"` on the icon, some screen readers may announce both the button label **and** the SVG's internal title, causing a duplicate or confusing announcement.
+Without `aria-label`, screen readers announce these controls only by their SVG title or nothing at all, giving users no meaningful description of the action. Without `aria-hidden="true"` on the icon, some screen readers may announce both the control label **and** the SVG's internal title, causing a duplicate or confusing announcement.
 
 #### Inputs in dynamic lists
 
@@ -658,8 +683,8 @@ When there is only one input in the list, omit the index to keep the label natur
 
 #### Checklist
 
-- Every `<button>` that renders only an icon must have `aria-label` or `aria-labelledby`.
-- Icon elements inside labeled buttons must carry `aria-hidden="true"` to prevent duplicate announcements.
+- Every `<button>` or `<a>` that renders only an icon must have `aria-label` or `aria-labelledby`.
+- Icon elements inside labeled controls must carry `aria-hidden="true"` to prevent duplicate announcements.
 - Every `<input>` and `<select>` must have either a linked `<label for="...">` or an `aria-label` / `aria-labelledby`.
 - `title` attributes are not a substitute for `aria-label`; they are advisory only and are not reliably announced.
 
@@ -671,8 +696,8 @@ When editing the app shell or adding new persistent navigation elements:
 2. If you add a new persistent region that users must bypass, add an additional skip link or update the existing one.
 3. Every page — authenticated or not — must contain exactly one `<main>` landmark. For the authenticated shell this is `<main id="main-content">` in `App.svelte`; for the pre-auth login/signup page this is `<main>` in `Auth.svelte`. Do not remove or replace these elements with a generic `<div>`.
 4. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
-5. Every icon-only button must have `aria-label`; the icon element inside the button must carry `aria-hidden="true"` to suppress redundant announcements; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only buttons and dynamic inputs](#accessible-labels-for-icon-only-buttons-and-dynamic-inputs) above.
-6. Navigation buttons that represent the active view or tab must carry `aria-current={isActive ? "page" : undefined}`. See [`aria-current` on active navigation buttons](#aria-current-on-active-navigation-buttons) above.
+5. Every icon-only link or button must have `aria-label`; the icon element inside the control must carry `aria-hidden="true"` to suppress redundant announcements; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only controls](#accessible-labels-for-icon-only-controls) above.
+6. Navigation links that represent the active view must carry `aria-current={isActive ? "page" : undefined}`. Tab-style buttons should use `aria-selected` instead (see item 8). See [`aria-current` on active navigation links](#aria-current-on-active-navigation-links) above.
 7. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
 8. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
 9. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. See [Table accessibility](#table-accessibility) below.
@@ -709,9 +734,9 @@ When a form contains a variable-length list of inputs of the same type (e.g. mul
 - Use the singular label (e.g. `"Folder path"`) when there is only one item — the ordinal is unnecessary and adds noise.
 - Use a 1-based counter (e.g. `"Folder path 1"`, `"Folder path 2"`) when there are multiple items.
 
-#### `aria-label` on icon-only buttons
+#### `aria-label` on icon-only controls
 
-Buttons whose visible content is solely an icon (SVG) must carry an `aria-label` so assistive technologies announce an intelligible action name. The icon itself must also carry `aria-hidden="true"` to prevent screen readers from reading both the button label and the SVG's internal title.
+Links and buttons whose visible content is solely an icon (SVG) must carry an `aria-label` so assistive technologies announce an intelligible action name. The icon itself must also carry `aria-hidden="true"` to prevent screen readers from reading both the control label and the SVG's internal title.
 
 ```svelte
 <!-- Close / cancel button -->
@@ -725,7 +750,7 @@ Buttons whose visible content is solely an icon (SVG) must carry an `aria-label`
 </button>
 ```
 
-When you add a new icon-only button, always supply both `aria-label` on the `<button>` and `aria-hidden="true"` on the icon component. `svelte-check` does **not** automatically detect missing labels or missing `aria-hidden` on `<button>` elements, so this must be reviewed manually.
+When you add a new icon-only link or button, always supply both `aria-label` on the element and `aria-hidden="true"` on the icon component. `svelte-check` does **not** automatically detect missing labels or missing `aria-hidden`, so this must be reviewed manually.
 
 #### `autocomplete` on credential inputs
 
@@ -921,6 +946,17 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 4. **`switches ARIA state when the Sign Up tab is clicked`** — simulates a user click on the Sign Up tab and verifies that `aria-selected` values update reactively and the Sign Up panel loses its `hidden` attribute.
 
 > **Testing note:** Each test wraps `render(Auth)` in an `async renderAuth()` helper that calls `await tick()` after mounting. This is necessary because Svelte 5 defers reactive updates; without the tick the DOM may not reflect the initial `$state` values when the first `expect` runs. The `afterEach(cleanup)` guard ensures the JSDOM is cleared between tests to prevent state bleed.
+
+#### `Sidebar.test.ts`
+
+`frontend/src/components/Sidebar.test.ts` verifies that the navigation sidebar uses semantic `<a>` anchor links (not `<button>` elements) for in-app navigation, and that `aria-current` state is applied correctly (WCAG 4.1.2). Four tests are included:
+
+1. **`renders Dashboard, All Books, and Settings as links with correct hrefs`** — asserts that the three primary nav items are rendered as `role="link"` elements with the correct hash `href` values (`#dashboard`, `#books`, `#settings`).
+2. **`renders Logout as a button, not a link`** — asserts that Logout is a `role="button"` element, which is semantically correct because it triggers an action (sign-out) rather than navigating to a URL.
+3. **`sets aria-current='page' on the active navigation link`** — renders with `currentView="settings"` and asserts that the Settings link carries `aria-current="page"` while Dashboard does not.
+4. **`sets aria-current='page' on the active library link`** — renders with `currentView="libraries"` and `subPath="1"` and asserts that only the matching library entry link receives `aria-current="page"`.
+
+> **Mocking note:** The test file mocks `authStore`, `libraryStore`, `api.getVersion`, and all `lucide-svelte` icon components. The icon mocks are necessary because Lucide icons are ESM-only packages that cannot render in JSDOM; replacing them with no-ops keeps the test focused on DOM structure. `afterEach(cleanup)` prevents DOM leakage between tests.
 
 ---
 
