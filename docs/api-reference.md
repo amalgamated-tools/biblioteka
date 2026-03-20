@@ -1434,6 +1434,25 @@ See [Cover images](opds.md#cover-images) in the OPDS guide for MIME-type detecti
 
 ---
 
+### `GET /opds/covers/{bookID}` — Book cover image
+
+Serve a book's cover image. When the stored `cover_image_url` is a `data:` URL (as set automatically for EPUB files during import), the endpoint decodes the base64 payload and streams the image bytes with the correct `Content-Type`. When it is a plain `https://` URL the client receives a `307` redirect. OPDS clients encounter this URL through the `rel="http://opds-spec.org/image"` link in acquisition feed entries and do not need to construct it manually.
+
+**Path parameters:** `{bookID}` — book resource ID
+
+**Auth:** HTTP Basic (same credentials as other `/opds` endpoints)
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Image bytes; `Content-Type` is set to the detected image MIME type (e.g. `image/jpeg`, `image/png`) |
+| `307 Temporary Redirect` | Cover URL is a plain HTTP/HTTPS URL; client is redirected there |
+| `404 Not Found` | Book not found or no cover image set |
+| `500 Internal Server Error` | Stored data URL is malformed or its payload is not a valid image |
+
+---
+
 ## Kobo Tokens
 
 Kobo sync tokens authenticate a Kobo e-reader device against the built-in Kobo device API served under `/kobo/<token>/`. Each token is scoped to a single user; multiple tokens can exist per user (one per device is recommended). See the [Kobo Sync guide](kobo.md) for setup instructions and a full feature overview.
