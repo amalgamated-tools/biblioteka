@@ -162,9 +162,12 @@ func (h *OPDSHandler) serveCover(w http.ResponseWriter, r *http.Request, bookID 
 	contentType, data, err := decodeDataURL(*book.CoverImageURL)
 	if err == nil {
 		if len(data) > 0 {
-			if sniffed := http.DetectContentType(data); strings.HasPrefix(sniffed, "image/") {
-				contentType = sniffed
+			sniffed := http.DetectContentType(data)
+			if !strings.HasPrefix(sniffed, "image/") {
+				http.Error(w, "invalid cover image", http.StatusInternalServerError)
+				return
 			}
+			contentType = sniffed
 		}
 		if !strings.HasPrefix(contentType, "image/") {
 			http.Error(w, "invalid cover image", http.StatusInternalServerError)
