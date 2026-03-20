@@ -192,6 +192,33 @@ func TestExtractMetadata_Unavailable(t *testing.T) {
 	}
 }
 
+func TestNormalizeISBN(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"9780306406157", "9780306406157"},                // plain ISBN-13
+		{"0-306-40615-2", "0306406152"},                   // ISBN-10 with hyphens
+		{"978-0-306-40615-7", "9780306406157"},            // ISBN-13 with hyphens
+		{"ISBN:978-0-306-40615-7", "9780306406157"},       // with ISBN: prefix
+		{"urn:isbn:978-0-306-40615-7", "9780306406157"},   // with urn:isbn: prefix
+		{"  978-0-306-40615-7  ", "9780306406157"},         // leading/trailing spaces
+		{"155860832X", "155860832X"},                       // ISBN-10 with X check digit
+		{"155860832x", "155860832X"},                       // lowercase x normalized
+		{"-\t1234567890", "1234567890"},                   // tab exposed after hyphen removal
+		{"\n978-0-306-40615-7\n", "9780306406157"},        // newlines around input
+		{"", ""},                                           // empty
+		{"tooshort", ""},                                   // invalid length
+		{"978-0-306-40615-!", ""},                          // invalid character
+	}
+	for _, tt := range tests {
+		got := NormalizeISBN(tt.input)
+		if got != tt.want {
+			t.Errorf("NormalizeISBN(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
 func TestNormalizeExifDate(t *testing.T) {
 	tests := []struct {
 		input string
