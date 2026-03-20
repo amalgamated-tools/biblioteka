@@ -170,7 +170,7 @@ jobs:
       - name: Install exiftool
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -q --no-install-recommends libimage-exiftool-perl
+          sudo apt-get install -y -q libimage-exiftool-perl
           exiftool -ver
 
       - name: Run Go tests
