@@ -1,6 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { getConfigStatus, getSmtpConfig, setSmtpConfig, testSmtpConfig } from "../../lib/api";
+  import {
+    getConfigStatus,
+    getSmtpConfig,
+    setSmtpConfig,
+    testSmtpConfig,
+  } from "../../lib/api";
   import { Mail, Send } from "lucide-svelte";
 
   interface Props {
@@ -203,17 +208,16 @@
     </div>
 
     <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
-      Configure SMTP settings to enable email notifications from
-      Biblioteka.
+      Configure SMTP settings to enable email notifications from Biblioteka.
     </p>
 
     {#if smtpEnvOverride}
       <div
         class="bg-accent-50 dark:bg-accent-800/20 border border-accent-200 dark:border-accent-700/30 text-accent-700 dark:text-accent-400 px-4 py-3 rounded-xl text-sm mb-4"
       >
-        SMTP is configured via environment variables and cannot be
-        changed here. Remove the SMTP environment variables from the
-        server to manage settings through this UI.
+        SMTP is configured via environment variables and cannot be changed here.
+        Remove the SMTP environment variables from the server to manage settings
+        through this UI.
       </div>
     {/if}
 
