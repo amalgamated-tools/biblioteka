@@ -15,6 +15,7 @@ const (
 	BookMetadata      string = "book_metadata"
 	CallerID          string = "caller_id"
 	Concurrency       string = "concurrency"
+	ContentType       string = "content_type"
 	Count             string = "count"
 	Description       string = "description"
 	Document          string = "document"

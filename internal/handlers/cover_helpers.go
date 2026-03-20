@@ -12,7 +12,7 @@ import (
 var errNotDataURL = errors.New("not a data URL")
 
 func coverMIMEType(imageURL string) string {
-	if mimeType, ok := dataURLMIMEType(imageURL); ok {
+	if mimeType, ok := dataURLMIMEType(imageURL); ok && strings.HasPrefix(mimeType, "image/") {
 		return mimeType
 	}
 

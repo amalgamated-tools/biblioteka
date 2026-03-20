@@ -66,10 +66,14 @@ func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*BookMeta
 	return e.extractExif(ctx, path)
 }
 
-func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
+func (e *Extractor) lockedExtractMetadata(path string) []exiftool.FileMetadata {
 	e.mu.Lock()
-	results := e.et.ExtractMetadata(path)
-	e.mu.Unlock()
+	defer e.mu.Unlock()
+	return e.et.ExtractMetadata(path)
+}
+
+func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
+	results := e.lockedExtractMetadata(path)
 
 	if len(results) == 0 {
 		return nil, fmt.Errorf("no metadata found for %s", path)
@@ -189,6 +193,8 @@ func findEPUBCoverRef(book *exiftool.FileMetadata) (epubCoverRef, bool) {
 				return ref, true
 			}
 		}
+		slog.Warn("EPUB cover meta tag references unknown or non-image manifest item",
+			slog.String("coverID", coverID))
 	}
 
 	var firstImage *epubCoverRef
