@@ -235,7 +235,12 @@ func readEPUBArchiveFile(ctx context.Context, filePath string, ref epubCoverRef)
 		return nil, "", fmt.Errorf("open epub archive: %w", err)
 	}
 	defer reader.Close()
-	slog.DebugContext(ctx, "opened EPUB archive for cover extraction", slog.String(otelkeys.Path, filePath), slog.Int(otelkeys.FilesFound, len(reader.File)))
+	slog.DebugContext(
+		ctx,
+		"opened EPUB archive for cover extraction",
+		slog.String(otelkeys.Path, filePath),
+		slog.Int(otelkeys.FilesFound, len(reader.File)),
+	)
 
 	rootFilePath, rootErr := readEPUBRootFilePath(reader.File)
 	candidates := archiveCandidates(rootFilePath, ref.Href)
