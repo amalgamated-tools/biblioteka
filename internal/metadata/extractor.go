@@ -110,7 +110,7 @@ func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata
 	coverImageURL := ""
 	if strings.EqualFold(filepath.Ext(path), ".epub") {
 		var err error
-		coverImageURL, err = extractEPUBCoverDataURL(&book, path)
+		coverImageURL, err = extractEPUBCoverDataURL(ctx, &book, path)
 		if err != nil {
 			slog.WarnContext(ctx, "failed to extract embedded EPUB cover image",
 				slog.String(otelkeys.Path, path),
@@ -143,13 +143,13 @@ type epubCoverRef struct {
 	MIMEType string
 }
 
-func extractEPUBCoverDataURL(book *exiftool.FileMetadata, filePath string) (string, error) {
-	ref, ok := findEPUBCoverRef(book)
+func extractEPUBCoverDataURL(ctx context.Context, book *exiftool.FileMetadata, filePath string) (string, error) {
+	ref, ok := findEPUBCoverRef(ctx, book)
 	if !ok {
 		return "", nil
 	}
 
-	coverBytes, mimeType, err := readEPUBArchiveFile(filePath, ref)
+	coverBytes, mimeType, err := readEPUBArchiveFile(ctx, filePath, ref)
 	if err != nil {
 		return "", err
 	}
@@ -157,7 +157,7 @@ func extractEPUBCoverDataURL(book *exiftool.FileMetadata, filePath string) (stri
 	return "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(coverBytes), nil
 }
 
-func findEPUBCoverRef(book *exiftool.FileMetadata) (epubCoverRef, bool) {
+func findEPUBCoverRef(ctx context.Context, book *exiftool.FileMetadata) (epubCoverRef, bool) {
 	manifestIDs, _ := book.GetStrings("ManifestItemId")
 	manifestHrefs, _ := book.GetStrings("ManifestItemHref")
 	manifestMIMETypes, _ := book.GetStrings("ManifestItemMedia-type")
@@ -193,8 +193,11 @@ func findEPUBCoverRef(book *exiftool.FileMetadata) (epubCoverRef, bool) {
 				return ref, true
 			}
 		}
-		slog.Warn("EPUB cover meta tag references unknown or non-image manifest item",
-			slog.String("coverID", coverID))
+		slog.WarnContext(
+			ctx,
+			"EPUB cover meta tag references unknown or non-image manifest item",
+			slog.String("coverID", coverID),
+		)
 	}
 
 	var firstImage *epubCoverRef
@@ -226,7 +229,7 @@ func findEPUBCoverRef(book *exiftool.FileMetadata) (epubCoverRef, bool) {
 	return epubCoverRef{}, false
 }
 
-func readEPUBArchiveFile(filePath string, ref epubCoverRef) ([]byte, string, error) {
+func readEPUBArchiveFile(ctx context.Context, filePath string, ref epubCoverRef) ([]byte, string, error) {
 	reader, err := zip.OpenReader(filePath)
 	if err != nil {
 		return nil, "", fmt.Errorf("open epub archive: %w", err)

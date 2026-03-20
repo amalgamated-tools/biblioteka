@@ -124,7 +124,7 @@ func TestReadEPUBArchiveFile_OversizedCover(t *testing.T) {
 	})
 
 	ref := epubCoverRef{Href: "images/cover.png", MIMEType: "image/png"}
-	_, _, err := readEPUBArchiveFile(epubPath, ref)
+	_, _, err := readEPUBArchiveFile(t.Context(), epubPath, ref)
 	if err == nil {
 		t.Fatal("expected error for oversized cover, got nil")
 	}
