@@ -958,6 +958,94 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 > **Mocking note:** The test file mocks `authStore`, `libraryStore`, `api.getVersion`, and all `lucide-svelte` icon components. The icon mocks are necessary because Lucide icons are ESM-only packages that cannot render in JSDOM; replacing them with no-ops keeps the test focused on DOM structure. `afterEach(cleanup)` prevents DOM leakage between tests.
 
+#### `LibraryForm.test.ts`
+
+`frontend/src/components/libraries/LibraryForm.test.ts` verifies the accessibility attributes on the library create/edit form (WCAG 1.3.1, 3.3.1, 4.1.2). Six tests are included:
+
+1. **`marks the name input as aria-required`** — asserts the `#lib-name` text input carries `aria-required="true"`.
+2. **`marks folder path inputs as aria-required`** — asserts the folder path input carries `aria-required="true"`.
+3. **`shows required indicator (*) on Name and Folders labels`** — asserts both the `<label for="lib-name">` and the `<fieldset>` legend contain a `<span aria-hidden="true">` with text `*`, so the required indicator is visible but not read aloud by screen readers (the `aria-required` attribute serves as the machine-readable signal instead).
+4. **`shows inline name error with aria-invalid when submitting empty name`** — submits the form with no name, then asserts the name input is marked `aria-invalid="true"`, references the error via `aria-describedby="lib-name-error"`, and that the error element carries `role="alert"` so it is announced immediately by assistive technologies.
+5. **`shows inline folder error with aria-invalid when submitting empty paths`** — fills in the name (to pass name validation) then submits with no folder paths; asserts the folder input becomes `aria-invalid="true"` with `aria-describedby="lib-folders-error"` and the error element carries `role="alert"`.
+6. **`does not show aria-invalid or error messages before submission`** — asserts that neither `aria-invalid` nor the error message elements are present on initial render, preventing premature error announcements.
+
+> **Testing note:** Each test calls `await tick()` after `render()` to flush Svelte 5 reactive state before asserting. `afterEach(cleanup)` removes the rendered component from JSDOM between tests.
+
+---
+
+## Unit tests
+
+The following test suites cover reactive stores and the API client. Unlike the accessibility tests above, these tests verify logic and state management rather than DOM structure.
+
+### `router.test.ts`
+
+`frontend/src/stores/router.test.ts` exercises `routerStore`, the hash-based navigation store. Tests set `window.location.hash` and dispatch synthetic `hashchange` events, then assert the store's reactive properties. Fourteen tests across two `describe` blocks:
+
+**Core routing:**
+
+1. **`defaults to 'dashboard' when hash is empty`** — asserts `currentView` is `"dashboard"` and `subPath` is `""` on load.
+2. **`parses 'books' from hash`** — sets `#books`; asserts `currentView` is `"books"` with empty `subPath`.
+3. **`parses 'my-library' from hash`** — sets `#my-library`; asserts `currentView` is `"my-library"`.
+4. **`parses 'settings' from hash`** — sets `#settings`; asserts `currentView` is `"settings"`.
+5. **`defaults invalid hash segment to 'dashboard'`** — sets `#invalid-page`; asserts `currentView` falls back to `"dashboard"`.
+6. **`extracts subPath from hash`** — sets `#settings/account`; asserts `currentView` is `"settings"` and `subPath` is `"account"`.
+7. **`handles multi-segment subPath`** — sets `#settings/oidc/config`; asserts `subPath` is `"oidc/config"`.
+8. **`navigate sets window.location.hash`** — calls `routerStore.navigate("books")`; asserts `window.location.hash` becomes `"#books"`.
+9. **`responds to hashchange events`** — dispatches a `hashchange` event after changing the hash; asserts `routerStore.hash` updates reactively.
+10. **`handles hash with leading slash`** — sets `#/books`; asserts the leading slash is stripped and `currentView` is `"books"`.
+
+**`pageTitle` sub-suite:**
+
+11. **Parameterised title tests** — asserts the correct page title string for each of the eleven known hash values (e.g. `#dashboard` → `"Dashboard – biblioteka"`, `#settings/account` → `"Account Settings – biblioteka"`).
+12. **`falls back to 'Settings – biblioteka' for unknown settings sub-path`** — sets `#settings/unknown`; asserts `pageTitle` returns the top-level settings title.
+13. **`falls back to 'biblioteka' for invalid hash`** — sets `#invalid-page`; asserts `pageTitle` is just `"biblioteka"`.
+
+### `auth.test.ts`
+
+`frontend/src/stores/auth.test.ts` exercises `authStore`, the authentication state store. All `api.*` calls are replaced with Vitest mocks so tests run without a real backend. Fourteen tests across four `describe` blocks:
+
+**`init` (nine tests) — application startup authentication flow:**
+
+1. **`sets loading to false when no token and no cookie`** — no token in localStorage, `getMe()` returns 401; asserts `loading` is `false` and `user` is `null`.
+2. **`fetches user when token exists`** — token in localStorage, `getMe()` resolves; asserts `user` is populated and `loading` is `false`.
+3. **`clears token and retries when getMe returns 401 with token`** — stale token case; asserts `clearToken()` is called and `getMe()` is called twice.
+4. **`clears stale token and authenticates via cookie on retry`** — first `getMe()` rejects with 401, second resolves with an OIDC user; asserts the user is set from the cookie session.
+5. **`preserves token on transient network error`** — `getMe()` rejects with a generic `Error` (not `ApiError`); asserts `clearToken()` is **not** called.
+6. **`authenticates via cookie on plain reload without token or URL marker`** — no token, no query params, `getMe()` resolves; asserts the user is set (HttpOnly cookie path).
+7. **`authenticates via cookie after OIDC redirect`** — `?oidc_login=1` in the URL; asserts `getMe()` is called and the URL marker is cleaned up with `history.replaceState`.
+8. **`sets oidcLinkError from URL params`** — `?oidc_link_error=account_already_linked`; asserts `authStore.oidcLinkError` is set.
+9. **`redirects to settings on oidc_linked param`** — `?oidc_linked=true`; asserts `history.replaceState` redirects to `/#settings`.
+
+**`signIn` (two tests):** asserts user is populated on success; asserts error is returned and user stays `null` on failure.
+
+**`signUp` (two tests):** asserts user is populated on success; asserts error is returned on failure.
+
+**`signOut` (one test):** asserts `clearToken()` and `logout()` are called and `user` is set to `null`.
+
+> **Mocking note:** The `beforeEach` block manually resets `authStore.user`, `authStore.loading`, and `authStore.oidcLinkError` before each test. `window.location` is redefined as a writable property so query-param tests can control the URL without triggering real navigation.
+
+### `api.test.ts`
+
+`frontend/src/lib/api.test.ts` exercises the centralised API client (`frontend/src/lib/api.ts`). `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into five `describe` blocks:
+
+**`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying `localStorage` read/write semantics, including the edge case of an empty string being treated as "no token".
+
+**`ApiError` (one test):** asserts the custom error class has the correct `name`, `message`, `status`, and prototype chain.
+
+**`request` (six tests):** exercises the shared `request()` helper (called indirectly through exported API functions):
+- Asserts the `Authorization: Bearer <token>` header is included when a token is stored.
+- Asserts the header is omitted when no token is present.
+- Asserts POST requests serialize the body as JSON.
+- Asserts a non-OK JSON response throws `ApiError` with the `error` field from the body.
+- Asserts a non-OK plain-text response throws `ApiError` with the response body as the message.
+- Asserts fallback to `statusText` when the JSON body contains no `error` field.
+
+**`Auth API` (five tests):** covers `signup`, `login`, `getMe`, `getOidcEnabled`, and `changePassword` — verifying the correct HTTP method, URL, and request body for each call.
+
+**`Config API` (four tests):** covers `getConfigStatus`, `getOidcConfig`, `setOidcConfig`, and `createOidcLinkNonce`.
+
+**`Admin API` (two tests):** covers `listUsers` and `setUserAdmin`.
+
 ---
 
 ## Build configuration (`vite.config.ts`)
