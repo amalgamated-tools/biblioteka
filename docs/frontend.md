@@ -396,7 +396,7 @@ Svelte 5 emits a `state_referenced_locally` warning for this pattern because the
 2. Define an `interface Props { … }` and use `$props()` for any data the tab needs from `Settings.svelte`.
 3. Add `"my-tab"` to the `SettingsTab` union type and `validTabs` array in `Settings.svelte`.
 4. Import and render `<MyTab />` inside the `{#if activeTab === "my-tab"}` block in `Settings.svelte`.
-5. Add a navigation `<button>` in `Settings.svelte`'s sidebar `<nav>`, wrapped in `{#if isAdmin}` if the tab is admin-only.
+5. Add a navigation `<a href="#settings/my-tab">` link in `Settings.svelte`'s sidebar `<nav>`, wrapped in `{#if isAdmin}` if the tab is admin-only.
 6. Add `"my-tab"` to the `SettingsSubPath` union type **and** the `settingsSubTitles` record in `frontend/src/stores/router.svelte.ts`. This ensures the browser tab title is set correctly (e.g., `My Tab – biblioteka`). If you skip this step, the title falls back to the top-level `Settings – biblioteka`.
 7. Update the tables above and in the [Page titles](#page-titles) section.
 
@@ -598,6 +598,7 @@ Each top-level navigation link receives `aria-current` dynamically based on the 
   href="#dashboard"
   aria-current={currentView === "dashboard" ? "page" : undefined}
   class="…"
+  onclick={onClose}
 >
   <LayoutDashboard class="w-5 h-5" />
   Dashboard
@@ -612,13 +613,13 @@ Each top-level navigation link receives `aria-current` dynamically based on the 
 The same pattern applies to settings sub-tabs, where the active tab is determined from the current `settingsSubPath`:
 
 ```svelte
-<button
-  onclick={() => navigateToSettings("account")}
+<a
+  href="#settings/account"
   aria-current={isActive ? "page" : undefined}
   class="…"
 >
   Account
-</button>
+</a>
 ```
 
 #### Rule for new navigation elements
@@ -640,6 +641,7 @@ Use `aria-label` on any `<a>` or `<button>` whose only child is an icon componen
 <a
   href="#libraries/new"
   aria-label="Create library"
+  onclick={onClose}
 >
   <Plus class="w-4 h-4" aria-hidden="true" />
 </a>
