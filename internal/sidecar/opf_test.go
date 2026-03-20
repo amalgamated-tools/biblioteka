@@ -12,12 +12,12 @@ import (
 func TestWriteOPF_AllFields(t *testing.T) {
 	dir := t.TempDir()
 	data := OPFData{
-		Title:       "The Great Gatsby",
-		Author:      "F. Scott Fitzgerald",
-		ISBN:        "9780743273565",
-		Language:    "en",
-		Date:        "1925-04-10",
-		Publisher:   "Scribner",
+		Title:          "The Great Gatsby",
+		Author:         "F. Scott Fitzgerald",
+		ISBN:           "9780743273565",
+		Language:       "en",
+		Date:           "1925-04-10",
+		Publisher:      "Scribner",
 		Description:    "A novel about the American Dream.",
 		CoverFilename:  "cover.jpg",
 		CoverMediaType: "image/jpeg",
