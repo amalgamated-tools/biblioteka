@@ -258,4 +258,15 @@ Reading state is pushed to the server when the device syncs. Make sure the Kobo 
 
 **Cover images are broken**
 
-Cover images are served from `/kobo/<token>/covers/{bookID}/...`. Check that the book has a cover image attached in Biblioteka and that the server is reachable at the configured URL.
+Cover images are served from `/kobo/<token>/covers/{bookID}/...`. The endpoint redirects the device to the URL stored in the book's `cover_image_url` field — if that field is empty, the endpoint returns 404 and the device shows no cover.
+
+**Automatic extraction is not yet implemented.** Biblioteka does not currently extract embedded cover images from EPUB (or other) files during library scans. To add a cover image to a book, set `cover_image_url` to a publicly reachable image URL via the API:
+
+```bash
+curl -X PUT http://localhost:8080/api/books/<book-id> \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"cover_image_url": "https://example.com/covers/my-book.jpg"}'
+```
+
+Also confirm the server is reachable at the URL configured in the Kobo device's sync settings.

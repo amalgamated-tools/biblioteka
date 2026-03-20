@@ -88,6 +88,17 @@ Supported MIME types:
 
 When a book has a cover image set, each acquisition feed entry includes a `rel="http://opds-spec.org/image"` link pointing to the cover URL. OPDS clients that support cover art (such as KOReader, Moon+ Reader, and PocketBook) will fetch and display the cover while browsing the catalog.
 
+> **Setting a cover image:** Biblioteka does not currently extract embedded cover images from EPUB or other files during library scans. To add cover art, set the `cover_image_url` field to a publicly reachable image URL via the API:
+>
+> ```bash
+> curl -X PUT http://localhost:8080/api/books/<book-id> \
+>   -H "Authorization: Bearer <token>" \
+>   -H "Content-Type: application/json" \
+>   -d '{"cover_image_url": "https://example.com/covers/my-book.jpg"}'
+> ```
+>
+> The URL must be reachable by the OPDS client (not `localhost`) and should end with a recognised image extension for correct MIME-type detection (see table below). Automatic cover extraction from EPUB files is planned for a future release.
+
 The `Content-Type` of the cover link is inferred from the image URL's file extension using Go's `path.Ext`, which operates on the full URL string. The URL must end cleanly with the file extension — query parameters or fragments that follow the extension prevent correct detection, because `path.Ext` includes them in the result (e.g. `path.Ext("cover.png?size=200")` returns `.png?size=200`, not `.png`).
 
 | URL example | Detected MIME type |
