@@ -1,7 +1,6 @@
 <script lang="ts">
   import { authStore } from "../stores/auth.svelte";
   import type { AppView } from "../stores/router.svelte";
-  import { routerStore } from "../stores/router.svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { getVersion } from "../lib/api";
   import {
@@ -17,23 +16,13 @@
 
   interface Props {
     currentView: AppView;
-    onNavigate: (view: AppView) => void;
+    subPath?: string;
     open: boolean;
     onClose: () => void;
   }
 
-  let { currentView, onNavigate, open, onClose }: Props = $props();
+  let { currentView, subPath = "", open, onClose }: Props = $props();
   let version = $state("");
-
-  function handleViewNavigate(view: AppView) {
-    onNavigate(view);
-    onClose();
-  }
-
-  function handleSidebarNavigate(path: string) {
-    routerStore.navigate(path);
-    onClose();
-  }
 
   $effect(() => {
     if (authStore.user && !libraryStore.loaded) {
@@ -102,29 +91,31 @@
         Home
       </p>
       <div class="space-y-0.5">
-        <button
-          onclick={() => handleViewNavigate("dashboard")}
+        <a
+          href="#dashboard"
           aria-current={currentView === "dashboard" ? "page" : undefined}
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
           'dashboard'
             ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
             : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
+          onclick={onClose}
         >
           <LayoutDashboard class="w-5 h-5" />
           Dashboard
-        </button>
+        </a>
         {#if libraryStore.libraries.length > 0}
-          <button
-            onclick={() => handleViewNavigate("books")}
+          <a
+            href="#books"
             aria-current={currentView === "books" ? "page" : undefined}
             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
             'books'
               ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
               : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
+            onclick={onClose}
           >
             <BookOpen class="w-5 h-5" />
             All Books
-          </button>
+          </a>
         {/if}
       </div>
     </div>
@@ -137,37 +128,44 @@
         >
           Libraries
         </p>
-        <button
-          onclick={() => handleSidebarNavigate("libraries/new")}
+        <a
+          href="#libraries/new"
           class="text-ink-500 hover:text-accent-400 transition-colors"
           title="Create library"
           aria-label="Create library"
+          onclick={onClose}
         >
           <Plus class="w-4 h-4" aria-hidden="true" />
-        </button>
+        </a>
       </div>
       <div class="space-y-0.5">
         {#each libraryStore.libraries as lib (lib.id)}
           <div
             class="group w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-sm transition-all text-ink-300 hover:bg-ink-800/70 hover:text-white"
           >
-            <button
-              onclick={() => handleSidebarNavigate(`libraries/${lib.id}`)}
+            <a
+              href={`#libraries/${lib.id}`}
+              aria-current={currentView === "libraries" &&
+              subPath === String(lib.id)
+                ? "page"
+                : undefined}
               class="flex items-center gap-3 flex-1 min-w-0"
+              onclick={onClose}
             >
               <Library
                 class="w-4 h-4 flex-shrink-0 text-ink-500 group-hover:text-accent-400 transition-colors"
               />
               <span class="truncate flex-1 text-left">{lib.name}</span>
-            </button>
-            <button
-              onclick={() => handleSidebarNavigate(`libraries/edit/${lib.id}`)}
+            </a>
+            <a
+              href={`#libraries/edit/${lib.id}`}
               class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 text-ink-500 hover:text-accent-400 transition-all p-0.5 flex-shrink-0"
               title="Library settings"
               aria-label="Library settings"
+              onclick={onClose}
             >
               <Settings2 class="w-3.5 h-3.5" />
-            </button>
+            </a>
           </div>
         {/each}
       </div>
@@ -176,17 +174,18 @@
     <!-- Settings -->
     <div>
       <div class="space-y-0.5">
-        <button
-          onclick={() => handleViewNavigate("settings")}
+        <a
+          href="#settings"
           aria-current={currentView === "settings" ? "page" : undefined}
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
           'settings'
             ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
             : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
+          onclick={onClose}
         >
           <SettingsIcon class="w-5 h-5" />
           Settings
-        </button>
+        </a>
       </div>
     </div>
   </nav>
