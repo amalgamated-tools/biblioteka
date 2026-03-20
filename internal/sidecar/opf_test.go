@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -34,7 +35,8 @@ func TestWriteOPF_AllFields(t *testing.T) {
 
 	checks := []string{
 		`<dc:title>The Great Gatsby</dc:title>`,
-		`<dc:creator>F. Scott Fitzgerald</dc:creator>`,
+		`<dc:creator opf:role="aut">F. Scott Fitzgerald</dc:creator>`,
+		`opf:scheme="ISBN"`,
 		`9780743273565`,
 		`<dc:language>en</dc:language>`,
 		`<dc:date>1925-04-10</dc:date>`,
@@ -77,8 +79,20 @@ func TestWriteOPF_MinimalData(t *testing.T) {
 		t.Errorf("metadata.opf missing title\nContent:\n%s", s)
 	}
 	// Should not contain empty elements for omitted fields.
-	if strings.Contains(s, `<dc:creator>`) {
+	if strings.Contains(s, `<dc:creator`) {
 		t.Errorf("metadata.opf should not contain empty creator\nContent:\n%s", s)
+	}
+	// Should always have a dc:identifier with UUID scheme when no ISBN.
+	if !strings.Contains(s, `opf:scheme="UUID"`) {
+		t.Errorf("metadata.opf missing UUID identifier\nContent:\n%s", s)
+	}
+	if !strings.Contains(s, `id="uid"`) {
+		t.Errorf("metadata.opf missing id=uid on identifier\nContent:\n%s", s)
+	}
+	// Verify the UUID value matches UUID format.
+	uuidRe := regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+	if !uuidRe.MatchString(s) {
+		t.Errorf("metadata.opf identifier does not contain a valid UUID\nContent:\n%s", s)
 	}
 }
 
@@ -104,6 +118,10 @@ func TestWriteOPF_NoCover(t *testing.T) {
 	}
 	if strings.Contains(s, `<manifest>`) {
 		t.Errorf("metadata.opf should not contain manifest when HasCover is false\nContent:\n%s", s)
+	}
+	// Identifier should still be present even without a cover.
+	if !strings.Contains(s, `<dc:identifier`) {
+		t.Errorf("metadata.opf missing dc:identifier\nContent:\n%s", s)
 	}
 }
 
