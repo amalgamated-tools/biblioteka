@@ -348,6 +348,28 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 
 `Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data.
 
+### SmtpTab (`settings/smtp`)
+
+`SmtpTab.svelte` renders a form for configuring the outgoing mail server. It is only shown to admin users.
+
+**Form fields:**
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| Host | Yes | Hostname or IP of the SMTP server |
+| Port | Yes | Defaults to `587` |
+| TLS Mode | Yes | Dropdown: `STARTTLS` (default), `TLS`, or `None`. Authenticated SMTP without TLS is blocked for non-loopback servers |
+| Username | No | Leave empty for unauthenticated relay |
+| Password | Conditional | Required when Username is set. Leave blank on update to keep the existing password |
+| From Address | Yes | Envelope `From` address; must be a valid email |
+
+**Key behaviours:**
+
+- **Status badge** — Shows *Configured* (green) or *Not configured* (grey) based on whether a complete SMTP config exists in the database.
+- **Test Email button** — Visible only when the server is configured. Sends a test message to the authenticated user's email address. Subject to rate-limiting (one send per minute).
+- **Environment-variable override banner** — When `SMTP_HOST` is set as a server environment variable, a blue informational banner replaces the form: *"SMTP is configured via environment variables and cannot be changed here."* The tab becomes read-only. To use the UI instead, unset `SMTP_HOST` from the environment and restart the server.
+- **Password preservation** — On save, leaving the password field blank preserves the existing stored credential; fill it only to change it.
+
 ### One-time prop initialisation (`svelte-ignore state_referenced_locally`)
 
 Some settings tabs receive initial values from `Settings.svelte` as props and then manage those values as **local state** for the duration of the tab's lifetime. Because the values are not expected to react to future prop changes (the parent passes them once at mount), the tabs use `$state(initialProp)` to seed local state:
