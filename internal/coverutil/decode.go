@@ -31,7 +31,7 @@ func DecodeDataURL(raw string) (string, []byte, error) {
 		mimeType = "text/plain;charset=US-ASCII"
 	}
 
-    // base64.StdEncoding.DecodedLen(n) returns n/4*3 — an upper bound that does not account for = padding characters. The actual decoded length can be up to 2 bytes shorter. 
+	// base64.StdEncoding.DecodedLen(n) returns n/4*3 — an upper bound that does not account for = padding characters. The actual decoded length can be up to 2 bytes shorter.
 	if base64.StdEncoding.DecodedLen(len(payload)) > maxDecodedBytes+2 {
 		return "", nil, fmt.Errorf("data URL payload exceeds %d-byte limit", maxDecodedBytes)
 	}
