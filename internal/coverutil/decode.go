@@ -2,12 +2,13 @@ package coverutil
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 )
 
 // ErrNotDataURL is returned when the input is not a valid data: URL.
-var ErrNotDataURL = fmt.Errorf("not a data URL")
+var ErrNotDataURL = errors.New("not a data URL")
 
 // maxDecodedBytes is the maximum decoded size for a data URL payload (20 MB).
 const maxDecodedBytes = 20 << 20
@@ -30,7 +31,7 @@ func DecodeDataURL(raw string) (string, []byte, error) {
 		mimeType = "text/plain;charset=US-ASCII"
 	}
 
-	if base64.StdEncoding.DecodedLen(len(payload)) > maxDecodedBytes+2 {
+	if base64.StdEncoding.DecodedLen(len(payload)) > maxDecodedBytes {
 		return "", nil, fmt.Errorf("data URL payload exceeds %d-byte limit", maxDecodedBytes)
 	}
 

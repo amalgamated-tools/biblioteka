@@ -97,7 +97,7 @@ func marshalOPF(data OPFData) ([]byte, error) {
 		if err := enc.EncodeToken(s); err != nil {
 			return nil, err
 		}
-		if err := enc.EncodeToken(xml.CharData(data.ISBN)); err != nil {
+		if err := enc.EncodeToken(xml.CharData([]byte(data.ISBN))); err != nil {
 			return nil, err
 		}
 		if err := enc.EncodeToken(s.End()); err != nil {
