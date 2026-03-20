@@ -140,3 +140,28 @@ func TestWriteCover_OverwritesExisting(t *testing.T) {
 		t.Error("cover.jpg was not overwritten")
 	}
 }
+
+func TestWriteCover_RemovesStaleFormats(t *testing.T) {
+	dir := t.TempDir()
+
+	for _, ext := range []string{".jpg", ".png"} {
+		if err := os.WriteFile(filepath.Join(dir, "cover"+ext), []byte("old"), 0o644); err != nil {
+			t.Fatalf("setup %s: %v", ext, err)
+		}
+	}
+
+	imageData := []byte{0x52, 0x49, 0x46, 0x46}
+	encoded := base64.StdEncoding.EncodeToString(imageData)
+	if _, _, err := WriteCover(dir, "data:image/webp;base64,"+encoded); err != nil {
+		t.Fatalf("WriteCover: %v", err)
+	}
+
+	for _, ext := range []string{".jpg", ".png"} {
+		if _, err := os.Stat(filepath.Join(dir, "cover"+ext)); !os.IsNotExist(err) {
+			t.Errorf("cover%s should have been removed, err=%v", ext, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "cover.webp")); err != nil {
+		t.Errorf("cover.webp not found: %v", err)
+	}
+}
