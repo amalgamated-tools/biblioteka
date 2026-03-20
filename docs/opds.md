@@ -118,6 +118,8 @@ If the extension is unknown or missing, the type falls back to `image/jpeg`.
 
 Entries for books without a cover image omit the image link entirely.
 
+> **Cover image size limit:** During EPUB import, Biblioteka skips cover images larger than 20 MB (a warning is logged and `cover_image_url` is left empty). The `/opds/covers/{bookID}` endpoint enforces the same 20 MB limit when decoding stored `data:` URLs; if the limit is exceeded the endpoint returns `500 Internal Server Error`. In practice the serving limit is never reached because the extractor cap prevents oversized covers from being stored.
+
 ---
 
 ## Managing OPDS credentials via the API

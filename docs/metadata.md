@@ -24,7 +24,7 @@ The extractor is implemented in [`internal/metadata/extractor.go`](../internal/m
 | `Publisher` | From ExifTool `Publisher` tag |
 | `Language` | From ExifTool `Language` tag |
 | `PublicationDate` | From ExifTool `PublicationDate` tag; normalized from ExifTool's `YYYY:MM:DD` format to `YYYY-MM-DD` |
-| `CoverImageURL` | For EPUB files with embedded cover art, resolved from ExifTool's cover manifest tags and stored as a `data:` URL |
+| `CoverImageURL` | For EPUB files with embedded cover art, resolved from ExifTool's cover manifest tags and stored as a `data:` URL. Cover images larger than 20 MB are skipped; a warning is logged and the field is left empty. |
 
 ---
 
