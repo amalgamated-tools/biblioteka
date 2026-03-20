@@ -54,6 +54,7 @@ All OPDS paths fall under `/opds`. The catalog is scoped to the authenticated us
 | `/opds/search` | OpenSearch description | OpenSearch description document (when no `q` parameter) |
 | `/opds/search?q={query}` | Acquisition | Full-text book search results, paginated |
 | `/opds/download/{file-id}` | — | Direct file download (streams the file to the client) |
+| `/opds/covers/{bookID}` | — | Serve book cover image (decodes `data:` URLs; redirects plain URLs) |
 
 ### Page size
 
@@ -88,21 +89,19 @@ Supported MIME types:
 
 When a book has a cover image set, each acquisition feed entry includes a `rel="http://opds-spec.org/image"` link pointing to the cover URL. OPDS clients that support cover art (such as KOReader, Moon+ Reader, and PocketBook) will fetch and display the cover while browsing the catalog.
 
-> **Setting a cover image:** Biblioteka does not currently extract embedded cover images from EPUB or other files during library scans. To add cover art, set the `cover_image_url` field to a publicly reachable image URL via the API. Note that `PUT /api/books/{id}` is a **full update**: you must include the book's `title` and all other fields you want to keep, not just `cover_image_url`.
->
-> A safe workflow is:
->
-> 
-> ```
->
-> The URL must be reachable by the OPDS client (not `localhost`) and should end with a recognised image extension for correct MIME-type detection (see table below). Automatic cover extraction from EPUB files is planned for a future release.
+**EPUB cover images are extracted automatically.** When a `.epub` file is imported, Biblioteka extracts the embedded cover from the EPUB archive and stores it as a `data:` URL in the `cover_image_url` field. The OPDS feed replaces the raw `data:` URL with a link to `/opds/covers/{bookID}`, which decodes and streams the image bytes with the correct `Content-Type`. OPDS clients never see the raw `data:` URL.
 
-The `Content-Type` of the cover link is inferred from the image URL's file extension using Go's `path.Ext`, which operates on the full URL string. The URL must end cleanly with the file extension — query parameters or fragments that follow the extension prevent correct detection, because `path.Ext` includes them in the result (e.g. `path.Ext("cover.png?size=200")` returns `.png?size=200`, not `.png`).
+For non-EPUB formats (PDF, MOBI, AZW3), cover art is not yet extracted automatically. To add cover art manually, set the `cover_image_url` field to a publicly reachable image URL via the API. The `PUT /api/books/{id}` endpoint performs a **full update**: include the book's `title` and all other fields you want to keep, not just `cover_image_url`. The URL should end with a recognised image extension for correct MIME-type detection when serving it to OPDS clients.
+
+The `Content-Type` of the cover link is inferred differently depending on how the URL is stored:
+
+- **`data:` URLs** (set automatically for EPUBs): the MIME type is read directly from the `data:` header (e.g. `image/jpeg`, `image/png`). Content-sniffing is applied to pick the most specific type when the sniffed and declared types both indicate an image.
+- **Plain HTTPS URLs**: the MIME type is inferred from the URL's path component using `url.Parse` + `path.Ext`. Query parameters and fragments do **not** interfere with detection because the parser strips them before extracting the extension.
 
 | URL example | Detected MIME type |
 |-------------|-------------------|
 | `https://example.com/covers/1234.png` | `image/png` |
-| `https://example.com/covers/1234.png?size=200` | `image/jpeg` (falls back — query string appended to extension) |
+| `https://example.com/covers/1234.png?size=200` | `image/png` (query string stripped before extension detection) |
 | `https://example.com/covers/1234.jpg` | `image/jpeg` |
 | `https://example.com/covers/1234` | `image/jpeg` (falls back — no extension) |
 
@@ -115,7 +114,7 @@ If the extension is unknown or missing, the type falls back to `image/jpeg`.
 | `.avif` | `image/avif` |
 | `.gif` | `image/gif` |
 | `.svg` | `image/svg+xml` |
-| other (including `.jpg` / `.jpeg`, unknown/missing extensions, or URLs where the extension is obscured by query strings/fragments) | `image/jpeg` |
+| other (including `.jpg` / `.jpeg` and unknown/missing extensions) | `image/jpeg` |
 
 Entries for books without a cover image omit the image link entirely.
 
@@ -215,16 +214,17 @@ Authentication errors also include a `WWW-Authenticate: Basic realm="Biblioteka 
 
 ## Code architecture (for contributors)
 
-OPDS-related code is split across five files under `internal/handlers/`:
+OPDS-related code is split across six files under `internal/handlers/`:
 
 | File | Responsibility |
 |------|---------------|
-| `opds.go` | `OPDSHandler` struct, `HandleOPDS` URL dispatcher, `downloadFile`, and `bookEntries` (batch-loading authors and files per book) |
+| `opds.go` | `OPDSHandler` struct, `HandleOPDS` URL dispatcher, `downloadFile`, `serveCover`, and `bookEntries` (batch-loading authors and files per book) |
 | `opds_feeds.go` | One function per feed endpoint: `rootFeed`, `allBooks`, `recentBooks`, `authorsFeed`, `authorBooks`, `seriesFeed`, `seriesBooks`, `searchResults` |
-| `opds_helpers.go` | Low-level helpers: XML serialisation (`writeOPDSFeed`, `writeOPDSError`), URL utilities (`opdsBaseURL`, `parsePage`), pagination link generation (`paginationLinks`), and MIME detection (`coverMIMEType`, `fileTypeMIME`) |
+| `opds_helpers.go` | Low-level helpers: XML serialisation (`writeOPDSFeed`, `writeOPDSError`), URL utilities (`opdsBaseURL`, `parsePage`), pagination link generation (`paginationLinks`), and MIME detection (`fileTypeMIME`) |
 | `opds_types.go` | XML struct definitions (`opdsFeed`, `opdsEntry`, `opdsLink`, …), namespace constants, and link-relation constants (`relSelf`, `relAcquisition`, …) |
 | `opds_credentials.go` | `OPDSCredentialHandler` struct and `HandleOPDSCredentials` dispatcher (GET / PUT / DELETE) for the JSON REST API at `/api/opds/credentials`; handles bcrypt hashing and username-uniqueness enforcement |
+| `cover_helpers.go` | Shared cover-image utilities used by both the OPDS and Kobo handlers: `coverMIMEType` (MIME detection for plain URLs and `data:` URLs), `decodeDataURL` (base64 decode with size limit), `dataURLMIMEType` (extract MIME from a `data:` header) |
 
 `HandleOPDS` performs path-based dispatch using `strings.TrimPrefix` / `strings.HasPrefix`; there is no router framework. Feed functions each call `writeOPDSFeed` or `writeOPDSError` as their final step, which handles XML serialisation and response headers.
 
-> **Note:** `opds_credentials.go` serves a separate handler struct (`OPDSCredentialHandler`) registered under the JSON API (`/api/opds/…`), while the four feed files (`opds.go`, `opds_feeds.go`, `opds_helpers.go`, `opds_types.go`) together form the OPDS feed server (`OPDSHandler`) registered under `/opds`.
+> **Note:** `opds_credentials.go` serves a separate handler struct (`OPDSCredentialHandler`) registered under the JSON API (`/api/opds/…`), while the five feed files (`opds.go`, `opds_feeds.go`, `opds_helpers.go`, `opds_types.go`, `cover_helpers.go`) together form the OPDS feed server (`OPDSHandler`) registered under `/opds`. `cover_helpers.go` is also used by the Kobo handler.
