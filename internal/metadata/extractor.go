@@ -10,7 +10,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/http"
 	pathpkg "path"
 	"path/filepath"
 	"strings"
@@ -257,12 +256,6 @@ func readEPUBArchiveFile(filePath string, ref epubCoverRef) ([]byte, string, err
 	mimeType := strings.TrimSpace(ref.MIMEType)
 	if !strings.HasPrefix(mimeType, "image/") {
 		mimeType = http.DetectContentType(coverBytes)
-	mimeType := strings.TrimSpace(ref.MIMEType)
-	if !strings.HasPrefix(mimeType, "image/") {
-		mimeType = http.DetectContentType(coverBytes)
-	}
-	if !strings.HasPrefix(mimeType, "image/") {
-		return nil, "", fmt.Errorf("cover asset %q has non-image content type %q", file.Name, mimeType)
 	}
 	if !strings.HasPrefix(mimeType, "image/") {
 		return nil, "", fmt.Errorf("cover asset %q has non-image content type %q", file.Name, mimeType)
