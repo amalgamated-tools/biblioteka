@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"database/sql"
 	"encoding/xml"
+	"errors"
 	"log/slog"
 	"mime"
 	"net/http"
@@ -53,6 +56,8 @@ func (h *OPDSHandler) HandleOPDS(w http.ResponseWriter, r *http.Request) {
 		}
 	case strings.HasPrefix(subPath, "/download/"):
 		h.downloadFile(w, r, strings.TrimPrefix(subPath, "/download/"))
+	case strings.HasPrefix(subPath, "/covers/"):
+		h.serveCover(w, r, strings.TrimPrefix(subPath, "/covers/"))
 	default:
 		http.NotFound(w, r)
 	}
@@ -135,6 +140,48 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 	http.ServeContent(w, r, bf.FileName, stat.ModTime(), f)
 }
 
+func (h *OPDSHandler) serveCover(w http.ResponseWriter, r *http.Request, bookID string) {
+	ctx := r.Context()
+
+	book, err := h.DB.GetBook(ctx, bookID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			slog.WarnContext(ctx, "OPDS: failed to fetch book for cover",
+				slog.String(otelkeys.BookID, bookID),
+				slog.Any(otelkeys.Error, err),
+			)
+		}
+		http.NotFound(w, r)
+		return
+	}
+	if book.CoverImageURL == nil || *book.CoverImageURL == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	contentType, data, err := decodeDataURL(*book.CoverImageURL)
+	if err == nil {
+		if len(data) > 0 {
+			if sniffed := http.DetectContentType(data); strings.HasPrefix(sniffed, "image/") {
+				contentType = sniffed
+			}
+		}
+		if !strings.HasPrefix(contentType, "image/") {
+			http.Error(w, "invalid cover image", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", contentType)
+		http.ServeContent(w, r, "cover", book.UpdatedAt.Time, bytes.NewReader(data))
+		return
+	}
+	if !errors.Is(err, errNotDataURL) {
+		http.Error(w, "invalid cover image", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, *book.CoverImageURL, http.StatusTemporaryRedirect)
+}
+
 // bookEntries converts a slice of books into OPDS entry elements, including
 // authors and download links for each book. Uses batch queries to avoid N+1.
 func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL string) []opdsEntry {
@@ -186,10 +233,15 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 
 		// Add cover image link
 		if book.CoverImageURL != nil && *book.CoverImageURL != "" {
-			coverType := coverMIMEType(*book.CoverImageURL)
+			coverURL := *book.CoverImageURL
+			coverType := coverMIMEType(coverURL)
+			// Data URLs must not be inlined — point to the cover endpoint instead.
+			if strings.HasPrefix(coverURL, "data:") {
+				coverURL = baseURL + "/covers/" + book.ID
+			}
 			entry.Links = append(entry.Links, opdsLink{
 				Rel:  relImage,
-				Href: *book.CoverImageURL,
+				Href: coverURL,
 				Type: coverType,
 			})
 		}
