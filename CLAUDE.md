@@ -22,6 +22,7 @@ internal/
   handlers/        # HTTP handlers, one struct per domain
   handlers/middleware/  # Logging, request ID middleware
   jobs/            # Background job definitions
+  otelkeys/        # Predefined slog field-key constants (logger_keys.go)
   server/          # HTTP server init, route registration, embedded frontend dist
   worker/          # asynq worker setup and job handler registration
   otel/            # OpenTelemetry logging and tracing bootstrap
@@ -42,7 +43,7 @@ db/migrations/
 
 ## Commits and pushing
 
-- Do not include a co-author line in commit messages.
+- Do not add a `Co-Authored-By:` trailer to commit messages.
 - Require user approval before committing.
 - Require user approval before pushing.
 - Follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/): `<type>[optional scope][optional !]: <description>`
