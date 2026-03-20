@@ -177,3 +177,29 @@ func TestWriteOPF_XMLSpecialChars(t *testing.T) {
 		t.Errorf("metadata.opf is not valid XML: %v\nContent:\n%s", err, string(content))
 	}
 }
+
+func TestWriteOPF_InconsistentCoverFields(t *testing.T) {
+	dir := t.TempDir()
+
+	tests := []struct {
+		name     string
+		filename string
+		media    string
+	}{
+		{"filename without media type", "cover.jpg", ""},
+		{"media type without filename", "", "image/jpeg"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			data := OPFData{
+				Title:          "Test",
+				CoverFilename:  tc.filename,
+				CoverMediaType: tc.media,
+			}
+			if err := WriteOPF(dir, data); err == nil {
+				t.Error("expected error for inconsistent CoverFilename/CoverMediaType, got nil")
+			}
+		})
+	}
+}

@@ -43,8 +43,11 @@ func TestWriteSidecarFiles_NoCover(t *testing.T) {
 
 	WriteSidecarFiles(context.Background(), dir, meta, "No Cover Book", "Author")
 
-	if _, err := os.Stat(filepath.Join(dir, "cover.jpg")); !os.IsNotExist(err) {
-		t.Error("cover.jpg should not exist when no cover data URL")
+	for _, ext := range []string{".jpg", ".png", ".webp", ".avif"} {
+		name := "cover" + ext
+		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
+			t.Errorf("%s should not exist when no cover data URL", name)
+		}
 	}
 	if _, err := os.Stat(filepath.Join(dir, "metadata.opf")); err != nil {
 		t.Errorf("metadata.opf not found: %v", err)
@@ -56,8 +59,11 @@ func TestWriteSidecarFiles_NilMetadata(t *testing.T) {
 
 	WriteSidecarFiles(context.Background(), dir, nil, "Title Only", "")
 
-	if _, err := os.Stat(filepath.Join(dir, "cover.jpg")); !os.IsNotExist(err) {
-		t.Error("cover.jpg should not exist with nil metadata")
+	for _, ext := range []string{".jpg", ".png", ".webp", ".avif"} {
+		name := "cover" + ext
+		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
+			t.Errorf("%s should not exist with nil metadata", name)
+		}
 	}
 	if _, err := os.Stat(filepath.Join(dir, "metadata.opf")); err != nil {
 		t.Errorf("metadata.opf not found: %v", err)
