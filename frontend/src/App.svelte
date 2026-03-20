@@ -79,7 +79,7 @@
 
     <Sidebar
       currentView={routerStore.currentView}
-      onNavigate={(view) => routerStore.navigate(view)}
+      subPath={routerStore.subPath}
       open={sidebarOpen}
       onClose={() => (sidebarOpen = false)}
     />
