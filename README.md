@@ -5,7 +5,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 ## Features
 
 - **Multi-format support** – EPUB, MOBI, AZW3, and PDF
-- **Metadata extraction** – title, author, ISBN, description, and publisher extracted automatically during library scans (EPUB natively; MOBI/AZW3/PDF via [ExifTool](https://exiftool.org/)); extracted authors are linked to book records automatically; standalone [`cmd/cli`](#cli-tool) tool available for manual import, directory scanning, and metadata inspection
+- **Metadata extraction** – title, author, ISBN, description, publisher, language, and publication date extracted automatically during library scans via [ExifTool](https://exiftool.org/) (all supported formats: EPUB, MOBI, AZW3, PDF); extracted authors are linked to book records automatically; standalone [`cmd/cli`](#cli-tool) tool available for manual import, directory scanning, and metadata inspection
 - **Path-based metadata** – when files are organized in `Author/Title/` or `Author - Title` directory layouts, Biblioteka automatically derives author, title, series name, and series position from the directory structure, supplementing any embedded file metadata; trailing `(YYYY)` year tokens are also stripped to keep titles clean (the year is not stored as `publication_date`)
 - **File organisation** – optional `organize_files` setting moves imported files into a canonical `Author/Title/` directory structure under the library root; see [Administration → File organization](docs/administration.md#file-organization)
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
@@ -120,7 +120,7 @@ Biblioteka includes a built-in [OPDS 1.2](https://specs.opds.io/opds-1.2) catalo
 
 - **URL:** `/opds` (e.g. `http://localhost:8080/opds`)
 - **Authentication:** HTTP Basic Auth using a per-user OPDS credential — separate from your main account password.
-- **Manage credentials:** via the `PUT /api/opds/credentials` endpoint (API-only; there is no Settings UI for OPDS credentials).
+- **Manage credentials:** via `GET /api/opds/credentials` (check current credentials), `PUT /api/opds/credentials` (set or update), and `DELETE /api/opds/credentials` (remove) — all API-only; there is no Settings UI for OPDS credentials.
 
 See [docs/opds.md](docs/opds.md) for the full setup guide, catalog structure, and supported OPDS clients.
 
@@ -248,7 +248,7 @@ Extracts metadata from one file, stores a book record in the database, and creat
 ./biblioteka-cli /path/to/book.epub
 ```
 
-> **Note:** PDF and MOBI/AZW3 metadata extraction requires [ExifTool](https://exiftool.org/) to be installed and available on `PATH`. EPUB extraction has no external dependencies.
+> **Note:** Metadata extraction for all supported formats (EPUB, MOBI, AZW3, PDF) requires [ExifTool](https://exiftool.org/) to be installed and available on `PATH`. When ExifTool is not installed, imports still succeed but metadata is derived from the filename only.
 
 #### `scan-directory` — enqueue a directory for processing
 
@@ -283,7 +283,7 @@ internal/
   db/              Database layer (SQLite/PostgreSQL), migrations, CRUD
   handlers/        HTTP request handlers (books, authors, series, libraries, auth)
   jobs/            Background job handlers (scan:libraries, scan:library, scan:path, process:file)
-  metadata/        EPUB/MOBI/PDF metadata extraction
+  metadata/        EPUB/MOBI/AZW3/PDF metadata extraction via ExifTool
   organize/        File reorganization into canonical Author/Title/ directory structure
   pathparser/      Path-based metadata extraction from directory layout (author, title, series)
   server/          Route registration, middleware setup, embedded frontend

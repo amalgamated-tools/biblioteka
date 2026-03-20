@@ -54,7 +54,7 @@ func decodeDataURL(raw string) (string, []byte, error) {
 	}
 
 	const maxDecodedBytes = 20 << 20 // 20 MB
-	if base64.StdEncoding.DecodedLen(len(payload)) > maxDecodedBytes+1 {
+	if base64.StdEncoding.DecodedLen(len(payload)) > maxDecodedBytes+2 {
 		return "", nil, fmt.Errorf("data URL payload exceeds %d-byte limit", maxDecodedBytes)
 	}
 
