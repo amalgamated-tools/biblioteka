@@ -268,7 +268,7 @@ func readEPUBArchiveFile(ctx context.Context, filePath string, ref epubCoverRef)
 		return nil, "", fmt.Errorf("cover asset %q exceeds %d-byte limit", file.Name, maxCoverBytes)
 	}
 
-	mimeType := strings.TrimSpace(ref.MIMEType)
+	mimeType := strings.ToLower(strings.TrimSpace(ref.MIMEType))
 	if !strings.HasPrefix(mimeType, "image/") {
 		mimeType = http.DetectContentType(coverBytes)
 	}

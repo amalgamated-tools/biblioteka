@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 )
 
 func setupOPDSHandler(t *testing.T) *OPDSHandler {
@@ -814,6 +817,62 @@ func TestCoverImageInFeed(t *testing.T) {
 	}
 	if imgLink.Type != "image/png" {
 		t.Errorf("image type = %q, want %q", imgLink.Type, "image/png")
+	}
+}
+
+func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := context.Background()
+
+	pngBytes := testutils.TinyPNG()
+	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
+	book, _ := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	feed := parseOPDSFeed(t, w.Body.Bytes())
+	if len(feed.Entries) != 1 {
+		t.Fatalf("entries = %d, want 1", len(feed.Entries))
+	}
+	imgLink := findLink(feed.Entries[0].Links, relImage)
+	if imgLink == nil {
+		t.Fatal("missing image link")
+	}
+	wantHref := "http://example.com/opds/covers/" + book.ID
+	if imgLink.Href != wantHref {
+		t.Errorf("image href = %q, want %q", imgLink.Href, wantHref)
+	}
+	if strings.HasPrefix(imgLink.Href, "data:") {
+		t.Error("image href should not be a data URL")
+	}
+}
+
+func TestServeCover_DataURL(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := context.Background()
+
+	pngBytes := testutils.TinyPNG()
+	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
+	book, _ := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "image/") {
+		t.Errorf("content-type = %q, want image/*", ct)
+	}
+	if !bytes.Equal(w.Body.Bytes(), pngBytes) {
+		t.Errorf("body length = %d, want %d", w.Body.Len(), len(pngBytes))
 	}
 }
 
