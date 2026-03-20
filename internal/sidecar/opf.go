@@ -27,6 +27,125 @@ type OPFData struct {
 	CoverMediaType string // e.g. "image/jpeg", "image/png"
 }
 
+// opfPackage is the top-level OPF 2.0 package element.
+type opfPackage struct {
+	XMLName          xml.Name     `xml:"package"`
+	XMLNS            string       `xml:"xmlns,attr"`
+	Version          string       `xml:"version,attr"`
+	UniqueIdentifier string       `xml:"unique-identifier,attr"`
+	Metadata         opfMetadata  `xml:"metadata"`
+	Manifest         *opfManifest `xml:"manifest,omitempty"`
+}
+
+// opfManifest represents the manifest element.
+type opfManifest struct {
+	Items []opfItem `xml:"item"`
+}
+
+// opfItem represents an item in the manifest.
+type opfItem struct {
+	ID        string `xml:"id,attr"`
+	Href      string `xml:"href,attr"`
+	MediaType string `xml:"media-type,attr"`
+}
+
+// opfMetadata holds metadata fields. It implements xml.Marshaler to produce
+// dc:-prefixed Dublin Core elements that Go's struct tags cannot express.
+type opfMetadata struct {
+	Title       string
+	Creator     string
+	Identifier  string
+	IdScheme    string
+	Language    string
+	Date        string
+	Publisher   string
+	Description string
+	HasCover    bool
+}
+
+// MarshalXML writes the <metadata> element with Dublin Core namespace-prefixed
+// children and conditional cover meta.
+func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = append(start.Attr,
+		xml.Attr{Name: xml.Name{Local: "xmlns:dc"}, Value: "http://purl.org/dc/elements/1.1/"},
+		xml.Attr{Name: xml.Name{Local: "xmlns:opf"}, Value: "http://www.idpf.org/2007/opf"},
+	)
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+
+	// dc writes a Dublin Core element, skipping it when value is empty.
+	dc := func(name, value string, attrs ...xml.Attr) error {
+		if value == "" {
+			return nil
+		}
+		el := xml.StartElement{Name: xml.Name{Local: "dc:" + name}, Attr: attrs}
+		if err := e.EncodeToken(el); err != nil {
+			return err
+		}
+		if err := e.EncodeToken(xml.CharData(value)); err != nil {
+			return err
+		}
+		return e.EncodeToken(el.End())
+	}
+
+	if err := dc("title", m.Title); err != nil {
+		return err
+	}
+	if err := dc("creator", m.Creator, xml.Attr{Name: xml.Name{Local: "opf:role"}, Value: "aut"}); err != nil {
+		return err
+	}
+
+	// dc:identifier is always present.
+	idEl := xml.StartElement{
+		Name: xml.Name{Local: "dc:identifier"},
+		Attr: []xml.Attr{
+			{Name: xml.Name{Local: "id"}, Value: "uid"},
+			{Name: xml.Name{Local: "opf:scheme"}, Value: m.IdScheme},
+		},
+	}
+	if err := e.EncodeToken(idEl); err != nil {
+		return err
+	}
+	if err := e.EncodeToken(xml.CharData(m.Identifier)); err != nil {
+		return err
+	}
+	if err := e.EncodeToken(idEl.End()); err != nil {
+		return err
+	}
+
+	if err := dc("language", m.Language); err != nil {
+		return err
+	}
+	if err := dc("date", m.Date); err != nil {
+		return err
+	}
+	if err := dc("publisher", m.Publisher); err != nil {
+		return err
+	}
+	if err := dc("description", m.Description); err != nil {
+		return err
+	}
+
+	if m.HasCover {
+		meta := xml.StartElement{
+			Name: xml.Name{Local: "meta"},
+			Attr: []xml.Attr{
+				{Name: xml.Name{Local: "name"}, Value: "cover"},
+				{Name: xml.Name{Local: "content"}, Value: "cover-image"},
+			},
+		}
+		if err := e.EncodeToken(meta); err != nil {
+			return err
+		}
+		if err := e.EncodeToken(meta.End()); err != nil {
+			return err
+		}
+	}
+
+	return e.EncodeToken(start.End())
+}
+
 // WriteOPF generates an OPF 2.0 metadata file and writes it to metadata.opf in dir.
 func WriteOPF(dir string, data OPFData) error {
 	if (data.CoverFilename == "") != (data.CoverMediaType == "") {
@@ -47,74 +166,6 @@ func WriteOPF(dir string, data OPFData) error {
 }
 
 func marshalOPF(data OPFData) ([]byte, error) {
-	var buf bytes.Buffer
-	buf.WriteString(xml.Header)
-
-	enc := xml.NewEncoder(&buf)
-	enc.Indent("", "  ")
-
-	start := xml.StartElement{
-		Name: xml.Name{Local: "package"},
-		Attr: []xml.Attr{
-			{Name: xml.Name{Local: "xmlns"}, Value: "http://www.idpf.org/2007/opf"},
-			{Name: xml.Name{Local: "version"}, Value: "2.0"},
-			{Name: xml.Name{Local: "unique-identifier"}, Value: "uid"},
-		},
-	}
-
-	if err := enc.EncodeToken(start); err != nil {
-		return nil, fmt.Errorf("encode package start: %w", err)
-	}
-
-	metaStart := xml.StartElement{
-		Name: xml.Name{Local: "metadata"},
-		Attr: []xml.Attr{
-			{Name: xml.Name{Local: "xmlns:dc"}, Value: "http://purl.org/dc/elements/1.1/"},
-			{Name: xml.Name{Local: "xmlns:opf"}, Value: "http://www.idpf.org/2007/opf"},
-		},
-	}
-	if err := enc.EncodeToken(metaStart); err != nil {
-		return nil, fmt.Errorf("encode metadata start: %w", err)
-	}
-
-	writeDCElement := func(name, value string) error {
-		if value == "" {
-			return nil
-		}
-		s := xml.StartElement{Name: xml.Name{Local: "dc:" + name}}
-		if err := enc.EncodeToken(s); err != nil {
-			return fmt.Errorf("encode dc:%s start: %w", name, err)
-		}
-		if err := enc.EncodeToken(xml.CharData(value)); err != nil {
-			return fmt.Errorf("encode dc:%s value: %w", name, err)
-		}
-		if err := enc.EncodeToken(s.End()); err != nil {
-			return fmt.Errorf("encode dc:%s end: %w", name, err)
-		}
-		return nil
-	}
-
-	if err := writeDCElement("title", data.Title); err != nil {
-		return nil, err
-	}
-	if data.Author != "" {
-		s := xml.StartElement{
-			Name: xml.Name{Local: "dc:creator"},
-			Attr: []xml.Attr{
-				{Name: xml.Name{Local: "opf:role"}, Value: "aut"},
-			},
-		}
-		if err := enc.EncodeToken(s); err != nil {
-			return nil, fmt.Errorf("encode dc:creator start: %w", err)
-		}
-		if err := enc.EncodeToken(xml.CharData([]byte(data.Author))); err != nil {
-			return nil, fmt.Errorf("encode dc:creator value: %w", err)
-		}
-		if err := enc.EncodeToken(s.End()); err != nil {
-			return nil, fmt.Errorf("encode dc:creator end: %w", err)
-		}
-	}
-
 	identifierValue := data.ISBN
 	identifierScheme := "ISBN"
 	if identifierValue == "" {
@@ -126,87 +177,42 @@ func marshalOPF(data OPFData) ([]byte, error) {
 		identifierValue = u.String()
 		identifierScheme = "UUID"
 	}
-	{
-		s := xml.StartElement{
-			Name: xml.Name{Local: "dc:identifier"},
-			Attr: []xml.Attr{
-				{Name: xml.Name{Local: "id"}, Value: "uid"},
-				{Name: xml.Name{Local: "opf:scheme"}, Value: identifierScheme},
-			},
-		}
-		if err := enc.EncodeToken(s); err != nil {
-			return nil, fmt.Errorf("encode dc:identifier start: %w", err)
-		}
-		if err := enc.EncodeToken(xml.CharData([]byte(identifierValue))); err != nil {
-			return nil, fmt.Errorf("encode dc:identifier value: %w", err)
-		}
-		if err := enc.EncodeToken(s.End()); err != nil {
-			return nil, fmt.Errorf("encode dc:identifier end: %w", err)
-		}
-	}
-	if err := writeDCElement("language", data.Language); err != nil {
-		return nil, err
-	}
-	if err := writeDCElement("date", data.Date); err != nil {
-		return nil, err
-	}
-	if err := writeDCElement("publisher", data.Publisher); err != nil {
-		return nil, err
-	}
-	if err := writeDCElement("description", data.Description); err != nil {
-		return nil, err
+
+	pkg := opfPackage{
+		XMLNS:            "http://www.idpf.org/2007/opf",
+		Version:          "2.0",
+		UniqueIdentifier: "uid",
+		Metadata: opfMetadata{
+			Title:       data.Title,
+			Creator:     data.Author,
+			Identifier:  identifierValue,
+			IdScheme:    identifierScheme,
+			Language:    data.Language,
+			Date:        data.Date,
+			Publisher:   data.Publisher,
+			Description: data.Description,
+			HasCover:    data.CoverFilename != "",
+		},
 	}
 
 	if data.CoverFilename != "" {
-		metaEl := xml.StartElement{
-			Name: xml.Name{Local: "meta"},
-			Attr: []xml.Attr{
-				{Name: xml.Name{Local: "name"}, Value: "cover"},
-				{Name: xml.Name{Local: "content"}, Value: "cover-image"},
-			},
-		}
-		if err := enc.EncodeToken(metaEl); err != nil {
-			return nil, fmt.Errorf("encode cover meta: %w", err)
-		}
-		if err := enc.EncodeToken(metaEl.End()); err != nil {
-			return nil, fmt.Errorf("encode cover meta end: %w", err)
+		pkg.Manifest = &opfManifest{
+			Items: []opfItem{{
+				ID:        "cover-image",
+				Href:      data.CoverFilename,
+				MediaType: data.CoverMediaType,
+			}},
 		}
 	}
 
-	if err := enc.EncodeToken(metaStart.End()); err != nil {
-		return nil, fmt.Errorf("encode metadata end: %w", err)
-	}
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
 
-	if data.CoverFilename != "" {
-		manifestStart := xml.StartElement{Name: xml.Name{Local: "manifest"}}
-		if err := enc.EncodeToken(manifestStart); err != nil {
-			return nil, fmt.Errorf("encode manifest start: %w", err)
-		}
-		item := xml.StartElement{
-			Name: xml.Name{Local: "item"},
-			Attr: []xml.Attr{
-				{Name: xml.Name{Local: "id"}, Value: "cover-image"},
-				{Name: xml.Name{Local: "href"}, Value: data.CoverFilename},
-				{Name: xml.Name{Local: "media-type"}, Value: data.CoverMediaType},
-			},
-		}
-		if err := enc.EncodeToken(item); err != nil {
-			return nil, fmt.Errorf("encode manifest item: %w", err)
-		}
-		if err := enc.EncodeToken(item.End()); err != nil {
-			return nil, fmt.Errorf("encode manifest item end: %w", err)
-		}
-		if err := enc.EncodeToken(manifestStart.End()); err != nil {
-			return nil, fmt.Errorf("encode manifest end: %w", err)
-		}
-	}
+	enc := xml.NewEncoder(&buf)
+	enc.Indent("", "  ")
 
-	if err := enc.EncodeToken(start.End()); err != nil {
-		return nil, fmt.Errorf("encode package end: %w", err)
-	}
-
-	if err := enc.Flush(); err != nil {
-		return nil, fmt.Errorf("flush OPF XML: %w", err)
+	if err := enc.Encode(pkg); err != nil {
+		return nil, fmt.Errorf("encode OPF: %w", err)
 	}
 
 	return buf.Bytes(), nil
