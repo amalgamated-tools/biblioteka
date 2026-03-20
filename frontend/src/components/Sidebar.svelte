@@ -16,11 +16,12 @@
 
   interface Props {
     currentView: AppView;
+    subPath?: string;
     open: boolean;
     onClose: () => void;
   }
 
-  let { currentView, open, onClose }: Props = $props();
+  let { currentView, subPath = "", open, onClose }: Props = $props();
   let version = $state("");
 
   $effect(() => {
@@ -144,6 +145,7 @@
           >
             <a
               href={`#libraries/${lib.id}`}
+              aria-current={currentView === "libraries" && subPath === String(lib.id) ? "page" : undefined}
               class="flex items-center gap-3 flex-1 min-w-0"
               onclick={onClose}
             >
