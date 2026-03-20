@@ -624,7 +624,7 @@ The same pattern applies to settings sub-tabs, where the active tab is determine
 
 #### Rule for new navigation elements
 
-Whenever you add a link or button that acts as a navigation item pointing to a distinct view or sub-page, apply `aria-current={isActive ? "page" : undefined}`. Do **not** rely solely on CSS class changes to convey the active state.
+Whenever you add a navigation link that points to a distinct view or sub-page, apply `aria-current={isActive ? "page" : undefined}`. Do **not** rely solely on CSS class changes to convey the active state.
 
 ### Accessible labels for icon-only controls
 
@@ -697,7 +697,7 @@ When editing the app shell or adding new persistent navigation elements:
 3. Every page — authenticated or not — must contain exactly one `<main>` landmark. For the authenticated shell this is `<main id="main-content">` in `App.svelte`; for the pre-auth login/signup page this is `<main>` in `Auth.svelte`. Do not remove or replace these elements with a generic `<div>`.
 4. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
 5. Every icon-only link or button must have `aria-label`; the icon element inside the control must carry `aria-hidden="true"` to suppress redundant announcements; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only controls](#accessible-labels-for-icon-only-controls) above.
-6. Navigation links or buttons that represent the active view or tab must carry `aria-current={isActive ? "page" : undefined}`. See [`aria-current` on active navigation links](#aria-current-on-active-navigation-links) above.
+6. Navigation links that represent the active view must carry `aria-current={isActive ? "page" : undefined}`. Tab-style buttons should use `aria-selected` instead (see item 8). See [`aria-current` on active navigation links](#aria-current-on-active-navigation-links) above.
 7. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
 8. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
 9. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. See [Table accessibility](#table-accessibility) below.
