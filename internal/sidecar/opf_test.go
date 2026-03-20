@@ -18,8 +18,9 @@ func TestWriteOPF_AllFields(t *testing.T) {
 		Language:    "en",
 		Date:        "1925-04-10",
 		Publisher:   "Scribner",
-		Description: "A novel about the American Dream.",
-		HasCover:    true,
+		Description:    "A novel about the American Dream.",
+		CoverFilename:  "cover.jpg",
+		CoverMediaType: "image/jpeg",
 	}
 
 	if err := WriteOPF(dir, data); err != nil {
@@ -45,6 +46,7 @@ func TestWriteOPF_AllFields(t *testing.T) {
 		`name="cover"`,
 		`content="cover-image"`,
 		`href="cover.jpg"`,
+		`media-type="image/jpeg"`,
 	}
 
 	for _, check := range checks {
@@ -99,8 +101,7 @@ func TestWriteOPF_MinimalData(t *testing.T) {
 func TestWriteOPF_NoCover(t *testing.T) {
 	dir := t.TempDir()
 	data := OPFData{
-		Title:    "Test Book",
-		HasCover: false,
+		Title: "Test Book",
 	}
 
 	if err := WriteOPF(dir, data); err != nil {
@@ -114,14 +115,44 @@ func TestWriteOPF_NoCover(t *testing.T) {
 
 	s := string(content)
 	if strings.Contains(s, `name="cover"`) {
-		t.Errorf("metadata.opf should not contain cover meta when HasCover is false\nContent:\n%s", s)
+		t.Errorf("metadata.opf should not contain cover meta without cover\nContent:\n%s", s)
 	}
 	if strings.Contains(s, `<manifest>`) {
-		t.Errorf("metadata.opf should not contain manifest when HasCover is false\nContent:\n%s", s)
+		t.Errorf("metadata.opf should not contain manifest without cover\nContent:\n%s", s)
 	}
 	// Identifier should still be present even without a cover.
 	if !strings.Contains(s, `<dc:identifier`) {
 		t.Errorf("metadata.opf missing dc:identifier\nContent:\n%s", s)
+	}
+}
+
+func TestWriteOPF_PNGCover(t *testing.T) {
+	dir := t.TempDir()
+	data := OPFData{
+		Title:          "PNG Cover Book",
+		CoverFilename:  "cover.png",
+		CoverMediaType: "image/png",
+	}
+
+	if err := WriteOPF(dir, data); err != nil {
+		t.Fatalf("WriteOPF: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
+	if err != nil {
+		t.Fatalf("read metadata.opf: %v", err)
+	}
+
+	s := string(content)
+	checks := []string{
+		`href="cover.png"`,
+		`media-type="image/png"`,
+		`name="cover"`,
+	}
+	for _, check := range checks {
+		if !strings.Contains(s, check) {
+			t.Errorf("metadata.opf missing %q\nContent:\n%s", check, s)
+		}
 	}
 }
 

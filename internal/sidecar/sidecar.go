@@ -8,26 +8,29 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// WriteSidecarFiles writes cover.jpg and metadata.opf alongside the book file.
+// WriteSidecarFiles writes a cover image and metadata.opf alongside the book file.
 // All operations are best-effort with WARN-level logging on failure.
 func WriteSidecarFiles(ctx context.Context, dir string, meta *metadata.BookMetadata, title, authorName string) {
-	var hasCover bool
+	var coverFilename, coverMediaType string
 
 	if meta != nil && meta.CoverImageURL != "" {
-		if err := WriteCover(dir, meta.CoverImageURL); err != nil {
-			slog.WarnContext(ctx, "failed to write cover.jpg",
+		var err error
+		coverFilename, coverMediaType, err = WriteCover(dir, meta.CoverImageURL)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to write cover image",
 				slog.String(otelkeys.Path, dir),
 				slog.Any(otelkeys.Error, err),
 			)
-		} else {
-			hasCover = true
+			coverFilename = ""
+			coverMediaType = ""
 		}
 	}
 
 	opfData := OPFData{
-		Title:    title,
-		Author:   authorName,
-		HasCover: hasCover,
+		Title:          title,
+		Author:         authorName,
+		CoverFilename:  coverFilename,
+		CoverMediaType: coverMediaType,
 	}
 
 	if meta != nil {
