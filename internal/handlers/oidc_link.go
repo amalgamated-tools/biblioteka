@@ -10,14 +10,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const oidcLinkUserIDCookieName = "oidc_link_user_id"
-
-// linkNonce is a short-lived, single-use token mapping to a user ID.
-type linkNonce struct {
-	UserID    string
-	ExpiresAt time.Time
-}
-
 // CreateLinkNonce godoc
 //
 // @Summary		Create OIDC link nonce

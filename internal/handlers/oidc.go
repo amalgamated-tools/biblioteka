@@ -17,10 +17,17 @@ import (
 )
 
 const (
-	oidcStateCookieName    = "oidc_state"
-	oidcVerifierCookieName = "oidc_verifier"
-	oidcStateCookieTTL     = 5 * time.Minute
+	oidcStateCookieName      = "oidc_state"
+	oidcVerifierCookieName   = "oidc_verifier"
+	oidcLinkUserIDCookieName = "oidc_link_user_id"
+	oidcStateCookieTTL       = 5 * time.Minute
 )
+
+// linkNonce is a short-lived, single-use token mapping to a user ID.
+type linkNonce struct {
+	UserID    string
+	ExpiresAt time.Time
+}
 
 // OIDCHandler holds dependencies for OIDC auth endpoints.
 type OIDCHandler struct {
@@ -63,11 +70,11 @@ func NewOIDCHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, 
 //
 // @Summary		OIDC login
 // @Description	Redirects to the OIDC provider's authorization endpoint
-// @Tags		OIDC
+// @Tags			OIDC
 // @Success		302	"Redirect to OIDC provider"
 // @Failure		404	{object}	errorResponse	"OIDC not configured"
 // @Failure		500	{object}	errorResponse
-// @Router		/auth/oidc/login [get]
+// @Router			/auth/oidc/login [get]
 func (h *OIDCHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
