@@ -139,6 +139,50 @@ Directory names are sanitized (path separators, control characters, and leading 
 
 See [Administration — File organization](administration.md#file-organization) for how to enable this feature.
 
+#### Sidecar files
+
+After the book record and all associations are persisted, `process:file` calls `sidecar.WriteSidecarFiles` (`internal/sidecar/sidecar.go`) to write two companion files in the same directory as the book file:
+
+| File | Description |
+|------|-------------|
+| `cover.{ext}` | Cover image decoded from `CoverImageURL`; written only when `CoverImageURL` is a valid `data:` URL |
+| `metadata.opf` | OPF 2.0 package document containing Dublin Core metadata |
+
+**`cover.{ext}`**
+
+The cover filename extension is determined by the decoded MIME type:
+
+| MIME type | Extension |
+|-----------|-----------|
+| `image/jpeg` | `.jpg` |
+| `image/png` | `.png` |
+| `image/webp` | `.webp` |
+| `image/avif` | `.avif` |
+
+When the cover format changes between job runs, any previously written `cover.*` file with a different extension is removed before the new file is written. Unsupported MIME types are rejected and no cover file is written. The 20 MB limit enforced by `coverutil.DecodeDataURL` also applies here — cover data URLs exceeding the limit are not decoded or written.
+
+**`metadata.opf`**
+
+The OPF file follows the [OPF 2.0 specification](https://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm) and includes Dublin Core metadata elements populated from the book's extracted metadata:
+
+| OPF element | Source |
+|-------------|--------|
+| `dc:title` | Book title |
+| `dc:creator` (role `aut`) | Author name |
+| `dc:identifier` | ISBN when available; otherwise a deterministic UUID v5 derived from title, author, publisher, date, and the book file's directory path |
+| `dc:language` | From `Language` metadata; defaults to `und` when absent |
+| `dc:date` | Publication date |
+| `dc:publisher` | Publisher |
+| `dc:description` | Description |
+| `<meta name="cover">` | Present when a cover image was written |
+| `<manifest>` | Lists the cover image item when a cover image was written |
+
+The `dc:identifier` uses `ISBN` as the `opf:scheme` when an ISBN is present, and `UUID` when a derived identifier is used. The UUID is derived as a SHA-1 UUID v5 using a fixed application namespace, ensuring the same book always produces the same identifier across repeated job runs.
+
+**Failure handling**
+
+Both file writes are best-effort. A failure to write `cover.{ext}` is logged at `WARN` level but does not prevent `metadata.opf` from being written. A failure to write `metadata.opf` is also logged at `WARN` level. Neither failure causes the job to fail or retry.
+
 ### Job Chain
 
 A full scan flows through the jobs in a fan-out pattern:
@@ -230,6 +274,12 @@ internal/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
   pathparser/
     pathparser.go              # ParseBookPath: extracts author/title/series from directory structure; strips trailing year tokens from titles
+  sidecar/
+    sidecar.go                 # WriteSidecarFiles: orchestrates cover + OPF writes (best-effort)
+    cover.go                   # WriteCover: decodes base64 data URL, writes cover.{ext}, cleans up stale cover files
+    opf.go                     # WriteOPF: generates and writes OPF 2.0 metadata.opf; OPFData struct
+  coverutil/
+    decode.go                  # DecodeDataURL: decodes base64 data: URLs; enforces 20 MB limit
   worker/
     worker.go                  # Worker struct: Register, Enqueue, Start, Close
 ```
