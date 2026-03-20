@@ -267,6 +267,21 @@ Always commit the updated spec files alongside the handler changes that prompted
 - **User scoping**: All data queries must include `user_id` to enforce per-user data isolation.
 - **Formatting**: Run `go fmt ./...` before committing Go code.
 
+## AI Coding Assistant Instructions
+
+The project provides per-agent instruction files so that AI coding assistants receive the full set of project conventions without needing them to be pasted into every prompt:
+
+| File | Agent |
+|---|---|
+| `CLAUDE.md` | Claude (Anthropic) — canonical source |
+| `AGENTS.md` | Codex / OpenAI-based agents |
+| `GEMINI.md` | Gemini (Google) |
+| `.github/copilot-instructions.md` | GitHub Copilot |
+
+All four files contain identical content. **When you update any coding convention documented here or in the project, keep all four files in sync.** `CLAUDE.md` is the canonical source; copy its content to the other three files.
+
+These files cover the same conventions as the [Code Conventions](#code-conventions) section above, plus additional detail on logging, error handling, HTTP handler patterns, database migrations, and frontend practices that is relevant to automated agents.
+
 ## Database Migrations
 
 Migrations live in `db/migrations/sqlite/` and `db/migrations/postgres/` using [dbmate](https://github.com/amacneil/dbmate) format:
