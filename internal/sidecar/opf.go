@@ -107,7 +107,12 @@ func marshalOPF(data OPFData) ([]byte, error) {
 	identifierValue := data.ISBN
 	identifierScheme := "ISBN"
 	if identifierValue == "" {
-		identifierValue = uuid.NewString()
+		// Derive a stable, deterministic UUID from available metadata so that
+		// the identifier does not change across repeated OPF writes for the
+		// same book when ISBN is missing.
+		stableKey := fmt.Sprintf("%s|%s|%s|%s", data.Title, data.Author, data.Publisher, data.Date)
+		u := uuid.NewSHA1(uuid.NameSpaceURL, []byte(stableKey))
+		identifierValue = u.String()
 		identifierScheme = "UUID"
 	}
 	{
