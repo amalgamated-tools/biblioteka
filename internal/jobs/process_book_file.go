@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/pathparser"
+	"github.com/amalgamated-tools/biblioteka/internal/sidecar"
 )
 
 // ProcessBookFile orchestrates the complete processing of a single book file:
@@ -87,6 +89,8 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	}
 
 	linkBookAssociations(ctx, database, book.ID, authorName, p.LibraryID, pathInfo, filePath)
+
+	sidecar.WriteSidecarFiles(ctx, filepath.Dir(filePath), meta, title, authorName)
 
 	var format string
 	if meta != nil {
