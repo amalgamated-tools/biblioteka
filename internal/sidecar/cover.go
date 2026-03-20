@@ -19,32 +19,10 @@ func WriteCover(dir string, coverDataURL string) error {
 		return fmt.Errorf("unsupported cover MIME type: %s", mimeType)
 	}
 
-	ext := extensionForMIME(mimeType) // e.g. ".jpg", ".png", ".webp"
-	filename := "cover" + ext
-	path := filepath.Join(dir, filename)
+	path := filepath.Join(dir, "cover.jpg")
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", filename, err)
+		return fmt.Errorf("write cover.jpg: %w", err)
 	}
 
 	return nil
-}
-
-// extensionForMIME returns the file extension for a given MIME type.
-func extensionForMIME(mimeType string) string {
-	switch mimeType {
-	case "image/jpeg":
-		return ".jpg"
-	case "image/png":
-		return ".png"
-	case "image/webp":
-		return ".webp"
-	case "image/avif":
-		return ".avif"
-	case "image/gif":
-		return ".gif"
-	case "image/svg+xml":
-		return ".svg"
-	default:
-		return ""
-	}
 }
