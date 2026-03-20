@@ -330,12 +330,12 @@ go-test ──┘
 | `frontend-checks` | — | Installs pnpm deps (cached), runs TypeScript check (`pnpm run check`), Prettier format check, ESLint (`pnpm run lint`), and frontend unit tests |
 | `frontend-all` | `frontend-build` + `frontend-checks` | Gate job — fails the run if either frontend job failed |
 | `go-lint` | — | Runs golangci-lint and Go format check (`gofmt`) |
-| `go-test` | — | Installs `exiftool`, runs `go test -v ./...` |
+| `go-test` | — | Installs `exiftool` (apt package cached), runs `go test -v ./...` |
 | `go-all` | `go-lint` + `go-test` | Gate job — fails the run if either Go job failed |
 
 All six jobs run fully in parallel (the two gate jobs wait for their pair). Total CI time is roughly `max(frontend-build, frontend-checks, go-lint, go-test)`.
 
-Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: 'pnpm'`, keyed on `frontend/pnpm-lock.yaml`) to avoid re-downloading the dependency tree on every run.
+Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: 'pnpm'`, keyed on `frontend/pnpm-lock.yaml`) to avoid re-downloading the dependency tree on every run. Both Go jobs use the Go module cache via `actions/setup-go` (`cache: true`, keyed on `go.sum`). The `go-test` job additionally caches the `libimage-exiftool-perl` apt package via `actions/cache` (keyed on the test workflow file hash) to avoid re-downloading the binary on every run.
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
 
