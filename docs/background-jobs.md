@@ -139,6 +139,23 @@ Directory names are sanitized (path separators, control characters, and leading 
 
 See [Administration — File organization](administration.md#file-organization) for how to enable this feature.
 
+#### Sidecar files
+
+After the book file is saved to its final path, Biblioteka writes two companion sidecar files alongside it in the same directory. Both writes are **best-effort**: failures are logged at `WARN` level and do not prevent the import from completing or roll back any database records.
+
+| Sidecar file | Description |
+|---|---|
+| `cover.<ext>` | Cover image decoded from `CoverImageURL` (e.g. `cover.jpg`, `cover.png`, `cover.webp`, `cover.avif`). Written only when `CoverImageURL` holds a `data:` URL. Images larger than 20 MB are not written. |
+| `metadata.opf` | OPF 2.0 Dublin Core metadata file containing title, author, identifier, language, publication date, publisher, description, and a manifest entry for the cover when present. Always written when the book has a title. |
+
+The cover file extension is determined from the image MIME type (`image/jpeg` → `.jpg`, `image/png` → `.png`, `image/webp` → `.webp`, `image/avif` → `.avif`). When the cover format changes between re-imports, stale cover files with other extensions are removed automatically.
+
+The `dc:identifier` in `metadata.opf` uses the book's ISBN when available. Without an ISBN, a deterministic UUID v5 is derived from the title, author, publisher, date, and file-directory path — ensuring the identifier is stable across repeated re-imports without requiring an ISBN.
+
+When [file organization](#file-reorganization) is enabled, sidecar files are written to the final `<Author>/<Title>/` directory after the book file is moved there.
+
+**Implementation:** `internal/sidecar` — `WriteSidecarFiles`, `WriteCover`, `WriteOPF`
+
 ### Job Chain
 
 A full scan flows through the jobs in a fan-out pattern:
@@ -226,10 +243,16 @@ internal/
     book_metadata_helpers.go   # deriveTitle, extractBookMetadata, resolveAuthorAndTitle
     book_path_helpers.go       # validatePayload, resolveSourcePath, checkDuplicate, defaultBookFileLookup (bookFileLookupFunc type)
     book_record_helpers.go     # maybeReorganizeFile, createBookRecord, linkBookAssociations
+  coverutil/
+    decode.go                  # DecodeDataURL: decodes base64 data: URLs; enforces the 20 MB size limit
   organize/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
   pathparser/
     pathparser.go              # ParseBookPath: extracts author/title/series from directory structure; strips trailing year tokens from titles
+  sidecar/
+    sidecar.go                 # WriteSidecarFiles: orchestrates cover and OPF writing after each import
+    cover.go                   # WriteCover: decodes CoverImageURL data URL and writes cover.<ext> to disk
+    opf.go                     # WriteOPF: marshals and writes metadata.opf (OPF 2.0 Dublin Core)
   worker/
     worker.go                  # Worker struct: Register, Enqueue, Start, Close
 ```

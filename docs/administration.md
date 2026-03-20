@@ -392,6 +392,19 @@ Even when `organize_files` is disabled, Biblioteka parses each file's path relat
 
 For full details on the supported directory layouts and precedence rules, see [Background Jobs — Path-based metadata](background-jobs.md#path-based-metadata).
 
+### Sidecar files
+
+Every time a book file is imported — regardless of whether file organization is enabled — Biblioteka writes two sidecar files in the same directory as the book file:
+
+| File | Contents |
+|------|----------|
+| `cover.<ext>` | Cover image (JPEG, PNG, WebP, or AVIF) decoded from the embedded EPUB cover, when available. Skipped for non-EPUB formats and when no cover is present. |
+| `metadata.opf` | OPF 2.0 Dublin Core metadata: title, author, identifier, language, publication date, publisher, and description. |
+
+These writes are best-effort. Failures are logged at `WARN` level and do not prevent the book from being imported.
+
+When file organization is enabled, sidecar files are placed in the final `<Author>/<Title>/` directory alongside the relocated book file. See [Background Jobs — Sidecar files](background-jobs.md#sidecar-files) for implementation details.
+
 ---
 
 ## Health Check
