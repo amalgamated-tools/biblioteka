@@ -80,6 +80,9 @@ func TestWriteOPF_MinimalData(t *testing.T) {
 	if !strings.Contains(s, `<dc:title>Untitled</dc:title>`) {
 		t.Errorf("metadata.opf missing title\nContent:\n%s", s)
 	}
+	if !strings.Contains(s, `<dc:language>und</dc:language>`) {
+		t.Errorf("metadata.opf missing fallback language\nContent:\n%s", s)
+	}
 	// Should not contain empty elements for omitted fields.
 	if strings.Contains(s, `<dc:creator`) {
 		t.Errorf("metadata.opf should not contain empty creator\nContent:\n%s", s)
@@ -104,6 +107,40 @@ func TestWriteOPF_EmptyTitle(t *testing.T) {
 
 	if err := WriteOPF(dir, data); err == nil {
 		t.Fatal("expected error when title is empty")
+	}
+}
+
+func TestWriteOPF_UUIDIsDeterministic(t *testing.T) {
+	dir := t.TempDir()
+	data := OPFData{
+		Title:  "Determinism Test",
+		Author: "Author A",
+	}
+
+	if err := WriteOPF(dir, data); err != nil {
+		t.Fatalf("first WriteOPF: %v", err)
+	}
+	first, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
+	if err != nil {
+		t.Fatalf("read first metadata.opf: %v", err)
+	}
+
+	if err := WriteOPF(dir, data); err != nil {
+		t.Fatalf("second WriteOPF: %v", err)
+	}
+	second, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
+	if err != nil {
+		t.Fatalf("read second metadata.opf: %v", err)
+	}
+
+	uuidRe := regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+	uuid1 := uuidRe.FindString(string(first))
+	uuid2 := uuidRe.FindString(string(second))
+	if uuid1 == "" || uuid2 == "" {
+		t.Fatalf("expected UUIDs in both OPF files, got %q and %q", uuid1, uuid2)
+	}
+	if uuid1 != uuid2 {
+		t.Errorf("UUID changed between calls: %q vs %q", uuid1, uuid2)
 	}
 }
 
