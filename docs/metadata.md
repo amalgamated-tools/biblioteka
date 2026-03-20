@@ -1,6 +1,6 @@
 # Metadata Extraction
 
-Biblioteka extracts metadata — title, author, ISBN, description, publisher, language, publication date — from book files using [ExifTool](https://exiftool.org/).
+Biblioteka extracts metadata — title, author, ISBN, description, publisher, language, publication date, and embedded cover art when available — from book files using [ExifTool](https://exiftool.org/).
 
 | Supported formats | External dependency |
 |-------------------|---------------------|
@@ -8,7 +8,7 @@ Biblioteka extracts metadata — title, author, ISBN, description, publisher, la
 
 The extractor is implemented in [`internal/metadata/extractor.go`](../internal/metadata/extractor.go) and exposed to end users via the standalone [`cmd/cli`](../cmd/cli/main.go) utility.
 
-> **Import pipeline status:** Automatic metadata extraction is **now active** in the `process:file` background job (since v0.0.5). When a file is imported during a library scan, the extractor runs and populates the book record with `Title`, `ISBN` (stored as ISBN-10 or ISBN-13), `Description`, `Publisher`, `Language`, and `PublicationDate` when the extracted value is non-empty. If extraction fails (for example, because ExifTool is not installed), the job falls back to deriving the book title from the filename. Author records are also created automatically from extracted author metadata and linked to the imported book.
+> **Import pipeline status:** Automatic metadata extraction is **now active** in the `process:file` background job (since v0.0.5). When a file is imported during a library scan, the extractor runs and populates the book record with `Title`, `ISBN` (stored as ISBN-10 or ISBN-13), `Description`, `Publisher`, `Language`, `PublicationDate`, and `cover_image_url` when extracted values are non-empty. If extraction fails (for example, because ExifTool is not installed), the job falls back to deriving the book title from the filename. Author records are also created automatically from extracted author metadata and linked to the imported book.
 
 ---
 
@@ -24,6 +24,7 @@ The extractor is implemented in [`internal/metadata/extractor.go`](../internal/m
 | `Publisher` | From ExifTool `Publisher` tag |
 | `Language` | From ExifTool `Language` tag |
 | `PublicationDate` | From ExifTool `PublicationDate` tag; normalized from ExifTool's `YYYY:MM:DD` format to `YYYY-MM-DD` |
+| `CoverImageURL` | For EPUB files with embedded cover art, resolved from ExifTool's cover manifest tags and stored as a `data:` URL |
 
 ---
 
@@ -40,6 +41,7 @@ All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-o
 | `Publisher` | `Publisher` | `""` |
 | `Language` | `Language` | `""` |
 | `PublicationDate` | `PublicationDate` | `""` |
+| `MetaName`, `MetaContent`, `ManifestItemId`, `ManifestItemHref`, `ManifestItemMedia-type` | `CoverImageURL` | `""` when no embedded cover is found |
 
 When ExifTool is **not installed**, `NewExtractor()` still returns a valid `*Extractor` (with a warning logged), but calling `ExtractMetadata` on any file returns an error:
 
@@ -116,9 +118,9 @@ When `<library-id>` is supplied the directory is also used as the `library_root`
 
 ## What's next
 
-The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) extracts and stores `Title`, `ISBN`, `Description`, `Publisher`, `Language`, `PublicationDate`, and links extracted `Author` names to book records. Planned future improvements include:
+The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) extracts and stores `Title`, `ISBN`, `Description`, `Publisher`, `Language`, `PublicationDate`, embedded EPUB cover art, and links extracted `Author` names to book records. Planned future improvements include:
 
-1. **Cover image** — populate `cover_image_url` for formats that embed cover art.
+1. **More cover formats** — extend embedded cover extraction beyond EPUB.
 
 Use `cmd/cli` to import a single file and verify what Biblioteka extracts before a full library scan.
 

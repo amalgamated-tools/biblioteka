@@ -1,10 +1,16 @@
 package metadata
 
 import (
+	"archive/zip"
 	"context"
+	"encoding/base64"
+	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
+	pathpkg "path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -17,6 +23,7 @@ var ErrExifToolUnavailable = errors.New("exiftool is not available on this syste
 
 type BookMetadata struct {
 	Author          string
+	CoverImageURL   string
 	Description     string
 	Format          string
 	ISBN            string
@@ -59,11 +66,15 @@ func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*BookMeta
 	return e.extractExif(ctx, path)
 }
 
-func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
+func (e *Extractor) lockedExtractMetadata(path string) []exiftool.FileMetadata {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	return e.et.ExtractMetadata(path)
+}
 
-	results := e.et.ExtractMetadata(path)
+func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
+	results := e.lockedExtractMetadata(path)
+
 	if len(results) == 0 {
 		return nil, fmt.Errorf("no metadata found for %s", path)
 	}
@@ -96,9 +107,22 @@ func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata
 	pubDate := getStringOr(&book, "PublicationDate", "")
 	pubDate = normalizeExifDate(pubDate)
 
+	coverImageURL := ""
+	if strings.EqualFold(filepath.Ext(path), ".epub") {
+		var err error
+		coverImageURL, err = extractEPUBCoverDataURL(ctx, &book, path)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to extract embedded EPUB cover image",
+				slog.String(otelkeys.Path, path),
+				slog.Any(otelkeys.Error, err),
+			)
+		}
+	}
+
 	return &BookMetadata{
 		Title:           title,
 		Author:          author,
+		CoverImageURL:   coverImageURL,
 		Description:     getStringOr(&book, "Description", ""),
 		ISBN:            isbn,
 		Format:          strings.ToUpper(strings.TrimPrefix(filepath.Ext(path), ".")),
@@ -106,6 +130,243 @@ func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata
 		PublicationDate: pubDate,
 		Publisher:       getStringOr(&book, "Publisher", ""),
 	}, nil
+}
+
+type epubContainer struct {
+	Rootfiles []struct {
+		FullPath string `xml:"full-path,attr"`
+	} `xml:"rootfiles>rootfile"`
+}
+
+type epubCoverRef struct {
+	Href     string
+	MIMEType string
+}
+
+func extractEPUBCoverDataURL(ctx context.Context, book *exiftool.FileMetadata, filePath string) (string, error) {
+	ref, ok := findEPUBCoverRef(ctx, book)
+	if !ok {
+		return "", nil
+	}
+
+	coverBytes, mimeType, err := readEPUBArchiveFile(ctx, filePath, ref)
+	if err != nil {
+		return "", err
+	}
+
+	return "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(coverBytes), nil
+}
+
+func findEPUBCoverRef(ctx context.Context, book *exiftool.FileMetadata) (epubCoverRef, bool) {
+	manifestIDs, _ := book.GetStrings("ManifestItemId")
+	manifestHrefs, _ := book.GetStrings("ManifestItemHref")
+	manifestMIMETypes, _ := book.GetStrings("ManifestItemMedia-type")
+	if len(manifestHrefs) == 0 {
+		return epubCoverRef{}, false
+	}
+
+	coverID := ""
+	metaNames, metaNameErr := book.GetStrings("MetaName")
+	metaContents, metaContentErr := book.GetStrings("MetaContent")
+	if metaNameErr == nil && metaContentErr == nil && len(metaNames) == len(metaContents) {
+		for i, name := range metaNames {
+			if strings.EqualFold(strings.TrimSpace(name), "cover") {
+				coverID = strings.TrimSpace(metaContents[i])
+				break
+			}
+		}
+	}
+	if coverID == "" && strings.EqualFold(strings.TrimSpace(getStringOr(book, "MetaName", "")), "cover") {
+		coverID = strings.TrimSpace(getStringOr(book, "MetaContent", ""))
+	}
+
+	if coverID != "" {
+		for i, href := range manifestHrefs {
+			if strings.TrimSpace(itemAt(manifestIDs, i)) != coverID {
+				continue
+			}
+			ref := epubCoverRef{
+				Href:     strings.TrimSpace(href),
+				MIMEType: strings.TrimSpace(itemAt(manifestMIMETypes, i)),
+			}
+			if ref.Href != "" && isLikelyImage(ref.Href, ref.MIMEType) {
+				return ref, true
+			}
+		}
+		slog.WarnContext(
+			ctx,
+			"EPUB cover meta tag references unknown or non-image manifest item",
+			slog.String(otelkeys.CoverID, coverID),
+		)
+	}
+
+	var firstImage *epubCoverRef
+	imageCount := 0
+	for i, href := range manifestHrefs {
+		ref := epubCoverRef{
+			Href:     strings.TrimSpace(href),
+			MIMEType: strings.TrimSpace(itemAt(manifestMIMETypes, i)),
+		}
+		if ref.Href == "" || !isLikelyImage(ref.Href, ref.MIMEType) {
+			continue
+		}
+		imageCount++
+		if firstImage == nil {
+			candidate := ref
+			firstImage = &candidate
+		}
+		id := strings.ToLower(strings.TrimSpace(itemAt(manifestIDs, i)))
+		lowerHref := strings.ToLower(pathpkg.Base(ref.Href))
+		if strings.Contains(id, "cover") || strings.Contains(lowerHref, "cover") {
+			return ref, true
+		}
+	}
+
+	if firstImage != nil && imageCount == 1 {
+		return *firstImage, true
+	}
+
+	return epubCoverRef{}, false
+}
+
+func readEPUBArchiveFile(ctx context.Context, filePath string, ref epubCoverRef) ([]byte, string, error) {
+	reader, err := zip.OpenReader(filePath)
+	if err != nil {
+		return nil, "", fmt.Errorf("open epub archive: %w", err)
+	}
+	defer reader.Close()
+	slog.DebugContext(
+		ctx,
+		"opened EPUB archive for cover extraction",
+		slog.String(otelkeys.Path, filePath),
+		slog.Int(otelkeys.FilesFound, len(reader.File)),
+	)
+
+	rootFilePath, rootErr := readEPUBRootFilePath(reader.File)
+	candidates := archiveCandidates(rootFilePath, ref.Href)
+
+	file := findArchiveFile(reader.File, candidates)
+	if file == nil {
+		if rootErr != nil {
+			return nil, "", fmt.Errorf("cover asset %q not found in archive (failed to determine EPUB root file path): %w", ref.Href, rootErr)
+		}
+		return nil, "", fmt.Errorf("cover asset %q not found in archive", ref.Href)
+	}
+
+	rc, err := file.Open()
+	if err != nil {
+		return nil, "", fmt.Errorf("open cover asset %q: %w", file.Name, err)
+	}
+	defer rc.Close()
+
+	const maxCoverBytes = 20 << 20 // 20 MB
+	coverBytes, err := io.ReadAll(io.LimitReader(rc, int64(maxCoverBytes)+1))
+	if err != nil {
+		return nil, "", fmt.Errorf("read cover asset %q: %w", file.Name, err)
+	}
+	if len(coverBytes) > maxCoverBytes {
+		return nil, "", fmt.Errorf("cover asset %q exceeds %d-byte limit", file.Name, maxCoverBytes)
+	}
+
+	mimeType := strings.ToLower(strings.TrimSpace(ref.MIMEType))
+	if !strings.HasPrefix(mimeType, "image/") {
+		mimeType = http.DetectContentType(coverBytes)
+	}
+	if !strings.HasPrefix(mimeType, "image/") {
+		return nil, "", fmt.Errorf("cover asset %q has non-image content type %q", file.Name, mimeType)
+	}
+
+	return coverBytes, mimeType, nil
+}
+
+func readEPUBRootFilePath(files []*zip.File) (string, error) {
+	container := findArchiveFile(files, []string{"META-INF/container.xml"})
+	if container == nil {
+		return "", errors.New("container.xml not found")
+	}
+
+	rc, err := container.Open()
+	if err != nil {
+		return "", fmt.Errorf("open container.xml: %w", err)
+	}
+	defer rc.Close()
+
+	const maxContainerXMLBytes = 1 << 20 // 1 MB
+	var doc epubContainer
+	if err := xml.NewDecoder(io.LimitReader(rc, maxContainerXMLBytes)).Decode(&doc); err != nil {
+		return "", fmt.Errorf("decode container.xml: %w", err)
+	}
+	if len(doc.Rootfiles) == 0 {
+		return "", errors.New("no rootfile entries in container.xml")
+	}
+
+	return cleanArchivePath(doc.Rootfiles[0].FullPath), nil
+}
+
+func archiveCandidates(rootFilePath, href string) []string {
+	cleanHref := cleanArchivePath(href)
+	if cleanHref == "" {
+		return nil
+	}
+
+	candidates := []string{cleanHref}
+	if rootFilePath != "" {
+		candidates = append([]string{cleanArchivePath(pathpkg.Join(pathpkg.Dir(rootFilePath), cleanHref))}, candidates...)
+	}
+
+	seen := make(map[string]struct{}, len(candidates))
+	unique := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate == "" {
+			continue
+		}
+		if _, ok := seen[candidate]; ok {
+			continue
+		}
+		seen[candidate] = struct{}{}
+		unique = append(unique, candidate)
+	}
+	return unique
+}
+
+func findArchiveFile(files []*zip.File, candidates []string) *zip.File {
+	for _, candidate := range candidates {
+		for _, file := range files {
+			name := cleanArchivePath(file.Name)
+			if name == candidate {
+				return file
+			}
+		}
+	}
+	return nil
+}
+
+func cleanArchivePath(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ""
+	}
+	return strings.TrimPrefix(pathpkg.Clean(name), "./")
+}
+
+func isLikelyImage(href, mimeType string) bool {
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(mimeType)), "image/") {
+		return true
+	}
+
+	switch strings.ToLower(pathpkg.Ext(href)) {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg":
+		return true
+	default:
+		return false
+	}
+}
+
+func itemAt(items []string, i int) string {
+	if i < 0 || i >= len(items) {
+		return ""
+	}
+	return items[i]
 }
 
 // getStringOr extracts a string tag from an exiftool result, returning fallback if not found.
