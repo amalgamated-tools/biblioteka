@@ -151,6 +151,9 @@ func WriteOPF(dir string, data OPFData) error {
 	if data.Title == "" {
 		return fmt.Errorf("WriteOPF: Title is required by OPF 2.0")
 	}
+	if data.Language == "" {
+		data.Language = "und"
+	}
 	if (data.CoverFilename == "") != (data.CoverMediaType == "") {
 		return fmt.Errorf("WriteOPF: CoverFilename and CoverMediaType must both be set or both be empty")
 	}
