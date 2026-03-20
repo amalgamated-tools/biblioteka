@@ -338,16 +338,15 @@ The E2E workflow runs on pushes and pull requests targeting `main` or `develop`,
 | `go.mod`, `go.sum` | Go module changes |
 | `.github/workflows/e2etest.yml` | Workflow file itself |
 
-It builds the full application and then executes the Playwright test suite:
+It builds the full application and runs the Playwright test suite in a single job:
 
 ```
-build ──► e2e (Playwright / Chromium)
+e2e (build frontend → compile Go binary → Playwright / Chromium)
 ```
 
 | Job | Depends on | What it does |
 |---|---|---|
-| `build` | — | Installs pnpm deps, builds the frontend, compiles the Go binary, uploads it as the `biblioteka-binary` artifact |
-| `e2e` | `build` | Downloads the binary, installs Playwright + Chromium, runs `pnpm test` against a live server on port `3847` |
+| `e2e` | — | Installs pnpm deps (cached), builds the frontend, compiles the Go binary, installs Playwright + Chromium (cached), runs `pnpm test` with `CI=true` (Playwright starts a fresh server for the run) |
 
 On completion, the `playwright-report/` artifact is uploaded and retained for **7 days**, giving you screenshots and traces for any failures.
 
