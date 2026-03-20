@@ -98,6 +98,15 @@ func TestWriteOPF_MinimalData(t *testing.T) {
 	}
 }
 
+func TestWriteOPF_EmptyTitle(t *testing.T) {
+	dir := t.TempDir()
+	data := OPFData{}
+
+	if err := WriteOPF(dir, data); err == nil {
+		t.Fatal("expected error when title is empty")
+	}
+}
+
 func TestWriteOPF_NoCover(t *testing.T) {
 	dir := t.TempDir()
 	data := OPFData{

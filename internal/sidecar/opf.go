@@ -148,11 +148,14 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 
 // WriteOPF generates an OPF 2.0 metadata file and writes it to metadata.opf in dir.
 func WriteOPF(dir string, data OPFData) error {
+	if data.Title == "" {
+		return fmt.Errorf("WriteOPF: Title is required by OPF 2.0")
+	}
 	if (data.CoverFilename == "") != (data.CoverMediaType == "") {
 		return fmt.Errorf("WriteOPF: CoverFilename and CoverMediaType must both be set or both be empty")
 	}
 
-	xmlBytes, err := marshalOPF(data)
+	xmlBytes, err := marshalOPF(dir, data)
 	if err != nil {
 		return fmt.Errorf("marshal OPF: %w", err)
 	}
@@ -165,14 +168,14 @@ func WriteOPF(dir string, data OPFData) error {
 	return nil
 }
 
-func marshalOPF(data OPFData) ([]byte, error) {
+func marshalOPF(dir string, data OPFData) ([]byte, error) {
 	identifierValue := data.ISBN
 	identifierScheme := "ISBN"
 	if identifierValue == "" {
 		// Derive a stable, deterministic UUID from available metadata so that
 		// the identifier does not change across repeated OPF writes for the
 		// same book when ISBN is missing.
-		stableKey := fmt.Sprintf("%s\x00%s\x00%s\x00%s", data.Title, data.Author, data.Publisher, data.Date)
+		stableKey := fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%s", data.Title, data.Author, data.Publisher, data.Date, dir)
 		u := uuid.NewSHA1(bibliotekaNamespace, []byte(stableKey))
 		identifierValue = u.String()
 		identifierScheme = "UUID"
