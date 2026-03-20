@@ -31,12 +31,13 @@ frontend/
       libraries/          Reusable sub-components for the Libraries view
         LibraryForm.svelte   Create / edit library form
         LibraryView.svelte   Library detail with book listing
-      settings/           Tab sub-components for the Settings page (the SMTP admin tab is inline in Settings.svelte — see Settings component architecture below)
+      settings/           Tab sub-components for the Settings page (see Settings component architecture below)
         AccountTab.svelte       Account & password management; OIDC linking
         APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix)
         KoboTab.svelte          Kobo sync token management; displays setup instructions
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
         PreferencesTab.svelte   Display theme selection
+        SmtpTab.svelte          Admin: SMTP mail server configuration
         UsersTab.svelte         Admin: user list and admin-role toggling
       ui/                 Generic reusable UI components
         AlertBanner.svelte   Dismissible alert / error banner
@@ -342,10 +343,10 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 | `KoboTab.svelte` | `settings/kobo` | All users | Create and revoke Kobo sync tokens; copy device sync URL |
 | `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
-| *(inline in `Settings.svelte`)* | `settings/smtp` | Admins only | Configure SMTP mail server |
+| `SmtpTab.svelte` | `settings/smtp` | Admins only | Configure SMTP mail server |
 | `UsersTab.svelte` | `settings/users` | Admins only | List users; toggle admin role |
 
-`Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data. The SMTP tab is the exception: its state and logic live directly in `Settings.svelte` rather than in a dedicated sub-component.
+`Settings.svelte` passes data down as props and receives updates via callback props (`onOidcSaved`, `onUsersLoaded`), keeping each tab stateless with respect to shared data.
 
 ### One-time prop initialisation (`svelte-ignore state_referenced_locally`)
 
