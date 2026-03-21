@@ -131,7 +131,7 @@ func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
 	writeJSON(r.Context(), w, http.StatusOK, dtos)
 }
 
-func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *libraryRequest) (pathsJSON string, ok bool) {
+func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *libraryRequest, defaultOrganizationType string) (pathsJSON string, ok bool) {
 	if req.Name == "" {
 		writeError(ctx, w, http.StatusBadRequest, "name is required")
 		return "", false
@@ -149,9 +149,9 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 		return "", false
 	}
 	if req.OrganizationType == "" {
-		req.OrganizationType = db.LibraryOrganizationBookPerFolder
+		req.OrganizationType = defaultOrganizationType
 	}
-	if !db.IsValidLibraryOrganizationType(req.OrganizationType) {
+	if req.OrganizationType != "" && !db.IsValidLibraryOrganizationType(req.OrganizationType) {
 		writeError(ctx, w, http.StatusBadRequest, "organization_type must be one of: "+strings.Join(db.LibraryOrganizationTypes, ", "))
 		return "", false
 	}
@@ -189,7 +189,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pathsJSON, ok := validateAndPrepareLibrary(r.Context(), w, &req)
+	pathsJSON, ok := validateAndPrepareLibrary(r.Context(), w, &req, db.LibraryOrganizationBookPerFolder)
 	if !ok {
 		return
 	}
@@ -289,7 +289,18 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
-	pathsJSON, ok := validateAndPrepareLibrary(r.Context(), w, &req)
+	existing, err := h.DB.GetLibrary(r.Context(), id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			writeError(r.Context(), w, http.StatusNotFound, "library not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to get library", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get library")
+		return
+	}
+
+	pathsJSON, ok := validateAndPrepareLibrary(r.Context(), w, &req, existing.OrganizationType)
 	if !ok {
 		return
 	}

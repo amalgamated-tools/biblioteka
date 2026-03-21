@@ -19,6 +19,23 @@ func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	return processBookFile(ctx, database, extractor, p, defaultBookFileLookup)
 }
 
+func lookupOrganizationType(ctx context.Context, database *db.DB, p ProcessFilePayload) string {
+	if p.LibraryRoot == "" || p.LibraryID == "" {
+		return ""
+	}
+
+	lib, libErr := database.GetLibrary(ctx, p.LibraryID)
+	if libErr != nil {
+		slog.WarnContext(ctx, "could not look up library for organization type",
+			slog.String(otelkeys.LibraryID, p.LibraryID),
+			slog.Any(otelkeys.Error, libErr),
+		)
+		return ""
+	}
+
+	return lib.OrganizationType
+}
+
 func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, p ProcessFilePayload, lookup bookFileLookupFunc) error {
 	if database == nil {
 		err := fmt.Errorf("process book file: database is nil")
@@ -40,7 +57,9 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		return err
 	}
 
-	resolvedPath, skip, err := resolveSourcePath(ctx, database, p, lookup)
+	organizationType := lookupOrganizationType(ctx, database, p)
+
+	resolvedPath, skip, err := resolveSourcePath(ctx, database, p, organizationType, lookup)
 	if err != nil {
 		return err
 	}
@@ -73,19 +92,6 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	}
 
 	authorName, title := resolveAuthorAndTitle(meta, pathInfo, title)
-
-	organizationType := ""
-	if p.LibraryRoot != "" && p.LibraryID != "" {
-		lib, libErr := database.GetLibrary(ctx, p.LibraryID)
-		if libErr != nil {
-			slog.WarnContext(ctx, "could not look up library for organization type",
-				slog.String(otelkeys.LibraryID, p.LibraryID),
-				slog.Any(otelkeys.Error, libErr),
-			)
-		} else {
-			organizationType = lib.OrganizationType
-		}
-	}
 
 	filePath, skip, err := maybeReorganizeFile(ctx, database, p.Path, p.LibraryRoot, authorName, title, p.LibraryID, organizationType, lookup)
 	if err != nil {
