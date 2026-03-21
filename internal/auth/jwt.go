@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/hkdf"
 )
 
 var (
@@ -25,8 +28,9 @@ type Claims struct {
 
 // JWTManager handles token creation and validation.
 type JWTManager struct {
-	secret []byte
-	ttl    time.Duration
+	secret  []byte
+	oidcKey []byte // HKDF-derived sub-key for OIDC state signing
+	ttl     time.Duration
 }
 
 // NewJWTManager creates a new JWTManager. If secret is empty, a random one is generated
@@ -43,7 +47,13 @@ func NewJWTManager(secret string, ttl time.Duration) (*JWTManager, error) {
 			return nil, fmt.Errorf("short read from crypto/rand: got %d bytes, want %d", n, len(key))
 		}
 	}
-	return &JWTManager{secret: key, ttl: ttl}, nil
+	oidcKey := make([]byte, 32)
+	r := hkdf.New(sha256.New, key, nil, []byte("oidc-link-state"))
+	if _, err := r.Read(oidcKey); err != nil {
+		return nil, fmt.Errorf("derive OIDC HMAC key: %w", err)
+	}
+
+	return &JWTManager{secret: key, oidcKey: oidcKey, ttl: ttl}, nil
 }
 
 // CreateToken generates a signed JWT for the given user ID.
@@ -97,4 +107,17 @@ func (j *JWTManager) ValidateToken(ctx context.Context, tokenString string) (*Cl
 
 	slog.DebugContext(ctx, "JWT token validated", slog.String(otelkeys.UserID, claims.UserID))
 	return claims, nil
+}
+
+// HMACSign produces an HMAC-SHA256 signature over data using a
+// purpose-specific key derived from the JWT secret via HKDF.
+func (j *JWTManager) HMACSign(data []byte) []byte {
+	mac := hmac.New(sha256.New, j.oidcKey)
+	mac.Write(data)
+	return mac.Sum(nil)
+}
+
+// HMACVerify checks that sig is a valid HMAC-SHA256 of data.
+func (j *JWTManager) HMACVerify(data, sig []byte) bool {
+	return hmac.Equal(j.HMACSign(data), sig)
 }
