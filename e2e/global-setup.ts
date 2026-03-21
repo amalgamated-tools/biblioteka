@@ -1,21 +1,8 @@
 import { request } from "@playwright/test";
-
-const testPort = 3847;
-
-// These credentials must match the constants in tests/helpers/admin.ts.
-// The admin user is the first user registered in the database.
-// In CI the database is always empty at test-suite start so this signup
-// creates the first (admin) user.  On a reused dev server a 409 response
-// means the user already exists; we treat that as success and let the tests
-// sign in normally.
-export const ADMIN_EMAIL = "e2e-admin@biblioteka-e2e.test";
-export const ADMIN_PASSWORD = "adminpassword123";
-const ADMIN_NAME = "E2E Admin";
+import { ADMIN_EMAIL, ADMIN_NAME, ADMIN_PASSWORD, BASE_URL } from "./constants";
 
 export default async function globalSetup() {
-  const context = await request.newContext({
-    baseURL: `http://localhost:${testPort}`,
-  });
+  const context = await request.newContext({ baseURL: BASE_URL });
 
   try {
     const res = await context.post("/api/auth/signup", {
@@ -26,8 +13,16 @@ export default async function globalSetup() {
       },
     });
 
-    // 201 = created (first user → auto-admin), 409 = already exists (dev reuse).
-    if (!res.ok() && res.status() !== 409) {
+    if (res.status() === 201) {
+      const body = await res.json();
+      if (!body.user?.is_admin) {
+        throw new Error(
+          "globalSetup: admin user was created but was NOT promoted to admin — " +
+            "the database is not empty. Ensure a clean DB before running E2E tests.",
+        );
+      }
+    } else if (res.status() !== 409) {
+      // 409 = user already exists (dev-server reuse); any other error is fatal.
       throw new Error(
         `globalSetup: failed to create admin user: HTTP ${res.status()}: ${await res.text()}`,
       );

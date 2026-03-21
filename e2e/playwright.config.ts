@@ -1,6 +1,5 @@
 import { defineConfig } from "@playwright/test";
-
-const testPort = 3847;
+import { BASE_URL, TEST_PORT } from "./constants";
 
 export default defineConfig({
   testDir: "./tests",
@@ -12,7 +11,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   use: {
-    baseURL: `http://localhost:${testPort}`,
+    baseURL: BASE_URL,
     screenshot: "only-on-failure",
     trace: "on-first-retry",
   },
@@ -26,11 +25,11 @@ export default defineConfig({
 
   webServer: {
     command: `../biblioteka -mode server`,
-    url: `http://localhost:${testPort}/api/health`,
+    url: `${BASE_URL}/api/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 15_000,
     env: {
-      PORT: String(testPort),
+      PORT: String(TEST_PORT),
       JWT_SECRET: "e2e-test-jwt-secret",
     },
   },
