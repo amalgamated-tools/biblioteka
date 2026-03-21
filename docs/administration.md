@@ -250,7 +250,7 @@ curl -X POST http://localhost:8080/api/libraries \
 | `organization_type` | —        | `"book_per_folder"` | How the library is organised (see note below)         |
 | `monitored`         | —        | `false`             | Include in scheduled 24-hour scans                    |
 
-> **`organization_type`:** The only recognised value is `"book_per_folder"` (the default). This describes the expected directory layout: each book occupies its own `<Author>/<Title>/` subdirectory under a library path. Biblioteka uses this layout for [path-based metadata extraction](background-jobs.md#path-based-metadata) (deriving author, title, and series from directory names) and, when file reorganization is enabled, for moving imported files into this structure automatically (see [Enabling file organization](#enabling-file-organization) below).
+> **`organization_type`:** Supported values are `"book_per_folder"` (`Author/Title/file`), `"book_per_file"` (`Author/file`), and `"none"` (leave files in place).
 
 ### Edit and delete libraries
 
@@ -330,51 +330,19 @@ See [API reference — SMTP config endpoints](api-reference.md#get-apiconfigsmtp
 
 ## File Organization
 
-Biblioteka can automatically move imported book files into a canonical `Author/Title/` directory structure under each library root. This keeps your collection tidy and makes paths predictable.
+Biblioteka can automatically move imported book files into an organized directory structure under each library root. This keeps your collection tidy and makes paths predictable.
 
-### Enabling file organization
+File organization is configured per-library via the **File Organization** dropdown when creating or editing a library. The available modes are:
 
-> **Note:** There is currently no HTTP API endpoint for toggling `organize_files`. The setting is read directly from the `settings` database table. Enable it by inserting or updating the row directly:
-
-**SQLite:**
-
-```bash
-sqlite3 /path/to/biblioteka.db \
-  "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('organize_files', 'true', datetime('now'));"
-```
-
-**PostgreSQL:**
-
-```sql
-INSERT INTO settings (key, value, updated_at)
-VALUES ('organize_files', 'true', NOW())
-ON CONFLICT (key) DO UPDATE SET value = 'true', updated_at = NOW();
-```
-
-To disable it, set the value to `'false'` (or any value other than `'true'`):
-
-**SQLite:**
-
-```bash
-sqlite3 /path/to/biblioteka.db \
-  "UPDATE settings SET value = 'false', updated_at = datetime('now') WHERE key = 'organize_files';"
-```
-
-**PostgreSQL:**
-
-```sql
-UPDATE settings SET value = 'false', updated_at = NOW() WHERE key = 'organize_files';
-```
-
-Changes take effect the next time a `process:file` job runs — no server restart is required.
+| Mode | Directory Structure | Description |
+|------|-------------------|-------------|
+| **Book Per Folder** (default) | `Author/Title/file` | Each book gets its own folder under the author |
+| **Multiple Books Per Author** | `Author/files` | Books are placed directly in the author folder |
+| **No Organization** | (unchanged) | Files are left where they are |
 
 ### How it works
 
-When `organize_files` is `"true"` and a `process:file` job has a `library_root` in its payload, the handler moves each imported file to:
-
-```
-<library_root>/<Author>/<Title>/<filename>
-```
+When a library's `organization_type` is set to `book_per_folder` or `book_per_file`, the `process:file` job moves each imported file into the corresponding directory structure under the library root.
 
 The author and title come from embedded file metadata when available, falling back to values parsed from the file's existing directory structure (see [Path-based metadata](background-jobs.md#path-based-metadata)).
 
@@ -388,7 +356,7 @@ The author and title come from embedded file metadata when available, falling ba
 
 ### Path-parsing and series inference
 
-Even when `organize_files` is disabled, Biblioteka parses each file's path relative to the library root to extract author, title, and series from the directory structure. Trailing `(YYYY)` year tokens are stripped to keep titles clean (the year is not stored as `publication_date`). This path-derived metadata supplements (but does not override) embedded file metadata.
+Even when file organization is set to `none`, Biblioteka parses each file's path relative to the library root to extract author, title, and series from the directory structure. Trailing `(YYYY)` year tokens are stripped to keep titles clean (the year is not stored as `publication_date`). This path-derived metadata supplements (but does not override) embedded file metadata.
 
 For full details on the supported directory layouts and precedence rules, see [Background Jobs — Path-based metadata](background-jobs.md#path-based-metadata).
 
