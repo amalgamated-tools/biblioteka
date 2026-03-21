@@ -154,9 +154,9 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 }
 
 // signLinkState encodes a link user ID into the OIDC state parameter.
-// Format: <random>.<base64url(userID)>.<base64url(hmac-sha256(random + userID))>
+// Format: <random>.<base64url(userID)>.<base64url(hmac-sha256(random + "|" + userID))>
 func (h *OIDCHandler) signLinkState(randomState, userID string) string {
-	payload := randomState + userID
+	payload := randomState + "|" + userID
 	sig := h.JWT.HMACSign([]byte(payload))
 	return randomState + "." +
 		base64.RawURLEncoding.EncodeToString([]byte(userID)) + "." +
@@ -182,7 +182,7 @@ func (h *OIDCHandler) parseLinkState(state string) string {
 	}
 
 	userID := string(userIDBytes)
-	payload := randomState + userID
+	payload := randomState + "|" + userID
 	if !h.JWT.HMACVerify([]byte(payload), sig) {
 		return ""
 	}
