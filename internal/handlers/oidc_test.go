@@ -450,17 +450,17 @@ func TestOIDCParseLinkState_NormalLogin(t *testing.T) {
 }
 
 func TestOIDCParseLinkState_ManualTamperUserID(t *testing.T) {
-    h := newTestOIDCHandler(t)
+	h := newTestOIDCHandler(t)
 
-    signed := h.signLinkState("random-state", "user-123")
-    parts := strings.SplitN(signed, ".", 3)
-    // Replace userID with a different one, leave HMAC unchanged
-    parts[1] = base64.RawURLEncoding.EncodeToString([]byte("victim-user"))
-    tampered := strings.Join(parts, ".")
+	signed := h.signLinkState("random-state", "user-123")
+	parts := strings.SplitN(signed, ".", 3)
+	// Replace userID with a different one, leave HMAC unchanged
+	parts[1] = base64.RawURLEncoding.EncodeToString([]byte("victim-user"))
+	tampered := strings.Join(parts, ".")
 
-    if got := h.parseLinkState(tampered); got != "" {
-        t.Fatalf("expected empty string for tampered state, got %q", got)
-    }
+	if got := h.parseLinkState(tampered); got != "" {
+		t.Fatalf("expected empty string for tampered state, got %q", got)
+	}
 }
 
 func TestOIDCParseLinkState_InvalidSignature(t *testing.T) {
