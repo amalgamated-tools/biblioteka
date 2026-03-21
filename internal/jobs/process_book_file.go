@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"path/filepath"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
@@ -18,6 +17,23 @@ import (
 // database record creation.
 func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, p ProcessFilePayload) error {
 	return processBookFile(ctx, database, extractor, p, defaultBookFileLookup)
+}
+
+func lookupOrganizationType(ctx context.Context, database *db.DB, p ProcessFilePayload) string {
+	if p.LibraryRoot == "" || p.LibraryID == "" {
+		return ""
+	}
+
+	lib, libErr := database.GetLibrary(ctx, p.LibraryID)
+	if libErr != nil {
+		slog.WarnContext(ctx, "could not look up library for organization type",
+			slog.String(otelkeys.LibraryID, p.LibraryID),
+			slog.Any(otelkeys.Error, libErr),
+		)
+		return ""
+	}
+
+	return lib.OrganizationType
 }
 
 func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, p ProcessFilePayload, lookup bookFileLookupFunc) error {
@@ -41,7 +57,9 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		return err
 	}
 
-	resolvedPath, skip, err := resolveSourcePath(ctx, database, p, lookup)
+	organizationType := lookupOrganizationType(ctx, database, p)
+
+	resolvedPath, skip, err := resolveSourcePath(ctx, database, p, organizationType, lookup)
 	if err != nil {
 		return err
 	}
@@ -75,7 +93,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	authorName, title := resolveAuthorAndTitle(meta, pathInfo, title)
 
-	filePath, skip, err := maybeReorganizeFile(ctx, database, p.Path, p.LibraryRoot, authorName, title, p.LibraryID, lookup)
+	filePath, skip, err := maybeReorganizeFile(ctx, database, p.Path, p.LibraryRoot, authorName, title, p.LibraryID, organizationType, lookup)
 	if err != nil {
 		return err
 	}
@@ -90,7 +108,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	linkBookAssociations(ctx, database, book.ID, authorName, p.LibraryID, pathInfo, filePath)
 
-	sidecar.WriteSidecarFiles(ctx, filepath.Dir(filePath), meta, title, authorName)
+	sidecar.WriteSidecarFiles(ctx, filePath, meta, title, authorName, organizationType)
 
 	var format string
 	if meta != nil {

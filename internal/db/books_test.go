@@ -122,7 +122,7 @@ func TestDeleteBook_NotFound(t *testing.T) {
 func TestAddBookToLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, err := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
+	lib, err := d.CreateLibrary(context.Background(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
 	if err != nil {
 		t.Fatalf("CreateLibrary() error: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestAddBookToLibrary(t *testing.T) {
 func TestListBooksByLibraryPaginated(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, err := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
+	lib, err := d.CreateLibrary(context.Background(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
 	if err != nil {
 		t.Fatalf("CreateLibrary() error: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestListBooksByLibraryPaginated(t *testing.T) {
 func TestRemoveBookFromLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, _ := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
+	lib, _ := d.CreateLibrary(context.Background(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
 	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	_ = d.AddBookToLibrary(context.Background(), lib.ID, book.ID)
 
@@ -505,7 +505,7 @@ func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
 func TestDeleteLibrary_DoesNotDeleteBook(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, _ := d.CreateLibrary(context.Background(), "Fiction", `[]`, "book_per_folder", false)
+	lib, _ := d.CreateLibrary(context.Background(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
 	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	_ = d.AddBookToLibrary(context.Background(), lib.ID, book.ID)
 

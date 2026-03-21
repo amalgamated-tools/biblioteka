@@ -690,7 +690,7 @@ Create a library.
 |---------------------|----------|----------|-------------|
 | `name`              | string   | ✓        | Display name (must be unique) |
 | `paths`             | string[] | ✓        | Absolute file-system paths; each must be an existing directory |
-| `organization_type` | string   |          | Expected directory layout. `"book_per_folder"` (default) — books are organised as `<Author>/<Title>/<filename>` under each library path. Directory names are used for [path-based metadata extraction](background-jobs.md#path-based-metadata); when file reorganization is enabled, imported files are moved into this structure automatically (see [File organization](administration.md#file-organization)). `"book_per_folder"` is the only recognised value. |
+| `organization_type` | string   |          | File-organization mode: `"book_per_folder"` (default, `Author/Title/file`), `"book_per_file"` (`Author/file`), or `"none"` (leave files in place). |
 | `monitored`         | boolean  |          | Whether to auto-import new files |
 
 **Responses:** `201 Created` with the new library object, `403 Forbidden` if the caller is not an admin, or `409 Conflict` if the name is taken.
