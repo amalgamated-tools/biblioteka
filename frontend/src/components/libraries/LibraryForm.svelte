@@ -205,6 +205,7 @@
             />
             <input
               type="text"
+              id={`lib-folder-${i}`}
               value={entry.value}
               oninput={(e) => {
                 formPaths[i] = {
