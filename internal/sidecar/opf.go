@@ -171,6 +171,10 @@ func WriteOPF(dir string, data OPFData, baseName string) error {
 
 	opfName := "metadata.opf"
 	if baseName != "" {
+		// Ensure baseName is a plain filename (no path separators, no "." or "..").
+		if baseName != filepath.Base(baseName) || baseName == "." || baseName == ".." {
+			return fmt.Errorf("WriteOPF: invalid baseName %q", baseName)
+		}
 		opfName = baseName + ".opf"
 	}
 	path := filepath.Join(dir, opfName)
