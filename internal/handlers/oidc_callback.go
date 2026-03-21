@@ -63,6 +63,11 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// Eagerly extract link user ID from the HMAC-signed state parameter.
+	// This is done early so the result is available on all code paths.
+	// For normal logins (no link), parseLinkState returns "".
+	linkUserID := h.parseLinkState(cookie.Value)
+
 	if errParam := r.URL.Query().Get("error"); errParam != "" {
 		slog.ErrorContext(r.Context(), "OIDC provider returned error",
 			slog.String(otelkeys.ErrorCode, errParam),
@@ -124,11 +129,6 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	if claims.Name == "" {
 		claims.Name = claims.Email
 	}
-
-	// Check if this callback is part of a link flow by looking up the state
-	// in the server-side linkStates map. This prevents cookie forgery attacks
-	// where an attacker could set a fake link user ID cookie.
-	linkUserID := h.consumeLinkState(cookie.Value)
 
 	if linkUserID == "" && (claims.EmailVerified == nil || !*claims.EmailVerified) {
 		slog.WarnContext(r.Context(), "OIDC login rejected: email not verified by identity provider",

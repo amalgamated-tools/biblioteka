@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -97,4 +99,16 @@ func (j *JWTManager) ValidateToken(ctx context.Context, tokenString string) (*Cl
 
 	slog.DebugContext(ctx, "JWT token validated", slog.String(otelkeys.UserID, claims.UserID))
 	return claims, nil
+}
+
+// HMACSign produces an HMAC-SHA256 signature over data using the JWT secret.
+func (j *JWTManager) HMACSign(data []byte) []byte {
+	mac := hmac.New(sha256.New, j.secret)
+	mac.Write(data)
+	return mac.Sum(nil)
+}
+
+// HMACVerify checks that sig is a valid HMAC-SHA256 of data.
+func (j *JWTManager) HMACVerify(data, sig []byte) bool {
+	return hmac.Equal(j.HMACSign(data), sig)
 }

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v4"
 	josejwt "github.com/go-jose/go-jose/v4/jwt"
@@ -36,7 +37,6 @@ func newTestOIDCHandler(t *testing.T) *OIDCHandler {
 		},
 		SecureCookies: false,
 		linkNonces:    make(map[string]linkNonce),
-		linkStates:    make(map[string]linkNonce),
 	}
 }
 
@@ -369,15 +369,10 @@ func TestOIDCLink_Success(t *testing.T) {
 		t.Error("verifier cookie not set")
 	}
 
-	// Verify link state is stored server-side, keyed by the OIDC state
-	h.linkStatesMu.Lock()
-	entry, ok := h.linkStates[stateValue]
-	h.linkStatesMu.Unlock()
-	if !ok {
-		t.Fatal("link state not found in linkStates map")
-	}
-	if entry.UserID != user.ID {
-		t.Errorf("expected link state UserID %q, got %q", user.ID, entry.UserID)
+	// Verify the state cookie contains a signed link state with the user ID
+	parsedUserID := h.parseLinkState(stateValue)
+	if parsedUserID != user.ID {
+		t.Errorf("expected parseLinkState to return %q, got %q", user.ID, parsedUserID)
 	}
 
 	// Verify nonce was consumed
@@ -429,95 +424,71 @@ func TestOIDCConsumeLinkNonce_Concurrent(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// storeLinkState / consumeLinkState
+// signLinkState / parseLinkState
 // ---------------------------------------------------------------------------
 
-func TestOIDCConsumeLinkState_Valid(t *testing.T) {
+func TestOIDCParseLinkState_Valid(t *testing.T) {
 	h := newTestOIDCHandler(t)
 
-	h.storeLinkState("state-abc", "user-123")
-
-	got := h.consumeLinkState("state-abc")
+	signed := h.signLinkState("random-state", "user-123")
+	got := h.parseLinkState(signed)
 	if got != "user-123" {
 		t.Fatalf("expected user ID %q, got %q", "user-123", got)
 	}
 }
 
-func TestOIDCConsumeLinkState_NotFound(t *testing.T) {
+func TestOIDCParseLinkState_NormalLogin(t *testing.T) {
 	h := newTestOIDCHandler(t)
 
-	got := h.consumeLinkState("nonexistent")
+	// A plain state (no dots) should return empty — this is a normal login.
+	got := h.parseLinkState("plain-state-no-dots")
 	if got != "" {
-		t.Fatalf("expected empty string for unknown state, got %q", got)
+		t.Fatalf("expected empty string for normal login state, got %q", got)
 	}
 }
 
-func TestOIDCConsumeLinkState_Expired(t *testing.T) {
+func TestOIDCParseLinkState_TamperedUserID(t *testing.T) {
 	h := newTestOIDCHandler(t)
 
-	h.linkStatesMu.Lock()
-	h.linkStates["expired-state"] = linkNonce{
-		UserID:    "user-456",
-		ExpiresAt: time.Now().Add(-1 * time.Minute),
+	signed := h.signLinkState("random-state", "user-123")
+	// Tamper with the user ID portion by re-signing with a different user ID
+	tampered := h.signLinkState("random-state", "victim-user")
+	// Parse the original to confirm it works
+	if got := h.parseLinkState(signed); got != "user-123" {
+		t.Fatalf("original: expected %q, got %q", "user-123", got)
 	}
-	h.linkStatesMu.Unlock()
+	// The tampered one should return the tampered user ID (it's properly signed)
+	if got := h.parseLinkState(tampered); got != "victim-user" {
+		t.Fatalf("tampered: expected %q, got %q", "victim-user", got)
+	}
+}
 
-	got := h.consumeLinkState("expired-state")
+func TestOIDCParseLinkState_InvalidSignature(t *testing.T) {
+	h := newTestOIDCHandler(t)
+
+	// Construct a state with a bad HMAC
+	got := h.parseLinkState("random-state.dXNlci0xMjM.bm90LWEtdmFsaWQtc2ln")
 	if got != "" {
-		t.Fatalf("expected empty string for expired state, got %q", got)
-	}
-
-	h.linkStatesMu.Lock()
-	_, exists := h.linkStates["expired-state"]
-	h.linkStatesMu.Unlock()
-	if exists {
-		t.Error("expired state should have been removed from the map")
+		t.Fatalf("expected empty string for invalid signature, got %q", got)
 	}
 }
 
-func TestOIDCConsumeLinkState_SingleUse(t *testing.T) {
-	h := newTestOIDCHandler(t)
+func TestOIDCParseLinkState_DifferentSecret(t *testing.T) {
+	h1 := newTestOIDCHandler(t)
 
-	h.storeLinkState("once-state", "user-789")
-
-	first := h.consumeLinkState("once-state")
-	if first != "user-789" {
-		t.Fatalf("first consume: expected %q, got %q", "user-789", first)
+	// Create a handler with a different JWT secret
+	differentJWT, err := auth.NewJWTManager("different-secret-key", time.Hour)
+	if err != nil {
+		t.Fatalf("NewJWTManager: %v", err)
 	}
+	h2 := newTestOIDCHandler(t)
+	h2.JWT = differentJWT
 
-	second := h.consumeLinkState("once-state")
-	if second != "" {
-		t.Fatalf("second consume: expected empty string, got %q", second)
-	}
-}
-
-func TestOIDCConsumeLinkState_Concurrent(t *testing.T) {
-	h := newTestOIDCHandler(t)
-
-	h.storeLinkState("race-state", "user-race")
-
-	const goroutines = 10
-	results := make(chan string, goroutines)
-	var wg sync.WaitGroup
-	wg.Add(goroutines)
-
-	for range goroutines {
-		go func() {
-			defer wg.Done()
-			results <- h.consumeLinkState("race-state")
-		}()
-	}
-	wg.Wait()
-	close(results)
-
-	var winners int
-	for r := range results {
-		if r == "user-race" {
-			winners++
-		}
-	}
-	if winners != 1 {
-		t.Fatalf("expected exactly 1 winner, got %d", winners)
+	signed := h1.signLinkState("random-state", "user-123")
+	// h2 has a different JWT secret, so it should reject h1's signature
+	got := h2.parseLinkState(signed)
+	if got != "" {
+		t.Fatalf("expected empty string when verifying with different secret, got %q", got)
 	}
 }
 
@@ -652,7 +623,6 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 		},
 		SecureCookies: false,
 		linkNonces:    make(map[string]linkNonce),
-		linkStates:    make(map[string]linkNonce),
 	}
 
 	tp := &testOIDCProvider{
@@ -761,11 +731,11 @@ func TestOIDCCallback_LinkFlowBypassesEmailVerified(t *testing.T) {
 		"email_verified": false,
 	})
 
-	// Store link state server-side (simulates what Link() does)
-	h.storeLinkState("test-state", user.ID)
+	// Create a signed link state (simulates what Link() does)
+	signedState := h.signLinkState("test-state", user.ID)
 
 	w := httptest.NewRecorder()
-	h.Callback(w, callbackRequest("test-state"))
+	h.Callback(w, callbackRequest(signedState))
 
 	resp := w.Result()
 	// Link flow should succeed (redirect) even without email_verified.
