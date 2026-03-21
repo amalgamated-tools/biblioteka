@@ -41,15 +41,18 @@ func NewJWTManager(secret string, ttl time.Duration) (*JWTManager, error) {
 		key = make([]byte, 32)
 		n, err := rand.Read(key)
 		if err != nil {
+			slog.ErrorContext(context.Background(), "Failed to generate random JWT secret", slog.Any(otelkeys.Error, err))
 			return nil, fmt.Errorf("failed to generate random JWT secret: %w", err)
 		}
 		if n != len(key) {
+			slog.ErrorContext(context.Background(), "Short read from crypto/rand", slog.Int("got", n), slog.Int("want", len(key)))
 			return nil, fmt.Errorf("short read from crypto/rand: got %d bytes, want %d", n, len(key))
 		}
 	}
 	oidcKey := make([]byte, 32)
 	r := hkdf.New(sha256.New, key, nil, []byte("oidc-link-state"))
 	if _, err := r.Read(oidcKey); err != nil {
+		slog.ErrorContext(context.Background(), "Failed to derive OIDC HMAC key", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("derive OIDC HMAC key: %w", err)
 	}
 
@@ -72,6 +75,7 @@ func (j *JWTManager) CreateToken(ctx context.Context, userID string) (string, er
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString(j.secret)
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to sign JWT token", slog.Any(otelkeys.Error, err))
 		return "", fmt.Errorf("sign JWT: %w", err)
 	}
 	slog.DebugContext(ctx, "JWT token created",
@@ -86,6 +90,7 @@ func (j *JWTManager) ValidateToken(ctx context.Context, tokenString string) (*Cl
 	slog.DebugContext(ctx, "validating JWT token")
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			slog.ErrorContext(ctx, "Unexpected JWT signing method", slog.Any(otelkeys.Error, t.Header["alg"]))
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 		return j.secret, nil

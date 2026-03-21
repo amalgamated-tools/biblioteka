@@ -58,6 +58,7 @@ const (
 	Query             string = "query"
 	Reason            string = "reason"
 	RedirectURI       string = "redirect_uri"
+	RedisURL          string = "redis_url"
 	RemoteAddr        string = "remote_addr"
 	RequestID         string = "request_id"
 	SeriesCount       string = "series_count"

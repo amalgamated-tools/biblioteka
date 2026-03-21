@@ -2,8 +2,10 @@ package middleware
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/google/uuid"
 )
 
@@ -20,9 +22,11 @@ func RequestIDHandler(next http.Handler) http.Handler {
 		id := r.Header.Get(RequestID)
 
 		if len(id) == 0 {
+			slog.DebugContext(r.Context(), "No request ID found in headers, generating a new one")
 			if newID, err := uuid.NewRandom(); err == nil {
 				id = newID.String()
 			} else {
+				slog.ErrorContext(r.Context(), "Failed to generate new request ID", slog.Any(otelkeys.Error, err))
 				id = "none"
 			}
 		}
@@ -45,6 +49,7 @@ func GetRequestID(ctx context.Context) string {
 	if reqID, ok := ctx.Value(ctxRequestIDKey).(string); ok {
 		return reqID
 	}
+	slog.DebugContext(ctx, "No request ID found in context")
 	return ""
 }
 

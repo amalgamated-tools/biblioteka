@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -275,7 +276,7 @@ func (c *cachingAdminChecker) IsAdmin(ctx context.Context, userID string) (bool,
 	// Cache miss or expired; consult the underlying checker.
 	isAdmin, err := c.delegate.IsAdmin(ctx, userID)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("admin check failed: %w", err)
 	}
 
 	// Store/refresh the cache entry under write lock; sweep expired entries

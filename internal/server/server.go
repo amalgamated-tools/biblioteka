@@ -101,17 +101,21 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.Address = net.JoinHostPort("0.0.0.0", strconv.Itoa(s.port))
 
 	if s.DB == nil {
+		slog.DebugContext(ctx, "No database provided, setting up new database connection")
 		database, err := db.SetupDatabase(ctx)
 		if err != nil {
+			slog.ErrorContext(ctx, "Failed to setup database", slog.Any(otelkeys.Error, err))
 			return nil, fmt.Errorf("failed to open database: %w", err)
 		}
 		s.DB = database
 		s.shutdownFuncs = append(s.shutdownFuncs, func(ctx context.Context) error {
+			slog.DebugContext(ctx, "Closing database connection")
 			return s.DB.Close()
 		})
 	}
 
 	if s.JWT == nil {
+		slog.DebugContext(ctx, "No JWT manager provided, setting up new JWT manager")
 		jwtSecret := os.Getenv("JWT_SECRET")
 		jwtManager, err := auth.NewJWTManager(jwtSecret, 24*time.Hour)
 		if err != nil {
@@ -125,20 +129,24 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	}
 
 	if s.requireAuth == nil {
+		slog.DebugContext(ctx, "No auth middleware provided, setting up default auth middleware")
 		s.requireAuth = auth.Middleware(s.JWT, s.DB)
 	}
 
 	if s.requireJWTAuth == nil {
+		slog.DebugContext(ctx, "No JWT auth middleware provided, setting up default JWT auth middleware")
 		s.requireJWTAuth = auth.Middleware(s.JWT, nil)
 	}
 
 	if s.requireAdmin == nil {
+		slog.DebugContext(ctx, "No admin auth middleware provided, setting up default admin auth middleware")
 		var adminChecker auth.AdminChecker = s.DB
 		var apiKeyValidator auth.APIKeyValidator = s.DB
 		s.requireAdmin = auth.AdminMiddleware(s.JWT, adminChecker, apiKeyValidator)
 	}
 
 	if s.authLimiter == nil {
+		slog.DebugContext(ctx, "No auth rate limiter provided, setting up default auth rate limiter")
 		s.authLimiter = auth.NewRateLimiter(5, 10)
 	}
 
@@ -171,7 +179,8 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		OnOIDCConfigSet: func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error {
 			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, issuerURL, clientID, clientSecret, redirectURI, secureCookies)
 			if err != nil {
-				return err
+				slog.ErrorContext(ctx, "Failed to initialize OIDC provider with new settings", slog.Any(otelkeys.Error, err))
+				return fmt.Errorf("failed to initialize OIDC provider with new settings: %w", err)
 			}
 			s.oidcHandler = oidcHandler
 			return nil
@@ -184,10 +193,12 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		clientSecret := os.Getenv("OIDC_CLIENT_SECRET")
 		redirectURI := os.Getenv("OIDC_REDIRECT_URI")
 		if clientID == "" || clientSecret == "" || redirectURI == "" {
+			slog.WarnContext(ctx, "OIDC_ISSUER_URL is set but one or more of OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, or OIDC_REDIRECT_URI is missing; OIDC authentication will not be enabled")
 			return nil, fmt.Errorf("OIDC_ISSUER_URL is set but one or more of OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, or OIDC_REDIRECT_URI is missing")
 		}
 		oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, issuer, clientID, clientSecret, redirectURI, secureCookies)
 		if err != nil {
+			slog.ErrorContext(ctx, "Failed to initialize OIDC provider from environment variables", slog.Any(otelkeys.Error, err))
 			return nil, fmt.Errorf("failed to initialize OIDC provider: %w", err)
 		}
 		s.oidcHandler = oidcHandler
@@ -214,6 +225,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 func (s *Server) Run(ctx context.Context) error {
 	newctx, span := otel.StartTracer(ctx, "server.Run")
 	defer span.End()
+
 	slog.DebugContext(newctx, "Running server", slog.String(otelkeys.Address, s.Address))
 	ctx, cancel := context.WithCancel(newctx)
 

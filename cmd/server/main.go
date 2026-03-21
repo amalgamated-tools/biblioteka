@@ -50,12 +50,15 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 
 	// Allow PORT env var to override the flag default
 	if p := os.Getenv("PORT"); p != "" {
+		slog.DebugContext(cancelCtx, "PORT environmental variable is set, overriding default port", slog.String(otelkeys.Port, p))
 		_, err := fmt.Sscanf(p, "%d", port)
 		if err != nil {
 			slog.ErrorContext(cancelCtx, "invalid PORT value", slog.Any(otelkeys.Error, err))
 			return fmt.Errorf("invalid PORT value: %w", err)
 		}
 	}
+
+	// Set up the database connection (always needed: server mode uses it for API requests, worker/all modes also use it for jobs)
 	database, err := db.SetupDatabase(cancelCtx)
 	if err != nil {
 		slog.ErrorContext(cancelCtx, "failed to setup database", slog.Any(otelkeys.Error, err))
@@ -66,8 +69,11 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 	// Set up the background worker (always needed: server mode uses it for enqueuing, worker/all modes also process jobs)
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
+		slog.DebugContext(cancelCtx, "REDIS_URL not set, using default", slog.String(otelkeys.RedisURL, "redis://localhost:6379"))
 		redisURL = "redis://localhost:6379"
 	}
+	slog.DebugContext(cancelCtx, "Using Redis URL", slog.String(otelkeys.RedisURL, redisURL))
+
 	w, err := worker.New(redisURL)
 	if err != nil {
 		slog.ErrorContext(cancelCtx, "failed to setup worker", slog.Any(otelkeys.Error, err))
@@ -97,10 +103,6 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 			slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any(otelkeys.Error, err))
 			return fmt.Errorf("failed to schedule scan:libraries job: %w", err)
 		}
-	}
-
-	if !runServer && !runWorker {
-		return fmt.Errorf("mode %q starts neither server nor worker", *mode)
 	}
 
 	g, ctx := errgroup.WithContext(cancelCtx)
