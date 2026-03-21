@@ -159,7 +159,7 @@ The cover is decoded from the base64 `data:` URL stored in `books.cover_image_ur
 | `image/webp` | `cover.webp` |
 | `image/avif` | `cover.avif` |
 
-When a cover is written, any previously written cover files in the same directory that use a different extension are removed (best-effort cleanup to avoid orphaned files when cover formats change).
+The cover file is written **atomically**: the image is first written to a temporary `cover.<ext>.tmp` file, then renamed into the final `cover.<ext>` path, and only after a successful rename are cover files of other formats removed (best-effort cleanup to avoid orphaned files when cover formats change). This ensures the directory always contains a valid cover file or retains the previous one — never an empty gap caused by an interrupted write.
 
 Cover data URLs are capped at **20 MB** of decoded bytes; inputs exceeding this limit are rejected with a warning and no cover file is written.
 
@@ -171,7 +171,7 @@ Cover data URLs are capped at **20 MB** of decoded bytes; inputs exceeding this 
 |-----------|--------|-------|
 | `dc:title` | Book title | Required; `WriteOPF` returns an error when empty |
 | `dc:creator` | Author name | `opf:role="aut"` attribute included |
-| `dc:identifier` | `books.isbn_10` or `books.isbn_13` | Falls back to a deterministic UUID v5 derived from title, author, publisher, publication date, and file path when no ISBN is present; scheme is `ISBN` or `UUID` accordingly |
+| `dc:identifier` | `books.isbn_10` or `books.isbn_13` | When an ISBN is present the value is the raw ISBN string and `opf:scheme="ISBN"`. When no ISBN is available, a deterministic UUID v5 is derived from the title, author, publisher, publication date, and file path; the value is formatted as `urn:uuid:<UUID>` (per OPF 2.0 §2.2.10 and EPUB 2 requirements) and `opf:scheme="UUID"` |
 | `dc:language` | `books.language` | Defaults to `"und"` (undetermined) when absent |
 | `dc:date` | `books.publication_date` | Omitted when empty |
 | `dc:publisher` | `books.publisher` | Omitted when empty |
