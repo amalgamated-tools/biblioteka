@@ -19,14 +19,22 @@ const (
 	LibraryOrganizationNone          = "none"
 )
 
-var LibraryOrganizationTypes = []string{
+var libraryOrganizationTypes = []string{
 	LibraryOrganizationBookPerFolder,
 	LibraryOrganizationBookPerFile,
 	LibraryOrganizationNone,
 }
 
+// LibraryOrganizationTypeNames returns the supported library organization type
+// values. The returned slice is a copy safe for the caller to modify.
+func LibraryOrganizationTypeNames() []string {
+	cpy := make([]string, len(libraryOrganizationTypes))
+	copy(cpy, libraryOrganizationTypes)
+	return cpy
+}
+
 func IsValidLibraryOrganizationType(organizationType string) bool {
-	for _, validType := range LibraryOrganizationTypes {
+	for _, validType := range libraryOrganizationTypes {
 		if organizationType == validType {
 			return true
 		}
