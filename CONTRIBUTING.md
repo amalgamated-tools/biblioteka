@@ -119,6 +119,15 @@ pnpm exec playwright test --headed
 
 > **Note:** When `CI=true` (set automatically in GitHub Actions), Playwright always starts a fresh server. Locally, it reuses a running server on port `3847` if one is already available.
 
+#### E2E spec files
+
+| Spec file | `test.describe` group | Tests |
+|-----------|----------------------|-------|
+| `tests/auth.spec.ts` | `Authentication flow` | Full sign-up → dashboard → sign-out → sign-in round trip; validation error and wrong-credential error paths |
+| `tests/auth.spec.ts` | `ARIA tabs accessibility` | Login/Sign Up tab roles, `aria-selected`, and `tabpanel` relationship; arrow-key navigation between tabs |
+| `tests/settings.spec.ts` | `Account settings` | Change-password flow: client-side validation (empty, too short, mismatch), successful update, and verification that the old password is rejected and the new one accepted |
+| `tests/libraries.spec.ts` | `Library management` | Create a library and verify it appears in the sidebar and as the page heading; validation errors when name or folder path is missing |
+
 #### E2E test helpers (`e2e/tests/helpers/auth.ts`)
 
 Shared auth utilities live in `e2e/tests/helpers/auth.ts`. Import them in any spec that needs authentication instead of duplicating login/signup logic.
