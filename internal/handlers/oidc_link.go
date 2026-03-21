@@ -127,8 +127,9 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 
 	// Encode the link user ID into the OIDC state parameter using HMAC signing.
 	// Format: <random>.<base64url(userID)>.<base64url(hmac)>
-	// This is tamper-proof and does not require server-side state, so it works
-	// correctly with horizontal scaling (no sticky sessions needed).
+	// This makes the Link → Callback user-ID propagation tamper-proof and
+	// stateless, so that this part of the flow can be handled by any instance
+	// without relying on per-instance server-side state.
 	signedState := h.signLinkState(state, userID)
 
 	http.SetCookie(w, &http.Cookie{
