@@ -27,7 +27,7 @@ frontend/
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
-      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; icon-only action links (Create library, Library settings) carry `aria-label` and `aria-hidden="true"` on their icons (WCAG 4.1.2)
+      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; icon-only action links (Create library, Library settings) carry `aria-label` and `aria-hidden="true"` on their icons (WCAG 4.1.2); nav link clusters are wrapped in `role="group"` containers labelled by `role="heading" aria-level="2"` spans (WCAG 1.3.1)
       libraries/          Reusable sub-components for the Libraries view
         LibraryForm.svelte   Create / edit library form
         LibraryView.svelte   Library detail with book listing
@@ -38,7 +38,7 @@ frontend/
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
         PreferencesTab.svelte   Display theme selection
         SmtpTab.svelte          Admin: SMTP mail server configuration
-        UsersTab.svelte         Admin: user list and admin-role toggling
+        UsersTab.svelte         Admin: user list and admin-role toggling; all `<th>` column headers carry `scope="col"` (WCAG 1.3.1)
       ui/                 Generic reusable UI components
         AlertBanner.svelte   Dismissible alert / error banner
         BookCard.svelte      Card widget displaying a single book summary
@@ -626,6 +626,59 @@ The same pattern applies to settings sub-tabs, where the active tab is determine
 
 Whenever you add a navigation link that points to a distinct view or sub-page, apply `aria-current={isActive ? "page" : undefined}`. Do **not** rely solely on CSS class changes to convey the active state.
 
+### Sidebar navigation group semantics (`Sidebar.svelte`)
+
+**WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) (Level A)
+
+The navigation sidebar groups its links into named clusters (currently **Home** and **Libraries**). Without explicit semantics, these group labels are purely visual — assistive technologies see only a list of links and cannot determine which links belong to which group.
+
+Each cluster is wrapped in a `role="group"` container labelled by a sibling span that carries `role="heading"` and `aria-level="2"`. The span is given a stable `id` so the group references it via `aria-labelledby`:
+
+```svelte
+<!-- Home group -->
+<div role="group" aria-labelledby="sidebar-home-heading">
+  <span
+    id="sidebar-home-heading"
+    role="heading"
+    aria-level="2"
+    class="block px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
+  >
+    Home
+  </span>
+  <div class="space-y-0.5">
+    <a href="#dashboard" …>Dashboard</a>
+    <a href="#books"     …>All Books</a>
+  </div>
+</div>
+
+<!-- Libraries group -->
+<div role="group" aria-labelledby="sidebar-libraries-heading">
+  <div class="flex items-center justify-between px-3 mb-2">
+    <span
+      id="sidebar-libraries-heading"
+      role="heading"
+      aria-level="2"
+      class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
+    >
+      Libraries
+    </span>
+    …
+  </div>
+  …library links…
+</div>
+```
+
+**Why `role="group"` instead of `<nav>`?** The outer `<nav aria-label="Primary navigation">` already provides the landmark for the whole sidebar. Adding a second `<nav>` per cluster would inflate the number of navigation landmarks, making landmark-based navigation noisier. A `role="group"` groups the links semantically without creating extra landmarks.
+
+**Why `role="heading" aria-level="2"` on a `<span>`?** The group labels must appear in the document outline so screen-reader users can skim headings and locate a section. A native `<h2>` would conflict with the content area's own `<h1>` / `<h2>` hierarchy. Using `role="heading" aria-level="2"` on a `<span>` achieves the same outline entry while keeping the heading level consistent without imposing a native heading element that could collide with content headings.
+
+**When adding a new navigation group:**
+
+1. Wrap the cluster in `<div role="group" aria-labelledby="sidebar-<name>-heading">`.
+2. Give the visual group label a unique `id="sidebar-<name>-heading"`.
+3. Add `role="heading" aria-level="2"` to the label element.
+4. Add a test assertion in `Sidebar.test.ts` that `screen.getByRole("heading", { name: "<Name>", level: 2 })` is visible.
+
 ### Accessible labels for icon-only controls
 
 **WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) / [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
@@ -949,12 +1002,13 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 #### `Sidebar.test.ts`
 
-`frontend/src/components/Sidebar.test.ts` verifies that the navigation sidebar uses semantic `<a>` anchor links (not `<button>` elements) for in-app navigation, and that `aria-current` state is applied correctly (WCAG 4.1.2). Four tests are included:
+`frontend/src/components/Sidebar.test.ts` verifies that the navigation sidebar uses semantic `<a>` anchor links (not `<button>` elements) for in-app navigation, and that `aria-current` state is applied correctly (WCAG 4.1.2). Five tests are included:
 
 1. **`renders Dashboard, All Books, and Settings as links with correct hrefs`** — asserts that the three primary nav items are rendered as `role="link"` elements with the correct hash `href` values (`#dashboard`, `#books`, `#settings`).
 2. **`renders Logout as a button, not a link`** — asserts that Logout is a `role="button"` element, which is semantically correct because it triggers an action (sign-out) rather than navigating to a URL.
 3. **`sets aria-current='page' on the active navigation link`** — renders with `currentView="settings"` and asserts that the Settings link carries `aria-current="page"` while Dashboard does not.
 4. **`sets aria-current='page' on the active library link`** — renders with `currentView="libraries"` and `subPath="1"` and asserts that only the matching library entry link receives `aria-current="page"`.
+5. **`renders navigation group labels as headings`** — renders with `currentView="dashboard"` and asserts that the "Home" and "Libraries" group labels are exposed as `role="heading"` elements at level 2 (WCAG 1.3.1).
 
 > **Mocking note:** The test file mocks `authStore`, `libraryStore`, `api.getVersion`, and all `lucide-svelte` icon components. The icon mocks are necessary because Lucide icons are ESM-only packages that cannot render in JSDOM; replacing them with no-ops keeps the test focused on DOM structure. `afterEach(cleanup)` prevents DOM leakage between tests.
 
@@ -970,6 +1024,14 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 6. **`does not show aria-invalid or error messages before submission`** — asserts that neither `aria-invalid` nor the error message elements are present on initial render, preventing premature error announcements.
 
 > **Testing note:** Each test calls `await tick()` after `render()` to flush Svelte 5 reactive state before asserting. `afterEach(cleanup)` removes the rendered component from JSDOM between tests.
+
+#### `UsersTab.test.ts`
+
+`frontend/src/components/settings/UsersTab.test.ts` verifies that the Users table in the admin settings panel exposes correctly scoped column headers (WCAG 1.3.1). One test is included:
+
+1. **`marks each table header as a column header`** — seeds the component with one cached user to bypass the initial loading path, then asserts that each of the five `<th>` elements — **Name**, **Email**, **Type**, **Role**, and **Joined** — is exposed as a `role="columnheader"` and carries `scope="col"`.
+
+> **Mocking note:** The test file mocks `authStore` (current admin user), `api.listUsers` (returns a resolved empty array to prevent uncaught-promise warnings), and all `lucide-svelte` icon components. `cachedUsers` is passed as a prop to seed the rendered table immediately, avoiding the need for async load completion. `afterEach(cleanup)` prevents DOM leakage between tests.
 
 ---
 
