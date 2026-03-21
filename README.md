@@ -19,6 +19,51 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Two database backends** – SQLite (zero-config, default) or PostgreSQL
 - **Single binary** – Go backend embeds the Svelte frontend; one executable to deploy
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><strong>Dashboard — light</strong></td>
+    <td align="center"><strong>Dashboard — dark</strong></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/dashboard-light.png" alt="Dashboard in light mode" /></td>
+    <td><img src="screenshots/dashboard-dark.png" alt="Dashboard in dark mode" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Books — light</strong></td>
+    <td align="center"><strong>Books — dark</strong></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/books-light.png" alt="Books list in light mode" /></td>
+    <td><img src="screenshots/books-dark.png" alt="Books list in dark mode" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>My Library — light</strong></td>
+    <td align="center"><strong>My Library — dark</strong></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/my-library-light.png" alt="My Library view in light mode" /></td>
+    <td><img src="screenshots/my-library-dark.png" alt="My Library view in dark mode" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Libraries — light</strong></td>
+    <td align="center"><strong>Libraries — dark</strong></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/libraries-light.png" alt="Libraries admin view in light mode" /></td>
+    <td><img src="screenshots/libraries-dark.png" alt="Libraries admin view in dark mode" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Settings (mobile) — light</strong></td>
+    <td align="center"><strong>Settings (mobile) — dark</strong></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/settings-light-mobile.png" alt="Settings on mobile in light mode" /></td>
+    <td><img src="screenshots/settings-dark-mobile.png" alt="Settings on mobile in dark mode" /></td>
+  </tr>
+</table>
+
 ## Tech Stack
 
 | Layer | Technology |
