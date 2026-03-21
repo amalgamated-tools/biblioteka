@@ -84,7 +84,7 @@
     class="flex-1 px-3 py-4 space-y-6 overflow-y-auto"
   >
     <!-- Home group -->
-    <section aria-labelledby="sidebar-home-heading">
+    <div role="group" aria-labelledby="sidebar-home-heading">
       <h2
         id="sidebar-home-heading"
         class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
@@ -119,10 +119,10 @@
           </a>
         {/if}
       </div>
-    </section>
+    </div>
 
     <!-- Libraries group -->
-    <section aria-labelledby="sidebar-libraries-heading">
+    <div role="group" aria-labelledby="sidebar-libraries-heading">
       <div class="flex items-center justify-between px-3 mb-2">
         <h2
           id="sidebar-libraries-heading"
@@ -171,7 +171,7 @@
           </div>
         {/each}
       </div>
-    </section>
+    </div>
 
     <!-- Settings -->
     <div>
