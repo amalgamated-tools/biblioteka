@@ -54,12 +54,12 @@ kill-dev:
 	@echo "Dev ports 5173 and 8080 are now free."
 
 # Capture application screenshots via Playwright
-screenshots: clean node_modules
+screenshots: clean frontend/node_modules
 	@mkdir -p screenshots
 	# call kill-dev first to ensure no existing servers are running
 	$(MAKE) kill-dev
 	@echo "Starting dev server in background..."	
-	@goreman -f Procfile.dev start & DEV_PID=$$!; \
+	@goreman -f Procfile.screen start & DEV_PID=$$!; \
 	echo "Waiting for frontend (localhost:5173) and backend (localhost:8080)..."; \
 	for i in $$(seq 1 60); do \
 		if curl -s -o /dev/null http://localhost:5173 && curl -s -o /dev/null http://localhost:8080/health; then \
