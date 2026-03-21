@@ -418,7 +418,7 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
 	// Create a library with book_per_folder organization.
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, "book_per_folder", false)
+	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
 	if err != nil {
 		t.Fatalf("create library: %v", err)
 	}
@@ -479,7 +479,7 @@ func TestProcessBookFile_OrganizeFiles_BookPerFile(t *testing.T) {
 	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
 	// Create a library with book_per_file organization (flat Author/ structure).
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, "book_per_file", false)
+	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
 	if err != nil {
 		t.Fatalf("create library: %v", err)
 	}
@@ -535,7 +535,7 @@ func TestProcessBookFile_OrganizeFiles_None(t *testing.T) {
 	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
 	// Create a library with no file organization.
-	lib, err := database.CreateLibrary(context.Background(), "Unorganized", `["`+root+`"]`, "none", false)
+	lib, err := database.CreateLibrary(context.Background(), "Unorganized", `["`+root+`"]`, db.LibraryOrganizationNone, false)
 	if err != nil {
 		t.Fatalf("create library: %v", err)
 	}
@@ -721,7 +721,7 @@ func TestProcessBookFile_ContinuesFromFlatReorganizedPathWhenSourceMoved(t *test
 	}
 	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, "book_per_file", false)
+	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
 	if err != nil {
 		t.Fatalf("create library: %v", err)
 	}

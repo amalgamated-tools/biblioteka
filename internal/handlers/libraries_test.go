@@ -754,7 +754,7 @@ func TestCreateLibrary_InvalidOrganizationType(t *testing.T) {
 }
 
 func TestCreateLibrary_ValidOrganizationTypes(t *testing.T) {
-	for _, orgType := range []string{"book_per_folder", "book_per_file", "none"} {
+	for _, orgType := range db.LibraryOrganizationTypes {
 		t.Run(orgType, func(t *testing.T) {
 			h, adminID, _ := setupLibraryHandler(t)
 
@@ -810,8 +810,8 @@ func TestCreateLibrary_EmptyOrganizationTypeDefaultsToBookPerFolder(t *testing.T
 	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if dto.OrganizationType != "book_per_folder" {
-		t.Errorf("organization_type = %q, want %q", dto.OrganizationType, "book_per_folder")
+	if dto.OrganizationType != db.LibraryOrganizationBookPerFolder {
+		t.Errorf("organization_type = %q, want %q", dto.OrganizationType, db.LibraryOrganizationBookPerFolder)
 	}
 }
 
