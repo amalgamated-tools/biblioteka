@@ -50,24 +50,18 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     oidcStateCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   h.SecureCookies,
-	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     oidcVerifierCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   h.SecureCookies,
-	})
+	// Clear all OIDC flow cookies upfront, before processing any outcomes.
+	for _, name := range []string{oidcStateCookieName, oidcVerifierCookieName} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+			Secure:   h.SecureCookies,
+		})
+	}
 
 	if errParam := r.URL.Query().Get("error"); errParam != "" {
 		slog.ErrorContext(r.Context(), "OIDC provider returned error",
@@ -131,19 +125,10 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		claims.Name = claims.Email
 	}
 
-	var linkUserID string
-	if linkCookie, err := r.Cookie(oidcLinkUserIDCookieName); err == nil && linkCookie.Value != "" {
-		linkUserID = linkCookie.Value
-	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     oidcLinkUserIDCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   h.SecureCookies,
-	})
+	// Check if this callback is part of a link flow by looking up the state
+	// in the server-side linkStates map. This prevents cookie forgery attacks
+	// where an attacker could set a fake link user ID cookie.
+	linkUserID := h.consumeLinkState(cookie.Value)
 
 	if linkUserID == "" && (claims.EmailVerified == nil || !*claims.EmailVerified) {
 		slog.WarnContext(r.Context(), "OIDC login rejected: email not verified by identity provider",

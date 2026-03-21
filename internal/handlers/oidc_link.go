@@ -141,15 +141,43 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   h.SecureCookies,
 	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     oidcLinkUserIDCookieName,
-		Value:    userID,
-		Path:     "/",
-		MaxAge:   int(oidcStateCookieTTL.Seconds()),
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   h.SecureCookies,
-	})
+
+	h.storeLinkState(state, userID)
 
 	http.Redirect(w, r, h.Config.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier)), http.StatusFound)
+}
+
+// storeLinkState records a mapping from OIDC state to user ID for the link flow.
+// This is stored server-side to prevent cookie forgery attacks.
+func (h *OIDCHandler) storeLinkState(state, userID string) {
+	h.linkStatesMu.Lock()
+	defer h.linkStatesMu.Unlock()
+
+	now := time.Now()
+	for k, v := range h.linkStates {
+		if now.After(v.ExpiresAt) {
+			delete(h.linkStates, k)
+		}
+	}
+	h.linkStates[state] = linkNonce{
+		UserID:    userID,
+		ExpiresAt: now.Add(oidcStateCookieTTL),
+	}
+}
+
+// consumeLinkState validates and removes a link state, returning the associated user ID.
+// Returns empty string if the state is not a link flow or has expired.
+func (h *OIDCHandler) consumeLinkState(state string) string {
+	h.linkStatesMu.Lock()
+	defer h.linkStatesMu.Unlock()
+
+	entry, ok := h.linkStates[state]
+	if !ok {
+		return ""
+	}
+	delete(h.linkStates, state)
+	if time.Now().After(entry.ExpiresAt) {
+		return ""
+	}
+	return entry.UserID
 }
