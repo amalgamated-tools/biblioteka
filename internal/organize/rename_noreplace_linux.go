@@ -16,16 +16,18 @@ func renameNoReplace(oldPath, newPath string) error {
 	if err == unix.EEXIST {
 		return os.ErrExist
 	}
-	// Fallback for kernels/filesystems that do not support renameat2(RENAME_NOREPLACE)
-	if err == unix.ENOSYS || err == unix.EINVAL || err == unix.EXDEV {
-		// Best-effort no-replace: fail if destination already exists
+	// Cross-filesystem: propagate EXDEV so the caller can use copy+remove.
+	if err == unix.EXDEV {
+		return err
+	}
+	// Fallback for kernels/filesystems that do not support RENAME_NOREPLACE.
+	// Best-effort: stat+rename has a TOCTOU window but there is no atomic alternative.
+	if err == unix.ENOSYS || err == unix.EINVAL {
 		if _, statErr := os.Stat(newPath); statErr == nil {
 			return os.ErrExist
 		} else if !os.IsNotExist(statErr) {
 			return statErr
 		}
-
-		// Destination does not exist (to the best of our knowledge); attempt rename
 		return os.Rename(oldPath, newPath)
 	}
 	return err
