@@ -100,10 +100,10 @@ describe("Sidebar navigation accessibility", () => {
     });
 
     expect(
-      screen.getByRole("heading", { name: "Home", level: 2 }),
+      screen.getByRole("heading", { name: "Home", level: 3 }),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", { name: "Libraries", level: 2 }),
+      screen.getByRole("heading", { name: "Libraries", level: 3 }),
     ).toBeVisible();
   });
 });
