@@ -162,6 +162,7 @@ jobs:
       - run: go version
 
       - name: Cache exiftool apt package
+        id: exiftool-cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
         with:
           path: ${{ runner.temp }}/apt-cache
@@ -170,8 +171,12 @@ jobs:
       - name: Install exiftool
         run: |
           mkdir -p "${{ runner.temp }}/apt-cache"
-          sudo apt-get update -qq
-          sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q libimage-exiftool-perl
+          if [ "${{ steps.exiftool-cache.outputs.cache-hit }}" = "true" ]; then
+            sudo dpkg -i "${{ runner.temp }}/apt-cache"/*.deb
+          else
+            sudo apt-get update -qq
+            sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q libimage-exiftool-perl
+          fi
           exiftool -ver
 
       - name: Run Go tests
