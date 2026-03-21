@@ -180,7 +180,7 @@ func marshalOPF(dir string, data OPFData) ([]byte, error) {
 		// same book when ISBN is missing.
 		stableKey := fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%s", data.Title, data.Author, data.Publisher, data.Date, dir)
 		u := uuid.NewSHA1(bibliotekaNamespace, []byte(stableKey))
-		identifierValue = u.String()
+		identifierValue = "urn:uuid:" + u.String()
 		identifierScheme = "UUID"
 	}
 
