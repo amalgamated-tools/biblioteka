@@ -8,7 +8,7 @@ vi.mock("../../stores/auth.svelte", () => ({
 }));
 
 vi.mock("../../lib/api", () => ({
-  listUsers: vi.fn(),
+  listUsers: vi.fn().mockResolvedValue([]),
   setUserAdmin: vi.fn(),
 }));
 
