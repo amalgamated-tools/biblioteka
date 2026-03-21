@@ -270,3 +270,12 @@ func TestWriteOPF_CustomBaseName(t *testing.T) {
 		t.Errorf("metadata.opf should not exist when using custom baseName")
 	}
 }
+
+func TestWriteOPF_InvalidBaseName(t *testing.T) {
+	dir := t.TempDir()
+	data := OPFData{Title: "Unsafe"}
+
+	if err := WriteOPF(dir, data, "../escape"); err == nil {
+		t.Fatal("expected error for invalid base name")
+	}
+}

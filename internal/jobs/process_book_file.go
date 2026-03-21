@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"path/filepath"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
@@ -77,7 +75,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	authorName, title := resolveAuthorAndTitle(meta, pathInfo, title)
 
 	organizationType := ""
-	if p.LibraryID != "" {
+	if p.LibraryRoot != "" && p.LibraryID != "" {
 		lib, libErr := database.GetLibrary(ctx, p.LibraryID)
 		if libErr != nil {
 			slog.WarnContext(ctx, "could not look up library for organization type",
@@ -104,15 +102,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	linkBookAssociations(ctx, database, book.ID, authorName, p.LibraryID, pathInfo, filePath)
 
-	// For book_per_file mode, name sidecar files after the book file so
-	// multiple books can share the same author directory.
-	var sidecarBaseName string
-	if organizationType == "book_per_file" {
-		base := filepath.Base(filePath)
-		sidecarBaseName = strings.TrimSuffix(base, filepath.Ext(base))
-	}
-
-	sidecar.WriteSidecarFiles(ctx, filepath.Dir(filePath), meta, title, authorName, sidecarBaseName)
+	sidecar.WriteSidecarFiles(ctx, filePath, meta, title, authorName, organizationType)
 
 	var format string
 	if meta != nil {

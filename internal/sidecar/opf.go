@@ -151,6 +151,9 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 // named "{baseName}.opf" (used for book_per_file mode where multiple books
 // share a directory).
 func WriteOPF(dir string, data OPFData, baseName string) error {
+	if err := validateBaseName(baseName); err != nil {
+		return err
+	}
 	if data.Title == "" {
 		return fmt.Errorf("WriteOPF: Title is required by OPF 2.0")
 	}

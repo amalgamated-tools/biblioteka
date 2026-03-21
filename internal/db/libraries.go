@@ -13,6 +13,28 @@ import (
 // ErrLibraryNameExists is returned when a library with the given name already exists.
 var ErrLibraryNameExists = errors.New("library name already exists")
 
+const (
+	LibraryOrganizationBookPerFolder = "book_per_folder"
+	LibraryOrganizationBookPerFile   = "book_per_file"
+	LibraryOrganizationNone          = "none"
+)
+
+var LibraryOrganizationTypes = []string{
+	LibraryOrganizationBookPerFolder,
+	LibraryOrganizationBookPerFile,
+	LibraryOrganizationNone,
+}
+
+func IsValidLibraryOrganizationType(organizationType string) bool {
+	for _, validType := range LibraryOrganizationTypes {
+		if organizationType == validType {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Library represents a row in the libraries table.
 type Library struct {
 	ID               string    `json:"id"`

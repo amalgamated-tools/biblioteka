@@ -211,3 +211,14 @@ func TestWriteCover_CustomBaseName_RemovesStaleFormats(t *testing.T) {
 		t.Errorf("%s.jpg not found: %v", stem, err)
 	}
 }
+
+func TestWriteCover_InvalidBaseName(t *testing.T) {
+	dir := t.TempDir()
+	imageData := []byte{0xFF, 0xD8}
+	encoded := base64.StdEncoding.EncodeToString(imageData)
+
+	_, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded, "../escape")
+	if err == nil {
+		t.Fatal("expected error for invalid base name")
+	}
+}
