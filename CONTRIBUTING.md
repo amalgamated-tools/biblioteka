@@ -229,6 +229,49 @@ make run
 make clean
 ```
 
+### Capturing Application Screenshots
+
+The `screenshots/` directory contains the images embedded in `README.md`. Refresh them whenever you make visible UI changes:
+
+```bash
+make screenshots
+```
+
+This command:
+
+1. Builds the frontend (`pnpm run build`) and installs root-level `node_modules`.
+2. Starts a production-mode server pair using `Procfile.screen` (Vite serve on port 5173 + Go backend on port 8080) and waits until both are ready.
+3. Runs `script/take-screenshots.mjs`, which drives a headless Chromium instance (via Playwright) to capture each view in **light/dark × desktop/mobile** variants.
+4. Saves the resulting images to `screenshots/`.
+5. Stops the background server processes.
+
+> **Note:** `make screenshots` requires a running Redis instance on `localhost:6379`. Run `make redis-check` first or start Redis with `docker compose up -d redis`.
+
+The screenshot script accepts several environment variables for pointing at a non-default server or using different credentials:
+
+| Variable | Default | Description |
+|---|---|---|
+| `BASE_URL` | `http://localhost:5173` | URL of the running Vite dev/serve frontend |
+| `DEMO_NAME` | `Demo` | Display name for the admin account the script signs up |
+| `DEMO_EMAIL` | `demo@veverka.net` | Email for the admin account |
+| `DEMO_PASSWORD` | `password123` | Password for the admin account |
+| `NONADMIN_NAME` | `Regular User` | Display name for the secondary non-admin account |
+| `NONADMIN_EMAIL` | `nonadmin@veverka.net` | Email for the non-admin account |
+| `NONADMIN_PASSWORD` | `password123` | Password for the non-admin account |
+| `SCREENSHOT_TIMEOUT_MS` | `5000` | Default Playwright action timeout (ms) |
+| `SCREENSHOT_NAVIGATION_TIMEOUT_MS` | `8000` | Playwright navigation timeout (ms) |
+
+#### `Procfile.screen`
+
+`Procfile.screen` defines the server pair used **only** during screenshot capture. It starts a production-mode server (the compiled Go binary is not required — it uses `go run`) alongside `pnpm run dev --host`:
+
+```
+web: PORT=8080 go run cmd/server/main.go -mode=server
+frontend: cd frontend && pnpm run dev --host
+```
+
+This is distinct from `Procfile.dev`, which uses [air](https://github.com/cosmtrek/air) for hot-reload during normal development.
+
 ### IDE and Editor Support
 
 #### VS Code
