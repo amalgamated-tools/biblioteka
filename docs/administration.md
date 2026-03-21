@@ -373,6 +373,8 @@ Every time a book file is imported — regardless of whether file organization i
 
 These writes are best-effort. Failures are logged at `WARN` level and do not prevent the book from being imported.
 
+> **`book_per_file` libraries:** When `organization_type` is `book_per_file`, multiple books share the same author directory, so sidecar filenames are prefixed with the book's filename stem to avoid collisions. For example, a book file named `gatsby.epub` produces `gatsby.jpg` and `gatsby.opf` instead of `cover.jpg` and `metadata.opf`.
+
 When file organization is enabled, sidecar files are placed in the final `<Author>/<Title>/` directory alongside the relocated book file. See [Background Jobs — Sidecar files](background-jobs.md#sidecar-files) for implementation details.
 
 ---
