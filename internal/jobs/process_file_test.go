@@ -216,7 +216,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	handler := NewProcessFileHandler(database, extractor)
 
 	// Create a library to link the book to.
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["/books"]`, "book_per_folder", true)
+	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["/books"]`, db.LibraryOrganizationBookPerFolder, true)
 	if err != nil {
 		t.Fatalf("create library: %v", err)
 	}
