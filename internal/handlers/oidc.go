@@ -38,9 +38,6 @@ type OIDCHandler struct {
 
 	linkNonces   map[string]linkNonce
 	linkNoncesMu sync.Mutex
-
-	linkStates   map[string]linkNonce
-	linkStatesMu sync.Mutex
 }
 
 // NewOIDCHandler creates a new OIDCHandler by performing OIDC discovery on the issuer URL.
@@ -65,7 +62,6 @@ func NewOIDCHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, 
 		Config:        config,
 		SecureCookies: secureCookies,
 		linkNonces:    make(map[string]linkNonce),
-		linkStates:    make(map[string]linkNonce),
 	}, nil
 }
 

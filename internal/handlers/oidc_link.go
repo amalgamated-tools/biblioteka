@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -123,9 +125,15 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 
 	verifier := oauth2.GenerateVerifier()
 
+	// Encode the link user ID into the OIDC state parameter using HMAC signing.
+	// Format: <random>.<base64url(userID)>.<base64url(hmac)>
+	// This is tamper-proof and does not require server-side state, so it works
+	// correctly with horizontal scaling (no sticky sessions needed).
+	signedState := h.signLinkState(state, userID)
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     oidcStateCookieName,
-		Value:    state,
+		Value:    signedState,
 		Path:     "/",
 		MaxAge:   int(oidcStateCookieTTL.Seconds()),
 		HttpOnly: true,
@@ -142,42 +150,41 @@ func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 		Secure:   h.SecureCookies,
 	})
 
-	h.storeLinkState(state, userID)
-
-	http.Redirect(w, r, h.Config.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier)), http.StatusFound)
+	http.Redirect(w, r, h.Config.AuthCodeURL(signedState, oauth2.S256ChallengeOption(verifier)), http.StatusFound)
 }
 
-// storeLinkState records a mapping from OIDC state to user ID for the link flow.
-// This is stored server-side to prevent cookie forgery attacks.
-func (h *OIDCHandler) storeLinkState(state, userID string) {
-	h.linkStatesMu.Lock()
-	defer h.linkStatesMu.Unlock()
-
-	now := time.Now()
-	for k, v := range h.linkStates {
-		if now.After(v.ExpiresAt) {
-			delete(h.linkStates, k)
-		}
-	}
-	h.linkStates[state] = linkNonce{
-		UserID:    userID,
-		ExpiresAt: now.Add(oidcStateCookieTTL),
-	}
+// signLinkState encodes a link user ID into the OIDC state parameter.
+// Format: <random>.<base64url(userID)>.<base64url(hmac-sha256(random + userID))>
+func (h *OIDCHandler) signLinkState(randomState, userID string) string {
+	payload := randomState + userID
+	sig := h.JWT.HMACSign([]byte(payload))
+	return randomState + "." +
+		base64.RawURLEncoding.EncodeToString([]byte(userID)) + "." +
+		base64.RawURLEncoding.EncodeToString(sig)
 }
 
-// consumeLinkState validates and removes a link state, returning the associated user ID.
-// Returns empty string if the state is not a link flow or has expired.
-func (h *OIDCHandler) consumeLinkState(state string) string {
-	h.linkStatesMu.Lock()
-	defer h.linkStatesMu.Unlock()
+// parseLinkState extracts and verifies a link user ID from a signed OIDC state.
+// Returns empty string if the state is a normal login (no link) or the signature is invalid.
+func (h *OIDCHandler) parseLinkState(state string) string {
+	parts := strings.SplitN(state, ".", 3)
+	if len(parts) != 3 {
+		return ""
+	}
 
-	entry, ok := h.linkStates[state]
-	if !ok {
+	randomState := parts[0]
+	userIDBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
 		return ""
 	}
-	delete(h.linkStates, state)
-	if time.Now().After(entry.ExpiresAt) {
+	sig, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
 		return ""
 	}
-	return entry.UserID
+
+	userID := string(userIDBytes)
+	payload := randomState + userID
+	if !h.JWT.HMACVerify([]byte(payload), sig) {
+		return ""
+	}
+	return userID
 }
