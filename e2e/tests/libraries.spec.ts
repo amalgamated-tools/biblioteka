@@ -30,7 +30,7 @@ test.describe("Library management", () => {
     await expect(page).toHaveURL(/#libraries\/.+/);
 
     // The library name should be displayed as the page heading.
-    await expect(page.locator("h1")).toContainText(libraryName);
+    await expect(page.locator("#main-content h1")).toContainText(libraryName);
 
     // The library should also appear in the sidebar navigation list.
     await expect(
