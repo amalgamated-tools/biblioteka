@@ -1,6 +1,10 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, fireEvent, cleanup } from "@testing-library/svelte";
 import { tick } from "svelte";
+import {
+  LIBRARY_ORGANIZATION_OPTIONS,
+  LIBRARY_ORGANIZATION_TYPES,
+} from "../../types";
 
 vi.mock("../../stores/libraries.svelte", () => ({
   libraryStore: {
@@ -158,10 +162,12 @@ describe("LibraryForm organization type dropdown", () => {
       "#lib-org-type",
     ) as HTMLSelectElement;
     const options = select.querySelectorAll("option");
-    expect(options).toHaveLength(3);
+    expect(options).toHaveLength(LIBRARY_ORGANIZATION_OPTIONS.length);
 
     const values = Array.from(options).map((o) => o.value);
-    expect(values).toEqual(["book_per_folder", "book_per_file", "none"]);
+    expect(values).toEqual(
+      LIBRARY_ORGANIZATION_OPTIONS.map((option) => option.value),
+    );
   });
 
   it("defaults to book_per_folder in create mode", async () => {
@@ -173,7 +179,7 @@ describe("LibraryForm organization type dropdown", () => {
     const select = container.querySelector(
       "#lib-org-type",
     ) as HTMLSelectElement;
-    expect(select.value).toBe("book_per_folder");
+    expect(select.value).toBe(LIBRARY_ORGANIZATION_TYPES.BOOK_PER_FOLDER);
   });
 
   it("has a label with text File Organization", async () => {

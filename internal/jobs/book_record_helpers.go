@@ -23,7 +23,7 @@ func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, library
 		return filePath, false, nil
 	}
 
-	if organizationType == "" || organizationType == "none" {
+	if organizationType == "" || organizationType == db.LibraryOrganizationNone {
 		return filePath, false, nil
 	}
 
@@ -31,12 +31,12 @@ func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, library
 	var reorgErr error
 
 	switch organizationType {
-	case "book_per_folder":
+	case db.LibraryOrganizationBookPerFolder:
 		if title == "" {
 			return filePath, false, nil
 		}
 		newPath, reorgErr = organize.ReorganizeFile(filePath, libraryRoot, author, title)
-	case "book_per_file":
+	case db.LibraryOrganizationBookPerFile:
 		newPath, reorgErr = organize.ReorganizeFileFlat(filePath, libraryRoot, author)
 	default:
 		return filePath, false, nil

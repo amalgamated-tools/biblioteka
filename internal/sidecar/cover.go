@@ -15,6 +15,10 @@ import (
 // (used for book_per_file mode where multiple books share a directory).
 // It returns the filename and MIME type on success.
 func WriteCover(dir string, coverDataURL string, baseName string) (filename, mimeType string, err error) {
+	if err := validateBaseName(baseName); err != nil {
+		return "", "", err
+	}
+
 	mimeType, data, err := coverutil.DecodeDataURL(coverDataURL)
 	if err != nil {
 		return "", "", fmt.Errorf("decode cover data URL: %w", err)

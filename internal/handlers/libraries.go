@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -148,11 +149,10 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 		return "", false
 	}
 	if req.OrganizationType == "" {
-		req.OrganizationType = "book_per_folder"
+		req.OrganizationType = db.LibraryOrganizationBookPerFolder
 	}
-	validOrgTypes := []string{"book_per_folder", "book_per_file", "none"}
-	if !slices.Contains(validOrgTypes, req.OrganizationType) {
-		writeError(ctx, w, http.StatusBadRequest, "organization_type must be one of: book_per_folder, book_per_file, none")
+	if !db.IsValidLibraryOrganizationType(req.OrganizationType) {
+		writeError(ctx, w, http.StatusBadRequest, "organization_type must be one of: "+strings.Join(db.LibraryOrganizationTypes, ", "))
 		return "", false
 	}
 	data, err := json.Marshal(req.Paths)
