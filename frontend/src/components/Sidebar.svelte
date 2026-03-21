@@ -84,12 +84,15 @@
     class="flex-1 px-3 py-4 space-y-6 overflow-y-auto"
   >
     <!-- Home group -->
-    <div>
-      <p
-        class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
+    <div role="group" aria-labelledby="sidebar-home-heading">
+      <span
+        id="sidebar-home-heading"
+        role="heading"
+        aria-level="2"
+        class="block px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
       >
         Home
-      </p>
+      </span>
       <div class="space-y-0.5">
         <a
           href="#dashboard"
@@ -121,13 +124,16 @@
     </div>
 
     <!-- Libraries group -->
-    <div>
+    <div role="group" aria-labelledby="sidebar-libraries-heading">
       <div class="flex items-center justify-between px-3 mb-2">
-        <p
+        <span
+          id="sidebar-libraries-heading"
+          role="heading"
+          aria-level="2"
           class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
         >
           Libraries
-        </p>
+        </span>
         <a
           href="#libraries/new"
           class="text-ink-500 hover:text-accent-400 transition-colors"
