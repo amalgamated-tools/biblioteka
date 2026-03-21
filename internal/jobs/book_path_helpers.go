@@ -23,7 +23,7 @@ func defaultBookFileLookup(ctx context.Context, database *db.DB, path string) (*
 	return database.GetBookFileByPath(ctx, path)
 }
 
-func reorganizedCandidatePaths(p ProcessFilePayload, pathInfo pathparser.PathInfo) []string {
+func reorganizedCandidatePaths(p ProcessFilePayload, pathInfo pathparser.PathInfo, organizationType string) []string {
 	candidates := make([]string, 0, 2)
 	addCandidate := func(path string) {
 		if path == "" {
@@ -37,11 +37,15 @@ func reorganizedCandidatePaths(p ProcessFilePayload, pathInfo pathparser.PathInf
 		candidates = append(candidates, path)
 	}
 
-	if pathInfo.Author != "" && pathInfo.Title != "" {
-		addCandidate(organize.TargetPath(p.Path, p.LibraryRoot, pathInfo.Author, pathInfo.Title))
-	}
-	if pathInfo.Author != "" {
-		addCandidate(organize.TargetPathFlat(p.Path, p.LibraryRoot, pathInfo.Author))
+	switch organizationType {
+	case db.LibraryOrganizationBookPerFolder, "":
+		if pathInfo.Author != "" && pathInfo.Title != "" {
+			addCandidate(organize.TargetPath(p.Path, p.LibraryRoot, pathInfo.Author, pathInfo.Title))
+		}
+	case db.LibraryOrganizationBookPerFile:
+		if pathInfo.Author != "" {
+			addCandidate(organize.TargetPathFlat(p.Path, p.LibraryRoot, pathInfo.Author))
+		}
 	}
 
 	return candidates
@@ -83,7 +87,7 @@ func validatePayload(ctx context.Context, p ProcessFilePayload) error {
 // to recover from a prior processing attempt that moved the file but failed to
 // commit DB records. Returns the resolved path, whether processing should be
 // skipped, and any hard error.
-func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayload, lookup bookFileLookupFunc) (string, bool, error) {
+func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayload, organizationType string, lookup bookFileLookupFunc) (string, bool, error) {
 	_, statErr := os.Stat(p.Path)
 	if statErr == nil {
 		return p.Path, false, nil
@@ -127,7 +131,7 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 	// Attempt to find the file at any expected reorganized location.
 	if p.LibraryRoot != "" {
 		pathInfo := pathparser.ParseBookPath(p.Path, p.LibraryRoot)
-		for _, candidatePath := range reorganizedCandidatePaths(p, pathInfo) {
+		for _, candidatePath := range reorganizedCandidatePaths(p, pathInfo, organizationType) {
 			if _, candidateStatErr := os.Stat(candidatePath); candidateStatErr == nil {
 				// Check if the reorganized path is already indexed.
 				bf, dbErr := lookup(ctx, database, candidatePath)
