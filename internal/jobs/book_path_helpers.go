@@ -23,6 +23,30 @@ func defaultBookFileLookup(ctx context.Context, database *db.DB, path string) (*
 	return database.GetBookFileByPath(ctx, path)
 }
 
+func reorganizedCandidatePaths(p ProcessFilePayload, pathInfo pathparser.PathInfo) []string {
+	candidates := make([]string, 0, 2)
+	addCandidate := func(path string) {
+		if path == "" {
+			return
+		}
+		for _, existing := range candidates {
+			if existing == path {
+				return
+			}
+		}
+		candidates = append(candidates, path)
+	}
+
+	if pathInfo.Author != "" && pathInfo.Title != "" {
+		addCandidate(organize.TargetPath(p.Path, p.LibraryRoot, pathInfo.Author, pathInfo.Title))
+	}
+	if pathInfo.Author != "" {
+		addCandidate(organize.TargetPathFlat(p.Path, p.LibraryRoot, pathInfo.Author))
+	}
+
+	return candidates
+}
+
 // validatePayload checks that required payload string fields are non-empty.
 func validatePayload(ctx context.Context, p ProcessFilePayload) error {
 	if strings.TrimSpace(p.Path) == "" {
@@ -100,46 +124,43 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 		return "", true, nil
 	}
 
-	// Attempt to find the file at the expected reorganized location.
+	// Attempt to find the file at any expected reorganized location.
 	if p.LibraryRoot != "" {
 		pathInfo := pathparser.ParseBookPath(p.Path, p.LibraryRoot)
-		if pathInfo.Author != "" && pathInfo.Title != "" {
-			candidatePath := organize.TargetPath(p.Path, p.LibraryRoot, pathInfo.Author, pathInfo.Title)
-			if candidatePath != "" {
-				if _, candidateStatErr := os.Stat(candidatePath); candidateStatErr == nil {
-					// Check if the reorganized path is already indexed.
-					bf, dbErr := lookup(ctx, database, candidatePath)
-					if dbErr != nil && !errors.Is(dbErr, sql.ErrNoRows) {
-						wrappedErr := fmt.Errorf("process book file: get book file by path %q: %w", candidatePath, dbErr)
-						slog.ErrorContext(ctx, "book processing failed: error looking up reorganized book file by path",
-							slog.Any(otelkeys.Error, wrappedErr),
-							slog.String(otelkeys.Path, candidatePath),
-						)
-						return "", false, wrappedErr
-					}
-					if dbErr == nil {
-						slog.InfoContext(ctx, "reorganized path already indexed, skipping",
-							slog.String(otelkeys.Path, candidatePath),
-							slog.String(otelkeys.BookID, bf.BookID),
-						)
-						if p.LibraryID != "" {
-							if err := database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID); err != nil {
-								slog.WarnContext(ctx, "failed to add reorganized already-indexed book to library",
-									slog.Any(otelkeys.Error, err),
-									slog.String(otelkeys.Path, candidatePath),
-									slog.String(otelkeys.BookID, bf.BookID),
-								)
-							}
-						}
-						return "", true, nil
-					}
-					// File exists at reorganized location but isn't indexed.
-					slog.InfoContext(ctx, "source file moved by prior attempt, continuing from reorganized path",
-						slog.String(otelkeys.From, p.Path),
-						slog.String(otelkeys.To, candidatePath),
+		for _, candidatePath := range reorganizedCandidatePaths(p, pathInfo) {
+			if _, candidateStatErr := os.Stat(candidatePath); candidateStatErr == nil {
+				// Check if the reorganized path is already indexed.
+				bf, dbErr := lookup(ctx, database, candidatePath)
+				if dbErr != nil && !errors.Is(dbErr, sql.ErrNoRows) {
+					wrappedErr := fmt.Errorf("process book file: get book file by path %q: %w", candidatePath, dbErr)
+					slog.ErrorContext(ctx, "book processing failed: error looking up reorganized book file by path",
+						slog.Any(otelkeys.Error, wrappedErr),
+						slog.String(otelkeys.Path, candidatePath),
 					)
-					return candidatePath, false, nil
+					return "", false, wrappedErr
 				}
+				if dbErr == nil {
+					slog.InfoContext(ctx, "reorganized path already indexed, skipping",
+						slog.String(otelkeys.Path, candidatePath),
+						slog.String(otelkeys.BookID, bf.BookID),
+					)
+					if p.LibraryID != "" {
+						if err := database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID); err != nil {
+							slog.WarnContext(ctx, "failed to add reorganized already-indexed book to library",
+								slog.Any(otelkeys.Error, err),
+								slog.String(otelkeys.Path, candidatePath),
+								slog.String(otelkeys.BookID, bf.BookID),
+							)
+						}
+					}
+					return "", true, nil
+				}
+				// File exists at reorganized location but isn't indexed.
+				slog.InfoContext(ctx, "source file moved by prior attempt, continuing from reorganized path",
+					slog.String(otelkeys.From, p.Path),
+					slog.String(otelkeys.To, candidatePath),
+				)
+				return candidatePath, false, nil
 			}
 		}
 	}
