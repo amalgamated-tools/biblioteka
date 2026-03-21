@@ -87,11 +87,11 @@
             <tr
               class="text-left text-ink-400 dark:text-ink-400 border-b border-ink-100 dark:border-ink-800"
             >
-              <th class="pb-3 font-medium">Name</th>
-              <th class="pb-3 font-medium">Email</th>
-              <th class="pb-3 font-medium">Type</th>
-              <th class="pb-3 font-medium">Role</th>
-              <th class="pb-3 font-medium">Joined</th>
+              <th scope="col" class="pb-3 font-medium">Name</th>
+              <th scope="col" class="pb-3 font-medium">Email</th>
+              <th scope="col" class="pb-3 font-medium">Type</th>
+              <th scope="col" class="pb-3 font-medium">Role</th>
+              <th scope="col" class="pb-3 font-medium">Joined</th>
             </tr>
           </thead>
           <tbody>
