@@ -146,8 +146,14 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeToken(start.End())
 }
 
-// WriteOPF generates an OPF 2.0 metadata file and writes it to metadata.opf in dir.
-func WriteOPF(dir string, data OPFData) error {
+// WriteOPF generates an OPF 2.0 metadata file and writes it to dir.
+// When baseName is empty the file is named "metadata.opf"; when set it is
+// named "{baseName}.opf" (used for book_per_file mode where multiple books
+// share a directory).
+func WriteOPF(dir string, data OPFData, baseName string) error {
+	if err := validateBaseName(baseName); err != nil {
+		return err
+	}
 	if data.Title == "" {
 		return fmt.Errorf("WriteOPF: Title is required by OPF 2.0")
 	}
@@ -163,9 +169,32 @@ func WriteOPF(dir string, data OPFData) error {
 		return fmt.Errorf("marshal OPF: %w", err)
 	}
 
-	path := filepath.Join(dir, "metadata.opf")
-	if err := os.WriteFile(path, xmlBytes, 0o644); err != nil {
-		return fmt.Errorf("write metadata.opf: %w", err)
+	opfName := "metadata.opf"
+	if baseName != "" {
+		opfName = baseName + ".opf"
+	}
+	path := filepath.Join(dir, opfName)
+	tmpFile, err := os.CreateTemp(dir, opfName+".tmp-*")
+	if err != nil {
+		return fmt.Errorf("create temp %s: %w", opfName, err)
+	}
+	tmpName := tmpFile.Name()
+	defer func() {
+		_ = os.Remove(tmpName)
+	}()
+
+	if _, err := tmpFile.Write(xmlBytes); err != nil {
+		_ = tmpFile.Close()
+		return fmt.Errorf("write temp %s: %w", opfName, err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		return fmt.Errorf("close temp %s: %w", opfName, err)
+	}
+	if err := os.Chmod(tmpName, 0o644); err != nil {
+		return fmt.Errorf("chmod temp %s: %w", opfName, err)
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		return fmt.Errorf("rename temp %s: %w", opfName, err)
 	}
 
 	return nil

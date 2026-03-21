@@ -1,6 +1,11 @@
 <script lang="ts">
   import { libraryStore } from "../../stores/libraries.svelte";
   import { routerStore } from "../../stores/router.svelte";
+  import {
+    LIBRARY_ORGANIZATION_OPTIONS,
+    LIBRARY_ORGANIZATION_TYPES,
+    type LibraryOrganizationType,
+  } from "../../types";
   import { Plus, FolderOpen, Trash2, X } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
 
@@ -19,6 +24,9 @@
     { id: nextPathId++, value: "" },
   ]);
   let formMonitored = $state(false);
+  let formOrganizationType = $state<LibraryOrganizationType>(
+    LIBRARY_ORGANIZATION_TYPES.BOOK_PER_FOLDER,
+  );
   let formError: string | null = $state(null);
   let nameError: string | null = $state(null);
   let pathsError: string | null = $state(null);
@@ -31,6 +39,7 @@
       formName = "";
       formPaths = [{ id: nextPathId++, value: "" }];
       formMonitored = false;
+      formOrganizationType = LIBRARY_ORGANIZATION_TYPES.BOOK_PER_FOLDER;
       formError = null;
       nameError = null;
       pathsError = null;
@@ -45,6 +54,8 @@
             ? lib.paths.map((p) => ({ id: nextPathId++, value: p }))
             : [{ id: nextPathId++, value: "" }];
         formMonitored = lib.monitored;
+        formOrganizationType =
+          lib.organization_type || LIBRARY_ORGANIZATION_TYPES.BOOK_PER_FOLDER;
         formError = null;
         nameError = null;
         pathsError = null;
@@ -54,6 +65,7 @@
         formName = "";
         formPaths = [{ id: nextPathId++, value: "" }];
         formMonitored = false;
+        formOrganizationType = LIBRARY_ORGANIZATION_TYPES.BOOK_PER_FOLDER;
         formError = "Library not found";
         nameError = null;
         pathsError = null;
@@ -96,7 +108,7 @@
       const input = {
         name,
         paths,
-        organization_type: "book_per_folder",
+        organization_type: formOrganizationType,
         monitored: formMonitored,
       };
 
@@ -250,12 +262,21 @@
     </fieldset>
 
     <div>
-      <p
-        class="text-sm text-ink-400 dark:text-ink-400 mb-2 flex items-center gap-2"
+      <label
+        for="lib-org-type"
+        class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-1.5"
+        >File Organization</label
       >
-        <FolderOpen class="w-4 h-4" aria-hidden="true" />
-        Organization: Book Per Folder
-      </p>
+      <select
+        id="lib-org-type"
+        bind:value={formOrganizationType}
+        class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+        disabled={saving}
+      >
+        {#each LIBRARY_ORGANIZATION_OPTIONS as option (option.value)}
+          <option value={option.value}>{option.label}</option>
+        {/each}
+      </select>
     </div>
 
     <div class="flex items-center">

@@ -10,9 +10,15 @@ import (
 )
 
 // WriteCover decodes a base64 data URL and writes the image in dir.
-// The output filename is determined by the decoded MIME type (e.g. cover.png,
-// cover.webp). It returns the filename and MIME type on success.
-func WriteCover(dir string, coverDataURL string) (filename, mimeType string, err error) {
+// The output filename is determined by the decoded MIME type. When baseName is
+// empty the file is named "cover.{ext}"; when set it is named "{baseName}.{ext}"
+// (used for book_per_file mode where multiple books share a directory).
+// It returns the filename and MIME type on success.
+func WriteCover(dir string, coverDataURL string, baseName string) (filename, mimeType string, err error) {
+	if err := validateBaseName(baseName); err != nil {
+		return "", "", err
+	}
+
 	mimeType, data, err := coverutil.DecodeDataURL(coverDataURL)
 	if err != nil {
 		return "", "", fmt.Errorf("decode cover data URL: %w", err)
@@ -25,7 +31,12 @@ func WriteCover(dir string, coverDataURL string) (filename, mimeType string, err
 	if ext == "" {
 		return "", "", fmt.Errorf("unsupported cover image format: %s", mimeType)
 	}
-	filename = "cover" + ext
+
+	stem := "cover"
+	if baseName != "" {
+		stem = baseName
+	}
+	filename = stem + ext
 	path := filepath.Join(dir, filename)
 
 	// Write atomically: write to a temp file, rename into place, then clean stale formats.
@@ -40,7 +51,7 @@ func WriteCover(dir string, coverDataURL string) (filename, mimeType string, err
 
 	// Remove previously written cover files of other formats only after the new file is in place.
 	for _, oldExt := range []string{".jpg", ".png", ".webp", ".avif"} {
-		oldPath := filepath.Join(dir, "cover"+oldExt)
+		oldPath := filepath.Join(dir, stem+oldExt)
 		if oldPath != path {
 			_ = os.Remove(oldPath) // best-effort cleanup
 		}
