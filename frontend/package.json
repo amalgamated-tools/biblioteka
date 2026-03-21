@@ -14,6 +14,11 @@
     "test:watch": "vitest"
   },
   "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "overrides": {
+      "flatted": "3.4.2"
+    }
+  },
   "dependencies": {
     "lucide-svelte": "^0.577.0",
     "svelte": "^5.54.0"
