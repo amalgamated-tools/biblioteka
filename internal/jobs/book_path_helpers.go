@@ -38,7 +38,7 @@ func reorganizedCandidatePaths(p ProcessFilePayload, pathInfo pathparser.PathInf
 	}
 
 	switch organizationType {
-	case db.LibraryOrganizationBookPerFolder, "":
+	case db.LibraryOrganizationBookPerFolder:
 		if pathInfo.Author != "" && pathInfo.Title != "" {
 			addCandidate(organize.TargetPath(p.Path, p.LibraryRoot, pathInfo.Author, pathInfo.Title))
 		}

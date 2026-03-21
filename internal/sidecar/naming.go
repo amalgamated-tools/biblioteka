@@ -28,6 +28,12 @@ func sidecarTarget(bookFilePath, organizationType string) (dir string, baseName 
 	if organizationType == db.LibraryOrganizationBookPerFile {
 		fileName := filepath.Base(bookFilePath)
 		baseName = strings.TrimSuffix(fileName, filepath.Ext(fileName))
+		if baseName == "" {
+			// For stem-less filenames like ".epub", trimming the extension
+			// results in an empty baseName. Fall back to the original file
+			// name to ensure a non-empty, unique sidecar base name.
+			baseName = fileName
+		}
 	}
 	if err := validateBaseName(baseName); err != nil {
 		return "", "", err
