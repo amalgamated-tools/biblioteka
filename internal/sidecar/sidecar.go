@@ -21,8 +21,6 @@ func WriteSidecarFiles(ctx context.Context, dir string, meta *metadata.BookMetad
 				slog.String(otelkeys.Path, dir),
 				slog.Any(otelkeys.Error, err),
 			)
-			coverFilename = ""
-			coverMediaType = ""
 		}
 	}
 
