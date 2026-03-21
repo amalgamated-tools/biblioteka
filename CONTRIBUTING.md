@@ -111,6 +111,7 @@ To re-run only failed tests or a specific file:
 # Run a specific test file
 pnpm exec playwright test tests/auth.spec.ts
 pnpm exec playwright test tests/settings.spec.ts
+pnpm exec playwright test tests/libraries.spec.ts
 
 # Run in headed mode to watch the browser
 pnpm exec playwright test --headed
@@ -147,6 +148,29 @@ test("login with wrong password shows error", async ({ page }) => {
   await signOut(page);
   await signIn(page, user.email, "wrong-password");
   await expect(getAuthErrorBanner(page)).toContainText(/invalid email or password/i);
+});
+```
+
+#### E2E test helpers (`e2e/tests/helpers/admin.ts`)
+
+Admin auth utilities live in `e2e/tests/helpers/admin.ts`. Use these in specs that need to act as the pre-seeded admin user instead of creating a fresh user each time.
+
+| Export | Description |
+|--------|-------------|
+| `signInAsAdmin(page)` | Opens the login form, signs in as the global admin (seeded by `global-setup.ts`), and waits for the authenticated dashboard. |
+| `ADMIN_EMAIL` | The email address of the seeded admin user (re-exported from `e2e/constants.ts`). |
+| `ADMIN_PASSWORD` | The password of the seeded admin user (re-exported from `e2e/constants.ts`). |
+
+**Usage example:**
+
+```typescript
+import { test, expect } from "@playwright/test";
+import { configureTimeouts } from "./helpers/auth";
+import { signInAsAdmin } from "./helpers/admin";
+
+test.beforeEach(async ({ page }) => {
+  configureTimeouts(page);
+  await signInAsAdmin(page);
 });
 ```
 
