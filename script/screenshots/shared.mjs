@@ -42,10 +42,11 @@ async function openAuthPage(page) {
 
 async function openSignupForm(page) {
     await openAuthPage(page);
-    await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
-    await page.waitForSelector('input#name');
+    await page.locator('button#signup-tab').click();
+    await page.waitForSelector('input#signup-name');
     await page.waitForFunction(() => {
-        const btn = document.querySelector('button[type="submit"]');
+        const panel = document.querySelector('#signup-panel');
+        const btn = panel && panel.querySelector('button[type="submit"]');
         return btn && btn.textContent.trim() === 'Create Account';
     });
 }
@@ -65,21 +66,23 @@ async function waitForSignupTab(page) {
 }
 
 async function logoutIfNeeded(page) {
+    // Clear both localStorage token and browser cookies
     await page.evaluate(() => {
         localStorage.removeItem('biblioteka_token');
     });
+    await page.context().clearCookies();
     await page.goto(`${BASE_URL}/`, {
         waitUntil: 'networkidle',
         timeout: NAVIGATION_TIMEOUT_MS,
     });
-    await page.waitForSelector('button#login-tab');
+    await page.waitForSelector('button#login-tab', { timeout: NAVIGATION_TIMEOUT_MS });
 }
 
 async function loginAsDemo(page) {
     await openAuthPage(page);
-    await page.locator('input#email').fill(DEMO_EMAIL);
-    await page.locator('input#password').fill(DEMO_PASSWORD);
-    await page.locator('button[type="submit"]').click();
+    await page.locator('input#login-email').fill(DEMO_EMAIL);
+    await page.locator('input#login-password').fill(DEMO_PASSWORD);
+    await page.locator('#login-panel button[type="submit"]').click();
     await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
 }
 
@@ -105,9 +108,16 @@ async function openBooksPage(page) {
         waitUntil: 'networkidle',
         timeout: NAVIGATION_TIMEOUT_MS,
     });
-    await page.getByRole('heading', { name: 'All Books', exact: true }).waitFor({ state: 'visible' });
-    // Wait for the book list to finish loading
-    await page.waitForFunction(() => !document.body.innerText.includes('Loading books...'));
+    // If no libraries exist, the app redirects to dashboard; wait for either
+    await Promise.any([
+        page.getByRole('heading', { name: 'All Books', exact: true }).waitFor({ state: 'visible' }),
+        page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor({ state: 'visible' }),
+    ]);
+    // Wait for the book list to finish loading (if we're on the books page)
+    const booksHeading = page.getByRole('heading', { name: 'All Books', exact: true });
+    if (await booksHeading.count()) {
+        await page.waitForFunction(() => !document.body.innerText.includes('Loading books...'));
+    }
 }
 
 async function openMyLibraryPage(page) {
@@ -133,10 +143,10 @@ async function openLibrariesPage(page) {
 async function ensureAccount(page, name, email, password) {
     console.log(`Ensuring account exists for ${email}...`);
     await openSignupForm(page);
-    await page.locator('input#name').fill(name);
-    await page.locator('input#email').fill(email);
-    await page.locator('input#password').fill(password);
-    await page.locator('button[type="submit"]').click();
+    await page.locator('input#signup-name').fill(name);
+    await page.locator('input#signup-email').fill(email);
+    await page.locator('input#signup-password').fill(password);
+    await page.locator('#signup-panel button[type="submit"]').click();
 
     const logoutButton = page.getByRole('button', { name: 'Logout', exact: true });
     const errorBanner = getAuthErrorBanner(page);
@@ -167,9 +177,9 @@ async function ensureNonadminAccount(page) {
 
 async function loginAsNonadmin(page) {
     await openAuthPage(page);
-    await page.locator('input#email').fill(NONADMIN_EMAIL);
-    await page.locator('input#password').fill(NONADMIN_PASSWORD);
-    await page.locator('button[type="submit"]').click();
+    await page.locator('input#login-email').fill(NONADMIN_EMAIL);
+    await page.locator('input#login-password').fill(NONADMIN_PASSWORD);
+    await page.locator('#login-panel button[type="submit"]').click();
     await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
 }
 
