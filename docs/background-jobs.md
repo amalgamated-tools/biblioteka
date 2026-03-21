@@ -133,7 +133,7 @@ Directory names are sanitized (path separators, control characters, and leading 
 **Failure handling:**
 - If reorganization fails for most reasons (e.g. permissions, cross-device copy errors), the handler logs a warning, cleans up any partial copy created at the destination, and continues processing the file at its original path.
 - If the source file disappears *during* reorganization (i.e. `os.IsNotExist` is returned by the move/copy step), the job returns an error so that asynq can retry it rather than committing a `book_files` row pointing at a non-existent path.
-- If the source file is missing when the job starts, the handler first checks whether the original path is already indexed in the database. If it is, the job skips without error (and, if a `library_id` is present, attempts to link the book to that library). If the original path is not in the database, the handler then tries to locate the file at its expected reorganized path (`<library_root>/<Author>/<Title>/<filename>`). If found there and already indexed, the job skips without error. If found there but not yet indexed, the handler resumes processing from that new location. If the file cannot be found at either location, the job logs a warning and returns without error. A database error (other than "not found") at any of these lookup steps is propagated as a hard error so that asynq retries the job rather than silently dropping it.
+- If the source file is missing when the job starts, the handler first checks whether the original path is already indexed in the database. If it is, the job skips without error (and, if a `library_id` is present, attempts to link the book to that library). If the original path is not in the database, the handler then tries to locate the file at its expected reorganized path: `<library_root>/<Author>/<Title>/<filename>` for `book_per_folder`, or `<library_root>/<Author>/<filename>` for `book_per_file`. If found there and already indexed, the job skips without error. If found there but not yet indexed, the handler resumes processing from that new location. If the file cannot be found at any expected location, the job logs a warning and returns without error. A database error (other than "not found") at any of these lookup steps is propagated as a hard error so that asynq retries the job rather than silently dropping it.
 - After a successful move, the handler checks whether the new path is already indexed before creating new database records, preventing duplicates from concurrent workers.
 
 See [Administration — File organization](administration.md#file-organization) for details on configuring this feature per-library.
@@ -270,7 +270,7 @@ internal/
   coverutil/
     decode.go                  # DecodeDataURL: decodes base64 data: URLs; enforces the 20 MB size limit
   organize/
-    organize.go                # ReorganizeFile: moves files into Author/Title/ layout
+    organize.go                # ReorganizeFile / ReorganizeFileFlat: move files into canonical library layouts
   pathparser/
     pathparser.go              # ParseBookPath: extracts author/title/series from directory structure; strips trailing year tokens from titles
   sidecar/
