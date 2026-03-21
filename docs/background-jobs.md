@@ -268,10 +268,16 @@ internal/
     book_metadata_helpers.go   # deriveTitle, extractBookMetadata, resolveAuthorAndTitle
     book_path_helpers.go       # validatePayload, resolveSourcePath, checkDuplicate, defaultBookFileLookup (bookFileLookupFunc type)
     book_record_helpers.go     # maybeReorganizeFile, createBookRecord, linkBookAssociations
+  coverutil/
+    decode.go                  # DecodeDataURL: decodes base64 data: URLs; enforces the 20 MB size limit
   organize/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
   pathparser/
     pathparser.go              # ParseBookPath: extracts author/title/series from directory structure; strips trailing year tokens from titles
+  sidecar/
+    sidecar.go                 # WriteSidecarFiles: orchestrates cover and OPF writing after each import
+    cover.go                   # WriteCover: decodes CoverImageURL data URL and writes cover.<ext> to disk
+    opf.go                     # WriteOPF: marshals and writes metadata.opf (OPF 2.0 Dublin Core)
   worker/
     worker.go                  # Worker struct: Register, Enqueue, Start, Close
 ```
