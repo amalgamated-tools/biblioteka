@@ -4,6 +4,7 @@ const testPort = 3847;
 
 export default defineConfig({
   testDir: "./tests",
+  globalSetup: "./global-setup.ts",
   fullyParallel: false,
   workers: 1,
   retries: 1,
