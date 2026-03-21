@@ -147,24 +147,36 @@ After a book record is created (and the file has been optionally reorganized), t
 | `cover.<ext>` | Only when `CoverImageURL` is non-empty | Cover image decoded from the stored `data:` URL |
 | `metadata.opf` | Always | OPF 2.0 file with Dublin Core metadata |
 
-**Cover image (`cover.<ext>`)**
+**Sidecar filenames and `book_per_file` mode**
+
+In `book_per_folder` and `none` libraries, sidecar files use the default names shown above (`cover.<ext>` and `metadata.opf`). In `book_per_file` libraries, multiple books share the same author directory, so sidecar files are prefixed with the **book's filename stem** to prevent collisions:
+
+| Library `organization_type` | Cover filename | OPF filename |
+|-----------------------------|----------------|--------------|
+| `book_per_folder` (default) | `cover.<ext>` | `metadata.opf` |
+| `none` | `cover.<ext>` | `metadata.opf` |
+| `book_per_file` | `<book-stem>.<ext>` | `<book-stem>.opf` |
+
+For example, a book file named `the-great-gatsby.epub` in a `book_per_file` library produces `the-great-gatsby.jpg` and `the-great-gatsby.opf` alongside it.
+
+**Cover image**
 
 The cover is decoded from the base64 `data:` URL stored in `books.cover_image_url` (populated during extraction for EPUB files). The file extension is determined by the decoded MIME type:
 
-| MIME type | Output filename |
-|-----------|-----------------|
-| `image/jpeg` | `cover.jpg` |
-| `image/png` | `cover.png` |
-| `image/webp` | `cover.webp` |
-| `image/avif` | `cover.avif` |
+| MIME type | Output filename (`book_per_folder`/`none`) | Output filename (`book_per_file`) |
+|-----------|-------------------------------------------|------------------------------------|
+| `image/jpeg` | `cover.jpg` | `<book-stem>.jpg` |
+| `image/png` | `cover.png` | `<book-stem>.png` |
+| `image/webp` | `cover.webp` | `<book-stem>.webp` |
+| `image/avif` | `cover.avif` | `<book-stem>.avif` |
 
 Cover files are written **atomically**: the new image is first written to a temporary file (`cover.<ext>.tmp`), then renamed into its final position. Only after the rename succeeds are stale cover files of other formats removed (best-effort cleanup to avoid orphaned files when cover formats change). This ensures the directory always contains either the previous cover or the new one — never nothing — even if the process is interrupted mid-write.
 
 Cover data URLs are capped at **20 MB** of decoded bytes; inputs exceeding this limit are rejected with a warning and no cover file is written.
 
-**OPF metadata file (`metadata.opf`)**
+**OPF metadata file (`metadata.opf` or `<book-stem>.opf`)**
 
-`metadata.opf` is an [OPF 2.0](https://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm) file suitable for use by e-reader applications (Kobo, KOReader, and others). It contains Dublin Core metadata:
+`metadata.opf` (or `<book-stem>.opf` in `book_per_file` mode) is an [OPF 2.0](https://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm) file suitable for use by e-reader applications (Kobo, KOReader, and others). It contains Dublin Core metadata:
 
 | OPF field | Source | Notes |
 |-----------|--------|-------|
