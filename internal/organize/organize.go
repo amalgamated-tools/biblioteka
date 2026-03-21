@@ -132,14 +132,10 @@ func copyFile(src, dst string) (err error) {
 		return err
 	}
 
-	if err = os.Link(tmpName, dst); err != nil {
-		if os.IsExist(err) {
+	if err = renameNoReplace(tmpName, dst); err != nil {
+		if errors.Is(err, os.ErrExist) {
 			return fmt.Errorf("destination file %q already exists", dst)
 		}
-		return err
-	}
-	if err = os.Remove(tmpName); err != nil {
-		_ = os.Remove(dst)
 		return err
 	}
 
@@ -185,16 +181,13 @@ func ReorganizeFileFlat(filePath, libraryRoot, author string) (string, error) {
 }
 
 func moveFileIntoLibrary(filePath, targetPath, libraryRoot string) (string, error) {
-	if err := os.Link(filePath, targetPath); err == nil {
-		if err := os.Remove(filePath); err != nil {
-			return targetPath, fmt.Errorf("remove original file %s after linking to %s: %w", filePath, targetPath, err)
-		}
+	if err := renameNoReplace(filePath, targetPath); err == nil {
 		cleanEmptyDirs(filepath.Dir(filePath), libraryRoot)
 		return targetPath, nil
-	} else if os.IsExist(err) {
+	} else if errors.Is(err, os.ErrExist) {
 		return "", fmt.Errorf("target file already exists: %s", targetPath)
 	} else if !errors.Is(err, syscall.EXDEV) {
-		return "", fmt.Errorf("link %s to %s: %w", filePath, targetPath, err)
+		return "", fmt.Errorf("rename %s to %s: %w", filePath, targetPath, err)
 	}
 
 	// Cross-filesystem fallback: copy then remove.

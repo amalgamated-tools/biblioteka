@@ -171,15 +171,30 @@ func WriteOPF(dir string, data OPFData, baseName string) error {
 
 	opfName := "metadata.opf"
 	if baseName != "" {
-		// Ensure baseName is a plain filename (no path separators, no "." or "..").
-		if baseName != filepath.Base(baseName) || baseName == "." || baseName == ".." {
-			return fmt.Errorf("WriteOPF: invalid baseName %q", baseName)
-		}
 		opfName = baseName + ".opf"
 	}
 	path := filepath.Join(dir, opfName)
-	if err := os.WriteFile(path, xmlBytes, 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", opfName, err)
+	tmpFile, err := os.CreateTemp(dir, opfName+".tmp-*")
+	if err != nil {
+		return fmt.Errorf("create temp %s: %w", opfName, err)
+	}
+	tmpName := tmpFile.Name()
+	defer func() {
+		_ = os.Remove(tmpName)
+	}()
+
+	if _, err := tmpFile.Write(xmlBytes); err != nil {
+		_ = tmpFile.Close()
+		return fmt.Errorf("write temp %s: %w", opfName, err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		return fmt.Errorf("close temp %s: %w", opfName, err)
+	}
+	if err := os.Chmod(tmpName, 0o644); err != nil {
+		return fmt.Errorf("chmod temp %s: %w", opfName, err)
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		return fmt.Errorf("rename temp %s: %w", opfName, err)
 	}
 
 	return nil
