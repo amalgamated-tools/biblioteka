@@ -348,11 +348,13 @@ The author and title come from embedded file metadata when available, falling ba
 
 **Behaviour details:**
 
-- Directory names are sanitized: path separators (`/`, `\`), control characters, colons, wildcards, and leading dots are removed.
+- **`book_per_folder`** requires both an author and a title; if either is absent after metadata extraction, the file stays in place.
+- **`book_per_file`** requires only an author; title is not needed.
+- Directory names are sanitized: path separators (`/`, `\`), control characters, colons, wildcards, and leading dots are removed. As a defense-in-depth measure, the computed target path is also verified to stay within the library root, guarding against path traversal via untrusted author/title metadata embedded in book files.
 - The move uses `os.Rename` when source and destination are on the same filesystem. A copy-then-delete falls back for cross-filesystem moves; source file permissions and modification time are preserved.
 - Empty source directories left behind after a move are removed automatically (up to but not including the library root).
 - If a file already exists at the target path, the handler skips the move and logs a warning — it never silently overwrites existing files.
-- If reorganization fails for any reason, the handler logs a warning and continues processing the file at its original path. The import still completes; only the file location is affected.
+- If reorganization fails (e.g. permissions error), the handler logs a warning and continues processing the file at its original path. The import still completes; only the file location is affected.
 
 ### Path-parsing and series inference
 
