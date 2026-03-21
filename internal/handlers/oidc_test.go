@@ -447,20 +447,18 @@ func TestOIDCParseLinkState_NormalLogin(t *testing.T) {
 	}
 }
 
-func TestOIDCParseLinkState_TamperedUserID(t *testing.T) {
-	h := newTestOIDCHandler(t)
+func TestOIDCParseLinkState_ManualTamperUserID(t *testing.T) {
+    h := newTestOIDCHandler(t)
 
-	signed := h.signLinkState("random-state", "user-123")
-	// Tamper with the user ID portion by re-signing with a different user ID
-	tampered := h.signLinkState("random-state", "victim-user")
-	// Parse the original to confirm it works
-	if got := h.parseLinkState(signed); got != "user-123" {
-		t.Fatalf("original: expected %q, got %q", "user-123", got)
-	}
-	// The tampered one should return the tampered user ID (it's properly signed)
-	if got := h.parseLinkState(tampered); got != "victim-user" {
-		t.Fatalf("tampered: expected %q, got %q", "victim-user", got)
-	}
+    signed := h.signLinkState("random-state", "user-123")
+    parts := strings.SplitN(signed, ".", 3)
+    // Replace userID with a different one, leave HMAC unchanged
+    parts[1] = base64.RawURLEncoding.EncodeToString([]byte("victim-user"))
+    tampered := strings.Join(parts, ".")
+
+    if got := h.parseLinkState(tampered); got != "" {
+        t.Fatalf("expected empty string for tampered state, got %q", got)
+    }
 }
 
 func TestOIDCParseLinkState_InvalidSignature(t *testing.T) {

@@ -50,7 +50,8 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Clear all OIDC flow cookies upfront, before processing any outcomes.
+    // Clear all OIDC flow cookies now that the state and verifier have been
+	// validated, so they are removed regardless of the outcome below.
 	for _, name := range []string{oidcStateCookieName, oidcVerifierCookieName} {
 		http.SetCookie(w, &http.Cookie{
 			Name:     name,
