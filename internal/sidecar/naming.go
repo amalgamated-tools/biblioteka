@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-
-	"github.com/amalgamated-tools/biblioteka/internal/db"
 )
+
+const organizationBookPerFile = "book_per_file"
 
 func validateBaseName(baseName string) error {
 	if baseName == "" {
@@ -25,7 +25,7 @@ func sidecarTarget(bookFilePath, organizationType string) (dir string, baseName 
 	}
 
 	dir = filepath.Dir(bookFilePath)
-	if organizationType == db.LibraryOrganizationBookPerFile {
+	if organizationType == organizationBookPerFile {
 		fileName := filepath.Base(bookFilePath)
 		baseName = strings.TrimSuffix(fileName, filepath.Ext(fileName))
 		if baseName == "" {
