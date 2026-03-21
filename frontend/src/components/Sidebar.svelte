@@ -89,7 +89,7 @@
         id="sidebar-home-heading"
         role="heading"
         aria-level="2"
-        class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
+        class="block px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
       >
         Home
       </span>
