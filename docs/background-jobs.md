@@ -139,6 +139,48 @@ Directory names are sanitized (path separators, control characters, and leading 
 
 See [Administration — File organization](administration.md#file-organization) for how to enable this feature.
 
+#### Sidecar files
+
+After a book record is created (and the file has been optionally reorganized), the handler calls `internal/sidecar.WriteSidecarFiles`, which writes two companion files alongside the book file:
+
+| File | Condition | Description |
+|------|-----------|-------------|
+| `cover.<ext>` | Only when `CoverImageURL` is non-empty | Cover image decoded from the stored `data:` URL |
+| `metadata.opf` | Always | OPF 2.0 file with Dublin Core metadata |
+
+**Cover image (`cover.<ext>`)**
+
+The cover is decoded from the base64 `data:` URL stored in `books.cover_image_url` (populated during extraction for EPUB files). The file extension is determined by the decoded MIME type:
+
+| MIME type | Output filename |
+|-----------|-----------------|
+| `image/jpeg` | `cover.jpg` |
+| `image/png` | `cover.png` |
+| `image/webp` | `cover.webp` |
+| `image/avif` | `cover.avif` |
+
+Cover files are written **atomically**: the new image is first written to a temporary file (`cover.<ext>.tmp`), then renamed into its final position. Only after the rename succeeds are stale cover files of other formats removed (best-effort cleanup to avoid orphaned files when cover formats change). This ensures the directory always contains either the previous cover or the new one — never nothing — even if the process is interrupted mid-write.
+
+Cover data URLs are capped at **20 MB** of decoded bytes; inputs exceeding this limit are rejected with a warning and no cover file is written.
+
+**OPF metadata file (`metadata.opf`)**
+
+`metadata.opf` is an [OPF 2.0](https://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm) file suitable for use by e-reader applications (Kobo, KOReader, and others). It contains Dublin Core metadata:
+
+| OPF field | Source | Notes |
+|-----------|--------|-------|
+| `dc:title` | Book title | Required; `WriteOPF` returns an error when empty |
+| `dc:creator` | Author name | `opf:role="aut"` attribute included |
+| `dc:identifier` | `books.isbn_10` or `books.isbn_13` | Falls back to a deterministic UUID v5 derived from title, author, publisher, publication date, and file path when no ISBN is present; scheme is `ISBN` or `UUID` accordingly. UUID values use the `urn:uuid:` URN prefix required by OPF 2.0 §2.2.10 (e.g. `urn:uuid:a5d3b2e1-7f4c-4e8a-9d6b-1c2e3f4a5b6d`) so that strict EPUB validators and importers such as Calibre accept the identifier |
+| `dc:language` | `books.language` | Defaults to `"und"` (undetermined) when absent |
+| `dc:date` | `books.publication_date` | Omitted when empty |
+| `dc:publisher` | `books.publisher` | Omitted when empty |
+| `dc:description` | `books.description` | Omitted when empty |
+| `<meta name="cover">` | Present when cover file was written | Points to `cover-image` manifest item |
+| `<manifest>` | Present when cover file was written | Lists the cover image with its MIME type |
+
+**Failure handling:** both the cover write and the OPF write are best-effort. A failure in either step is logged at `WARN` level and does **not** fail the `process:file` job. The book record committed to the database is not affected.
+
 ### Job Chain
 
 A full scan flows through the jobs in a fan-out pattern:
@@ -226,10 +268,16 @@ internal/
     book_metadata_helpers.go   # deriveTitle, extractBookMetadata, resolveAuthorAndTitle
     book_path_helpers.go       # validatePayload, resolveSourcePath, checkDuplicate, defaultBookFileLookup (bookFileLookupFunc type)
     book_record_helpers.go     # maybeReorganizeFile, createBookRecord, linkBookAssociations
+  coverutil/
+    decode.go                  # DecodeDataURL: decodes base64 data: URLs; enforces the 20 MB size limit
   organize/
     organize.go                # ReorganizeFile: moves files into Author/Title/ layout
   pathparser/
     pathparser.go              # ParseBookPath: extracts author/title/series from directory structure; strips trailing year tokens from titles
+  sidecar/
+    sidecar.go                 # WriteSidecarFiles: orchestrates cover and OPF writing after each import
+    cover.go                   # WriteCover: decodes CoverImageURL data URL and writes cover.<ext> to disk
+    opf.go                     # WriteOPF: marshals and writes metadata.opf (OPF 2.0 Dublin Core)
   worker/
     worker.go                  # Worker struct: Register, Enqueue, Start, Close
 ```
