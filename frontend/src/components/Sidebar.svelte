@@ -88,7 +88,7 @@
       <span
         id="sidebar-home-heading"
         role="heading"
-        aria-level="3"
+        aria-level="2"
         class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
       >
         Home
@@ -129,7 +129,7 @@
         <span
           id="sidebar-libraries-heading"
           role="heading"
-          aria-level="3"
+          aria-level="2"
           class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
         >
           Libraries
