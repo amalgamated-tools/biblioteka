@@ -4,14 +4,17 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v4"
 	josejwt "github.com/go-jose/go-jose/v4/jwt"
@@ -343,12 +346,14 @@ func TestOIDCLink_Success(t *testing.T) {
 		t.Fatalf("expected status 302, got %d", resp.StatusCode)
 	}
 
-	// Verify cookies are set
-	var foundState, foundVerifier, foundLinkUserID bool
+	// Verify cookies are set (state and verifier only — no link user ID cookie)
+	var foundState, foundVerifier bool
+	var stateValue string
 	for _, c := range resp.Cookies() {
 		switch c.Name {
 		case oidcStateCookieName:
 			foundState = true
+			stateValue = c.Value
 			if c.Value == "" {
 				t.Error("state cookie value is empty")
 			}
@@ -356,11 +361,6 @@ func TestOIDCLink_Success(t *testing.T) {
 			foundVerifier = true
 			if c.Value == "" {
 				t.Error("verifier cookie value is empty")
-			}
-		case oidcLinkUserIDCookieName:
-			foundLinkUserID = true
-			if c.Value != user.ID {
-				t.Errorf("link user ID cookie: expected %q, got %q", user.ID, c.Value)
 			}
 		}
 	}
@@ -370,8 +370,11 @@ func TestOIDCLink_Success(t *testing.T) {
 	if !foundVerifier {
 		t.Error("verifier cookie not set")
 	}
-	if !foundLinkUserID {
-		t.Error("link user ID cookie not set")
+
+	// Verify the state cookie contains a signed link state with the user ID
+	parsedUserID := h.parseLinkState(stateValue)
+	if parsedUserID != user.ID {
+		t.Errorf("expected parseLinkState to return %q, got %q", user.ID, parsedUserID)
 	}
 
 	// Verify nonce was consumed
@@ -419,6 +422,73 @@ func TestOIDCConsumeLinkNonce_Concurrent(t *testing.T) {
 	}
 	if winners != 1 {
 		t.Fatalf("expected exactly 1 winner, got %d", winners)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// signLinkState / parseLinkState
+// ---------------------------------------------------------------------------
+
+func TestOIDCParseLinkState_Valid(t *testing.T) {
+	h := newTestOIDCHandler(t)
+
+	signed := h.signLinkState("random-state", "user-123")
+	got := h.parseLinkState(signed)
+	if got != "user-123" {
+		t.Fatalf("expected user ID %q, got %q", "user-123", got)
+	}
+}
+
+func TestOIDCParseLinkState_NormalLogin(t *testing.T) {
+	h := newTestOIDCHandler(t)
+
+	// A plain state (no dots) should return empty — this is a normal login.
+	got := h.parseLinkState("plain-state-no-dots")
+	if got != "" {
+		t.Fatalf("expected empty string for normal login state, got %q", got)
+	}
+}
+
+func TestOIDCParseLinkState_ManualTamperUserID(t *testing.T) {
+	h := newTestOIDCHandler(t)
+
+	signed := h.signLinkState("random-state", "user-123")
+	parts := strings.SplitN(signed, ".", 3)
+	// Replace userID with a different one, leave HMAC unchanged
+	parts[1] = base64.RawURLEncoding.EncodeToString([]byte("victim-user"))
+	tampered := strings.Join(parts, ".")
+
+	if got := h.parseLinkState(tampered); got != "" {
+		t.Fatalf("expected empty string for tampered state, got %q", got)
+	}
+}
+
+func TestOIDCParseLinkState_InvalidSignature(t *testing.T) {
+	h := newTestOIDCHandler(t)
+
+	// Construct a state with a bad HMAC
+	got := h.parseLinkState("random-state.dXNlci0xMjM.bm90LWEtdmFsaWQtc2ln")
+	if got != "" {
+		t.Fatalf("expected empty string for invalid signature, got %q", got)
+	}
+}
+
+func TestOIDCParseLinkState_DifferentSecret(t *testing.T) {
+	h1 := newTestOIDCHandler(t)
+
+	// Create a handler with a different JWT secret
+	differentJWT, err := auth.NewJWTManager("different-secret-key", time.Hour)
+	if err != nil {
+		t.Fatalf("NewJWTManager: %v", err)
+	}
+	h2 := newTestOIDCHandler(t)
+	h2.JWT = differentJWT
+
+	signed := h1.signLinkState("random-state", "user-123")
+	// h2 has a different JWT secret, so it should reject h1's signature
+	got := h2.parseLinkState(signed)
+	if got != "" {
+		t.Fatalf("expected empty string when verifying with different secret, got %q", got)
 	}
 }
 
@@ -566,16 +636,12 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 	return tp
 }
 
-// callbackRequest builds a GET /callback request with valid state/verifier
-// cookies and optional link-user-id cookie.
-func callbackRequest(state, linkUserID string) *http.Request {
+// callbackRequest builds a GET /callback request with valid state/verifier cookies.
+func callbackRequest(state string) *http.Request {
 	r := httptest.NewRequest(http.MethodGet,
 		fmt.Sprintf("/auth/oidc/callback?state=%s&code=test-code", state), nil)
 	r.AddCookie(&http.Cookie{Name: oidcStateCookieName, Value: state})
 	r.AddCookie(&http.Cookie{Name: oidcVerifierCookieName, Value: "test-verifier"})
-	if linkUserID != "" {
-		r.AddCookie(&http.Cookie{Name: oidcLinkUserIDCookieName, Value: linkUserID})
-	}
 	return r
 }
 
@@ -591,7 +657,7 @@ func TestOIDCCallback_EmailVerifiedTrue(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	h.Callback(w, callbackRequest("test-state", ""))
+	h.Callback(w, callbackRequest("test-state"))
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusFound {
@@ -615,7 +681,7 @@ func TestOIDCCallback_EmailVerifiedFalse(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	h.Callback(w, callbackRequest("test-state", ""))
+	h.Callback(w, callbackRequest("test-state"))
 
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status 401, got %d; body: %s", w.Code, w.Body.String())
@@ -641,7 +707,7 @@ func TestOIDCCallback_EmailVerifiedMissing(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	h.Callback(w, callbackRequest("test-state", ""))
+	h.Callback(w, callbackRequest("test-state"))
 
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status 401, got %d; body: %s", w.Code, w.Body.String())
@@ -665,8 +731,11 @@ func TestOIDCCallback_LinkFlowBypassesEmailVerified(t *testing.T) {
 		"email_verified": false,
 	})
 
+	// Create a signed link state (simulates what Link() does)
+	signedState := h.signLinkState("test-state", user.ID)
+
 	w := httptest.NewRecorder()
-	h.Callback(w, callbackRequest("test-state", user.ID))
+	h.Callback(w, callbackRequest(signedState))
 
 	resp := w.Result()
 	// Link flow should succeed (redirect) even without email_verified.

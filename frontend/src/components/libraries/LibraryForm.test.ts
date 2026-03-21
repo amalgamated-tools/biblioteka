@@ -1,6 +1,10 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, fireEvent, cleanup } from "@testing-library/svelte";
 import { tick } from "svelte";
+import {
+  LIBRARY_ORGANIZATION_OPTIONS,
+  LIBRARY_ORGANIZATION_TYPES,
+} from "../../types";
 
 vi.mock("../../stores/libraries.svelte", () => ({
   libraryStore: {
@@ -129,5 +133,63 @@ describe("LibraryForm accessibility", () => {
 
     expect(container.querySelector("#lib-name-error")).toBeNull();
     expect(container.querySelector("#lib-folders-error")).toBeNull();
+  });
+});
+
+describe("LibraryForm organization type dropdown", () => {
+  afterEach(() => cleanup());
+
+  it("renders the organization type dropdown", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const select = container.querySelector(
+      "#lib-org-type",
+    ) as HTMLSelectElement;
+    expect(select).toBeInTheDocument();
+    expect(select.tagName).toBe("SELECT");
+  });
+
+  it("has three options with correct values", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const select = container.querySelector(
+      "#lib-org-type",
+    ) as HTMLSelectElement;
+    const options = select.querySelectorAll("option");
+    expect(options).toHaveLength(LIBRARY_ORGANIZATION_OPTIONS.length);
+
+    const values = Array.from(options).map((o) => o.value);
+    expect(values).toEqual(
+      LIBRARY_ORGANIZATION_OPTIONS.map((option) => option.value),
+    );
+  });
+
+  it("defaults to book_per_folder in create mode", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const select = container.querySelector(
+      "#lib-org-type",
+    ) as HTMLSelectElement;
+    expect(select.value).toBe(LIBRARY_ORGANIZATION_TYPES.BOOK_PER_FOLDER);
+  });
+
+  it("has a label with text File Organization", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const label = container.querySelector('label[for="lib-org-type"]');
+    expect(label).toBeInTheDocument();
+    expect(label).toHaveTextContent("File Organization");
   });
 });
