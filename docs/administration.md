@@ -250,7 +250,7 @@ curl -X POST http://localhost:8080/api/libraries \
 | `organization_type` | —        | `"book_per_folder"` | How the library is organised (see note below)         |
 | `monitored`         | —        | `false`             | Include in scheduled 24-hour scans                    |
 
-> **`organization_type`:** The only supported value is `"book_per_folder"`. Each immediate subdirectory under a library path is treated as a single book's folder.
+> **`organization_type`:** The only recognised value is `"book_per_folder"` (the default). This describes the expected directory layout: each book occupies its own `<Author>/<Title>/` subdirectory under a library path. Biblioteka uses this layout for [path-based metadata extraction](background-jobs.md#path-based-metadata) (deriving author, title, and series from directory names) and, when file reorganization is enabled, for moving imported files into this structure automatically (see [Enabling file organization](#enabling-file-organization) below).
 
 ### Edit and delete libraries
 
