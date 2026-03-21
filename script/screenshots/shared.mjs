@@ -45,7 +45,7 @@ async function openSignupForm(page) {
     await page.locator('button#signup-tab').click();
     await page.waitForSelector('input#signup-name');
     await page.waitForFunction(() => {
-        const panel = document.querySelector('#signup-panel');
+        const panel = document.querySelector('#signup-panel:not([hidden])');
         const btn = panel && panel.querySelector('button[type="submit"]');
         return btn && btn.textContent.trim() === 'Create Account';
     });
@@ -151,7 +151,7 @@ async function ensureAccount(page, name, email, password) {
     const logoutButton = page.getByRole('button', { name: 'Logout', exact: true });
     const errorBanner = getAuthErrorBanner(page);
 
-    await Promise.race([
+    await Promise.any([
         logoutButton.waitFor({ state: 'visible' }),
         errorBanner.waitFor({ state: 'visible' }),
     ]);

@@ -54,7 +54,7 @@ kill-dev:
 	@echo "Dev ports 5173 and 8080 are now free."
 
 # Capture application screenshots via Playwright
-screenshots: clean frontend/node_modules
+screenshots: clean node_modules frontend/node_modules
 	@mkdir -p screenshots
 	# call kill-dev first to ensure no existing servers are running
 	$(MAKE) kill-dev
