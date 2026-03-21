@@ -152,7 +152,7 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 		req.OrganizationType = defaultOrganizationType
 	}
 	if req.OrganizationType != "" && !db.IsValidLibraryOrganizationType(req.OrganizationType) {
-		writeError(ctx, w, http.StatusBadRequest, "organization_type must be one of: "+strings.Join(db.LibraryOrganizationTypes, ", "))
+		writeError(ctx, w, http.StatusBadRequest, "organization_type must be one of: "+strings.Join(db.LibraryOrganizationTypeNames(), ", "))
 		return "", false
 	}
 	data, err := json.Marshal(req.Paths)

@@ -754,7 +754,7 @@ func TestCreateLibrary_InvalidOrganizationType(t *testing.T) {
 }
 
 func TestCreateLibrary_ValidOrganizationTypes(t *testing.T) {
-	for _, orgType := range db.LibraryOrganizationTypes {
+	for _, orgType := range db.LibraryOrganizationTypeNames() {
 		t.Run(orgType, func(t *testing.T) {
 			h, adminID, _ := setupLibraryHandler(t)
 
