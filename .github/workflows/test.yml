@@ -171,10 +171,10 @@ jobs:
       - name: Install exiftool
         run: |
           mkdir -p "${{ runner.temp }}/apt-cache"
-          sudo apt-get update -qq
           if [ "${{ steps.exiftool-cache.outputs.cache-hit }}" = "true" ]; then
             sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q --no-download libimage-exiftool-perl
           else
+            sudo apt-get update -qq
             sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q libimage-exiftool-perl
           fi
           exiftool -ver
