@@ -174,6 +174,28 @@ test.beforeEach(async ({ page }) => {
 });
 ```
 
+#### E2E global setup (`e2e/global-setup.ts`) and constants (`e2e/constants.ts`)
+
+`playwright.config.ts` declares `global-setup.ts` as the Playwright `globalSetup` hook. It runs once before the entire test suite and provisions the pre-seeded admin account:
+
+1. It calls `POST /api/auth/signup` with the credentials from `e2e/constants.ts` (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`).
+2. Because Biblioteka automatically promotes the **first registered account** to admin, the setup verifies the response confirms `is_admin: true`. If it does not, global setup throws — this guards against accidentally running E2E tests against a database that already has accounts.
+3. If the account already exists (HTTP 409), global setup silently succeeds. This allows reuse of a running dev server without re-seeding.
+
+`e2e/constants.ts` centralises shared test configuration:
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `TEST_PORT` | `3847` | Port the test server listens on |
+| `BASE_URL` | `http://localhost:3847` | Base URL used by Playwright |
+| `ADMIN_EMAIL` | `e2e-admin@biblioteka-e2e.test` | Admin account email |
+| `ADMIN_PASSWORD` | `adminpassword123` | Admin account password |
+| `ADMIN_NAME` | `E2E Admin` | Admin account display name |
+
+> **Important:** The test server started by Playwright uses a fixed `JWT_SECRET` of `e2e-test-jwt-secret` (see `playwright.config.ts`). Never use this secret value in a real deployment.
+
+> **Clean database requirement (CI):** In CI (`CI=true`), Playwright always spins up a fresh server with an empty database. Running against a non-empty database will fail global setup because the first-account-is-admin guarantee no longer applies. Locally, if you reuse a running dev server (port `3847`) the 409 short-circuit in global setup handles this gracefully.
+
 #### Test helpers (`internal/testutils`)
 
 The `internal/testutils` package provides helpers for generating fixture book files in tests:
