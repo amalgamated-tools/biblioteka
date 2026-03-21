@@ -17,10 +17,9 @@ import (
 )
 
 const (
-	oidcStateCookieName      = "oidc_state"
-	oidcVerifierCookieName   = "oidc_verifier"
-	oidcLinkUserIDCookieName = "oidc_link_user_id"
-	oidcStateCookieTTL       = 5 * time.Minute
+	oidcStateCookieName    = "oidc_state"
+	oidcVerifierCookieName = "oidc_verifier"
+	oidcStateCookieTTL     = 5 * time.Minute
 )
 
 // linkNonce is a short-lived, single-use token mapping to a user ID.
@@ -39,6 +38,9 @@ type OIDCHandler struct {
 
 	linkNonces   map[string]linkNonce
 	linkNoncesMu sync.Mutex
+
+	linkStates   map[string]linkNonce
+	linkStatesMu sync.Mutex
 }
 
 // NewOIDCHandler creates a new OIDCHandler by performing OIDC discovery on the issuer URL.
@@ -63,6 +65,7 @@ func NewOIDCHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, 
 		Config:        config,
 		SecureCookies: secureCookies,
 		linkNonces:    make(map[string]linkNonce),
+		linkStates:    make(map[string]linkNonce),
 	}, nil
 }
 

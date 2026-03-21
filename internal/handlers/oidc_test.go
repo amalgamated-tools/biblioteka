@@ -36,6 +36,7 @@ func newTestOIDCHandler(t *testing.T) *OIDCHandler {
 		},
 		SecureCookies: false,
 		linkNonces:    make(map[string]linkNonce),
+		linkStates:    make(map[string]linkNonce),
 	}
 }
 
@@ -343,12 +344,14 @@ func TestOIDCLink_Success(t *testing.T) {
 		t.Fatalf("expected status 302, got %d", resp.StatusCode)
 	}
 
-	// Verify cookies are set
-	var foundState, foundVerifier, foundLinkUserID bool
+	// Verify cookies are set (state and verifier only — no link user ID cookie)
+	var foundState, foundVerifier bool
+	var stateValue string
 	for _, c := range resp.Cookies() {
 		switch c.Name {
 		case oidcStateCookieName:
 			foundState = true
+			stateValue = c.Value
 			if c.Value == "" {
 				t.Error("state cookie value is empty")
 			}
@@ -356,11 +359,6 @@ func TestOIDCLink_Success(t *testing.T) {
 			foundVerifier = true
 			if c.Value == "" {
 				t.Error("verifier cookie value is empty")
-			}
-		case oidcLinkUserIDCookieName:
-			foundLinkUserID = true
-			if c.Value != user.ID {
-				t.Errorf("link user ID cookie: expected %q, got %q", user.ID, c.Value)
 			}
 		}
 	}
@@ -370,8 +368,16 @@ func TestOIDCLink_Success(t *testing.T) {
 	if !foundVerifier {
 		t.Error("verifier cookie not set")
 	}
-	if !foundLinkUserID {
-		t.Error("link user ID cookie not set")
+
+	// Verify link state is stored server-side, keyed by the OIDC state
+	h.linkStatesMu.Lock()
+	entry, ok := h.linkStates[stateValue]
+	h.linkStatesMu.Unlock()
+	if !ok {
+		t.Fatal("link state not found in linkStates map")
+	}
+	if entry.UserID != user.ID {
+		t.Errorf("expected link state UserID %q, got %q", user.ID, entry.UserID)
 	}
 
 	// Verify nonce was consumed
@@ -406,6 +412,99 @@ func TestOIDCConsumeLinkNonce_Concurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			results <- h.consumeLinkNonce("race-nonce")
+		}()
+	}
+	wg.Wait()
+	close(results)
+
+	var winners int
+	for r := range results {
+		if r == "user-race" {
+			winners++
+		}
+	}
+	if winners != 1 {
+		t.Fatalf("expected exactly 1 winner, got %d", winners)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// storeLinkState / consumeLinkState
+// ---------------------------------------------------------------------------
+
+func TestOIDCConsumeLinkState_Valid(t *testing.T) {
+	h := newTestOIDCHandler(t)
+
+	h.storeLinkState("state-abc", "user-123")
+
+	got := h.consumeLinkState("state-abc")
+	if got != "user-123" {
+		t.Fatalf("expected user ID %q, got %q", "user-123", got)
+	}
+}
+
+func TestOIDCConsumeLinkState_NotFound(t *testing.T) {
+	h := newTestOIDCHandler(t)
+
+	got := h.consumeLinkState("nonexistent")
+	if got != "" {
+		t.Fatalf("expected empty string for unknown state, got %q", got)
+	}
+}
+
+func TestOIDCConsumeLinkState_Expired(t *testing.T) {
+	h := newTestOIDCHandler(t)
+
+	h.linkStatesMu.Lock()
+	h.linkStates["expired-state"] = linkNonce{
+		UserID:    "user-456",
+		ExpiresAt: time.Now().Add(-1 * time.Minute),
+	}
+	h.linkStatesMu.Unlock()
+
+	got := h.consumeLinkState("expired-state")
+	if got != "" {
+		t.Fatalf("expected empty string for expired state, got %q", got)
+	}
+
+	h.linkStatesMu.Lock()
+	_, exists := h.linkStates["expired-state"]
+	h.linkStatesMu.Unlock()
+	if exists {
+		t.Error("expired state should have been removed from the map")
+	}
+}
+
+func TestOIDCConsumeLinkState_SingleUse(t *testing.T) {
+	h := newTestOIDCHandler(t)
+
+	h.storeLinkState("once-state", "user-789")
+
+	first := h.consumeLinkState("once-state")
+	if first != "user-789" {
+		t.Fatalf("first consume: expected %q, got %q", "user-789", first)
+	}
+
+	second := h.consumeLinkState("once-state")
+	if second != "" {
+		t.Fatalf("second consume: expected empty string, got %q", second)
+	}
+}
+
+func TestOIDCConsumeLinkState_Concurrent(t *testing.T) {
+	h := newTestOIDCHandler(t)
+
+	h.storeLinkState("race-state", "user-race")
+
+	const goroutines = 10
+	results := make(chan string, goroutines)
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+
+	for range goroutines {
+		go func() {
+			defer wg.Done()
+			results <- h.consumeLinkState("race-state")
 		}()
 	}
 	wg.Wait()
@@ -553,6 +652,7 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 		},
 		SecureCookies: false,
 		linkNonces:    make(map[string]linkNonce),
+		linkStates:    make(map[string]linkNonce),
 	}
 
 	tp := &testOIDCProvider{
@@ -566,16 +666,12 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 	return tp
 }
 
-// callbackRequest builds a GET /callback request with valid state/verifier
-// cookies and optional link-user-id cookie.
-func callbackRequest(state, linkUserID string) *http.Request {
+// callbackRequest builds a GET /callback request with valid state/verifier cookies.
+func callbackRequest(state string) *http.Request {
 	r := httptest.NewRequest(http.MethodGet,
 		fmt.Sprintf("/auth/oidc/callback?state=%s&code=test-code", state), nil)
 	r.AddCookie(&http.Cookie{Name: oidcStateCookieName, Value: state})
 	r.AddCookie(&http.Cookie{Name: oidcVerifierCookieName, Value: "test-verifier"})
-	if linkUserID != "" {
-		r.AddCookie(&http.Cookie{Name: oidcLinkUserIDCookieName, Value: linkUserID})
-	}
 	return r
 }
 
@@ -591,7 +687,7 @@ func TestOIDCCallback_EmailVerifiedTrue(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	h.Callback(w, callbackRequest("test-state", ""))
+	h.Callback(w, callbackRequest("test-state"))
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusFound {
@@ -615,7 +711,7 @@ func TestOIDCCallback_EmailVerifiedFalse(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	h.Callback(w, callbackRequest("test-state", ""))
+	h.Callback(w, callbackRequest("test-state"))
 
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status 401, got %d; body: %s", w.Code, w.Body.String())
@@ -641,7 +737,7 @@ func TestOIDCCallback_EmailVerifiedMissing(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	h.Callback(w, callbackRequest("test-state", ""))
+	h.Callback(w, callbackRequest("test-state"))
 
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status 401, got %d; body: %s", w.Code, w.Body.String())
@@ -665,8 +761,11 @@ func TestOIDCCallback_LinkFlowBypassesEmailVerified(t *testing.T) {
 		"email_verified": false,
 	})
 
+	// Store link state server-side (simulates what Link() does)
+	h.storeLinkState("test-state", user.ID)
+
 	w := httptest.NewRecorder()
-	h.Callback(w, callbackRequest("test-state", user.ID))
+	h.Callback(w, callbackRequest("test-state"))
 
 	resp := w.Result()
 	// Link flow should succeed (redirect) even without email_verified.
