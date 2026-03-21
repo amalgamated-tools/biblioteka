@@ -93,4 +93,17 @@ describe("Sidebar navigation accessibility", () => {
     const nonFiction = screen.getByRole("link", { name: "Non-Fiction" });
     expect(nonFiction).not.toHaveAttribute("aria-current");
   });
+
+  it("renders navigation group labels as headings", () => {
+    render(Sidebar, {
+      props: { currentView: "dashboard", open: true, onClose: () => {} },
+    });
+
+    expect(
+      screen.getByRole("heading", { name: "Home", level: 2 }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Libraries", level: 2 }),
+    ).toBeVisible();
+  });
 });
