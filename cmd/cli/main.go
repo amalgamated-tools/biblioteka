@@ -105,6 +105,25 @@ func runProcessFile(ctx context.Context, path string) error {
 	}
 	defer func() { _ = database.Close() }()
 
+	// folder path
+	folderPath := filepath.Dir(path)
+
+	// create a temporary library for processing the file, which will be cleaned up after processing completes. This allows us to associate the file with a library for metadata extraction and association purposes, without requiring the user to specify a library upfront.
+	library, err := database.CreateLibrary(ctx, "Temporary Library", folderPath, "book_per_folder", true)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create temporary library", slog.Any(otelkeys.Error, err))
+		return fmt.Errorf("failed to create temporary library: %w", err)
+	}
+	defer func() {
+		err := database.DeleteLibrary(ctx, library.ID)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to delete temporary library",
+				slog.String(otelkeys.LibraryID, library.ID),
+				slog.Any(otelkeys.Error, err),
+			)
+		}
+	}()
+
 	ext, err := metadata.NewExtractor(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create metadata extractor: %w", err)

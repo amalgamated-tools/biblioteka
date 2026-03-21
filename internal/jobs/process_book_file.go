@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
@@ -75,7 +76,20 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	authorName, title := resolveAuthorAndTitle(meta, pathInfo, title)
 
-	filePath, skip, err := maybeReorganizeFile(ctx, database, p.Path, p.LibraryRoot, authorName, title, p.LibraryID, lookup)
+	organizationType := ""
+	if p.LibraryID != "" {
+		lib, libErr := database.GetLibrary(ctx, p.LibraryID)
+		if libErr != nil {
+			slog.WarnContext(ctx, "could not look up library for organization type",
+				slog.String(otelkeys.LibraryID, p.LibraryID),
+				slog.Any(otelkeys.Error, libErr),
+			)
+		} else {
+			organizationType = lib.OrganizationType
+		}
+	}
+
+	filePath, skip, err := maybeReorganizeFile(ctx, database, p.Path, p.LibraryRoot, authorName, title, p.LibraryID, organizationType, lookup)
 	if err != nil {
 		return err
 	}
@@ -90,7 +104,15 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	linkBookAssociations(ctx, database, book.ID, authorName, p.LibraryID, pathInfo, filePath)
 
-	sidecar.WriteSidecarFiles(ctx, filepath.Dir(filePath), meta, title, authorName)
+	// For book_per_file mode, name sidecar files after the book file so
+	// multiple books can share the same author directory.
+	var sidecarBaseName string
+	if organizationType == "book_per_file" {
+		base := filepath.Base(filePath)
+		sidecarBaseName = strings.TrimSuffix(base, filepath.Ext(base))
+	}
+
+	sidecar.WriteSidecarFiles(ctx, filepath.Dir(filePath), meta, title, authorName, sidecarBaseName)
 
 	var format string
 	if meta != nil {

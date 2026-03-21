@@ -722,3 +722,132 @@ func TestListLibraries_NonAdminAllowed(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 }
+
+func TestCreateLibrary_InvalidOrganizationType(t *testing.T) {
+	h, adminID, _ := setupLibraryHandler(t)
+
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{
+		Name:             "Books",
+		Paths:            []string{dir},
+		OrganizationType: "invalid_type",
+	})
+
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleLibraries(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+
+	var resp map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if msg := resp["error"]; msg == "" {
+		t.Error("expected error message about organization_type")
+	}
+}
+
+func TestCreateLibrary_ValidOrganizationTypes(t *testing.T) {
+	for _, orgType := range []string{"book_per_folder", "book_per_file", "none"} {
+		t.Run(orgType, func(t *testing.T) {
+			h, adminID, _ := setupLibraryHandler(t)
+
+			dir := t.TempDir()
+			body, _ := json.Marshal(libraryRequest{
+				Name:             "Books-" + orgType,
+				Paths:            []string{dir},
+				OrganizationType: orgType,
+			})
+
+			r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+			r = withUserID(r, adminID)
+			w := httptest.NewRecorder()
+
+			h.HandleLibraries(w, r)
+
+			if w.Code != http.StatusCreated {
+				t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+			}
+
+			var dto libraryDTO
+			if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+			if dto.OrganizationType != orgType {
+				t.Errorf("organization_type = %q, want %q", dto.OrganizationType, orgType)
+			}
+		})
+	}
+}
+
+func TestCreateLibrary_EmptyOrganizationTypeDefaultsToBookPerFolder(t *testing.T) {
+	h, adminID, _ := setupLibraryHandler(t)
+
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{
+		Name:  "Books",
+		Paths: []string{dir},
+		// OrganizationType intentionally omitted (empty string)
+	})
+
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleLibraries(w, r)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+	}
+
+	var dto libraryDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if dto.OrganizationType != "book_per_folder" {
+		t.Errorf("organization_type = %q, want %q", dto.OrganizationType, "book_per_folder")
+	}
+}
+
+func TestUpdateLibrary_InvalidOrganizationType(t *testing.T) {
+	h, adminID, _ := setupLibraryHandler(t)
+
+	dir := t.TempDir()
+	body, _ := json.Marshal(libraryRequest{
+		Name:  "Books",
+		Paths: []string{dir},
+	})
+	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+	h.HandleLibraries(w, r)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+	}
+
+	var created libraryDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
+		t.Fatalf("unmarshal created: %v", err)
+	}
+
+	updateBody, _ := json.Marshal(libraryRequest{
+		Name:             "Books",
+		Paths:            []string{dir},
+		OrganizationType: "flat_organize",
+	})
+	r2 := httptest.NewRequest(http.MethodPut, "/api/libraries/"+created.ID, bytes.NewReader(updateBody))
+	r2 = withUserID(r2, adminID)
+	w2 := httptest.NewRecorder()
+
+	h.HandleLibrary(w2, r2)
+
+	if w2.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusBadRequest, w2.Body.String())
+	}
+}

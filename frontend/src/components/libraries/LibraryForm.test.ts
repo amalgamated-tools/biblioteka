@@ -131,3 +131,59 @@ describe("LibraryForm accessibility", () => {
     expect(container.querySelector("#lib-folders-error")).toBeNull();
   });
 });
+
+describe("LibraryForm organization type dropdown", () => {
+  afterEach(() => cleanup());
+
+  it("renders the organization type dropdown", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const select = container.querySelector(
+      "#lib-org-type",
+    ) as HTMLSelectElement;
+    expect(select).toBeInTheDocument();
+    expect(select.tagName).toBe("SELECT");
+  });
+
+  it("has three options with correct values", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const select = container.querySelector(
+      "#lib-org-type",
+    ) as HTMLSelectElement;
+    const options = select.querySelectorAll("option");
+    expect(options).toHaveLength(3);
+
+    const values = Array.from(options).map((o) => o.value);
+    expect(values).toEqual(["book_per_folder", "book_per_file", "none"]);
+  });
+
+  it("defaults to book_per_folder in create mode", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const select = container.querySelector(
+      "#lib-org-type",
+    ) as HTMLSelectElement;
+    expect(select.value).toBe("book_per_folder");
+  });
+
+  it("has a label with text File Organization", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const label = container.querySelector('label[for="lib-org-type"]');
+    expect(label).toBeInTheDocument();
+    expect(label).toHaveTextContent("File Organization");
+  });
+});
