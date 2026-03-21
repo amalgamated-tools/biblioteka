@@ -433,7 +433,7 @@ go-test ──┘
 
 All six jobs run fully in parallel (the two gate jobs wait for their pair). Total CI time is roughly `max(frontend-build, frontend-checks, go-lint, go-test)`.
 
-Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: 'pnpm'`, keyed on `frontend/pnpm-lock.yaml`) to avoid re-downloading the dependency tree on every run. Both Go jobs use the Go module cache via `actions/setup-go` (`cache: true`, keyed on `go.sum`). The `go-test` job additionally caches the `libimage-exiftool-perl` apt package via `actions/cache` (keyed on the test workflow file hash) to avoid re-downloading the binary on every run.
+Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: 'pnpm'`, keyed on `frontend/pnpm-lock.yaml`) to avoid re-downloading the dependency tree on every run. Both Go jobs use the Go module cache via `actions/setup-go` (`cache: true`, keyed on `go.sum`). The `go-test` job additionally caches the `libimage-exiftool-perl` apt package via `actions/cache` (keyed on the test workflow file hash). On a cache hit the job skips `apt-get update` entirely and uses `--no-download` to install directly from the cache, cutting CI overhead. On a cache miss the full `apt-get update` + install runs and the downloaded package is saved for subsequent runs.
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
 
@@ -459,7 +459,7 @@ e2e (build frontend → compile Go binary → Playwright / Chromium)
 
 | Job | Depends on | What it does |
 |---|---|---|
-| `e2e` | — | Installs pnpm deps (cached), builds the frontend, compiles the Go binary, installs Playwright + Chromium (cached), runs `pnpm test` with `CI=true` (Playwright starts a fresh server for the run) |
+| `e2e` | — | Installs pnpm deps (cached), builds the frontend, compiles the Go binary, installs Playwright + Chromium (cached; on cache hit only system deps are installed via `install-deps`), runs `pnpm test` with `CI=true` (Playwright starts a fresh server for the run); job timeout is **45 minutes** |
 
 On completion, the `playwright-report/` artifact is uploaded and retained for **7 days**, giving you screenshots and traces for any failures.
 
