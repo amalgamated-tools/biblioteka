@@ -123,11 +123,10 @@ Key rules applied by the parser:
 
 #### File reorganization
 
-When both `library_root` is set and the `organize_files` database setting equals `"true"`, the handler moves the file into a canonical `Author/Title/` directory structure under the library root after resolving the author name and title:
+When `library_root` is set and the library's `organization_type` is `book_per_folder` or `book_per_file`, the handler moves the file into the corresponding directory structure under the library root after resolving the author name and title:
 
-```
-<library_root>/<Author>/<Title>/<filename>
-```
+- `book_per_folder`: `<library_root>/<Author>/<Title>/<filename>`
+- `book_per_file`: `<library_root>/<Author>/<filename>`
 
 Directory names are sanitized (path separators, control characters, and leading dots removed). The move uses `os.Rename` when source and destination are on the same filesystem, falling back to copy-then-delete for cross-filesystem moves. Intermediate empty source directories are removed after a successful move.
 
@@ -137,7 +136,7 @@ Directory names are sanitized (path separators, control characters, and leading 
 - If the source file is missing when the job starts, the handler first checks whether the original path is already indexed in the database. If it is, the job skips without error (and, if a `library_id` is present, attempts to link the book to that library). If the original path is not in the database, the handler then tries to locate the file at its expected reorganized path (`<library_root>/<Author>/<Title>/<filename>`). If found there and already indexed, the job skips without error. If found there but not yet indexed, the handler resumes processing from that new location. If the file cannot be found at either location, the job logs a warning and returns without error. A database error (other than "not found") at any of these lookup steps is propagated as a hard error so that asynq retries the job rather than silently dropping it.
 - After a successful move, the handler checks whether the new path is already indexed before creating new database records, preventing duplicates from concurrent workers.
 
-See [Administration — File organization](administration.md#file-organization) for how to enable this feature.
+See [Administration — File organization](administration.md#file-organization) for details on configuring this feature per-library.
 
 #### Sidecar files
 

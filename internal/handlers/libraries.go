@@ -150,6 +150,11 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 	if req.OrganizationType == "" {
 		req.OrganizationType = "book_per_folder"
 	}
+	validOrgTypes := []string{"book_per_folder", "book_per_file", "none"}
+	if !slices.Contains(validOrgTypes, req.OrganizationType) {
+		writeError(ctx, w, http.StatusBadRequest, "organization_type must be one of: book_per_folder, book_per_file, none")
+		return "", false
+	}
 	data, err := json.Marshal(req.Paths)
 	if err != nil {
 		writeError(ctx, w, http.StatusInternalServerError, "failed to encode paths")

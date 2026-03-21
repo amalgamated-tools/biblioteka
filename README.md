@@ -7,7 +7,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Multi-format support** – EPUB, MOBI, AZW3, and PDF
 - **Metadata extraction** – title, author, ISBN, description, publisher, language, and publication date extracted automatically during library scans via [ExifTool](https://exiftool.org/) (all supported formats: EPUB, MOBI, AZW3, PDF); extracted authors are linked to book records automatically; standalone [`cmd/cli`](#cli-tool) tool available for manual import, directory scanning, and metadata inspection
 - **Path-based metadata** – when files are organized in `Author/Title/` or `Author - Title` directory layouts, Biblioteka automatically derives author, title, series name, and series position from the directory structure, supplementing any embedded file metadata; trailing `(YYYY)` year tokens are also stripped to keep titles clean (the year is not stored as `publication_date`)
-- **File organisation** – optional `organize_files` setting moves imported files into a canonical `Author/Title/` directory structure under the library root; see [Administration → File organization](docs/administration.md#file-organization)
+- **File organisation** – per-library `organization_type` setting controls how imported files are arranged: `book_per_folder` (`Author/Title/file`), `book_per_file` (`Author/file`), or `none` (leave as-is); see [Administration → File organization](docs/administration.md#file-organization)
 - **Library organisation** – group books into multiple named libraries with configurable file-system paths
 - **Author & series tracking** – browse by author or series, with position numbers within each series
 - **User authentication** – JWT-based login, optional OpenID Connect (OIDC/SSO)

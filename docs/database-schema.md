@@ -70,7 +70,7 @@ Stores registered user accounts.
 
 ### `settings`
 
-Key-value store for runtime configuration. Used for OIDC provider settings, SMTP mail configuration, and application-level feature flags (e.g. `organize_files`).
+Key-value store for runtime configuration. Used for OIDC provider settings and SMTP mail configuration.
 
 | Column       | Type    | Nullable | Default  | Description             |
 |--------------|---------|----------|----------|-------------------------|
@@ -103,9 +103,7 @@ Key-value store for runtime configuration. Used for OIDC provider settings, SMTP
 
 *Application settings:*
 
-| Key               | Description                                                                                          |
-|-------------------|------------------------------------------------------------------------------------------------------|
-| `organize_files`  | When `"true"`, the `process:file` job moves imported files into `<library_root>/<Author>/<Title>/`. No HTTP API endpoint exists yet — set directly in the database. See [File organization](administration.md#file-organization). |
+(No application-level keys remain — file organization is now configured per-library via the `organization_type` column on the `libraries` table.)
 
 **Notes:**
 - Environment variables (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `SMTP_HOST`, etc.) take precedence over values stored in this table.
@@ -132,7 +130,9 @@ Named collections of filesystem paths to scan for book files.
 
 | Value             | Meaning                                                   |
 |-------------------|-----------------------------------------------------------|
-| `book_per_folder` | Each immediate subdirectory is treated as one book (default) |
+| `book_per_folder` | Files are moved into `Author/Title/file` (default)        |
+| `book_per_file`   | Files are moved into `Author/file` (flat per-author)      |
+| `none`            | Files are left where they are                             |
 
 **Notes:**
 - `paths` is stored as a JSON array string (e.g. `'["/mnt/books", "/mnt/audiobooks"]'`).

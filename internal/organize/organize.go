@@ -169,6 +169,79 @@ func copyFile(src, dst string) (err error) {
 	return nil
 }
 
+// ReorganizeFileFlat moves a book file into an Author/ directory structure
+// under libraryRoot (flat, no title subdirectory). If the file is already in
+// the correct location, it returns the original path unchanged. After moving,
+// empty source directories are cleaned up (up to but not including libraryRoot).
+//
+// Returns the new absolute path of the file.
+func ReorganizeFileFlat(filePath, libraryRoot, author string) (string, error) {
+	if author == "" {
+		return filePath, nil
+	}
+
+	safeAuthor := sanitizeDirName(author)
+	if safeAuthor == "" {
+		return filePath, nil
+	}
+
+	filename := filepath.Base(filePath)
+	targetDir := filepath.Join(libraryRoot, safeAuthor)
+	targetPath := filepath.Join(targetDir, filename)
+
+	// Defense-in-depth: verify the target path is still inside libraryRoot.
+	relCheck, err := filepath.Rel(libraryRoot, targetPath)
+	if err != nil || relCheck == ".." || strings.HasPrefix(relCheck, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("target path %q escapes library root %q", targetPath, libraryRoot)
+	}
+
+	// Already in the right place.
+	if filepath.Clean(filePath) == filepath.Clean(targetPath) {
+		return filePath, nil
+	}
+
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		return "", fmt.Errorf("create target directory %s: %w", targetDir, err)
+	}
+
+	if _, err := os.Stat(targetPath); err == nil {
+		return "", fmt.Errorf("target file already exists: %s", targetPath)
+	} else if !os.IsNotExist(err) {
+		return "", fmt.Errorf("stat target file %s: %w", targetPath, err)
+	}
+
+	if err := os.Rename(filePath, targetPath); err == nil {
+		cleanEmptyDirs(filepath.Dir(filePath), libraryRoot)
+		return targetPath, nil
+	}
+
+	// Cross-filesystem fallback: copy then remove.
+	if err := copyFile(filePath, targetPath); err != nil {
+		return "", fmt.Errorf("copy file to %s: %w", targetPath, err)
+	}
+	if err := os.Remove(filePath); err != nil {
+		return targetPath, fmt.Errorf("remove original file %s after copy to %s: %w", filePath, targetPath, err)
+	}
+
+	cleanEmptyDirs(filepath.Dir(filePath), libraryRoot)
+	return targetPath, nil
+}
+
+// TargetPathFlat returns the canonical target file path that
+// ReorganizeFileFlat would produce for the given inputs, without actually
+// moving anything. Returns an empty string if author is empty or sanitizes
+// to empty.
+func TargetPathFlat(filePath, libraryRoot, author string) string {
+	if author == "" {
+		return ""
+	}
+	safeAuthor := sanitizeDirName(author)
+	if safeAuthor == "" {
+		return ""
+	}
+	return filepath.Join(libraryRoot, safeAuthor, filepath.Base(filePath))
+}
+
 // TargetPath returns the canonical target file path that ReorganizeFile would
 // produce for the given inputs, without actually moving anything. Returns an
 // empty string if author or title is empty or sanitizes to empty.

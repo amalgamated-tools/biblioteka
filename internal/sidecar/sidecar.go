@@ -8,14 +8,18 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// WriteSidecarFiles writes a cover image and metadata.opf alongside the book file.
+// WriteSidecarFiles writes a cover image and OPF metadata file alongside the
+// book file. When baseName is empty, files are named "cover.{ext}" and
+// "metadata.opf". When baseName is set (e.g. for book_per_file mode), files
+// are named "{baseName}.{ext}" and "{baseName}.opf" so that multiple books can
+// share a directory without overwriting each other's sidecar files.
 // All operations are best-effort with WARN-level logging on failure.
-func WriteSidecarFiles(ctx context.Context, dir string, meta *metadata.BookMetadata, title, authorName string) {
+func WriteSidecarFiles(ctx context.Context, dir string, meta *metadata.BookMetadata, title, authorName, baseName string) {
 	var coverFilename, coverMediaType string
 
 	if meta != nil && meta.CoverImageURL != "" {
 		var err error
-		coverFilename, coverMediaType, err = WriteCover(dir, meta.CoverImageURL)
+		coverFilename, coverMediaType, err = WriteCover(dir, meta.CoverImageURL, baseName)
 		if err != nil {
 			slog.WarnContext(ctx, "failed to write cover image",
 				slog.String(otelkeys.Path, dir),
@@ -39,7 +43,7 @@ func WriteSidecarFiles(ctx context.Context, dir string, meta *metadata.BookMetad
 		opfData.ISBN = meta.ISBN
 	}
 
-	if err := WriteOPF(dir, opfData); err != nil {
+	if err := WriteOPF(dir, opfData, baseName); err != nil {
 		slog.WarnContext(ctx, "failed to write metadata.opf",
 			slog.String(otelkeys.Path, dir),
 			slog.Any(otelkeys.Error, err),

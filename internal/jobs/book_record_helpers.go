@@ -15,31 +15,33 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/pathparser"
 )
 
-// maybeReorganizeFile moves the file into an Author/Title/ directory structure
-// when the organize_files setting is enabled. Returns the final file path,
-// whether processing should be skipped, and any hard error.
-func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, libraryRoot, author, title, libraryID string, lookup bookFileLookupFunc) (string, bool, error) {
-	if libraryRoot == "" || author == "" || title == "" {
+// maybeReorganizeFile moves the file into an organized directory structure
+// based on the library's organization_type setting. Returns the final file
+// path, whether processing should be skipped, and any hard error.
+func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, libraryRoot, author, title, libraryID, organizationType string, lookup bookFileLookupFunc) (string, bool, error) {
+	if libraryRoot == "" || author == "" {
 		return filePath, false, nil
 	}
 
-	shouldOrganize := false
-	setting, settingErr := database.GetSetting(ctx, "organize_files")
-	if settingErr != nil {
-		if !errors.Is(settingErr, sql.ErrNoRows) {
-			slog.WarnContext(ctx, "could not read organize_files setting, skipping reorganization",
-				slog.Any(otelkeys.Error, settingErr),
-			)
+	if organizationType == "" || organizationType == "none" {
+		return filePath, false, nil
+	}
+
+	var newPath string
+	var reorgErr error
+
+	switch organizationType {
+	case "book_per_folder":
+		if title == "" {
+			return filePath, false, nil
 		}
-	} else if setting == "true" {
-		shouldOrganize = true
-	}
-
-	if !shouldOrganize {
+		newPath, reorgErr = organize.ReorganizeFile(filePath, libraryRoot, author, title)
+	case "book_per_file":
+		newPath, reorgErr = organize.ReorganizeFileFlat(filePath, libraryRoot, author)
+	default:
 		return filePath, false, nil
 	}
 
-	newPath, reorgErr := organize.ReorganizeFile(filePath, libraryRoot, author, title)
 	if reorgErr != nil {
 		slog.WarnContext(ctx, "reorganize file encountered an error",
 			slog.String(otelkeys.Path, filePath),

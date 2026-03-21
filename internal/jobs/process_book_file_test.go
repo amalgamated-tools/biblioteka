@@ -412,21 +412,23 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	}
 	defer ext.Close()
 
-	// Enable file reorganization.
-	if err := database.SetSetting(context.Background(), "organize_files", "true"); err != nil {
-		t.Fatalf("set setting: %v", err)
-	}
-
-	// Create a library root with Author/Book.epub structure.
+	// Create a library root with a book file at the top level.
 	root := t.TempDir()
 	epubPath := filepath.Join(root, "The Great Gatsby.epub")
 	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+
+	// Create a library with book_per_folder organization.
+	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, "book_per_folder", false)
+	if err != nil {
+		t.Fatalf("create library: %v", err)
+	}
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:        epubPath,
 		FileName:    "The Great Gatsby.epub",
 		FileType:    "epub",
 		FileSize:    1024,
+		LibraryID:   lib.ID,
 		LibraryRoot: root,
 	})
 	if err != nil {
@@ -461,6 +463,196 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	}
 	if files[0].FilePath != expectedPath {
 		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
+	}
+}
+
+func TestProcessBookFile_OrganizeFiles_BookPerFile(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	if err != nil {
+		t.Fatalf("new extractor: %v", err)
+	}
+	defer ext.Close()
+
+	root := t.TempDir()
+	epubPath := filepath.Join(root, "The Great Gatsby.epub")
+	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+
+	// Create a library with book_per_file organization (flat Author/ structure).
+	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, "book_per_file", false)
+	if err != nil {
+		t.Fatalf("create library: %v", err)
+	}
+
+	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+		Path:        epubPath,
+		FileName:    "The Great Gatsby.epub",
+		FileType:    "epub",
+		FileSize:    1024,
+		LibraryID:   lib.ID,
+		LibraryRoot: root,
+	})
+	if err != nil {
+		t.Fatalf("ProcessBookFile() error: %v", err)
+	}
+
+	// Verify the file was moved to Author/ (no title subfolder).
+	expectedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby.epub")
+	if _, err := os.Stat(expectedPath); err != nil {
+		t.Fatalf("expected reorganized file at %q, got error: %v", expectedPath, err)
+	}
+
+	// Verify book_files.file_path matches the new location.
+	books, err := database.ListBooks(context.Background())
+	if err != nil {
+		t.Fatalf("list books: %v", err)
+	}
+	if len(books) != 1 {
+		t.Fatalf("expected 1 book, got %d", len(books))
+	}
+	files, err := database.ListBookFiles(context.Background(), books[0].ID)
+	if err != nil {
+		t.Fatalf("list book files: %v", err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("expected 1 file, got %d", len(files))
+	}
+	if files[0].FilePath != expectedPath {
+		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
+	}
+}
+
+func TestProcessBookFile_OrganizeFiles_None(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	if err != nil {
+		t.Fatalf("new extractor: %v", err)
+	}
+	defer ext.Close()
+
+	root := t.TempDir()
+	epubPath := filepath.Join(root, "The Great Gatsby.epub")
+	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+
+	// Create a library with no file organization.
+	lib, err := database.CreateLibrary(context.Background(), "Unorganized", `["`+root+`"]`, "none", false)
+	if err != nil {
+		t.Fatalf("create library: %v", err)
+	}
+
+	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+		Path:        epubPath,
+		FileName:    "The Great Gatsby.epub",
+		FileType:    "epub",
+		FileSize:    1024,
+		LibraryID:   lib.ID,
+		LibraryRoot: root,
+	})
+	if err != nil {
+		t.Fatalf("ProcessBookFile() error: %v", err)
+	}
+
+	// Verify the file was NOT moved — it should remain at its original path.
+	if _, err := os.Stat(epubPath); err != nil {
+		t.Fatalf("expected file to remain at %q, got error: %v", epubPath, err)
+	}
+
+	books, err := database.ListBooks(context.Background())
+	if err != nil {
+		t.Fatalf("list books: %v", err)
+	}
+	if len(books) != 1 {
+		t.Fatalf("expected 1 book, got %d", len(books))
+	}
+	files, err := database.ListBookFiles(context.Background(), books[0].ID)
+	if err != nil {
+		t.Fatalf("list book files: %v", err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("expected 1 file, got %d", len(files))
+	}
+	if files[0].FilePath != epubPath {
+		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
+	}
+}
+
+func TestProcessBookFile_NonExistentLibrarySkipsOrganization(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	if err != nil {
+		t.Fatalf("new extractor: %v", err)
+	}
+	defer ext.Close()
+
+	root := t.TempDir()
+	epubPath := filepath.Join(root, "The Great Gatsby.epub")
+	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+
+	// Use a non-existent library ID — lookup should fail gracefully and
+	// skip file organization rather than error out.
+	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+		Path:        epubPath,
+		FileName:    "The Great Gatsby.epub",
+		FileType:    "epub",
+		FileSize:    1024,
+		LibraryID:   "nonexistent-library-id",
+		LibraryRoot: root,
+	})
+	if err != nil {
+		t.Fatalf("ProcessBookFile() error: %v", err)
+	}
+
+	// File should NOT have been moved since library lookup failed.
+	if _, err := os.Stat(epubPath); err != nil {
+		t.Fatalf("expected file to remain at %q, got error: %v", epubPath, err)
+	}
+
+	books, err := database.ListBooks(context.Background())
+	if err != nil {
+		t.Fatalf("list books: %v", err)
+	}
+	if len(books) != 1 {
+		t.Fatalf("expected 1 book, got %d", len(books))
+	}
+	files, err := database.ListBookFiles(context.Background(), books[0].ID)
+	if err != nil {
+		t.Fatalf("list book files: %v", err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("expected 1 file, got %d", len(files))
+	}
+	if files[0].FilePath != epubPath {
+		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
+	}
+}
+
+func TestProcessBookFile_NoLibraryIDSkipsOrganization(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	if err != nil {
+		t.Fatalf("new extractor: %v", err)
+	}
+	defer ext.Close()
+
+	root := t.TempDir()
+	epubPath := filepath.Join(root, "The Great Gatsby.epub")
+	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+
+	// No library ID — organization type stays empty, no file moves.
+	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+		Path:        epubPath,
+		FileName:    "The Great Gatsby.epub",
+		FileType:    "epub",
+		FileSize:    1024,
+		LibraryRoot: root,
+	})
+	if err != nil {
+		t.Fatalf("ProcessBookFile() error: %v", err)
+	}
+
+	// File should remain in place.
+	if _, err := os.Stat(epubPath); err != nil {
+		t.Fatalf("expected file to remain at %q, got error: %v", epubPath, err)
 	}
 }
 

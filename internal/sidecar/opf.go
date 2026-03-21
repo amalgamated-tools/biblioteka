@@ -146,8 +146,11 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeToken(start.End())
 }
 
-// WriteOPF generates an OPF 2.0 metadata file and writes it to metadata.opf in dir.
-func WriteOPF(dir string, data OPFData) error {
+// WriteOPF generates an OPF 2.0 metadata file and writes it to dir.
+// When baseName is empty the file is named "metadata.opf"; when set it is
+// named "{baseName}.opf" (used for book_per_file mode where multiple books
+// share a directory).
+func WriteOPF(dir string, data OPFData, baseName string) error {
 	if data.Title == "" {
 		return fmt.Errorf("WriteOPF: Title is required by OPF 2.0")
 	}
@@ -163,9 +166,13 @@ func WriteOPF(dir string, data OPFData) error {
 		return fmt.Errorf("marshal OPF: %w", err)
 	}
 
-	path := filepath.Join(dir, "metadata.opf")
+	opfName := "metadata.opf"
+	if baseName != "" {
+		opfName = baseName + ".opf"
+	}
+	path := filepath.Join(dir, opfName)
 	if err := os.WriteFile(path, xmlBytes, 0o644); err != nil {
-		return fmt.Errorf("write metadata.opf: %w", err)
+		return fmt.Errorf("write %s: %w", opfName, err)
 	}
 
 	return nil
