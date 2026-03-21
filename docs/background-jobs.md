@@ -159,7 +159,7 @@ The cover is decoded from the base64 `data:` URL stored in `books.cover_image_ur
 | `image/webp` | `cover.webp` |
 | `image/avif` | `cover.avif` |
 
-When a cover is written, any previously written cover files in the same directory that use a different extension are removed (best-effort cleanup to avoid orphaned files when cover formats change).
+Cover files are written **atomically**: the new image is first written to a temporary file (`cover.<ext>.tmp`), then renamed into its final position. Only after the rename succeeds are stale cover files of other formats removed (best-effort cleanup to avoid orphaned files when cover formats change). This ensures the directory always contains either the previous cover or the new one — never nothing — even if the process is interrupted mid-write.
 
 Cover data URLs are capped at **20 MB** of decoded bytes; inputs exceeding this limit are rejected with a warning and no cover file is written.
 
@@ -171,7 +171,7 @@ Cover data URLs are capped at **20 MB** of decoded bytes; inputs exceeding this 
 |-----------|--------|-------|
 | `dc:title` | Book title | Required; `WriteOPF` returns an error when empty |
 | `dc:creator` | Author name | `opf:role="aut"` attribute included |
-| `dc:identifier` | `books.isbn_10` or `books.isbn_13` | Falls back to a deterministic UUID v5 derived from title, author, publisher, publication date, and file path when no ISBN is present; scheme is `ISBN` or `UUID` accordingly |
+| `dc:identifier` | `books.isbn_10` or `books.isbn_13` | Falls back to a deterministic UUID v5 derived from title, author, publisher, publication date, and file path when no ISBN is present; scheme is `ISBN` or `UUID` accordingly. UUID values use the `urn:uuid:` URN prefix required by OPF 2.0 §2.2.10 (e.g. `urn:uuid:a5d3b2e1-7f4c-4e8a-9d6b-1c2e3f4a5b6d`) so that strict EPUB validators and importers such as Calibre accept the identifier |
 | `dc:language` | `books.language` | Defaults to `"und"` (undetermined) when absent |
 | `dc:date` | `books.publication_date` | Omitted when empty |
 | `dc:publisher` | `books.publisher` | Omitted when empty |
