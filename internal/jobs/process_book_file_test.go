@@ -673,11 +673,17 @@ func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.
 	}
 	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
+	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
+	if err != nil {
+		t.Fatalf("create library: %v", err)
+	}
+
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:        originalPath,
 		FileName:    filepath.Base(originalPath),
 		FileType:    "epub",
 		FileSize:    1024,
+		LibraryID:   lib.ID,
 		LibraryRoot: root,
 	})
 	if err != nil {
@@ -835,6 +841,11 @@ func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 	}
 	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
+	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
+	if err != nil {
+		t.Fatalf("create library: %v", err)
+	}
+
 	candidateLookupErr := errors.New("candidate lookup failed")
 	lookup := func(ctx context.Context, database *db.DB, path string) (*db.BookFile, error) {
 		switch path {
@@ -852,6 +863,7 @@ func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 		FileName:    filepath.Base(originalPath),
 		FileType:    "epub",
 		FileSize:    1024,
+		LibraryID:   lib.ID,
 		LibraryRoot: root,
 	}, lookup)
 	if err == nil {
