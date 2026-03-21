@@ -19,8 +19,10 @@ func SetupDatabase(ctx context.Context) (*DB, error) {
 	slog.DebugContext(ctx, "Setting up database")
 
 	if databaseURL := os.Getenv("DATABASE_URL"); isPostgresURL(databaseURL) {
+		slog.DebugContext(ctx, "DATABASE_URL indicates PostgreSQL, using PostgreSQL setup")
 		return setupPostgres(ctx, databaseURL)
 	}
+	slog.DebugContext(ctx, "No valid DATABASE_URL found, defaulting to SQLite setup")
 	return setupSQLite(ctx)
 }
 
@@ -32,11 +34,13 @@ func setupPostgres(ctx context.Context, databaseURL string) (*DB, error) {
 	slog.DebugContext(ctx, "Opening PostgreSQL database")
 	sqlDB, err := sql.Open("pgx", databaseURL)
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to open PostgreSQL database", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("failed to open postgres database: %w", err)
 	}
 
 	if err := sqlDB.PingContext(ctx); err != nil {
 		_ = sqlDB.Close()
+		slog.ErrorContext(ctx, "Failed to ping PostgreSQL database", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("failed to ping postgres database: %w", err)
 	}
 
@@ -46,6 +50,7 @@ func setupPostgres(ctx context.Context, databaseURL string) (*DB, error) {
 
 	if err := runMigrations(ctx, d); err != nil {
 		_ = sqlDB.Close()
+		slog.ErrorContext(ctx, "Failed to run migrations on PostgreSQL database", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("failed to run migrations on postgres: %w", err)
 	}
 
@@ -54,6 +59,7 @@ func setupPostgres(ctx context.Context, databaseURL string) (*DB, error) {
 }
 
 func setupSQLite(ctx context.Context) (*DB, error) {
+	slog.DebugContext(ctx, "Setting up SQLite database")
 	// Determine database path: prefer mounted /data folder, fall back to ./db
 	var dbFilePath string
 	if _, err := os.Stat("/data"); err == nil {

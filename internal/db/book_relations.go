@@ -50,7 +50,7 @@ func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error
 
 	var authors []Author
 	for rows.Next() {
-		a, err := scanAuthor(rows)
+		a, err := scanAuthor(ctx, rows)
 		if err != nil {
 			return nil, err
 		}
@@ -111,6 +111,7 @@ func (d *DB) GetBookSeries(ctx context.Context, bookID string) ([]BookSeriesEntr
 		var entry BookSeriesEntry
 		err := rows.Scan(&entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position)
 		if err != nil {
+			slog.ErrorContext(ctx, "Failed to scan book series entry", slog.Any(otelkeys.Error, err))
 			return nil, err
 		}
 		entries = append(entries, entry)
@@ -182,7 +183,7 @@ func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[stri
 	result := make(map[string][]Author, len(bookIDs))
 	for rows.Next() {
 		var bookID string
-		a, err := scanAuthor(prefixedScanner{row: rows, prefix: []any{&bookID}})
+		a, err := scanAuthor(ctx, prefixedScanner{row: rows, prefix: []any{&bookID}})
 		if err != nil {
 			return nil, err
 		}

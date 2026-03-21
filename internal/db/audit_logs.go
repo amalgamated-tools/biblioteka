@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -50,11 +51,12 @@ type AuditLog struct {
 
 const auditLogColumns = `id, user_id, action, entity_type, entity_id, metadata, created_at`
 
-func scanAuditLog(row interface{ Scan(...any) error }) (*AuditLog, error) {
+func scanAuditLog(ctx context.Context, row interface{ Scan(...any) error }) (*AuditLog, error) {
 	var entry AuditLog
 	err := row.Scan(&entry.ID, &entry.UserID, &entry.Action, &entry.EntityType, &entry.EntityID, &entry.Metadata, &entry.CreatedAt)
 	if err != nil {
-		return nil, err
+		slog.ErrorContext(ctx, "Failed to scan audit log", slog.Any(otelkeys.Error, err))
+		return nil, fmt.Errorf("failed to scan audit log: %w", err)
 	}
 	return &entry, nil
 }
@@ -73,7 +75,8 @@ func (d *DB) CreateAuditLog(ctx context.Context, userID, action, entityType, ent
 	if metadata != nil {
 		b, err := json.Marshal(metadata)
 		if err != nil {
-			return err
+			slog.ErrorContext(ctx, "Failed to marshal audit log metadata", slog.Any(otelkeys.Error, err))
+			return fmt.Errorf("failed to marshal audit log metadata: %w", err)
 		}
 		s := string(b)
 		metadataJSON = &s
@@ -88,7 +91,11 @@ func (d *DB) CreateAuditLog(ctx context.Context, userID, action, entityType, ent
 		`INSERT INTO audit_logs (user_id, action, entity_type, entity_id, metadata) VALUES ($1, $2, $3, $4, $5)`,
 		uid, action, entityType, entityID, metadataJSON,
 	)
-	return err
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to create audit log", slog.Any(otelkeys.Error, err))
+		return fmt.Errorf("failed to create audit log: %w", err)
+	}
+	return nil
 }
 
 // ListAuditLogs returns audit log entries ordered by creation time (newest first),
@@ -101,7 +108,8 @@ func (d *DB) ListAuditLogs(ctx context.Context, limit, offset int) ([]AuditLog, 
 
 	var total int
 	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_logs`).Scan(&total); err != nil {
-		return nil, 0, err
+		slog.ErrorContext(ctx, "Failed to count audit logs", slog.Any(otelkeys.Error, err))
+		return nil, 0, fmt.Errorf("failed to count audit logs: %w", err)
 	}
 
 	rows, err := d.QueryContext(ctx,
@@ -109,20 +117,23 @@ func (d *DB) ListAuditLogs(ctx context.Context, limit, offset int) ([]AuditLog, 
 		limit, offset,
 	)
 	if err != nil {
-		return nil, 0, err
+		slog.ErrorContext(ctx, "Failed to query audit logs", slog.Any(otelkeys.Error, err))
+		return nil, 0, fmt.Errorf("failed to list audit logs: %w", err)
 	}
 	defer rows.Close()
 
 	var entries []AuditLog
 	for rows.Next() {
-		entry, err := scanAuditLog(rows)
+		entry, err := scanAuditLog(ctx, rows)
 		if err != nil {
-			return nil, 0, err
+			slog.ErrorContext(ctx, "Failed to scan audit log from list", slog.Any(otelkeys.Error, err))
+			return nil, 0, fmt.Errorf("failed to scan audit log: %w", err)
 		}
 		entries = append(entries, *entry)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, err
+		slog.ErrorContext(ctx, "Failed to iterate audit log rows", slog.Any(otelkeys.Error, err))
+		return nil, 0, fmt.Errorf("failed to iterate audit log rows: %w", err)
 	}
 	return entries, total, nil
 }
