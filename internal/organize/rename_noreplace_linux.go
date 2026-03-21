@@ -4,39 +4,17 @@ package organize
 
 import (
 	"os"
-	"syscall"
-	"unsafe"
-)
 
-const (
-	atFDCWD             = -100
-	renameNoReplaceFlag = 1
+	"golang.org/x/sys/unix"
 )
 
 func renameNoReplace(oldPath, newPath string) error {
-	oldPtr, err := syscall.BytePtrFromString(oldPath)
-	if err != nil {
-		return err
-	}
-	newPtr, err := syscall.BytePtrFromString(newPath)
-	if err != nil {
-		return err
-	}
-
-	_, _, errno := syscall.Syscall6(
-		syscall.SYS_RENAMEAT2,
-		uintptr(atFDCWD),
-		uintptr(unsafe.Pointer(oldPtr)),
-		uintptr(atFDCWD),
-		uintptr(unsafe.Pointer(newPtr)),
-		uintptr(renameNoReplaceFlag),
-		0,
-	)
-	if errno == 0 {
+	err := unix.Renameat2(unix.AT_FDCWD, oldPath, unix.AT_FDCWD, newPath, unix.RENAME_NOREPLACE)
+	if err == nil {
 		return nil
 	}
-	if errno == syscall.EEXIST {
+	if err == unix.EEXIST {
 		return os.ErrExist
 	}
-	return errno
+	return err
 }
