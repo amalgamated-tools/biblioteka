@@ -18,7 +18,7 @@ test.describe("Account settings", () => {
 
     await signUp(page, testUser);
 
-    await page.locator("aside").getByRole("link", { name: "Settings" }).click();
+    await page.locator("aside").getByRole("link", { name: "Settings", exact: true }).click();
     await expect(page).toHaveURL(/\/#settings$/);
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
     await expect(page.locator("#email-display")).toHaveValue(testUser.email);

@@ -188,17 +188,62 @@ Any provider that exposes a discovery endpoint at `<issuer>/.well-known/openid-c
 
 ## OIDC Account Linking
 
-Existing password-based accounts can be linked to an OIDC provider without losing access:
+Existing password-based accounts can be linked to an OIDC provider without losing access.
+
+### How the link flow works
+
+The link flow is a two-phase process that piggybacks on the same OAuth 2.0 Authorization Code + PKCE flow used for normal login, with the addition of a signed state parameter to carry the user identity.
+
+```
+Browser (authenticated)    Biblioteka              OIDC Provider
+         │                     │                        │
+         │  POST /api/auth/    │                        │
+         │  oidc/link-nonce    │                        │
+         │────────────────────▶│                        │
+         │  { "nonce": "…" }   │                        │
+         │◀────────────────────│                        │
+         │                     │                        │
+         │  GET /api/auth/oidc/link?nonce=…             │
+         │────────────────────▶│                        │
+         │                     │ nonce consumed,        │
+         │                     │ signed state created   │
+         │                     │  302 → provider /auth  │
+         │◀────────────────────│                        │
+         │  Redirect to provider                        │
+         │──────────────────────────────────────────────▶│
+         │                     │    302 → /api/auth/    │
+         │◀────────────────────────────────────────────│
+         │  GET /api/auth/oidc/callback?code=…&state=…  │
+         │────────────────────▶│                        │
+         │                     │ state verified,        │
+         │                     │ user ID extracted,     │
+         │                     │ OIDC sub linked        │
+         │  302 → /?oidc_linked=true                    │
+         │◀────────────────────│                        │
+```
+
+**Step 1 — Create a link nonce:** The frontend calls `POST /api/auth/oidc/link-nonce` (authenticated). The server stores a short-lived (5-minute), single-use token mapping the nonce to the current user ID.
+
+**Step 2 — Initiate the OIDC flow:** The frontend navigates the browser to `GET /api/auth/oidc/link?nonce=…`. The server consumes the nonce (removing it from the store), then embeds the user ID into the OIDC `state` parameter as an **HMAC-SHA256–signed payload** and redirects to the provider's authorization endpoint. This signed state makes user-ID propagation through the OIDC round-trip tamper-proof and stateless — no per-instance server-side state is needed between this step and the callback.
+
+> **Signed state format:** `<random>.<base64url(userID)>.<base64url(HMAC-SHA256(random + "|" + userID))>`. The HMAC key is derived from `JWT_SECRET` via HKDF with the purpose label `oidc-link-state`.
+
+**Step 3 — Callback completes the link:** After the provider redirects back to `/api/auth/oidc/callback`, the server verifies the HMAC signature in the state parameter, extracts the user ID, and links the provider's `sub` claim to that account. On success the browser is redirected to `/?oidc_linked=true`. On failure it is redirected to `/?oidc_link_error=<reason>`.
+
+### Initiating account linking from the UI
 
 1. Sign in with your password.
 2. Navigate to **Settings → Account**.
 3. Click **Link SSO account**.
 
-When you next visit `/api/auth/oidc/link` with the generated nonce, the server completes the flow and links the `sub` claim from the OIDC provider to your existing account. After linking, you can log in via either method.
+After the flow completes you can log in via either your password or your SSO provider.
 
 **Constraints:**
 - Each OIDC identity (`sub`) can be linked to at most one Biblioteka account.
 - An account can be linked to at most one OIDC identity at a time.
+- The link nonce expires after 5 minutes and can only be used once.
+
+### Automatic linking on first OIDC login
 
 If a user signs in via OIDC and no existing account has that `sub` claim, the server looks up by `email`. If an account with that email exists **and the identity provider has set `email_verified: true`**, the OIDC subject is automatically linked to it. Otherwise, a new account is created.
 
