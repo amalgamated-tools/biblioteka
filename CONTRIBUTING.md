@@ -119,6 +119,15 @@ pnpm exec playwright test --headed
 
 > **Note:** When `CI=true` (set automatically in GitHub Actions), Playwright always starts a fresh server. Locally, it reuses a running server on port `3847` if one is already available.
 
+#### E2E spec files
+
+| Spec file | `test.describe` group | Tests |
+|-----------|----------------------|-------|
+| `tests/auth.spec.ts` | `Authentication flow` | Full sign-up → dashboard → sign-out → sign-in round trip; validation error and wrong-credential error paths |
+| `tests/auth.spec.ts` | `ARIA tabs accessibility` | Login/Sign Up tab roles, `aria-selected`, and `tabpanel` relationship; arrow-key navigation between tabs |
+| `tests/settings.spec.ts` | `Account settings` | Change-password flow: client-side validation (empty, too short, mismatch), successful update, and verification that the old password is rejected and the new one accepted |
+| `tests/libraries.spec.ts` | `Library management` | Create a library and verify it appears in the sidebar and as the page heading; validation errors when name or folder path is missing |
+
 #### E2E test helpers (`e2e/tests/helpers/auth.ts`)
 
 Shared auth utilities live in `e2e/tests/helpers/auth.ts`. Import them in any spec that needs authentication instead of duplicating login/signup logic.
@@ -424,7 +433,7 @@ go-test ──┘
 
 All six jobs run fully in parallel (the two gate jobs wait for their pair). Total CI time is roughly `max(frontend-build, frontend-checks, go-lint, go-test)`.
 
-Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: 'pnpm'`, keyed on `frontend/pnpm-lock.yaml`) to avoid re-downloading the dependency tree on every run. Both Go jobs use the Go module cache via `actions/setup-go` (`cache: true`, keyed on `go.sum`). The `go-test` job additionally caches the `libimage-exiftool-perl` apt package via `actions/cache` (keyed on the test workflow file hash) to avoid re-downloading the binary on every run.
+Both frontend jobs use pnpm's built-in cache via `actions/setup-node` (`cache: 'pnpm'`, keyed on `frontend/pnpm-lock.yaml`) to avoid re-downloading the dependency tree on every run. Both Go jobs use the Go module cache via `actions/setup-go` (`cache: true`, keyed on `go.sum`). The `go-test` job additionally caches the `libimage-exiftool-perl` apt package via `actions/cache` (keyed on the test workflow file hash). On a cache hit the job skips `apt-get update` entirely and uses `--no-download` to install directly from the cache, cutting CI overhead. On a cache miss the full `apt-get update` + install runs and the downloaded package is saved for subsequent runs.
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
 
@@ -450,7 +459,7 @@ e2e (build frontend → compile Go binary → Playwright / Chromium)
 
 | Job | Depends on | What it does |
 |---|---|---|
-| `e2e` | — | Installs pnpm deps (cached), builds the frontend, compiles the Go binary, installs Playwright + Chromium (cached), runs `pnpm test` with `CI=true` (Playwright starts a fresh server for the run) |
+| `e2e` | — | Installs pnpm deps (cached), builds the frontend, compiles the Go binary, installs Playwright + Chromium (cached; on cache hit only system deps are installed via `install-deps`), runs `pnpm test` with `CI=true` (Playwright starts a fresh server for the run); job timeout is **45 minutes** |
 
 On completion, the `playwright-report/` artifact is uploaded and retained for **7 days**, giving you screenshots and traces for any failures.
 
