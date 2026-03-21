@@ -92,9 +92,42 @@ async function openSettingsPage(page) {
     await page.locator('input#email-display').waitFor({ state: 'visible' });
 }
 
-async function openSettingsTab(page, tabName, headingName) {
-    await page.getByRole('button', { name: tabName, exact: true }).click();
+async function openSettingsTab(page, tabHash, headingName) {
+    await page.goto(`${BASE_URL}/#settings/${tabHash}`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
     await page.getByRole('heading', { name: headingName, exact: true }).waitFor({ state: 'visible' });
+}
+
+async function openBooksPage(page) {
+    await page.goto(`${BASE_URL}/#books`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'All Books', exact: true }).waitFor({ state: 'visible' });
+    // Wait for the book list to finish loading
+    await page.waitForFunction(() => !document.body.innerText.includes('Loading books...'));
+}
+
+async function openMyLibraryPage(page) {
+    await page.goto(`${BASE_URL}/#my-library`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.getByRole('heading', { name: 'My Library', exact: true }).waitFor({ state: 'visible' });
+}
+
+async function openLibrariesPage(page) {
+    await page.goto(`${BASE_URL}/#libraries`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    // Wait for either the empty-state CTA or the non-empty placeholder to appear
+    await Promise.race([
+        page.getByRole('button', { name: 'Add A Library' }).waitFor({ state: 'visible' }),
+        page.getByText('Select a library from the sidebar').waitFor({ state: 'visible' }),
+    ]);
 }
 
 async function ensureAccount(page, name, email, password) {
@@ -185,6 +218,21 @@ export async function runVariant({ theme, mobile }) {
         // await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('dashboard', variantName)) });
 
+        console.log(`Capturing books (${variantName})...`);
+        await openBooksPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('books', variantName)) });
+
+        console.log(`Capturing my-library (${variantName})...`);
+        await openMyLibraryPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('my-library', variantName)) });
+
+        console.log(`Capturing libraries (${variantName})...`);
+        await openLibrariesPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('libraries', variantName)) });
+
         console.log(`Capturing settings (${variantName})...`);
         await openSettingsPage(page);
         await setTheme(page, theme);
@@ -194,15 +242,27 @@ export async function runVariant({ theme, mobile }) {
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings', variantName)) });
 
         console.log(`Capturing settings OIDC (${variantName})...`);
-        await openSettingsTab(page, 'OIDC / SSO', 'OIDC / Single Sign-On');
+        await openSettingsTab(page, 'oidc', 'OIDC / Single Sign-On');
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-oidc', variantName)) });
 
+        console.log(`Capturing settings SMTP (${variantName})...`);
+        await openSettingsTab(page, 'smtp', 'Email / SMTP Configuration');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-smtp', variantName)) });
+
         console.log(`Capturing settings users (${variantName})...`);
-        await openSettingsTab(page, 'Users', 'User Management');
+        await openSettingsTab(page, 'users', 'User Management');
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-users', variantName)) });
 
+        console.log(`Capturing settings API keys (${variantName})...`);
+        await openSettingsTab(page, 'api-keys', 'API Keys');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-api-keys', variantName)) });
+
+        console.log(`Capturing settings Kobo sync (${variantName})...`);
+        await openSettingsTab(page, 'kobo', 'Kobo Sync');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-kobo', variantName)) });
+
         console.log(`Capturing settings preferences (${variantName})...`);
-        await openSettingsTab(page, 'Preferences', 'Display Preferences');
+        await openSettingsTab(page, 'preferences', 'Display Preferences');
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-preferences', variantName)) });
 
         console.log(`Logging out admin for ${variantName}...`);
@@ -221,8 +281,16 @@ export async function runVariant({ theme, mobile }) {
         await page.locator('input#email-display').waitFor({ state: 'visible' });
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-nonadmin', variantName)) });
 
+        console.log(`Capturing non-admin settings API keys (${variantName})...`);
+        await openSettingsTab(page, 'api-keys', 'API Keys');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-nonadmin-api-keys', variantName)) });
+
+        console.log(`Capturing non-admin settings Kobo sync (${variantName})...`);
+        await openSettingsTab(page, 'kobo', 'Kobo Sync');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-nonadmin-kobo', variantName)) });
+
         console.log(`Capturing non-admin settings preferences (${variantName})...`);
-        await openSettingsTab(page, 'Preferences', 'Display Preferences');
+        await openSettingsTab(page, 'preferences', 'Display Preferences');
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-nonadmin-preferences', variantName)) });
 
         console.log(`Logging out non-admin for ${variantName}...`);
