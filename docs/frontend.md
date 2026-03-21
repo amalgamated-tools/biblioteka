@@ -1037,6 +1037,14 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 > **Testing note:** Each test calls `await tick()` after `render()` to flush Svelte 5 reactive state before asserting. `afterEach(cleanup)` removes the rendered component from JSDOM between tests.
 
+#### `UsersTab.test.ts`
+
+`frontend/src/components/settings/UsersTab.test.ts` verifies that the Users table in the admin settings panel exposes correctly scoped column headers (WCAG 1.3.1). One test is included:
+
+1. **`marks each table header as a column header`** — seeds the component with one cached user to bypass the initial loading path, then asserts that each of the five `<th>` elements — **Name**, **Email**, **Type**, **Role**, and **Joined** — is exposed as a `role="columnheader"` and carries `scope="col"`.
+
+> **Mocking note:** The test file mocks `authStore` (current admin user), `api.listUsers` (returns a resolved empty array to prevent uncaught-promise warnings), and all `lucide-svelte` icon components. `cachedUsers` is passed as a prop to seed the rendered table immediately, avoiding the need for async load completion. `afterEach(cleanup)` prevents DOM leakage between tests.
+
 ---
 
 ## Unit tests
