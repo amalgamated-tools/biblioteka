@@ -84,12 +84,13 @@
     class="flex-1 px-3 py-4 space-y-6 overflow-y-auto"
   >
     <!-- Home group -->
-    <div>
-      <p
+    <section aria-labelledby="sidebar-home-heading">
+      <h2
+        id="sidebar-home-heading"
         class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
       >
         Home
-      </p>
+      </h2>
       <div class="space-y-0.5">
         <a
           href="#dashboard"
@@ -118,16 +119,17 @@
           </a>
         {/if}
       </div>
-    </div>
+    </section>
 
     <!-- Libraries group -->
-    <div>
+    <section aria-labelledby="sidebar-libraries-heading">
       <div class="flex items-center justify-between px-3 mb-2">
-        <p
+        <h2
+          id="sidebar-libraries-heading"
           class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
         >
           Libraries
-        </p>
+        </h2>
         <a
           href="#libraries/new"
           class="text-ink-500 hover:text-accent-400 transition-colors"
@@ -169,7 +171,7 @@
           </div>
         {/each}
       </div>
-    </div>
+    </section>
 
     <!-- Settings -->
     <div>
