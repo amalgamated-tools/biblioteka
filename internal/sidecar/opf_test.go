@@ -94,10 +94,10 @@ func TestWriteOPF_MinimalData(t *testing.T) {
 	if !strings.Contains(s, `id="uid"`) {
 		t.Errorf("metadata.opf missing id=uid on identifier\nContent:\n%s", s)
 	}
-	// Verify the UUID value matches UUID format.
-	uuidRe := regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+	// Verify the identifier uses the urn:uuid: URN format required by OPF 2.0 §2.2.10.
+	uuidRe := regexp.MustCompile(`urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 	if !uuidRe.MatchString(s) {
-		t.Errorf("metadata.opf identifier does not contain a valid UUID\nContent:\n%s", s)
+		t.Errorf("metadata.opf identifier does not contain a urn:uuid: URN\nContent:\n%s", s)
 	}
 }
 
@@ -133,7 +133,7 @@ func TestWriteOPF_UUIDIsDeterministic(t *testing.T) {
 		t.Fatalf("read second metadata.opf: %v", err)
 	}
 
-	uuidRe := regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+	uuidRe := regexp.MustCompile(`urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 	uuid1 := uuidRe.FindString(string(first))
 	uuid2 := uuidRe.FindString(string(second))
 	if uuid1 == "" || uuid2 == "" {
