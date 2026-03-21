@@ -99,7 +99,9 @@ describe("Sidebar navigation accessibility", () => {
       props: { currentView: "dashboard", open: true, onClose: () => {} },
     });
 
-    expect(screen.getByRole("heading", { name: "Home", level: 2 })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Home", level: 2 }),
+    ).toBeVisible();
     expect(
       screen.getByRole("heading", { name: "Libraries", level: 2 }),
     ).toBeVisible();
