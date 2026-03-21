@@ -124,7 +124,7 @@ async function openLibrariesPage(page) {
         timeout: NAVIGATION_TIMEOUT_MS,
     });
     // Wait for either the empty-state CTA or the non-empty placeholder to appear
-    await Promise.race([
+    await Promise.any([
         page.getByRole('button', { name: 'Add A Library' }).waitFor({ state: 'visible' }),
         page.getByText('Select a library from the sidebar').waitFor({ state: 'visible' }),
     ]);
