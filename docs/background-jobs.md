@@ -141,20 +141,45 @@ See [Administration — File organization](administration.md#file-organization) 
 
 #### Sidecar files
 
-After the book file is saved to its final path, Biblioteka writes two companion sidecar files alongside it in the same directory. Both writes are **best-effort**: failures are logged at `WARN` level and do not prevent the import from completing or roll back any database records.
+After a book record is created (and the file has been optionally reorganized), the handler calls `internal/sidecar.WriteSidecarFiles`, which writes two companion files alongside the book file:
 
-| Sidecar file | Description |
-|---|---|
-| `cover.<ext>` | Cover image decoded from `CoverImageURL` (e.g. `cover.jpg`, `cover.png`, `cover.webp`, `cover.avif`). Written only when `CoverImageURL` holds a `data:` URL. Images larger than 20 MB are not written. |
-| `metadata.opf` | OPF 2.0 Dublin Core metadata file containing title, author, identifier, language, publication date, publisher, description, and a manifest entry for the cover when present. Always written when the book has a title. |
+| File | Condition | Description |
+|------|-----------|-------------|
+| `cover.<ext>` | Only when `CoverImageURL` is non-empty | Cover image decoded from the stored `data:` URL |
+| `metadata.opf` | Always | OPF 2.0 file with Dublin Core metadata |
 
-The cover file extension is determined from the image MIME type (`image/jpeg` → `.jpg`, `image/png` → `.png`, `image/webp` → `.webp`, `image/avif` → `.avif`). When the cover format changes between re-imports, stale cover files with other extensions are removed automatically.
+**Cover image (`cover.<ext>`)**
 
-The `dc:identifier` in `metadata.opf` uses the book's ISBN when available. Without an ISBN, a deterministic UUID v5 is derived from the title, author, publisher, date, and file-directory path — ensuring the identifier is stable across repeated re-imports without requiring an ISBN.
+The cover is decoded from the base64 `data:` URL stored in `books.cover_image_url` (populated during extraction for EPUB files). The file extension is determined by the decoded MIME type:
 
-When [file organization](#file-reorganization) is enabled, sidecar files are written to the final `<Author>/<Title>/` directory after the book file is moved there.
+| MIME type | Output filename |
+|-----------|-----------------|
+| `image/jpeg` | `cover.jpg` |
+| `image/png` | `cover.png` |
+| `image/webp` | `cover.webp` |
+| `image/avif` | `cover.avif` |
 
-**Implementation:** `internal/sidecar` — `WriteSidecarFiles`, `WriteCover`, `WriteOPF`
+When a cover is written, any previously written cover files in the same directory that use a different extension are removed (best-effort cleanup to avoid orphaned files when cover formats change).
+
+Cover data URLs are capped at **20 MB** of decoded bytes; inputs exceeding this limit are rejected with a warning and no cover file is written.
+
+**OPF metadata file (`metadata.opf`)**
+
+`metadata.opf` is an [OPF 2.0](https://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm) file suitable for use by e-reader applications (Kobo, KOReader, and others). It contains Dublin Core metadata:
+
+| OPF field | Source | Notes |
+|-----------|--------|-------|
+| `dc:title` | Book title | Required; `WriteOPF` returns an error when empty |
+| `dc:creator` | Author name | `opf:role="aut"` attribute included |
+| `dc:identifier` | `books.isbn_10` or `books.isbn_13` | Falls back to a deterministic UUID v5 derived from title, author, publisher, publication date, and file path when no ISBN is present; scheme is `ISBN` or `UUID` accordingly |
+| `dc:language` | `books.language` | Defaults to `"und"` (undetermined) when absent |
+| `dc:date` | `books.publication_date` | Omitted when empty |
+| `dc:publisher` | `books.publisher` | Omitted when empty |
+| `dc:description` | `books.description` | Omitted when empty |
+| `<meta name="cover">` | Present when cover file was written | Points to `cover-image` manifest item |
+| `<manifest>` | Present when cover file was written | Lists the cover image with its MIME type |
+
+**Failure handling:** both the cover write and the OPF write are best-effort. A failure in either step is logged at `WARN` level and does **not** fail the `process:file` job. The book record committed to the database is not affected.
 
 ### Job Chain
 

@@ -116,11 +116,22 @@ When `<library-id>` is supplied the directory is also used as the `library_root`
 
 ---
 
+## Sidecar files
+
+When a cover image is extracted and stored, the `process:file` job also writes companion files into the same directory as the book file:
+
+- **`cover.<ext>`** — the cover image decoded from the stored `data:` URL (JPEG, PNG, WebP, or AVIF).
+- **`metadata.opf`** — an OPF 2.0 file with Dublin Core metadata (title, author, identifier, language, publication date, publisher, description, and a cover manifest entry when a cover is present).
+
+These sidecar files are written by `internal/sidecar` after the book record is committed. See [background-jobs.md — Sidecar files](background-jobs.md#sidecar-files) for the full specification.
+
+---
+
 ## What's next
 
 The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) extracts and stores `Title`, `ISBN`, `Description`, `Publisher`, `Language`, `PublicationDate`, embedded EPUB cover art, and links extracted `Author` names to book records. Planned future improvements include:
 
-1. **More cover formats** — extend embedded cover extraction beyond EPUB.
+1. **More cover formats** — extend embedded cover extraction beyond EPUB (currently only EPUB files get an extracted `CoverImageURL`; the sidecar cover write already supports JPEG, PNG, WebP, and AVIF once a URL is present).
 
 Use `cmd/cli` to import a single file and verify what Biblioteka extracts before a full library scan.
 
