@@ -149,6 +149,13 @@ Return the currently authenticated user's profile.
 }
 ```
 
+| Field         | Type    | Description |
+|---------------|---------|-------------|
+| `id`          | string  | Opaque user ID |
+| `email`       | string  | User's email address |
+| `oidc_linked` | boolean | `true` when the account has an OIDC/SSO identity linked; `false` for local-only accounts |
+| `is_admin`    | boolean | `true` when the user has admin privileges |
+
 ---
 
 ### `PUT /api/auth/password` 🔒 **JWT only**
@@ -406,6 +413,13 @@ Return the current OIDC configuration. The `client_secret` value is never return
 }
 ```
 
+| Field               | Type    | Description |
+|---------------------|---------|-------------|
+| `issuer_url`        | string  | OIDC provider issuer URL (e.g. `https://accounts.example.com`) |
+| `client_id`         | string  | OAuth 2.0 client ID registered with the provider |
+| `client_secret_set` | boolean | `true` when a client secret has been stored; the secret itself is never returned |
+| `redirect_uri`      | string  | Callback URL configured in the OIDC provider (must match exactly) |
+
 ---
 
 ### `PUT /api/config/oidc` 🔒 **Admin** · **JWT only**
@@ -555,6 +569,15 @@ List all registered users.
   }
 ]
 ```
+
+| Field         | Type    | Description |
+|---------------|---------|-------------|
+| `id`          | string  | Opaque user ID |
+| `name`        | string  | User's display name |
+| `email`       | string  | User's email address |
+| `is_admin`    | boolean | `true` when the user has admin privileges |
+| `oidc_linked` | boolean | `true` when the account has an OIDC/SSO identity linked |
+| `created_at`  | string  | Timestamp when the account was created (ISO 8601) |
 
 ---
 
@@ -1110,6 +1133,26 @@ Get a single book with its full details: authors, series entries, and associated
 }
 ```
 
+The flat book fields (`id`, `title`, `description`, etc.) are described in the [book summary object](#get-apibooks) table. The nested arrays are described below.
+
+**`authors[]`** — each element is an [author object](#post-apiauthors).
+
+**`series[]`** — each element is a series entry object:
+
+| Field              | Type    | Description |
+|--------------------|---------|-------------|
+| `series`           | object  | Series object (id, name, external IDs, timestamps) |
+| `series.id`        | string  | Opaque series ID |
+| `series.name`      | string  | Series name |
+| `series.goodreads_id` | string? | Goodreads series ID; `null` when absent |
+| `series.hardcover_id` | string? | Hardcover series ID; `null` when absent |
+| `series.google_books_id` | string? | Google Books series ID; `null` when absent |
+| `series.created_at` | string | Creation timestamp (ISO 8601) |
+| `series.updated_at` | string | Last update timestamp (ISO 8601) |
+| `position`         | number? | Position of this book in the series (e.g. `1` for book one); `null` when unset |
+
+**`files[]`** — each element is a [book file object](#get-apibook-filesid).
+
 ---
 
 ### `PUT /api/books/{id}` 🔒
@@ -1481,6 +1524,16 @@ List all Kobo sync tokens for the authenticated user.
 
 Returns `[]` when no tokens exist.
 
+**Kobo token object** fields:
+
+| Field        | Type   | Description |
+|--------------|--------|-------------|
+| `id`         | string | Opaque token ID (used for deletion) |
+| `user_id`    | string | ID of the owning user |
+| `name`       | string | Human-readable label given at creation time |
+| `token_hash` | string | SHA-256 hex digest of the raw token — the raw token is never returned after creation |
+| `created_at` | string | Timestamp when the token was created (ISO 8601) |
+
 ---
 
 ### `POST /api/kobo/tokens` 🔒 **JWT only**
@@ -1694,6 +1747,18 @@ Get a single book file by ID.
   "updated_at": "2026-03-14T02:00:00Z"
 }
 ```
+
+| Field        | Type     | Description |
+|--------------|----------|-------------|
+| `id`         | string   | Opaque book-file ID |
+| `book_id`    | string   | ID of the parent book |
+| `file_type`  | string   | Format identifier: `epub`, `mobi`, `pdf`, or `azw3` |
+| `file_name`  | string   | Filename on disk (basename only) |
+| `file_size`  | integer? | File size in bytes; `null` when not recorded |
+| `file_hash`  | string?  | Content hash (e.g. `sha256:abc123…`); `null` when not recorded |
+| `file_path`  | string   | Absolute path to the file on the server's filesystem |
+| `created_at` | string   | Timestamp when the record was created (ISO 8601) |
+| `updated_at` | string   | Timestamp when the record was last updated (ISO 8601) |
 
 ---
 

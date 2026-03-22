@@ -123,6 +123,9 @@
                     <button
                       onclick={() => toggleAdmin(u)}
                       disabled={togglingId === u.id}
+                      aria-label={u.is_admin
+                        ? `Remove admin role from ${u.name || u.email}`
+                        : `Grant admin role to ${u.name || u.email}`}
                       class="px-3 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 {u.is_admin
                         ? 'bg-success-50 text-success-700 hover:bg-danger-50 hover:text-danger-700 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-danger-700/10 dark:hover:text-red-400'
                         : 'bg-ink-50 text-ink-500 hover:bg-success-50 hover:text-success-700 dark:bg-ink-800 dark:text-ink-400 dark:hover:bg-green-900/20 dark:hover:text-green-400'}"
