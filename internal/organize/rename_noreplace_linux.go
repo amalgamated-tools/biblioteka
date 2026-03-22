@@ -60,7 +60,23 @@ func renameNoReplace(ctx context.Context, oldPath, newPath string) error {
 			)
 			return fmt.Errorf("stat destination file %s: %w", newPath, statErr)
 		}
-		return os.Rename(oldPath, newPath)
+		if renameErr := os.Rename(oldPath, newPath); renameErr != nil {
+			slog.ErrorContext(
+				ctx,
+				"fallback rename failed",
+				slog.String("oldPath", oldPath),
+				slog.String("newPath", newPath),
+				slog.Any("error", renameErr),
+			)
+			return fmt.Errorf("fallback rename %s to %s: %w", oldPath, newPath, renameErr)
+		}
+		slog.DebugContext(
+			ctx,
+			"renamed file without replacement (fallback)",
+			slog.String("oldPath", oldPath),
+			slog.String("newPath", newPath),
+		)
+		return nil
 	}
 	return fmt.Errorf("rename %s to %s: %w", oldPath, newPath, err)
 }
