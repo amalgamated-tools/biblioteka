@@ -83,6 +83,7 @@ db/migrations/
 - Use `writeJSON(r.Context(), w, status, data)` and `writeError(r.Context(), w, status, message)` from `internal/handlers/helpers.go` for all responses.
 - Extract resource IDs with `extractPathID(r.URL.Path, "/api/books/")` — there are no named URL parameters. To extract a resource ID **and** an optional sub-resource segment, use `extractPathSegments(r.URL.Path, "/api/books/")` which returns `(id, sub, ok)`.
 - After fetching a resource by ID, use `handleDBErr(r.Context(), w, err, "book")` to write the error response and return early. It returns `true` when it wrote a response (caller should `return`), `false` when `err == nil`. Maps `sql.ErrNoRows` → `404 Not Found`; all other errors → `500 Internal Server Error`.
+- For paginated list endpoints, use `parseLimitOffset(r, defaultPageLimit, maxPageLimit)` from `internal/handlers/pagination.go` to parse `limit` and `offset` query parameters. It silently clamps out-of-range values to safe defaults (`defaultPageLimit = 50`, `maxPageLimit = 200`).
 
 ### Admin protection
 

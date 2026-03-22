@@ -366,6 +366,11 @@ Always commit the updated spec files alongside the handler changes that prompted
       return
   }
   ```
+- **Pagination**: For list endpoints that support paging, use `parseLimitOffset(r, defaultPageLimit, maxPageLimit)` from `internal/handlers/pagination.go`. It reads `limit` and `offset` query parameters, silently falls back to safe defaults for invalid or missing values, and caps `limit` at `maxPageLimit`:
+  ```go
+  limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+  ```
+  The package-level constants `defaultPageLimit = 50` and `maxPageLimit = 200` are the standard values for most list endpoints.
 - **Admin-only endpoints**: Use the package-level `requireAdmin(h.DB, w, r) bool` function from `internal/handlers/helpers.go` to protect admin endpoints. Return early if it returns `false` — the function already writes the error response:
   ```go
   if !requireAdmin(h.DB, w, r) {
