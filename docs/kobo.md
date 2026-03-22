@@ -106,7 +106,7 @@ See [Kobo Tokens API](#kobo-tokens-api) below for the full reference.
 
 ## Security model
 
-- **Token-based authentication**: Each `/kobo/<token>/...` request is authenticated by looking up the SHA-256 hash of the token against the `kobo_tokens` table. The raw token is never stored.
+- **Token-based authentication**: Each `/kobo/<token>/...` request is authenticated by looking up the SHA-256 hash of the token against the `kobo_tokens` table. The raw token is never stored. SHA-256 is appropriate here because Kobo tokens are high-entropy random values, not user-chosen passwords — an attacker cannot brute-force a randomly generated token regardless of hash speed.
 - **User data isolation**: All sync queries are scoped to the user associated with the token. A device with one token cannot access another user's books.
 - **JWT required for token management**: The token management API (`/api/kobo/tokens`) requires a valid JWT session — API keys are not accepted. This prevents an API key from being used to create or enumerate Kobo sync URLs.
 - **One-time token display**: The raw token is returned once at creation time only. Biblioteka stores only the hash; if you lose the token URL you must delete it and create a new one.
