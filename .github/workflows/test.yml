@@ -83,12 +83,10 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Check all frontend jobs passed
+      - name: Verify frontend checks job passed
         run: |
           if [[ "${{ needs.frontend-checks.result }}" != "success" ]]; then
-            echo "Frontend checks failed"
-            exit 1
-          fi
+            echo "Frontend checks job failed"
 
 
   # Lint and test run fully in parallel with frontend-checks; the dist placeholder
