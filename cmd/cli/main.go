@@ -183,6 +183,34 @@ func runScanDirectory(ctx context.Context, path string, libraryID string) error 
 
 func runGoodreadsSearch(ctx context.Context, query string) error {
 	client := goodreads.NewClient()
-	fmt.Print(client)
+	results, err := client.Search(ctx, query)
+	if err != nil {
+		return fmt.Errorf("error searching Goodreads for query %q: %w", query, err)
+	}
+
+	if len(results) == 0 {
+		fmt.Printf("No results found for query: %s\n", query)
+		return nil
+	}
+
+	fmt.Printf("Goodreads search results for query: %s\n", query)
+	for i, book := range results {
+		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.Title, book.AuthorName, book.WorkID)
+	}
+
+	isbnResults, err := client.SearchByISBN(ctx, "9780593135204")
+	if err != nil {
+		return fmt.Errorf("error searching Goodreads for ISBN %q: %w", "9780593135204", err)
+	}
+	if len(isbnResults) == 0 {
+		fmt.Printf("No results found for ISBN: %s\n", "9780593135204")
+		return nil
+	}
+
+	fmt.Printf("Goodreads search results for ISBN: %s\n", "9780593135204")
+	for i, book := range isbnResults {
+		fmt.Printf("%d. %s by %s (Goodreads ID: %d)\n", i+1, book.Title, book.AuthorName, book.WorkID)
+	}
+
 	return nil
 }

@@ -6,11 +6,24 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// These credentials are public and easily obtainable.
+// They are stored as raw bytes only to hide them from search results.
 var (
-	// DefaultToken is the default token used for authentication with the Goodreads API. It is decoded from a hex string and should be kept secret.
-	DefaultToken = []byte{100, 161, 45, 120, 112, 103, 115, 100, 121, 107, 98, 114, 101, 103, 106, 104, 112, 114, 54, 101, 122, 113, 104, 117, 119}
-	// DefaultHost is the default host URL for the Goodreads API. It is decoded from a hex string and should be kept secret.
-	DefaultHost = []byte{104, 116, 116, 112, 115, 58, 47, 47, 107, 120, 98, 119, 109, 113, 111, 118, 54, 106, 103, 115, 51, 100, 97, 97, 97, 109, 98, 55, 52, 52, 121, 99, 117, 52, 46, 97, 112, 112, 115, 121, 110, 99, 45, 97, 112, 105, 46, 117, 115, 45, 101, 97, 115, 116, 45, 49, 46, 97, 109, 97, 122, 111, 110, 97, 119, 115, 46, 99, 111, 109, 47, 103, 114, 97, 112, 104, 113, 108}
+	defaultToken = []byte{
+		0x64, 0x61, 0x32, 0x2d, 0x78, 0x70, 0x67, 0x73, 0x64, 0x79,
+		0x64, 0x6b, 0x62, 0x72, 0x65, 0x67, 0x6a, 0x68, 0x70, 0x72,
+		0x36, 0x65, 0x6a, 0x7a, 0x71, 0x64, 0x68, 0x75, 0x77, 0x79,
+	}
+	defaultHost = []byte{
+		0x68, 0x74, 0x74, 0x70, 0x73, 0x3a, 0x2f, 0x2f, 0x6b, 0x78,
+		0x62, 0x77, 0x6d, 0x71, 0x6f, 0x76, 0x36, 0x6a, 0x67, 0x67,
+		0x33, 0x64, 0x61, 0x61, 0x61, 0x6d, 0x62, 0x37, 0x34,
+		0x34, 0x79, 0x63, 0x75, 0x34, 0x2e, 0x61, 0x70, 0x70, 0x73,
+		0x79, 0x6e, 0x63, 0x2d, 0x61, 0x70, 0x69, 0x2e, 0x75, 0x73,
+		0x2d, 0x65, 0x61, 0x73, 0x74, 0x2d, 0x31, 0x2e, 0x61, 0x6d,
+		0x61, 0x7a, 0x6f, 0x6e, 0x61, 0x77, 0x73, 0x2e, 0x63, 0x6f,
+		0x6d, 0x2f, 0x67, 0x72, 0x61, 0x70, 0x68, 0x71, 0x6c,
+	}
 )
 
 type Client struct {
@@ -21,13 +34,13 @@ type Client struct {
 
 func NewClient() *Client {
 	return &Client{
-		Token: string(DefaultToken),
-		Host:  string(DefaultHost),
+		Token: string(defaultToken),
+		Host:  string(defaultHost),
 		client: graphql.NewClient(
-			string(DefaultHost),
+			string(defaultHost),
 			&http.Client{
 				Transport: &AuthTransport{
-					Token:            DefaultToken,
+					Token:            defaultToken,
 					WrappedTransport: http.DefaultTransport,
 				},
 			},

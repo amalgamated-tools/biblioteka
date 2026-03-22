@@ -34,7 +34,7 @@
             "mode": "auto",
             "args": [
                 "goodreads-search",
-                "Alice's Adventures in Wonderland",
+                "Project Hail Mary",
             ],
             "program": "cmd/cli/main.go",
             "envFile": "${workspaceFolder}/.env",
