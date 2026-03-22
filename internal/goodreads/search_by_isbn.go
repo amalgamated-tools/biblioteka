@@ -14,9 +14,30 @@ import (
 )
 
 // SearchByISBN searches Goodreads for books matching the given ISBN and returns a list of search results.
-// It uses the Goodreads auto_complete endpoint, which returns a list of books matching the query. We then filter
-// the results to only include those that have a matching ISBN.
+// It uses the Goodreads auto_complete endpoint, which returns a list of books matching the query.
+// Since we are searching by ISBN, we expect to get either 0 or 1 results back, but we return a list to be consistent with the other search methods.
 func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, error) {
+	// make sure that the ISBN is valid before making the HTTP request, to avoid unnecessary requests and to provide better error messages
+	if len(isbn) == 0 {
+		return nil, fmt.Errorf("ISBN cannot be empty")
+	}
+	// these can be 10 or 13 characters long, and can contain dashes, but we will just remove the dashes and check the length of the remaining string
+	isbnDigits := ""
+	for _, r := range isbn {
+		if r >= '0' && r <= '9' {
+			isbnDigits += string(r)
+		}
+	}
+	if len(isbnDigits) != 10 && len(isbnDigits) != 13 {
+		return nil, fmt.Errorf("invalid ISBN: %s", isbn)
+	}
+	if len(isbnDigits) == 10 && !ValidISBN10CheckDigit(isbn) {
+		return nil, fmt.Errorf("invalid ISBN-10 check digit: %s", isbn)
+	}
+	if len(isbnDigits) == 13 && !ValidISBN13CheckDigit(isbn) {
+		return nil, fmt.Errorf("invalid ISBN-13 check digit: %s", isbn)
+	}
+
 	searchURL := fmt.Sprintf("https://goodreads.com/book/auto_complete?format=json&q=%s", url.QueryEscape(isbn))
 	req, err := http.NewRequestWithContext(ctx, "GET", searchURL, nil)
 	if err != nil {
