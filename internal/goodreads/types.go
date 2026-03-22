@@ -1,6 +1,6 @@
 package goodreads
 
-type SearchResult struct {
+type BookResult struct {
 	WorkID                string `json:"work_id"`
 	WorkLegacyID          int64  `json:"work_legacy_id"`
 	BookID                string `json:"book_id"`

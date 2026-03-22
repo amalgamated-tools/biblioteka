@@ -1,3 +1,77 @@
+query GetBookByAsin($asin: String!) {
+  getBookByAsin(asin: $asin) {
+    work {
+      id
+      legacyId
+      details {
+        webUrl
+        originalTitle
+      }
+      bestBook {
+        id
+        legacyId
+        imageUrl
+        title
+              details {
+                asin
+                isbn
+                isbn13
+                language {
+                  name
+                }
+                numPages
+              }        
+        primaryContributorEdge {
+          role
+          node {
+                  id
+                  name
+                  legacyId
+                  profileImageUrl
+          }
+        }
+      }
+    }
+  }
+}
+
+query GetBookByLegacyId($legacyId: Int!) {
+  getBookByLegacyId(legacyId: $legacyId) {
+    work {
+      id
+      legacyId
+      details {
+        webUrl
+        originalTitle
+      }
+      bestBook {
+        id
+        legacyId
+        imageUrl
+        title
+              details {
+                asin
+                isbn
+                isbn13
+                language {
+                  name
+                }
+                numPages
+              }        
+        primaryContributorEdge {
+          role
+          node {
+                  id
+                  name
+                  legacyId
+                  profileImageUrl
+          }
+        }
+      }
+    }
+  }
+}
+
 query Search($query: String!) {
   getSearchSuggestions(query: $query) {
     totalCount
@@ -22,6 +96,7 @@ query Search($query: String!) {
                 numPages
               }
               primaryContributorEdge {
+                role
                 node {
                   id
                   name
