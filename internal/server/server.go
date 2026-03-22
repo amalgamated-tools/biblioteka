@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -275,12 +277,20 @@ type opdsDBAdapter struct {
 func (a *opdsDBAdapter) GetOPDSCredential(ctx context.Context, username string) (*auth.OPDSCredentialResult, error) {
 	cred, err := a.db.GetOPDSCredentialByUsername(ctx, username)
 	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to get OPDS credential",
-			slog.String(otelkeys.Username, username),
-			slog.Any(otelkeys.Error, err),
-		)
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.DebugContext(
+				ctx,
+				"OPDS credential not found",
+				slog.String(otelkeys.OPDSUsername, username),
+			)
+		} else {
+			slog.ErrorContext(
+				ctx,
+				"failed to get OPDS credential",
+				slog.String(otelkeys.OPDSUsername, username),
+				slog.Any(otelkeys.Error, err),
+			)
+		}
 		return nil, fmt.Errorf("failed to get OPDS credential for username %s: %w", username, err)
 	}
 	return &auth.OPDSCredentialResult{
@@ -298,12 +308,20 @@ func (a *koboDBAdapter) GetKoboTokenByToken(ctx context.Context, token string) (
 	tokenHash := auth.HashKoboToken(token)
 	t, err := a.db.GetKoboTokenByHash(ctx, tokenHash)
 	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to get Kobo token",
-			slog.String(otelkeys.TokenHash, tokenHash),
-			slog.Any(otelkeys.Error, err),
-		)
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.DebugContext(
+				ctx,
+				"Kobo token not found",
+				slog.String(otelkeys.TokenHash, tokenHash),
+			)
+		} else {
+			slog.ErrorContext(
+				ctx,
+				"failed to get Kobo token",
+				slog.String(otelkeys.TokenHash, tokenHash),
+				slog.Any(otelkeys.Error, err),
+			)
+		}
 		return nil, fmt.Errorf("failed to get Kobo token for token hash %s: %w", tokenHash, err)
 	}
 	return &auth.KoboTokenResult{
@@ -319,12 +337,20 @@ type kosyncDBAdapter struct {
 func (a *kosyncDBAdapter) GetKOSyncCredential(ctx context.Context, username string) (*auth.KOSyncCredentialResult, error) {
 	cred, err := a.db.GetKOSyncCredentialByUsername(ctx, username)
 	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to get KOSync credential",
-			slog.String(otelkeys.Username, username),
-			slog.Any(otelkeys.Error, err),
-		)
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.DebugContext(
+				ctx,
+				"KOSync credential not found",
+				slog.String(otelkeys.KOSyncUsername, username),
+			)
+		} else {
+			slog.ErrorContext(
+				ctx,
+				"failed to get KOSync credential",
+				slog.String(otelkeys.KOSyncUsername, username),
+				slog.Any(otelkeys.Error, err),
+			)
+		}
 		return nil, fmt.Errorf("failed to get KOSync credential for username %s: %w", username, err)
 	}
 	return &auth.KOSyncCredentialResult{
