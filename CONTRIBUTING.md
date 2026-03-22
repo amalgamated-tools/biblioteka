@@ -359,9 +359,9 @@ Always commit the updated spec files alongside the handler changes that prompted
 - **Path parameters**: Two helpers in `internal/handlers/helpers.go` extract URL segments — there is no router with named params:
   - `extractPathID(path, prefix)` — extracts a single resource ID. Example: `id, ok := extractPathID(r.URL.Path, "/api/books/")`.
   - `extractPathSegments(path, prefix)` — extracts a resource ID **and** an optional sub-resource. Example: `id, sub, ok := extractPathSegments(r.URL.Path, "/api/books/")` where `sub` holds the trailing segment (e.g., `"authors"`, `"files"`).
-- **DB lookup error handling**: After fetching a resource by ID use `handleDBErr(r.Context(), w, err, "book")` from `internal/handlers/helpers.go`. It returns `true` when it wrote an error response (caller should `return`), `false` when `err == nil`. Translates `sql.ErrNoRows` to `404 Not Found` and any other error to `500 Internal Server Error`:
+- **Database error handling**: Use `handleDBErr(ctx, w, err, resource)` from `internal/handlers/helpers.go` after a DB lookup. It returns `true` and writes the appropriate HTTP error when the error is non-nil (404 for `sql.ErrNoRows`, 500 otherwise), so callers can simply `return`:
   ```go
-  book, err := h.db.GetBook(r.Context(), userID, bookID)
+  book, err := h.DB.GetBook(r.Context(), id)
   if handleDBErr(r.Context(), w, err, "book") {
       return
   }
