@@ -87,7 +87,8 @@ jobs:
         run: |
           if [[ "${{ needs.frontend-checks.result }}" != "success" ]]; then
             echo "Frontend checks job failed"
-
+            exit 1
+          fi
 
   # Lint and test run fully in parallel with frontend-checks; the dist placeholder
   # (.gitkeep) in internal/server/dist satisfies //go:embed all:dist for compilation.
