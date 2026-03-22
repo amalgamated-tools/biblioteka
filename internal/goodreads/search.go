@@ -25,25 +25,31 @@ func (c *Client) Search(ctx context.Context, query string) ([]SearchResult, erro
 	for _, e := range resp.GetSearchSuggestions.Edges {
 		edge, ok := e.(*SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdge)
 		if !ok {
+			slog.DebugContext(
+				ctx,
+				"unexpected edge type in Goodreads search results",
+				slog.Any(otelkeys.EdgeType, fmt.Sprintf("%T", e)),
+			)
 			continue
 		}
 		res := edge.Node
+		book := res.Work.GetBestBook()
 		results = append(results, SearchResult{
 			WorkID:                res.Work.Id,
 			WorkLegacyID:          res.Work.LegacyId,
-			BookID:                res.Work.GetBestBook().Id,
-			BookLegacyID:          res.Work.GetBestBook().LegacyId,
-			BookImageURL:          res.Work.GetBestBook().ImageUrl,
-			BookTitle:             res.Work.GetBestBook().Title,
-			BookASIN:              res.Work.GetBestBook().Details.Asin,
-			BookISBN:              res.Work.GetBestBook().Details.Isbn,
-			BookISBN13:            res.Work.GetBestBook().Details.Isbn13,
-			BookLanguage:          res.Work.GetBestBook().Details.Language.Name,
-			BookNumberOfPages:     res.Work.GetBestBook().Details.NumPages,
-			AuthorName:            res.Work.GetBestBook().PrimaryContributorEdge.Node.Name,
-			AuthorID:              res.Work.GetBestBook().PrimaryContributorEdge.Node.Id,
-			AuthorLegacyID:        res.Work.GetBestBook().PrimaryContributorEdge.Node.LegacyId,
-			AuthorProfileImageURL: res.Work.GetBestBook().PrimaryContributorEdge.Node.ProfileImageUrl,
+			BookID:                book.Id,
+			BookLegacyID:          book.LegacyId,
+			BookImageURL:          book.ImageUrl,
+			BookTitle:             book.Title,
+			BookASIN:              book.Details.Asin,
+			BookISBN:              book.Details.Isbn,
+			BookISBN13:            book.Details.Isbn13,
+			BookLanguage:          book.Details.Language.Name,
+			BookNumberOfPages:     book.Details.NumPages,
+			AuthorName:            book.PrimaryContributorEdge.Node.Name,
+			AuthorID:              book.PrimaryContributorEdge.Node.Id,
+			AuthorLegacyID:        book.PrimaryContributorEdge.Node.LegacyId,
+			AuthorProfileImageURL: book.PrimaryContributorEdge.Node.ProfileImageUrl,
 		})
 	}
 
@@ -54,17 +60,38 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]SearchResult,
 	url := fmt.Sprintf("https://goodreads.com/book/auto_complete?format=json&q=%s", isbn)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to create HTTP request for Goodreads ISBN search",
+			slog.Any(otelkeys.Query, isbn),
+			slog.Any(otelkeys.Error, err),
+			slog.Any(otelkeys.URL, url),
+		)
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		slog.ErrorContext(
+			ctx,
+			"HTTP request failed for Goodreads ISBN search",
+			slog.Any(otelkeys.Query, isbn),
+			slog.Any(otelkeys.Error, err),
+			slog.Any(otelkeys.URL, url),
+		)
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to read response body for Goodreads ISBN search",
+			slog.Any(otelkeys.Query, isbn),
+			slog.Any(otelkeys.Error, err),
+			slog.Any(otelkeys.URL, url),
+		)
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
@@ -77,13 +104,22 @@ func parseISBNSearchResponse(ctx context.Context, bodyText []byte) []SearchResul
 
 	_, _ = jsonparser.ArrayEach(bodyText, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		if err != nil {
+			slog.ErrorContext(
+				ctx,
+				"failed to parse Goodreads ISBN search result",
+				slog.Any(otelkeys.Error, err),
+			)
 			return
 		}
 
 		imageURL, err := jsonparser.GetString(value, "imageUrl")
 		if err != nil {
 			// we don't care if this is missing, so we won't return an error
-			slog.DebugContext(ctx, "missing imageUrl in Goodreads search result", slog.Any(otelkeys.Error, err))
+			slog.DebugContext(
+				ctx,
+				"missing imageUrl in Goodreads search result",
+				slog.Any(otelkeys.Error, err),
+			)
 		}
 
 		bookIDStr, err := jsonparser.GetString(value, "bookId")
