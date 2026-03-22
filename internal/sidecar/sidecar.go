@@ -49,7 +49,7 @@ func WriteSidecarFiles(ctx context.Context, bookFilePath string, meta *metadata.
 		opfData.ISBN = meta.ISBN
 	}
 
-	if err := WriteOPF(dir, opfData, baseName); err != nil {
+	if err := WriteOPF(ctx, dir, opfData, baseName); err != nil {
 		slog.WarnContext(ctx, "failed to write OPF sidecar",
 			slog.String(otelkeys.Path, dir),
 			slog.Any(otelkeys.Error, err),

@@ -2,11 +2,14 @@ package sidecar
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/google/uuid"
 )
 
@@ -168,15 +171,27 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 // When baseName is empty the file is named "metadata.opf"; when set it is
 // named "{baseName}.opf" (used for book_per_file mode where multiple books
 // share a directory).
-func WriteOPF(dir string, data OPFData, baseName string) error {
+func WriteOPF(ctx context.Context, dir string, data OPFData, baseName string) error {
 	if err := validateBaseName(baseName); err != nil {
-		// Let's let the top-level caller decide when/how to log errors since they have more context
+		slog.WarnContext(
+			ctx,
+			"invalid OPF base name",
+			slog.String(otelkeys.Path, dir),
+			slog.String(otelkeys.BaseName, baseName),
+			slog.Any(otelkeys.Error, err),
+		)
 		return fmt.Errorf("invalid OPF base name %q: %w", baseName, err)
 	}
 	if data.Title == "" {
 		return fmt.Errorf("WriteOPF: Title is required by OPF 2.0")
 	}
 	if data.Language == "" {
+		slog.DebugContext(
+			ctx,
+			"missing language, defaulting to 'und'",
+			slog.String(otelkeys.Path, dir),
+			slog.String(otelkeys.BaseName, baseName),
+		)
 		data.Language = "und"
 	}
 	if (data.CoverFilename == "") != (data.CoverMediaType == "") {
@@ -185,6 +200,13 @@ func WriteOPF(dir string, data OPFData, baseName string) error {
 
 	xmlBytes, err := marshalOPF(dir, data)
 	if err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to marshal OPF XML",
+			slog.String(otelkeys.Path, dir),
+			slog.String(otelkeys.BaseName, baseName),
+			slog.Any(otelkeys.Error, err),
+		)
 		return fmt.Errorf("marshal OPF: %w", err)
 	}
 
@@ -195,6 +217,13 @@ func WriteOPF(dir string, data OPFData, baseName string) error {
 	path := filepath.Join(dir, opfName)
 	tmpFile, err := os.CreateTemp(dir, opfName+".tmp-*")
 	if err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to create temp OPF file",
+			slog.String(otelkeys.Path, dir),
+			slog.String(otelkeys.BaseName, baseName),
+			slog.Any(otelkeys.Error, err),
+		)
 		return fmt.Errorf("create temp %s: %w", opfName, err)
 	}
 	tmpName := tmpFile.Name()
@@ -203,16 +232,44 @@ func WriteOPF(dir string, data OPFData, baseName string) error {
 	}()
 
 	if _, err := tmpFile.Write(xmlBytes); err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to write OPF XML to temp file",
+			slog.String(otelkeys.Path, dir),
+			slog.String(otelkeys.BaseName, baseName),
+			slog.Any(otelkeys.Error, err),
+		)
 		_ = tmpFile.Close()
 		return fmt.Errorf("write temp %s: %w", opfName, err)
 	}
 	if err := tmpFile.Close(); err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to close temp OPF file",
+			slog.String(otelkeys.Path, dir),
+			slog.String(otelkeys.BaseName, baseName),
+			slog.Any(otelkeys.Error, err),
+		)
 		return fmt.Errorf("close temp %s: %w", opfName, err)
 	}
 	if err := os.Chmod(tmpName, 0o644); err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to set permissions on temp OPF file",
+			slog.String(otelkeys.Path, dir),
+			slog.String(otelkeys.BaseName, baseName),
+			slog.Any(otelkeys.Error, err),
+		)
 		return fmt.Errorf("chmod temp %s: %w", opfName, err)
 	}
 	if err := os.Rename(tmpName, path); err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to rename temp OPF file",
+			slog.String(otelkeys.Path, dir),
+			slog.String(otelkeys.BaseName, baseName),
+			slog.Any(otelkeys.Error, err),
+		)
 		return fmt.Errorf("rename temp %s: %w", opfName, err)
 	}
 
