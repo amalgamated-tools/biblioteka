@@ -51,25 +51,31 @@ func (c *Client) Search(ctx context.Context, query string) ([]SearchResult, erro
 }
 
 func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]SearchResult, error) {
-	results := make([]SearchResult, 0)
 	url := fmt.Sprintf("https://goodreads.com/book/auto_complete?format=json&q=%s", isbn)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return results, fmt.Errorf("failed to create HTTP request: %w", err)
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return results, fmt.Errorf("HTTP request failed: %w", err)
+		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return results, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	jsonparser.ArrayEach(bodyText, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+	return parseISBNSearchResponse(ctx, bodyText), nil
+}
+
+// parseISBNSearchResponse parses the JSON response from the Goodreads auto_complete endpoint.
+func parseISBNSearchResponse(ctx context.Context, bodyText []byte) []SearchResult {
+	results := make([]SearchResult, 0)
+
+	_, _ = jsonparser.ArrayEach(bodyText, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		if err != nil {
 			return
 		}
@@ -135,5 +141,5 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]SearchResult,
 		})
 	})
 
-	return results, nil
+	return results
 }
