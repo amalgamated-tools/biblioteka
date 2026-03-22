@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -23,16 +24,14 @@ func defaultBookFileLookup(ctx context.Context, database *db.DB, path string) (*
 	return database.GetBookFileByPath(ctx, path)
 }
 
-func reorganizedCandidatePaths(p ProcessFilePayload, pathInfo pathparser.PathInfo, organizationType string) []string {
+func reorganizedCandidatePaths(ctx context.Context, p ProcessFilePayload, pathInfo pathparser.PathInfo, organizationType string) []string {
 	candidates := make([]string, 0, 2)
 	addCandidate := func(path string) {
 		if path == "" {
 			return
 		}
-		for _, existing := range candidates {
-			if existing == path {
-				return
-			}
+		if slices.Contains(candidates, path) {
+			return
 		}
 		candidates = append(candidates, path)
 	}
@@ -40,11 +39,11 @@ func reorganizedCandidatePaths(p ProcessFilePayload, pathInfo pathparser.PathInf
 	switch organizationType {
 	case db.LibraryOrganizationBookPerFolder:
 		if pathInfo.Author != "" && pathInfo.Title != "" {
-			addCandidate(organize.TargetPath(p.Path, p.LibraryRoot, pathInfo.Author, pathInfo.Title))
+			addCandidate(organize.TargetPath(ctx, p.Path, p.LibraryRoot, pathInfo.Author, pathInfo.Title))
 		}
 	case db.LibraryOrganizationBookPerFile:
 		if pathInfo.Author != "" {
-			addCandidate(organize.TargetPathFlat(p.Path, p.LibraryRoot, pathInfo.Author))
+			addCandidate(organize.TargetPathFlat(ctx, p.Path, p.LibraryRoot, pathInfo.Author))
 		}
 	}
 
@@ -58,7 +57,7 @@ func validatePayload(ctx context.Context, p ProcessFilePayload) error {
 		slog.ErrorContext(ctx, "book processing failed: empty path in payload",
 			slog.Any(otelkeys.Error, err),
 		)
-		return err
+		return fmt.Errorf("invalid payload: %w", err)
 	}
 
 	if strings.TrimSpace(p.FileName) == "" {
@@ -67,7 +66,7 @@ func validatePayload(ctx context.Context, p ProcessFilePayload) error {
 			slog.Any(otelkeys.Error, err),
 			slog.String(otelkeys.Path, p.Path),
 		)
-		return err
+		return fmt.Errorf("invalid payload: %w", err)
 	}
 
 	if strings.TrimSpace(p.FileType) == "" {
@@ -77,7 +76,7 @@ func validatePayload(ctx context.Context, p ProcessFilePayload) error {
 			slog.String(otelkeys.Path, p.Path),
 			slog.String(otelkeys.FileName, p.FileName),
 		)
-		return err
+		return fmt.Errorf("invalid payload: %w", err)
 	}
 
 	return nil
@@ -131,7 +130,7 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 	// Attempt to find the file at any expected reorganized location.
 	if p.LibraryRoot != "" {
 		pathInfo := pathparser.ParseBookPath(p.Path, p.LibraryRoot)
-		for _, candidatePath := range reorganizedCandidatePaths(p, pathInfo, organizationType) {
+		for _, candidatePath := range reorganizedCandidatePaths(ctx, p, pathInfo, organizationType) {
 			if _, candidateStatErr := os.Stat(candidatePath); candidateStatErr == nil {
 				// Check if the reorganized path is already indexed.
 				bf, dbErr := lookup(ctx, database, candidatePath)

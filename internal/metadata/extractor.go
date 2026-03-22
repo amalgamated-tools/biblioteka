@@ -411,7 +411,7 @@ func NormalizeISBN(raw string) string {
 	switch len(s) {
 	case 10:
 		// First 9 characters must be digits.
-		for i := 0; i < 9; i++ {
+		for i := range 9 {
 			if s[i] < '0' || s[i] > '9' {
 				return ""
 			}
@@ -428,7 +428,7 @@ func NormalizeISBN(raw string) string {
 		return s
 	case 13:
 		// All characters must be digits.
-		for i := 0; i < 13; i++ {
+		for i := range 13 {
 			if s[i] < '0' || s[i] > '9' {
 				return ""
 			}
