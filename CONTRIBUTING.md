@@ -59,6 +59,10 @@ internal/
   handlers/          # HTTP request handlers
   jobs/              # Background job definitions
   metadata/          # EPUB/MOBI/AZW3/PDF metadata extraction via ExifTool
+  organize/          # File reorganization into canonical Author/Title/ directory structure
+  pathparser/        # Path-based metadata extraction from directory layout (author, title, series)
+  coverutil/         # Cover image decoding from base64 data: URLs; enforces 20 MB size limit
+  sidecar/           # Writes OPF metadata and cover image sidecar files alongside book files
   server/            # HTTP server setup, routing, embedded frontend
   worker/            # asynq-based background job processing
   otel/              # Logging and tracing setup
