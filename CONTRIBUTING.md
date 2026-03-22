@@ -559,7 +559,7 @@ Review these pull requests the same way you would a human-authored CI improvemen
 
 #### Daily Repo Chronicle
 
-The `daily-repo-chronicle` workflow runs on weekdays at 16:00 UTC. It collects the day's repository activity — commits, pull requests, issues, and discussions — and writes a newspaper-style narrative summary with exactly two trend charts. The report is published as a GitHub Discussion in the **announcements** category with a `📰` title prefix. The previous day's discussion from this workflow is closed automatically when a new one is created.
+The `daily-repo-chronicle` workflow runs on weekdays at 16:00 UTC and can also be triggered on demand. It collects the day's repository activity — commits, pull requests, issues, and discussions — and writes a newspaper-style narrative summary with exactly two trend charts. The report is published as a GitHub Discussion in the **announcements** category with a `📰` title prefix. The previous day's discussion from this workflow is closed automatically when a new one is created.
 
 These discussions give contributors a quick narrative view of what changed each day without reading the raw commit log.
 
