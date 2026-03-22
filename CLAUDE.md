@@ -16,16 +16,24 @@ Biblioteka is a personal digital library management system for cataloging and or
 
 ```
 cmd/server/        # Binary entry point
+cmd/cli/           # CLI tool for standalone metadata extraction
 internal/
   auth/            # JWT creation/validation, rate limiting, auth middleware
+  coverutil/       # Cover image decoding (base64 data: URLs; enforces 20 MB limit)
   db/              # Database layer: setup, CRUD per domain (books, authors, …)
   handlers/        # HTTP handlers, one struct per domain
   handlers/middleware/  # Logging, request ID middleware
   jobs/            # Background job definitions
-  otelkeys/        # Predefined slog field-key constants (logger_keys.go)
-  server/          # HTTP server init, route registration, embedded frontend dist
-  worker/          # asynq worker setup and job handler registration
+  metadata/        # EPUB/MOBI/AZW3/PDF metadata extraction via ExifTool
+  organize/        # File reorganization into canonical library layouts
   otel/            # OpenTelemetry logging and tracing bootstrap
+  otelkeys/        # Predefined slog field-key constants (logger_keys.go)
+  pathparser/      # Book path parsing from directory structure
+  server/          # HTTP server init, route registration, embedded frontend dist
+  sidecar/         # Sidecar file writing: OPF metadata and cover image alongside book files
+  telemetry/       # Anonymous usage telemetry (opt-in)
+  testutils/       # Test helpers (MakeTestEPUB, MakeTestPDF); used in _test.go files only
+  worker/          # asynq worker setup and job handler registration
 frontend/src/
   components/      # Svelte page components (PascalCase .svelte files)
   stores/          # Svelte reactive stores (lowercase .ts files)
