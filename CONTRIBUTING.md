@@ -465,6 +465,26 @@ On completion, the `playwright-report/` artifact is uploaded and retained for **
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the E2E workflow. If you need E2E tests to run on a docs-only PR, trigger the workflow manually via **Actions → E2E Tests → Run workflow**.
 
+### Other CI workflows
+
+#### PR Title Check (`.github/workflows/pr-title.yml`)
+
+Every pull request title is validated against the [Conventional Commits](#commit-messages) format by the `action-semantic-pull-request` action. The check runs when a PR is opened, edited, or receives a new push. If the title does not match, the check fails and the PR cannot be merged until the title is corrected.
+
+#### Docker Build (`.github/workflows/docker-build.yml`)
+
+On every push to `main` and on every published release, multi-arch container images (`linux/amd64`, `linux/arm64`) are built and pushed to the GitHub Container Registry (GHCR) at `ghcr.io/amalgamated-tools/biblioteka`. Images are tagged `edge` and `sha-<short-sha>` for `main`-branch builds; release builds also receive `latest` and semver tags. See [Container Images](docs/deployment.md#container-images) in the deployment guide for usage details.
+
+#### Release Please (`.github/workflows/release-please.yml`)
+
+Releases are automated by [Release Please](https://github.com/googleapis/release-please-action). On every push to `main`, Release Please analyses the commit history since the last release, computes the next version number according to [Semantic Versioning](https://semver.org/), and either creates or updates an open "Release PR" that updates `CHANGELOG.md` and `version` references. Merging that PR triggers a GitHub Release, which in turn triggers the Docker Build workflow to publish a release-tagged container image.
+
+You do not need to manually tag releases or edit `CHANGELOG.md`. Commit messages that follow the Conventional Commits format are required for Release Please to correctly classify changes.
+
+#### Dependabot Auto-Merge (`.github/workflows/dependabot-auto-merge.yml`)
+
+Dependabot pull requests for **patch and minor** version updates are automatically approved and enabled for auto-merge. Major version updates require a manual review before merging. The auto-merge workflow runs only when the pull request author is `dependabot[bot]`.
+
 ### Automated agentic workflows
 
 Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that run on a schedule or in response to events. They analyze the codebase, find issues, and open pull requests or GitHub issues automatically. You do not need to trigger them manually.

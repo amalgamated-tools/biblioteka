@@ -57,6 +57,44 @@ docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
 
 Database migrations still run on startup of the `server` container; the `worker` container skips the HTTP listener and begins processing jobs immediately.
 
+## Container Images
+
+Pre-built multi-arch container images (`linux/amd64`, `linux/arm64`) are published to the GitHub Container Registry (GHCR) automatically by the **Build Container** CI workflow:
+
+- On every push to `main` → tagged `edge` and `sha-<short-sha>`
+- On every published release → tagged `latest`, `v<major>.<minor>`, and `v<major>.<minor>.<patch>`
+
+| Tag | Example | Use for |
+|-----|---------|---------|
+| `latest` | `ghcr.io/amalgamated-tools/biblioteka:latest` | Production (most recent release) |
+| `edge` | `ghcr.io/amalgamated-tools/biblioteka:edge` | Bleeding-edge / staging (built from `main`) |
+| `v<major>.<minor>` | `ghcr.io/amalgamated-tools/biblioteka:v0.1` | Minor-version pin |
+| `v<major>.<minor>.<patch>` | `ghcr.io/amalgamated-tools/biblioteka:v0.1.0` | Exact-version pin |
+| `sha-<short-sha>` | `ghcr.io/amalgamated-tools/biblioteka:sha-6fcf024` | Reproducing a specific build |
+
+### Using a pre-built image with Docker Compose
+
+The default `docker-compose.yml` builds the image locally (`build: .`). To use a pre-built image instead, create a `docker-compose.override.yml` alongside it:
+
+```yaml
+# docker-compose.override.yml — use GHCR pre-built image instead of local build
+services:
+  biblioteka:
+    image: ghcr.io/amalgamated-tools/biblioteka:latest
+    build: null   # disable local build
+```
+
+Then run as normal:
+
+```bash
+export JWT_SECRET=$(openssl rand -hex 32)
+export SECURE_COOKIES=true
+
+docker compose up -d
+```
+
+> **Note:** If you receive a `403 Forbidden` error when pushing or pulling the image, the GHCR package may need its permissions configured. Go to **https://github.com/orgs/amalgamated-tools/packages**, find the `biblioteka` package, and check that the repository has read access. For CI pushes, ensure the workflow has `packages: write` permission or a `GHCR_TOKEN` secret is set.
+
 ## Docker Compose Deployments
 
 ### SQLite + Redis (simplest)
