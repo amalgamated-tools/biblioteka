@@ -173,13 +173,6 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 // share a directory).
 func WriteOPF(ctx context.Context, dir string, data OPFData, baseName string) error {
 	if err := validateBaseName(baseName); err != nil {
-		slog.WarnContext(
-			ctx,
-			"invalid OPF base name",
-			slog.String(otelkeys.Path, dir),
-			slog.String(otelkeys.BaseName, baseName),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("invalid OPF base name %q: %w", baseName, err)
 	}
 	if data.Title == "" {
@@ -200,13 +193,6 @@ func WriteOPF(ctx context.Context, dir string, data OPFData, baseName string) er
 
 	xmlBytes, err := marshalOPF(dir, data)
 	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to marshal OPF XML",
-			slog.String(otelkeys.Path, dir),
-			slog.String(otelkeys.BaseName, baseName),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("marshal OPF: %w", err)
 	}
 
@@ -217,13 +203,6 @@ func WriteOPF(ctx context.Context, dir string, data OPFData, baseName string) er
 	path := filepath.Join(dir, opfName)
 	tmpFile, err := os.CreateTemp(dir, opfName+".tmp-*")
 	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to create temp OPF file",
-			slog.String(otelkeys.Path, dir),
-			slog.String(otelkeys.BaseName, baseName),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("create temp %s: %w", opfName, err)
 	}
 	tmpName := tmpFile.Name()
@@ -232,44 +211,16 @@ func WriteOPF(ctx context.Context, dir string, data OPFData, baseName string) er
 	}()
 
 	if _, err := tmpFile.Write(xmlBytes); err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to write OPF XML to temp file",
-			slog.String(otelkeys.Path, dir),
-			slog.String(otelkeys.BaseName, baseName),
-			slog.Any(otelkeys.Error, err),
-		)
 		_ = tmpFile.Close()
 		return fmt.Errorf("write temp %s: %w", opfName, err)
 	}
 	if err := tmpFile.Close(); err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to close temp OPF file",
-			slog.String(otelkeys.Path, dir),
-			slog.String(otelkeys.BaseName, baseName),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("close temp %s: %w", opfName, err)
 	}
 	if err := os.Chmod(tmpName, 0o644); err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to set permissions on temp OPF file",
-			slog.String(otelkeys.Path, dir),
-			slog.String(otelkeys.BaseName, baseName),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("chmod temp %s: %w", opfName, err)
 	}
 	if err := os.Rename(tmpName, path); err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to rename temp OPF file",
-			slog.String(otelkeys.Path, dir),
-			slog.String(otelkeys.BaseName, baseName),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("rename temp %s: %w", opfName, err)
 	}
 

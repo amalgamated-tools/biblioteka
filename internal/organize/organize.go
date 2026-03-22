@@ -41,12 +41,19 @@ func ReorganizeFile(ctx context.Context, filePath, libraryRoot, author, title st
 	// Author/title may come from untrusted epub metadata.
 	relCheck, err := filepath.Rel(libraryRoot, targetPath)
 	if err != nil || relCheck == ".." || strings.HasPrefix(relCheck, ".."+string(os.PathSeparator)) {
-		slog.WarnContext(
-			ctx,
-			"organize: target path escapes library root, skipping reorganization",
+		attrs := []slog.Attr{
 			slog.String(otelkeys.TargetPath, targetPath),
 			slog.String(otelkeys.LibraryRoot, libraryRoot),
-			slog.Any(otelkeys.Error, err),
+			slog.String(otelkeys.RelPath, relCheck),
+		}
+		if err != nil {
+			attrs = append(attrs, slog.Any(otelkeys.Error, err))
+		}
+		slog.LogAttrs(
+			ctx,
+			slog.LevelWarn,
+			"organize: target path escapes library root, skipping reorganization",
+			attrs...,
 		)
 		return "", fmt.Errorf("target path %q escapes library root %q", targetPath, libraryRoot)
 	}
@@ -268,12 +275,19 @@ func ReorganizeFileFlat(ctx context.Context, filePath, libraryRoot, author strin
 	// Defense-in-depth: verify the target path is still inside libraryRoot.
 	relCheck, err := filepath.Rel(libraryRoot, targetPath)
 	if err != nil || relCheck == ".." || strings.HasPrefix(relCheck, ".."+string(os.PathSeparator)) {
-		slog.WarnContext(
-			ctx,
-			"organize: target path escapes library root, skipping reorganization",
+		attrs := []slog.Attr{
 			slog.String(otelkeys.TargetPath, targetPath),
 			slog.String(otelkeys.LibraryRoot, libraryRoot),
-			slog.Any(otelkeys.Error, err),
+			slog.String(otelkeys.RelPath, relCheck),
+		}
+		if err != nil {
+			attrs = append(attrs, slog.Any(otelkeys.Error, err))
+		}
+		slog.LogAttrs(
+			ctx,
+			slog.LevelWarn,
+			"organize: target path escapes library root, skipping reorganization",
+			attrs...,
 		)
 		return "", fmt.Errorf("target path %q escapes library root %q", targetPath, libraryRoot)
 	}
