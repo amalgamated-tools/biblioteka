@@ -547,13 +547,13 @@ The `daily-file-diet` workflow runs on weekdays and can also be triggered on dem
 1. Scans all non-test production source files (Go, TypeScript, JavaScript, and other languages) and identifies the single largest file by line count.
 2. Applies a **500-line threshold**: if the largest file is under 500 lines the workflow calls `noop` and exits without creating an issue.
 3. When a file exceeds 500 lines, it analyses the file's structure and opens a GitHub issue labeled `refactoring`, `code-health`, and `automated-analysis` with the title prefix `chore(file-diet):`. The issue identifies the oversized file and includes specific guidance for splitting it into smaller, more focused units.
-4. At most one `[file-diet]` issue is open at a time — if one is already open, the workflow skips.
+4. The workflow is configured to skip if there is already an open issue whose title contains `[file-diet]`. Automatically created issues currently use the `chore(file-diet):` prefix, so this guard does not prevent multiple file-diet issues from being open at the same time.
 
 Review these issues the same way you would a human-authored refactoring suggestion. Close an issue once the file has been split or you have determined the size is intentional and acceptable.
 
 #### CI Coach
 
-The `ci-coach` workflow runs daily. It analyses GitHub Actions workflow performance across the repository to find efficiency improvements and cost reduction opportunities (targeting 20%+ savings). When it identifies actionable optimizations, it opens a pull request with the title prefix `ci(ci-coach):`. If a pull request cannot be created (e.g. due to branch protection), it falls back to opening a GitHub issue instead.
+The `ci-coach` workflow runs daily. It analyses GitHub Actions workflow performance across the repository to find efficiency improvements and cost reduction opportunities. When it identifies actionable optimizations, it opens a pull request with the title prefix `ci(ci-coach):`. If a pull request cannot be created (e.g. due to branch protection), it falls back to opening a GitHub issue instead.
 
 Review these pull requests the same way you would a human-authored CI improvement. Merge if the optimization is correct; close if you prefer the existing behaviour.
 
