@@ -284,7 +284,7 @@ func TestSetBookSeries(t *testing.T) {
 		t.Fatal("CreateSeries() returned nil series")
 	}
 
-	err = d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.1)}})
+	err = d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(float64(1.1))}})
 	if err != nil {
 		t.Fatalf("SetBookSeries() error: %v", err)
 	}
@@ -299,8 +299,8 @@ func TestSetBookSeries(t *testing.T) {
 	if entries[0].Series.ID != s.ID {
 		t.Errorf("series ID = %q, want %q", entries[0].Series.ID, s.ID)
 	}
-	if entries[0].Position == nil || *entries[0].Position != 1 {
-		t.Errorf("Position = %v, want 1", entries[0].Position)
+	if entries[0].Position == nil || *(entries[0].Position) != 1.1 {
+		t.Errorf("Position = %v, want 1.1", entries[0].Position)
 	}
 }
 
