@@ -283,12 +283,15 @@ internal/
     decode.go                  # DecodeDataURL: decodes base64 data: URLs; enforces the 20 MB size limit
   organize/
     organize.go                # ReorganizeFile / ReorganizeFileFlat: move files into canonical library layouts
+    rename_noreplace_linux.go  # renameNoReplace for Linux: uses RENAME_NOREPLACE via renameat2(2)
+    rename_noreplace_other.go  # renameNoReplace for non-Linux: link+remove fallback
   pathparser/
     pathparser.go              # ParseBookPath: extracts author/title/series from directory structure; strips trailing year tokens from titles
   sidecar/
     sidecar.go                 # WriteSidecarFiles: orchestrates cover and OPF writing after each import
     cover.go                   # WriteCover: decodes CoverImageURL data URL and writes cover.<ext> to disk
     opf.go                     # WriteOPF: marshals and writes metadata.opf (OPF 2.0 Dublin Core)
+    naming.go                  # sidecarTarget: resolves sidecar directory and filename stem (book_per_file uses book stem; other modes use default names)
   worker/
     worker.go                  # Worker struct: Register, Enqueue, Start, Close
 ```
