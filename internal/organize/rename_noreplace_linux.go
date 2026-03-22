@@ -33,9 +33,9 @@ func renameNoReplace(ctx context.Context, oldPath, newPath string) error {
 	}
 	// Cross-filesystem: propagate EXDEV so the caller can use copy+remove.
 	if err == unix.EXDEV {
-		slog.WarnContext(
+		slog.DebugContext(
 			ctx,
-			"cross-filesystem rename, caller should use copy+remove",
+			"cross-filesystem rename detected, falling back to copy+remove",
 			slog.String(otelkeys.OldPath, oldPath),
 			slog.String(otelkeys.NewPath, newPath),
 		)
