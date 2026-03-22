@@ -39,6 +39,12 @@ func main() {
 				os.Exit(1)
 			}
 			err = runGoodreadsSearch(ctx, os.Args[2])
+		case "goodreads-search-isbn":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: %s goodreads-search-isbn <isbn>\n", os.Args[0])
+				os.Exit(1)
+			}
+			err = runGoodreadsSearchByISBN(ctx, os.Args[2])
 		case "process-file":
 			if len(os.Args) < 3 {
 				fmt.Fprintf(os.Stderr, "Usage: %s process-file <file>\n", os.Args[0])
@@ -89,6 +95,8 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "Commands:\n")
 	fmt.Fprintf(os.Stderr, "  process-file <file>                    Process a single book file\n")
 	fmt.Fprintf(os.Stderr, "  scan-directory <directory> [library-id] Scan a directory and enqueue files for processing\n")
+	fmt.Fprintf(os.Stderr, "  goodreads-search <query>              Search Goodreads for a book by query\n")
+	fmt.Fprintf(os.Stderr, "  goodreads-search-isbn <isbn>          Search Goodreads for a book by ISBN\n")
 }
 
 func runProcessFile(ctx context.Context, path string) error {
@@ -198,17 +206,23 @@ func runGoodreadsSearch(ctx context.Context, query string) error {
 		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.BookTitle, book.AuthorName, book.WorkID)
 	}
 
-	isbnResults, err := client.SearchByISBN(ctx, "9780593135204")
+	return nil
+}
+
+func runGoodreadsSearchByISBN(ctx context.Context, isbn string) error {
+	client := goodreads.NewClient()
+	results, err := client.SearchByISBN(ctx, isbn)
 	if err != nil {
-		return fmt.Errorf("error searching Goodreads for ISBN %q: %w", "9780593135204", err)
+		return fmt.Errorf("error searching Goodreads for ISBN %q: %w", isbn, err)
 	}
-	if len(isbnResults) == 0 {
-		fmt.Printf("No results found for ISBN: %s\n", "9780593135204")
+
+	if len(results) == 0 {
+		fmt.Printf("No results found for ISBN: %s\n", isbn)
 		return nil
 	}
 
-	fmt.Printf("Goodreads search results for ISBN: %s\n", "9780593135204")
-	for i, book := range isbnResults {
+	fmt.Printf("Goodreads search results for ISBN: %s\n", isbn)
+	for i, book := range results {
 		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.BookTitle, book.AuthorName, book.WorkID)
 	}
 
