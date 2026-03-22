@@ -248,16 +248,9 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching library", slog.String(otelkeys.LibraryID, id))
 	lib, err := h.DB.GetLibrary(r.Context(), id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "library not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get library", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get library")
+	if handleDBErr(r.Context(), w, err, "library") {
 		return
 	}
-
 	writeJSON(r.Context(), w, http.StatusOK, toLibraryDTO(lib))
 }
 
