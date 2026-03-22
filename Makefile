@@ -133,3 +133,9 @@ hardfmt:
 
 test:
 	go test -v ./...
+
+testsum:
+	gotestsum -- -v ./...
+
+modernize:
+	go run golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@latest -fix  ./...

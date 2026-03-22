@@ -9,7 +9,7 @@ import (
 func TestCreateSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	s, err := d.CreateSeries(context.Background(), "The Dark Tower", strPtr("dt-123"), nil, nil)
+	s, err := d.CreateSeries(context.Background(), "The Dark Tower", new("dt-123"), nil, nil)
 	if err != nil {
 		t.Fatalf("CreateSeries() error: %v", err)
 	}
@@ -139,7 +139,7 @@ func TestUpdateSeries(t *testing.T) {
 
 	created, _ := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
 
-	updated, err := d.UpdateSeries(context.Background(), created.ID, "The Dark Tower", strPtr("dt-456"), nil, nil)
+	updated, err := d.UpdateSeries(context.Background(), created.ID, "The Dark Tower", new("dt-456"), nil, nil)
 	if err != nil {
 		t.Fatalf("UpdateSeries() error: %v", err)
 	}

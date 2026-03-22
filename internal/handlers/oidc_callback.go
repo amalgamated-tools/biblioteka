@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -204,7 +205,7 @@ func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name
 		return user, nil
 	}
 	if err != sql.ErrNoRows {
-		return nil, err
+		return nil, fmt.Errorf("database error: %w", err)
 	}
 
 	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by email", slog.String(otelkeys.Email, email))
@@ -212,12 +213,12 @@ func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name
 	if err == nil {
 		slog.DebugContext(ctx, "OIDC findOrCreateUser: linking subject to existing user", slog.String(otelkeys.UserID, user.ID))
 		if err := h.DB.LinkOIDCSubject(ctx, user.ID, subject); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to link OIDC subject: %w", err)
 		}
 		return user, nil
 	}
 	if err != sql.ErrNoRows {
-		return nil, err
+		return nil, fmt.Errorf("database error: %w", err)
 	}
 
 	slog.DebugContext(ctx, "OIDC findOrCreateUser: creating new user", slog.String(otelkeys.Email, email))
@@ -237,5 +238,5 @@ func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name
 		return u, nil
 	}
 
-	return nil, err
+	return nil, fmt.Errorf("failed to create user and verify existence after failure: %w", err)
 }

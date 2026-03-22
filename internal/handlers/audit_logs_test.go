@@ -282,7 +282,7 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 func TestToAuditLogDTO_NilMetadata(t *testing.T) {
 	entry := &db.AuditLog{
 		ID:         "log-1",
-		UserID:     strPtr("user-1"),
+		UserID:     new("user-1"),
 		Action:     db.AuditActionBookCreated,
 		EntityType: "book",
 		EntityID:   "book-1",
@@ -303,7 +303,7 @@ func TestToAuditLogDTO_EmptyMetadata(t *testing.T) {
 	empty := ""
 	entry := &db.AuditLog{
 		ID:         "log-2",
-		UserID:     strPtr("user-1"),
+		UserID:     new("user-1"),
 		Action:     db.AuditActionBookUpdated,
 		EntityType: "book",
 		EntityID:   "book-2",
@@ -321,7 +321,7 @@ func TestToAuditLogDTO_ValidMetadata(t *testing.T) {
 	meta := `{"title":"Test Book","pages":42}`
 	entry := &db.AuditLog{
 		ID:         "log-3",
-		UserID:     strPtr("user-1"),
+		UserID:     new("user-1"),
 		Action:     db.AuditActionBookCreated,
 		EntityType: "book",
 		EntityID:   "book-3",
@@ -356,6 +356,8 @@ func TestToAuditLogDTO_ValidMetadata(t *testing.T) {
 }
 
 // strPtr is a helper that returns a pointer to the given string.
+//
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }
