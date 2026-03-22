@@ -2,9 +2,7 @@ package auth
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,8 +29,7 @@ type APIKeyValidator interface {
 // (128 bits), not user-chosen passwords. Expensive hashing (bcrypt/argon2) is
 // unnecessary — an attacker cannot brute-force 128-bit keys regardless of hash speed.
 func HashAPIKey(key string) string {
-	h := sha256.Sum256([]byte(key)) // #nosec G401 -- not a password; high-entropy API key
-	return hex.EncodeToString(h[:])
+	return hashHighEntropyToken(key)
 }
 
 var (
