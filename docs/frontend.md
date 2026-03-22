@@ -754,7 +754,8 @@ When editing the app shell or adding new persistent navigation elements:
 7. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
 8. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
 9. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. See [Table accessibility](#table-accessibility) below.
-10. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+10. Sidebar navigation groups must use `role="group"` with `aria-labelledby` pointing to a `role="heading"` + `aria-level="2"` element so screen readers announce the section name. See [Labelled navigation groups](#labelled-navigation-groups-sidebarsvelte) above.
+11. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
 ### Form accessibility
 
@@ -953,6 +954,8 @@ Add `scope="col"` to every `<th>` that acts as a column header:
 
 When a `<th>` spans rows instead of columns (a row header), use `scope="row"`. For most flat, non-hierarchical tables in Biblioteka, `scope="col"` is sufficient.
 
+`UsersTab.svelte` is the canonical reference implementation: its "Name", "Email", "Type", "Role", and "Joined" headers all carry `scope="col"`.
+
 #### Accessible label for visual-only header cells
 
 An "Actions" column typically has no visible heading — its purpose is implied by the buttons in each row. A blank `<th>` is still announced by screen readers (often as an empty cell), which can be confusing. Use an `sr-only` span to provide a descriptive label that sighted users cannot see:
@@ -1011,6 +1014,14 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 5. **`renders navigation group labels as headings`** — renders with `currentView="dashboard"` and asserts that the "Home" and "Libraries" group labels are exposed as `role="heading"` elements at level 2 (WCAG 1.3.1).
 
 > **Mocking note:** The test file mocks `authStore`, `libraryStore`, `api.getVersion`, and all `lucide-svelte` icon components. The icon mocks are necessary because Lucide icons are ESM-only packages that cannot render in JSDOM; replacing them with no-ops keeps the test focused on DOM structure. `afterEach(cleanup)` prevents DOM leakage between tests.
+
+#### `UsersTab.test.ts`
+
+`frontend/src/components/settings/UsersTab.test.ts` verifies that the users admin table uses properly scoped column headers (WCAG 1.3.1). One test is included:
+
+1. **`marks each table header as a column header`** — renders `UsersTab` with one pre-loaded user and asserts that each `<th>` element ("Name", "Email", "Type", "Role", "Joined") carries `scope="col"`, ensuring screen readers can associate each data cell with its column header.
+
+> **Mocking note:** The test mocks `authStore` (the current admin user), `listUsers` (returns an empty list — the pre-loaded user is passed via the `cachedUsers` prop), `setUserAdmin`, and `lucide-svelte` icons. `afterEach(cleanup)` prevents DOM leakage between tests.
 
 #### `LibraryForm.test.ts`
 
