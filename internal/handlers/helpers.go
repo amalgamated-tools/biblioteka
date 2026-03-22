@@ -93,6 +93,24 @@ func extractPathSegments(path, prefix string) (id, sub string, ok bool) {
 	return parts[0], parts[1], true
 }
 
+// handleDBErr writes the appropriate HTTP error for a DB lookup error.
+// Returns true if an error was written (caller should return).
+func handleDBErr(ctx context.Context, w http.ResponseWriter, err error, resource string) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(ctx, w, http.StatusNotFound, resource+" not found")
+		return true
+	}
+	slog.ErrorContext(ctx, "failed to get resource",
+		slog.String(otelkeys.Resource, resource),
+		slog.Any(otelkeys.Error, err),
+	)
+	writeError(ctx, w, http.StatusInternalServerError, "failed to get "+resource)
+	return true
+}
+
 // requireAdmin checks whether the authenticated user is an admin and writes the
 // appropriate error response if not. It returns true when the caller is allowed
 // to proceed. A deleted user (stale JWT) receives a generic 401 response.

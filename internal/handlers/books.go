@@ -369,13 +369,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching book", slog.String(otelkeys.BookID, id))
 	b, err := h.DB.GetBook(r.Context(), id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "book not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get book", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get book")
+	if handleDBErr(r.Context(), w, err, "book") {
 		return
 	}
 

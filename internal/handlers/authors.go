@@ -178,16 +178,9 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching author", slog.String(otelkeys.AuthorID, id))
 	a, err := h.DB.GetAuthor(r.Context(), id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "author not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get author", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get author")
+	if handleDBErr(r.Context(), w, err, "author") {
 		return
 	}
-
 	writeJSON(r.Context(), w, http.StatusOK, toAuthorDTO(a))
 }
 
