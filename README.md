@@ -351,6 +351,8 @@ internal/
   metadata/        EPUB/MOBI/AZW3/PDF metadata extraction via ExifTool
   organize/        File reorganization into canonical Author/Title/ directory structure
   pathparser/      Path-based metadata extraction from directory layout (author, title, series)
+  coverutil/       Cover image decoding from base64 data: URLs; enforces 20 MB size limit
+  sidecar/         Writes OPF metadata and cover image sidecar files alongside book files
   server/          Route registration, middleware setup, embedded frontend
   worker/          asynq worker setup
   otel/            OpenTelemetry tracing and structured logging setup
