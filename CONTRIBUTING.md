@@ -366,9 +366,9 @@ Always commit the updated spec files alongside the handler changes that prompted
       return
   }
   ```
-- **Admin-only endpoints**: Use the handler's `requireAdmin(w, r) bool` method to protect admin endpoints. Return early if it returns `false` — the method already writes the error response:
+- **Admin-only endpoints**: Use the package-level `requireAdmin(h.DB, w, r) bool` function from `internal/handlers/helpers.go` to protect admin endpoints. Return early if it returns `false` — the function already writes the error response:
   ```go
-  if !h.requireAdmin(w, r) {
+  if !requireAdmin(h.DB, w, r) {
       return
   }
   ```
