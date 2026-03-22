@@ -24,6 +24,7 @@ const (
 	Directory         string = "directory"
 	Document          string = "document"
 	Duration          string = "duration"
+	EdgeType          string = "edge_type"
 	Email             string = "email"
 	EntityID          string = "entity_id"
 	EntityType        string = "entity_type"
