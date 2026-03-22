@@ -508,6 +508,17 @@ Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that ru
 | **Duplicate Code Detector** | Daily | GitHub issues listing duplicate code patterns with refactoring suggestions |
 | **Metrics Collector** | Daily | Agent performance metrics written to repo-memory for meta-orchestrator analysis |
 | **Schema Consistency Checker** | Daily | GitHub Discussion in "audits" category with schema/code/docs inconsistency findings |
+| **Claude Code User Docs Review** | Daily at 08:00 UTC | GitHub Discussion in "audits" category evaluating docs from a non-Copilot developer's perspective |
+| **Daily Assign Issue to User** | Daily | Assigns one unassigned open issue to an active contributor |
+| **Daily Code Metrics** | Daily | GitHub Discussion in "audits" category with code health metrics and 30-day trend charts |
+| **Daily Copilot Token Report** | Weekdays at 11:00 UTC | GitHub Discussion in "audits" category with Copilot token consumption and cost trends |
+| **Daily Doc Updater** | Daily at 06:00 UTC | Draft pull requests correcting and expanding documentation |
+| **Daily Issues Report** | Daily | GitHub Discussion in "audits" category with issue clustering, metrics, and trend charts |
+| **Daily Multi-Device Docs Tester** | Daily | GitHub issues for responsive-design failures; asset uploads with test results |
+| **Daily Observability Report** | Daily | GitHub Discussion in "audits" category with logging and telemetry coverage analysis |
+| **Daily Performance Summary** | Daily | GitHub Discussion in "audits" category with 90-day performance metrics and trend charts |
+| **Daily Safe Output Optimizer** | Daily | GitHub issues labeled `[safeoutputs]` when safe-output tool calls fail |
+| **Daily Semgrep Scan** | Daily | Code scanning alerts for SQL injection and other security vulnerabilities |
 
 
 #### Daily Accessibility Review
@@ -589,6 +600,64 @@ The `schema-consistency-checker` workflow runs daily and detects inconsistencies
 - The documentation (Markdown docs) and workflow definition files (for example, `.github/workflows/*.yml`)
 
 Findings are published as a GitHub Discussion in the **audits** category with a `[Schema Consistency]` title prefix. Previous discussions are closed automatically when a new one is created. If a finding affects Biblioteka's workflow definitions or documentation, address it as you would any other documentation inconsistency.
+
+#### Claude Code User Docs Review
+
+The `claude-code-user-docs-review` workflow runs every day at 08:00 UTC. It adopts the perspective of a developer who uses Claude Code but does not have a GitHub Copilot subscription. It reads `README.md` and the `docs/` directory, then evaluates the documentation for clarity, completeness, and accessibility to non-Copilot users. Findings are published as a GitHub Discussion in the **audits** category. The previous discussion from this workflow is closed automatically when a new one is created.
+
+Review these discussions to identify documentation gaps that may block contributors who don't use Copilot.
+
+#### Daily Assign Issue to User
+
+The `daily-assign-issue-to-user` workflow runs every day on a schedule. It finds one open, unassigned issue and assigns it to an active contributor. After assigning, it adds a comment to the issue notifying the contributor. This ensures issues don't remain unassigned indefinitely without requiring manual triage.
+
+#### Daily Code Metrics
+
+The `daily-code-metrics` workflow runs every day. It measures code-health indicators (lines of code, test coverage, complexity, churn, and similar metrics), generates trend charts over a 30-day window, and publishes the results as a GitHub Discussion in the **audits** category. Historical data is stored in the `memory/` branch so that trend comparisons remain accurate between runs. The previous discussion from this workflow is closed automatically.
+
+#### Daily Copilot Token Report
+
+The `daily-copilot-token-report` workflow runs on weekdays at 11:00 UTC. It downloads logs from all agentic workflows over the previous 30 days, aggregates token consumption by workflow and engine, calculates approximate costs, and identifies usage trends. Results are published as a GitHub Discussion in the **audits** category. The previous discussion from this workflow is closed automatically.
+
+Review these reports to monitor AI spending across workflows and identify expensive or runaway workflows before costs accumulate.
+
+#### Daily Doc Updater
+
+The `daily-doc-updater` workflow runs every day at 06:00 UTC. It reviews recent code changes and the existing documentation for gaps, inaccuracies, and outdated content. When it identifies documentation that needs updating, it opens a draft pull request with the title prefix `[docs]`. Draft PRs expire after one day if not merged. Review and merge these pull requests to keep documentation in sync with the codebase.
+
+This is a complement to the event-driven `update-docs` workflow (which fires on every push to `main`): `update-docs` documents specific code changes immediately, while `daily-doc-updater` sweeps for broader documentation drift on a schedule.
+
+#### Daily Issues Report
+
+The `daily-issues-report` workflow runs every day. It retrieves the most recent 1,000 issues, clusters them by theme, computes key metrics (open rate, resolution time, label distribution), and generates trend charts. The report is published as a GitHub Discussion in the **audits** category. The previous discussion from this workflow is closed automatically.
+
+Use these reports to spot patterns in user-reported bugs or feature requests, or to identify recurring problems that may warrant broader fixes.
+
+#### Daily Multi-Device Docs Tester
+
+The `daily-multi-device-docs-tester` workflow runs every day. It opens the documentation site using Playwright at three device widths — mobile (375 px), tablet (768 px), and desktop (1280 px) — and checks for layout breakage, unreadable text, inaccessible interactive elements, and missing responsive behaviour. Any failures are reported as GitHub issues. Full test results are uploaded as Actions artifacts and retained for 2 days.
+
+When assigned a docs-tester issue, inspect the attached artifact for screenshots and check the affected page at the reported viewport width.
+
+#### Daily Observability Report
+
+The `daily-observability-report` workflow runs every day. It analyzes the last 7 days of workflow run logs to assess logging and telemetry coverage across all agentic workflows. It specifically looks at the AWF firewall and MCP Gateway layers, checks structured-logging completeness, and flags workflows with poor observability. Findings are published as a GitHub Discussion in the **audits** category. The previous discussion from this workflow is closed automatically.
+
+#### Daily Performance Summary
+
+The `daily-performance-summary` workflow runs every day. It queries GitHub for repository activity over a 90-day window — pull request cycle time, issue resolution time, workflow success rates, and contributor velocity — then generates trend charts. The report is published as a GitHub Discussion in the **audits** category. The previous discussion from this workflow is closed automatically.
+
+#### Daily Safe Output Optimizer
+
+The `daily-safe-output-optimizer` workflow runs every day. It inspects gateway logs for failed `safe-outputs` tool calls (e.g. `create_pull_request`, `create-issue`) and creates a GitHub issue labeled `[safeoutputs]`, `bug`, and `tool-improvement` when it identifies tool descriptions or configurations that cause repeated failures. Only one such issue is open at a time; the workflow skips if a `[safeoutputs]` issue is already open.
+
+If you see a `[safeoutputs]`-labeled issue, update the relevant workflow's safe-output configuration or tool description as directed by the issue body.
+
+#### Daily Semgrep Scan
+
+The `daily-semgrep-scan` workflow runs every day. It runs [Semgrep](https://semgrep.dev/) against the repository to detect SQL injection vulnerabilities and other common security issues. Confirmed findings are reported as code scanning alerts visible under **Security → Code scanning**. The workflow uses the shared `shared/mcp/semgrep.md` tool configuration.
+
+Treat any code-scanning alert from this workflow as a security concern and address it before the affected code reaches production.
 
 
 ### Slash-command workflows
