@@ -15,7 +15,7 @@ func TestReorganizeFile_MovesToAuthorTitle(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	newPath, err := ReorganizeFile(srcPath, root, "Jane Austen", "Pride and Prejudice")
+	newPath, err := ReorganizeFile(t.Context(), srcPath, root, "Jane Austen", "Pride and Prejudice")
 	if err != nil {
 		t.Fatalf("reorganize: %v", err)
 	}
@@ -51,7 +51,7 @@ func TestReorganizeFile_AlreadyInPlace(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	newPath, err := ReorganizeFile(filePath, root, "Jane Austen", "Pride and Prejudice")
+	newPath, err := ReorganizeFile(t.Context(), filePath, root, "Jane Austen", "Pride and Prejudice")
 	if err != nil {
 		t.Fatalf("reorganize: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestReorganizeFile_EmptyAuthorOrTitle(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	newPath, err := ReorganizeFile(filePath, root, "", "Title")
+	newPath, err := ReorganizeFile(t.Context(), filePath, root, "", "Title")
 	if err != nil {
 		t.Fatalf("reorganize: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestReorganizeFile_EmptyAuthorOrTitle(t *testing.T) {
 		t.Errorf("expected unchanged path for empty author")
 	}
 
-	newPath, err = ReorganizeFile(filePath, root, "Author", "")
+	newPath, err = ReorganizeFile(t.Context(), filePath, root, "Author", "")
 	if err != nil {
 		t.Fatalf("reorganize: %v", err)
 	}
@@ -97,7 +97,7 @@ func TestReorganizeFile_CleansEmptySourceDirs(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	_, err := ReorganizeFile(srcPath, root, "NewAuthor", "NewTitle")
+	_, err := ReorganizeFile(t.Context(), srcPath, root, "NewAuthor", "NewTitle")
 	if err != nil {
 		t.Fatalf("reorganize: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestReorganizeFileFlat_MovesToAuthor(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	newPath, err := ReorganizeFileFlat(srcPath, root, "Jane Austen")
+	newPath, err := ReorganizeFileFlat(t.Context(), srcPath, root, "Jane Austen")
 	if err != nil {
 		t.Fatalf("reorganize flat: %v", err)
 	}
@@ -150,7 +150,7 @@ func TestReorganizeFileFlat_AlreadyInPlace(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	newPath, err := ReorganizeFileFlat(filePath, root, "Jane Austen")
+	newPath, err := ReorganizeFileFlat(t.Context(), filePath, root, "Jane Austen")
 	if err != nil {
 		t.Fatalf("reorganize flat: %v", err)
 	}
@@ -166,7 +166,7 @@ func TestReorganizeFileFlat_EmptyAuthor(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	newPath, err := ReorganizeFileFlat(filePath, root, "")
+	newPath, err := ReorganizeFileFlat(t.Context(), filePath, root, "")
 	if err != nil {
 		t.Fatalf("reorganize flat: %v", err)
 	}
@@ -187,7 +187,7 @@ func TestReorganizeFileFlat_CleansEmptySourceDirs(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	_, err := ReorganizeFileFlat(srcPath, root, "NewAuthor")
+	_, err := ReorganizeFileFlat(t.Context(), srcPath, root, "NewAuthor")
 	if err != nil {
 		t.Fatalf("reorganize flat: %v", err)
 	}
@@ -198,14 +198,14 @@ func TestReorganizeFileFlat_CleansEmptySourceDirs(t *testing.T) {
 }
 
 func TestTargetPathFlat(t *testing.T) {
-	result := TargetPathFlat("/lib/book.epub", "/lib", "Jane Austen")
+	result := TargetPathFlat(t.Context(), "/lib/book.epub", "/lib", "Jane Austen")
 	expected := filepath.Join("/lib", "Jane Austen", "book.epub")
 	if result != expected {
 		t.Errorf("expected %q, got %q", expected, result)
 	}
 
 	// Empty author returns empty string.
-	if got := TargetPathFlat("/lib/book.epub", "/lib", ""); got != "" {
+	if got := TargetPathFlat(t.Context(), "/lib/book.epub", "/lib", ""); got != "" {
 		t.Errorf("expected empty for empty author, got %q", got)
 	}
 }
@@ -229,7 +229,7 @@ func TestReorganizeFileFlat_TargetExists(t *testing.T) {
 		t.Fatalf("write source: %v", err)
 	}
 
-	_, err := ReorganizeFileFlat(srcPath, root, "Jane Austen")
+	_, err := ReorganizeFileFlat(t.Context(), srcPath, root, "Jane Austen")
 	if err == nil {
 		t.Fatal("expected error when target file already exists")
 	}
@@ -257,7 +257,7 @@ func TestReorganizeFile_TargetExists(t *testing.T) {
 		t.Fatalf("write source: %v", err)
 	}
 
-	_, err := ReorganizeFile(srcPath, root, "Author", "Title")
+	_, err := ReorganizeFile(t.Context(), srcPath, root, "Author", "Title")
 	if err == nil {
 		t.Fatal("expected error when target file already exists")
 	}
@@ -275,7 +275,7 @@ func TestReorganizeFileFlat_SanitizedAuthorEmpty(t *testing.T) {
 	}
 
 	// Author that sanitizes to empty (only dots and special chars).
-	newPath, err := ReorganizeFileFlat(srcPath, root, "...")
+	newPath, err := ReorganizeFileFlat(t.Context(), srcPath, root, "...")
 	if err != nil {
 		t.Fatalf("reorganize flat: %v", err)
 	}
@@ -292,7 +292,7 @@ func TestReorganizeFile_SanitizedFieldsEmpty(t *testing.T) {
 	}
 
 	// Author sanitizes to empty.
-	newPath, err := ReorganizeFile(srcPath, root, "...", "Title")
+	newPath, err := ReorganizeFile(t.Context(), srcPath, root, "...", "Title")
 	if err != nil {
 		t.Fatalf("reorganize: %v", err)
 	}
@@ -301,7 +301,7 @@ func TestReorganizeFile_SanitizedFieldsEmpty(t *testing.T) {
 	}
 
 	// Title sanitizes to empty.
-	newPath, err = ReorganizeFile(srcPath, root, "Author", "...")
+	newPath, err = ReorganizeFile(t.Context(), srcPath, root, "Author", "...")
 	if err != nil {
 		t.Fatalf("reorganize: %v", err)
 	}
@@ -311,16 +311,16 @@ func TestReorganizeFile_SanitizedFieldsEmpty(t *testing.T) {
 }
 
 func TestTargetPathFlat_SanitizedEmpty(t *testing.T) {
-	if got := TargetPathFlat("/lib/book.epub", "/lib", "..."); got != "" {
+	if got := TargetPathFlat(t.Context(), "/lib/book.epub", "/lib", "..."); got != "" {
 		t.Errorf("expected empty for sanitized-to-empty author, got %q", got)
 	}
 }
 
 func TestTargetPath_SanitizedEmpty(t *testing.T) {
-	if got := TargetPath("/lib/book.epub", "/lib", "...", "Title"); got != "" {
+	if got := TargetPath(t.Context(), "/lib/book.epub", "/lib", "...", "Title"); got != "" {
 		t.Errorf("expected empty for sanitized-to-empty author, got %q", got)
 	}
-	if got := TargetPath("/lib/book.epub", "/lib", "Author", "..."); got != "" {
+	if got := TargetPath(t.Context(), "/lib/book.epub", "/lib", "Author", "..."); got != "" {
 		t.Errorf("expected empty for sanitized-to-empty title, got %q", got)
 	}
 }

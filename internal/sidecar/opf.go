@@ -2,11 +2,14 @@ package sidecar
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/google/uuid"
 )
 
@@ -71,7 +74,8 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		xml.Attr{Name: xml.Name{Local: "xmlns:opf"}, Value: "http://www.idpf.org/2007/opf"},
 	)
 	if err := e.EncodeToken(start); err != nil {
-		return err
+		// Let's let the top-level caller decide when/how to log errors since they have more context
+		return fmt.Errorf("failed to encode metadata start element: %w", err)
 	}
 
 	// dc writes a Dublin Core element, skipping it when value is empty.
@@ -81,12 +85,18 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		}
 		el := xml.StartElement{Name: xml.Name{Local: "dc:" + name}, Attr: attrs}
 		if err := e.EncodeToken(el); err != nil {
-			return err
+			// Let's let the top-level caller decide when/how to log errors since they have more context
+			return fmt.Errorf("failed to encode dc:%s start element: %w", name, err)
 		}
 		if err := e.EncodeToken(xml.CharData(value)); err != nil {
-			return err
+			// Let's let the top-level caller decide when/how to log errors since they have more context
+			return fmt.Errorf("failed to encode dc:%s char data: %w", name, err)
 		}
-		return e.EncodeToken(el.End())
+		if err := e.EncodeToken(el.End()); err != nil {
+			// Let's let the top-level caller decide when/how to log errors since they have more context
+			return fmt.Errorf("failed to encode dc:%s end element: %w", name, err)
+		}
+		return nil
 	}
 
 	if err := dc("title", m.Title); err != nil {
@@ -105,13 +115,16 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		},
 	}
 	if err := e.EncodeToken(idEl); err != nil {
-		return err
+		// Let's let the top-level caller decide when/how to log errors since they have more context
+		return fmt.Errorf("failed to encode dc:identifier start element: %w", err)
 	}
 	if err := e.EncodeToken(xml.CharData(m.Identifier)); err != nil {
-		return err
+		// Let's let the top-level caller decide when/how to log errors since they have more context
+		return fmt.Errorf("failed to encode dc:identifier char data: %w", err)
 	}
 	if err := e.EncodeToken(idEl.End()); err != nil {
-		return err
+		// Let's let the top-level caller decide when/how to log errors since they have more context
+		return fmt.Errorf("failed to encode dc:identifier end element: %w", err)
 	}
 
 	if err := dc("language", m.Language); err != nil {
@@ -136,10 +149,12 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 			},
 		}
 		if err := e.EncodeToken(meta); err != nil {
-			return err
+			// Let's let the top-level caller decide when/how to log errors since they have more context
+			return fmt.Errorf("failed to encode meta start element: %w", err)
 		}
 		if err := e.EncodeToken(meta.End()); err != nil {
-			return err
+			// Let's let the top-level caller decide when/how to log errors since they have more context
+			return fmt.Errorf("failed to encode meta end element: %w", err)
 		}
 	}
 
@@ -150,14 +165,20 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 // When baseName is empty the file is named "metadata.opf"; when set it is
 // named "{baseName}.opf" (used for book_per_file mode where multiple books
 // share a directory).
-func WriteOPF(dir string, data OPFData, baseName string) error {
+func WriteOPF(ctx context.Context, dir string, data OPFData, baseName string) error {
 	if err := validateBaseName(baseName); err != nil {
-		return err
+		return fmt.Errorf("invalid OPF base name %q: %w", baseName, err)
 	}
 	if data.Title == "" {
 		return fmt.Errorf("WriteOPF: Title is required by OPF 2.0")
 	}
 	if data.Language == "" {
+		slog.DebugContext(
+			ctx,
+			"missing language, defaulting to 'und'",
+			slog.String(otelkeys.Path, dir),
+			slog.String(otelkeys.BaseName, baseName),
+		)
 		data.Language = "und"
 	}
 	if (data.CoverFilename == "") != (data.CoverMediaType == "") {

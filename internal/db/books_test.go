@@ -6,13 +6,16 @@ import (
 	"testing"
 )
 
-func intPtr(i int) *int           { return &i }
-func floatPtr(f float64) *float64 { return &f }
+//go:fix inline
+func intPtr(i int) *int { return new(i) }
+
+//go:fix inline
+func floatPtr(f float64) *float64 { return new(f) }
 
 func TestCreateBook(t *testing.T) {
 	d := newTestDB(t)
 
-	b, err := d.CreateBook(context.Background(), "The Gunslinger", strPtr("The first book"), nil, strPtr("1234567890"), nil, nil, nil, nil, strPtr("1982-06-10"), strPtr("Grant"), strPtr("en"), intPtr(224), nil)
+	b, err := d.CreateBook(context.Background(), "The Gunslinger", new("The first book"), nil, new("1234567890"), nil, nil, nil, nil, new("1982-06-10"), new("Grant"), new("en"), new(224), nil)
 	if err != nil {
 		t.Fatalf("CreateBook() error: %v", err)
 	}
@@ -82,7 +85,7 @@ func TestUpdateBook(t *testing.T) {
 
 	created, _ := d.CreateBook(context.Background(), "Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
-	updated, err := d.UpdateBook(context.Background(), created.ID, "The Gunslinger", strPtr("Revised edition"), nil, nil, nil, nil, nil, nil, nil, nil, strPtr("en"), intPtr(300), nil)
+	updated, err := d.UpdateBook(context.Background(), created.ID, "The Gunslinger", new("Revised edition"), nil, nil, nil, nil, nil, nil, nil, nil, new("en"), new(300), nil)
 	if err != nil {
 		t.Fatalf("UpdateBook() error: %v", err)
 	}
@@ -400,15 +403,15 @@ func TestCreateBookWithFile(t *testing.T) {
 	b, bf, err := d.CreateBookWithFile(
 		context.Background(),
 		"The Gunslinger",
-		strPtr("The first book of the Dark Tower series"),
+		new("The first book of the Dark Tower series"),
 		nil,
-		strPtr("1234567890"),
+		new("1234567890"),
 		nil,
 		nil, nil, nil,
-		strPtr("1982-06-10"),
-		strPtr("Grant"),
-		strPtr("en"),
-		intPtr(224),
+		new("1982-06-10"),
+		new("Grant"),
+		new("en"),
+		new(224),
 		nil,
 		"epub",
 		"the-gunslinger.epub",
