@@ -122,24 +122,12 @@ func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdge) G
 
 // SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBook includes the requested fields of the GraphQL type Book.
 type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBook struct {
-	Work     SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork `json:"work"`
-	Title    string                                                                           `json:"title"`
-	LegacyId int64                                                                            `json:"legacyId"`
+	Work SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork `json:"work"`
 }
 
 // GetWork returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBook.Work, and is useful for accessing the field via an interface.
 func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBook) GetWork() SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork {
 	return v.Work
-}
-
-// GetTitle returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBook.Title, and is useful for accessing the field via an interface.
-func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBook) GetTitle() string {
-	return v.Title
-}
-
-// GetLegacyId returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBook.LegacyId, and is useful for accessing the field via an interface.
-func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBook) GetLegacyId() int64 {
-	return v.LegacyId
 }
 
 // SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork includes the requested fields of the GraphQL type Work.
@@ -166,7 +154,25 @@ func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNod
 
 // SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook includes the requested fields of the GraphQL type Book.
 type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook struct {
+	Id                     string                                                                                                                            `json:"id"`
+	LegacyId               int64                                                                                                                             `json:"legacyId"`
+	Title                  string                                                                                                                            `json:"title"`
 	PrimaryContributorEdge SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdge `json:"primaryContributorEdge"`
+}
+
+// GetId returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook.Id, and is useful for accessing the field via an interface.
+func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook) GetId() string {
+	return v.Id
+}
+
+// GetLegacyId returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook.LegacyId, and is useful for accessing the field via an interface.
+func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook) GetLegacyId() int64 {
+	return v.LegacyId
+}
+
+// GetTitle returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook.Title, and is useful for accessing the field via an interface.
+func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook) GetTitle() string {
+	return v.Title
 }
 
 // GetPrimaryContributorEdge returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook.PrimaryContributorEdge, and is useful for accessing the field via an interface.
@@ -296,6 +302,9 @@ query Search ($query: String!) {
 						id
 						legacyId
 						bestBook {
+							id
+							legacyId
+							title
 							primaryContributorEdge {
 								node {
 									id
@@ -305,8 +314,6 @@ query Search ($query: String!) {
 							}
 						}
 					}
-					title
-					legacyId
 				}
 			}
 		}
