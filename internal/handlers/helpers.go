@@ -103,7 +103,10 @@ func handleDBErr(ctx context.Context, w http.ResponseWriter, err error, resource
 		writeError(ctx, w, http.StatusNotFound, resource+" not found")
 		return true
 	}
-	slog.ErrorContext(ctx, "failed to get "+resource, slog.Any(otelkeys.Error, err))
+	slog.ErrorContext(ctx, "failed to get resource",
+		slog.String(otelkeys.Resource, resource),
+		slog.Any(otelkeys.Error, err),
+	)
 	writeError(ctx, w, http.StatusInternalServerError, "failed to get "+resource)
 	return true
 }
