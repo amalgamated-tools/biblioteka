@@ -30,7 +30,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		slog.ErrorContext(
 			ctx,

@@ -9,7 +9,11 @@ import (
 )
 
 func (c *Client) GetBookByID(ctx context.Context, grID string) (*BookResult, error) {
-	return nil, nil
+	resp, err := GetBook(ctx, c.client, grID)
+	if err != nil {
+		return nil, err
+	}
+	return loadBookResult(ctx, resp.GetBook.Work.BestBook)
 }
 
 func (c *Client) GetBookByASIN(ctx context.Context, asin string) (*BookResult, error) {
@@ -66,6 +70,48 @@ func loadBookResult(ctx context.Context, value any) (result *BookResult, err err
 		}, nil
 	}
 	if v, ok := value.(GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBook); ok {
+		book := v
+		author := book.PrimaryContributorEdge.Node
+		return &BookResult{
+			WorkID:                v.Id,
+			WorkLegacyID:          v.LegacyId,
+			BookID:                book.Id,
+			BookLegacyID:          book.LegacyId,
+			BookImageURL:          book.ImageUrl,
+			BookTitle:             book.Title,
+			BookASIN:              book.Details.Asin,
+			BookISBN:              book.Details.Isbn,
+			BookISBN13:            book.Details.Isbn13,
+			BookLanguage:          book.Details.Language.Name,
+			BookNumberOfPages:     book.Details.NumPages,
+			AuthorName:            author.Name,
+			AuthorID:              author.Id,
+			AuthorLegacyID:        author.LegacyId,
+			AuthorProfileImageURL: author.ProfileImageUrl,
+		}, nil
+	}
+	if v, ok := value.(GetBookByAsinGetBookByAsinBookWorkBestBook); ok {
+		book := v
+		author := book.PrimaryContributorEdge.Node
+		return &BookResult{
+			WorkID:                v.Id,
+			WorkLegacyID:          v.LegacyId,
+			BookID:                book.Id,
+			BookLegacyID:          book.LegacyId,
+			BookImageURL:          book.ImageUrl,
+			BookTitle:             book.Title,
+			BookASIN:              book.Details.Asin,
+			BookISBN:              book.Details.Isbn,
+			BookISBN13:            book.Details.Isbn13,
+			BookLanguage:          book.Details.Language.Name,
+			BookNumberOfPages:     book.Details.NumPages,
+			AuthorName:            author.Name,
+			AuthorID:              author.Id,
+			AuthorLegacyID:        author.LegacyId,
+			AuthorProfileImageURL: author.ProfileImageUrl,
+		}, nil
+	}
+	if v, ok := value.(GetBookGetBookWorkBestBook); ok {
 		book := v
 		author := book.PrimaryContributorEdge.Node
 		return &BookResult{

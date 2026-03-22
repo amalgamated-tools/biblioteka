@@ -1,10 +1,13 @@
 package goodreads
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"testing"
 
 	"github.com/Khan/genqlient/graphql"
@@ -18,6 +21,14 @@ type mockGraphQLClient struct {
 
 func (m *mockGraphQLClient) MakeRequest(ctx context.Context, req *graphql.Request, resp *graphql.Response) error {
 	return m.handler(req, resp)
+}
+
+type mockHTTPClient struct {
+	handler func(req *http.Request) (*http.Response, error)
+}
+
+func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	return m.handler(req)
 }
 
 func noResponseClient() *Client {
@@ -178,9 +189,68 @@ func TestSearch_EmptyEdges(t *testing.T) {
 	}
 }
 
+func Test_SearchByISBN(t *testing.T) {
+	var response GetBookByLegacyIdResponse
+	err := json.Unmarshal(GetBookByLegacyID_54493401, &response)
+	if err != nil {
+		t.Fatalf("failed to unmarshal JSON response: %v", err)
+	}
+	client := &Client{
+		httpClient: &mockHTTPClient{
+			handler: func(req *http.Request) (*http.Response, error) {
+				// Return a successful response with the JSON body
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(bytes.NewReader(AutoComplete)),
+					Header:     make(http.Header),
+				}, nil
+			},
+		},
+		client: &mockGraphQLClient{
+			handler: func(req *graphql.Request, resp *graphql.Response) error {
+				data := resp.Data.(*GetBookByLegacyIdResponse)
+				*data = response
+				return nil
+			},
+		},
+	}
+
+	results, err := client.SearchByISBN(t.Context(), response.GetBookByLegacyId.Work.BestBook.Details.Isbn)
+	if err != nil {
+		t.Fatalf("failed to search by ISBN: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+
+	r := results[0]
+	expected, err := loadBookResult(t.Context(), response.GetBookByLegacyId.Work.BestBook)
+	if err != nil {
+		t.Fatalf("failed to load expected BookResult from response: %v", err)
+	}
+
+	require.Equal(t, *expected, r)
+	require.Equal(t, expected.WorkID, r.WorkID)
+	require.Equal(t, expected.WorkLegacyID, r.WorkLegacyID)
+	require.Equal(t, expected.BookID, r.BookID)
+	require.Equal(t, expected.BookLegacyID, r.BookLegacyID)
+	require.Equal(t, expected.BookImageURL, r.BookImageURL)
+	require.Equal(t, expected.BookTitle, r.BookTitle)
+	require.Equal(t, expected.BookASIN, r.BookASIN)
+	require.Equal(t, expected.BookISBN, r.BookISBN)
+	require.Equal(t, expected.BookISBN13, r.BookISBN13)
+	require.Equal(t, expected.BookLanguage, r.BookLanguage)
+	require.Equal(t, expected.BookNumberOfPages, r.BookNumberOfPages)
+	require.Equal(t, expected.AuthorID, r.AuthorID)
+	require.Equal(t, expected.AuthorName, r.AuthorName)
+	require.Equal(t, expected.AuthorLegacyID, r.AuthorLegacyID)
+	require.Equal(t, expected.AuthorProfileImageURL, r.AuthorProfileImageURL)
+
+}
+
 func TestParseISBNSearchResponse_Success(t *testing.T) {
 	var response GetBookByLegacyIdResponse
-	err := json.Unmarshal(GetBookByLegacyIDResponse54493401, &response)
+	err := json.Unmarshal(GetBookByLegacyID_54493401, &response)
 	if err != nil {
 		t.Fatalf("failed to unmarshal JSON response: %v", err)
 	}
@@ -194,7 +264,7 @@ func TestParseISBNSearchResponse_Success(t *testing.T) {
 		},
 	}
 
-	results := client.parseISBNSearchResponse(context.Background(), AutoCompleteResponse)
+	results := client.parseISBNSearchResponse(context.Background(), AutoComplete)
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
