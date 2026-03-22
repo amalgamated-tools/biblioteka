@@ -126,6 +126,30 @@ docker compose logs -f --no-log-prefix biblioteka | jq 'select(.request_id == "5
 docker compose logs -f --no-log-prefix biblioteka | jq 'select(.duration != null and .duration > 500000000)'
 ```
 
+#### Book import troubleshooting
+
+```bash
+# Watch all background job activity (scan + process jobs)
+docker compose logs -f --no-log-prefix biblioteka \
+  | jq 'select(.task_id != null or (.msg | test("scan|process|enqueue"; "i")))'
+
+# Trace a specific file through the import pipeline (use a substring of the path)
+docker compose logs biblioteka \
+  | jq 'select(.file_path != null and (.file_path | contains("great-gatsby")))'
+
+# Find all failed background jobs (errors during processing)
+docker compose logs biblioteka \
+  | jq 'select(.level == "ERROR" and (.msg | test("scan|process|job|file"; "i")))'
+
+# See sidecar write failures (WARN-level, best-effort — book import still succeeded)
+docker compose logs biblioteka \
+  | jq 'select(.level == "WARN" and (.msg | test("sidecar|cover|opf"; "i")))'
+
+# Find all logs for a specific library scan
+docker compose logs biblioteka \
+  | jq 'select(.library_id == "<library-id>")'
+```
+
 ## Distributed Tracing
 
 Biblioteka includes OpenTelemetry trace context propagation (`TraceMiddleware`) that wraps every incoming HTTP request in an OTel span. The global tracer provider is used, which defaults to a **no-op provider** (no spans are exported) unless you configure an OTLP exporter before the server starts.
