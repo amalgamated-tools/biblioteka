@@ -34,7 +34,7 @@ jobs:
   frontend-checks:
     runs-on: ubuntu-latest
     name: Frontend Checks
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
@@ -78,7 +78,6 @@ jobs:
       - name: Run frontend tests
         working-directory: ./frontend
         run: pnpm run test
-        
   frontend-all:
     needs: [frontend-checks]
     runs-on: ubuntu-latest
