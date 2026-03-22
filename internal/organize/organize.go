@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -119,6 +118,9 @@ func cleanEmptyDirs(ctx context.Context, dir, stopAt string) {
 			return
 		}
 		if err := os.Remove(dir); err != nil {
+			if isBenignCleanupRemoveError(err) {
+				return
+			}
 			slog.ErrorContext(
 				ctx,
 				"organize: failed to remove empty directory during cleanup",
@@ -335,7 +337,7 @@ func moveFileIntoLibrary(ctx context.Context, filePath, targetPath, libraryRoot 
 			slog.String(otelkeys.TargetPath, targetPath),
 		)
 		return "", fmt.Errorf("target file already exists: %s", targetPath)
-	} else if !errors.Is(err, syscall.EXDEV) {
+	} else if !isCrossDeviceRenameError(err) {
 		slog.ErrorContext(
 			ctx,
 			"organize: failed to rename file",

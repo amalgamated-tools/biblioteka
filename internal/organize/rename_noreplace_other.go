@@ -21,6 +21,15 @@ func renameNoReplace(ctx context.Context, oldPath, newPath string) error {
 			)
 			return os.ErrExist
 		}
+		if isCrossDeviceRenameError(err) {
+			slog.DebugContext(
+				ctx,
+				"cross-filesystem rename detected, falling back to copy+remove",
+				slog.String(otelkeys.OldPath, oldPath),
+				slog.String(otelkeys.NewPath, newPath),
+			)
+			return fmt.Errorf("cross-filesystem rename from %s to %s: %w", oldPath, newPath, err)
+		}
 		slog.ErrorContext(
 			ctx,
 			"failed to create hard link for rename fallback",
