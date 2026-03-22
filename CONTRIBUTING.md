@@ -494,7 +494,7 @@ Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that ru
 | **Daily Accessibility Review** | Every 3 hours | GitHub issues labeled `a11y`, `automated-analysis` |
 | **Code Simplifier** | Daily | Pull requests simplifying recently changed code |
 | **Issue Triage** | On every new issue | Applies type/priority labels, flags duplicates, asks clarifying questions |
-| **Daily File Diet** | On demand | GitHub issues for source files that exceed healthy size thresholds |
+| **Daily File Diet** | Daily on weekdays; on demand | GitHub issues for source files that exceed healthy size thresholds |
 | **CI Coach** | Daily | Workflow optimization suggestions |
 | **Daily Repo Chronicle** | Weekdays at 4 PM UTC | Narrative summary of daily repository activity |
 | **Weekly Repo Map** | Mondays | ASCII file-tree visualization of the repository |
