@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -19,11 +20,12 @@ type KoboToken struct {
 
 const koboTokenColumns = `id, user_id, name, token_hash, created_at`
 
-func scanKoboToken(row interface{ Scan(...any) error }) (*KoboToken, error) {
+func scanKoboToken(ctx context.Context, row interface{ Scan(...any) error }) (*KoboToken, error) {
 	var t KoboToken
 	err := row.Scan(&t.ID, &t.UserID, &t.Name, &t.TokenHash, &t.CreatedAt)
 	if err != nil {
-		return nil, err
+		slog.ErrorContext(ctx, "Failed to scan kobo token", slog.Any("error", err))
+		return nil, fmt.Errorf("scanning kobo token: %w", err)
 	}
 	return &t, nil
 }
@@ -35,7 +37,7 @@ func (d *DB) CreateKoboToken(ctx context.Context, userID, name, tokenHash string
 		slog.String(otelkeys.Name, name),
 	)
 	// Store the hash in the legacy token column to avoid persisting raw secrets.
-	return scanKoboToken(d.QueryRowContext(ctx,
+	return scanKoboToken(ctx, d.QueryRowContext(ctx,
 		`INSERT INTO kobo_tokens (user_id, name, token, token_hash) VALUES ($1, $2, $3, $4) RETURNING `+koboTokenColumns,
 		userID, name, tokenHash, tokenHash,
 	))
@@ -44,7 +46,7 @@ func (d *DB) CreateKoboToken(ctx context.Context, userID, name, tokenHash string
 // GetKoboToken returns a Kobo token by ID scoped to the given user, or sql.ErrNoRows if not found.
 func (d *DB) GetKoboToken(ctx context.Context, id, userID string) (*KoboToken, error) {
 	slog.DebugContext(ctx, "db: fetching kobo token", slog.String(otelkeys.ID, id))
-	return scanKoboToken(d.QueryRowContext(ctx,
+	return scanKoboToken(ctx, d.QueryRowContext(ctx,
 		`SELECT `+koboTokenColumns+` FROM kobo_tokens WHERE id = $1 AND user_id = $2`,
 		id, userID,
 	))
@@ -53,7 +55,7 @@ func (d *DB) GetKoboToken(ctx context.Context, id, userID string) (*KoboToken, e
 // GetKoboTokenByHash returns a Kobo token record by its hash, or sql.ErrNoRows if not found.
 func (d *DB) GetKoboTokenByHash(ctx context.Context, tokenHash string) (*KoboToken, error) {
 	slog.DebugContext(ctx, "db: looking up kobo token by hash")
-	return scanKoboToken(d.QueryRowContext(ctx,
+	return scanKoboToken(ctx, d.QueryRowContext(ctx,
 		`SELECT `+koboTokenColumns+` FROM kobo_tokens WHERE token_hash = $1`,
 		tokenHash,
 	))
@@ -67,19 +69,25 @@ func (d *DB) ListKoboTokens(ctx context.Context, userID string) ([]KoboToken, er
 		userID,
 	)
 	if err != nil {
-		return nil, err
+		slog.ErrorContext(ctx, "Failed to query kobo tokens", slog.Any("error", err))
+		return nil, fmt.Errorf("failed to query kobo tokens: %w", err)
 	}
 	defer rows.Close()
 
 	var tokens []KoboToken
 	for rows.Next() {
-		t, err := scanKoboToken(rows)
+		t, err := scanKoboToken(ctx, rows)
 		if err != nil {
-			return nil, err
+			slog.ErrorContext(ctx, "Failed to scan kobo token from list", slog.Any("error", err))
+			return nil, fmt.Errorf("scanning kobo token from list: %w", err)
 		}
 		tokens = append(tokens, *t)
 	}
-	return tokens, rows.Err()
+	if err := rows.Err(); err != nil {
+		slog.ErrorContext(ctx, "Error iterating kobo token rows", slog.Any("error", err))
+		return nil, fmt.Errorf("error iterating kobo token rows: %w", err)
+	}
+	return tokens, nil
 }
 
 // DeleteKoboToken removes a Kobo token by ID, scoped to the given user.
@@ -91,10 +99,12 @@ func (d *DB) DeleteKoboToken(ctx context.Context, id, userID string) error {
 	)
 	res, err := d.ExecContext(ctx, `DELETE FROM kobo_tokens WHERE id = $1 AND user_id = $2`, id, userID)
 	if err != nil {
-		return err
+		slog.ErrorContext(ctx, "Failed to delete kobo token", slog.Any("error", err))
+		return fmt.Errorf("failed to delete kobo token: %w", err)
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
+		slog.ErrorContext(ctx, "Kobo token not found", slog.String(otelkeys.ID, id), slog.String(otelkeys.UserID, userID))
 		return sql.ErrNoRows
 	}
 	return nil

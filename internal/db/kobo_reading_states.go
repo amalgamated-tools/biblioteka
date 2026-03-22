@@ -26,11 +26,12 @@ type KoboReadingState struct {
 
 const koboReadingStateColumns = `id, user_id, book_id, status, percent_read, location_value, location_type, location_source, created_at, updated_at`
 
-func scanKoboReadingState(row interface{ Scan(...any) error }) (*KoboReadingState, error) {
+func scanKoboReadingState(ctx context.Context, row interface{ Scan(...any) error }) (*KoboReadingState, error) {
 	var s KoboReadingState
 	err := row.Scan(&s.ID, &s.UserID, &s.BookID, &s.Status, &s.PercentRead,
 		&s.LocationValue, &s.LocationType, &s.LocationSource, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to scan kobo reading state", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("scan kobo reading state: %w", err)
 	}
 	return &s, nil
@@ -43,11 +44,12 @@ func (d *DB) GetKoboReadingState(ctx context.Context, userID, bookID string) (*K
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.BookID, bookID),
 	)
-	state, err := scanKoboReadingState(d.QueryRowContext(ctx,
+	state, err := scanKoboReadingState(ctx, d.QueryRowContext(ctx,
 		`SELECT `+koboReadingStateColumns+` FROM kobo_reading_states WHERE user_id = $1 AND book_id = $2`,
 		userID, bookID,
 	))
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to get kobo reading state", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("get kobo reading state: %w", err)
 	}
 	return state, nil
@@ -72,10 +74,11 @@ func (d *DB) UpsertKoboReadingState(ctx context.Context, userID, bookID, status 
 	          updated_at = ` + d.now() + `
 	      RETURNING ` + koboReadingStateColumns
 
-	state, err := scanKoboReadingState(d.QueryRowContext(ctx, q,
+	state, err := scanKoboReadingState(ctx, d.QueryRowContext(ctx, q,
 		userID, bookID, status, percentRead, locationValue, locationType, locationSource,
 	))
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to upsert kobo reading state", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("upsert kobo reading state: %w", err)
 	}
 	return state, nil
@@ -94,11 +97,13 @@ func (d *DB) ListKoboReadingStatesSince(ctx context.Context, userID string, sinc
 			userID,
 		)
 		if err != nil {
+			slog.ErrorContext(ctx, "Failed to query kobo reading states", slog.Any(otelkeys.Error, err))
 			return nil, fmt.Errorf("query kobo reading states: %w", err)
 		}
 		defer rows.Close()
-		states, err := scanKoboReadingStateRows(rows)
+		states, err := scanKoboReadingStateRows(ctx, rows)
 		if err != nil {
+			slog.ErrorContext(ctx, "Failed to scan kobo reading states", slog.Any(otelkeys.Error, err))
 			return nil, fmt.Errorf("scan kobo reading states: %w", err)
 		}
 		return states, nil
@@ -117,11 +122,13 @@ func (d *DB) ListKoboReadingStatesSince(ctx context.Context, userID string, sinc
 		userID, sinceParam,
 	)
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to query kobo reading states since", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("query kobo reading states since: %w", err)
 	}
 	defer rows.Close()
-	states, err := scanKoboReadingStateRows(rows)
+	states, err := scanKoboReadingStateRows(ctx, rows)
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to scan kobo reading states since", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("scan kobo reading states since: %w", err)
 	}
 	return states, nil
@@ -166,12 +173,14 @@ func (d *DB) GetReadingStatesForBooks(ctx context.Context, userID string, bookID
 
 	rows, err := d.QueryContext(ctx, q, args...)
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to query reading states for books", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("query reading states for books: %w", err)
 	}
 	defer rows.Close()
 
-	states, err := scanKoboReadingStateRows(rows)
+	states, err := scanKoboReadingStateRows(ctx, rows)
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to scan reading states for books", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("scan reading states for books: %w", err)
 	}
 
@@ -188,16 +197,18 @@ type koboReadingStateScanner interface {
 	Err() error
 }
 
-func scanKoboReadingStateRows(rows koboReadingStateScanner) ([]KoboReadingState, error) {
+func scanKoboReadingStateRows(ctx context.Context, rows koboReadingStateScanner) ([]KoboReadingState, error) {
 	var states []KoboReadingState
 	for rows.Next() {
-		s, err := scanKoboReadingState(rows)
+		s, err := scanKoboReadingState(ctx, rows)
 		if err != nil {
+			slog.ErrorContext(ctx, "Failed to scan kobo reading state row", slog.Any(otelkeys.Error, err))
 			return nil, fmt.Errorf("scan kobo reading state row: %w", err)
 		}
 		states = append(states, *s)
 	}
 	if err := rows.Err(); err != nil {
+		slog.ErrorContext(ctx, "Error iterating kobo reading state rows", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("iterate kobo reading state rows: %w", err)
 	}
 	return states, nil

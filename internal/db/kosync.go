@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -25,11 +26,12 @@ type KOSyncCredential struct {
 
 const kosyncCredentialColumns = `id, user_id, username, password_hash, created_at, updated_at`
 
-func scanKOSyncCredential(row interface{ Scan(...any) error }) (*KOSyncCredential, error) {
+func scanKOSyncCredential(ctx context.Context, row interface{ Scan(...any) error }) (*KOSyncCredential, error) {
 	var c KOSyncCredential
 	err := row.Scan(&c.ID, &c.UserID, &c.Username, &c.PasswordHash, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
-		return nil, err
+		slog.ErrorContext(ctx, "Failed to scan KOSync credential", slog.Any("error", err))
+		return nil, fmt.Errorf("scanning KOSync credential: %w", err)
 	}
 	return &c, nil
 }
@@ -37,7 +39,7 @@ func scanKOSyncCredential(row interface{ Scan(...any) error }) (*KOSyncCredentia
 // GetKOSyncCredentialByUserID returns the KOSync credential for a user, or sql.ErrNoRows if not found.
 func (d *DB) GetKOSyncCredentialByUserID(ctx context.Context, userID string) (*KOSyncCredential, error) {
 	slog.DebugContext(ctx, "db: fetching KOSync credential by user ID", slog.String(otelkeys.UserID, userID))
-	return scanKOSyncCredential(d.QueryRowContext(ctx,
+	return scanKOSyncCredential(ctx, d.QueryRowContext(ctx,
 		`SELECT `+kosyncCredentialColumns+` FROM kosync_credentials WHERE user_id = $1`,
 		userID,
 	))
@@ -46,7 +48,7 @@ func (d *DB) GetKOSyncCredentialByUserID(ctx context.Context, userID string) (*K
 // GetKOSyncCredentialByUsername returns the KOSync credential for a username, or sql.ErrNoRows if not found.
 func (d *DB) GetKOSyncCredentialByUsername(ctx context.Context, username string) (*KOSyncCredential, error) {
 	slog.DebugContext(ctx, "db: fetching KOSync credential by username", slog.String(otelkeys.KOSyncUsername, username))
-	return scanKOSyncCredential(d.QueryRowContext(ctx,
+	return scanKOSyncCredential(ctx, d.QueryRowContext(ctx,
 		`SELECT `+kosyncCredentialColumns+` FROM kosync_credentials WHERE LOWER(username) = $1`,
 		username,
 	))
@@ -65,11 +67,12 @@ func (d *DB) UpsertKOSyncCredential(ctx context.Context, userID, username, passw
 		ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = ` + d.now() + `
 		RETURNING ` + kosyncCredentialColumns
 
-	cred, err := scanKOSyncCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
+	cred, err := scanKOSyncCredential(ctx, d.QueryRowContext(ctx, query, userID, username, passwordHash))
 	if err != nil && isKOSyncUsernameUniqueViolation(err) {
+		slog.ErrorContext(ctx, "KOSync username already exists", slog.String(otelkeys.KOSyncUsername, username))
 		return nil, ErrKOSyncUsernameExists
 	}
-	return cred, err
+	return cred, fmt.Errorf("upserting KOSync credential: %w", err)
 }
 
 // isKOSyncUsernameUniqueViolation checks if an error is a unique constraint violation
@@ -87,10 +90,12 @@ func (d *DB) DeleteKOSyncCredential(ctx context.Context, userID string) error {
 	slog.DebugContext(ctx, "db: deleting KOSync credential", slog.String(otelkeys.UserID, userID))
 	res, err := d.ExecContext(ctx, `DELETE FROM kosync_credentials WHERE user_id = $1`, userID)
 	if err != nil {
-		return err
+		slog.ErrorContext(ctx, "Failed to delete KOSync credential", slog.Any("error", err))
+		return fmt.Errorf("failed to delete KOSync credential: %w", err)
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
+		slog.ErrorContext(ctx, "KOSync credential not found for user", slog.String(otelkeys.UserID, userID))
 		return sql.ErrNoRows
 	}
 	return nil
@@ -111,11 +116,12 @@ type ReadingProgress struct {
 
 const readingProgressColumns = `id, user_id, document, progress, percentage, device, device_id, created_at, updated_at`
 
-func scanReadingProgress(row interface{ Scan(...any) error }) (*ReadingProgress, error) {
+func scanReadingProgress(ctx context.Context, row interface{ Scan(...any) error }) (*ReadingProgress, error) {
 	var p ReadingProgress
 	err := row.Scan(&p.ID, &p.UserID, &p.Document, &p.Progress, &p.Percentage, &p.Device, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
-		return nil, err
+		slog.ErrorContext(ctx, "Failed to scan reading progress", slog.Any("error", err))
+		return nil, fmt.Errorf("scanning reading progress: %w", err)
 	}
 	return &p, nil
 }
@@ -126,7 +132,7 @@ func (d *DB) GetReadingProgress(ctx context.Context, userID, document string) (*
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.Document, document),
 	)
-	return scanReadingProgress(d.QueryRowContext(ctx,
+	return scanReadingProgress(ctx, d.QueryRowContext(ctx,
 		`SELECT `+readingProgressColumns+` FROM reading_progress WHERE user_id = $1 AND document = $2`,
 		userID, document,
 	))
@@ -145,5 +151,5 @@ func (d *DB) UpsertReadingProgress(ctx context.Context, userID, document, progre
 			progress = $3, percentage = $4, device = $5, device_id = $6, updated_at = ` + d.now() + `
 		RETURNING ` + readingProgressColumns
 
-	return scanReadingProgress(d.QueryRowContext(ctx, query, userID, document, progress, percentage, device, deviceID))
+	return scanReadingProgress(ctx, d.QueryRowContext(ctx, query, userID, document, progress, percentage, device, deviceID))
 }

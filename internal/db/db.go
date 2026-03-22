@@ -3,8 +3,10 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "modernc.org/sqlite"
 )
@@ -40,21 +42,25 @@ func (t *Timestamp) Scan(value any) error {
 	case string:
 		for _, layout := range tzLayouts {
 			if parsed, err := time.Parse(layout, v); err == nil {
+				slog.Debug("Parsed timestamp with timezone", "input", v, "layout", layout, "parsed", parsed)
 				t.Time = parsed
 				return nil
 			}
 		}
 		for _, layout := range utcLayouts {
 			if parsed, err := time.ParseInLocation(layout, v, time.UTC); err == nil {
+				slog.Debug("Parsed timestamp without timezone", "input", v, "layout", layout, "parsed", parsed)
 				t.Time = parsed
 				return nil
 			}
 		}
+		slog.Error("Failed to parse timestamp string", "input", v)
 		return fmt.Errorf("Timestamp.Scan: unable to parse %q", v)
 	case nil:
 		t.Time = time.Time{}
 		return nil
 	default:
+		slog.Error("Unsupported type for timestamp scan", "type", fmt.Sprintf("%T", value))
 		return fmt.Errorf("Timestamp.Scan: unsupported type %T", value)
 	}
 }
@@ -80,6 +86,7 @@ func (t *Timestamp) UnmarshalJSON(data []byte) error {
 	}
 	parsed, err := time.Parse(time.RFC3339, s)
 	if err != nil {
+		slog.Error("Failed to parse timestamp JSON", "input", s, slog.Any(otelkeys.Error, err))
 		return fmt.Errorf("Timestamp.UnmarshalJSON: %w", err)
 	}
 	t.Time = parsed

@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -34,13 +36,7 @@ func LibraryOrganizationTypeNames() []string {
 }
 
 func IsValidLibraryOrganizationType(organizationType string) bool {
-	for _, validType := range libraryOrganizationTypes {
-		if organizationType == validType {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(libraryOrganizationTypes, organizationType)
 }
 
 // Library represents a row in the libraries table.
@@ -57,11 +53,12 @@ type Library struct {
 const libraryColumns = `id, name, paths, organization_type, monitored, created_at, updated_at`
 
 // scanLibrary scans a library row into a Library struct.
-func scanLibrary(row interface{ Scan(...any) error }) (*Library, error) {
+func scanLibrary(ctx context.Context, row interface{ Scan(...any) error }) (*Library, error) {
 	var lib Library
 	err := row.Scan(&lib.ID, &lib.Name, &lib.Paths, &lib.OrganizationType, &lib.Monitored, &lib.CreatedAt, &lib.UpdatedAt)
 	if err != nil {
-		return nil, err
+		slog.ErrorContext(ctx, "Failed to scan library", slog.Any("error", err))
+		return nil, fmt.Errorf("scanning library: %w", err)
 	}
 	return &lib, nil
 }
@@ -70,23 +67,26 @@ func scanLibrary(row interface{ Scan(...any) error }) (*Library, error) {
 // Returns ErrLibraryNameExists if a library with that name already exists.
 func (d *DB) CreateLibrary(ctx context.Context, name, paths, organizationType string, monitored bool) (*Library, error) {
 	slog.DebugContext(ctx, "db: creating library", slog.String(otelkeys.Name, name))
-	lib, err := scanLibrary(d.QueryRowContext(ctx,
+	lib, err := scanLibrary(ctx, d.QueryRowContext(ctx,
 		`INSERT INTO libraries (name, paths, organization_type, monitored) VALUES ($1, $2, $3, $4) RETURNING `+libraryColumns,
 		name, paths, organizationType, monitored,
 	))
 	if err != nil {
 		if isUniqueViolation(err) {
+			slog.ErrorContext(ctx, "Library name already exists", slog.String(otelkeys.Name, name))
 			return nil, ErrLibraryNameExists
 		}
-		return nil, err
+		slog.ErrorContext(ctx, "Failed to create library", slog.Any("error", err))
+		return nil, fmt.Errorf("failed to create library: %w", err)
 	}
+
 	return lib, nil
 }
 
 // GetLibrary returns a library by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetLibrary(ctx context.Context, id string) (*Library, error) {
 	slog.DebugContext(ctx, "db: fetching library", slog.String(otelkeys.ID, id))
-	return scanLibrary(d.QueryRowContext(ctx,
+	return scanLibrary(ctx, d.QueryRowContext(ctx,
 		`SELECT `+libraryColumns+` FROM libraries WHERE id = $1`,
 		id,
 	))
@@ -103,19 +103,25 @@ func (d *DB) ListLibraries(ctx context.Context) ([]Library, error) {
 		`SELECT `+libraryColumns+` FROM libraries `+orderBy,
 	)
 	if err != nil {
-		return nil, err
+		slog.ErrorContext(ctx, "Failed to query libraries", slog.Any("error", err))
+		return nil, fmt.Errorf("failed to query libraries: %w", err)
 	}
 	defer rows.Close()
 
 	var libraries []Library
 	for rows.Next() {
-		lib, err := scanLibrary(rows)
+		lib, err := scanLibrary(ctx, rows)
 		if err != nil {
-			return nil, err
+			slog.ErrorContext(ctx, "Failed to scan library row", slog.Any("error", err))
+			return nil, fmt.Errorf("failed to scan library row: %w", err)
 		}
 		libraries = append(libraries, *lib)
 	}
-	return libraries, rows.Err()
+	if err := rows.Err(); err != nil {
+		slog.ErrorContext(ctx, "Error iterating library rows", slog.Any("error", err))
+		return nil, fmt.Errorf("error iterating library rows: %w", err)
+	}
+	return libraries, nil
 }
 
 // UpdateLibrary updates a library's fields and returns the updated library.
@@ -126,15 +132,17 @@ func (d *DB) UpdateLibrary(ctx context.Context, id, name, paths, organizationTyp
 		slog.String(otelkeys.ID, id),
 		slog.String(otelkeys.Name, name),
 	)
-	lib, err := scanLibrary(d.QueryRowContext(ctx,
+	lib, err := scanLibrary(ctx, d.QueryRowContext(ctx,
 		`UPDATE libraries SET name = $1, paths = $2, organization_type = $3, monitored = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+libraryColumns,
 		name, paths, organizationType, monitored, id,
 	))
 	if err != nil {
 		if isUniqueViolation(err) {
+			slog.ErrorContext(ctx, "Library name already exists", slog.String(otelkeys.Name, name))
 			return nil, ErrLibraryNameExists
 		}
-		return nil, err
+		slog.ErrorContext(ctx, "Failed to update library", slog.Any("error", err))
+		return nil, fmt.Errorf("failed to update library: %w", err)
 	}
 	return lib, nil
 }
@@ -145,7 +153,8 @@ func (d *DB) DeleteLibrary(ctx context.Context, id string) error {
 	slog.DebugContext(ctx, "db: deleting library", slog.String(otelkeys.ID, id))
 	res, err := d.ExecContext(ctx, `DELETE FROM libraries WHERE id = $1`, id)
 	if err != nil {
-		return err
+		slog.ErrorContext(ctx, "Failed to delete library", slog.Any("error", err))
+		return fmt.Errorf("failed to delete library: %w", err)
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
