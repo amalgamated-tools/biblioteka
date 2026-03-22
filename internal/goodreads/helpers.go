@@ -25,7 +25,7 @@ func ValidISBN10CheckDigit(isbn string) bool {
 	}
 
 	sum := 0
-	for i := 0; i < 9; i++ {
+	for i := range 9 {
 		sum += int(digits[i]-'0') * (10 - i)
 	}
 	if digits[9] == 'X' {
@@ -56,7 +56,7 @@ func ValidISBN13CheckDigit(isbn string) bool {
 	}
 
 	sum := 0
-	for i := 0; i < 13; i++ {
+	for i := range 13 {
 		d := int(digits[i] - '0')
 		if i%2 == 0 {
 			sum += d
@@ -89,7 +89,7 @@ func ConvertISBN10To13(isbn10 string) (string, error) {
 	}
 	isbn13Digits := "978" + isbnDigits[:9]
 	sum := 0
-	for i := 0; i < 12; i++ {
+	for i := range 12 {
 		d := int(isbn13Digits[i] - '0')
 		if i%2 == 0 {
 			sum += d

@@ -30,7 +30,7 @@ func Test_GetBookByASIN(t *testing.T) {
 		t.Fatalf("failed to search by ASIN: %v", err)
 	}
 
-	expected, err := loadBookResult(t.Context(), response.GetBookByAsin.Work.BestBook)
+	expected, err := loadBookResult(t.Context(), response.GetBookByAsin.Work)
 	if err != nil {
 		t.Fatalf("failed to load expected BookResult from response: %v", err)
 	}
@@ -89,7 +89,7 @@ func Test_GetBook(t *testing.T) {
 		t.Fatalf("failed to search by ID: %v", err)
 	}
 
-	expected, err := loadBookResult(t.Context(), response.GetBook.Work.BestBook)
+	expected, err := loadBookResult(t.Context(), response.GetBook.Work)
 	if err != nil {
 		t.Fatalf("failed to load expected BookResult from response: %v", err)
 	}

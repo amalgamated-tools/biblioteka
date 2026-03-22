@@ -224,7 +224,7 @@ func Test_SearchByISBN(t *testing.T) {
 	}
 
 	r := results[0]
-	expected, err := loadBookResult(t.Context(), response.GetBookByLegacyId.Work.BestBook)
+	expected, err := loadBookResult(t.Context(), response.GetBookByLegacyId.Work)
 	if err != nil {
 		t.Fatalf("failed to load expected BookResult from response: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestParseISBNSearchResponse_Success(t *testing.T) {
 	}
 
 	r := results[0]
-	expected, err := loadBookResult(t.Context(), response.GetBookByLegacyId.Work.BestBook)
+	expected, err := loadBookResult(t.Context(), response.GetBookByLegacyId.Work)
 	if err != nil {
 		t.Fatalf("failed to load expected BookResult from response: %v", err)
 	}
