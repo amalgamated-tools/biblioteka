@@ -17,7 +17,7 @@ func TestCreateBookFile(t *testing.T) {
 		t.Fatalf("CreateBook() returned nil book")
 	}
 
-	bf, err := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024000, strPtr("abc123hash"), "/books/gunslinger.epub")
+	bf, err := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024000, new("abc123hash"), "/books/gunslinger.epub")
 	if err != nil {
 		t.Fatalf("CreateBookFile() error: %v", err)
 	}
