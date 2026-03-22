@@ -2,6 +2,7 @@ package goodreads
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -27,23 +28,28 @@ var (
 )
 
 type Client struct {
-	Token  string
-	Host   string
-	client graphql.Client
+	Token      string
+	Host       string
+	client     graphql.Client
+	httpClient *http.Client
 }
 
 func NewClient() *Client {
+	httpClient := &http.Client{
+		// 3 second timeout is more than enough for the Goodreads API, which is usually very fast.
+		Timeout: 3 * time.Second,
+		Transport: &AuthTransport{
+			Token:            defaultToken,
+			WrappedTransport: http.DefaultTransport,
+		},
+	}
 	return &Client{
 		Token: string(defaultToken),
 		Host:  string(defaultHost),
 		client: graphql.NewClient(
 			string(defaultHost),
-			&http.Client{
-				Transport: &AuthTransport{
-					Token:            defaultToken,
-					WrappedTransport: http.DefaultTransport,
-				},
-			},
+			httpClient,
 		),
+		httpClient: httpClient,
 	}
 }

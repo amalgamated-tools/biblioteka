@@ -90,4 +90,5 @@ const (
 	UserID            string = "user_id"
 	Username          string = "username"
 	Version           string = "version"
+	WorkID            string = "work_id"
 )

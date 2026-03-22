@@ -165,12 +165,53 @@ func TestSearch_EmptyEdges(t *testing.T) {
 }
 
 func TestParseISBNSearchResponse_Success(t *testing.T) {
+	client := &Client{
+		client: &mockGraphQLClient{
+			handler: func(req *graphql.Request, resp *graphql.Response) error {
+				data := resp.Data.(*GetBookByLegacyIdResponse)
+				data.GetBookByLegacyId = GetBookByLegacyIdGetBookByLegacyIdBook{
+					Work: GetBookByLegacyIdGetBookByLegacyIdBookWork{
+						Id:       "kca://work/amzn1.gr.work.v3.hH023IoekBBaUTCm",
+						LegacyId: 79106958,
+						Details: GetBookByLegacyIdGetBookByLegacyIdBookWorkDetails{
+							WebUrl:        "https://www.goodreads.com/work/79106958-project-hail-mary",
+							OriginalTitle: "Project Hail Mary",
+						},
+						BestBook: GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBook{
+							Id:       "kca://book/amzn1.gr.book.v3.7WmufEffpivF1XTp",
+							LegacyId: 54493401,
+							ImageUrl: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1764703833i/54493401._SY75_.jpg",
+							Title:    "Project Hail Mary",
+							Details: GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetails{
+								Asin:   "B08FHBV4ZX",
+								Isbn:   "0593135202",
+								Isbn13: "9780593135204",
+								Language: GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetailsLanguage{
+									Name: "English",
+								},
+								NumPages: 476,
+							},
+							PrimaryContributorEdge: GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookPrimaryContributorEdgeBookContributorEdge{
+								Node: GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor{
+									Id:              "kca://author/amzn1.gr.author.v3.9nqjH8sK7Xl2Zt5e",
+									Name:            "Andy Weir",
+									LegacyId:        6540057,
+									ProfileImageUrl: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/authors/1637667636i/6540057._SY75_.jpg",
+								},
+							},
+						},
+					},
+				}
+				return nil
+			},
+		},
+	}
 	body, err := os.ReadFile(filepath.Join("autocomplete.json"))
 	if err != nil {
 		t.Fatalf("failed to read test fixture: %v", err)
 	}
 
-	results := parseISBNSearchResponse(context.Background(), body)
+	results := client.parseISBNSearchResponse(context.Background(), body)
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
@@ -232,7 +273,8 @@ func TestParseISBNSearchResponse_MissingRequiredFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results := parseISBNSearchResponse(context.Background(), []byte(tt.body))
+			client := &Client{}
+			results := client.parseISBNSearchResponse(context.Background(), []byte(tt.body))
 			if len(results) != 0 {
 				t.Errorf("expected 0 results, got %d", len(results))
 			}
@@ -241,24 +283,27 @@ func TestParseISBNSearchResponse_MissingRequiredFields(t *testing.T) {
 }
 
 func TestParseISBNSearchResponse_InvalidBookID(t *testing.T) {
+	client := &Client{}
 	body := `[{"bookId": "not-a-number", "workId": "456", "title": "Test"}]`
-	results := parseISBNSearchResponse(context.Background(), []byte(body))
+	results := client.parseISBNSearchResponse(context.Background(), []byte(body))
 	if len(results) != 0 {
 		t.Errorf("expected 0 results for invalid bookId, got %d", len(results))
 	}
 }
 
 func TestParseISBNSearchResponse_InvalidWorkID(t *testing.T) {
+	client := &Client{}
 	body := `[{"bookId": "123", "workId": "not-a-number", "title": "Test"}]`
-	results := parseISBNSearchResponse(context.Background(), []byte(body))
+	results := client.parseISBNSearchResponse(context.Background(), []byte(body))
 	if len(results) != 0 {
 		t.Errorf("expected 0 results for invalid workId, got %d", len(results))
 	}
 }
 
 func TestParseISBNSearchResponse_OptionalFieldsMissing(t *testing.T) {
+	client := &Client{}
 	body := `[{"bookId": "123", "workId": "456", "title": "Minimal Book"}]`
-	results := parseISBNSearchResponse(context.Background(), []byte(body))
+	results := client.parseISBNSearchResponse(context.Background(), []byte(body))
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
@@ -279,14 +324,16 @@ func TestParseISBNSearchResponse_OptionalFieldsMissing(t *testing.T) {
 }
 
 func TestParseISBNSearchResponse_EmptyArray(t *testing.T) {
-	results := parseISBNSearchResponse(context.Background(), []byte(`[]`))
+	client := &Client{}
+	results := client.parseISBNSearchResponse(context.Background(), []byte(`[]`))
 	if len(results) != 0 {
 		t.Errorf("expected 0 results, got %d", len(results))
 	}
 }
 
 func TestParseISBNSearchResponse_InvalidJSON(t *testing.T) {
-	results := parseISBNSearchResponse(context.Background(), []byte(`not json`))
+	client := &Client{}
+	results := client.parseISBNSearchResponse(context.Background(), []byte(`not json`))
 	if len(results) != 0 {
 		t.Errorf("expected 0 results for invalid JSON, got %d", len(results))
 	}
@@ -297,7 +344,8 @@ func TestParseISBNSearchResponse_MultipleResults(t *testing.T) {
 		{"bookId": "111", "workId": "222", "title": "Book One", "numPages": 100, "author": {"id": 1, "name": "Author A"}},
 		{"bookId": "333", "workId": "444", "title": "Book Two", "numPages": 200, "author": {"id": 2, "name": "Author B"}}
 	]`
-	results := parseISBNSearchResponse(context.Background(), []byte(body))
+	client := &Client{}
+	results := client.parseISBNSearchResponse(context.Background(), []byte(body))
 	if len(results) != 2 {
 		t.Fatalf("expected 2 results, got %d", len(results))
 	}
@@ -320,7 +368,8 @@ func TestParseISBNSearchResponse_SkipsInvalidEntriesKeepsValid(t *testing.T) {
 		{"bookId": "bad", "workId": "222", "title": "Invalid Entry"},
 		{"bookId": "333", "workId": "444", "title": "Valid Entry", "author": {"id": 1, "name": "Author"}}
 	]`
-	results := parseISBNSearchResponse(context.Background(), []byte(body))
+	client := &Client{}
+	results := client.parseISBNSearchResponse(context.Background(), []byte(body))
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result (skipping invalid), got %d", len(results))
 	}

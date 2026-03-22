@@ -3,21 +3,16 @@ package goodreads
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
-	"net/url"
-	"strconv"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"github.com/buger/jsonparser"
 )
 
 // Search performs a search query against the Goodreads unpublished GraphQL API and returns a list of search results.
 // The query parameter is a string that can contain the book title, author name, or other relevant information to find matching books on Goodreads.
 // It should not be a search for ISBN - we have other functions for that
-func (c *Client) Search(ctx context.Context, query string) ([]SearchResult, error) {
-	results := make([]SearchResult, 0)
+func (c *Client) Search(ctx context.Context, query string) ([]BookResult, error) {
+	results := make([]BookResult, 0)
 	resp, err := Search(ctx, c.client, query)
 	if err != nil {
 		return results, fmt.Errorf("goodreads search: %w", err)
@@ -34,160 +29,19 @@ func (c *Client) Search(ctx context.Context, query string) ([]SearchResult, erro
 			continue
 		}
 		res := edge.Node
-		book := res.Work.GetBestBook()
-		results = append(results, SearchResult{
-			WorkID:                res.Work.Id,
-			WorkLegacyID:          res.Work.LegacyId,
-			BookID:                book.Id,
-			BookLegacyID:          book.LegacyId,
-			BookImageURL:          book.ImageUrl,
-			BookTitle:             book.Title,
-			BookASIN:              book.Details.Asin,
-			BookISBN:              book.Details.Isbn,
-			BookISBN13:            book.Details.Isbn13,
-			BookLanguage:          book.Details.Language.Name,
-			BookNumberOfPages:     book.Details.NumPages,
-			AuthorName:            book.PrimaryContributorEdge.Node.Name,
-			AuthorID:              book.PrimaryContributorEdge.Node.Id,
-			AuthorLegacyID:        book.PrimaryContributorEdge.Node.LegacyId,
-			AuthorProfileImageURL: book.PrimaryContributorEdge.Node.ProfileImageUrl,
-		})
+
+		result, err := loadBookResult(ctx, res.Work)
+		if err != nil {
+			slog.DebugContext(
+				ctx,
+				"failed to load book result from Goodreads search result",
+				slog.Any(otelkeys.Error, err),
+				slog.Any(otelkeys.WorkID, res.Work.Id),
+			)
+			continue
+		}
+		results = append(results, *result)
 	}
 
 	return results, nil
-}
-
-func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]SearchResult, error) {
-	searchURL := fmt.Sprintf("https://goodreads.com/book/auto_complete?format=json&q=%s", url.QueryEscape(isbn))
-	req, err := http.NewRequestWithContext(ctx, "GET", searchURL, nil)
-	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to create HTTP request for Goodreads ISBN search",
-			slog.Any(otelkeys.Query, isbn),
-			slog.Any(otelkeys.Error, err),
-			slog.Any(otelkeys.URL, searchURL),
-		)
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"HTTP request failed for Goodreads ISBN search",
-			slog.Any(otelkeys.Query, isbn),
-			slog.Any(otelkeys.Error, err),
-			slog.Any(otelkeys.URL, searchURL),
-		)
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("goodreads ISBN search returned status %d", resp.StatusCode)
-	}
-
-	bodyText, err := io.ReadAll(resp.Body)
-	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to read response body for Goodreads ISBN search",
-			slog.Any(otelkeys.Query, isbn),
-			slog.Any(otelkeys.Error, err),
-			slog.Any(otelkeys.URL, searchURL),
-		)
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	return parseISBNSearchResponse(ctx, bodyText), nil
-}
-
-// parseISBNSearchResponse parses the JSON response from the Goodreads auto_complete endpoint.
-func parseISBNSearchResponse(ctx context.Context, bodyText []byte) []SearchResult {
-	results := make([]SearchResult, 0)
-
-	_, err := jsonparser.ArrayEach(bodyText, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		if err != nil {
-			slog.ErrorContext(
-				ctx,
-				"failed to parse Goodreads ISBN search result",
-				slog.Any(otelkeys.Error, err),
-			)
-			return
-		}
-
-		imageURL, err := jsonparser.GetString(value, "imageUrl")
-		if err != nil {
-			// we don't care if this is missing, so we won't return an error
-			slog.DebugContext(
-				ctx,
-				"missing imageUrl in Goodreads search result",
-				slog.Any(otelkeys.Error, err),
-			)
-		}
-
-		bookIDStr, err := jsonparser.GetString(value, "bookId")
-		if err != nil {
-			return
-		}
-
-		bookID, err := strconv.ParseInt(bookIDStr, 10, 64)
-		if err != nil {
-			return
-		}
-
-		workIDStr, err := jsonparser.GetString(value, "workId")
-		if err != nil {
-			return
-		}
-
-		workID, err := strconv.ParseInt(workIDStr, 10, 64)
-		if err != nil {
-			return
-		}
-
-		title, err := jsonparser.GetString(value, "title")
-		if err != nil {
-			return
-		}
-
-		if workID == 0 || bookID == 0 || title == "" {
-			return
-		}
-
-		numPages, err := jsonparser.GetInt(value, "numPages")
-		if err != nil {
-			slog.DebugContext(ctx, "missing numPages in Goodreads search result", slog.Any(otelkeys.Error, err))
-		}
-
-		authorID, err := jsonparser.GetInt(value, "author", "id")
-		if err != nil {
-			slog.DebugContext(ctx, "missing author id in Goodreads search result", slog.Any(otelkeys.Error, err))
-		}
-
-		authorName, err := jsonparser.GetString(value, "author", "name")
-		if err != nil {
-			slog.DebugContext(ctx, "missing author name in Goodreads search result", slog.Any(otelkeys.Error, err))
-		}
-
-		results = append(results, SearchResult{
-			BookImageURL:      imageURL,
-			BookLegacyID:      bookID,
-			WorkLegacyID:      workID,
-			BookTitle:         title,
-			BookNumberOfPages: numPages,
-			AuthorLegacyID:    authorID,
-			AuthorName:        authorName,
-		})
-	})
-	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"failed to parse Goodreads ISBN search response as JSON array",
-			slog.Any(otelkeys.Error, err),
-		)
-	}
-
-	return results
 }
