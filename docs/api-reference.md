@@ -69,6 +69,27 @@ The version is also displayed in the application sidebar so users can confirm wh
 
 ---
 
+## Pagination
+
+Several list endpoints accept `limit` and `offset` query parameters to page through results.
+
+| Parameter | Type    | Default | Description |
+|-----------|---------|---------|-------------|
+| `limit`   | integer | `50`    | Maximum items per page (capped at `200`) |
+| `offset`  | integer | `0`     | Number of items to skip before the first result |
+
+Paginated responses include envelope fields alongside the data array:
+
+| Field    | Type    | Description |
+|----------|---------|-------------|
+| `total`  | integer | Total number of items across all pages |
+| `limit`  | integer | Effective limit used for this page |
+| `offset` | integer | Effective offset used for this page |
+
+**Behavior:** Most paginated endpoints (`GET /api/books`, `GET /api/libraries/{id}/books`) use `parseLimitOffset`, which **silently clamps** out-of-range values — a non-integer or negative `offset` falls back to `0`, and a `limit` below `1` falls back to `50`. The `GET /api/audit-logs` endpoint uses stricter validation and returns `400 Bad Request` for a non-integer or out-of-range `limit`/`offset`.
+
+---
+
 ## Auth
 
 > **Rate limiting:** The signup, login, logout, all OIDC auth endpoints (`/api/auth/oidc/login`, `/api/auth/oidc/callback`, `/api/auth/oidc/link`), and the KOReader kosync protocol endpoints (`/api/user/create`, `/api/user/auth`, `/api/syncs/progress`) are protected by a per-IP token-bucket rate limiter (5 requests/second, burst of 10). Exceeding the limit returns `429 Too Many Requests`.
