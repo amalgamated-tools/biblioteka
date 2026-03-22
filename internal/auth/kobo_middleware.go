@@ -2,9 +2,7 @@ package auth
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -22,8 +20,7 @@ type KoboTokenResult struct {
 // HashKoboToken returns the hex-encoded SHA-256 hash of the given Kobo token.
 // SHA-256 is appropriate here because tokens are high-entropy random values.
 func HashKoboToken(token string) string {
-	h := sha256.Sum256([]byte(token)) // #nosec G401 -- not a password; high-entropy token
-	return hex.EncodeToString(h[:])
+	return hashHighEntropyToken(token)
 }
 
 // KoboTokenChecker is implemented by types that can look up Kobo tokens by value.
