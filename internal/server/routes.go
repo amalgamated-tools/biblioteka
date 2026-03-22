@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
@@ -226,10 +227,8 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 // If not, it writes a JSON 405 Method Not Allowed response and returns false.
 // Callers should return immediately when this function returns false.
 func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, logMessage string, allowedMethods ...string) bool {
-	for _, m := range allowedMethods {
-		if r.Method == m {
-			return true
-		}
+	if slices.Contains(allowedMethods, r.Method) {
+		return true
 	}
 
 	w.Header().Set("Content-Type", "application/json")

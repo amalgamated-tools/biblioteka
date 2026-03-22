@@ -42,7 +42,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		slog.ErrorContext(ctx, "book processing failed: database is nil",
 			slog.Any(otelkeys.Error, err),
 		)
-		return err
+		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	if extractor == nil {
@@ -50,10 +50,11 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 		slog.ErrorContext(ctx, "book processing failed: extractor is nil",
 			slog.Any(otelkeys.Error, err),
 		)
-		return err
+		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	if err := validatePayload(ctx, p); err != nil {
+		// validatePayload already returns errors wrapped with the "invalid payload: %w" prefix
 		return err
 	}
 
@@ -61,7 +62,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	resolvedPath, skip, err := resolveSourcePath(ctx, database, p, organizationType, lookup)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to resolve source path: %w", err)
 	}
 	if skip {
 		return nil
@@ -70,7 +71,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	alreadyIndexed, err := checkDuplicate(ctx, database, p.Path, p.LibraryID, lookup)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check for duplicate: %w", err)
 	}
 	if alreadyIndexed {
 		return nil
@@ -95,7 +96,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	filePath, skip, err := maybeReorganizeFile(ctx, database, p.Path, p.LibraryRoot, authorName, title, p.LibraryID, organizationType, lookup)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to reorganize file: %w", err)
 	}
 	if skip {
 		return nil
@@ -103,7 +104,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	book, err := createBookRecord(ctx, database, title, meta, p, filePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create book record: %w", err)
 	}
 
 	linkBookAssociations(ctx, database, book.ID, authorName, p.LibraryID, pathInfo, filePath)

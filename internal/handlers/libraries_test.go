@@ -365,7 +365,7 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 
 	// Create multiple books and link them to the library.
 	const totalBooks = 3
-	for i := 0; i < totalBooks; i++ {
+	for i := range totalBooks {
 		title := fmt.Sprintf("Book %d", i+1)
 		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
@@ -419,7 +419,7 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 
 	// Create multiple books and link them to the library.
 	const totalBooks = 3
-	for i := 0; i < totalBooks; i++ {
+	for i := range totalBooks {
 		title := fmt.Sprintf("Invalid Book %d", i+1)
 		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
@@ -473,7 +473,7 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 
 	// Create several books and link them to the library.
 	const totalBooks = 10
-	for i := 0; i < totalBooks; i++ {
+	for i := range totalBooks {
 		title := fmt.Sprintf("Clamped Book %d", i+1)
 		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
