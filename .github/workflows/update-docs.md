@@ -108,15 +108,15 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 
 7. **Maintain Open Documentation PRs**
 
-   - List all open PRs with the `automation` and `documentation` labels created by this workflow.
-   - For each PR:
-     - Resolve merge conflicts by rebasing off the default branch.
-     - Fix CI failures caused by documentation changes (broken links, formatting issues, stale references).
-     - If a PR has been stuck after multiple retry attempts, add a comment explaining the blocker and leave it for maintainer review.
+   - Find the highest-priority open PR with the `automation` and `documentation` labels created by this workflow (oldest conflict first).
+   - Resolve merge conflicts by rebasing off the default branch.
+   - Fix CI failures caused by documentation changes (broken links, formatting issues, stale references).
+   - If a PR has been stuck after multiple retry attempts, add a comment explaining the blocker and leave it for maintainer review.
+   - Note: only one PR branch push is permitted per run; address the next PR on the subsequent workflow trigger.
 
 ### Output Requirements
 
-- **Create Draft Pull Requests**: When documentation needs updates, create focused draft pull requests with clear descriptions
+- **Create Draft Pull Requests**: When documentation needs updates, create focused draft pull requests with clear descriptions. Pull request titles should follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `docs: <short description>` (e.g., `docs(api): update authentication endpoint reference`).
 
 ### Technical Implementation
 
