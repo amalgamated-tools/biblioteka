@@ -1,0 +1,26 @@
+query Search($query: String!) {
+  getSearchSuggestions(query: $query) {
+    totalCount
+    edges {
+      ... on SearchBookEdge {
+        node {
+          work {
+            id
+            legacyId
+            bestBook {
+              primaryContributorEdge {
+                node {
+                  id
+                  name
+                  legacyId
+                }
+              }
+            }
+          }
+          title
+          legacyId
+        }
+      }
+    }
+  }
+}
