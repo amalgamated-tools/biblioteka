@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/goodreads"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -32,6 +33,12 @@ func main() {
 	// happens to match a reserved command.
 	if len(os.Args) >= 3 || !pathExists(cmd) {
 		switch cmd {
+		case "goodreads-search":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: %s goodreads-search <query>\n", os.Args[0])
+				os.Exit(1)
+			}
+			err = runGoodreadsSearch(ctx, os.Args[2])
 		case "process-file":
 			if len(os.Args) < 3 {
 				fmt.Fprintf(os.Stderr, "Usage: %s process-file <file>\n", os.Args[0])
@@ -171,5 +178,11 @@ func runScanDirectory(ctx context.Context, path string, libraryID string) error 
 	}
 
 	fmt.Printf("Successfully scanned directory: %s\n", absPath)
+	return nil
+}
+
+func runGoodreadsSearch(ctx context.Context, query string) error {
+	client := goodreads.NewClient()
+	fmt.Print(client)
 	return nil
 }

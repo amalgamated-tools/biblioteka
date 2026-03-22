@@ -28,6 +28,19 @@
             "showLog": true
         },
         {
+            "name": "Run CLI (Search)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "args": [
+                "goodreads-search",
+                "Alice's Adventures in Wonderland",
+            ],
+            "program": "cmd/cli/main.go",
+            "envFile": "${workspaceFolder}/.env",
+            "showLog": true
+        },
+        {
             "name": "Run Server",
             "type": "go",
             "request": "launch",
