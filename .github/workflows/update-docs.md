@@ -24,6 +24,7 @@ safe-outputs:
     target: "*"
     protected-files: fallback-to-issue
     labels: [automation, documentation]
+    max: 1
 
 tools:
   github:
@@ -109,14 +110,14 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 7. **Maintain Open Documentation PRs**
 
    - Find the highest-priority open PR with the `automation` and `documentation` labels created by this workflow (oldest conflict first).
-   - Resolve merge conflicts by rebasing off the default branch.
+   - Resolve merge conflicts by rebasing onto main.
    - Fix CI failures caused by documentation changes (broken links, formatting issues, stale references).
    - If a PR has been stuck after multiple retry attempts, add a comment explaining the blocker and leave it for maintainer review.
    - Note: only one PR branch push is permitted per run; address the next PR on the subsequent workflow trigger.
 
 ### Output Requirements
 
-- **Create Draft Pull Requests**: When documentation needs updates, create focused draft pull requests with clear descriptions. Pull request titles should follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `docs: <short description>` (e.g., `docs(api): update authentication endpoint reference`).
+- **Create Draft Pull Requests**: When documentation needs updates, create focused draft pull requests with clear descriptions. Pull request titles **must** use a semantic [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) style that passes the `amannn/action-semantic-pull-request` check. For this workflow, titles must be of the form `docs: <short description>` (e.g., `docs(api): update authentication endpoint reference`).
 
 ### Technical Implementation
 
