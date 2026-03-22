@@ -133,3 +133,6 @@ hardfmt:
 
 test:
 	go test -v ./...
+
+testsum:
+	gotestsum
