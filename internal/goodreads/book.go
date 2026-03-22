@@ -8,12 +8,21 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+func (c *Client) GetBookByLegacyID(ctx context.Context, legacyID int64) (*BookResult, error) {
+	resp, err := GetBookByLegacyId(ctx, c.client, legacyID)
+	if err != nil {
+		return nil, err
+	}
+
+	return loadBookResult(ctx, resp.GetBookByLegacyId.Work)
+}
+
 func (c *Client) GetBookByID(ctx context.Context, grID string) (*BookResult, error) {
 	resp, err := GetBook(ctx, c.client, grID)
 	if err != nil {
 		return nil, err
 	}
-	return loadBookResult(ctx, resp.GetBook.Work.BestBook)
+	return loadBookResult(ctx, resp.GetBook.Work)
 }
 
 func (c *Client) GetBookByASIN(ctx context.Context, asin string) (*BookResult, error) {
@@ -22,15 +31,20 @@ func (c *Client) GetBookByASIN(ctx context.Context, asin string) (*BookResult, e
 		return nil, error
 	}
 
-	return loadBookResult(ctx, resp.GetBookByAsin.Work.BestBook)
+	return loadBookResult(ctx, resp.GetBookByAsin.Work)
 }
 
-func loadBookResult(ctx context.Context, value any) (result *BookResult, err error) {
-	// see if this is a GetBookByLegacyIdGetBookByLegacyIdBookWork or SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork
-	if v, ok := value.(GetBookByLegacyIdGetBookByLegacyIdBookWork); ok {
+// loadBookResult gets a bookresult from a *Work type, which is the common type returned by all the different book queries.
+// It handles all the different possible types of the Work field in the various queries.
+func loadBookResult(ctx context.Context, work any) (*BookResult, error) {
+	var result *BookResult
+
+	// we reach this from the goodreadsClient.Search method, which hits their graphql endpoint,
+	// and the type of the work field is SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork
+	if v, ok := work.(SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork); ok {
 		book := v.BestBook
 		author := book.PrimaryContributorEdge.Node
-		return &BookResult{
+		result = &BookResult{
 			WorkID:                v.Id,
 			WorkLegacyID:          v.LegacyId,
 			BookID:                book.Id,
@@ -46,12 +60,15 @@ func loadBookResult(ctx context.Context, value any) (result *BookResult, err err
 			AuthorID:              author.Id,
 			AuthorLegacyID:        author.LegacyId,
 			AuthorProfileImageURL: author.ProfileImageUrl,
-		}, nil
+		}
 	}
-	if v, ok := value.(SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork); ok {
+
+	// we reach this from the goodreadsClient.GetBookByLegacyId method, which hits their graphql endpoint
+	// sometimes after hitting the autocomplete (when searching by ISBN)
+	if v, ok := work.(GetBookByLegacyIdGetBookByLegacyIdBookWork); ok {
 		book := v.BestBook
 		author := book.PrimaryContributorEdge.Node
-		return &BookResult{
+		result = &BookResult{
 			WorkID:                v.Id,
 			WorkLegacyID:          v.LegacyId,
 			BookID:                book.Id,
@@ -67,12 +84,14 @@ func loadBookResult(ctx context.Context, value any) (result *BookResult, err err
 			AuthorID:              author.Id,
 			AuthorLegacyID:        author.LegacyId,
 			AuthorProfileImageURL: author.ProfileImageUrl,
-		}, nil
+		}
 	}
-	if v, ok := value.(GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBook); ok {
-		book := v
+
+	// we reach this from the goodreadsClient.GetBookByASIN method, which hits their graphql endpoint
+	if v, ok := work.(GetBookByAsinGetBookByAsinBookWork); ok {
+		book := v.BestBook
 		author := book.PrimaryContributorEdge.Node
-		return &BookResult{
+		result = &BookResult{
 			WorkID:                v.Id,
 			WorkLegacyID:          v.LegacyId,
 			BookID:                book.Id,
@@ -88,12 +107,14 @@ func loadBookResult(ctx context.Context, value any) (result *BookResult, err err
 			AuthorID:              author.Id,
 			AuthorLegacyID:        author.LegacyId,
 			AuthorProfileImageURL: author.ProfileImageUrl,
-		}, nil
+		}
 	}
-	if v, ok := value.(GetBookByAsinGetBookByAsinBookWorkBestBook); ok {
-		book := v
+
+	// we reach this from the goodreadsClient.GetBook method, which hits their graphql endpoint
+	if v, ok := work.(GetBookGetBookWork); ok {
+		book := v.BestBook
 		author := book.PrimaryContributorEdge.Node
-		return &BookResult{
+		result = &BookResult{
 			WorkID:                v.Id,
 			WorkLegacyID:          v.LegacyId,
 			BookID:                book.Id,
@@ -109,29 +130,11 @@ func loadBookResult(ctx context.Context, value any) (result *BookResult, err err
 			AuthorID:              author.Id,
 			AuthorLegacyID:        author.LegacyId,
 			AuthorProfileImageURL: author.ProfileImageUrl,
-		}, nil
+		}
 	}
-	if v, ok := value.(GetBookGetBookWorkBestBook); ok {
-		book := v
-		author := book.PrimaryContributorEdge.Node
-		return &BookResult{
-			WorkID:                v.Id,
-			WorkLegacyID:          v.LegacyId,
-			BookID:                book.Id,
-			BookLegacyID:          book.LegacyId,
-			BookImageURL:          book.ImageUrl,
-			BookTitle:             book.Title,
-			BookASIN:              book.Details.Asin,
-			BookISBN:              book.Details.Isbn,
-			BookISBN13:            book.Details.Isbn13,
-			BookLanguage:          book.Details.Language.Name,
-			BookNumberOfPages:     book.Details.NumPages,
-			AuthorName:            author.Name,
-			AuthorID:              author.Id,
-			AuthorLegacyID:        author.LegacyId,
-			AuthorProfileImageURL: author.ProfileImageUrl,
-		}, nil
+	if result != nil {
+		return result, nil
 	}
-	slog.ErrorContext(ctx, "unexpected type for book result", slog.Any(otelkeys.Type, value))
-	return nil, fmt.Errorf("unexpected type for book result: %T", value)
+	slog.ErrorContext(ctx, "unexpected type for book result", slog.Any(otelkeys.Type, work))
+	return result, fmt.Errorf("unexpected type for book result: %T", work)
 }
