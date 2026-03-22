@@ -27,11 +27,15 @@ var (
 	}
 )
 
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type Client struct {
 	Token      string
 	Host       string
 	client     graphql.Client
-	httpClient *http.Client
+	httpClient HttpClient
 }
 
 func NewClient() *Client {

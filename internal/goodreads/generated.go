@@ -348,6 +348,162 @@ func (v *GetBookByLegacyIdResponse) GetGetBookByLegacyId() GetBookByLegacyIdGetB
 	return v.GetBookByLegacyId
 }
 
+// GetBookGetBook includes the requested fields of the GraphQL type Book.
+type GetBookGetBook struct {
+	Work GetBookGetBookWork `json:"work"`
+}
+
+// GetWork returns GetBookGetBook.Work, and is useful for accessing the field via an interface.
+func (v *GetBookGetBook) GetWork() GetBookGetBookWork { return v.Work }
+
+// GetBookGetBookWork includes the requested fields of the GraphQL type Work.
+type GetBookGetBookWork struct {
+	Id       string                     `json:"id"`
+	LegacyId int64                      `json:"legacyId"`
+	Details  GetBookGetBookWorkDetails  `json:"details"`
+	BestBook GetBookGetBookWorkBestBook `json:"bestBook"`
+}
+
+// GetId returns GetBookGetBookWork.Id, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWork) GetId() string { return v.Id }
+
+// GetLegacyId returns GetBookGetBookWork.LegacyId, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWork) GetLegacyId() int64 { return v.LegacyId }
+
+// GetDetails returns GetBookGetBookWork.Details, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWork) GetDetails() GetBookGetBookWorkDetails { return v.Details }
+
+// GetBestBook returns GetBookGetBookWork.BestBook, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWork) GetBestBook() GetBookGetBookWorkBestBook { return v.BestBook }
+
+// GetBookGetBookWorkBestBook includes the requested fields of the GraphQL type Book.
+type GetBookGetBookWorkBestBook struct {
+	Id                     string                                                              `json:"id"`
+	LegacyId               int64                                                               `json:"legacyId"`
+	ImageUrl               string                                                              `json:"imageUrl"`
+	Title                  string                                                              `json:"title"`
+	Details                GetBookGetBookWorkBestBookDetails                                   `json:"details"`
+	PrimaryContributorEdge GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdge `json:"primaryContributorEdge"`
+}
+
+// GetId returns GetBookGetBookWorkBestBook.Id, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBook) GetId() string { return v.Id }
+
+// GetLegacyId returns GetBookGetBookWorkBestBook.LegacyId, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBook) GetLegacyId() int64 { return v.LegacyId }
+
+// GetImageUrl returns GetBookGetBookWorkBestBook.ImageUrl, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBook) GetImageUrl() string { return v.ImageUrl }
+
+// GetTitle returns GetBookGetBookWorkBestBook.Title, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBook) GetTitle() string { return v.Title }
+
+// GetDetails returns GetBookGetBookWorkBestBook.Details, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBook) GetDetails() GetBookGetBookWorkBestBookDetails { return v.Details }
+
+// GetPrimaryContributorEdge returns GetBookGetBookWorkBestBook.PrimaryContributorEdge, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBook) GetPrimaryContributorEdge() GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdge {
+	return v.PrimaryContributorEdge
+}
+
+// GetBookGetBookWorkBestBookDetails includes the requested fields of the GraphQL type BookDetails.
+type GetBookGetBookWorkBestBookDetails struct {
+	Asin     string                                    `json:"asin"`
+	Isbn     string                                    `json:"isbn"`
+	Isbn13   string                                    `json:"isbn13"`
+	Language GetBookGetBookWorkBestBookDetailsLanguage `json:"language"`
+	NumPages int64                                     `json:"numPages"`
+}
+
+// GetAsin returns GetBookGetBookWorkBestBookDetails.Asin, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookDetails) GetAsin() string { return v.Asin }
+
+// GetIsbn returns GetBookGetBookWorkBestBookDetails.Isbn, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookDetails) GetIsbn() string { return v.Isbn }
+
+// GetIsbn13 returns GetBookGetBookWorkBestBookDetails.Isbn13, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookDetails) GetIsbn13() string { return v.Isbn13 }
+
+// GetLanguage returns GetBookGetBookWorkBestBookDetails.Language, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookDetails) GetLanguage() GetBookGetBookWorkBestBookDetailsLanguage {
+	return v.Language
+}
+
+// GetNumPages returns GetBookGetBookWorkBestBookDetails.NumPages, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookDetails) GetNumPages() int64 { return v.NumPages }
+
+// GetBookGetBookWorkBestBookDetailsLanguage includes the requested fields of the GraphQL type Language.
+type GetBookGetBookWorkBestBookDetailsLanguage struct {
+	Name string `json:"name"`
+}
+
+// GetName returns GetBookGetBookWorkBestBookDetailsLanguage.Name, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookDetailsLanguage) GetName() string { return v.Name }
+
+// GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdge includes the requested fields of the GraphQL type BookContributorEdge.
+type GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdge struct {
+	Role string                                                                             `json:"role"`
+	Node GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor `json:"node"`
+}
+
+// GetRole returns GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdge.Role, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdge) GetRole() string {
+	return v.Role
+}
+
+// GetNode returns GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdge.Node, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdge) GetNode() GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor {
+	return v.Node
+}
+
+// GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor includes the requested fields of the GraphQL type Contributor.
+type GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor struct {
+	Id              string `json:"id"`
+	Name            string `json:"name"`
+	LegacyId        int64  `json:"legacyId"`
+	ProfileImageUrl string `json:"profileImageUrl"`
+}
+
+// GetId returns GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor.Id, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor) GetId() string {
+	return v.Id
+}
+
+// GetName returns GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor.Name, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor) GetName() string {
+	return v.Name
+}
+
+// GetLegacyId returns GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor.LegacyId, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor) GetLegacyId() int64 {
+	return v.LegacyId
+}
+
+// GetProfileImageUrl returns GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor.ProfileImageUrl, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor) GetProfileImageUrl() string {
+	return v.ProfileImageUrl
+}
+
+// GetBookGetBookWorkDetails includes the requested fields of the GraphQL type WorkDetails.
+type GetBookGetBookWorkDetails struct {
+	WebUrl        string `json:"webUrl"`
+	OriginalTitle string `json:"originalTitle"`
+}
+
+// GetWebUrl returns GetBookGetBookWorkDetails.WebUrl, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkDetails) GetWebUrl() string { return v.WebUrl }
+
+// GetOriginalTitle returns GetBookGetBookWorkDetails.OriginalTitle, and is useful for accessing the field via an interface.
+func (v *GetBookGetBookWorkDetails) GetOriginalTitle() string { return v.OriginalTitle }
+
+// GetBookResponse is returned by GetBook on success.
+type GetBookResponse struct {
+	GetBook GetBookGetBook `json:"getBook"`
+}
+
+// GetGetBook returns GetBookResponse.GetBook, and is useful for accessing the field via an interface.
+func (v *GetBookResponse) GetGetBook() GetBookGetBook { return v.GetBook }
+
 // SearchGetSearchSuggestionsSearchResultsConnection includes the requested fields of the GraphQL type SearchResultsConnection.
 type SearchGetSearchSuggestionsSearchResultsConnection struct {
 	TotalCount int64                                                                    `json:"totalCount"`
@@ -473,7 +629,6 @@ type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBoo
 	Id       string                                                                                   `json:"id"`
 	LegacyId int64                                                                                    `json:"legacyId"`
 	BestBook SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook `json:"bestBook"`
-	Typename string                                                                                   `json:"__typename"`
 }
 
 // GetId returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork.Id, and is useful for accessing the field via an interface.
@@ -491,11 +646,6 @@ func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNod
 	return v.BestBook
 }
 
-// GetTypename returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork.Typename, and is useful for accessing the field via an interface.
-func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWork) GetTypename() string {
-	return v.Typename
-}
-
 // SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook includes the requested fields of the GraphQL type Book.
 type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook struct {
 	Id                     string                                                                                                                            `json:"id"`
@@ -504,7 +654,6 @@ type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBoo
 	Title                  string                                                                                                                            `json:"title"`
 	Details                SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetails                                   `json:"details"`
 	PrimaryContributorEdge SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdge `json:"primaryContributorEdge"`
-	Typename               string                                                                                                                            `json:"__typename"`
 }
 
 // GetId returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook.Id, and is useful for accessing the field via an interface.
@@ -537,11 +686,6 @@ func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNod
 	return v.PrimaryContributorEdge
 }
 
-// GetTypename returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook.Typename, and is useful for accessing the field via an interface.
-func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook) GetTypename() string {
-	return v.Typename
-}
-
 // SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetails includes the requested fields of the GraphQL type BookDetails.
 type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetails struct {
 	Asin     string                                                                                                  `json:"asin"`
@@ -549,7 +693,6 @@ type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBoo
 	Isbn13   string                                                                                                  `json:"isbn13"`
 	Language SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetailsLanguage `json:"language"`
 	NumPages int64                                                                                                   `json:"numPages"`
-	Typename string                                                                                                  `json:"__typename"`
 }
 
 // GetAsin returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetails.Asin, and is useful for accessing the field via an interface.
@@ -577,25 +720,14 @@ func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNod
 	return v.NumPages
 }
 
-// GetTypename returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetails.Typename, and is useful for accessing the field via an interface.
-func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetails) GetTypename() string {
-	return v.Typename
-}
-
 // SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetailsLanguage includes the requested fields of the GraphQL type Language.
 type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetailsLanguage struct {
-	Name     string `json:"name"`
-	Typename string `json:"__typename"`
+	Name string `json:"name"`
 }
 
 // GetName returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetailsLanguage.Name, and is useful for accessing the field via an interface.
 func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetailsLanguage) GetName() string {
 	return v.Name
-}
-
-// GetTypename returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetailsLanguage.Typename, and is useful for accessing the field via an interface.
-func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetailsLanguage) GetTypename() string {
-	return v.Typename
 }
 
 // SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdge includes the requested fields of the GraphQL type BookContributorEdge.
@@ -620,7 +752,6 @@ type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBoo
 	Name            string `json:"name"`
 	LegacyId        int64  `json:"legacyId"`
 	ProfileImageUrl string `json:"profileImageUrl"`
-	Typename        string `json:"__typename"`
 }
 
 // GetId returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor.Id, and is useful for accessing the field via an interface.
@@ -641,11 +772,6 @@ func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNod
 // GetProfileImageUrl returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor.ProfileImageUrl, and is useful for accessing the field via an interface.
 func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor) GetProfileImageUrl() string {
 	return v.ProfileImageUrl
-}
-
-// GetTypename returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor.Typename, and is useful for accessing the field via an interface.
-func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor) GetTypename() string {
-	return v.Typename
 }
 
 // SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchResultEdge includes the requested fields of the GraphQL interface SearchResultEdge.
@@ -733,6 +859,14 @@ type __GetBookByLegacyIdInput struct {
 // GetLegacyId returns __GetBookByLegacyIdInput.LegacyId, and is useful for accessing the field via an interface.
 func (v *__GetBookByLegacyIdInput) GetLegacyId() int64 { return v.LegacyId }
 
+// __GetBookInput is used internally by genqlient
+type __GetBookInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __GetBookInput.Id, and is useful for accessing the field via an interface.
+func (v *__GetBookInput) GetId() string { return v.Id }
+
 // __SearchInput is used internally by genqlient
 type __SearchInput struct {
 	Query string `json:"query"`
@@ -740,6 +874,71 @@ type __SearchInput struct {
 
 // GetQuery returns __SearchInput.Query, and is useful for accessing the field via an interface.
 func (v *__SearchInput) GetQuery() string { return v.Query }
+
+// The query executed by GetBook.
+const GetBook_Operation = `
+query GetBook ($id: ID!) {
+	getBook(id: $id) {
+		work {
+			id
+			legacyId
+			details {
+				webUrl
+				originalTitle
+			}
+			bestBook {
+				id
+				legacyId
+				imageUrl
+				title
+				details {
+					asin
+					isbn
+					isbn13
+					language {
+						name
+					}
+					numPages
+				}
+				primaryContributorEdge {
+					role
+					node {
+						id
+						name
+						legacyId
+						profileImageUrl
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func GetBook(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+) (data_ *GetBookResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "GetBook",
+		Query:  GetBook_Operation,
+		Variables: &__GetBookInput{
+			Id: id,
+		},
+	}
+
+	data_ = &GetBookResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
 
 // The query executed by GetBookByAsin.
 const GetBookByAsin_Operation = `
@@ -894,10 +1093,8 @@ query Search ($query: String!) {
 								isbn13
 								language {
 									name
-									__typename
 								}
 								numPages
-								__typename
 							}
 							primaryContributorEdge {
 								role
@@ -906,12 +1103,9 @@ query Search ($query: String!) {
 									name
 									legacyId
 									profileImageUrl
-									__typename
 								}
 							}
-							__typename
 						}
-						__typename
 					}
 				}
 			}

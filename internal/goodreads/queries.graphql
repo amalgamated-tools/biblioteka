@@ -12,22 +12,59 @@ query GetBookByAsin($asin: String!) {
         legacyId
         imageUrl
         title
-              details {
-                asin
-                isbn
-                isbn13
-                language {
-                  name
-                }
-                numPages
-              }        
+        details {
+          asin
+          isbn
+          isbn13
+          language {
+            name
+          }
+          numPages
+        }
         primaryContributorEdge {
           role
           node {
-                  id
-                  name
-                  legacyId
-                  profileImageUrl
+            id
+            name
+            legacyId
+            profileImageUrl
+          }
+        }
+      }
+    }
+  }
+}
+
+query GetBook($id: ID!) {
+  getBook(id: $id) {
+    work {
+      id
+      legacyId
+      details {
+        webUrl
+        originalTitle
+      }
+      bestBook {
+        id
+        legacyId
+        imageUrl
+        title
+        details {
+          asin
+          isbn
+          isbn13
+          language {
+            name
+          }
+          numPages
+        }
+        primaryContributorEdge {
+          role
+          node {
+            id
+            name
+            legacyId
+            profileImageUrl
           }
         }
       }
@@ -49,22 +86,22 @@ query GetBookByLegacyId($legacyId: Int!) {
         legacyId
         imageUrl
         title
-              details {
-                asin
-                isbn
-                isbn13
-                language {
-                  name
-                }
-                numPages
-              }        
+        details {
+          asin
+          isbn
+          isbn13
+          language {
+            name
+          }
+          numPages
+        }
         primaryContributorEdge {
           role
           node {
-                  id
-                  name
-                  legacyId
-                  profileImageUrl
+            id
+            name
+            legacyId
+            profileImageUrl
           }
         }
       }
@@ -92,10 +129,8 @@ query Search($query: String!) {
                 isbn13
                 language {
                   name
-                  __typename
                 }
                 numPages
-                __typename
               }
               primaryContributorEdge {
                 role
@@ -104,12 +139,9 @@ query Search($query: String!) {
                   name
                   legacyId
                   profileImageUrl
-                  __typename
                 }
               }
-              __typename
             }
-            __typename
           }
         }
       }

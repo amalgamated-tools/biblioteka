@@ -1,0 +1,36 @@
+{
+    "getBookByAsin": {
+        "work": {
+            "id": "kca://work/amzn1.gr.work.v3.hH023IoekBBaUTCm",
+            "legacyId": 79106958,
+            "details": {
+                "webUrl": "https://www.goodreads.com/work/79106958-project-hail-mary",
+                "originalTitle": "Project Hail Mary"
+            },
+            "bestBook": {
+                "id": "kca://book/amzn1.gr.book.v3.7WmufEffpivF1XTp",
+                "legacyId": 54493401,
+                "imageUrl": "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1764703833i/54493401.jpg",
+                "title": "Project Hail Mary",
+                "details": {
+                    "asin": "0593135202",
+                    "isbn": "0593135202",
+                    "isbn13": "9780593135204",
+                    "language": {
+                        "name": "English"
+                    },
+                    "numPages": 476
+                },
+                "primaryContributorEdge": {
+                    "role": "Author",
+                    "node": {
+                        "id": "kca://author/amzn1.gr.author.v1.0B0Zi_LT0OIMBtoV35Dveg",
+                        "name": "Andy Weir",
+                        "legacyId": 6540057,
+                        "profileImageUrl": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/authors/1382592903i/6540057._UY200_CR15,0,200,200_.jpg"
+                    }
+                }
+            }
+        }
+    }
+}
