@@ -12,6 +12,15 @@ query Search($query: String!) {
               legacyId
               imageUrl
               title
+              details {
+                asin
+                isbn
+                isbn13
+                language {
+                  name
+                }
+                numPages
+              }
               primaryContributorEdge {
                 node {
                   id

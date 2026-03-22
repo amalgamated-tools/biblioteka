@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/buger/jsonparser"
 )
 
@@ -31,7 +33,12 @@ func (c *Client) Search(ctx context.Context, query string) ([]SearchResult, erro
 			BookID:                res.Work.GetBestBook().Id,
 			BookLegacyID:          res.Work.GetBestBook().LegacyId,
 			BookImageURL:          res.Work.GetBestBook().ImageUrl,
-			Title:                 res.Work.GetBestBook().Title,
+			BookTitle:             res.Work.GetBestBook().Title,
+			BookASIN:              res.Work.GetBestBook().Details.Asin,
+			BookISBN:              res.Work.GetBestBook().Details.Isbn,
+			BookISBN13:            res.Work.GetBestBook().Details.Isbn13,
+			BookLanguage:          res.Work.GetBestBook().Details.Language.Name,
+			BookNumberOfPages:     res.Work.GetBestBook().Details.NumPages,
 			AuthorName:            res.Work.GetBestBook().PrimaryContributorEdge.Node.Name,
 			AuthorID:              res.Work.GetBestBook().PrimaryContributorEdge.Node.Id,
 			AuthorLegacyID:        res.Work.GetBestBook().PrimaryContributorEdge.Node.LegacyId,
@@ -66,30 +73,54 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]SearchResult,
 			return
 		}
 
-		workID, err := jsonparser.GetInt(value, "workId")
+		imageURL, err := jsonparser.GetString(value, "imageUrl")
 		if err != nil {
-			return
+			// we don't care if this is missing, so we won't return an error
+			slog.DebugContext(ctx, "missing imageUrl in Goodreads search result", slog.Any(otelkeys.Error, err))
 		}
+
 		bookID, err := jsonparser.GetInt(value, "bookId")
 		if err != nil {
 			return
 		}
-		if workID == 0 || bookID == 0 {
+
+		workID, err := jsonparser.GetInt(value, "workId")
+		if err != nil {
 			return
 		}
-		// title, _ := jsonparser.GetString(value, "title")
-		// author, _ := jsonparser.GetString(value, "author_name")
+
+		title, err := jsonparser.GetString(value, "title")
+		if err != nil {
+			return
+		}
+
+		if workID == 0 || bookID == 0 || title == "" {
+			return
+		}
+
+		numPages, err := jsonparser.GetInt(value, "numPages")
+		if err != nil {
+			slog.DebugContext(ctx, "missing numPages in Goodreads search result", slog.Any(otelkeys.Error, err))
+		}
+
+		authorID, err := jsonparser.GetInt(value, "author", "id")
+		if err != nil {
+			slog.DebugContext(ctx, "missing author id in Goodreads search result", slog.Any(otelkeys.Error, err))
+		}
+
+		authorName, err := jsonparser.GetString(value, "author", "name")
+		if err != nil {
+			slog.DebugContext(ctx, "missing author name in Goodreads search result", slog.Any(otelkeys.Error, err))
+		}
 
 		results = append(results, SearchResult{
-			WorkLegacyID: workID,
-			BookLegacyID: bookID,
-			// WorkLegacyID:   res.Work.LegacyId,
-			// BookID:         res.Work.GetBestBook().Id,
-			// BookLegacyID:   res.Work.GetBestBook().LegacyId,
-			// Title:          res.Work.GetBestBook().Title,
-			// Author:         res.Work.GetBestBook().PrimaryContributorEdge.Node.Name,
-			// AuthorID:       res.Work.GetBestBook().PrimaryContributorEdge.Node.Id,
-			// AuthorLegacyID: res.Work.GetBestBook().PrimaryContributorEdge.Node.LegacyId,
+			BookImageURL:      imageURL,
+			BookLegacyID:      bookID,
+			WorkLegacyID:      workID,
+			BookTitle:         title,
+			BookNumberOfPages: numPages,
+			AuthorLegacyID:    authorID,
+			AuthorName:        authorName,
 		})
 	})
 

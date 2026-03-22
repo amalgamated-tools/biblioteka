@@ -195,7 +195,7 @@ func runGoodreadsSearch(ctx context.Context, query string) error {
 
 	fmt.Printf("Goodreads search results for query: %s\n", query)
 	for i, book := range results {
-		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.Title, book.AuthorName, book.WorkID)
+		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.BookTitle, book.AuthorName, book.WorkID)
 	}
 
 	isbnResults, err := client.SearchByISBN(ctx, "9780593135204")
@@ -209,7 +209,7 @@ func runGoodreadsSearch(ctx context.Context, query string) error {
 
 	fmt.Printf("Goodreads search results for ISBN: %s\n", "9780593135204")
 	for i, book := range isbnResults {
-		fmt.Printf("%d. %s by %s (Goodreads ID: %d)\n", i+1, book.Title, book.AuthorName, book.WorkID)
+		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.BookTitle, book.AuthorName, book.WorkID)
 	}
 
 	return nil
