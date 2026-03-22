@@ -175,16 +175,9 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching series", slog.String(otelkeys.SeriesID, id))
 	s, err := h.DB.GetSeries(r.Context(), id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "series not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get series", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get series")
+	if handleDBErr(r.Context(), w, err, "series") {
 		return
 	}
-
 	writeJSON(r.Context(), w, http.StatusOK, toSeriesDTO(s))
 }
 

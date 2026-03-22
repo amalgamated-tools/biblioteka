@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -119,6 +122,71 @@ func Test_ExtractPathID(t *testing.T) {
 			if gotID != tt.wantID || gotOK != tt.wantOK {
 				t.Errorf("extractPathID(%q, %q) = (%q, %v), want (%q, %v)",
 					tt.path, tt.prefix, gotID, gotOK, tt.wantID, tt.wantOK)
+			}
+		})
+	}
+}
+
+func Test_HandleDBErr(t *testing.T) {
+	tests := []struct {
+		name        string
+		err         error
+		resource    string
+		wantHandled bool
+		wantCode    int
+		wantMsg     string
+	}{
+		{
+			name:        "nil error",
+			err:         nil,
+			resource:    "book",
+			wantHandled: false,
+		},
+		{
+			name:        "not found",
+			err:         sql.ErrNoRows,
+			resource:    "author",
+			wantHandled: true,
+			wantCode:    http.StatusNotFound,
+			wantMsg:     "author not found",
+		},
+		{
+			name:        "wrapped not found",
+			err:         fmt.Errorf("lookup failed: %w", sql.ErrNoRows),
+			resource:    "series",
+			wantHandled: true,
+			wantCode:    http.StatusNotFound,
+			wantMsg:     "series not found",
+		},
+		{
+			name:        "other error",
+			err:         errors.New("connection refused"),
+			resource:    "library",
+			wantHandled: true,
+			wantCode:    http.StatusInternalServerError,
+			wantMsg:     "failed to get library",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			got := handleDBErr(t.Context(), w, tt.err, tt.resource)
+			if got != tt.wantHandled {
+				t.Fatalf("handleDBErr() = %v, want %v", got, tt.wantHandled)
+			}
+			if !tt.wantHandled {
+				return
+			}
+			if w.Code != tt.wantCode {
+				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
+			}
+			var result map[string]string
+			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+				t.Fatalf("failed to unmarshal: %v", err)
+			}
+			if result["error"] != tt.wantMsg {
+				t.Errorf("error = %q, want %q", result["error"], tt.wantMsg)
 			}
 		})
 	}
