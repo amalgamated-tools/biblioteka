@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/buger/jsonparser"
@@ -22,19 +23,19 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		return nil, fmt.Errorf("ISBN cannot be empty")
 	}
 	// these can be 10 or 13 characters long, and can contain dashes, but we will just remove the dashes and check the length of the remaining string
-	isbnDigits := ""
+	var isbnDigits strings.Builder
 	for _, r := range isbn {
 		if r >= '0' && r <= '9' {
-			isbnDigits += string(r)
+			isbnDigits.WriteString(string(r))
 		}
 	}
-	if len(isbnDigits) != 10 && len(isbnDigits) != 13 {
+	if len(isbnDigits.String()) != 10 && len(isbnDigits.String()) != 13 {
 		return nil, fmt.Errorf("invalid ISBN: %s", isbn)
 	}
-	if len(isbnDigits) == 10 && !ValidISBN10CheckDigit(isbn) {
+	if len(isbnDigits.String()) == 10 && !ValidISBN10CheckDigit(isbn) {
 		return nil, fmt.Errorf("invalid ISBN-10 check digit: %s", isbn)
 	}
-	if len(isbnDigits) == 13 && !ValidISBN13CheckDigit(isbn) {
+	if len(isbnDigits.String()) == 13 && !ValidISBN13CheckDigit(isbn) {
 		return nil, fmt.Errorf("invalid ISBN-13 check digit: %s", isbn)
 	}
 
