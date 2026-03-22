@@ -87,12 +87,12 @@ db/migrations/
 ### Admin protection
 
 ```go
-if !h.requireAdmin(w, r) {
+if !requireAdmin(h.DB, w, r) {
     return
 }
 ```
 
-`requireAdmin` writes the error response itself; return immediately when it returns `false`.
+`requireAdmin` is a package-level function in `internal/handlers/helpers.go`. It writes the error response itself; return immediately when it returns `false`.
 
 ### User data isolation
 
