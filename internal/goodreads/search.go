@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/buger/jsonparser"
@@ -79,12 +80,22 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]SearchResult,
 			slog.DebugContext(ctx, "missing imageUrl in Goodreads search result", slog.Any(otelkeys.Error, err))
 		}
 
-		bookID, err := jsonparser.GetInt(value, "bookId")
+		bookIDStr, err := jsonparser.GetString(value, "bookId")
 		if err != nil {
 			return
 		}
 
-		workID, err := jsonparser.GetInt(value, "workId")
+		bookID, err := strconv.ParseInt(bookIDStr, 10, 64)
+		if err != nil {
+			return
+		}
+
+		workIDStr, err := jsonparser.GetString(value, "workId")
+		if err != nil {
+			return
+		}
+
+		workID, err := strconv.ParseInt(workIDStr, 10, 64)
 		if err != nil {
 			return
 		}
