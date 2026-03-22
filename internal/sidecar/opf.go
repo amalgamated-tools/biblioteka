@@ -2,14 +2,11 @@ package sidecar
 
 import (
 	"bytes"
-	"context"
 	"encoding/xml"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 
-	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/google/uuid"
 )
 
@@ -74,7 +71,7 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		xml.Attr{Name: xml.Name{Local: "xmlns:opf"}, Value: "http://www.idpf.org/2007/opf"},
 	)
 	if err := e.EncodeToken(start); err != nil {
-		slog.ErrorContext(context.Background(), "encode metadata start element", slog.Any(otelkeys.Error, err))
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("failed to encode metadata start element: %w", err)
 	}
 
@@ -85,26 +82,26 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		}
 		el := xml.StartElement{Name: xml.Name{Local: "dc:" + name}, Attr: attrs}
 		if err := e.EncodeToken(el); err != nil {
-			slog.ErrorContext(context.Background(), "encode dc:"+name+" start element", slog.Any(otelkeys.Error, err))
+			// Let's let the top-level caller decide when/how to log errors since they have more context
 			return fmt.Errorf("failed to encode dc:%s start element: %w", name, err)
 		}
 		if err := e.EncodeToken(xml.CharData(value)); err != nil {
-			slog.ErrorContext(context.Background(), "encode dc:"+name+" char data", slog.Any(otelkeys.Error, err))
+			// Let's let the top-level caller decide when/how to log errors since they have more context
 			return fmt.Errorf("failed to encode dc:%s char data: %w", name, err)
 		}
 		if err := e.EncodeToken(el.End()); err != nil {
-			slog.ErrorContext(context.Background(), "encode dc:"+name+" end element", slog.Any(otelkeys.Error, err))
+			// Let's let the top-level caller decide when/how to log errors since they have more context
 			return fmt.Errorf("failed to encode dc:%s end element: %w", name, err)
 		}
 		return nil
 	}
 
 	if err := dc("title", m.Title); err != nil {
-		slog.ErrorContext(context.Background(), "encode dc:title element", slog.Any(otelkeys.Error, err))
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("failed to encode dc:title element: %w", err)
 	}
 	if err := dc("creator", m.Creator, xml.Attr{Name: xml.Name{Local: "opf:role"}, Value: "aut"}); err != nil {
-		slog.ErrorContext(context.Background(), "encode dc:creator element", slog.Any(otelkeys.Error, err))
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("failed to encode dc:creator element: %w", err)
 	}
 
@@ -117,32 +114,32 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		},
 	}
 	if err := e.EncodeToken(idEl); err != nil {
-		slog.ErrorContext(context.Background(), "encode dc:identifier start element", slog.Any(otelkeys.Error, err))
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("failed to encode dc:identifier start element: %w", err)
 	}
 	if err := e.EncodeToken(xml.CharData(m.Identifier)); err != nil {
-		slog.ErrorContext(context.Background(), "encode dc:identifier char data", slog.Any(otelkeys.Error, err))
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("failed to encode dc:identifier char data: %w", err)
 	}
 	if err := e.EncodeToken(idEl.End()); err != nil {
-		slog.ErrorContext(context.Background(), "encode dc:identifier end element", slog.Any(otelkeys.Error, err))
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("failed to encode dc:identifier end element: %w", err)
 	}
 
 	if err := dc("language", m.Language); err != nil {
-		slog.ErrorContext(context.Background(), "encode dc:language element", slog.Any(otelkeys.Error, err))
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("failed to encode dc:language element: %w", err)
 	}
 	if err := dc("date", m.Date); err != nil {
-		slog.ErrorContext(context.Background(), "encode dc:date element", slog.Any(otelkeys.Error, err))
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("failed to encode dc:date element: %w", err)
 	}
 	if err := dc("publisher", m.Publisher); err != nil {
-		slog.ErrorContext(context.Background(), "encode dc:publisher element", slog.Any(otelkeys.Error, err))
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("failed to encode dc:publisher element: %w", err)
 	}
 	if err := dc("description", m.Description); err != nil {
-		slog.ErrorContext(context.Background(), "encode dc:description element", slog.Any(otelkeys.Error, err))
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("failed to encode dc:description element: %w", err)
 	}
 
@@ -155,11 +152,11 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 			},
 		}
 		if err := e.EncodeToken(meta); err != nil {
-			slog.ErrorContext(context.Background(), "encode meta start element", slog.Any(otelkeys.Error, err))
+			// Let's let the top-level caller decide when/how to log errors since they have more context
 			return fmt.Errorf("failed to encode meta start element: %w", err)
 		}
 		if err := e.EncodeToken(meta.End()); err != nil {
-			slog.ErrorContext(context.Background(), "encode meta end element", slog.Any(otelkeys.Error, err))
+			// Let's let the top-level caller decide when/how to log errors since they have more context
 			return fmt.Errorf("failed to encode meta end element: %w", err)
 		}
 	}
@@ -173,12 +170,7 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 // share a directory).
 func WriteOPF(dir string, data OPFData, baseName string) error {
 	if err := validateBaseName(baseName); err != nil {
-		slog.ErrorContext(
-			context.Background(),
-			"invalid OPF base name",
-			slog.String(otelkeys.BaseName, baseName),
-			slog.Any(otelkeys.Error, err),
-		)
+		// Let's let the top-level caller decide when/how to log errors since they have more context
 		return fmt.Errorf("invalid OPF base name %q: %w", baseName, err)
 	}
 	if data.Title == "" {
