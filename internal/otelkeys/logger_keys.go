@@ -64,6 +64,7 @@ const (
 	Port              string = "port"
 	Query             string = "query"
 	Reason            string = "reason"
+	RelPath           string = "rel_path"
 	RedirectURI       string = "redirect_uri"
 	RemoteAddr        string = "remote_addr"
 	RequestID         string = "request_id"
