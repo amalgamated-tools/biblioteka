@@ -47,4 +47,45 @@ describe("UsersTab accessibility", () => {
       );
     }
   });
+
+  it("gives toggle-admin buttons descriptive accessible names", () => {
+    render(UsersTab, {
+      props: {
+        cachedUsers: [
+          {
+            id: "1",
+            name: "Admin User",
+            email: "admin@example.com",
+            is_admin: true,
+            oidc_linked: false,
+            created_at: "2026-01-01T00:00:00Z",
+          },
+          {
+            id: "2",
+            name: "Reader User",
+            email: "reader@example.com",
+            is_admin: false,
+            oidc_linked: false,
+            created_at: "2026-01-02T00:00:00Z",
+          },
+          {
+            id: "3",
+            name: "Staff User",
+            email: "staff@example.com",
+            is_admin: true,
+            oidc_linked: false,
+            created_at: "2026-01-03T00:00:00Z",
+          },
+        ],
+        onUsersLoaded: () => {},
+      },
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Grant admin role to Reader User" }),
+    ).toHaveTextContent("User");
+    expect(
+      screen.getByRole("button", { name: "Remove admin role from Staff User" }),
+    ).toHaveTextContent("Admin");
+  });
 });
