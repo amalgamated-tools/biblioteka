@@ -31,10 +31,10 @@ permissions:
   pull-requests: read
 
 jobs:
-  frontend-build:
+  frontend-checks:
     runs-on: ubuntu-latest
-    name: Frontend Build
-    timeout-minutes: 15
+    name: Frontend Checks
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
@@ -59,30 +59,6 @@ jobs:
         working-directory: ./frontend
         run: pnpm run build
 
-  frontend-checks:
-    runs-on: ubuntu-latest
-    name: Frontend Checks
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      # pnpm must be set up before setup-node so the node cache can locate the pnpm store
-      - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
-        with:
-          version: 10.32.1
-
-      - name: Set up Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
-        with:
-          node-version: "20"
-          cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        working-directory: ./frontend
-        run: pnpm install --frozen-lockfile
-
       - name: Check TypeScript
         working-directory: ./frontend
         run: pnpm run check
@@ -102,21 +78,19 @@ jobs:
       - name: Run frontend tests
         working-directory: ./frontend
         run: pnpm run test
-        
   frontend-all:
-    needs: [frontend-build, frontend-checks]
+    needs: [frontend-checks]
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Check all frontend jobs passed
+      - name: Verify frontend checks job passed
         run: |
-          if [[ "${{ needs.frontend-build.result }}" != "success" || "${{ needs.frontend-checks.result }}" != "success" ]]; then
-            echo "One or more frontend jobs failed"
+          if [[ "${{ needs.frontend-checks.result }}" != "success" ]]; then
+            echo "Frontend checks job failed"
             exit 1
           fi
 
-
-  # Lint and test run fully in parallel with frontend-build; the dist placeholder
+  # Lint and test run fully in parallel with frontend-checks; the dist placeholder
   # (.gitkeep) in internal/server/dist satisfies //go:embed all:dist for compilation.
   go-lint:
     runs-on: ubuntu-latest
