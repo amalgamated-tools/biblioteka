@@ -1,17 +1,18 @@
 {
-  "timestamp": "2026-03-22T02:28:32Z",
+  "timestamp": "2026-03-22T19:25:32Z",
+  "collection_date": "2026-03-22",
   "period": "daily",
-  "collection_duration_seconds": 38,
   "data_sources": {
-    "agentic_workflows_status": "available",
-    "agentic_workflows_logs": "unavailable (git PATH issue in MCP server)",
-    "github_api": "available"
+    "workflow_runs_available": false,
+    "github_api_prs": true,
+    "github_api_issues": true,
+    "note": "agentic-workflows logs tool unavailable (git not in PATH); metrics derived from GitHub API only"
   },
   "workflows": {
-    "daily-accessibility-review": {
+    "github-actions-bot": {
       "safe_outputs": {
-        "issues_created": 6,
-        "prs_created": 4,
+        "prs_created": 30,
+        "issues_created": 2,
         "comments_added": 0,
         "discussions_created": 0
       },
@@ -25,123 +26,62 @@
         "total_cost_usd": null
       },
       "engagement": {
-        "issue_reactions": 0,
         "pr_comments": 0,
+        "issue_reactions": 0,
         "discussion_replies": 0
       },
       "quality_indicators": {
-        "pr_merge_rate": 1.0,
-        "avg_issue_close_time_hours": null,
-        "avg_pr_merge_time_hours": null
+        "pr_merge_rate": 0.933,
+        "avg_pr_merge_time_hours": 0.71,
+        "avg_issue_close_time_hours": null
       }
     },
-    "update-docs": {
+    "copilot": {
       "safe_outputs": {
-        "issues_created": 1,
         "prs_created": 15,
-        "comments_added": 0,
-        "discussions_created": 0
-      },
-      "workflow_runs": {
-        "total": null,
-        "successful": null,
-        "failed": 1,
-        "success_rate": null,
-        "avg_duration_seconds": null,
-        "total_tokens": null,
-        "total_cost_usd": null
-      },
-      "engagement": {
-        "issue_reactions": 0,
-        "pr_comments": 0,
-        "discussion_replies": 0
-      },
-      "quality_indicators": {
-        "pr_merge_rate": 0.867,
-        "avg_issue_close_time_hours": null,
-        "avg_pr_merge_time_hours": 0.52
-      }
-    },
-    "ci-coach": {
-      "safe_outputs": {
-        "issues_created": 1,
-        "prs_created": 1,
-        "comments_added": 0,
-        "discussions_created": 0
-      },
-      "workflow_runs": {
-        "total": null,
-        "successful": null,
-        "failed": 0,
-        "success_rate": null,
-        "avg_duration_seconds": null,
-        "total_tokens": null,
-        "total_cost_usd": null
-      },
-      "engagement": {
-        "issue_reactions": 0,
-        "pr_comments": 0,
-        "discussion_replies": 0
-      },
-      "quality_indicators": {
-        "pr_merge_rate": 1.0,
-        "avg_issue_close_time_hours": null,
-        "avg_pr_merge_time_hours": null
-      }
-    },
-    "code-simplifier": {
-      "safe_outputs": {
         "issues_created": 0,
-        "prs_created": 1,
         "comments_added": 0,
         "discussions_created": 0
       },
       "workflow_runs": {
         "total": null,
         "successful": null,
-        "failed": 0,
+        "failed": null,
         "success_rate": null,
         "avg_duration_seconds": null,
         "total_tokens": null,
         "total_cost_usd": null
       },
       "engagement": {
-        "issue_reactions": 0,
         "pr_comments": 0,
+        "issue_reactions": 0,
         "discussion_replies": 0
       },
       "quality_indicators": {
-        "pr_merge_rate": 1.0,
-        "avg_issue_close_time_hours": null,
-        "avg_pr_merge_time_hours": null
+        "pr_merge_rate": 0.933,
+        "avg_pr_merge_time_hours": 0.71,
+        "avg_issue_close_time_hours": null
       }
     }
   },
   "ecosystem": {
-    "total_workflows": 20,
-    "active_workflows": 4,
-    "total_issues_created": 9,
-    "total_prs_created": 21,
-    "total_comments_added": 0,
-    "total_discussions_created": 0,
-    "total_safe_outputs": 30,
-    "overall_success_rate": null,
+    "total_workflows": 31,
+    "active_workflows_estimated": 5,
+    "total_prs_created_24h": 50,
+    "total_bot_prs_24h": 45,
+    "total_merged_prs_24h": 45,
+    "total_open_prs_24h": 3,
+    "total_issues_open_agentic": 2,
+    "overall_pr_merge_rate": 0.9,
+    "avg_pr_merge_time_hours": 0.71,
     "total_tokens": null,
     "total_cost_usd": null,
-    "pr_stats": {
-      "total_prs_24h": 30,
-      "merged_prs_24h": 27,
-      "open_prs_24h": 3,
-      "workflow_created_prs": 17,
-      "merge_rate": 0.9,
-      "avg_merge_time_hours": 0.52
-    },
-    "issue_stats": {
-      "total_issues_24h": 9,
-      "bot_created_issues": 9,
-      "closed_issues_24h": 8,
-      "open_issues_24h": 1,
-      "failure_issues": 1
-    }
+    "known_failures": [
+      {
+        "workflow": "update-docs",
+        "run_id": "23393975321",
+        "reason": "patch apply failed - merge conflict"
+      }
+    ]
   }
 }
