@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -19,7 +20,7 @@ func (c *Client) Search(ctx context.Context, query string) ([]SearchResult, erro
 	results := make([]SearchResult, 0)
 	resp, err := Search(ctx, c.client, query)
 	if err != nil {
-		return results, err
+		return results, fmt.Errorf("goodreads search: %w", err)
 	}
 
 	for _, e := range resp.GetSearchSuggestions.Edges {
@@ -57,15 +58,15 @@ func (c *Client) Search(ctx context.Context, query string) ([]SearchResult, erro
 }
 
 func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]SearchResult, error) {
-	url := fmt.Sprintf("https://goodreads.com/book/auto_complete?format=json&q=%s", isbn)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	searchURL := fmt.Sprintf("https://goodreads.com/book/auto_complete?format=json&q=%s", url.QueryEscape(isbn))
+	req, err := http.NewRequestWithContext(ctx, "GET", searchURL, nil)
 	if err != nil {
 		slog.ErrorContext(
 			ctx,
 			"failed to create HTTP request for Goodreads ISBN search",
 			slog.Any(otelkeys.Query, isbn),
 			slog.Any(otelkeys.Error, err),
-			slog.Any(otelkeys.URL, url),
+			slog.Any(otelkeys.URL, searchURL),
 		)
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
@@ -77,11 +78,15 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]SearchResult,
 			"HTTP request failed for Goodreads ISBN search",
 			slog.Any(otelkeys.Query, isbn),
 			slog.Any(otelkeys.Error, err),
-			slog.Any(otelkeys.URL, url),
+			slog.Any(otelkeys.URL, searchURL),
 		)
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("goodreads ISBN search returned status %d", resp.StatusCode)
+	}
 
 	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -90,7 +95,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]SearchResult,
 			"failed to read response body for Goodreads ISBN search",
 			slog.Any(otelkeys.Query, isbn),
 			slog.Any(otelkeys.Error, err),
-			slog.Any(otelkeys.URL, url),
+			slog.Any(otelkeys.URL, searchURL),
 		)
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -102,7 +107,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]SearchResult,
 func parseISBNSearchResponse(ctx context.Context, bodyText []byte) []SearchResult {
 	results := make([]SearchResult, 0)
 
-	_, _ = jsonparser.ArrayEach(bodyText, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+	_, err := jsonparser.ArrayEach(bodyText, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		if err != nil {
 			slog.ErrorContext(
 				ctx,
@@ -176,6 +181,13 @@ func parseISBNSearchResponse(ctx context.Context, bodyText []byte) []SearchResul
 			AuthorName:        authorName,
 		})
 	})
+	if err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to parse Goodreads ISBN search response as JSON array",
+			slog.Any(otelkeys.Error, err),
+		)
+	}
 
 	return results
 }
