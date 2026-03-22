@@ -1,0 +1,147 @@
+{
+  "timestamp": "2026-03-22T02:28:32Z",
+  "period": "daily",
+  "collection_duration_seconds": 38,
+  "data_sources": {
+    "agentic_workflows_status": "available",
+    "agentic_workflows_logs": "unavailable (git PATH issue in MCP server)",
+    "github_api": "available"
+  },
+  "workflows": {
+    "daily-accessibility-review": {
+      "safe_outputs": {
+        "issues_created": 6,
+        "prs_created": 4,
+        "comments_added": 0,
+        "discussions_created": 0
+      },
+      "workflow_runs": {
+        "total": null,
+        "successful": null,
+        "failed": null,
+        "success_rate": null,
+        "avg_duration_seconds": null,
+        "total_tokens": null,
+        "total_cost_usd": null
+      },
+      "engagement": {
+        "issue_reactions": 0,
+        "pr_comments": 0,
+        "discussion_replies": 0
+      },
+      "quality_indicators": {
+        "pr_merge_rate": 1.0,
+        "avg_issue_close_time_hours": null,
+        "avg_pr_merge_time_hours": null
+      }
+    },
+    "update-docs": {
+      "safe_outputs": {
+        "issues_created": 1,
+        "prs_created": 15,
+        "comments_added": 0,
+        "discussions_created": 0
+      },
+      "workflow_runs": {
+        "total": null,
+        "successful": null,
+        "failed": 1,
+        "success_rate": null,
+        "avg_duration_seconds": null,
+        "total_tokens": null,
+        "total_cost_usd": null
+      },
+      "engagement": {
+        "issue_reactions": 0,
+        "pr_comments": 0,
+        "discussion_replies": 0
+      },
+      "quality_indicators": {
+        "pr_merge_rate": 0.867,
+        "avg_issue_close_time_hours": null,
+        "avg_pr_merge_time_hours": 0.52
+      }
+    },
+    "ci-coach": {
+      "safe_outputs": {
+        "issues_created": 1,
+        "prs_created": 1,
+        "comments_added": 0,
+        "discussions_created": 0
+      },
+      "workflow_runs": {
+        "total": null,
+        "successful": null,
+        "failed": 0,
+        "success_rate": null,
+        "avg_duration_seconds": null,
+        "total_tokens": null,
+        "total_cost_usd": null
+      },
+      "engagement": {
+        "issue_reactions": 0,
+        "pr_comments": 0,
+        "discussion_replies": 0
+      },
+      "quality_indicators": {
+        "pr_merge_rate": 1.0,
+        "avg_issue_close_time_hours": null,
+        "avg_pr_merge_time_hours": null
+      }
+    },
+    "code-simplifier": {
+      "safe_outputs": {
+        "issues_created": 0,
+        "prs_created": 1,
+        "comments_added": 0,
+        "discussions_created": 0
+      },
+      "workflow_runs": {
+        "total": null,
+        "successful": null,
+        "failed": 0,
+        "success_rate": null,
+        "avg_duration_seconds": null,
+        "total_tokens": null,
+        "total_cost_usd": null
+      },
+      "engagement": {
+        "issue_reactions": 0,
+        "pr_comments": 0,
+        "discussion_replies": 0
+      },
+      "quality_indicators": {
+        "pr_merge_rate": 1.0,
+        "avg_issue_close_time_hours": null,
+        "avg_pr_merge_time_hours": null
+      }
+    }
+  },
+  "ecosystem": {
+    "total_workflows": 20,
+    "active_workflows": 4,
+    "total_issues_created": 9,
+    "total_prs_created": 21,
+    "total_comments_added": 0,
+    "total_discussions_created": 0,
+    "total_safe_outputs": 30,
+    "overall_success_rate": null,
+    "total_tokens": null,
+    "total_cost_usd": null,
+    "pr_stats": {
+      "total_prs_24h": 30,
+      "merged_prs_24h": 27,
+      "open_prs_24h": 3,
+      "workflow_created_prs": 17,
+      "merge_rate": 0.9,
+      "avg_merge_time_hours": 0.52
+    },
+    "issue_stats": {
+      "total_issues_24h": 9,
+      "bot_created_issues": 9,
+      "closed_issues_24h": 8,
+      "open_issues_24h": 1,
+      "failure_issues": 1
+    }
+  }
+}
