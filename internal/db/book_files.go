@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -29,7 +30,7 @@ func scanBookFile(ctx context.Context, row interface{ Scan(...any) error }) (*Bo
 	err := row.Scan(&bf.ID, &bf.BookID, &bf.FileType, &bf.FileName, &bf.FileSize, &bf.FileHash, &bf.FilePath, &bf.CreatedAt, &bf.UpdatedAt)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to scan book file", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("failed to scan book file: %w", err)
 	}
 	return &bf, nil
 }
@@ -51,7 +52,7 @@ func (d *DB) CreateBookFile(ctx context.Context, bookID, fileType, fileName stri
 	))
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to create book file", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("failed to create book file: %w", err)
 	}
 	return bf, nil
 }
@@ -78,7 +79,7 @@ func (d *DB) ListBookFiles(ctx context.Context, bookID string) ([]BookFile, erro
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to list book files", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("failed to list book files: %w", err)
 	}
 	defer rows.Close()
 
@@ -87,13 +88,13 @@ func (d *DB) ListBookFiles(ctx context.Context, bookID string) ([]BookFile, erro
 		bf, err := scanBookFile(ctx, rows)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan book file", slog.Any(otelkeys.Error, err))
-			return nil, err
+			return nil, fmt.Errorf("failed to scan book file: %w", err)
 		}
 		files = append(files, *bf)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate book file rows", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("failed to iterate book file rows: %w", err)
 	}
 	return files, nil
 }
@@ -113,7 +114,7 @@ func (d *DB) DeleteBookFile(ctx context.Context, id string) error {
 	res, err := d.ExecContext(ctx, `DELETE FROM book_files WHERE id = $1`, id)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to delete book file", slog.Any(otelkeys.Error, err))
-		return err
+		return fmt.Errorf("failed to delete book file: %w", err)
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
@@ -147,7 +148,7 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to batch fetch book files", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("failed to batch fetch book files: %w", err)
 	}
 	defer rows.Close()
 
@@ -156,13 +157,13 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 		bf, err := scanBookFile(ctx, rows)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan book file", slog.Any(otelkeys.Error, err))
-			return nil, err
+			return nil, fmt.Errorf("failed to scan book file: %w", err)
 		}
 		result[bf.BookID] = append(result[bf.BookID], *bf)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate book file rows", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("failed to iterate book file rows: %w", err)
 	}
 	return result, nil
 }

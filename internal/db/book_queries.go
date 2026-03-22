@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -25,7 +26,7 @@ func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book,
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to list books paginated", slog.Any(otelkeys.Error, err))
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to list books paginated: %w", err)
 	}
 	defer rows.Close()
 
@@ -35,20 +36,20 @@ func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book,
 		b, t, err := scanBookAndTotal(ctx, rows)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan book and total", slog.Any(otelkeys.Error, err))
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("failed to scan book and total: %w", err)
 		}
 		total = t
 		books = append(books, *b)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate book rows", slog.Any(otelkeys.Error, err))
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to iterate book rows: %w", err)
 	}
 
 	if len(books) == 0 && offset > 0 {
 		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books`).Scan(&total); err != nil {
 			slog.ErrorContext(ctx, "Failed to count total books", slog.Any(otelkeys.Error, err))
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("failed to count total books: %w", err)
 		}
 	}
 
@@ -72,7 +73,7 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to list recent books", slog.Any(otelkeys.Error, err))
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to list recent books: %w", err)
 	}
 	defer rows.Close()
 
@@ -82,20 +83,20 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 		b, t, err := scanBookAndTotal(ctx, rows)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan book and total", slog.Any(otelkeys.Error, err))
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("failed to scan book and total: %w", err)
 		}
 		total = t
 		books = append(books, *b)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate book rows", slog.Any(otelkeys.Error, err))
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to iterate book rows: %w", err)
 	}
 
 	if len(books) == 0 && offset > 0 {
 		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books`).Scan(&total); err != nil {
 			slog.ErrorContext(ctx, "Failed to count total books", slog.Any(otelkeys.Error, err))
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("failed to count total books: %w", err)
 		}
 	}
 
@@ -115,7 +116,7 @@ func (d *DB) ListBooksByAuthor(ctx context.Context, authorID string) ([]Book, er
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to list books by author", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("failed to list books by author: %w", err)
 	}
 	defer rows.Close()
 
@@ -124,13 +125,13 @@ func (d *DB) ListBooksByAuthor(ctx context.Context, authorID string) ([]Book, er
 		b, err := scanBook(ctx, rows)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan book", slog.Any(otelkeys.Error, err))
-			return nil, err
+			return nil, fmt.Errorf("failed to scan book: %w", err)
 		}
 		books = append(books, *b)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate book rows", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("failed to iterate book rows: %w", err)
 	}
 	return books, nil
 }
@@ -153,7 +154,7 @@ func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, li
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to list books by author paginated", slog.Any(otelkeys.Error, err))
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to list books by author paginated: %w", err)
 	}
 	defer rows.Close()
 
@@ -163,14 +164,14 @@ func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, li
 		b, t, err := scanBookAndTotal(ctx, rows)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan book and total", slog.Any(otelkeys.Error, err))
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("failed to scan book and total: %w", err)
 		}
 		total = t
 		books = append(books, *b)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate book rows", slog.Any(otelkeys.Error, err))
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to iterate book rows: %w", err)
 	}
 
 	if len(books) == 0 && offset > 0 {
@@ -179,7 +180,7 @@ func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, li
 			authorID,
 		).Scan(&total); err != nil {
 			slog.ErrorContext(ctx, "Failed to count total books by author", slog.Any(otelkeys.Error, err))
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("failed to count total books by author: %w", err)
 		}
 	}
 
@@ -199,7 +200,7 @@ func (d *DB) ListBooksBySeries(ctx context.Context, seriesID string) ([]Book, er
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to list books by series", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("failed to list books by series: %w", err)
 	}
 	defer rows.Close()
 
@@ -208,13 +209,13 @@ func (d *DB) ListBooksBySeries(ctx context.Context, seriesID string) ([]Book, er
 		b, err := scanBook(ctx, rows)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan book", slog.Any(otelkeys.Error, err))
-			return nil, err
+			return nil, fmt.Errorf("failed to scan book: %w", err)
 		}
 		books = append(books, *b)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate book rows", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("failed to iterate book rows: %w", err)
 	}
 	return books, nil
 }
@@ -237,7 +238,7 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to list books by series paginated", slog.Any(otelkeys.Error, err))
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to list books by series paginated: %w", err)
 	}
 	defer rows.Close()
 
@@ -247,14 +248,14 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 		b, t, err := scanBookAndTotal(ctx, rows)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan book and total", slog.Any(otelkeys.Error, err))
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("failed to scan book and total: %w", err)
 		}
 		total = t
 		books = append(books, *b)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate book rows", slog.Any(otelkeys.Error, err))
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to iterate book rows: %w", err)
 	}
 
 	if len(books) == 0 && offset > 0 {
@@ -263,7 +264,7 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 			seriesID,
 		).Scan(&total); err != nil {
 			slog.ErrorContext(ctx, "Failed to count total books by series", slog.Any(otelkeys.Error, err))
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("failed to count total books by series: %w", err)
 		}
 	}
 
@@ -298,7 +299,7 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to search books", slog.Any(otelkeys.Error, err))
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to search books: %w", err)
 	}
 	defer rows.Close()
 
@@ -308,20 +309,20 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 		b, t, err := scanBookAndTotal(ctx, rows)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan book and total", slog.Any(otelkeys.Error, err))
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("failed to scan book and total: %w", err)
 		}
 		total = t
 		books = append(books, *b)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate book rows", slog.Any(otelkeys.Error, err))
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to iterate book rows: %w", err)
 	}
 
 	if len(books) == 0 && offset > 0 {
 		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books `+whereClause, likePattern).Scan(&total); err != nil {
 			slog.ErrorContext(ctx, "Failed to count total search results", slog.Any(otelkeys.Error, err))
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("failed to count total search results: %w", err)
 		}
 	}
 

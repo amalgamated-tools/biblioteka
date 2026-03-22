@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -45,7 +46,7 @@ func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to query book authors", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("querying book authors: %w", err)
 	}
 	defer rows.Close()
 
@@ -54,13 +55,13 @@ func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error
 		a, err := scanAuthor(ctx, rows)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan author", slog.Any(otelkeys.Error, err))
-			return nil, err
+			return nil, fmt.Errorf("scanning author: %w", err)
 		}
 		authors = append(authors, *a)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate author rows", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("iterating author rows: %w", err)
 	}
 	return authors, nil
 }
@@ -83,19 +84,19 @@ func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []stri
 
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("beginning transaction: %w", err)
 	}
 	defer tx.Rollback() //nolint:errcheck
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM book_authors WHERE book_id = $1`, bookID); err != nil {
 		slog.ErrorContext(ctx, "Failed to delete existing book authors", slog.Any(otelkeys.Error, err))
-		return err
+		return fmt.Errorf("deleting existing book authors: %w", err)
 	}
 
 	for _, authorID := range unique {
 		if _, err := tx.ExecContext(ctx, `INSERT INTO book_authors (book_id, author_id) VALUES ($1, $2)`, bookID, authorID); err != nil {
 			slog.ErrorContext(ctx, "Failed to insert book author association", slog.Any(otelkeys.Error, err), slog.String(otelkeys.AuthorID, authorID))
-			return err
+			return fmt.Errorf("inserting book author association: %w", err)
 		}
 	}
 
@@ -111,7 +112,7 @@ func (d *DB) GetBookSeries(ctx context.Context, bookID string) ([]BookSeriesEntr
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to query book series", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("querying book series: %w", err)
 	}
 	defer rows.Close()
 
@@ -121,13 +122,13 @@ func (d *DB) GetBookSeries(ctx context.Context, bookID string) ([]BookSeriesEntr
 		err := rows.Scan(&entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan book series entry", slog.Any(otelkeys.Error, err))
-			return nil, err
+			return nil, fmt.Errorf("scanning book series entry: %w", err)
 		}
 		entries = append(entries, entry)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate book series rows", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("iterating book series rows: %w", err)
 	}
 	return entries, nil
 }
@@ -150,19 +151,19 @@ func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSer
 
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("beginning transaction: %w", err)
 	}
 	defer tx.Rollback() //nolint:errcheck
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM book_series WHERE book_id = $1`, bookID); err != nil {
 		slog.ErrorContext(ctx, "Failed to delete existing book series", slog.Any(otelkeys.Error, err))
-		return err
+		return fmt.Errorf("deleting existing book series: %w", err)
 	}
 
 	for _, entry := range unique {
 		if _, err := tx.ExecContext(ctx, `INSERT INTO book_series (book_id, series_id, position) VALUES ($1, $2, $3)`, bookID, entry.SeriesID, entry.Position); err != nil {
 			slog.ErrorContext(ctx, "Failed to insert book series association", slog.Any(otelkeys.Error, err), slog.String(otelkeys.SeriesID, entry.SeriesID))
-			return err
+			return fmt.Errorf("inserting book series association: %w", err)
 		}
 	}
 
@@ -192,7 +193,7 @@ func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[stri
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to batch fetch book authors", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("batch fetching book authors: %w", err)
 	}
 	defer rows.Close()
 
@@ -202,13 +203,13 @@ func (d *DB) GetAuthorsForBooks(ctx context.Context, bookIDs []string) (map[stri
 		a, err := scanAuthor(ctx, prefixedScanner{row: rows, prefix: []any{&bookID}})
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to scan author", slog.Any(otelkeys.Error, err))
-			return nil, err
+			return nil, fmt.Errorf("scanning author: %w", err)
 		}
 		result[bookID] = append(result[bookID], *a)
 	}
 	if err := rows.Err(); err != nil {
 		slog.ErrorContext(ctx, "Failed to iterate author rows", slog.Any(otelkeys.Error, err))
-		return nil, err
+		return nil, fmt.Errorf("iterating author rows: %w", err)
 	}
 	return result, nil
 }
