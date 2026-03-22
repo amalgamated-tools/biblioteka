@@ -114,7 +114,17 @@ func cleanEmptyDirs(ctx context.Context, dir, stopAt string) {
 		}
 
 		entries, err := os.ReadDir(dir)
-		if err != nil || len(entries) > 0 {
+		if err != nil {
+			slog.ErrorContext(
+				ctx,
+				"organize: failed to read directory during cleanup, stopping cleanup",
+				slog.String(otelkeys.Directory, dir),
+				slog.String(otelkeys.StopAt, stopAt),
+				slog.Any(otelkeys.Error, err),
+			)
+			return
+		}
+		if len(entries) > 0 {
 			return
 		}
 		if err := os.Remove(dir); err != nil {
@@ -137,13 +147,6 @@ func cleanEmptyDirs(ctx context.Context, dir, stopAt string) {
 func copyFile(ctx context.Context, src, dst string) (err error) {
 	in, err := os.Open(src)
 	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to open source file for copying",
-			slog.String(otelkeys.Source, src),
-			slog.String(otelkeys.Destination, dst),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("open source file %s: %w", src, err)
 	}
 	defer in.Close()
@@ -151,13 +154,6 @@ func copyFile(ctx context.Context, src, dst string) (err error) {
 	// Capture source file metadata so we can preserve it on the destination.
 	srcInfo, err := in.Stat()
 	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to stat source file",
-			slog.String(otelkeys.Source, src),
-			slog.String(otelkeys.Destination, dst),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("stat source file %s: %w", src, err)
 	}
 	srcMode := srcInfo.Mode()
@@ -166,13 +162,6 @@ func copyFile(ctx context.Context, src, dst string) (err error) {
 	dstDir := filepath.Dir(dst)
 	out, err := os.CreateTemp(dstDir, ".biblioteka-copy-*")
 	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to create temp file for copying",
-			slog.String(otelkeys.Source, src),
-			slog.String(otelkeys.Destination, dst),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("create temp file in %s: %w", dstDir, err)
 	}
 	tmpName := out.Name()
@@ -181,13 +170,6 @@ func copyFile(ctx context.Context, src, dst string) (err error) {
 	// the copy behaves like a rename from the user's perspective.
 	if err := out.Chmod(srcMode.Perm()); err != nil {
 		_ = out.Close()
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to set permissions on temp file during copying",
-			slog.String(otelkeys.Source, src),
-			slog.String(otelkeys.Destination, dst),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("chmod temp file %s: %w", tmpName, err)
 	}
 
@@ -199,50 +181,22 @@ func copyFile(ctx context.Context, src, dst string) (err error) {
 	}()
 
 	if _, err = io.Copy(out, in); err != nil {
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to copy file contents",
-			slog.String(otelkeys.Source, src),
-			slog.String(otelkeys.Destination, dst),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("copy file %s to %s: %w", src, dst, err)
 	}
 
 	// Close the temp file before renaming to ensure contents are flushed and to
 	// avoid rename failures on platforms like Windows.
 	if cerr := out.Close(); cerr != nil {
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to close temp file after copying",
-			slog.String(otelkeys.Source, src),
-			slog.String(otelkeys.Destination, dst),
-			slog.Any(otelkeys.Error, cerr),
-		)
 		return fmt.Errorf("close temp file %s: %w", tmpName, cerr)
 	}
 
 	// Preserve modification time (and use it for access time as well) so the
 	// copied file closely matches the original's metadata.
 	if err = os.Chtimes(tmpName, srcModTime, srcModTime); err != nil {
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to set modification time on temp file during copying",
-			slog.String(otelkeys.Source, src),
-			slog.String(otelkeys.Destination, dst),
-			slog.Any(otelkeys.Error, err),
-		)
 		return fmt.Errorf("set modification time on temp file %s: %w", tmpName, err)
 	}
 
 	if err = renameNoReplace(ctx, tmpName, dst); err != nil {
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to rename temp file to destination during copying",
-			slog.String(otelkeys.Source, src),
-			slog.String(otelkeys.Destination, dst),
-			slog.Any(otelkeys.Error, err),
-		)
 		if errors.Is(err, os.ErrExist) {
 			return fmt.Errorf("destination file %q already exists", dst)
 		}

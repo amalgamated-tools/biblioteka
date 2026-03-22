@@ -219,6 +219,7 @@ func (s *Server) Run(ctx context.Context) error {
 	defer span.End()
 	slog.DebugContext(newctx, "Running server", slog.String(otelkeys.Address, s.Address))
 	ctx, cancel := context.WithCancel(newctx)
+	defer cancel()
 
 	chain := alice.New(
 		middleware.RequestIDHandler,
@@ -234,23 +235,30 @@ func (s *Server) Run(ctx context.Context) error {
 		IdleTimeout:  HTTPIdleTimeout,
 	}
 
+	errCh := make(chan error, 1)
+
 	go func() {
 		err := s.httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			slog.ErrorContext(newctx, "HTTP server error", slog.Any(otelkeys.Error, err))
-			s.shutdownFuncs = append(s.shutdownFuncs, func(ctx context.Context) error {
-				slog.InfoContext(ctx, "Shutting down HTTP server due to error")
-				return fmt.Errorf("HTTP server error: %w", err)
-			})
-			cancel()
-			return
+			errCh <- err
 		}
 	}()
 
 	s.shutdownFuncs = append(s.shutdownFuncs, s.httpServer.Shutdown)
 
-	<-ctx.Done()
-	return s.shutdown(ctx)
+	select {
+	case <-ctx.Done():
+		return s.shutdown(ctx)
+	case err := <-errCh:
+		slog.ErrorContext(newctx, "HTTP server error", slog.Any(otelkeys.Error, err))
+		s.shutdownFuncs = append(s.shutdownFuncs, func(ctx context.Context) error {
+			slog.InfoContext(ctx, "Shutting down HTTP server due to error")
+			return fmt.Errorf("HTTP server error: %w", err)
+		})
+		cancel()
+		<-ctx.Done()
+		return s.shutdown(ctx)
+	}
 }
 
 func (s *Server) shutdown(ctx context.Context) error {
