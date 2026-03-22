@@ -100,12 +100,10 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	}
 
 	if err := dc("title", m.Title); err != nil {
-		// Let's let the top-level caller decide when/how to log errors since they have more context
-		return fmt.Errorf("failed to encode dc:title element: %w", err)
+		return err
 	}
 	if err := dc("creator", m.Creator, xml.Attr{Name: xml.Name{Local: "opf:role"}, Value: "aut"}); err != nil {
-		// Let's let the top-level caller decide when/how to log errors since they have more context
-		return fmt.Errorf("failed to encode dc:creator element: %w", err)
+		return err
 	}
 
 	// dc:identifier is always present.
@@ -130,20 +128,16 @@ func (m opfMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	}
 
 	if err := dc("language", m.Language); err != nil {
-		// Let's let the top-level caller decide when/how to log errors since they have more context
-		return fmt.Errorf("failed to encode dc:language element: %w", err)
+		return err
 	}
 	if err := dc("date", m.Date); err != nil {
-		// Let's let the top-level caller decide when/how to log errors since they have more context
-		return fmt.Errorf("failed to encode dc:date element: %w", err)
+		return err
 	}
 	if err := dc("publisher", m.Publisher); err != nil {
-		// Let's let the top-level caller decide when/how to log errors since they have more context
-		return fmt.Errorf("failed to encode dc:publisher element: %w", err)
+		return err
 	}
 	if err := dc("description", m.Description); err != nil {
-		// Let's let the top-level caller decide when/how to log errors since they have more context
-		return fmt.Errorf("failed to encode dc:description element: %w", err)
+		return err
 	}
 
 	if m.HasCover {

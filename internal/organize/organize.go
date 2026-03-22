@@ -292,35 +292,14 @@ func moveFileIntoLibrary(ctx context.Context, filePath, targetPath, libraryRoot 
 		)
 		return "", fmt.Errorf("target file already exists: %s", targetPath)
 	} else if !isCrossDeviceRenameError(err) {
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to rename file",
-			slog.String(otelkeys.FilePath, filePath),
-			slog.String(otelkeys.TargetPath, targetPath),
-			slog.Any(otelkeys.Error, err),
-		)
 		return "", fmt.Errorf("rename %s to %s: %w", filePath, targetPath, err)
 	}
 
 	// Cross-filesystem fallback: copy then remove.
 	if err := copyFile(ctx, filePath, targetPath); err != nil {
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to copy file during cross-filesystem move",
-			slog.String(otelkeys.FilePath, filePath),
-			slog.String(otelkeys.TargetPath, targetPath),
-			slog.Any(otelkeys.Error, err),
-		)
 		return "", fmt.Errorf("copy file to %s: %w", targetPath, err)
 	}
 	if err := os.Remove(filePath); err != nil {
-		slog.ErrorContext(
-			ctx,
-			"organize: failed to remove original file after copy during cross-filesystem move",
-			slog.String(otelkeys.FilePath, filePath),
-			slog.String(otelkeys.TargetPath, targetPath),
-			slog.Any(otelkeys.Error, err),
-		)
 		return targetPath, fmt.Errorf("remove original file %s after copy to %s: %w", filePath, targetPath, err)
 	}
 

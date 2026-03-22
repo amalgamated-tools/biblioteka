@@ -257,7 +257,7 @@ func (s *Server) Run(ctx context.Context) error {
 		})
 		cancel()
 		<-ctx.Done()
-		return s.shutdown(ctx)
+		return s.shutdown(newctx)
 	}
 }
 
