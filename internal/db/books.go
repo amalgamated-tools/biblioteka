@@ -33,21 +33,23 @@ type Book struct {
 
 const bookColumns = `id, title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, num_pages, cover_image_url, created_at, updated_at`
 
-func scanBook(row interface{ Scan(...any) error }) (*Book, error) {
+func scanBook(ctx context.Context, row interface{ Scan(...any) error }) (*Book, error) {
 	var b Book
 	err := row.Scan(&b.ID, &b.Title, &b.Description, &b.ASIN, &b.ISBN10, &b.ISBN13, &b.GoodreadsID, &b.HardcoverID, &b.GoogleBooksID, &b.PublicationDate, &b.Publisher, &b.Language, &b.NumPages, &b.CoverImageURL, &b.CreatedAt, &b.UpdatedAt)
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to scan book", slog.Any(otelkeys.Error, err))
 		return nil, err
 	}
 	return &b, nil
 }
 
 // scanBookAndTotal scans book columns plus a trailing COUNT(*) OVER() total.
-func scanBookAndTotal(row interface{ Scan(...any) error }) (*Book, int, error) {
+func scanBookAndTotal(ctx context.Context, row interface{ Scan(...any) error }) (*Book, int, error) {
 	var b Book
 	var total int
 	err := row.Scan(&b.ID, &b.Title, &b.Description, &b.ASIN, &b.ISBN10, &b.ISBN13, &b.GoodreadsID, &b.HardcoverID, &b.GoogleBooksID, &b.PublicationDate, &b.Publisher, &b.Language, &b.NumPages, &b.CoverImageURL, &b.CreatedAt, &b.UpdatedAt, &total)
 	if err != nil {
+		slog.ErrorContext(ctx, "Failed to scan book and total", slog.Any(otelkeys.Error, err))
 		return nil, 0, err
 	}
 	return &b, total, nil
@@ -56,7 +58,7 @@ func scanBookAndTotal(row interface{ Scan(...any) error }) (*Book, int, error) {
 // CreateBook inserts a new book and returns it.
 func (d *DB) CreateBook(ctx context.Context, title string, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language *string, numPages *int, coverImageURL *string) (*Book, error) {
 	slog.DebugContext(ctx, "db: creating book", slog.String(otelkeys.Title, title))
-	b, err := scanBook(d.QueryRowContext(ctx,
+	b, err := scanBook(ctx, d.QueryRowContext(ctx,
 		`INSERT INTO books (title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, num_pages, cover_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING `+bookColumns,
 		title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, numPages, coverImageURL,
 	))
@@ -80,7 +82,7 @@ func (d *DB) CreateBookWithFile(ctx context.Context, title string, description, 
 	}
 	defer tx.Rollback() //nolint:errcheck
 
-	b, err := scanBook(tx.QueryRowContext(ctx,
+	b, err := scanBook(ctx, tx.QueryRowContext(ctx,
 		`INSERT INTO books (title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, num_pages, cover_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING `+bookColumns,
 		title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, numPages, coverImageURL,
 	))
@@ -88,7 +90,7 @@ func (d *DB) CreateBookWithFile(ctx context.Context, title string, description, 
 		return nil, nil, err
 	}
 
-	bf, err := scanBookFile(tx.QueryRowContext(ctx,
+	bf, err := scanBookFile(ctx, tx.QueryRowContext(ctx,
 		`INSERT INTO book_files (book_id, file_type, file_name, file_size, file_hash, file_path) VALUES ($1, $2, $3, $4, $5, $6) RETURNING `+bookFileColumns,
 		b.ID, fileType, fileName, fileSize, fileHash, filePath,
 	))
@@ -105,7 +107,7 @@ func (d *DB) CreateBookWithFile(ctx context.Context, title string, description, 
 // GetBook returns a book by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetBook(ctx context.Context, id string) (*Book, error) {
 	slog.DebugContext(ctx, "db: fetching book", slog.String(otelkeys.ID, id))
-	return scanBook(d.QueryRowContext(ctx,
+	return scanBook(ctx, d.QueryRowContext(ctx,
 		`SELECT `+bookColumns+` FROM books WHERE id = $1`,
 		id,
 	))
@@ -128,13 +130,17 @@ func (d *DB) ListBooks(ctx context.Context) ([]Book, error) {
 
 	var books []Book
 	for rows.Next() {
-		b, err := scanBook(rows)
+		b, err := scanBook(ctx, rows)
 		if err != nil {
 			return nil, err
 		}
 		books = append(books, *b)
 	}
-	return books, rows.Err()
+	if err := rows.Err(); err != nil {
+		slog.ErrorContext(ctx, "Failed to iterate book rows", slog.Any(otelkeys.Error, err))
+		return nil, err
+	}
+	return books, nil
 }
 
 // ListBooksByLibrary returns all books in a specific library.
@@ -155,7 +161,7 @@ func (d *DB) ListBooksByLibrary(ctx context.Context, libraryID string) ([]Book, 
 
 	var books []Book
 	for rows.Next() {
-		b, err := scanBook(rows)
+		b, err := scanBook(ctx, rows)
 		if err != nil {
 			return nil, err
 		}
@@ -188,7 +194,7 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 	var books []Book
 	var total int
 	for rows.Next() {
-		b, t, err := scanBookAndTotal(rows)
+		b, t, err := scanBookAndTotal(ctx, rows)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -219,7 +225,7 @@ func (d *DB) UpdateBook(ctx context.Context, id, title string, description, asin
 		slog.String(otelkeys.ID, id),
 		slog.String(otelkeys.Title, title),
 	)
-	b, err := scanBook(d.QueryRowContext(ctx,
+	b, err := scanBook(ctx, d.QueryRowContext(ctx,
 		`UPDATE books SET title = $1, description = $2, asin = $3, isbn10 = $4, isbn13 = $5, goodreads_id = $6, hardcover_id = $7, google_books_id = $8, publication_date = $9, publisher = $10, language = $11, num_pages = $12, cover_image_url = $13, updated_at = `+d.now()+` WHERE id = $14 RETURNING `+bookColumns,
 		title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, numPages, coverImageURL, id,
 	))
@@ -308,7 +314,7 @@ func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, lastID
 			return nil, err
 		}
 		defer rows.Close()
-		return scanBookRows(rows)
+		return scanBookRows(ctx, rows)
 	}
 
 	var sinceParam any
@@ -330,7 +336,7 @@ func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, lastID
 		return nil, err
 	}
 	defer rows.Close()
-	return scanBookRows(rows)
+	return scanBookRows(ctx, rows)
 }
 
 type bookRowScanner interface {
@@ -339,16 +345,20 @@ type bookRowScanner interface {
 	Err() error
 }
 
-func scanBookRows(rows bookRowScanner) ([]Book, error) {
+func scanBookRows(ctx context.Context, rows bookRowScanner) ([]Book, error) {
 	var books []Book
 	for rows.Next() {
-		b, err := scanBook(rows)
+		b, err := scanBook(ctx, rows)
 		if err != nil {
 			return nil, err
 		}
 		books = append(books, *b)
 	}
-	return books, rows.Err()
+	if err := rows.Err(); err != nil {
+		slog.ErrorContext(ctx, "Failed to iterate book rows", slog.Any(otelkeys.Error, err))
+		return nil, err
+	}
+	return books, nil
 }
 
 // GetSeriesForBooks returns series entries (with position) grouped by book ID for the given book IDs.
@@ -386,5 +396,9 @@ func (d *DB) GetSeriesForBooks(ctx context.Context, bookIDs []string) (map[strin
 		}
 		result[bookID] = append(result[bookID], entry)
 	}
-	return result, rows.Err()
+	if err := rows.Err(); err != nil {
+		slog.ErrorContext(ctx, "Failed to iterate series rows", slog.Any(otelkeys.Error, err))
+		return nil, err
+	}
+	return result, nil
 }
