@@ -4,7 +4,7 @@ description: Analyzes source files daily to identify oversized files that exceed
 on:
   workflow_dispatch:
   schedule: daily on weekdays
-  skip-if-match: 'is:issue is:open in:title "[file-diet]"'
+  skip-if-match: 'is:issue is:open in:title "file-diet"'
 
 permissions:
   contents: read

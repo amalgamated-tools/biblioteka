@@ -24,14 +24,14 @@
 #
 # Source: githubnext/agentics/workflows/daily-file-diet.md@b897c2f3e43bde9ff7923c8fa9211055b26e27cc
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"6f13fa725dd0f1dffcf30ac6c6f14c14a14def1800a0bda42267c5ca93b8a905","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"06a0cc6e9afeb096210a106d3922f43471d32e2fed2f12e9a0304c8a3fdfa4ef","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
 
 name: "Daily File Diet"
 "on":
   schedule:
   - cron: "30 23 * * 1-5"
     # Friendly format: daily on weekdays (scattered)
-  # skip-if-match: is:issue is:open in:title "[file-diet]" # Skip-if-match processed as search check in pre-activation job
+  # skip-if-match: is:issue is:open in:title "file-diet" # Skip-if-match processed as search check in pre-activation job
   workflow_dispatch:
 
 permissions: {}
@@ -988,7 +988,7 @@ jobs:
         id: check_skip_if_match
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          GH_AW_SKIP_QUERY: "is:issue is:open in:title \"[file-diet]\""
+          GH_AW_SKIP_QUERY: "is:issue is:open in:title \"file-diet\""
           GH_AW_WORKFLOW_NAME: "Daily File Diet"
           GH_AW_SKIP_MAX_MATCHES: "1"
         with:
