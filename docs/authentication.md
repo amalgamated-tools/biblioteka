@@ -289,6 +289,8 @@ bib_a3f2c8e1d074b651...
 
 Only the `bib_` prefix and the first 12 hex characters (the *key prefix*) are stored in plaintext for identification in the UI. The remainder is stored only as a SHA-256 hash — the full key is never retrievable after creation.
 
+> **Why SHA-256 and not bcrypt or Argon2?** API keys are 128-bit cryptographically random values, not user-chosen passwords. An attacker cannot brute-force 128 bits of randomness regardless of how fast or slow the hash function is, so the added computational cost of a password-hashing algorithm would provide no security benefit. SHA-256 is the appropriate choice for high-entropy tokens.
+
 ### Using an API key
 
 Supply the key in the `Authorization` header as a Bearer token:
@@ -315,7 +317,7 @@ To manage keys programmatically, see the [API Keys endpoints](api-reference.md#a
 | Property | Detail |
 |----------|--------|
 | Entropy | 128 bits (cryptographically random) |
-| Storage | SHA-256 hash only — plaintext key is never persisted after creation |
+| Storage | SHA-256 hash only — plaintext key is never persisted after creation (SHA-256 is appropriate because keys are 128-bit random values, not passwords) |
 | Scope | Tied to the creating user; inherits that user's permissions |
 | Transmission | HTTPS only in production; `Authorization` header only (cookies rejected) |
 | Visibility | Key prefix (`bib_XXXXXXXXXXXX`) shown in the UI for identification |
