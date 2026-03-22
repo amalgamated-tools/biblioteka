@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -580,12 +581,8 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 			"exp": now.Add(time.Hour).Unix(),
 		}
 		merged := make(map[string]any)
-		for k, v := range defaults {
-			merged[k] = v
-		}
-		for k, v := range idTokenClaims {
-			merged[k] = v
-		}
+		maps.Copy(merged, defaults)
+		maps.Copy(merged, idTokenClaims)
 
 		idToken := signToken(merged)
 		w.Header().Set("Content-Type", "application/json")
