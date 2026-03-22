@@ -11,7 +11,13 @@ import (
 func (c *Client) GetBookByLegacyID(ctx context.Context, legacyID int64) (*BookResult, error) {
 	resp, err := GetBookByLegacyId(ctx, c.client, legacyID)
 	if err != nil {
-		return nil, err
+		slog.ErrorContext(
+			ctx,
+			"failed to get book by legacy ID",
+			slog.Any(otelkeys.BookLegacyID, legacyID),
+			slog.Any(otelkeys.Error, err),
+		)
+		return nil, fmt.Errorf("failed to get book by legacy ID: %w", err)
 	}
 
 	return loadBookResult(ctx, resp.GetBookByLegacyId.Work)
@@ -20,15 +26,27 @@ func (c *Client) GetBookByLegacyID(ctx context.Context, legacyID int64) (*BookRe
 func (c *Client) GetBookByID(ctx context.Context, grID string) (*BookResult, error) {
 	resp, err := GetBook(ctx, c.client, grID)
 	if err != nil {
-		return nil, err
+		slog.ErrorContext(
+			ctx,
+			"failed to get book by Goodreads ID",
+			slog.Any(otelkeys.BookID, grID),
+			slog.Any(otelkeys.Error, err),
+		)
+		return nil, fmt.Errorf("failed to get book by Goodreads ID: %w", err)
 	}
 	return loadBookResult(ctx, resp.GetBook.Work)
 }
 
 func (c *Client) GetBookByASIN(ctx context.Context, asin string) (*BookResult, error) {
-	resp, error := GetBookByAsin(ctx, c.client, asin)
-	if error != nil {
-		return nil, error
+	resp, err := GetBookByAsin(ctx, c.client, asin)
+	if err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to get book by ASIN",
+			slog.Any(otelkeys.BookASIN, asin),
+			slog.Any(otelkeys.Error, err),
+		)
+		return nil, fmt.Errorf("failed to get book by ASIN: %w", err)
 	}
 
 	return loadBookResult(ctx, resp.GetBookByAsin.Work)
