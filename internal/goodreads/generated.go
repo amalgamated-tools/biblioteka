@@ -156,6 +156,7 @@ func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNod
 type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook struct {
 	Id                     string                                                                                                                            `json:"id"`
 	LegacyId               int64                                                                                                                             `json:"legacyId"`
+	ImageUrl               string                                                                                                                            `json:"imageUrl"`
 	Title                  string                                                                                                                            `json:"title"`
 	PrimaryContributorEdge SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdge `json:"primaryContributorEdge"`
 }
@@ -168,6 +169,11 @@ func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNod
 // GetLegacyId returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook.LegacyId, and is useful for accessing the field via an interface.
 func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook) GetLegacyId() int64 {
 	return v.LegacyId
+}
+
+// GetImageUrl returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook.ImageUrl, and is useful for accessing the field via an interface.
+func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook) GetImageUrl() string {
+	return v.ImageUrl
 }
 
 // GetTitle returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBook.Title, and is useful for accessing the field via an interface.
@@ -192,9 +198,10 @@ func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNod
 
 // SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor includes the requested fields of the GraphQL type Contributor.
 type SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor struct {
-	Id       string `json:"id"`
-	Name     string `json:"name"`
-	LegacyId int64  `json:"legacyId"`
+	Id              string `json:"id"`
+	Name            string `json:"name"`
+	LegacyId        int64  `json:"legacyId"`
+	ProfileImageUrl string `json:"profileImageUrl"`
 }
 
 // GetId returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor.Id, and is useful for accessing the field via an interface.
@@ -210,6 +217,11 @@ func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNod
 // GetLegacyId returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor.LegacyId, and is useful for accessing the field via an interface.
 func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor) GetLegacyId() int64 {
 	return v.LegacyId
+}
+
+// GetProfileImageUrl returns SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor.ProfileImageUrl, and is useful for accessing the field via an interface.
+func (v *SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor) GetProfileImageUrl() string {
+	return v.ProfileImageUrl
 }
 
 // SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchResultEdge includes the requested fields of the GraphQL interface SearchResultEdge.
@@ -304,12 +316,14 @@ query Search ($query: String!) {
 						bestBook {
 							id
 							legacyId
+							imageUrl
 							title
 							primaryContributorEdge {
 								node {
 									id
 									name
 									legacyId
+									profileImageUrl
 								}
 							}
 						}

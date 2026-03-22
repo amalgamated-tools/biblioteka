@@ -8,3 +8,5 @@ generated: generated.go
 bindings:
   Int:
     type: int64
+  DateTime:
+    type: time.Time

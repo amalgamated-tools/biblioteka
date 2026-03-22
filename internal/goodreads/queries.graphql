@@ -10,12 +10,14 @@ query Search($query: String!) {
             bestBook {
               id
               legacyId
+              imageUrl
               title
               primaryContributorEdge {
                 node {
                   id
                   name
                   legacyId
+                  profileImageUrl
                 }
               }
             }
