@@ -2,12 +2,13 @@ package goodreads
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/stretchr/testify/require"
 )
 
 // mockGraphQLClient implements graphql.Client for testing the Search method.
@@ -17,6 +18,19 @@ type mockGraphQLClient struct {
 
 func (m *mockGraphQLClient) MakeRequest(ctx context.Context, req *graphql.Request, resp *graphql.Response) error {
 	return m.handler(req, resp)
+}
+
+func noResponseClient() *Client {
+	return &Client{
+		client: &mockGraphQLClient{
+			handler: func(req *graphql.Request, resp *graphql.Response) error {
+				resp.Data = nil
+				// to not append to the results slice in case of missing required fields,
+				// we return an error here which will cause the parseISBNSearchResponse to skip processing this entry
+				return errors.New("missing required fields in response")
+			},
+		},
+	}
 }
 
 func TestSearch_Success(t *testing.T) {
@@ -165,79 +179,49 @@ func TestSearch_EmptyEdges(t *testing.T) {
 }
 
 func TestParseISBNSearchResponse_Success(t *testing.T) {
+	var response GetBookByLegacyIdResponse
+	err := json.Unmarshal(GetBookByLegacyIDResponse54493401, &response)
+	if err != nil {
+		t.Fatalf("failed to unmarshal JSON response: %v", err)
+	}
 	client := &Client{
 		client: &mockGraphQLClient{
 			handler: func(req *graphql.Request, resp *graphql.Response) error {
 				data := resp.Data.(*GetBookByLegacyIdResponse)
-				data.GetBookByLegacyId = GetBookByLegacyIdGetBookByLegacyIdBook{
-					Work: GetBookByLegacyIdGetBookByLegacyIdBookWork{
-						Id:       "kca://work/amzn1.gr.work.v3.hH023IoekBBaUTCm",
-						LegacyId: 79106958,
-						Details: GetBookByLegacyIdGetBookByLegacyIdBookWorkDetails{
-							WebUrl:        "https://www.goodreads.com/work/79106958-project-hail-mary",
-							OriginalTitle: "Project Hail Mary",
-						},
-						BestBook: GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBook{
-							Id:       "kca://book/amzn1.gr.book.v3.7WmufEffpivF1XTp",
-							LegacyId: 54493401,
-							ImageUrl: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1764703833i/54493401._SY75_.jpg",
-							Title:    "Project Hail Mary",
-							Details: GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetails{
-								Asin:   "B08FHBV4ZX",
-								Isbn:   "0593135202",
-								Isbn13: "9780593135204",
-								Language: GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetailsLanguage{
-									Name: "English",
-								},
-								NumPages: 476,
-							},
-							PrimaryContributorEdge: GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookPrimaryContributorEdgeBookContributorEdge{
-								Node: GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor{
-									Id:              "kca://author/amzn1.gr.author.v3.9nqjH8sK7Xl2Zt5e",
-									Name:            "Andy Weir",
-									LegacyId:        6540057,
-									ProfileImageUrl: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/authors/1637667636i/6540057._SY75_.jpg",
-								},
-							},
-						},
-					},
-				}
+				*data = response
 				return nil
 			},
 		},
 	}
-	body, err := os.ReadFile(filepath.Join("autocomplete.json"))
-	if err != nil {
-		t.Fatalf("failed to read test fixture: %v", err)
-	}
 
-	results := client.parseISBNSearchResponse(context.Background(), body)
+	results := client.parseISBNSearchResponse(context.Background(), AutoCompleteResponse)
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
 
 	r := results[0]
-	if r.BookImageURL != "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1764703833i/54493401._SY75_.jpg" {
-		t.Errorf("BookImageURL = %q, want fixture value", r.BookImageURL)
+	expected, err := loadBookResult(t.Context(), response.GetBookByLegacyId.Work.BestBook)
+	if err != nil {
+		t.Fatalf("failed to load expected BookResult from response: %v", err)
 	}
-	if r.BookLegacyID != 54493401 {
-		t.Errorf("BookLegacyID = %d, want %d", r.BookLegacyID, 54493401)
-	}
-	if r.WorkLegacyID != 79106958 {
-		t.Errorf("WorkLegacyID = %d, want %d", r.WorkLegacyID, 79106958)
-	}
-	if r.BookTitle != "Project Hail Mary" {
-		t.Errorf("BookTitle = %q, want %q", r.BookTitle, "Project Hail Mary")
-	}
-	if r.BookNumberOfPages != 476 {
-		t.Errorf("BookNumberOfPages = %d, want %d", r.BookNumberOfPages, 476)
-	}
-	if r.AuthorLegacyID != 6540057 {
-		t.Errorf("AuthorLegacyID = %d, want %d", r.AuthorLegacyID, 6540057)
-	}
-	if r.AuthorName != "Andy Weir" {
-		t.Errorf("AuthorName = %q, want %q", r.AuthorName, "Andy Weir")
-	}
+
+	require.Equal(t, *expected, r)
+	require.Equal(t, expected.WorkID, r.WorkID)
+	require.Equal(t, expected.WorkLegacyID, r.WorkLegacyID)
+	require.Equal(t, expected.BookID, r.BookID)
+	require.Equal(t, expected.BookLegacyID, r.BookLegacyID)
+	require.Equal(t, expected.BookImageURL, r.BookImageURL)
+	require.Equal(t, expected.BookTitle, r.BookTitle)
+	require.Equal(t, expected.BookASIN, r.BookASIN)
+	require.Equal(t, expected.BookISBN, r.BookISBN)
+	require.Equal(t, expected.BookISBN13, r.BookISBN13)
+	require.Equal(t, expected.BookLanguage, r.BookLanguage)
+	require.Equal(t, expected.BookNumberOfPages, r.BookNumberOfPages)
+	require.Equal(t, expected.AuthorID, r.AuthorID)
+	require.Equal(t, expected.AuthorName, r.AuthorName)
+	require.Equal(t, expected.AuthorLegacyID, r.AuthorLegacyID)
+	require.Equal(t, expected.AuthorProfileImageURL, r.AuthorProfileImageURL)
+
 }
 
 func TestParseISBNSearchResponse_MissingRequiredFields(t *testing.T) {
@@ -273,7 +257,16 @@ func TestParseISBNSearchResponse_MissingRequiredFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := &Client{}
+			client := &Client{
+				client: &mockGraphQLClient{
+					handler: func(req *graphql.Request, resp *graphql.Response) error {
+						resp.Data = nil
+						// to not append to the results slice in case of missing required fields,
+						// we return an error here which will cause the parseISBNSearchResponse to skip processing this entry
+						return errors.New("missing required fields in response")
+					},
+				},
+			}
 			results := client.parseISBNSearchResponse(context.Background(), []byte(tt.body))
 			if len(results) != 0 {
 				t.Errorf("expected 0 results, got %d", len(results))
@@ -283,27 +276,24 @@ func TestParseISBNSearchResponse_MissingRequiredFields(t *testing.T) {
 }
 
 func TestParseISBNSearchResponse_InvalidBookID(t *testing.T) {
-	client := &Client{}
 	body := `[{"bookId": "not-a-number", "workId": "456", "title": "Test"}]`
-	results := client.parseISBNSearchResponse(context.Background(), []byte(body))
+	results := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
 	if len(results) != 0 {
 		t.Errorf("expected 0 results for invalid bookId, got %d", len(results))
 	}
 }
 
 func TestParseISBNSearchResponse_InvalidWorkID(t *testing.T) {
-	client := &Client{}
 	body := `[{"bookId": "123", "workId": "not-a-number", "title": "Test"}]`
-	results := client.parseISBNSearchResponse(context.Background(), []byte(body))
+	results := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
 	if len(results) != 0 {
 		t.Errorf("expected 0 results for invalid workId, got %d", len(results))
 	}
 }
 
 func TestParseISBNSearchResponse_OptionalFieldsMissing(t *testing.T) {
-	client := &Client{}
 	body := `[{"bookId": "123", "workId": "456", "title": "Minimal Book"}]`
-	results := client.parseISBNSearchResponse(context.Background(), []byte(body))
+	results := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
@@ -324,16 +314,14 @@ func TestParseISBNSearchResponse_OptionalFieldsMissing(t *testing.T) {
 }
 
 func TestParseISBNSearchResponse_EmptyArray(t *testing.T) {
-	client := &Client{}
-	results := client.parseISBNSearchResponse(context.Background(), []byte(`[]`))
+	results := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(`[]`))
 	if len(results) != 0 {
 		t.Errorf("expected 0 results, got %d", len(results))
 	}
 }
 
 func TestParseISBNSearchResponse_InvalidJSON(t *testing.T) {
-	client := &Client{}
-	results := client.parseISBNSearchResponse(context.Background(), []byte(`not json`))
+	results := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(`not json`))
 	if len(results) != 0 {
 		t.Errorf("expected 0 results for invalid JSON, got %d", len(results))
 	}
@@ -344,8 +332,7 @@ func TestParseISBNSearchResponse_MultipleResults(t *testing.T) {
 		{"bookId": "111", "workId": "222", "title": "Book One", "numPages": 100, "author": {"id": 1, "name": "Author A"}},
 		{"bookId": "333", "workId": "444", "title": "Book Two", "numPages": 200, "author": {"id": 2, "name": "Author B"}}
 	]`
-	client := &Client{}
-	results := client.parseISBNSearchResponse(context.Background(), []byte(body))
+	results := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
 	if len(results) != 2 {
 		t.Fatalf("expected 2 results, got %d", len(results))
 	}
@@ -368,8 +355,7 @@ func TestParseISBNSearchResponse_SkipsInvalidEntriesKeepsValid(t *testing.T) {
 		{"bookId": "bad", "workId": "222", "title": "Invalid Entry"},
 		{"bookId": "333", "workId": "444", "title": "Valid Entry", "author": {"id": 1, "name": "Author"}}
 	]`
-	client := &Client{}
-	results := client.parseISBNSearchResponse(context.Background(), []byte(body))
+	results := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result (skipping invalid), got %d", len(results))
 	}

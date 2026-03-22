@@ -92,8 +92,10 @@ query Search($query: String!) {
                 isbn13
                 language {
                   name
+                  __typename
                 }
                 numPages
+                __typename
               }
               primaryContributorEdge {
                 role
@@ -102,9 +104,12 @@ query Search($query: String!) {
                   name
                   legacyId
                   profileImageUrl
+                  __typename
                 }
               }
+              __typename
             }
+            __typename
           }
         }
       }
