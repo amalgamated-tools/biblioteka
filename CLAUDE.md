@@ -44,6 +44,12 @@ db/migrations/
   postgres/        # PostgreSQL migrations (dbmate format)
 ```
 
+## OTEL Keys
+- Predefine all structured log field keys as constants in `internal/otelkeys/logger_keys.go` (e.g., `UserID`, `BookID`, `RequestID`).
+- Use these constants in all logging calls to ensure consistency and enable better log querying.
+- If you need a new log field, add a constant in `internal/otelkeys/logger_keys.go` first before using it in your code.
+- Keep the keys alphabetized
+
 ## After completing a task
 
 - Run `make fmt` and `make hardfmt` before committing.
