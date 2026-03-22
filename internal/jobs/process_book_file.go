@@ -54,7 +54,8 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	}
 
 	if err := validatePayload(ctx, p); err != nil {
-		return fmt.Errorf("invalid payload: %w", err)
+		// validatePayload already returns errors wrapped with the "invalid payload: %w" prefix
+		return err
 	}
 
 	organizationType := lookupOrganizationType(ctx, database, p)

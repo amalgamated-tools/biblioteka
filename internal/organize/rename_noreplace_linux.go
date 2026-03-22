@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"golang.org/x/sys/unix"
 )
 
@@ -17,8 +18,8 @@ func renameNoReplace(ctx context.Context, oldPath, newPath string) error {
 		slog.DebugContext(
 			ctx,
 			"renamed file without replacement",
-			slog.String("oldPath", oldPath),
-			slog.String("newPath", newPath),
+			slog.String(otelkeys.OldPath, oldPath),
+			slog.String(otelkeys.NewPath, newPath),
 		)
 		return nil
 	}
@@ -26,7 +27,7 @@ func renameNoReplace(ctx context.Context, oldPath, newPath string) error {
 		slog.WarnContext(
 			ctx,
 			"file already exists at destination",
-			slog.String("newPath", newPath),
+			slog.String(otelkeys.NewPath, newPath),
 		)
 		return os.ErrExist
 	}
@@ -35,8 +36,8 @@ func renameNoReplace(ctx context.Context, oldPath, newPath string) error {
 		slog.WarnContext(
 			ctx,
 			"cross-filesystem rename, caller should use copy+remove",
-			slog.String("oldPath", oldPath),
-			slog.String("newPath", newPath),
+			slog.String(otelkeys.OldPath, oldPath),
+			slog.String(otelkeys.NewPath, newPath),
 		)
 		return fmt.Errorf("cross-filesystem rename from %s to %s: %w", oldPath, newPath, err)
 	}
@@ -47,15 +48,15 @@ func renameNoReplace(ctx context.Context, oldPath, newPath string) error {
 			slog.WarnContext(
 				ctx,
 				"file already exists at destination (fallback)",
-				slog.String("newPath", newPath),
+				slog.String(otelkeys.NewPath, newPath),
 			)
 			return os.ErrExist
 		} else if !os.IsNotExist(statErr) {
 			slog.ErrorContext(
 				ctx,
 				"failed to stat destination file during rename fallback",
-				slog.String("newPath", newPath),
-				slog.Any("error", statErr),
+				slog.String(otelkeys.NewPath, newPath),
+				slog.Any(otelkeys.Error, statErr),
 			)
 			return fmt.Errorf("stat destination file %s: %w", newPath, statErr)
 		}
