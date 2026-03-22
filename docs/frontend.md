@@ -626,7 +626,7 @@ The same pattern applies to settings sub-tabs, where the active tab is determine
 
 Whenever you add a navigation link that points to a distinct view or sub-page, apply `aria-current={isActive ? "page" : undefined}`. Do **not** rely solely on CSS class changes to convey the active state.
 
-### Sidebar navigation group semantics (`Sidebar.svelte`)
+### Labelled navigation groups (`Sidebar.svelte`)
 
 **WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) (Level A)
 
@@ -1014,14 +1014,6 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 5. **`renders navigation group labels as headings`** — renders with `currentView="dashboard"` and asserts that the "Home" and "Libraries" group labels are exposed as `role="heading"` elements at level 2 (WCAG 1.3.1).
 
 > **Mocking note:** The test file mocks `authStore`, `libraryStore`, `api.getVersion`, and all `lucide-svelte` icon components. The icon mocks are necessary because Lucide icons are ESM-only packages that cannot render in JSDOM; replacing them with no-ops keeps the test focused on DOM structure. `afterEach(cleanup)` prevents DOM leakage between tests.
-
-#### `UsersTab.test.ts`
-
-`frontend/src/components/settings/UsersTab.test.ts` verifies that the users admin table uses properly scoped column headers (WCAG 1.3.1). One test is included:
-
-1. **`marks each table header as a column header`** — renders `UsersTab` with one pre-loaded user and asserts that each `<th>` element ("Name", "Email", "Type", "Role", "Joined") carries `scope="col"`, ensuring screen readers can associate each data cell with its column header.
-
-> **Mocking note:** The test mocks `authStore` (the current admin user), `listUsers` (returns an empty list — the pre-loaded user is passed via the `cachedUsers` prop), `setUserAdmin`, and `lucide-svelte` icons. `afterEach(cleanup)` prevents DOM leakage between tests.
 
 #### `LibraryForm.test.ts`
 
