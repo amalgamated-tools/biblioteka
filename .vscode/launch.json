@@ -28,13 +28,26 @@
             "showLog": true
         },
         {
-            "name": "Run CLI (Search)",
+            "name": "Run CLI (Goodreads Search)",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "args": [
                 "goodreads-search",
                 "Project Hail Mary",
+            ],
+            "program": "cmd/cli/main.go",
+            "envFile": "${workspaceFolder}/.env",
+            "showLog": true
+        },
+        {
+            "name": "Run CLI (Goodreads Search by ISBN)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "args": [
+                "goodreads-search-isbn",
+                "9780593135204",
             ],
             "program": "cmd/cli/main.go",
             "envFile": "${workspaceFolder}/.env",
