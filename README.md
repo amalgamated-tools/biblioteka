@@ -79,6 +79,26 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 
 ### Docker Compose (recommended)
 
+Pre-built multi-arch images (`linux/amd64`, `linux/arm64`) are published to the GitHub Container Registry on every push to `main` and on every release. To use them instead of building from source, set the `image:` key in a `docker-compose.override.yml`:
+
+```yaml
+# docker-compose.override.yml
+services:
+  biblioteka:
+    image: ghcr.io/amalgamated-tools/biblioteka:latest
+    build: null   # disable local build
+```
+
+Available image tags:
+
+| Tag | When updated | Use for |
+|-----|-------------|---------|
+| `latest` | Each release | Production |
+| `edge` | Every push to `main` | Bleeding-edge / staging |
+| `v<major>.<minor>` (e.g. `v0.1`) | Each release | Minor-version pin |
+| `v<major>.<minor>.<patch>` | Each release | Exact-version pin |
+| `sha-<short-sha>` | Every push to `main` | Reproducing a specific build |
+
 ```bash
 # SQLite + Redis (simplest setup)
 docker compose up -d
