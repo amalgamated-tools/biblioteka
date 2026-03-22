@@ -23,7 +23,7 @@ func TestWriteOPF_AllFields(t *testing.T) {
 		CoverMediaType: "image/jpeg",
 	}
 
-	if err := WriteOPF(dir, data, ""); err != nil {
+	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
 		t.Fatalf("WriteOPF: %v", err)
 	}
 
@@ -67,7 +67,7 @@ func TestWriteOPF_MinimalData(t *testing.T) {
 		Title: "Untitled",
 	}
 
-	if err := WriteOPF(dir, data, ""); err != nil {
+	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
 		t.Fatalf("WriteOPF: %v", err)
 	}
 
@@ -105,7 +105,7 @@ func TestWriteOPF_EmptyTitle(t *testing.T) {
 	dir := t.TempDir()
 	data := OPFData{}
 
-	if err := WriteOPF(dir, data, ""); err == nil {
+	if err := WriteOPF(t.Context(), dir, data, ""); err == nil {
 		t.Fatal("expected error when title is empty")
 	}
 }
@@ -117,7 +117,7 @@ func TestWriteOPF_UUIDIsDeterministic(t *testing.T) {
 		Author: "Author A",
 	}
 
-	if err := WriteOPF(dir, data, ""); err != nil {
+	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
 		t.Fatalf("first WriteOPF: %v", err)
 	}
 	first, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
@@ -125,7 +125,7 @@ func TestWriteOPF_UUIDIsDeterministic(t *testing.T) {
 		t.Fatalf("read first metadata.opf: %v", err)
 	}
 
-	if err := WriteOPF(dir, data, ""); err != nil {
+	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
 		t.Fatalf("second WriteOPF: %v", err)
 	}
 	second, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
@@ -150,7 +150,7 @@ func TestWriteOPF_NoCover(t *testing.T) {
 		Title: "Test Book",
 	}
 
-	if err := WriteOPF(dir, data, ""); err != nil {
+	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
 		t.Fatalf("WriteOPF: %v", err)
 	}
 
@@ -180,7 +180,7 @@ func TestWriteOPF_PNGCover(t *testing.T) {
 		CoverMediaType: "image/png",
 	}
 
-	if err := WriteOPF(dir, data, ""); err != nil {
+	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
 		t.Fatalf("WriteOPF: %v", err)
 	}
 
@@ -209,7 +209,7 @@ func TestWriteOPF_XMLSpecialChars(t *testing.T) {
 		Description: `A "special" <description> with & chars`,
 	}
 
-	if err := WriteOPF(dir, data, ""); err != nil {
+	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
 		t.Fatalf("WriteOPF: %v", err)
 	}
 
@@ -243,7 +243,7 @@ func TestWriteOPF_InconsistentCoverFields(t *testing.T) {
 				CoverFilename:  tc.filename,
 				CoverMediaType: tc.media,
 			}
-			if err := WriteOPF(dir, data, ""); err == nil {
+			if err := WriteOPF(t.Context(), dir, data, ""); err == nil {
 				t.Error("expected error for inconsistent CoverFilename/CoverMediaType, got nil")
 			}
 		})
@@ -257,7 +257,7 @@ func TestWriteOPF_CustomBaseName(t *testing.T) {
 	}
 
 	baseName := "Alice's Adventures in Wonderland by Lewis Carroll"
-	if err := WriteOPF(dir, data, baseName); err != nil {
+	if err := WriteOPF(t.Context(), dir, data, baseName); err != nil {
 		t.Fatalf("WriteOPF: %v", err)
 	}
 
@@ -275,7 +275,7 @@ func TestWriteOPF_InvalidBaseName(t *testing.T) {
 	dir := t.TempDir()
 	data := OPFData{Title: "Unsafe"}
 
-	if err := WriteOPF(dir, data, "../escape"); err == nil {
+	if err := WriteOPF(t.Context(), dir, data, "../escape"); err == nil {
 		t.Fatal("expected error for invalid base name")
 	}
 }
