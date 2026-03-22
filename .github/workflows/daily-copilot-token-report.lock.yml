@@ -31,7 +31,7 @@
 #     - shared/python-dataviz.md
 #     - shared/reporting.md
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"fc5e497baebf7c7fc20f5151e6b2763274187a8c710f8cd6ec5701cba5d5fad6","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"43a4cfb050eacf56ed3d5e39423f73fc7166b5ac82258632255f77cd76361cc8","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
 
 name: "Daily Copilot Token Consumption Report"
 "on":
@@ -342,7 +342,7 @@ jobs:
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         name: Pre-download workflow logs
-        run: "# Download logs for copilot workflows from last 30 days with JSON output\n./gh-aw logs --engine copilot --start-date -30d --json -c 500 > /tmp/gh-aw/copilot-logs.json\n\n# Verify the download\nif [ -f /tmp/gh-aw/copilot-logs.json ]; then\n  echo \"✅ Logs downloaded successfully\"\n  echo \"Total runs: $(jq '. | length' /tmp/gh-aw/copilot-logs.json || echo '0')\"\nelse\n  echo \"❌ Failed to download logs\"\n  exit 1\nfi\n"
+        run: "# Download logs for copilot workflows from last 30 days with JSON output\ngh aw logs --engine copilot --start-date -30d --json -c 500 > /tmp/gh-aw/copilot-logs.json\n\n# Verify the download\nif [ -f /tmp/gh-aw/copilot-logs.json ]; then\n  echo \"✅ Logs downloaded successfully\"\n  echo \"Total runs: $(jq '. | length' /tmp/gh-aw/copilot-logs.json || echo '0')\"\nelse\n  echo \"❌ Failed to download logs\"\n  exit 1\nfi\n"
 
       # Cache memory file share configuration from frontmatter processed below
       - name: Create cache-memory directory
