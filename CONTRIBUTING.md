@@ -553,9 +553,7 @@ Review these issues the same way you would a human-authored refactoring suggesti
 
 #### CI Coach
 
-The `ci-coach` workflow runs daily. It analyses GitHub Actions workflow performance across the repository to find efficiency improvements and cost reduction opportunities. When it identifies actionable optimizations, it opens a pull request with the title prefix `ci(ci-coach):`. If a pull request cannot be created (e.g. due to branch protection), it falls back to opening a GitHub issue instead.
-
-Review these pull requests the same way you would a human-authored CI improvement. Merge if the optimization is correct; close if you prefer the existing behaviour.
+The `ci-coach` workflow runs daily and can also be triggered on demand. It analyses GitHub Actions workflow performance across the repository to find efficiency improvements and cost reduction opportunities. When it identifies actionable optimizations, it opens a pull request with the title prefix `ci(ci-coach):`. If a pull request cannot be created (e.g. due to branch protection), it falls back to opening a GitHub issue instead.
 
 #### Daily Repo Chronicle
 
