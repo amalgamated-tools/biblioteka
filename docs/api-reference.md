@@ -1047,7 +1047,7 @@ List books (summary objects — no nested authors, series, or files), with pagin
 | `publisher`        | string\|null | Publisher name |
 | `language`         | string\|null | BCP 47 language tag |
 | `num_pages`        | integer\|null | Page count |
-| `cover_image_url`  | string\|null | Cover art URL |
+| `cover_image_url`  | string\|null | Cover art URL or `data:image/...;base64,...` string. For EPUB books imported with an embedded cover, this field is automatically set to a base64-encoded `data:` URL; the encoded value can be up to 20 MB. For other formats or manually set covers it is a plain `https://` URL. Prefer the [OPDS cover endpoint](#get-opdscoversbookid) to serve cover images rather than decoding this field in application code. |
 | `created_at`       | string  | ISO 8601 creation timestamp |
 | `updated_at`       | string  | ISO 8601 last-updated timestamp |
 
@@ -1073,7 +1073,7 @@ Create a book.
 | `publisher`        | string  |          | Publisher name |
 | `language`         | string  |          | BCP 47 language tag (e.g., `"en"`) |
 | `num_pages`        | integer |          | Page count |
-| `cover_image_url`  | string  |          | Cover art URL |
+| `cover_image_url`  | string  |          | Cover art URL or a `data:image/...;base64,...` string. Accepts both a plain `https://` URL and a base64-encoded `data:` URL. For EPUB books, the import pipeline sets this field automatically from the embedded cover; for all other formats, set it manually. The 20 MB decoded-size cap applies on read — see [book summary object](#get-apibooks) for details. |
 
 **Response:** `201 Created` with the full book object (includes `authors`, `series`, `files` arrays).
 
@@ -1157,9 +1157,22 @@ The flat book fields (`id`, `title`, `description`, etc.) are described in the [
 
 ### `PUT /api/books/{id}` 🔒
 
-Update a book's metadata (full update). Returns the updated book detail object.
+Update a book's metadata. This is a **full replacement** — every field not included in the request body is cleared. Fetch the current book with `GET /api/books/{id}` first to avoid accidentally clearing fields.
 
-**Request body:** Same fields as `POST /api/books`.
+**Request body:** Same fields as [`POST /api/books`](#post-apibooks). `title` is the only required field.
+
+**Response:** `200 OK` with the updated book detail object (same shape as `GET /api/books/{id}`).
+
+**Error responses:**
+
+| Status | Condition |
+|--------|-----------|
+| `400 Bad Request` | `title` is missing or empty |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `404 Not Found` | Book with the given `{id}` does not exist |
+| `500 Internal Server Error` | Unexpected server error |
+
+> **Cover images:** To update `cover_image_url` to a plain URL, include the full URL in the request. To preserve the existing cover, include the current `cover_image_url` value (even if it is a large `data:` URL) in the request body. To remove the cover, omit `cover_image_url` or set it to `null`.
 
 ---
 
