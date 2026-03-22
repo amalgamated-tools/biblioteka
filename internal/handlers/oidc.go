@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -44,7 +45,7 @@ type OIDCHandler struct {
 func NewOIDCHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, issuerURL, clientID, clientSecret, redirectURI string, secureCookies bool) (*OIDCHandler, error) {
 	provider, err := oidc.NewProvider(ctx, issuerURL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize OIDC provider: %w", err)
 	}
 
 	config := oauth2.Config{

@@ -35,9 +35,9 @@ func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, library
 		if title == "" {
 			return filePath, false, nil
 		}
-		newPath, reorgErr = organize.ReorganizeFile(filePath, libraryRoot, author, title)
+		newPath, reorgErr = organize.ReorganizeFile(ctx, filePath, libraryRoot, author, title)
 	case db.LibraryOrganizationBookPerFile:
-		newPath, reorgErr = organize.ReorganizeFileFlat(filePath, libraryRoot, author)
+		newPath, reorgErr = organize.ReorganizeFileFlat(ctx, filePath, libraryRoot, author)
 	default:
 		return filePath, false, nil
 	}

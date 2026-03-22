@@ -65,7 +65,7 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		}
 		client, cleanup, err := newSMTPClientWithContext(ctx, conn, host)
 		if err != nil {
-			return err
+			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
 		defer client.Close()
 		defer cleanup()
@@ -77,7 +77,7 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		}
 		client, cleanup, err := newSMTPClientWithContext(ctx, conn, host)
 		if err != nil {
-			return err
+			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
 		defer client.Close()
 		defer cleanup()
@@ -92,7 +92,7 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		}
 		client, cleanup, err := newSMTPClientWithContext(ctx, conn, host)
 		if err != nil {
-			return err
+			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
 		defer client.Close()
 		defer cleanup()

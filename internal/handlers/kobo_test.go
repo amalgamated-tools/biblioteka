@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -89,7 +90,7 @@ func (c *testKoboTokenChecker) GetKoboTokenByToken(ctx context.Context, token st
 	tokenHash := auth.HashKoboToken(token)
 	t, err := c.db.GetKoboTokenByHash(ctx, tokenHash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get token by hash: %w", err)
 	}
 	return &auth.KoboTokenResult{
 		UserID: t.UserID,
