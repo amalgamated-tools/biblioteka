@@ -570,23 +570,23 @@ When you see a `[CI Failure Doctor]` issue, follow the recommended actions liste
 
 The `duplicate-code-detector` workflow runs daily and scans the codebase for duplicate code patterns. It:
 
-1. Analyses Go and TypeScript source files for structural and logical duplication.
+1. Analyses Go and CommonJS JavaScript (`.cjs`) source files for structural and logical duplication.
 2. Evaluates severity: high-impact duplicates that should be refactored before they spread versus low-risk patterns that may be acceptable.
-3. Opens a GitHub issue for each meaningful finding, including the affected file paths, a description of the pattern, and a suggested refactoring approach.
+3. Opens GitHub issues for the highest-priority findings (including affected file paths, a description of the pattern, and a suggested refactoring approach), subject to a safety cap of at most 3 new issues per run.
 
-Review these issues the same way you would a human-authored refactoring suggestion. Close an issue once you have refactored the duplicate or determined it is intentional.
+Review these issues the same way you would a human-authored refactoring suggestion. Close an issue once you have refactored the duplicate or determined it is intentional. Keep in mind that the detector may find more duplicates than it files issues for in a single run due to this per-run cap and internal thresholding.
 
 #### Metrics Collector
 
-The `metrics-collector` workflow runs daily and gathers performance metrics for the entire agentic workflow ecosystem. It reads workflow run history, job durations, success/failure rates, and token usage, then writes structured JSON data to a dedicated `memory/meta-orchestrators` branch under `metrics/`. This data is consumed by meta-orchestrator workflows (such as **Portfolio Analyst**) for trend analysis, cost tracking, and health monitoring. You do not need to interact with these files directly.
+The `metrics-collector` workflow runs daily and gathers performance metrics for the entire agentic workflow ecosystem. It reads workflow run history, job durations, success/failure rates, and token usage, then writes structured JSON data to a dedicated `memory/meta-orchestrators` branch under `metrics/`. This data is intended for meta-orchestrator workflows for trend analysis, cost tracking, and health monitoring. You do not need to interact with these files directly.
 
 #### Schema Consistency Checker
 
 The `schema-consistency-checker` workflow runs daily and detects inconsistencies across three sources of truth:
 
-- The agentic workflow JSON schema (`pkg/parser/schemas/main_workflow_schema.json`)
-- The parser and compiler implementation (`pkg/parser/*.go`, `pkg/workflow/*.go`)
-- The documentation (`docs/src/content/docs/**/*.md`) and workflow files (`.github/workflows/*.md`)
+- The agentic workflow JSON schema (as defined in this repository's schema definitions)
+- The parser and compiler implementation (the Go packages that load, validate, and execute workflow definitions)
+- The documentation (Markdown docs) and workflow definition files (for example, `.github/workflows/*.yml`)
 
 Findings are published as a GitHub Discussion in the **audits** category with a `[Schema Consistency]` title prefix. Previous discussions are closed automatically when a new one is created. If a finding affects Biblioteka's workflow definitions or documentation, address it as you would any other documentation inconsistency.
 
