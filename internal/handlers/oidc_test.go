@@ -501,7 +501,7 @@ func TestOIDCParseLinkState_DifferentSecret(t *testing.T) {
 // controls the claims embedded in the ID token returned by the /token endpoint.
 type testOIDCProvider struct {
 	handler   *OIDCHandler
-	setClaims func(claims map[string]interface{})
+	setClaims func(claims map[string]any)
 	server    *httptest.Server
 }
 
@@ -532,7 +532,7 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 	}
 
 	// signToken produces a compact JWT from an arbitrary claims map.
-	signToken := func(claims map[string]interface{}) string {
+	signToken := func(claims map[string]any) string {
 		t.Helper()
 		builder := josejwt.Signed(signer).Claims(claims)
 		raw, err := builder.Serialize()
@@ -548,13 +548,13 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 	var serverURL string
 
 	// idTokenClaims is set per-test to control what the token endpoint returns.
-	var idTokenClaims map[string]interface{}
+	var idTokenClaims map[string]any
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"issuer":                                serverURL,
 			"authorization_endpoint":                serverURL + "/authorize",
 			"token_endpoint":                        serverURL + "/token",
@@ -573,13 +573,13 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 	mux.HandleFunc("/token", func(w http.ResponseWriter, _ *http.Request) {
 		// Inject issuer and timing claims if not already present.
 		now := time.Now()
-		defaults := map[string]interface{}{
+		defaults := map[string]any{
 			"iss": serverURL,
 			"aud": "test-client",
 			"iat": now.Unix(),
 			"exp": now.Add(time.Hour).Unix(),
 		}
-		merged := make(map[string]interface{})
+		merged := make(map[string]any)
 		for k, v := range defaults {
 			merged[k] = v
 		}
@@ -589,7 +589,7 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 
 		idToken := signToken(merged)
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"access_token": "fake-access-token",
 			"token_type":   "Bearer",
 			"id_token":     idToken,
@@ -628,7 +628,7 @@ func newTestOIDCProvider(t *testing.T) *testOIDCProvider {
 	tp := &testOIDCProvider{
 		handler: h,
 		server:  srv,
-		setClaims: func(claims map[string]interface{}) {
+		setClaims: func(claims map[string]any) {
 			idTokenClaims = claims
 		},
 	}
@@ -649,7 +649,7 @@ func TestOIDCCallback_EmailVerifiedTrue(t *testing.T) {
 	tp := newTestOIDCProvider(t)
 	h := tp.handler
 
-	tp.setClaims(map[string]interface{}{
+	tp.setClaims(map[string]any{
 		"sub":            "oidc-user-1",
 		"email":          "verified@example.com",
 		"name":           "Verified User",
@@ -673,7 +673,7 @@ func TestOIDCCallback_EmailVerifiedFalse(t *testing.T) {
 	tp := newTestOIDCProvider(t)
 	h := tp.handler
 
-	tp.setClaims(map[string]interface{}{
+	tp.setClaims(map[string]any{
 		"sub":            "oidc-user-2",
 		"email":          "unverified@example.com",
 		"name":           "Unverified User",
@@ -699,7 +699,7 @@ func TestOIDCCallback_EmailVerifiedMissing(t *testing.T) {
 	tp := newTestOIDCProvider(t)
 	h := tp.handler
 
-	tp.setClaims(map[string]interface{}{
+	tp.setClaims(map[string]any{
 		"sub":   "oidc-user-3",
 		"email": "noverify@example.com",
 		"name":  "No Verify User",
@@ -724,7 +724,7 @@ func TestOIDCCallback_LinkFlowBypassesEmailVerified(t *testing.T) {
 		t.Fatalf("CreateUser: %v", err)
 	}
 
-	tp.setClaims(map[string]interface{}{
+	tp.setClaims(map[string]any{
 		"sub":            "oidc-link-subject",
 		"email":          "linktarget@example.com",
 		"name":           "Link Target",
