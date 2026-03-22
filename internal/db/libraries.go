@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -34,13 +35,7 @@ func LibraryOrganizationTypeNames() []string {
 }
 
 func IsValidLibraryOrganizationType(organizationType string) bool {
-	for _, validType := range libraryOrganizationTypes {
-		if organizationType == validType {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(libraryOrganizationTypes, organizationType)
 }
 
 // Library represents a row in the libraries table.

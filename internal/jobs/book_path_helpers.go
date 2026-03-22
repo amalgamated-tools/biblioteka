@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -29,10 +30,8 @@ func reorganizedCandidatePaths(ctx context.Context, p ProcessFilePayload, pathIn
 		if path == "" {
 			return
 		}
-		for _, existing := range candidates {
-			if existing == path {
-				return
-			}
+		if slices.Contains(candidates, path) {
+			return
 		}
 		candidates = append(candidates, path)
 	}
