@@ -38,7 +38,7 @@ frontend/
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
         PreferencesTab.svelte   Display theme selection
         SmtpTab.svelte          Admin: SMTP mail server configuration
-        UsersTab.svelte         Admin: user list and admin-role toggling; all `<th>` column headers carry `scope="col"` (WCAG 1.3.1)
+        UsersTab.svelte         Admin: user list and admin-role toggling; all `<th>` column headers carry `scope="col"` (WCAG 1.3.1); the role-toggle button carries an action-oriented `aria-label` that describes what the button will do, not the user's current role (WCAG 4.1.2)
       ui/                 Generic reusable UI components
         AlertBanner.svelte   Dismissible alert / error banner
         BookCard.svelte      Card widget displaying a single book summary
@@ -753,7 +753,7 @@ When editing the app shell or adding new persistent navigation elements:
 6. Navigation links that represent the active view must carry `aria-current={isActive ? "page" : undefined}`. Tab-style buttons should use `aria-selected` instead (see item 8). See [`aria-current` on active navigation links](#aria-current-on-active-navigation-links) above.
 7. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
 8. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-9. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. See [Table accessibility](#table-accessibility) below.
+9. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. Buttons in table rows that display the current item state must carry an action-oriented `aria-label`. See [Table accessibility](#table-accessibility) below.
 10. Sidebar navigation groups must use `role="group"` with `aria-labelledby` pointing to a `role="heading"` + `aria-level="2"` element so screen readers announce the section name. See [Labelled navigation groups](#labelled-navigation-groups-sidebarsvelte) above.
 11. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
@@ -969,6 +969,31 @@ An "Actions" column typically has no visible heading — its purpose is implied 
 - Do **not** leave a `<th>` completely empty. An empty header cell gives screen-reader users no context for the column.
 - `sr-only` is a Tailwind utility (equivalent to `position: absolute; width: 1px; height: 1px; overflow: hidden; …`) that hides the text visually while keeping it in the accessibility tree.
 
+#### Action-oriented `aria-label` on state-toggle buttons
+
+**WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
+
+When a button's visible text displays the *current state* of an item rather than the *action it will perform*, screen-reader users hear only the state and receive no indication of what activating the button will change. Provide an `aria-label` that describes the operation explicitly, falling back to a secondary identifier (e.g., the user's email) when a display name is absent:
+
+```svelte
+<button
+  onclick={() => toggleAdmin(u)}
+  disabled={togglingId === u.id}
+  aria-label={u.is_admin
+    ? `Remove admin role from ${u.name || u.email}`
+    : `Grant admin role to ${u.name || u.email}`}
+>
+  {u.is_admin ? "Admin" : "User"}
+</button>
+```
+
+- The visible text ("Admin" / "User") shows what the user *currently is*.
+- The `aria-label` ("Remove admin role from …" / "Grant admin role to …") announces what the button *will do*.
+- The `||` fallback ensures the label is meaningful even when `name` is empty or `null`.
+- Once the toggle completes and the component re-renders, the `aria-label` automatically reflects the new state.
+
+`UsersTab.svelte` is the canonical reference implementation for this pattern.
+
 #### Checklist for new tables
 
 When adding a data table component:
@@ -977,6 +1002,7 @@ When adding a data table component:
 2. Columns whose purpose is visually implied (e.g., "Actions") have `<span class="sr-only">Actions</span>` inside their `<th>`.
 3. If a `<th>` spans rows, it has `scope="row"`.
 4. Do not use `<td>` for header cells — use `<th scope="…">` so the relationship is semantically clear.
+5. Buttons that display the current state of a row item (e.g., "Admin" / "User") must carry an action-oriented `aria-label` describing what will happen on activation. See [Action-oriented `aria-label` on state-toggle buttons](#action-oriented-aria-label-on-state-toggle-buttons) above.
 
 ### Accessibility tests
 
@@ -1030,11 +1056,13 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 #### `UsersTab.test.ts`
 
-`frontend/src/components/settings/UsersTab.test.ts` verifies that the Users table in the admin settings panel exposes correctly scoped column headers (WCAG 1.3.1). One test is included:
+`frontend/src/components/settings/UsersTab.test.ts` verifies that the Users table in the admin settings panel meets two accessibility requirements. Two tests are included:
 
-1. **`marks each table header as a column header`** — seeds the component with one cached user to bypass the initial loading path, then asserts that each of the five `<th>` elements — **Name**, **Email**, **Type**, **Role**, and **Joined** — is exposed as a `role="columnheader"` and carries `scope="col"`.
+1. **`marks each table header as a column header`** — seeds the component with one cached user to bypass the initial loading path, then asserts that each of the five `<th>` elements — **Name**, **Email**, **Type**, **Role**, and **Joined** — is exposed as a `role="columnheader"` and carries `scope="col"` (WCAG 1.3.1).
 
-> **Mocking note:** The test file mocks `authStore` (current admin user), `api.listUsers` (returns a resolved empty array to prevent uncaught-promise warnings), and all `lucide-svelte` icon components. `cachedUsers` is passed as a prop to seed the rendered table immediately, avoiding the need for async load completion. `afterEach(cleanup)` prevents DOM leakage between tests.
+2. **`gives toggle-admin buttons descriptive accessible names`** — seeds the component with three users (the logged-in admin, a non-admin "Reader User", and an admin "Staff User"), then asserts that: the non-admin row exposes a button with `aria-label="Grant admin role to Reader User"` whose visible text is "User"; the admin row exposes a button with `aria-label="Remove admin role from Staff User"` whose visible text is "Admin"; and the logged-in user's own row renders a non-interactive badge ("Admin (you)") with no toggle button (WCAG 4.1.2).
+
+> **Mocking note:** The test file mocks `authStore` (current admin user with `id: "1"`), `api.listUsers` (returns a resolved empty array to prevent uncaught-promise warnings), and all `lucide-svelte` icon components. `cachedUsers` is passed as a prop to seed the rendered table immediately, avoiding the need for async load completion. `afterEach(cleanup)` prevents DOM leakage between tests.
 
 ---
 
