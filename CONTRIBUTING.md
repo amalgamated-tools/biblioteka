@@ -540,6 +540,35 @@ The `code-simplifier` workflow runs daily and creates pull requests that simplif
 
 The `issue-triage` workflow fires on every newly opened issue. It applies conventional-commit type labels (e.g. `bug`, `feat`), detects duplicates, and posts clarifying questions when the issue description is unclear. Labels applied by triage are informational — override them if they are wrong.
 
+#### Daily File Diet
+
+The `daily-file-diet` workflow runs on weekdays and can also be triggered on demand. It:
+
+1. Scans all non-test production source files (Go, TypeScript, JavaScript, and other languages) and identifies the single largest file by line count.
+2. Applies a **500-line threshold**: if the largest file is under 500 lines the workflow calls `noop` and exits without creating an issue.
+3. When a file exceeds 500 lines, it analyses the file's structure and opens a GitHub issue labeled `refactoring`, `code-health`, and `automated-analysis` with the title prefix `chore(file-diet):`. The issue identifies the oversized file and includes specific guidance for splitting it into smaller, more focused units.
+4. At most one `[file-diet]` issue is open at a time — if one is already open, the workflow skips.
+
+Review these issues the same way you would a human-authored refactoring suggestion. Close an issue once the file has been split or you have determined the size is intentional and acceptable.
+
+#### CI Coach
+
+The `ci-coach` workflow runs daily. It analyses GitHub Actions workflow performance across the repository to find efficiency improvements and cost reduction opportunities (targeting 20%+ savings). When it identifies actionable optimizations, it opens a pull request with the title prefix `ci(ci-coach):`. If a pull request cannot be created (e.g. due to branch protection), it falls back to opening a GitHub issue instead.
+
+Review these pull requests the same way you would a human-authored CI improvement. Merge if the optimization is correct; close if you prefer the existing behaviour.
+
+#### Daily Repo Chronicle
+
+The `daily-repo-chronicle` workflow runs on weekdays at 16:00 UTC. It collects the day's repository activity — commits, pull requests, issues, and discussions — and writes a newspaper-style narrative summary with exactly two trend charts. The report is published as a GitHub Discussion in the **announcements** category with a `📰` title prefix. The previous day's discussion from this workflow is closed automatically when a new one is created.
+
+These discussions give contributors a quick narrative view of what changed each day without reading the raw commit log.
+
+#### Weekly Repo Map
+
+The `weekly-repo-map` workflow runs every Monday at approximately 15:00 UTC and can also be triggered on demand. It generates an ASCII file-tree visualization of the repository's structure with size distribution, then creates a GitHub issue labeled `documentation` with the title prefix `[repo-map]`. The previous repo-map issue is closed automatically when a new one is created.
+
+Use these issues to quickly understand which directories have grown and whether the project layout remains navigable.
+
 #### Greptile Labeler
 
 The `greptile-labeler` workflow fires whenever a pull request is opened, updated (new commit pushed), or receives a new comment. It scans PR review threads and comments for activity from the **Greptile** bot. If Greptile has commented, the workflow adds the `greptile-changes` label to the PR. If Greptile has not commented (or its comments were removed), the label is removed. You may see this label appear or disappear automatically as you push commits or as Greptile completes its review.
