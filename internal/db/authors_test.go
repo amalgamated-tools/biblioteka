@@ -6,12 +6,10 @@ import (
 	"testing"
 )
 
-func strPtr(s string) *string { return &s }
-
 func TestCreateAuthor(t *testing.T) {
 	d := newTestDB(t)
 
-	a, err := d.CreateAuthor(context.Background(), "Stephen King", strPtr("123"), nil, nil, strPtr("http://example.com/king.jpg"))
+	a, err := d.CreateAuthor(context.Background(), "Stephen King", new("123"), nil, nil, new("http://example.com/king.jpg"))
 	if err != nil {
 		t.Fatalf("CreateAuthor() error: %v", err)
 	}
@@ -202,7 +200,7 @@ func TestUpdateAuthor(t *testing.T) {
 		t.Fatalf("CreateAuthor() error: %v", err)
 	}
 
-	updated, err := d.UpdateAuthor(context.Background(), created.ID, "Stephen King", strPtr("456"), nil, nil, nil)
+	updated, err := d.UpdateAuthor(context.Background(), created.ID, "Stephen King", new("456"), nil, nil, nil)
 	if err != nil {
 		t.Fatalf("UpdateAuthor() error: %v", err)
 	}
