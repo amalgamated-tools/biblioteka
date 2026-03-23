@@ -35,14 +35,19 @@ func listPaginated[T any](
 	limit, offset int,
 	scan func(interface{ Scan(...any) error }) (*T, error),
 ) ([]T, int, error) {
+	if limit <= 0 {
+		return make([]T, 0), 0, nil
+	}
+
 	table := query.table()
-	columns := query.columns()
-	orderBy := query.orderBy(d)
-	items := make([]T, 0, max(0, limit))
 
 	if !allowedPaginatedTables[table] {
 		return nil, 0, fmt.Errorf("listPaginated: unknown table %q", table)
 	}
+
+	columns := query.columns()
+	orderBy := query.orderBy(d)
+	items := make([]T, 0, limit)
 
 	var total int
 	// safe: table validated against allowedPaginatedTables above
