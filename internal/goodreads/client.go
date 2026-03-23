@@ -32,8 +32,8 @@ type HttpClient interface {
 }
 
 type Client struct {
-	Token      string
-	Host       string
+	token      string
+	host       string
 	client     graphql.Client
 	httpClient HttpClient
 }
@@ -48,8 +48,8 @@ func NewClient() *Client {
 		},
 	}
 	return &Client{
-		Token: string(defaultToken),
-		Host:  string(defaultHost),
+		token: string(defaultToken),
+		host:  string(defaultHost),
 		client: graphql.NewClient(
 			string(defaultHost),
 			httpClient,
