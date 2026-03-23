@@ -113,11 +113,23 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	return c.parseISBNSearchResponse(ctx, bodyText), nil
+	results, err := c.parseISBNSearchResponse(ctx, bodyText)
+	if err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to parse Goodreads ISBN search response",
+			slog.Any(otelkeys.Query, isbn),
+			slog.Any(otelkeys.Error, err),
+			slog.Any(otelkeys.URL, searchURL),
+		)
+		return nil, fmt.Errorf("failed to parse Goodreads ISBN search response: %w", err)
+	}
+
+	return results, nil
 }
 
 // parseISBNSearchResponse parses the JSON response from the Goodreads auto_complete endpoint.
-func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) []BookResult {
+func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) ([]BookResult, error) {
 	results := make([]BookResult, 0)
 
 	_, err := jsonparser.ArrayEach(bodyText, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
@@ -251,6 +263,7 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) [
 			"failed to parse Goodreads ISBN search response as JSON array",
 			slog.Any(otelkeys.Error, err),
 		)
+		return nil, fmt.Errorf("parse Goodreads ISBN search response as JSON array: %w", err)
 	}
 
 	slog.DebugContext(
@@ -258,5 +271,5 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) [
 		"parsed Goodreads ISBN search response",
 		slog.Int(otelkeys.Count, len(results)),
 	)
-	return results
+	return results, nil
 }
