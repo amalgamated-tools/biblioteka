@@ -347,35 +347,11 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
-	slog.DebugContext(r.Context(), "deleting library", slog.String(otelkeys.LibraryID, id))
-
-	lib, err := h.DB.GetLibrary(r.Context(), id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "library not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get library", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete library")
-		return
-	}
-
-	if err := h.DB.DeleteLibrary(r.Context(), id); err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "library not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to delete library", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete library")
-		return
-	}
-
-	userID := auth.UserIDFromContext(r.Context())
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionLibraryDeleted, "library", id, map[string]any{"name": lib.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	deleteResource(h.DB, w, r, id, "library", otelkeys.LibraryID,
+		h.DB.GetLibrary, h.DB.DeleteLibrary,
+		db.AuditActionLibraryDeleted,
+		func(l *db.Library) map[string]any { return map[string]any{"name": l.Name} },
+	)
 }
 
 // listLibraryBooks godoc

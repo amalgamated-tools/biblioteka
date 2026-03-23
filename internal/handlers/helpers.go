@@ -111,6 +111,54 @@ func handleDBErr(ctx context.Context, w http.ResponseWriter, err error, resource
 	return true
 }
 
+// deleteResource is a generic helper that implements the fetch-then-delete-then-audit
+// pattern common to all resource deletion handlers. It fetches the resource (to
+// capture audit metadata), deletes it, writes an audit log entry, and responds
+// with 204 No Content on success.
+func deleteResource[T any](
+	d *db.DB,
+	w http.ResponseWriter,
+	r *http.Request,
+	id string,
+	resource string,
+	idKey string,
+	get func(context.Context, string) (T, error),
+	del func(context.Context, string) error,
+	auditAction string,
+	auditMeta func(T) map[string]any,
+) {
+	ctx := r.Context()
+	slog.DebugContext(ctx, "deleting "+resource, slog.String(idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+
+	entity, err := get(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(ctx, w, http.StatusNotFound, resource+" not found")
+			return
+		}
+		slog.ErrorContext(ctx, "failed to get "+resource, slog.Any(otelkeys.Error, err))
+		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
+		return
+	}
+
+	if err := del(ctx, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(ctx, w, http.StatusNotFound, resource+" not found")
+			return
+		}
+		slog.ErrorContext(ctx, "failed to delete "+resource, slog.Any(otelkeys.Error, err))
+		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
+		return
+	}
+
+	userID := auth.UserIDFromContext(ctx)
+	if err := d.CreateAuditLog(ctx, userID, auditAction, resource, id, auditMeta(entity)); err != nil {
+		slog.WarnContext(ctx, "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // requireAdmin checks whether the authenticated user is an admin and writes the
 // appropriate error response if not. It returns true when the caller is allowed
 // to proceed. A deleted user (stale JWT) receives a generic 401 response.
