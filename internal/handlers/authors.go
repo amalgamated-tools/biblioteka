@@ -139,7 +139,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 
 	a, err := h.DB.CreateAuthor(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
-		if err == db.ErrInvalidAuthorName {
+		if errors.Is(err, db.ErrInvalidAuthorName) {
 			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 			return
 		}
