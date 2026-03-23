@@ -608,7 +608,7 @@ func TestParseISBNSearchResponse_ConcurrentGraphQLCalls(t *testing.T) {
 		{"bookId": "333", "workId": "444", "title": "Book Two"},
 		{"bookId": "555", "workId": "666", "title": "Book Three"}
 	]`
-	results, err := client.parseISBNSearchResponse(t.Context(), []byte(body))
+	results, err := client.parseISBNSearchResponse(context.Background(), []byte(body))
 	require.NoError(t, err)
 	require.Len(t, results, 3)
 
