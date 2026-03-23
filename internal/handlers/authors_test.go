@@ -179,3 +179,25 @@ func TestDeleteAuthor_Handler(t *testing.T) {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
 	}
 }
+
+func TestDeleteAuthor_NotFound(t *testing.T) {
+	h, userID := setupAuthorHandler(t)
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/authors/nonexistent-id", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleAuthor(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+
+	var resp errorResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.Error != "author not found" {
+		t.Errorf("error = %q, want %q", resp.Error, "author not found")
+	}
+}
