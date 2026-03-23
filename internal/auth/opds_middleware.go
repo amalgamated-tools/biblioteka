@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -27,15 +26,7 @@ type OPDSCredentialChecker interface {
 // dummyOPDSBcryptHash is a precomputed valid bcrypt hash used for timing-safe
 // comparisons when a username is not found, to mitigate username enumeration
 // via timing attacks.
-var dummyOPDSBcryptHash = mustGenerateDummyOPDSHash()
-
-func mustGenerateDummyOPDSHash() []byte {
-	hash, err := bcrypt.GenerateFromPassword([]byte("dummy-opds-password"), bcrypt.DefaultCost)
-	if err != nil {
-		panic(fmt.Errorf("generate dummy OPDS bcrypt hash: %w", err))
-	}
-	return hash
-}
+var dummyOPDSBcryptHash = mustGenerateDummyBcryptHash("dummy-opds-password", "OPDS")
 
 // writeOPDSError writes an OPDS-compatible XML error response for authentication failures.
 func writeOPDSError(_ context.Context, w http.ResponseWriter, status int, message string) {
