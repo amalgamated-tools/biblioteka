@@ -148,13 +148,23 @@ Searches the Goodreads catalog for books matching a free-text query. Returns up 
 
 #### `goodreads-search-isbn` — search by ISBN
 
-Looks up books by ISBN-10 or ISBN-13. Hyphens in the ISBN are accepted and stripped automatically.
+Looks up books by ISBN-10 or ISBN-13. Hyphens and spaces are stripped automatically before lookup. The check digit is validated; an ISBN with an invalid check digit causes the command to exit with an error. Returns up to 5 results.
 
 ```bash
 ./biblioteka-cli goodreads-search-isbn 9780756404741
 ./biblioteka-cli goodreads-search-isbn 978-0-7564-0474-1
 ./biblioteka-cli goodreads-search-isbn 0756404746
 ```
+
+**Validation errors:**
+
+| Condition | Error message |
+|-----------|---------------|
+| Empty input | `ISBN cannot be empty` |
+| Non-digit character | `invalid ISBN: <value> (unexpected character '<char>')` |
+| Wrong length (not 10 or 13 digits) | `invalid ISBN: <value>` |
+| Invalid ISBN-10 check digit | `invalid ISBN-10 check digit: <value>` |
+| Invalid ISBN-13 check digit | `invalid ISBN-13 check digit: <value>` |
 
 #### `goodreads-get-by-asin` — fetch by Amazon ASIN
 
