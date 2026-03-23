@@ -2,21 +2,22 @@
 
 ## Memory Layout
 
-A slice is a 24-byte header (3 machine words):
+Conceptually, a slice value is a small header containing three machine words (24 bytes on 64-bit architectures):
 
 - **Pointer** — points to backing array (heap-allocated)
 - **Length** — number of elements in use
 - **Capacity** — allocated size of backing array
 
-Assigning or passing a slice copies the 24-byte header, not the backing array. Both the original and copy point to the same underlying data—mutations are visible to both.
+Assigning or passing a slice copies this header value, not the backing array. Both the original and copy point to the same underlying data—mutations are visible to both.
 
 ## Capacity Growth
 
-When `append` exceeds capacity:
+On current Go releases, when `append` exceeds capacity, the runtime typically grows the backing array roughly as follows (an implementation detail that may change between versions and architectures):
 
-- `oldCap < 256`: double capacity
-- `oldCap ≥ 256`: grow ~25% (`oldCap + (oldCap + 3*256) / 4`)
+- For small capacities (around `oldCap < 256` on 64-bit architectures): roughly double capacity
+- For larger capacities: grow by about 25% (`oldCap + (oldCap + 3*256) / 4`)
 
+Code must not rely on these exact thresholds or formulas; they describe current runtime behavior for intuition and performance reasoning only.
 ### Growth Cost
 
 Each growth is O(n) — the entire array is copied to a new location. For a slice growing from 0 to N elements one at a time, the amortized cost per append is O(1), but the total copies are roughly 2N. **Preallocation eliminates all intermediate copies:**
