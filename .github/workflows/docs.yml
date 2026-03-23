@@ -12,8 +12,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -33,7 +31,7 @@ jobs:
 
       - run: pip install mkdocs-material==9.6.11
 
-      - run: mkdocs build
+      - run: mkdocs build --strict
 
       - uses: actions/upload-pages-artifact@v3
         with:
