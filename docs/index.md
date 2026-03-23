@@ -8,6 +8,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Automatic metadata extraction** — title, author, ISBN, description, publisher, language, and publication date via [ExifTool](https://exiftool.org/)
 - **Path-based metadata** — derives author, title, series name, and position from directory structure
 - **File organization** — configurable layouts: `book_per_folder`, `book_per_file`, or `none`
+- **Goodreads catalog lookup** — search by title, author, ISBN, ASIN, or Goodreads ID from the CLI
 - **Sidecar files** — writes OPF metadata and cover images alongside book files (Calibre/KOReader/Kobo compatible)
 - **Multiple libraries** — group books into named libraries with configurable paths
 - **Author and series tracking** — browse by author or series with position numbers
@@ -40,3 +41,4 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - [OPDS Catalog](opds.md) — set up e-reader access
 - [Kobo Sync](kobo.md) — sync with Kobo e-readers
 - [KOReader Sync](koreader.md) — sync reading progress with KOReader
+- [Goodreads Lookup](metadata.md#goodreads-lookup) — search the Goodreads catalog by title, author, ISBN, ASIN, or ID
