@@ -1,0 +1,30 @@
+[
+    {
+        "imageUrl": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1764703833i/54493401._SY75_.jpg",
+        "bookId": "54493401",
+        "workId": "79106958",
+        "bookUrl": "/book/show/54493401-project-hail-mary",
+        "from_search": true,
+        "from_srp": true,
+        "qid": "tjgMIyxA58",
+        "rank": 1,
+        "title": "Project Hail Mary",
+        "bookTitleBare": "Project Hail Mary",
+        "numPages": 476,
+        "avgRating": "4.51",
+        "ratingsCount": 1315703,
+        "author": {
+            "id": 6540057,
+            "name": "Andy Weir",
+            "isGoodreadsAuthor": true,
+            "profileUrl": "https://www.goodreads.com/author/show/6540057.Andy_Weir",
+            "worksListUrl": "https://www.goodreads.com/author/list/6540057.Andy_Weir"
+        },
+        "kcrPreviewUrl": "https://read.amazon.com/kp/embed?asin=B08FHBV4ZX&ref=x_gr_w_preview_new_nf_story-20&tag=x_gr_w_preview_new_nf_story-20&preview=inline",
+        "description": {
+            "html": "<b>A LONE ASTRONAUT. <br/>AN IMPOSSIBLE MISSION. <br/>AN ALLY HE NEVER IMAGINED.</b><br/><br/><b> RYLAND GRACE</b> is the sole survivor on a desperate, last-chance mission—and if he fails, humanity and Earth i…",
+            "truncated": true,
+            "fullContentUrl": "https://www.goodreads.com/book/show/54493401-project-hail-mary"
+        }
+    }
+]

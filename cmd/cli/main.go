@@ -6,9 +6,11 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/goodreads"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -32,6 +34,41 @@ func main() {
 	// happens to match a reserved command.
 	if len(os.Args) >= 3 || !pathExists(cmd) {
 		switch cmd {
+		case "goodreads-search":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: %s goodreads-search <query>\n", os.Args[0])
+				os.Exit(1)
+			}
+			err = runGoodreadsSearch(ctx, os.Args[2])
+		case "goodreads-search-isbn":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: %s goodreads-search-isbn <isbn>\n", os.Args[0])
+				os.Exit(1)
+			}
+			err = runGoodreadsSearchByISBN(ctx, os.Args[2])
+		case "goodreads-get-by-asin":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: %s goodreads-get-by-asin <asin>\n", os.Args[0])
+				os.Exit(1)
+			}
+			err = runGoodreadsGetByASIN(ctx, os.Args[2])
+		case "goodreads-get-by-id":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: %s goodreads-get-by-id <goodreads-id>\n", os.Args[0])
+				os.Exit(1)
+			}
+			err = runGoodreadsGetByID(ctx, os.Args[2])
+		case "goodreads-get-by-legacy-id":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: %s goodreads-get-by-legacy-id <legacy-id>\n", os.Args[0])
+				os.Exit(1)
+			}
+			legacyID, parseErr := strconv.ParseInt(os.Args[2], 10, 64)
+			if parseErr != nil {
+				fmt.Fprintf(os.Stderr, "Invalid legacy ID: %s\n", os.Args[2])
+				os.Exit(1)
+			}
+			err = runGoodreadsGetByLegacyID(ctx, legacyID)
 		case "process-file":
 			if len(os.Args) < 3 {
 				fmt.Fprintf(os.Stderr, "Usage: %s process-file <file>\n", os.Args[0])
@@ -82,6 +119,11 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "Commands:\n")
 	fmt.Fprintf(os.Stderr, "  process-file <file>                    Process a single book file\n")
 	fmt.Fprintf(os.Stderr, "  scan-directory <directory> [library-id] Scan a directory and enqueue files for processing\n")
+	fmt.Fprintf(os.Stderr, "  goodreads-search <query>              Search Goodreads for a book by query\n")
+	fmt.Fprintf(os.Stderr, "  goodreads-search-isbn <isbn>          Search Goodreads for a book by ISBN\n")
+	fmt.Fprintf(os.Stderr, "  goodreads-get-by-asin <asin>          Get a book from Goodreads by ASIN\n")
+	fmt.Fprintf(os.Stderr, "  goodreads-get-by-id <goodreads-id>    Get a book from Goodreads by ID\n")
+	fmt.Fprintf(os.Stderr, "  goodreads-get-by-legacy-id <legacy-id> Get a book from Goodreads by legacy ID\n")
 }
 
 func runProcessFile(ctx context.Context, path string) error {
@@ -171,5 +213,103 @@ func runScanDirectory(ctx context.Context, path string, libraryID string) error 
 	}
 
 	fmt.Printf("Successfully scanned directory: %s\n", absPath)
+	return nil
+}
+
+func runGoodreadsSearch(ctx context.Context, query string) error {
+	client := goodreads.NewClient()
+	results, err := client.Search(ctx, query)
+	if err != nil {
+		return fmt.Errorf("error searching Goodreads for query %q: %w", query, err)
+	}
+
+	if len(results) == 0 {
+		fmt.Printf("No results found for query: %s\n", query)
+		return nil
+	}
+
+	fmt.Printf("Goodreads search results for query: %s\n", query)
+	for i, book := range results {
+		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.BookTitle, book.AuthorName, book.BookID)
+	}
+
+	return nil
+}
+
+func runGoodreadsSearchByISBN(ctx context.Context, isbn string) error {
+	client := goodreads.NewClient()
+	results, err := client.SearchByISBN(ctx, isbn)
+	if err != nil {
+		return fmt.Errorf("error searching Goodreads for ISBN %q: %w", isbn, err)
+	}
+
+	if len(results) == 0 {
+		fmt.Printf("No results found for ISBN: %s\n", isbn)
+		return nil
+	}
+
+	fmt.Printf("Goodreads search results for ISBN: %s\n", isbn)
+	for i, book := range results {
+		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.BookTitle, book.AuthorName, book.BookID)
+	}
+
+	return nil
+}
+
+func runGoodreadsGetByASIN(ctx context.Context, asin string) error {
+	client := goodreads.NewClient()
+	result, err := client.GetBookByASIN(ctx, asin)
+	if err != nil {
+		return fmt.Errorf("error searching Goodreads for ASIN %q: %w", asin, err)
+	}
+
+	if result == nil {
+		fmt.Printf("No results found for ASIN: %s\n", asin)
+		return nil
+	}
+	fmt.Printf("Goodreads search result for ASIN: %s\n", asin)
+	fmt.Printf("Title: %s\n", result.BookTitle)
+	fmt.Printf("Author: %s\n", result.AuthorName)
+	fmt.Printf("Goodreads ID: %s\n", result.BookID)
+
+	return nil
+}
+
+func runGoodreadsGetByID(ctx context.Context, id string) error {
+	client := goodreads.NewClient()
+	result, err := client.GetBookByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("error getting book from Goodreads for ID %q: %w", id, err)
+	}
+
+	if result == nil {
+		fmt.Printf("No results found for Goodreads ID: %s\n", id)
+		return nil
+	}
+	fmt.Printf("Goodreads search result for ID: %s\n", id)
+	fmt.Printf("Title: %s\n", result.BookTitle)
+	fmt.Printf("Author: %s\n", result.AuthorName)
+	fmt.Printf("ASIN: %s\n", result.BookASIN)
+	fmt.Printf("Goodreads ID: %s\n", result.BookID)
+
+	return nil
+}
+
+func runGoodreadsGetByLegacyID(ctx context.Context, legacyID int64) error {
+	client := goodreads.NewClient()
+	result, err := client.GetBookByLegacyID(ctx, legacyID)
+	if err != nil {
+		return fmt.Errorf("error getting book from Goodreads for legacy ID %d: %w", legacyID, err)
+	}
+
+	if result == nil {
+		fmt.Printf("No results found for Goodreads legacy ID: %d\n", legacyID)
+		return nil
+	}
+	fmt.Printf("Goodreads search result for legacy ID: %d\n", legacyID)
+	fmt.Printf("Title: %s\n", result.BookTitle)
+	fmt.Printf("Author: %s\n", result.AuthorName)
+	fmt.Printf("ASIN: %s\n", result.BookASIN)
+	fmt.Printf("Goodreads ID: %s\n", result.BookID)
 	return nil
 }

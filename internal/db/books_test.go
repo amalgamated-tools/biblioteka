@@ -6,12 +6,6 @@ import (
 	"testing"
 )
 
-//go:fix inline
-func intPtr(i int) *int { return new(i) }
-
-//go:fix inline
-func floatPtr(f float64) *float64 { return new(f) }
-
 func TestCreateBook(t *testing.T) {
 	d := newTestDB(t)
 
@@ -290,7 +284,7 @@ func TestSetBookSeries(t *testing.T) {
 		t.Fatal("CreateSeries() returned nil series")
 	}
 
-	err = d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: floatPtr(1)}})
+	err = d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(float64(1))}})
 	if err != nil {
 		t.Fatalf("SetBookSeries() error: %v", err)
 	}
@@ -305,8 +299,8 @@ func TestSetBookSeries(t *testing.T) {
 	if entries[0].Series.ID != s.ID {
 		t.Errorf("series ID = %q, want %q", entries[0].Series.ID, s.ID)
 	}
-	if entries[0].Position == nil || *entries[0].Position != 1 {
-		t.Errorf("Position = %v, want 1", entries[0].Position)
+	if entries[0].Position == nil || *(entries[0].Position) != 1.0 {
+		t.Errorf("Position = %v, want 1.0", entries[0].Position)
 	}
 }
 
@@ -382,7 +376,7 @@ func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 	s, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 
 	_ = d.SetBookAuthors(context.Background(), book.ID, []string{a.ID})
-	_ = d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: floatPtr(1)}})
+	_ = d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.1)}})
 
 	_ = d.DeleteBook(context.Background(), book.ID)
 
