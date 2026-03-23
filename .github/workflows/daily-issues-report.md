@@ -14,7 +14,7 @@ features:
   dangerous-permissions-write: true
 tools:
   github:
-    lockdown: true
+    lockdown: false
     toolsets: [default, discussions]
 safe-outputs:
   upload-asset:
