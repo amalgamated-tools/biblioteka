@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.1.0...v0.2.0) (2026-03-23)
+## [0.1.2](https://github.com/amalgamated-tools/biblioteka/compare/v0.1.0...v0.1.2) (2026-03-23)
 
 
 ### Features
