@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync/atomic"
 	"testing"
 
 	"github.com/Khan/genqlient/graphql"
@@ -574,4 +575,76 @@ func TestSearchByISBN_RejectsInvalidCharacters(t *testing.T) {
 			require.Contains(t, err.Error(), "unexpected character")
 		})
 	}
+}
+
+func TestParseISBNSearchResponse_CancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+
+	client := noResponseClient()
+	body := `[{"bookId": "123", "workId": "456", "title": "Test Book"}]`
+	results, err := client.parseISBNSearchResponse(ctx, []byte(body))
+	require.Error(t, err)
+	require.ErrorIs(t, err, context.Canceled)
+	require.Nil(t, results)
+}
+
+func TestParseISBNSearchResponse_ConcurrentGraphQLCalls(t *testing.T) {
+	// Track the number of concurrent GraphQL calls to verify fan-out.
+	var callCount atomic.Int32
+
+	client := &Client{
+		client: &mockGraphQLClient{
+			handler: func(req *graphql.Request, resp *graphql.Response) error {
+				callCount.Add(1)
+				resp.Data = nil
+				return errors.New("mock error for concurrency test")
+			},
+		},
+	}
+
+	body := `[
+		{"bookId": "111", "workId": "222", "title": "Book One"},
+		{"bookId": "333", "workId": "444", "title": "Book Two"},
+		{"bookId": "555", "workId": "666", "title": "Book Three"}
+	]`
+	results, err := client.parseISBNSearchResponse(t.Context(), []byte(body))
+	require.NoError(t, err)
+	require.Len(t, results, 3)
+
+	// All 3 entries should have triggered a GraphQL call.
+	require.Equal(t, int32(3), callCount.Load())
+
+	// Verify order is preserved.
+	require.Equal(t, "Book One", results[0].BookTitle)
+	require.Equal(t, "Book Two", results[1].BookTitle)
+	require.Equal(t, "Book Three", results[2].BookTitle)
+}
+
+func TestSearchByISBN_PropagatesContextCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	client := &Client{
+		httpClient: &mockHTTPClient{
+			handler: func(req *http.Request) (*http.Response, error) {
+				// Cancel the context after the HTTP request succeeds
+				cancel()
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(bytes.NewReader([]byte(`[{"bookId": "123", "workId": "456", "title": "Test"}]`))),
+					Header:     make(http.Header),
+				}, nil
+			},
+		},
+		client: &mockGraphQLClient{
+			handler: func(req *graphql.Request, resp *graphql.Response) error {
+				return context.Canceled
+			},
+		},
+	}
+
+	results, err := client.SearchByISBN(ctx, "9780306406157")
+	require.Error(t, err)
+	require.ErrorIs(t, err, context.Canceled)
+	require.Nil(t, results)
 }
