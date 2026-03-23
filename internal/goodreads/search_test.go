@@ -553,3 +553,25 @@ func TestSearchByISBN_ReturnsErrorForMalformedAutocompletePayload(t *testing.T) 
 	require.Error(t, err)
 	require.Nil(t, results)
 }
+
+func TestSearchByISBN_RejectsInvalidCharacters(t *testing.T) {
+	client := &Client{}
+
+	tests := []struct {
+		name string
+		isbn string
+	}{
+		{name: "exclamation mark", isbn: "059313520!"},
+		{name: "letter in middle", isbn: "97803064a6157"},
+		{name: "X not in last position of ISBN-10", isbn: "0X93135202"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			results, err := client.SearchByISBN(t.Context(), tt.isbn)
+			require.Error(t, err)
+			require.Nil(t, results)
+			require.Contains(t, err.Error(), "unexpected character")
+		})
+	}
+}
