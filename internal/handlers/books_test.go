@@ -284,6 +284,28 @@ func TestDeleteBook_Handler(t *testing.T) {
 	}
 }
 
+func TestDeleteBook_NotFound(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/books/nonexistent-id", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+
+	var resp errorResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.Error != "book not found" {
+		t.Errorf("error = %q, want %q", resp.Error, "book not found")
+	}
+}
+
 func TestBookAuthors_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 

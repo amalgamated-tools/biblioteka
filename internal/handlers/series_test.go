@@ -179,3 +179,25 @@ func TestDeleteSeries_Handler(t *testing.T) {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
 	}
 }
+
+func TestDeleteSeries_NotFound(t *testing.T) {
+	h, userID := setupSeriesHandler(t)
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/series/nonexistent-id", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleSeries(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+
+	var resp errorResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.Error != "series not found" {
+		t.Errorf("error = %q, want %q", resp.Error, "series not found")
+	}
+}
