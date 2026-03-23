@@ -70,17 +70,24 @@ func Test_ValidateName(t *testing.T) {
 			if got != tt.wantValid {
 				t.Fatalf("validateName(%q) = %v, want %v", tt.input, got, tt.wantValid)
 			}
-			if !tt.wantValid {
-				if w.Code != tt.wantCode {
-					t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
+			if tt.wantValid {
+				if w.Code != http.StatusOK {
+					t.Errorf("expected no response written, but got status %d", w.Code)
 				}
-				var result map[string]string
-				if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-					t.Fatalf("failed to unmarshal: %v", err)
+				if w.Body.Len() != 0 {
+					t.Errorf("expected empty body, but got %q", w.Body.String())
 				}
-				if result["error"] != "name is required" {
-					t.Errorf("error = %q, want %q", result["error"], "name is required")
-				}
+				return
+			}
+			if w.Code != tt.wantCode {
+				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
+			}
+			var result map[string]string
+			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+				t.Fatalf("failed to unmarshal: %v", err)
+			}
+			if result["error"] != "name is required" {
+				t.Errorf("error = %q, want %q", result["error"], "name is required")
 			}
 		})
 	}
