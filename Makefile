@@ -1,4 +1,4 @@
-.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt
+.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt docs-serve
 
 # Tooling commands
 SWAG_CMD = go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5
@@ -142,3 +142,7 @@ modernize:
 
 generate:
 	go generate ./...
+
+# Serve documentation locally with MkDocs
+docs-serve:
+	mkdocs serve
