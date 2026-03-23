@@ -141,12 +141,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 
 	a, err := h.DB.CreateAuthor(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
-		if errors.Is(err, db.ErrInvalidAuthorName) {
-			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
-			return
-		}
-		if errors.Is(err, db.ErrAuthorNameExists) {
-			writeError(r.Context(), w, http.StatusConflict, "an author with that name already exists")
+		if handleNameErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author") {
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to create author", slog.Any(otelkeys.Error, err))
@@ -227,12 +222,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 			writeError(r.Context(), w, http.StatusNotFound, "author not found")
 			return
 		}
-		if errors.Is(err, db.ErrInvalidAuthorName) {
-			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
-			return
-		}
-		if errors.Is(err, db.ErrAuthorNameExists) {
-			writeError(r.Context(), w, http.StatusConflict, "an author with that name already exists")
+		if handleNameErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author") {
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to update author", slog.Any(otelkeys.Error, err))
