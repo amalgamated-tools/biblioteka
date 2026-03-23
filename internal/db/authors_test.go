@@ -300,6 +300,9 @@ func TestListAuthorsPaginated(t *testing.T) {
 	if page1[0].Name != "Brandon Sanderson" {
 		t.Errorf("page1[0].Name = %q, want %q", page1[0].Name, "Brandon Sanderson")
 	}
+	if page1[1].Name != "Isaac Asimov" {
+		t.Errorf("page1[1].Name = %q, want %q", page1[1].Name, "Isaac Asimov")
+	}
 
 	// Second page: remaining 2 authors.
 	page2, total2, err := d.ListAuthorsPaginated(context.Background(), 2, 2)
@@ -314,6 +317,9 @@ func TestListAuthorsPaginated(t *testing.T) {
 	}
 	if page2[0].Name != "Stephen King" {
 		t.Errorf("page2[0].Name = %q, want %q", page2[0].Name, "Stephen King")
+	}
+	if page2[1].Name != "Ursula K. Le Guin" {
+		t.Errorf("page2[1].Name = %q, want %q", page2[1].Name, "Ursula K. Le Guin")
 	}
 
 	// Empty table: total should be 0.
