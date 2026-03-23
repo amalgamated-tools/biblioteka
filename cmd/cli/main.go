@@ -230,7 +230,7 @@ func runGoodreadsSearch(ctx context.Context, query string) error {
 
 	fmt.Printf("Goodreads search results for query: %s\n", query)
 	for i, book := range results {
-		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.BookTitle, book.AuthorName, book.WorkID)
+		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.BookTitle, book.AuthorName, book.BookID)
 	}
 
 	return nil
@@ -250,7 +250,7 @@ func runGoodreadsSearchByISBN(ctx context.Context, isbn string) error {
 
 	fmt.Printf("Goodreads search results for ISBN: %s\n", isbn)
 	for i, book := range results {
-		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.BookTitle, book.AuthorName, book.WorkID)
+		fmt.Printf("%d. %s by %s (Goodreads ID: %s)\n", i+1, book.BookTitle, book.AuthorName, book.BookID)
 	}
 
 	return nil
@@ -270,7 +270,7 @@ func runGoodreadsGetByASIN(ctx context.Context, asin string) error {
 	fmt.Printf("Goodreads search result for ASIN: %s\n", asin)
 	fmt.Printf("Title: %s\n", result.BookTitle)
 	fmt.Printf("Author: %s\n", result.AuthorName)
-	fmt.Printf("Goodreads ID: %s\n", result.WorkID)
+	fmt.Printf("Goodreads ID: %s\n", result.BookID)
 
 	return nil
 }
@@ -290,6 +290,7 @@ func runGoodreadsGetByID(ctx context.Context, id string) error {
 	fmt.Printf("Title: %s\n", result.BookTitle)
 	fmt.Printf("Author: %s\n", result.AuthorName)
 	fmt.Printf("ASIN: %s\n", result.BookASIN)
+	fmt.Printf("Goodreads ID: %s\n", result.BookID)
 
 	return nil
 }
@@ -309,6 +310,6 @@ func runGoodreadsGetByLegacyID(ctx context.Context, legacyID int64) error {
 	fmt.Printf("Title: %s\n", result.BookTitle)
 	fmt.Printf("Author: %s\n", result.AuthorName)
 	fmt.Printf("ASIN: %s\n", result.BookASIN)
-
+	fmt.Printf("Goodreads ID: %s\n", result.BookID)
 	return nil
 }
