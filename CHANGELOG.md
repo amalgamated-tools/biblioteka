@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.1.2](https://github.com/amalgamated-tools/biblioteka/compare/v0.1.0...v0.1.2) (2026-03-23)
+
+
+### Features
+
+* Add in support for querying Goodreads ([#644](https://github.com/amalgamated-tools/biblioteka/issues/644)) ([3cd7f58](https://github.com/amalgamated-tools/biblioteka/commit/3cd7f5815e53aaff9f01afbf78064024334f1a5f))
+* add in workflows ([#610](https://github.com/amalgamated-tools/biblioteka/issues/610)) ([6fcf024](https://github.com/amalgamated-tools/biblioteka/commit/6fcf024fac83c85b09e386b82e8bf33e53b22c44))
+* Refactor file organization logic to support multiple organization types ([#553](https://github.com/amalgamated-tools/biblioteka/issues/553)) ([89f480b](https://github.com/amalgamated-tools/biblioteka/commit/89f480b014be2cbb4eff5d30b8209066af754649))
+
+
+### Bug Fixes
+
+* **accessibility:** add semantic sidebar group headings and scoped user table headers ([#577](https://github.com/amalgamated-tools/biblioteka/issues/577)) ([e7a4953](https://github.com/amalgamated-tools/biblioteka/commit/e7a4953693feaf64fd7d3943a6c30708657cf436))
+* **accessibility:** describe toggle-admin button action in Users table ([#603](https://github.com/amalgamated-tools/biblioteka/issues/603)) ([16fcf18](https://github.com/amalgamated-tools/biblioteka/commit/16fcf18d8afdfb9657a614b6b38730c13ea67eca))
+* **accessibility:** use header landmark for mobile top bar ([#675](https://github.com/amalgamated-tools/biblioteka/issues/675)) ([cac95b6](https://github.com/amalgamated-tools/biblioteka/commit/cac95b660bd1a6630b5a6420a38c2ef35509ebc9))
+* **code-simplifier:** refactor(handlers): use errors.Is for sentinel error comparisons ([#686](https://github.com/amalgamated-tools/biblioteka/issues/686)) ([5b51848](https://github.com/amalgamated-tools/biblioteka/commit/5b518489b538dad78c3aa3e70417b90dc55faa75))
+* **code-simplifier:** refactor(sidebar): use semantic h2 elements instead of span with ARIA roles ([#606](https://github.com/amalgamated-tools/biblioteka/issues/606)) ([661d592](https://github.com/amalgamated-tools/biblioteka/commit/661d592e567993a837acc5a49357187a36b25b5f))
+* **code-simplifier:** refactor(sidecar): atomic cover write, urn:uuid prefix, and cleanup ([#551](https://github.com/amalgamated-tools/biblioteka/issues/551)) ([0c836c5](https://github.com/amalgamated-tools/biblioteka/commit/0c836c5a5a5cdc9d5e995766f7b8cb122c4fb4c5))
+* don't lock ([#648](https://github.com/amalgamated-tools/biblioteka/issues/648)) ([f2a7b5b](https://github.com/amalgamated-tools/biblioteka/commit/f2a7b5bbaee71beeaa0fd471135f0238c5e129a7))
+* **goodreads:** prevent API key leak, concurrent GraphQL fan-out, context-cancellation propagation ([#716](https://github.com/amalgamated-tools/biblioteka/issues/716)) ([e27f0b7](https://github.com/amalgamated-tools/biblioteka/commit/e27f0b75ae345770dcfe727e0874e5cb9274a5c8))
+* **handlers:** return 400 for whitespace-only author and series names ([#649](https://github.com/amalgamated-tools/biblioteka/issues/649)) ([ca53101](https://github.com/amalgamated-tools/biblioteka/commit/ca53101cb1eb40dc55742cadcf7c3131a30ad831))
+
+
+### Chores / CI
+
+* **ci:** allow CI coach to open pull requests ([4a7a7c0](https://github.com/amalgamated-tools/biblioteka/commit/4a7a7c079663b23ecd8fef075e990bb76d875658))
+* **ci:** refine and expand GitHub Actions workflows ([abb20d0](https://github.com/amalgamated-tools/biblioteka/commit/abb20d0543c42734173df6cb4b8e5ea8f3e42d6e), [282ca6b](https://github.com/amalgamated-tools/biblioteka/commit/282ca6bc36bd42c14ce8436d9fad383eb5d74c73), [b1a060d](https://github.com/amalgamated-tools/biblioteka/commit/b1a060d07a11eb80fce74a53849d5821448e8da9))
+* **ci:** iterate on AI-assisted workflow configuration ([91df811](https://github.com/amalgamated-tools/biblioteka/commit/91df811b119bc90141de46db43756daa2b4fa6c5), [b9a8b10](https://github.com/amalgamated-tools/biblioteka/commit/b9a8b109782b4536335c6d83b23c2630d688cd20), [dcf1856](https://github.com/amalgamated-tools/biblioteka/commit/dcf1856409d4692e5d80a27126dcbc953f625b81))
+* **workflows:** add concurrency cancel-in-progress and paths-ignore to Update Docs ([#755](https://github.com/amalgamated-tools/biblioteka/issues/755)) ([1204dff](https://github.com/amalgamated-tools/biblioteka/commit/1204dfff82fcaa0f0822293526f677ffd4292846))
+* **workflows:** use announcement-capable discussion category for all agentic workflows ([#717](https://github.com/amalgamated-tools/biblioteka/issues/717)) ([50b5e41](https://github.com/amalgamated-tools/biblioteka/commit/50b5e4143573737a201dec11f2ff4df1ba9e8179))
+* **workflows:** use installed gh-aw CLI in daily copilot token report ([#620](https://github.com/amalgamated-tools/biblioteka/issues/620)) ([a0fd72f](https://github.com/amalgamated-tools/biblioteka/commit/a0fd72f6bcfa8154c40c0f5d7e99e7788a822a71))
+
 ## [0.1.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.0.7...v0.1.0) (2026-03-20)
 
 
