@@ -28,7 +28,7 @@
 #   Imports:
 #     - shared/reporting.md
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"4e00baec59436356cf491c1a8eb96ab12b6625a4dada0c1e74f87ca53c5269f1","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"3f6012b9eabde12a58711f7eb33680ddae871a7928dbddd6d2bd7dce1838fff4","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
 
 name: "Commit Changes Analyzer"
 "on":

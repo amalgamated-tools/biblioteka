@@ -8,21 +8,25 @@ permissions:
   discussions: read
   issues: read
   pull-requests: read
-# engine: claude
+engine: copilot
 tools:
   edit:
   bash: ["*"]
   github:
-    mode: remote
+    lockdown: false
     toolsets: [default, discussions]
   cache-memory:
     key: schema-consistency-cache-${{ github.workflow }}
 safe-outputs:
+  upload-asset:
   create-discussion:
+    expires: 3d
     category: "audits"
     title-prefix: "[Schema Consistency] "
     max: 1
     close-older-discussions: true
+  close-discussion:
+    max: 10    
 timeout-minutes: 30
 imports:
   - shared/mood.md

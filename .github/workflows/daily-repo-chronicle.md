@@ -6,12 +6,15 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
   issues: read
   pull-requests: read
   discussions: read
 tracker-id: daily-repo-chronicle
+strict: true
 engine: copilot
-
+features:
+  dangerous-permissions-write: true
 timeout-minutes: 45
 
 network:
@@ -25,16 +28,18 @@ tools:
   bash:
     - "*"
   github:
-    toolsets:
-      - default
-      - discussions
+    lockdown: false
+    toolsets: [default, discussions]
 safe-outputs:
   upload-asset:
   create-discussion:
     expires: 3d
     category: "announcements"
     title-prefix: "📰 "
+    max: 1
     close-older-discussions: true
+  close-discussion:
+    max: 10
 imports:
   - shared/reporting.md
 

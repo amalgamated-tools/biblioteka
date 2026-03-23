@@ -6,17 +6,23 @@ on:
   schedule: daily
 permissions:
   contents: read
+  actions: read
   issues: read
   pull-requests: read
+  discussions: read
 engine: copilot
+features:
+  dangerous-permissions-write: true
 tools:
   serena: ["go"]
+  github:
+    lockdown: false
+    toolsets: [default, discussions]  
 safe-outputs:
   create-issue:
     expires: 2d
     title-prefix: "chore: Duplicate Code Detected"
     labels: [code-quality, automated-analysis, cookie]
-    assignees: copilot
     group: true
     max: 3
 timeout-minutes: 15
