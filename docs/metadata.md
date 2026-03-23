@@ -161,10 +161,12 @@ Looks up books by ISBN-10 or ISBN-13. Hyphens and spaces are stripped automatica
 | Condition | Error message |
 |-----------|---------------|
 | Empty input | `ISBN cannot be empty` |
-| Non-digit character | `invalid ISBN: <value> (unexpected character '<char>')` |
+| Non-digit character (except trailing `X`/`x` in ISBN-10) | `invalid ISBN: <value> (unexpected character '<char>')` |
 | Wrong length (not 10 or 13 digits) | `invalid ISBN: <value>` |
 | Invalid ISBN-10 check digit | `invalid ISBN-10 check digit: <value>` |
 | Invalid ISBN-13 check digit | `invalid ISBN-13 check digit: <value>` |
+
+> **Note:** A trailing `X` or `x` is accepted as a valid ISBN-10 check digit (the standard representation of check value 10). For example, `080442957X` is a valid ISBN-10.
 
 #### `goodreads-get-by-asin` — fetch by Amazon ASIN
 
