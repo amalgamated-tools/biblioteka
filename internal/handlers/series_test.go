@@ -58,6 +58,38 @@ func TestCreateSeries_MissingName(t *testing.T) {
 	}
 }
 
+func TestCreateSeries_WhitespaceOnlyName(t *testing.T) {
+	h, userID := setupSeriesHandler(t)
+
+	body, _ := json.Marshal(seriesRequest{Name: "   "})
+	r := httptest.NewRequest(http.MethodPost, "/api/series", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleSeriesList(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestUpdateSeries_WhitespaceOnlyName(t *testing.T) {
+	h, userID := setupSeriesHandler(t)
+
+	s, _ := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+
+	body, _ := json.Marshal(seriesRequest{Name: "   "})
+	r := httptest.NewRequest(http.MethodPut, "/api/series/"+s.ID, bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleSeries(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
 func TestCreateSeries_Duplicate(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 

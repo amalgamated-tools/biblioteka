@@ -58,6 +58,38 @@ func TestCreateAuthor_MissingName(t *testing.T) {
 	}
 }
 
+func TestCreateAuthor_WhitespaceOnlyName(t *testing.T) {
+	h, userID := setupAuthorHandler(t)
+
+	body, _ := json.Marshal(authorRequest{Name: "   "})
+	r := httptest.NewRequest(http.MethodPost, "/api/authors", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleAuthors(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestUpdateAuthor_WhitespaceOnlyName(t *testing.T) {
+	h, userID := setupAuthorHandler(t)
+
+	a, _ := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+
+	body, _ := json.Marshal(authorRequest{Name: "   "})
+	r := httptest.NewRequest(http.MethodPut, "/api/authors/"+a.ID, bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleAuthor(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
 func TestCreateAuthor_Duplicate(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
