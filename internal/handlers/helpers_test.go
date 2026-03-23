@@ -50,6 +50,42 @@ func Test_WriteError(t *testing.T) {
 	}
 }
 
+func Test_ValidateName(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantValid bool
+		wantCode  int
+	}{
+		{"valid name", "Stephen King", true, 0},
+		{"empty string", "", false, http.StatusBadRequest},
+		{"whitespace only", "   ", false, http.StatusBadRequest},
+		{"tab only", "\t", false, http.StatusBadRequest},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			got := validateName(t.Context(), w, tt.input)
+			if got != tt.wantValid {
+				t.Fatalf("validateName(%q) = %v, want %v", tt.input, got, tt.wantValid)
+			}
+			if !tt.wantValid {
+				if w.Code != tt.wantCode {
+					t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
+				}
+				var result map[string]string
+				if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+					t.Fatalf("failed to unmarshal: %v", err)
+				}
+				if result["error"] != "name is required" {
+					t.Errorf("error = %q, want %q", result["error"], "name is required")
+				}
+			}
+		})
+	}
+}
+
 func Test_ValidatePassword(t *testing.T) {
 	tests := []struct {
 		name     string
