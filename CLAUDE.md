@@ -75,6 +75,7 @@ db/migrations/
 - Check every error explicitly with `if err != nil`.
 - Do not ignore errors in tests either.
 - Wrap errors with context: `fmt.Errorf("context: %w", err)`.
+- Prefer `errors.Is` for error handling in most cases; only check error strings as a last resort when the error type does not provide enough context.
 
 ### HTTP handlers
 
