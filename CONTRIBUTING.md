@@ -451,6 +451,8 @@ The frontend job uses pnpm's built-in cache via `actions/setup-node` (`cache: 'p
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
 
+> **Concurrency:** The workflow uses a concurrency group keyed on the branch ref. A new push to a PR branch automatically cancels any in-progress run for that branch. Runs on `main` are never cancelled.
+
 ### E2E workflow (`.github/workflows/e2etest.yml`)
 
 The E2E workflow runs on pushes and pull requests targeting `main` or `develop`, but only when the following paths are modified:
@@ -479,6 +481,8 @@ On completion, the `playwright-report/` artifact is uploaded and retained for **
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the E2E workflow. If you need E2E tests to run on a docs-only PR, trigger the workflow manually via **Actions → E2E Tests → Run workflow**.
 
+> **Concurrency:** The workflow uses a concurrency group keyed on the branch ref. A new push automatically cancels any in-progress run for that branch. Runs on `main` and `develop` are never cancelled.
+
 ### Other CI workflows
 
 #### PR Title Check (`.github/workflows/pr-title.yml`)
@@ -494,6 +498,18 @@ On every push to `main` and on every published release, multi-arch container ima
 Releases are automated by [Release Please](https://github.com/googleapis/release-please-action). On every push to `main`, Release Please analyses the commit history since the last release, computes the next version number according to [Semantic Versioning](https://semver.org/), and either creates or updates an open "Release PR" that updates `CHANGELOG.md` and `version` references. Merging that PR triggers a GitHub Release, which in turn triggers the Docker Build workflow to publish a release-tagged container image.
 
 You do not need to manually tag releases or edit `CHANGELOG.md`. Commit messages that follow the Conventional Commits format are required for Release Please to correctly classify changes.
+
+#### Dependabot (`.github/dependabot.yml`)
+
+Dependabot monitors three package ecosystems on a weekly schedule:
+
+| Ecosystem | Directory | Grouping |
+|---|---|---|
+| Go modules (`gomod`) | `/` | Minor and patch updates are grouped into a single PR |
+| npm | `/frontend` | Minor and patch updates are grouped into a single PR |
+| GitHub Actions | `/` | Minor and patch updates are grouped into a single PR |
+
+Major version bumps are opened as individual PRs and require manual review before merging.
 
 #### Dependabot Auto-Merge (`.github/workflows/dependabot-auto-merge.yml`)
 
