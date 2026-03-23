@@ -943,7 +943,7 @@ Create a series.
 | `hardcover_id`    | string |          | Hardcover series ID |
 | `google_books_id` | string |          | Google Books series ID |
 
-> **Name trimming:** Before storage, the server trims leading/trailing whitespace from the name. A name that is blank after trimming is rejected with `400`.
+> **Name normalization:** Before storage, the server trims leading/trailing whitespace and collapses any internal whitespace run to a single space. Capitalization is preserved. For example, `"  The  Lord  of  the  Rings  "` is stored as `"The Lord of the Rings"`. A name that is blank after normalization is rejected with `400`.
 
 **Response:** `201 Created` with the series object.
 
@@ -951,7 +951,7 @@ Create a series.
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Invalid request (malformed JSON, missing name, or name is blank after trimming) |
+| `400` | Invalid request (malformed JSON, missing name, or name is blank after normalization) |
 | `409` | A series with that name already exists |
 | `500` | Unexpected server error |
 
@@ -989,7 +989,7 @@ Get a single series by ID.
 
 Update a series (full update).
 
-**Request body:** Same fields as `POST /api/series`. The same name trimming applies.
+**Request body:** Same fields as `POST /api/series`. The same name normalization (whitespace trimming and collapsing) applies.
 
 **Response body (`200`):** Updated series object.
 
@@ -997,7 +997,7 @@ Update a series (full update).
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Invalid request (malformed JSON, missing name, or name is blank after trimming) |
+| `400` | Invalid request (malformed JSON, missing name, or name is blank after normalization) |
 | `404` | Series not found |
 | `409` | A series with that name already exists |
 
