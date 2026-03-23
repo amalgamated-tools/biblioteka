@@ -39,7 +39,7 @@ safe-outputs:
   upload-asset:
   create-discussion:
     expires: 3d
-    category: "audits"
+    category: "announcements"
     max: 1
     close-older-discussions: true
 timeout-minutes: 20
@@ -714,7 +714,7 @@ A successful token consumption report:
 
 Your output MUST:
 
-1. Create a discussion in the "audits" category with the complete report
+1. Create a discussion in the "announcements" category with the complete report
 2. Include executive summary with key metrics and highlights
 3. Embed all three generated charts with URLs from `upload asset` tool
 4. Provide detailed per-workflow statistics in a table
