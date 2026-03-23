@@ -111,20 +111,7 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 		return "", false, wrappedErr
 	}
 	if dbErr == nil {
-		slog.InfoContext(ctx, "source file missing but already indexed, skipping",
-			slog.String(otelkeys.Path, p.Path),
-			slog.String(otelkeys.BookID, bf.BookID),
-		)
-		if p.LibraryID != "" {
-			if err := database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID); err != nil {
-				slog.WarnContext(ctx, "failed to add already-indexed book to library",
-					slog.Any(otelkeys.Error, err),
-					slog.String(otelkeys.Path, p.Path),
-					slog.String(otelkeys.BookID, bf.BookID),
-				)
-			}
-		}
-		return "", true, nil
+		return linkExistingBookAndSkip(ctx, database, bf, p.LibraryID, p.Path)
 	}
 
 	// Attempt to find the file at any expected reorganized location.
@@ -143,20 +130,7 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 					return "", false, wrappedErr
 				}
 				if dbErr == nil {
-					slog.InfoContext(ctx, "reorganized path already indexed, skipping",
-						slog.String(otelkeys.Path, candidatePath),
-						slog.String(otelkeys.BookID, bf.BookID),
-					)
-					if p.LibraryID != "" {
-						if err := database.AddBookToLibrary(ctx, p.LibraryID, bf.BookID); err != nil {
-							slog.WarnContext(ctx, "failed to add reorganized already-indexed book to library",
-								slog.Any(otelkeys.Error, err),
-								slog.String(otelkeys.Path, candidatePath),
-								slog.String(otelkeys.BookID, bf.BookID),
-							)
-						}
-					}
-					return "", true, nil
+					return linkExistingBookAndSkip(ctx, database, bf, p.LibraryID, candidatePath)
 				}
 				// File exists at reorganized location but isn't indexed.
 				slog.InfoContext(ctx, "source file moved by prior attempt, continuing from reorganized path",
@@ -174,28 +148,32 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 	return "", true, nil
 }
 
+// linkExistingBookAndSkip logs that a book at path is already indexed,
+// best-effort links it to libraryID, and returns the skip signal.
+func linkExistingBookAndSkip(ctx context.Context, database *db.DB, bf *db.BookFile, libraryID, path string) (string, bool, error) {
+	slog.InfoContext(ctx, "file already indexed, skipping",
+		slog.String(otelkeys.Path, path),
+		slog.String(otelkeys.BookID, bf.BookID),
+	)
+	if libraryID != "" {
+		if err := database.AddBookToLibrary(ctx, libraryID, bf.BookID); err != nil {
+			slog.WarnContext(ctx, "failed to associate existing book with library",
+				slog.Any(otelkeys.Error, err),
+				slog.String(otelkeys.Path, path),
+				slog.String(otelkeys.BookID, bf.BookID),
+			)
+		}
+	}
+	return "", true, nil
+}
+
 // checkDuplicate returns true if the file at the given path is already indexed.
 // When already indexed, it best-effort links the existing book to libraryID.
 func checkDuplicate(ctx context.Context, database *db.DB, path, libraryID string, lookup bookFileLookupFunc) (bool, error) {
 	bookFile, err := lookup(ctx, database, path)
 	if err == nil {
-		slog.InfoContext(ctx, "file already indexed, skipping full processing",
-			slog.String(otelkeys.Path, path),
-		)
-
-		// Best-effort: if this job was scoped to a specific library, ensure the
-		// existing book is associated with that library as well.
-		if libraryID != "" {
-			if err := database.AddBookToLibrary(ctx, libraryID, bookFile.BookID); err != nil {
-				wrappedErr := fmt.Errorf("process book file: add existing book %s to library %s: %w", bookFile.BookID, libraryID, err)
-				slog.WarnContext(ctx, "could not associate existing book with library",
-					slog.Any(otelkeys.Error, wrappedErr),
-					slog.String(otelkeys.Path, path),
-				)
-			}
-		}
-
-		return true, nil
+		_, skip, skipErr := linkExistingBookAndSkip(ctx, database, bookFile, libraryID, path)
+		return skip, skipErr
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		wrappedErr := fmt.Errorf("process book file: get existing book file by path %q: %w", path, err)
