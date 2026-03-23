@@ -140,7 +140,13 @@ jobs:
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
         with:
           path: ${{ runner.temp }}/apt-cache
-          key: ${{ runner.os }}-apt-exiftool-${{ hashFiles('.github/workflows/test.yml') }}
+          # Stable key tied to the OS only; bump the version suffix (v1 → v2) only
+          # when a different exiftool version is intentionally required.
+          # Previously used hashFiles('.github/workflows/test.yml'), which caused
+          # cache misses on every unrelated workflow edit (action bumps, comments, etc.).
+          key: ${{ runner.os }}-apt-exiftool-v1
+          restore-keys: |
+            ${{ runner.os }}-apt-exiftool-
 
       - name: Install exiftool
         run: |
