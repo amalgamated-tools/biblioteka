@@ -7,7 +7,7 @@ A self-hosted personal book library manager. Scan local files, extract metadata,
 - **Multi-format support** — EPUB, MOBI, AZW3, and PDF
 - **Automatic metadata extraction** — title, author, ISBN, description, publisher, language, and publication date via [ExifTool](https://exiftool.org/)
 - **Path-based metadata** — derives author, title, series name, and position from directory structure
-- **File organisation** — configurable layouts: `book_per_folder`, `book_per_file`, or `none`
+- **File organization** — configurable layouts: `book_per_folder`, `book_per_file`, or `none`
 - **Sidecar files** — writes OPF metadata and cover images alongside book files (Calibre/KOReader/Kobo compatible)
 - **Multiple libraries** — group books into named libraries with configurable paths
 - **Author and series tracking** — browse by author or series with position numbers
