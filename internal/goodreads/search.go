@@ -13,6 +13,7 @@ import (
 // It should not be a search for ISBN - we have other functions for that
 func (c *Client) Search(ctx context.Context, query string) ([]BookResult, error) {
 	results := make([]BookResult, 0)
+	seen := make(map[string]struct{})
 	resp, err := Search(ctx, c.client, query)
 	if err != nil {
 		return results, fmt.Errorf("goodreads search: %w", err)
@@ -40,6 +41,24 @@ func (c *Client) Search(ctx context.Context, query string) ([]BookResult, error)
 			)
 			continue
 		}
+
+		dedupeKey := result.BookID
+		if dedupeKey == "" {
+			dedupeKey = result.WorkID
+		}
+		if dedupeKey != "" {
+			if _, ok := seen[dedupeKey]; ok {
+				slog.DebugContext(
+					ctx,
+					"skipping duplicate Goodreads search result",
+					slog.Any(otelkeys.BookID, result.BookID),
+					slog.Any(otelkeys.WorkID, result.WorkID),
+				)
+				continue
+			}
+			seen[dedupeKey] = struct{}{}
+		}
+
 		results = append(results, *result)
 	}
 
