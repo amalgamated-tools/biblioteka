@@ -145,7 +145,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 			return
 		}
-		if err == db.ErrAuthorNameExists {
+		if errors.Is(err, db.ErrAuthorNameExists) {
 			writeError(r.Context(), w, http.StatusConflict, "an author with that name already exists")
 			return
 		}
@@ -225,15 +225,15 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 
 	a, err := h.DB.UpdateAuthor(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusNotFound, "author not found")
 			return
 		}
-		if err == db.ErrInvalidAuthorName {
+		if errors.Is(err, db.ErrInvalidAuthorName) {
 			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 			return
 		}
-		if err == db.ErrAuthorNameExists {
+		if errors.Is(err, db.ErrAuthorNameExists) {
 			writeError(r.Context(), w, http.StatusConflict, "an author with that name already exists")
 			return
 		}
@@ -268,7 +268,7 @@ func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id 
 
 	author, err := h.DB.GetAuthor(r.Context(), id)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusNotFound, "author not found")
 			return
 		}
@@ -278,7 +278,7 @@ func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id 
 	}
 
 	if err := h.DB.DeleteAuthor(r.Context(), id); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusNotFound, "author not found")
 			return
 		}
