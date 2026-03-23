@@ -96,7 +96,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		return nil, fmt.Errorf("goodreads ISBN search returned status %d", resp.StatusCode)
 	}
 
-	bodyText, err := io.ReadAll(resp.Body)
+	bodyText, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // 1 MB limit
 	if err != nil {
 		slog.ErrorContext(
 			ctx,
