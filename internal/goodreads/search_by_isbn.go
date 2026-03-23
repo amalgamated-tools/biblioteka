@@ -347,13 +347,13 @@ func buildFallbackResult(e autocompleteEntry) BookResult {
 	// integer strings (e.g. "123"), not KCA URIs (e.g. "kca://book/...").
 	// Callers must not assume the same format as the primary GraphQL path.
 	return BookResult{
-		BookID:            strconv.FormatInt(e.bookID, 10),
-		WorkID:            strconv.FormatInt(e.workID, 10),
-		BookImageURL:      e.imageURL,
-		BookLegacyID:      e.bookID,
-		WorkLegacyID:      e.workID,
-		BookTitle:         e.title,
-		AuthorLegacyID:    e.authorID,
-		AuthorName:        e.authorName,
+		BookID:         strconv.FormatInt(e.bookID, 10),
+		WorkID:         strconv.FormatInt(e.workID, 10),
+		BookImageURL:   e.imageURL,
+		BookLegacyID:   e.bookID,
+		WorkLegacyID:   e.workID,
+		BookTitle:      e.title,
+		AuthorLegacyID: e.authorID,
+		AuthorName:     e.authorName,
 	}
 }

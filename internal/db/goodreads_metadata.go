@@ -17,29 +17,29 @@ const (
 
 // GoodreadsMetadata represents a row in the goodreads_metadata table.
 type GoodreadsMetadata struct {
-	ID                     string    `json:"id"`
-	UserID                 string    `json:"user_id"`
-	BookID                 *string   `json:"book_id"`
-	Status                 string    `json:"status"`
-	Title                  *string   `json:"title"`
-	Description            *string   `json:"description"`
-	ASIN                   *string   `json:"asin"`
-	ISBN10                 *string   `json:"isbn10"`
-	ISBN13                 *string   `json:"isbn13"`
-	GoodreadsID            *string   `json:"goodreads_id"`
-	PublicationDate        *string   `json:"publication_date"`
-	Publisher              *string   `json:"publisher"`
-	Language               *string   `json:"language"`
-	CoverImageURL          *string   `json:"cover_image_url"`
-	AuthorName             *string   `json:"author_name"`
-	AuthorGoodreadsID      *string   `json:"author_goodreads_id"`
-	AuthorImageURL         *string   `json:"author_image_url"`
-	GoodreadsWorkID        *string   `json:"goodreads_work_id"`
-	GoodreadsBookLegacyID  *int64    `json:"goodreads_book_legacy_id"`
-	GoodreadsWorkLegacyID  *int64    `json:"goodreads_work_legacy_id"`
-	GoodreadsAuthorLegacyID *int64   `json:"goodreads_author_legacy_id"`
-	CreatedAt              Timestamp `json:"created_at"`
-	UpdatedAt              Timestamp `json:"updated_at"`
+	ID                      string    `json:"id"`
+	UserID                  string    `json:"user_id"`
+	BookID                  *string   `json:"book_id"`
+	Status                  string    `json:"status"`
+	Title                   *string   `json:"title"`
+	Description             *string   `json:"description"`
+	ASIN                    *string   `json:"asin"`
+	ISBN10                  *string   `json:"isbn10"`
+	ISBN13                  *string   `json:"isbn13"`
+	GoodreadsID             *string   `json:"goodreads_id"`
+	PublicationDate         *string   `json:"publication_date"`
+	Publisher               *string   `json:"publisher"`
+	Language                *string   `json:"language"`
+	CoverImageURL           *string   `json:"cover_image_url"`
+	AuthorName              *string   `json:"author_name"`
+	AuthorGoodreadsID       *string   `json:"author_goodreads_id"`
+	AuthorImageURL          *string   `json:"author_image_url"`
+	GoodreadsWorkID         *string   `json:"goodreads_work_id"`
+	GoodreadsBookLegacyID   *int64    `json:"goodreads_book_legacy_id"`
+	GoodreadsWorkLegacyID   *int64    `json:"goodreads_work_legacy_id"`
+	GoodreadsAuthorLegacyID *int64    `json:"goodreads_author_legacy_id"`
+	CreatedAt               Timestamp `json:"created_at"`
+	UpdatedAt               Timestamp `json:"updated_at"`
 }
 
 const goodreadsMetadataColumns = `id, user_id, book_id, status, title, description, asin, isbn10, isbn13, goodreads_id, publication_date, publisher, language, cover_image_url, author_name, author_goodreads_id, author_image_url, goodreads_work_id, goodreads_book_legacy_id, goodreads_work_legacy_id, goodreads_author_legacy_id, created_at, updated_at`
