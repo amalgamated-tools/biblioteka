@@ -24,7 +24,9 @@
     variant
   ]} {extraClass ?? ''}"
   role={role ?? (variant === "error" ? "alert" : "status")}
-  aria-live={role === "alert" || (!role && variant === "error") ? "assertive" : "polite"}
+  aria-live={role === "alert" || (!role && variant === "error")
+    ? "assertive"
+    : "polite"}
   data-testid={testId}
 >
   {@render children()}
