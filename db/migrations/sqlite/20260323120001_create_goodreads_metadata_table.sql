@@ -25,5 +25,13 @@ CREATE TABLE IF NOT EXISTS goodreads_metadata (
 	updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE INDEX IF NOT EXISTS idx_goodreads_metadata_user_id
+	ON goodreads_metadata (user_id);
+
+CREATE INDEX IF NOT EXISTS idx_goodreads_metadata_user_status_created_at_id
+	ON goodreads_metadata (user_id, status, created_at DESC, id DESC);
+
 -- migrate:down
+DROP INDEX IF EXISTS idx_goodreads_metadata_user_status_created_at_id;
+DROP INDEX IF EXISTS idx_goodreads_metadata_user_id;
 DROP TABLE IF EXISTS goodreads_metadata;
