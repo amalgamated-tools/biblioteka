@@ -168,9 +168,7 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionAPIKeyCreated, "api_key", apiKey.ID, map[string]any{"name": name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyCreated, "api_key", apiKey.ID, map[string]any{"name": name})
 
 	resp := apiKeyCreateResponse{
 		apiKeyDTO: toAPIKeyDTO(apiKey),
@@ -209,9 +207,7 @@ func (h *APIKeyHandler) deleteAPIKey(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionAPIKeyDeleted, "api_key", id, map[string]any{"name": apiKey.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyDeleted, "api_key", id, map[string]any{"name": apiKey.Name})
 
 	w.WriteHeader(http.StatusNoContent)
 }

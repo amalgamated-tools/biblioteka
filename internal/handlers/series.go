@@ -157,9 +157,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 	)
 
 	userID := auth.UserIDFromContext(r.Context())
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSeriesCreated, "series", s.ID, map[string]any{"name": s.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionSeriesCreated, "series", s.ID, map[string]any{"name": s.Name})
 
 	writeJSON(r.Context(), w, http.StatusCreated, toSeriesDTO(s))
 }
@@ -240,9 +238,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSeriesUpdated, "series", s.ID, map[string]any{"name": s.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionSeriesUpdated, "series", s.ID, map[string]any{"name": s.Name})
 
 	writeJSON(r.Context(), w, http.StatusOK, toSeriesDTO(s))
 }
