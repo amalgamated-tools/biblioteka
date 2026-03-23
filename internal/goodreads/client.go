@@ -42,7 +42,7 @@ func NewClient() *Client {
 	httpClient := &http.Client{
 		// 3 second timeout is more than enough for the Goodreads API, which is usually very fast.
 		Timeout: 3 * time.Second,
-		Transport: &AuthTransport{
+		Transport: &GoodReadsAuthTransport{
 			Token:            defaultToken,
 			WrappedTransport: http.DefaultTransport,
 		},
