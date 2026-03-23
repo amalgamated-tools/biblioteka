@@ -159,12 +159,21 @@ func Test_HandleNameErr(t *testing.T) {
 			wantErrMsg:  "name is required",
 		},
 		{
+		{
 			name:        "wrapped errInvalid yields 400",
 			err:         fmt.Errorf("db: %w", errInvalid),
 			resourceArt: "a series",
 			wantHandled: true,
 			wantCode:    http.StatusBadRequest,
 			wantErrMsg:  "name is required",
+		},
+		{
+			name:        "wrapped errExists yields 409",
+			err:         fmt.Errorf("db: %w", errExists),
+			resourceArt: "an author",
+			wantHandled: true,
+			wantCode:    http.StatusConflict,
+			wantErrMsg:  "an author with that name already exists",
 		},
 		{
 			name:        "errExists yields 409",
