@@ -76,6 +76,7 @@
       <p class="text-ink-400 dark:text-ink-400">Loading users...</p>
     {:else if usersError}
       <div
+        role="alert"
         class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm"
       >
         {usersError}

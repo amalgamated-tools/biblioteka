@@ -176,6 +176,7 @@
 
     {#if newlyCreatedKey}
       <div
+        role="alert"
         class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 px-4 py-4 rounded-xl mb-6 animate-scale-in"
       >
         <p
