@@ -312,6 +312,9 @@ func TestListAuthorsPaginated(t *testing.T) {
 	if len(page2) != 2 {
 		t.Fatalf("len(page2) = %d, want 2", len(page2))
 	}
+	if page2[0].Name != "Stephen King" {
+		t.Errorf("page2[0].Name = %q, want %q", page2[0].Name, "Stephen King")
+	}
 
 	// Empty table: total should be 0.
 	d2 := newTestDB(t)
@@ -324,5 +327,8 @@ func TestListAuthorsPaginated(t *testing.T) {
 	}
 	if len(empty) != 0 {
 		t.Errorf("empty result len = %d, want 0", len(empty))
+	}
+	if empty == nil {
+		t.Error("empty result = nil, want empty slice")
 	}
 }
