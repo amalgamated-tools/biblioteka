@@ -40,6 +40,20 @@ func TestDialectOrderBy(t *testing.T) {
 			direction: "ASC",
 			want:      "ORDER BY bf.file_name ASC, bf.id ASC",
 		},
+		{
+			name:      "lowercase direction normalized",
+			db:        &DB{Dialect: DialectSQLite},
+			column:    "title",
+			direction: "asc",
+			want:      "ORDER BY title ASC, rowid ASC",
+		},
+		{
+			name:      "invalid direction defaults to ASC",
+			db:        &DB{Dialect: DialectPostgres},
+			column:    "created_at",
+			direction: "INVALID",
+			want:      "ORDER BY created_at ASC, id ASC",
+		},
 	}
 
 	for _, tt := range tests {

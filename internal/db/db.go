@@ -111,6 +111,7 @@ func (d *DB) now() string {
 
 // dialectOrderBy returns an ORDER BY clause with a dialect-appropriate
 // row identifier tiebreaker. SQLite uses rowid while PostgreSQL uses id.
+// column must be a hardcoded SQL identifier — never pass user-supplied input.
 func (d *DB) dialectOrderBy(column, direction string) string {
 	direction = strings.ToUpper(direction)
 	if direction != "ASC" && direction != "DESC" {
