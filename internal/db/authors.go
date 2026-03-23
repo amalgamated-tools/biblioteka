@@ -123,31 +123,7 @@ func (d *DB) ListAuthorsPaginated(ctx context.Context, limit, offset int) ([]Aut
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
-
-	var total int
-	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM authors`).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	orderBy := d.dialectOrderBy("name", "ASC")
-	rows, err := d.QueryContext(ctx,
-		`SELECT `+authorColumns+` FROM authors `+orderBy+` LIMIT $1 OFFSET $2`,
-		limit, offset,
-	)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-
-	var authors []Author
-	for rows.Next() {
-		a, err := scanAuthor(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		authors = append(authors, *a)
-	}
-	return authors, total, rows.Err()
+	return listPaginated(ctx, d, "authors", authorColumns, d.dialectOrderBy("name", "ASC"), limit, offset, scanAuthor)
 }
 
 func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {
