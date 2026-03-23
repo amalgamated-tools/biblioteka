@@ -31,7 +31,7 @@
 #     - shared/reporting.md
 #     - shared/trending-charts-simple.md
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"60a9e1f8a681a042bf4592090ce8193224307d94d44a026565a69e9663207ee2","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"6d92f42bdd30478f98b3008b8f80b4f8d9146b2ab9111012efee15877a359e73","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
 
 name: "Automated Portfolio Analyst"
 "on":
@@ -426,7 +426,7 @@ jobs:
           cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_EOF'
           {
             "description_suffixes": {
-              "create_discussion": " CONSTRAINTS: Maximum 1 discussion(s) can be created. Title will be prefixed with \"[portfolio] \". Discussions will be created in category \"audits\".",
+              "create_discussion": " CONSTRAINTS: Maximum 1 discussion(s) can be created. Title will be prefixed with \"[portfolio] \". Discussions will be created in category \"announcements\".",
               "upload_asset": " CONSTRAINTS: Maximum file size: 10240KB. Allowed file extensions: [.png .jpg .jpeg]."
             },
             "repo_params": {},
@@ -1158,7 +1158,7 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "*.pythonhosted.org,anaconda.org,api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,binstar.org,bootstrap.pypa.io,conda.anaconda.org,conda.binstar.org,crates.io,files.pythonhosted.org,github.com,host.docker.internal,index.crates.io,pip.pypa.io,pypi.org,pypi.python.org,raw.githubusercontent.com,registry.npmjs.org,repo.anaconda.com,repo.continuum.io,static.crates.io,telemetry.enterprise.githubcopilot.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_discussion\":{\"category\":\"audits\",\"close_older_discussions\":true,\"expires\":168,\"fallback_to_issue\":true,\"max\":1,\"title_prefix\":\"[portfolio] \"},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"},\"upload_asset\":{\"allowed-exts\":[\".png\",\".jpg\",\".jpeg\"],\"branch\":\"assets/${{ github.workflow }}\",\"max-size\":10240}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_discussion\":{\"category\":\"announcements\",\"close_older_discussions\":true,\"expires\":168,\"fallback_to_issue\":true,\"max\":1,\"title_prefix\":\"[portfolio] \"},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"},\"upload_asset\":{\"allowed-exts\":[\".png\",\".jpg\",\".jpeg\"],\"branch\":\"assets/${{ github.workflow }}\",\"max-size\":10240}}"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
