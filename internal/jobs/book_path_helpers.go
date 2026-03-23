@@ -111,7 +111,7 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 		return "", false, wrappedErr
 	}
 	if dbErr == nil {
-		return linkExistingBookAndSkip(ctx, database, bf, p.LibraryID, p.Path)
+		return linkExistingBookAndSkip(ctx, database, bf, p.LibraryID, p.Path, "exact_path_match")
 	}
 
 	// Attempt to find the file at any expected reorganized location.
@@ -130,7 +130,7 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 					return "", false, wrappedErr
 				}
 				if dbErr == nil {
-					return linkExistingBookAndSkip(ctx, database, bf, p.LibraryID, candidatePath)
+					return linkExistingBookAndSkip(ctx, database, bf, p.LibraryID, candidatePath, "reorganized_path_match")
 				}
 				// File exists at reorganized location but isn't indexed.
 				slog.InfoContext(ctx, "source file moved by prior attempt, continuing from reorganized path",
@@ -150,10 +150,13 @@ func resolveSourcePath(ctx context.Context, database *db.DB, p ProcessFilePayloa
 
 // linkExistingBookAndSkip logs that a book at path is already indexed,
 // best-effort links it to libraryID, and returns the skip signal.
-func linkExistingBookAndSkip(ctx context.Context, database *db.DB, bf *db.BookFile, libraryID, path string) (string, bool, error) {
+// reason describes why processing was skipped (e.g. "exact_path_match",
+// "reorganized_path_match", "duplicate_check", "post_reorganization_duplicate").
+func linkExistingBookAndSkip(ctx context.Context, database *db.DB, bf *db.BookFile, libraryID, path, reason string) (string, bool, error) {
 	slog.InfoContext(ctx, "file already indexed, skipping",
 		slog.String(otelkeys.Path, path),
 		slog.String(otelkeys.BookID, bf.BookID),
+		slog.String(otelkeys.Reason, reason),
 	)
 	if libraryID != "" {
 		if err := database.AddBookToLibrary(ctx, libraryID, bf.BookID); err != nil {
@@ -174,7 +177,7 @@ func linkExistingBookAndSkip(ctx context.Context, database *db.DB, bf *db.BookFi
 func checkDuplicate(ctx context.Context, database *db.DB, path, libraryID string, lookup bookFileLookupFunc) (bool, error) {
 	bookFile, err := lookup(ctx, database, path)
 	if err == nil {
-		_, skip, skipErr := linkExistingBookAndSkip(ctx, database, bookFile, libraryID, path)
+		_, skip, skipErr := linkExistingBookAndSkip(ctx, database, bookFile, libraryID, path, "duplicate_check")
 		return skip, skipErr
 	}
 	if !errors.Is(err, sql.ErrNoRows) {

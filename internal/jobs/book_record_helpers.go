@@ -93,7 +93,7 @@ func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, library
 		// Re-check for duplicates at the new path — another worker may
 		// have already indexed the reorganized location.
 		if existingBF, err := lookup(ctx, database, newPath); err == nil {
-			return linkExistingBookAndSkip(ctx, database, existingBF, libraryID, newPath)
+			return linkExistingBookAndSkip(ctx, database, existingBF, libraryID, newPath, "post_reorganization_duplicate")
 		} else if !errors.Is(err, sql.ErrNoRows) {
 			return "", false, fmt.Errorf("check duplicate at reorganized path %q: %w", newPath, err)
 		}
