@@ -23,7 +23,7 @@ network:
 safe-outputs:
   create-pull-request:
     expires: 1d
-    title-prefix: "[docs] "
+    title-prefix: "docs(daily):"
     labels: [documentation, automation]
     reviewers: [copilot]
     draft: false

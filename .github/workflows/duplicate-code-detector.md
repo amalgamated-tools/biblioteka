@@ -14,7 +14,7 @@ tools:
 safe-outputs:
   create-issue:
     expires: 2d
-    title-prefix: "[duplicate-code] "
+    title-prefix: "chore: Duplicate Code Detected"
     labels: [code-quality, automated-analysis, cookie]
     assignees: copilot
     group: true

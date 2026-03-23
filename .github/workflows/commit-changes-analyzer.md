@@ -13,8 +13,7 @@ permissions:
   issues: read
   pull-requests: read
 engine:
-  id: claude
-  max-turns: 100
+  id: copilot
 tools:
   github:
     toolsets: [default]
@@ -24,7 +23,7 @@ tools:
 safe-outputs:
   create-discussion:
     expires: 1d
-    category: "dev"
+    category: "Development"
     max: 1
 timeout-minutes: 30
 imports:

@@ -21,7 +21,7 @@ safe-outputs:
     protected-files: fallback-to-issue
     labels: [automation, documentation]
   push-to-pull-request-branch:
-    target: "*"
+    target: "triggering"
     protected-files: fallback-to-issue
     labels: [automation, documentation]
     max: 1
