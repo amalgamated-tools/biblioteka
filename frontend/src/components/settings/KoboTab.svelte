@@ -21,6 +21,7 @@
   // Per-token "copied" state
   let copiedTokenId: string | null = $state(null);
   let copiedTimeout: number | null = null;
+  let liveMessage = $state("");
 
   onDestroy(() => {
     if (copiedTimeout !== null) {
@@ -92,7 +93,11 @@
     return `${window.location.origin}/kobo/${token.token}/v1/initialization`;
   }
 
-  async function copyToClipboard(text: string, tokenId: string) {
+  async function copyToClipboard(
+    text: string,
+    tokenId: string,
+    tokenName: string,
+  ) {
     tokensError = null;
 
     try {
@@ -120,6 +125,7 @@
       }
 
       copiedTokenId = tokenId;
+      liveMessage = `Copied sync URL for ${tokenName}`;
       if (copiedTimeout !== null) clearTimeout(copiedTimeout);
       copiedTimeout = window.setTimeout(() => {
         copiedTokenId = null;
@@ -225,7 +231,7 @@
                   {url}
                 </code>
                 <button
-                  onclick={() => copyToClipboard(url, token.id)}
+                  onclick={() => copyToClipboard(url, token.id, token.name)}
                   aria-label={copiedTokenId === token.id
                     ? `Copied sync URL for ${token.name}`
                     : `Copy sync URL for ${token.name}`}
@@ -244,9 +250,9 @@
                   Token hidden. Create a new token to get a fresh sync URL.
                 </div>
                 <button
+                  type="button"
                   aria-disabled="true"
                   aria-label={`Copy unavailable for ${token.name} — token value is only shown once`}
-                  onclick={(e) => e.preventDefault()}
                   class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500 cursor-not-allowed"
                 >
                   <Copy class="w-4 h-4" />
@@ -259,11 +265,7 @@
       </div>
     {/if}
 
-    <span aria-live="polite" class="sr-only">
-      {copiedTokenId
-        ? `Copied sync URL for ${tokenList.find((t) => t.id === copiedTokenId)?.name ?? ""}`
-        : ""}
-    </span>
+    <span role="status" class="sr-only">{liveMessage}</span>
   </div>
 
   <div
