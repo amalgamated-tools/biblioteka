@@ -93,19 +93,7 @@ func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, library
 		// Re-check for duplicates at the new path — another worker may
 		// have already indexed the reorganized location.
 		if existingBF, err := lookup(ctx, database, newPath); err == nil {
-			slog.InfoContext(ctx, "reorganized path already indexed, skipping",
-				slog.String(otelkeys.Path, newPath),
-			)
-			if libraryID != "" {
-				if linkErr := database.AddBookToLibrary(ctx, libraryID, existingBF.BookID); linkErr != nil {
-					slog.WarnContext(ctx, "could not associate existing book with library after reorg",
-						slog.String(otelkeys.BookID, existingBF.BookID),
-						slog.String(otelkeys.LibraryID, libraryID),
-						slog.Any(otelkeys.Error, linkErr),
-					)
-				}
-			}
-			return "", true, nil
+			return linkExistingBookAndSkip(ctx, database, existingBF, libraryID, newPath, "post_reorganization_duplicate")
 		} else if !errors.Is(err, sql.ErrNoRows) {
 			return "", false, fmt.Errorf("check duplicate at reorganized path %q: %w", newPath, err)
 		}
