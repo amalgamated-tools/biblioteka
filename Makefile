@@ -147,5 +147,6 @@ generate:
 docs-serve:
 	mkdocs serve
 
-db-dump:
+db-dump: clean
+	go run cmd/cli/main.go db-migrate
 	sqlite3 db/biblioteka.db .dump > db/schema.sql

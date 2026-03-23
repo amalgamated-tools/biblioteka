@@ -34,6 +34,8 @@ func main() {
 	// happens to match a reserved command.
 	if len(os.Args) >= 3 || !pathExists(cmd) {
 		switch cmd {
+		case "db-migrate":
+			err = runDBMigrate(ctx)
 		case "goodreads-search":
 			if len(os.Args) < 3 {
 				fmt.Fprintf(os.Stderr, "Usage: %s goodreads-search <query>\n", os.Args[0])
@@ -124,6 +126,17 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  goodreads-get-by-asin <asin>          Get a book from Goodreads by ASIN\n")
 	fmt.Fprintf(os.Stderr, "  goodreads-get-by-id <goodreads-id>    Get a book from Goodreads by ID\n")
 	fmt.Fprintf(os.Stderr, "  goodreads-get-by-legacy-id <legacy-id> Get a book from Goodreads by legacy ID\n")
+	fmt.Fprintf(os.Stderr, "  version                                Print the version of the application\n")
+}
+
+func runDBMigrate(ctx context.Context) error {
+	database, err := db.SetupDatabase(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to setup database: %w", err)
+	}
+	defer func() { _ = database.Close() }()
+
+	return nil
 }
 
 func runProcessFile(ctx context.Context, path string) error {

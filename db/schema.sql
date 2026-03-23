@@ -4,33 +4,33 @@ CREATE TABLE schema_migrations (
 			version TEXT PRIMARY KEY,
 			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
-INSERT INTO schema_migrations VALUES('20260214235631_create_users_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260222200000_create_settings_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260222210000_add_oidc_to_users','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260224000000_add_is_admin_to_users','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260313000000_create_libraries_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260313010000_remove_user_id_from_libraries','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260313020000_create_authors_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260313030000_create_series_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260313040000_create_books_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260313050000_create_library_books_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260313060000_create_book_authors_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260313070000_create_book_series_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260313080000_create_book_files_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260314000000_create_audit_logs_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260315000000_create_api_keys_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260315000000_create_opds_credentials_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260316000000_add_unique_file_path_index','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260316000000_author_name_ci_unique','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260316000001_series_name_ci_unique','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260317000000_create_kobo_tokens_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260317000000_create_kosync_tables','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260317000001_create_kobo_reading_states_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260317000002_add_books_updated_at_index','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260317010000_add_kobo_token_hash','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260323120000_drop_num_pages_from_books','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260323120001_create_goodreads_metadata_table','2026-03-23 23:54:31');
-INSERT INTO schema_migrations VALUES('20260323120002_add_hardcover_google_to_goodreads_metadata','2026-03-23 23:54:31');
+INSERT INTO schema_migrations VALUES('20260214235631_create_users_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260222200000_create_settings_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260222210000_add_oidc_to_users','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260224000000_add_is_admin_to_users','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260313000000_create_libraries_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260313010000_remove_user_id_from_libraries','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260313020000_create_authors_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260313030000_create_series_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260313040000_create_books_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260313050000_create_library_books_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260313060000_create_book_authors_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260313070000_create_book_series_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260313080000_create_book_files_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260314000000_create_audit_logs_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260315000000_create_api_keys_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260315000000_create_opds_credentials_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260316000000_add_unique_file_path_index','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260316000000_author_name_ci_unique','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260316000001_series_name_ci_unique','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260317000000_create_kobo_tokens_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260317000000_create_kosync_tables','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260317000001_create_kobo_reading_states_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260317000002_add_books_updated_at_index','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260317010000_add_kobo_token_hash','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260323120000_drop_num_pages_from_books','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260323120001_create_goodreads_metadata_table','2026-03-23 23:58:43');
+INSERT INTO schema_migrations VALUES('20260323120002_add_hardcover_google_to_goodreads_metadata','2026-03-23 23:58:43');
 CREATE TABLE users (
 	id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     name TEXT NOT NULL,
