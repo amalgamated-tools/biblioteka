@@ -13,12 +13,11 @@ tools:
   bash:
     - "*"
 safe-outputs:
-  create-issue:
+  create-discussion:
     expires: 7d
-    title-prefix: "[repo-map] "
-    labels: [documentation]
-    max: 1
-    close-older-issues: true
+    category: "announcements"
+    title-prefix: "📰 "
+    close-older-discussions: true
   noop:
 timeout-minutes: 20
 strict: true
