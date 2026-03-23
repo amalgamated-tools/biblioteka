@@ -7,7 +7,7 @@ permissions:
   issues: read
   pull-requests: read
   discussions: read
-engine: codex
+engine: copilot
 strict: true
 tracker-id: daily-issues-report
 features:
