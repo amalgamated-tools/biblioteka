@@ -30,6 +30,14 @@ type Series struct {
 
 const seriesColumns = `id, name, goodreads_id, hardcover_id, google_books_id, created_at, updated_at`
 
+type seriesPaginatedQuery struct{}
+
+func (seriesPaginatedQuery) table() string   { return "series" }
+func (seriesPaginatedQuery) columns() string { return seriesColumns }
+func (seriesPaginatedQuery) orderBy(d *DB) string {
+	return d.dialectOrderBy("name", "ASC")
+}
+
 func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
 	var s Series
 	err := row.Scan(&s.ID, &s.Name, &s.GoodreadsID, &s.HardcoverID, &s.GoogleBooksID, &s.CreatedAt, &s.UpdatedAt)
@@ -94,7 +102,7 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
-	return listPaginated(ctx, d, "series", seriesColumns, d.dialectOrderBy("name", "ASC"), limit, offset, scanSeries)
+	return listPaginated(ctx, d, seriesPaginatedQuery{}, limit, offset, scanSeries)
 }
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
