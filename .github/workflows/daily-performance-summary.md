@@ -16,12 +16,13 @@ features:
   dangerous-permissions-write: true
 tools:
   github:
+    lockdown: false
     toolsets: [default, discussions]
 safe-outputs:
   upload-asset:
   create-discussion:
     expires: 3d
-    category: "Audits"
+    category: "audits"
     title-prefix: "[daily performance] "
     max: 1
     close-older-discussions: true

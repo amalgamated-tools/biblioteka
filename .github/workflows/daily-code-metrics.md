@@ -20,7 +20,7 @@ safe-outputs:
   upload-asset:
   create-discussion:
     expires: 3d
-    category: "Audits"
+    category: "audits"
     max: 1
     close-older-discussions: true
 timeout-minutes: 30

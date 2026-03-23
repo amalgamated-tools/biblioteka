@@ -1,6 +1,8 @@
 ---
 description: Daily report analyzing repository issues with clustering, metrics, and trend charts
-on: daily
+on:
+  schedule: daily
+  workflow_dispatch:
 permissions:
   contents: read
   actions: read
@@ -20,7 +22,7 @@ safe-outputs:
   upload-asset:
   create-discussion:
     expires: 3d
-    category: "Audits"
+    category: "audits"
     title-prefix: "[daily issues] "
     max: 1
     close-older-discussions: true

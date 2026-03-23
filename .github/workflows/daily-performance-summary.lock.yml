@@ -31,7 +31,7 @@
 #     - shared/reporting.md
 #     - shared/trending-charts-simple.md
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"91a69663a5ef516a8a42eaf3b32945c8a2739f7140eab7079808ae6195dc8d58","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"acdba518b8a798c752d0852bd7b2e6fdaef15e0905aa394482cd285c1a27cea3","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
 
 name: "Daily Project Performance Summary Generator (Using Safe Inputs)"
 "on":
