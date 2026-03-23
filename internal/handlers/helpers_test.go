@@ -129,6 +129,91 @@ func Test_ExtractPathID(t *testing.T) {
 	}
 }
 
+func Test_HandleNameErr(t *testing.T) {
+	var (
+		errInvalid = errors.New("invalid name")
+		errExists  = errors.New("name exists")
+		errOther   = errors.New("other error")
+	)
+
+	tests := []struct {
+		name           string
+		err            error
+		resourceArt    string
+		wantHandled    bool
+		wantCode       int
+		wantMsgContain string
+	}{
+		{
+			name:        "nil error not handled",
+			err:         nil,
+			resourceArt: "an author",
+			wantHandled: false,
+		},
+		{
+			name:           "errInvalid yields 400",
+			err:            errInvalid,
+			resourceArt:    "an author",
+			wantHandled:    true,
+			wantCode:       http.StatusBadRequest,
+			wantMsgContain: "name is required",
+		},
+		{
+			name:           "wrapped errInvalid yields 400",
+			err:            fmt.Errorf("db: %w", errInvalid),
+			resourceArt:    "a series",
+			wantHandled:    true,
+			wantCode:       http.StatusBadRequest,
+			wantMsgContain: "name is required",
+		},
+		{
+			name:           "errExists yields 409",
+			err:            errExists,
+			resourceArt:    "an author",
+			wantHandled:    true,
+			wantCode:       http.StatusConflict,
+			wantMsgContain: "an author with that name already exists",
+		},
+		{
+			name:           "errExists series yields 409",
+			err:            errExists,
+			resourceArt:    "a series",
+			wantHandled:    true,
+			wantCode:       http.StatusConflict,
+			wantMsgContain: "a series with that name already exists",
+		},
+		{
+			name:        "unrelated error not handled",
+			err:         errOther,
+			resourceArt: "an author",
+			wantHandled: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			got := handleNameErr(t.Context(), w, tt.err, errInvalid, errExists, tt.resourceArt)
+			if got != tt.wantHandled {
+				t.Fatalf("handleNameErr() = %v, want %v", got, tt.wantHandled)
+			}
+			if !tt.wantHandled {
+				return
+			}
+			if w.Code != tt.wantCode {
+				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
+			}
+			var result map[string]string
+			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+				t.Fatalf("failed to unmarshal: %v", err)
+			}
+			if result["error"] != tt.wantMsgContain {
+				t.Errorf("error = %q, want %q", result["error"], tt.wantMsgContain)
+			}
+		})
+	}
+}
+
 func Test_HandleDBErr(t *testing.T) {
 	tests := []struct {
 		name        string
