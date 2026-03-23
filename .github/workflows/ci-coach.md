@@ -27,12 +27,14 @@ tools:
 safe-outputs:
   create-pull-request:
     expires: 2d
+    draft: true
     fallback-as-issue: true
     title-prefix: "ci(ci-coach): "
     protected-files: allowed
     allowed-files:
       - .github/workflows/*
     github-token-for-extra-empty-commit: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
+    github-token: ${{ secrets.GH_AW_PUSH_TOKEN }}
 timeout-minutes: 30
 source: githubnext/agentics/workflows/ci-coach.md@b897c2f3e43bde9ff7923c8fa9211055b26e27cc
 ---
