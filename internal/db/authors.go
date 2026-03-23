@@ -93,10 +93,7 @@ func (d *DB) GetAuthorByName(ctx context.Context, name string) (*Author, error) 
 
 func (d *DB) ListAuthors(ctx context.Context) ([]Author, error) {
 	slog.DebugContext(ctx, "db: listing authors")
-	orderBy := "ORDER BY name ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY name ASC, id ASC"
-	}
+	orderBy := d.dialectOrderBy("name", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+authorColumns+` FROM authors `+orderBy,
 	)
@@ -128,10 +125,7 @@ func (d *DB) ListAuthorsPaginated(ctx context.Context, limit, offset int) ([]Aut
 		return nil, 0, err
 	}
 
-	orderBy := "ORDER BY name ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY name ASC, id ASC"
-	}
+	orderBy := d.dialectOrderBy("name", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+authorColumns+` FROM authors `+orderBy+` LIMIT $1 OFFSET $2`,
 		limit, offset,

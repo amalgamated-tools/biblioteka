@@ -65,10 +65,7 @@ func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
 
 func (d *DB) ListSeries(ctx context.Context) ([]Series, error) {
 	slog.DebugContext(ctx, "db: listing series")
-	orderBy := "ORDER BY name ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY name ASC, id ASC"
-	}
+	orderBy := d.dialectOrderBy("name", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+seriesColumns+` FROM series `+orderBy,
 	)
@@ -100,10 +97,7 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 		return nil, 0, err
 	}
 
-	orderBy := "ORDER BY name ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY name ASC, id ASC"
-	}
+	orderBy := d.dialectOrderBy("name", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+seriesColumns+` FROM series `+orderBy+` LIMIT $1 OFFSET $2`,
 		limit, offset,

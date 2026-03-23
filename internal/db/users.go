@@ -175,10 +175,7 @@ func (d *DB) SetAdmin(ctx context.Context, userID string, isAdmin bool) error {
 // ListUsers returns all users ordered by creation time.
 func (d *DB) ListUsers(ctx context.Context) ([]User, error) {
 	slog.DebugContext(ctx, "db: listing users")
-	orderBy := "ORDER BY created_at ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY created_at ASC, id ASC"
-	}
+	orderBy := d.dialectOrderBy("created_at", "ASC")
 	rows, err := d.QueryContext(ctx, `SELECT `+userColumns+` FROM users `+orderBy)
 	if err != nil {
 		return nil, err

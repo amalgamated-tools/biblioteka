@@ -66,10 +66,7 @@ func (d *DB) GetBookFile(ctx context.Context, id string) (*BookFile, error) {
 // ListBookFiles returns all files for a given book.
 func (d *DB) ListBookFiles(ctx context.Context, bookID string) ([]BookFile, error) {
 	slog.DebugContext(ctx, "db: listing book files", slog.String(otelkeys.BookID, bookID))
-	orderBy := "ORDER BY file_name ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY file_name ASC, id ASC"
-	}
+	orderBy := d.dialectOrderBy("file_name", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookFileColumns+` FROM book_files WHERE book_id = $1 `+orderBy,
 		bookID,
@@ -127,10 +124,7 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 		args[i] = id
 	}
 
-	orderBy := "ORDER BY bf.file_name ASC, bf.rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY bf.file_name ASC, bf.id ASC"
-	}
+	orderBy := d.dialectOrderBy("bf.file_name", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookFileColumnsWithPrefix("bf.")+` FROM book_files bf WHERE bf.book_id IN (`+strings.Join(placeholders, ",")+`) `+orderBy,
 		args...,
