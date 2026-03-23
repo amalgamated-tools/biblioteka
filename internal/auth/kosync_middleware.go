@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -35,15 +34,7 @@ type KOSyncCredentialChecker interface {
 // dummyKOSyncBcryptHash is a precomputed valid bcrypt hash used for timing-safe
 // comparisons when a username is not found, to mitigate username enumeration
 // via timing attacks.
-var dummyKOSyncBcryptHash = mustGenerateDummyKOSyncHash()
-
-func mustGenerateDummyKOSyncHash() []byte {
-	hash, err := bcrypt.GenerateFromPassword([]byte("dummy-kosync-key"), bcrypt.DefaultCost)
-	if err != nil {
-		panic(fmt.Errorf("generate dummy KOSync bcrypt hash: %w", err))
-	}
-	return hash
-}
+var dummyKOSyncBcryptHash = mustGenerateDummyBcryptHash("dummy-kosync-key", "KOSync")
 
 // KOSyncHeaderAuthMiddleware returns an HTTP middleware that validates KOSync
 // credentials using the x-auth-user and x-auth-key request headers and injects
