@@ -40,10 +40,11 @@ A slice is a 3-word header: pointer, length, capacity. Multiple slices can share
 
 ### Capacity Growth
 
-- < 256 elements: capacity doubles
-- > = 256 elements: grows by ~25% (`newcap += (newcap + 3*256) / 4`)
-- Each growth copies the entire backing array — O(n)
+Approximate current Go runtime behavior (Go 1.22; **implementation detail** that may change between Go versions/architectures — your code MUST NOT depend on these exact thresholds or formulas):
 
+- < 256 elements: capacity roughly doubles
+- >= 256 elements: grows by ~25% (current implementation: `newcap += (newcap + 3*256) / 4`)
+- Each growth copies the entire backing array — O(n); instead of relying on growth patterns, **preallocate** when you can estimate size (see next section)
 ### Preallocation
 
 ```go
