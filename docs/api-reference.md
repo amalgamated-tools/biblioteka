@@ -947,6 +947,14 @@ Create a series.
 
 **Response:** `201 Created` with the series object.
 
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Invalid request (malformed JSON, missing name, or name is blank after trimming) |
+| `409` | A series with that name already exists |
+| `500` | Unexpected server error |
+
 **Series object:**
 
 ```json
@@ -989,7 +997,7 @@ Update a series (full update).
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Validation error (missing name) |
+| `400` | Invalid request (malformed JSON, missing name, or name is blank after trimming) |
 | `404` | Series not found |
 | `409` | A series with that name already exists |
 
