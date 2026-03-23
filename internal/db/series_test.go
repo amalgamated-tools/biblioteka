@@ -27,6 +27,29 @@ func TestCreateSeries(t *testing.T) {
 	}
 }
 
+func TestCreateSeries_NormalizesWhitespace(t *testing.T) {
+	d := newTestDB(t)
+
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"  The Dark Tower  ", "The Dark Tower"},
+		{"The   Wheel   of Time", "The Wheel of Time"},
+		{"  A  Song   of Ice   and Fire  ", "A Song of Ice and Fire"},
+	}
+
+	for _, tt := range tests {
+		s, err := d.CreateSeries(context.Background(), tt.input, nil, nil, nil)
+		if err != nil {
+			t.Fatalf("CreateSeries(%q) error: %v", tt.input, err)
+		}
+		if s.Name != tt.want {
+			t.Errorf("CreateSeries(%q).Name = %q, want %q", tt.input, s.Name, tt.want)
+		}
+	}
+}
+
 func TestCreateSeries_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
@@ -151,6 +174,23 @@ func TestUpdateSeries(t *testing.T) {
 	}
 }
 
+func TestUpdateSeries_NormalizesWhitespace(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateSeries() error: %v", err)
+	}
+
+	updated, err := d.UpdateSeries(context.Background(), created.ID, "  The   Dark   Tower  ", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("UpdateSeries() error: %v", err)
+	}
+	if updated.Name != "The Dark Tower" {
+		t.Errorf("UpdateSeries().Name = %q, want %q", updated.Name, "The Dark Tower")
+	}
+}
+
 func TestUpdateSeries_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
@@ -189,6 +229,26 @@ func TestFindOrCreateSeries_CaseInsensitive(t *testing.T) {
 	}
 	if found.ID != created.ID {
 		t.Errorf("expected same series ID, got %q and %q", found.ID, created.ID)
+	}
+}
+
+func TestFindOrCreateSeries_NormalizesWhitespace(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.FindOrCreateSeries(context.Background(), "The Wheel of Time")
+	if err != nil {
+		t.Fatalf("first FindOrCreateSeries() error: %v", err)
+	}
+
+	found, err := d.FindOrCreateSeries(context.Background(), "  The   Wheel   of Time  ")
+	if err != nil {
+		t.Fatalf("second FindOrCreateSeries() error: %v", err)
+	}
+	if found.ID != created.ID {
+		t.Errorf("expected same series ID, got %q and %q", found.ID, created.ID)
+	}
+	if found.Name != "The Wheel of Time" {
+		t.Errorf("FindOrCreateSeries().Name = %q, want %q", found.Name, "The Wheel of Time")
 	}
 }
 
