@@ -56,6 +56,7 @@ cmd/
 internal/
   auth/              # JWT, rate limiting, middleware
   db/                # Database abstraction (SQLite/Postgres), CRUD operations
+  goodreads/         # Goodreads catalog client: search by query/ISBN, lookup by ASIN or Goodreads ID; used by CLI commands
   handlers/          # HTTP request handlers
   jobs/              # Background job definitions
   metadata/          # EPUB/MOBI/AZW3/PDF metadata extraction via ExifTool
