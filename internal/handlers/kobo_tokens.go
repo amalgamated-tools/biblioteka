@@ -121,9 +121,7 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionKoboTokenCreated, "kobo_token", koboToken.ID, map[string]any{"name": name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionKoboTokenCreated, "kobo_token", koboToken.ID, map[string]any{"name": name})
 
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
@@ -158,9 +156,7 @@ func (h *KoboHandler) deleteKoboToken(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionKoboTokenDeleted, "kobo_token", id, map[string]any{"name": token.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionKoboTokenDeleted, "kobo_token", id, map[string]any{"name": token.Name})
 
 	w.WriteHeader(http.StatusNoContent)
 }

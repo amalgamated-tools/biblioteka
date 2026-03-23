@@ -77,9 +77,7 @@ func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, book
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionBookFileCreated, "book_file", bf.ID, map[string]any{"book_id": bookID, "file_name": bf.FileName, "file_type": bf.FileType}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionBookFileCreated, "book_file", bf.ID, map[string]any{"book_id": bookID, "file_name": bf.FileName, "file_type": bf.FileType})
 
 	writeJSON(r.Context(), w, http.StatusCreated, toBookFileDTO(bf))
 }

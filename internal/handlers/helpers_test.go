@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 )
 
 func Test_WriteJSON(t *testing.T) {
@@ -189,5 +191,34 @@ func Test_HandleDBErr(t *testing.T) {
 				t.Errorf("error = %q, want %q", result["error"], tt.wantMsg)
 			}
 		})
+	}
+}
+
+func Test_LogAudit(t *testing.T) {
+	d := newTestDB(t)
+
+	logAudit(t.Context(), d, "user-42", db.AuditActionBookCreated, "book", "book-1", map[string]any{"title": "Audited"})
+
+	logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
+	if err != nil {
+		t.Fatalf("list audit logs: %v", err)
+	}
+	if len(logs) != 1 {
+		t.Fatalf("len(logs) = %d, want 1", len(logs))
+	}
+	if logs[0].UserID == nil || *logs[0].UserID != "user-42" {
+		t.Errorf("user id = %v, want %q", logs[0].UserID, "user-42")
+	}
+	if logs[0].Action != db.AuditActionBookCreated {
+		t.Errorf("action = %q, want %q", logs[0].Action, db.AuditActionBookCreated)
+	}
+	if logs[0].EntityType != "book" {
+		t.Errorf("entity type = %q, want %q", logs[0].EntityType, "book")
+	}
+	if logs[0].EntityID != "book-1" {
+		t.Errorf("entity id = %q, want %q", logs[0].EntityID, "book-1")
+	}
+	if logs[0].Metadata == nil {
+		t.Fatal("metadata = nil, want JSON metadata")
 	}
 }

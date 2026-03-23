@@ -112,6 +112,15 @@ func handleDBErr(ctx context.Context, w http.ResponseWriter, err error, resource
 	return true
 }
 
+// logAudit persists an audit log entry on a best-effort basis. Write failures
+// are logged as warnings and intentionally not propagated to the caller, so
+// audit issues never block the primary request flow.
+func logAudit(ctx context.Context, d *db.DB, userID, action, resourceType, resourceID string, meta map[string]any) {
+	if err := d.CreateAuditLog(ctx, userID, action, resourceType, resourceID, meta); err != nil {
+		slog.WarnContext(ctx, "failed to write audit log", slog.Any(otelkeys.Error, err))
+	}
+}
+
 // deleteResource is a generic helper that implements the fetch-then-delete-then-audit
 // pattern common to all resource deletion handlers. It fetches the resource (to
 // capture audit metadata), deletes it, writes an audit log entry, and responds
