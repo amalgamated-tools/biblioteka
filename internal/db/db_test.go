@@ -44,6 +44,7 @@ func TestDialectOrderBy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.db.dialectOrderBy(tt.column, tt.direction)
 			if got != tt.want {
 				t.Errorf("dialectOrderBy(%q, %q) = %q, want %q", tt.column, tt.direction, got, tt.want)
