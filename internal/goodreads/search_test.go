@@ -245,7 +245,6 @@ func Test_SearchByISBN(t *testing.T) {
 	require.Equal(t, expected.AuthorName, r.AuthorName)
 	require.Equal(t, expected.AuthorLegacyID, r.AuthorLegacyID)
 	require.Equal(t, expected.AuthorProfileImageURL, r.AuthorProfileImageURL)
-
 }
 
 func TestParseISBNSearchResponse_Success(t *testing.T) {
@@ -291,7 +290,6 @@ func TestParseISBNSearchResponse_Success(t *testing.T) {
 	require.Equal(t, expected.AuthorName, r.AuthorName)
 	require.Equal(t, expected.AuthorLegacyID, r.AuthorLegacyID)
 	require.Equal(t, expected.AuthorProfileImageURL, r.AuthorProfileImageURL)
-
 }
 
 func TestParseISBNSearchResponse_MissingRequiredFields(t *testing.T) {

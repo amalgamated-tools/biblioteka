@@ -245,7 +245,6 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) [
 			AuthorName:        authorName,
 		})
 	})
-
 	if err != nil {
 		slog.ErrorContext(
 			ctx,
