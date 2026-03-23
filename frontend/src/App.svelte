@@ -100,7 +100,7 @@
         class="text-lg font-display font-bold text-ink-900 dark:text-cream-100"
         >biblioteka</span
       >
-    </div>
+    </header>
 
     <main id="main-content" tabindex="-1" class="md:ml-64 p-4 md:p-8">
       <div class="max-w-6xl mx-auto animate-fade-in">
