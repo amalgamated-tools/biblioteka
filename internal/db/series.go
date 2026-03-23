@@ -30,6 +30,14 @@ type Series struct {
 
 const seriesColumns = `id, name, goodreads_id, hardcover_id, google_books_id, created_at, updated_at`
 
+type seriesPaginatedQuery struct{}
+
+func (seriesPaginatedQuery) table() string   { return "series" }
+func (seriesPaginatedQuery) columns() string { return seriesColumns }
+func (seriesPaginatedQuery) orderBy(d *DB) string {
+	return d.dialectOrderBy("name", "ASC")
+}
+
 func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
 	var s Series
 	err := row.Scan(&s.ID, &s.Name, &s.GoodreadsID, &s.HardcoverID, &s.GoogleBooksID, &s.CreatedAt, &s.UpdatedAt)
@@ -94,31 +102,7 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
-
-	var total int
-	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM series`).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	orderBy := d.dialectOrderBy("name", "ASC")
-	rows, err := d.QueryContext(ctx,
-		`SELECT `+seriesColumns+` FROM series `+orderBy+` LIMIT $1 OFFSET $2`,
-		limit, offset,
-	)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-
-	var list []Series
-	for rows.Next() {
-		s, err := scanSeries(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		list = append(list, *s)
-	}
-	return list, total, rows.Err()
+	return listPaginated(ctx, d, seriesPaginatedQuery{}, limit, offset, scanSeries)
 }
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
