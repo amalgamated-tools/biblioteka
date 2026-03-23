@@ -208,7 +208,7 @@
                 >
                 <button
                   onclick={() => handleDeleteToken(token.id, token.name)}
-                  aria-label={`Delete token ${token.name}`}
+                  aria-label={`Delete token ${token.name} (created ${new Date(token.created_at).toLocaleDateString()})`}
                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                 >
                   <Trash2 class="w-3.5 h-3.5" />
@@ -244,8 +244,9 @@
                   Token hidden. Create a new token to get a fresh sync URL.
                 </div>
                 <button
-                  disabled
+                  aria-disabled="true"
                   aria-label={`Copy unavailable for ${token.name} — token value is only shown once`}
+                  onclick={(e) => e.preventDefault()}
                   class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500 cursor-not-allowed"
                 >
                   <Copy class="w-4 h-4" />
@@ -257,6 +258,10 @@
         {/each}
       </div>
     {/if}
+
+    <span aria-live="polite" class="sr-only">
+      {copiedTokenId ? `Copied sync URL for ${tokenList.find(t => t.id === copiedTokenId)?.name ?? ''}` : ''}
+    </span>
   </div>
 
   <div
