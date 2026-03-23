@@ -90,10 +90,7 @@ func (d *DB) GetLibrary(ctx context.Context, id string) (*Library, error) {
 // ListLibraries returns all libraries ordered by creation time.
 func (d *DB) ListLibraries(ctx context.Context) ([]Library, error) {
 	slog.DebugContext(ctx, "db: listing libraries")
-	orderBy := "ORDER BY created_at ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY created_at ASC, id ASC"
-	}
+	orderBy := d.dialectOrderBy("created_at", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+libraryColumns+` FROM libraries `+orderBy,
 	)

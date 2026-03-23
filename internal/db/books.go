@@ -114,10 +114,7 @@ func (d *DB) GetBook(ctx context.Context, id string) (*Book, error) {
 // ListBooks returns all books ordered by title.
 func (d *DB) ListBooks(ctx context.Context) ([]Book, error) {
 	slog.DebugContext(ctx, "db: listing books")
-	orderBy := "ORDER BY title ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY title ASC, id ASC"
-	}
+	orderBy := d.dialectOrderBy("title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumns+` FROM books `+orderBy,
 	)
@@ -140,10 +137,7 @@ func (d *DB) ListBooks(ctx context.Context) ([]Book, error) {
 // ListBooksByLibrary returns all books in a specific library.
 func (d *DB) ListBooksByLibrary(ctx context.Context, libraryID string) ([]Book, error) {
 	slog.DebugContext(ctx, "db: listing books by library", slog.String(otelkeys.LibraryID, libraryID))
-	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY b.title ASC, b.id ASC"
-	}
+	orderBy := d.dialectOrderBy("b.title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13, b.goodreads_id, b.hardcover_id, b.google_books_id, b.publication_date, b.publisher, b.language, b.num_pages, b.cover_image_url, b.created_at, b.updated_at FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy,
 		libraryID,
@@ -172,10 +166,7 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY b.title ASC, b.id ASC"
-	}
+	orderBy := d.dialectOrderBy("b.title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
 		libraryID, limit, offset,

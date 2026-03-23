@@ -15,10 +15,7 @@ func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book,
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	orderBy := "ORDER BY title ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY title ASC, id ASC"
-	}
+	orderBy := d.dialectOrderBy("title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+orderBy+` LIMIT $1 OFFSET $2`,
 		limit, offset,
@@ -58,10 +55,7 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	orderBy := "ORDER BY created_at DESC, rowid DESC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY created_at DESC, id DESC"
-	}
+	orderBy := d.dialectOrderBy("created_at", "DESC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+orderBy+` LIMIT $1 OFFSET $2`,
 		limit, offset,
@@ -97,10 +91,7 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 // ListBooksByAuthor returns all books for a specific author.
 func (d *DB) ListBooksByAuthor(ctx context.Context, authorID string) ([]Book, error) {
 	slog.DebugContext(ctx, "db: listing books by author", slog.String(otelkeys.AuthorID, authorID))
-	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY b.title ASC, b.id ASC"
-	}
+	orderBy := d.dialectOrderBy("b.title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1 `+orderBy,
 		authorID,
@@ -129,10 +120,7 @@ func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, li
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	orderBy := "ORDER BY b.title ASC, b.rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY b.title ASC, b.id ASC"
-	}
+	orderBy := d.dialectOrderBy("b.title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumnsWithPrefix("b.")+`, COUNT(*) OVER() FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1 `+orderBy+` LIMIT $2 OFFSET $3`,
 		authorID, limit, offset,
@@ -260,10 +248,7 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 		whereClause = `WHERE (title LIKE $1 ESCAPE '\' OR description LIKE $1 ESCAPE '\')`
 	}
 
-	orderBy := "ORDER BY title ASC, rowid ASC"
-	if d.Dialect == DialectPostgres {
-		orderBy = "ORDER BY title ASC, id ASC"
-	}
+	orderBy := d.dialectOrderBy("title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+whereClause+` `+orderBy+` LIMIT $2 OFFSET $3`,
 		likePattern, limit, offset,
