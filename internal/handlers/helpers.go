@@ -121,6 +121,22 @@ func logAudit(ctx context.Context, d *db.DB, userID, action, resourceType, resou
 	}
 }
 
+// handleNameErr handles the ErrInvalidName / ErrNameExists error pattern that is
+// common to all named-resource create and update handlers. resourceArticle should
+// be the resource noun with its indefinite article, e.g. "an author" or "a series".
+// Returns true if an error was handled and the caller should return immediately.
+func handleNameErr(ctx context.Context, w http.ResponseWriter, err, errInvalid, errExists error, resourceArticle string) bool {
+	if errors.Is(err, errInvalid) {
+		writeError(ctx, w, http.StatusBadRequest, "name is required")
+		return true
+	}
+	if errors.Is(err, errExists) {
+		writeError(ctx, w, http.StatusConflict, resourceArticle+" with that name already exists")
+		return true
+	}
+	return false
+}
+
 // deleteResource is a generic helper that implements the fetch-then-delete-then-audit
 // pattern common to all resource deletion handlers. It fetches the resource (to
 // capture audit metadata), deletes it, writes an audit log entry, and responds
