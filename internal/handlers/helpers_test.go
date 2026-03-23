@@ -137,12 +137,12 @@ func Test_HandleNameErr(t *testing.T) {
 	)
 
 	tests := []struct {
-		name           string
-		err            error
-		resourceArt    string
-		wantHandled    bool
-		wantCode       int
-		wantMsgContain string
+		name        string
+		err         error
+		resourceArt string
+		wantHandled bool
+		wantCode    int
+		wantErrMsg  string
 	}{
 		{
 			name:        "nil error not handled",
@@ -151,36 +151,36 @@ func Test_HandleNameErr(t *testing.T) {
 			wantHandled: false,
 		},
 		{
-			name:           "errInvalid yields 400",
-			err:            errInvalid,
-			resourceArt:    "an author",
-			wantHandled:    true,
-			wantCode:       http.StatusBadRequest,
-			wantMsgContain: "name is required",
+			name:        "errInvalid yields 400",
+			err:         errInvalid,
+			resourceArt: "an author",
+			wantHandled: true,
+			wantCode:    http.StatusBadRequest,
+			wantErrMsg:  "name is required",
 		},
 		{
-			name:           "wrapped errInvalid yields 400",
-			err:            fmt.Errorf("db: %w", errInvalid),
-			resourceArt:    "a series",
-			wantHandled:    true,
-			wantCode:       http.StatusBadRequest,
-			wantMsgContain: "name is required",
+			name:        "wrapped errInvalid yields 400",
+			err:         fmt.Errorf("db: %w", errInvalid),
+			resourceArt: "a series",
+			wantHandled: true,
+			wantCode:    http.StatusBadRequest,
+			wantErrMsg:  "name is required",
 		},
 		{
-			name:           "errExists yields 409",
-			err:            errExists,
-			resourceArt:    "an author",
-			wantHandled:    true,
-			wantCode:       http.StatusConflict,
-			wantMsgContain: "an author with that name already exists",
+			name:        "errExists yields 409",
+			err:         errExists,
+			resourceArt: "an author",
+			wantHandled: true,
+			wantCode:    http.StatusConflict,
+			wantErrMsg:  "an author with that name already exists",
 		},
 		{
-			name:           "errExists series yields 409",
-			err:            errExists,
-			resourceArt:    "a series",
-			wantHandled:    true,
-			wantCode:       http.StatusConflict,
-			wantMsgContain: "a series with that name already exists",
+			name:        "errExists series yields 409",
+			err:         errExists,
+			resourceArt: "a series",
+			wantHandled: true,
+			wantCode:    http.StatusConflict,
+			wantErrMsg:  "a series with that name already exists",
 		},
 		{
 			name:        "unrelated error not handled",
@@ -198,6 +198,12 @@ func Test_HandleNameErr(t *testing.T) {
 				t.Fatalf("handleNameErr() = %v, want %v", got, tt.wantHandled)
 			}
 			if !tt.wantHandled {
+				if w.Code != http.StatusOK {
+					t.Errorf("expected no response written, but got status %d", w.Code)
+				}
+				if w.Body.Len() != 0 {
+					t.Errorf("expected empty body, but got %q", w.Body.String())
+				}
 				return
 			}
 			if w.Code != tt.wantCode {
@@ -207,8 +213,8 @@ func Test_HandleNameErr(t *testing.T) {
 			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
 				t.Fatalf("failed to unmarshal: %v", err)
 			}
-			if result["error"] != tt.wantMsgContain {
-				t.Errorf("error = %q, want %q", result["error"], tt.wantMsgContain)
+			if result["error"] != tt.wantErrMsg {
+				t.Errorf("error = %q, want %q", result["error"], tt.wantErrMsg)
 			}
 		})
 	}
