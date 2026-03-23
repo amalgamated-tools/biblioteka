@@ -154,6 +154,10 @@ func (d *DB) ListAuthorsPaginated(ctx context.Context, limit, offset int) ([]Aut
 
 func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {
 	name = NormalizeAuthorName(name)
+	if name == "" {
+		slog.WarnContext(ctx, "db: rejecting author update with blank name after normalization")
+		return nil, ErrInvalidAuthorName
+	}
 	slog.DebugContext(ctx, "db: updating author",
 		slog.String(otelkeys.ID, id),
 		slog.String(otelkeys.Name, name),
