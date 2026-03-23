@@ -159,7 +159,6 @@ func Test_HandleNameErr(t *testing.T) {
 			wantErrMsg:  "name is required",
 		},
 		{
-		{
 			name:        "wrapped errInvalid yields 400",
 			err:         fmt.Errorf("db: %w", errInvalid),
 			resourceArt: "a series",
