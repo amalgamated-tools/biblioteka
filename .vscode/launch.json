@@ -8,7 +8,7 @@
             "mode": "auto",
             "args": [
                 "scan-directory",
-                "${workspaceFolder}/books",
+                "${workspaceFolder}/books"
             ],
             "program": "cmd/cli/main.go",
             "envFile": "${workspaceFolder}/.env",
@@ -21,7 +21,72 @@
             "mode": "auto",
             "args": [
                 "process-file",
-                "${workspaceFolder}/books/Alice's Adventures in Wonderland by Lewis Carroll.epub",
+                "${workspaceFolder}/books/Alice's Adventures in Wonderland by Lewis Carroll.epub"
+            ],
+            "program": "cmd/cli/main.go",
+            "envFile": "${workspaceFolder}/.env",
+            "showLog": true
+        },
+        {
+            "name": "Run CLI (Goodreads Search)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "args": [
+                "goodreads-search",
+                "Project Hail Mary"
+            ],
+            "program": "cmd/cli/main.go",
+            "envFile": "${workspaceFolder}/.env",
+            "showLog": true
+        },
+        {
+            "name": "Run CLI (Goodreads Search by ISBN)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "args": [
+                "goodreads-search-isbn",
+                "9780593135204"
+            ],
+            "program": "cmd/cli/main.go",
+            "envFile": "${workspaceFolder}/.env",
+            "showLog": true
+        },
+        {
+            "name": "Run CLI (Goodreads Fetch by ASIN)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "args": [
+                "goodreads-get-by-asin",
+                "0593135202"
+            ],
+            "program": "cmd/cli/main.go",
+            "envFile": "${workspaceFolder}/.env",
+            "showLog": true
+        },
+        {
+            "name": "Run CLI (Goodreads Fetch by ID)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "args": [
+                "goodreads-get-by-id",
+                "kca://book/amzn1.gr.book.v3.7WmufEffpivF1XTp"
+            ],
+            "program": "cmd/cli/main.go",
+            "envFile": "${workspaceFolder}/.env",
+            "showLog": true
+        },
+        {
+            "name": "Run CLI (Goodreads Fetch by Legacy ID)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "args": [
+                "goodreads-get-by-legacy-id",
+                "54493401"
             ],
             "program": "cmd/cli/main.go",
             "envFile": "${workspaceFolder}/.env",
@@ -35,6 +100,6 @@
             "program": "cmd/server/main.go",
             "envFile": "${workspaceFolder}/.env",
             "showLog": true
-        },
+        }
     ]
 }

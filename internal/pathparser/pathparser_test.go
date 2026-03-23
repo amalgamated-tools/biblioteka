@@ -26,8 +26,8 @@ func TestParseBookPath(t *testing.T) {
 				Author:         "Alexander McCall Smith",
 				Title:          "Tea Time for the Traditionally Built",
 				SeriesName:     "No. 1 Ladies' Detective Agency",
-				SeriesPosition: pf(10),
-				Year:           new(2009),
+				SeriesPosition: new(float64(10)),
+				Year:           new(int(2009)),
 			},
 		},
 		{
@@ -42,8 +42,8 @@ func TestParseBookPath(t *testing.T) {
 				Author:         "Alexander McCall Smith",
 				Title:          "The Double Comfort Safari Club",
 				SeriesName:     "No. 1 Ladies' Detective Agency",
-				SeriesPosition: pf(11),
-				Year:           new(2010),
+				SeriesPosition: new(float64(11)),
+				Year:           new(int(2010)),
 			},
 		},
 		{
@@ -56,8 +56,8 @@ func TestParseBookPath(t *testing.T) {
 			want: PathInfo{
 				Author:         "Agatha Christie",
 				Title:          "The Seven Dials Mystery",
-				SeriesPosition: pf(1),
-				Year:           new(2010),
+				SeriesPosition: new(float64(1)),
+				Year:           new(int(2010)),
 			},
 		},
 		{
@@ -112,7 +112,7 @@ func TestParseBookPath(t *testing.T) {
 			want: PathInfo{
 				Author: "Jane Austen",
 				Title:  "Pride and Prejudice",
-				Year:   new(1813),
+				Year:   new(int(1813)),
 			},
 		},
 		{
@@ -132,7 +132,7 @@ func TestParseBookPath(t *testing.T) {
 				Author:         "Brandon Sanderson",
 				Title:          "The Well of Ascension",
 				SeriesName:     "Mistborn",
-				SeriesPosition: pf(2),
+				SeriesPosition: new(float64(2)),
 			},
 		},
 		{
@@ -171,12 +171,6 @@ func TestParseBookPath(t *testing.T) {
 		})
 	}
 }
-
-//go:fix inline
-func pf(f float64) *float64 { return new(f) }
-
-//go:fix inline
-func pi(i int) *int { return new(i) }
 
 func float64PtrEqual(a, b *float64) bool {
 	if a == nil && b == nil {
