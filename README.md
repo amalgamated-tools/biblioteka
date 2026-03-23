@@ -347,6 +347,7 @@ cmd/
 internal/
   auth/            JWT, OIDC, rate-limiting, middleware
   db/              Database layer (SQLite/PostgreSQL), migrations, CRUD
+  goodreads/       Goodreads catalog client: search by query/ISBN, lookup by ASIN or Goodreads ID; used by CLI commands
   handlers/        HTTP request handlers (books, authors, series, libraries, auth)
   jobs/            Background job handlers (scan:libraries, scan:library, scan:path, process:file)
   metadata/        EPUB/MOBI/AZW3/PDF metadata extraction via ExifTool

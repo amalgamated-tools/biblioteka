@@ -21,6 +21,7 @@ internal/
   auth/            # JWT creation/validation, rate limiting, auth middleware
   coverutil/       # Cover image decoding (base64 data: URLs; enforces 20 MB limit)
   db/              # Database layer: setup, CRUD per domain (books, authors, …)
+  goodreads/       # Goodreads catalog client: search by query/ISBN, lookup by ASIN or Goodreads ID; used by CLI commands
   handlers/        # HTTP handlers, one struct per domain
   handlers/middleware/  # Logging, request ID middleware
   jobs/            # Background job definitions
