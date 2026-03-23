@@ -120,7 +120,6 @@ export interface BookSummary {
   publication_date: string | null;
   publisher: string | null;
   language: string | null;
-  num_pages: number | null;
   cover_image_url: string | null;
   created_at: string;
   updated_at: string;
@@ -144,7 +143,6 @@ export interface BookInput {
   publication_date?: string;
   publisher?: string;
   language?: string;
-  num_pages?: number;
   cover_image_url?: string;
 }
 

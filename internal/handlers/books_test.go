@@ -72,10 +72,10 @@ func TestCreateBook_MissingTitle(t *testing.T) {
 func TestListBooks_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
@@ -111,10 +111,10 @@ func TestListBooks_InvalidLimitOffset_NonInt(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	// Seed some data
-	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
@@ -152,10 +152,10 @@ func TestListBooks_InvalidLimitOffset_NonInt(t *testing.T) {
 func TestListBooks_NegativeLimitOffset(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
@@ -199,10 +199,10 @@ func TestListBooks_NegativeLimitOffset(t *testing.T) {
 func TestListBooks_MaxLimitClamping(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
@@ -241,7 +241,7 @@ func TestListBooks_MaxLimitClamping(t *testing.T) {
 func TestGetBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID, nil)
 	r = withUserID(r, userID)
@@ -271,7 +271,7 @@ func TestGetBook_NotFound(t *testing.T) {
 func TestDeleteBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/books/"+b.ID, nil)
 	r = withUserID(r, userID)
@@ -309,7 +309,7 @@ func TestDeleteBook_NotFound(t *testing.T) {
 func TestBookAuthors_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	a, _ := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
 
 	// Set authors
@@ -350,7 +350,7 @@ func TestBookAuthors_Handler(t *testing.T) {
 func TestBookSeries_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	s, _ := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
 
 	pos := 1.0
@@ -393,7 +393,7 @@ func TestBookSeries_Handler(t *testing.T) {
 func TestBookFiles_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Create a file
 	body, _ := json.Marshal(map[string]any{

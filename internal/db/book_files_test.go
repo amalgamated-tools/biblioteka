@@ -9,7 +9,7 @@ import (
 func TestCreateBookFile(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("CreateBook() error: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestCreateBookFile(t *testing.T) {
 func TestGetBookFile(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	created, _ := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 
 	found, err := d.GetBookFile(context.Background(), created.ID)
@@ -74,7 +74,7 @@ func TestGetBookFile_NotFound(t *testing.T) {
 func TestListBookFiles(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	_, _ = d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 	_, _ = d.CreateBookFile(context.Background(), book.ID, "pdf", "gunslinger.pdf", 2048, nil, "/books/gunslinger.pdf")
 
@@ -93,7 +93,7 @@ func TestListBookFiles(t *testing.T) {
 func TestDeleteBookFile(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	bf, _ := d.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 
 	err := d.DeleteBookFile(context.Background(), bf.ID)
@@ -119,7 +119,7 @@ func TestDeleteBookFile_NotFound(t *testing.T) {
 func TestDeleteBook_CascadeFiles(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("CreateBook() error: %v", err)
 	}
@@ -147,14 +147,14 @@ func TestDeleteBook_CascadeFiles(t *testing.T) {
 func TestGetFilesForBooks(t *testing.T) {
 	d := newTestDB(t)
 
-	book1, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book1, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("CreateBook() for book1 error: %v", err)
 	}
 	if book1 == nil {
 		t.Fatalf("CreateBook() returned nil book1")
 	}
-	book2, err := d.CreateBook(context.Background(), "Wizard and Glass", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book2, err := d.CreateBook(context.Background(), "Wizard and Glass", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("CreateBook() for book2 error: %v", err)
 	}

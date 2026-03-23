@@ -108,7 +108,6 @@ func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, library
 // and payload fields.
 func createBookRecord(ctx context.Context, database *db.DB, title string, meta *metadata.BookMetadata, p ProcessFilePayload, filePath string) (*db.Book, error) {
 	var description, isbn10, isbn13, coverImageURL *string
-	var numPages *int
 	var publicationDate, publisher, language *string
 
 	if meta != nil {
@@ -158,7 +157,6 @@ func createBookRecord(ctx context.Context, database *db.DB, title string, meta *
 		publicationDate,
 		publisher,
 		language,
-		numPages,
 		coverImageURL,
 		p.FileType,
 		p.FileName,

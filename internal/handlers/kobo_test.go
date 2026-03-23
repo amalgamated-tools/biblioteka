@@ -127,7 +127,7 @@ func TestHandleCoverImage_DataURL(t *testing.T) {
 	h, _ := setupKoboHandler(t)
 	pngBytes := testutils.TinyPNG()
 	cover := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, err := h.DB.CreateBook(context.Background(), "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &cover)
+	book, err := h.DB.CreateBook(context.Background(), "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &cover)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
