@@ -86,7 +86,7 @@
 
     <!-- Mobile header with hamburger -->
     <header
-      aria-label="Site header"
+      aria-label="Mobile site navigation"
       class="sticky top-0 z-30 flex items-center gap-3 bg-cream-50/90 dark:bg-ink-950/90 backdrop-blur-md border-b border-ink-100 dark:border-ink-800 px-4 py-3 md:hidden"
     >
       <button
