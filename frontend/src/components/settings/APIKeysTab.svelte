@@ -179,6 +179,7 @@
         class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 px-4 py-4 rounded-xl mb-6 animate-scale-in"
       >
         <p
+          role="alert"
           class="text-sm font-medium text-success-700 dark:text-green-400 mb-2"
         >
           API key created successfully. Copy it now — it will not be shown
@@ -265,6 +266,7 @@
                 <td class="py-3 text-right">
                   <button
                     onclick={() => handleDeleteAPIKey(key.id, key.name)}
+                    aria-label={`Delete API key ${key.name} (${key.key_prefix}...)`}
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                   >
                     <Trash2 class="w-3.5 h-3.5" />

@@ -21,6 +21,7 @@
   // Per-token "copied" state
   let copiedTokenId: string | null = $state(null);
   let copiedTimeout: number | null = null;
+  let liveMessage = $state("");
 
   onDestroy(() => {
     if (copiedTimeout !== null) {
@@ -92,7 +93,11 @@
     return `${window.location.origin}/kobo/${token.token}/v1/initialization`;
   }
 
-  async function copyToClipboard(text: string, tokenId: string) {
+  async function copyToClipboard(
+    text: string,
+    tokenId: string,
+    tokenName: string,
+  ) {
     tokensError = null;
 
     try {
@@ -120,6 +125,7 @@
       }
 
       copiedTokenId = tokenId;
+      liveMessage = `Copied sync URL for ${tokenName}`;
       if (copiedTimeout !== null) clearTimeout(copiedTimeout);
       copiedTimeout = window.setTimeout(() => {
         copiedTokenId = null;
@@ -176,6 +182,7 @@
 
     {#if tokensError}
       <div
+        role="alert"
         class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm mb-4"
       >
         {tokensError}
@@ -208,6 +215,7 @@
                 >
                 <button
                   onclick={() => handleDeleteToken(token.id, token.name)}
+                  aria-label={`Delete token ${token.name} (created ${new Date(token.created_at).toLocaleDateString()})`}
                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                 >
                   <Trash2 class="w-3.5 h-3.5" />
@@ -224,8 +232,10 @@
                   {url}
                 </code>
                 <button
-                  onclick={() => copyToClipboard(url, token.id)}
-                  title="Copy sync URL"
+                  onclick={() => copyToClipboard(url, token.id, token.name)}
+                  aria-label={copiedTokenId === token.id
+                    ? `Copied sync URL for ${token.name}`
+                    : `Copy sync URL for ${token.name}`}
                   class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {copiedTokenId ===
                   token.id
                     ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
@@ -241,8 +251,9 @@
                   Token hidden. Create a new token to get a fresh sync URL.
                 </div>
                 <button
-                  disabled
-                  title="Token value is only shown once"
+                  type="button"
+                  aria-disabled="true"
+                  aria-label={`Copy unavailable for ${token.name} — token value is only shown once`}
                   class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500 cursor-not-allowed"
                 >
                   <Copy class="w-4 h-4" />
@@ -254,6 +265,8 @@
         {/each}
       </div>
     {/if}
+
+    <span role="status" class="sr-only">{liveMessage}</span>
   </div>
 
   <div

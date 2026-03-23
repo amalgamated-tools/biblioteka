@@ -46,6 +46,14 @@ type Author struct {
 
 const authorColumns = `id, name, goodreads_id, hardcover_id, google_books_id, image_url, created_at, updated_at`
 
+type authorPaginatedQuery struct{}
+
+func (authorPaginatedQuery) table() string   { return "authors" }
+func (authorPaginatedQuery) columns() string { return authorColumns }
+func (authorPaginatedQuery) orderBy(d *DB) string {
+	return d.dialectOrderBy("name", "ASC")
+}
+
 func scanAuthor(row interface{ Scan(...any) error }) (*Author, error) {
 	var a Author
 	err := row.Scan(&a.ID, &a.Name, &a.GoodreadsID, &a.HardcoverID, &a.GoogleBooksID, &a.ImageURL, &a.CreatedAt, &a.UpdatedAt)
@@ -123,31 +131,7 @@ func (d *DB) ListAuthorsPaginated(ctx context.Context, limit, offset int) ([]Aut
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
-
-	var total int
-	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM authors`).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	orderBy := d.dialectOrderBy("name", "ASC")
-	rows, err := d.QueryContext(ctx,
-		`SELECT `+authorColumns+` FROM authors `+orderBy+` LIMIT $1 OFFSET $2`,
-		limit, offset,
-	)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-
-	var authors []Author
-	for rows.Next() {
-		a, err := scanAuthor(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		authors = append(authors, *a)
-	}
-	return authors, total, rows.Err()
+	return listPaginated(ctx, d, authorPaginatedQuery{}, limit, offset, scanAuthor)
 }
 
 func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {

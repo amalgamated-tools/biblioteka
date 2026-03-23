@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -132,8 +131,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.TrimSpace(req.Name) == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
+	if !validateName(r.Context(), w, req.Name) {
 		return
 	}
 
@@ -206,8 +204,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
-	if strings.TrimSpace(req.Name) == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
+	if !validateName(r.Context(), w, req.Name) {
 		return
 	}
 

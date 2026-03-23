@@ -1,10 +1,40 @@
 {
   "version": 1,
   "skills": {
+    "conventional-git": {
+      "source": "samber/cc-skills",
+      "sourceType": "github",
+      "computedHash": "34d65f69044e157346567a6233e6db6529145a769d0a613dd3e5bf62279b03f8"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
+    },
+    "golang-code-style": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "computedHash": "690c737b9561a2b4cf1ec8157d134379e9bcd70403faf98987a82160824049fc"
+    },
+    "golang-concurrency": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "computedHash": "a45db917c17f483f2442209e53fbe611c5706101412e3cb589f20dd107fe1b67"
+    },
+    "golang-context": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "computedHash": "10bbb60f626a4245f8580cbb45fae8450cc5eae09436801435259089be4eec88"
+    },
+    "golang-data-structures": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "computedHash": "c0b5baefe41a33b2709a4ba928588d975d68bbe9e165de7fb92461dbc4a79dfb"
+    },
+    "golang-documentation": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "computedHash": "e913dd6f3a5f4eccb0aae701c96feb25d68a545824bb1f8aca86ae732e4b348b"
     },
     "refactor": {
       "source": "github/awesome-copilot",

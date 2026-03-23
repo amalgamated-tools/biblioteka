@@ -172,6 +172,7 @@
 
     {#if smtpTestMessage}
       <div
+        role="status"
         class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
       >
         {smtpTestMessage}
@@ -180,6 +181,7 @@
 
     {#if smtpTestError}
       <div
+        role="alert"
         class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
       >
         {smtpTestError}
@@ -340,6 +342,7 @@
 
       {#if smtpError}
         <div
+          role="alert"
           class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
         >
           {smtpError}
@@ -348,6 +351,7 @@
 
       {#if smtpSuccessMessage}
         <div
+          role="status"
           class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
         >
           {smtpSuccessMessage}

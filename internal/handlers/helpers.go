@@ -15,6 +15,16 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// validateName returns true if name is non-blank. On failure it writes a 400
+// error response and returns false, so callers can simply return.
+func validateName(ctx context.Context, w http.ResponseWriter, name string) bool {
+	if strings.TrimSpace(name) == "" {
+		writeError(ctx, w, http.StatusBadRequest, "name is required")
+		return false
+	}
+	return true
+}
+
 // decodeJSON reads and decodes the JSON request body into v.
 // It returns true on success. On failure it writes a 400 error response and
 // returns false, so callers can simply return.
