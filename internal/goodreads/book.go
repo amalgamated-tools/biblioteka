@@ -141,7 +141,13 @@ func loadBookResult(ctx context.Context, work any) (*BookResult, error) {
 			authorName:        author.Name, authorID: author.Id,
 			authorLegacyID: author.LegacyId, authorProfileImageURL: author.ProfileImageUrl,
 		}
-		slog.ErrorContext(ctx, "unexpected type for book result", slog.String(otelkeys.Type, fmt.Sprintf("%T", work)))
+	default:
+		slog.ErrorContext(
+			ctx,
+			"unexpected type for book result",
+			slog.String(otelkeys.Type, fmt.Sprintf("%T", work)),
+		)
+		return nil, fmt.Errorf("unexpected type for book result: %T", work)
 	}
 
 	return d.toBookResult(), nil
