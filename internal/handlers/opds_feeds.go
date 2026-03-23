@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -57,56 +59,56 @@ func (h *OPDSHandler) rootFeed(w http.ResponseWriter, r *http.Request) {
 	writeOPDSFeed(r, w, opdsNavContentType, feed)
 }
 
-func (h *OPDSHandler) allBooks(w http.ResponseWriter, r *http.Request) {
+// writeBooksFeed is a shared helper for book-listing OPDS acquisition feeds.
+// selfPath is the path after /opds (e.g. "/all" or "/authors/<id>").
+// extraLinks are appended after the pagination links (e.g. a relStart link back to root).
+// listFn must return (books, totalCount, error) for the given limit and offset.
+func (h *OPDSHandler) writeBooksFeed(
+	w http.ResponseWriter, r *http.Request,
+	selfPath, title string,
+	extraLinks []opdsLink,
+	listFn func(ctx context.Context, limit, offset int) ([]db.Book, int, error),
+) {
 	ctx := r.Context()
 	baseURL := opdsBaseURL(r)
 	page := parsePage(r)
 	offset := (page - 1) * opdsPageSize
+	selfURL := baseURL + selfPath
 
-	books, total, err := h.DB.ListBooksPaginated(ctx, opdsPageSize, offset)
+	books, total, err := listFn(ctx, opdsPageSize, offset)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list books", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, baseURL+"/all", "Failed to list books")
+		slog.ErrorContext(
+			ctx,
+			"OPDS: failed to list books",
+			slog.String(otelkeys.URL, selfURL),
+			slog.String(otelkeys.Title, title),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, selfURL, "Failed to list books")
 		return
 	}
 
 	entries := h.bookEntries(ctx, books, baseURL)
+	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsAcqContentType)
+	links = append(links, extraLinks...)
 	feed := &opdsFeed{
 		XMLNS:     xmlnsAtom,
 		XMLNSOPDS: xmlnsOPDS,
-		ID:        baseURL + "/all",
-		Title:     "All Books",
+		ID:        selfURL,
+		Title:     title,
 		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     paginationLinks(baseURL+"/all", page, total, opdsPageSize, opdsAcqContentType),
+		Links:     links,
 		Entries:   entries,
 	}
 	writeOPDSFeed(r, w, opdsAcqContentType, feed)
 }
 
+func (h *OPDSHandler) allBooks(w http.ResponseWriter, r *http.Request) {
+	h.writeBooksFeed(w, r, "/all", "All Books", nil, h.DB.ListBooksPaginated)
+}
+
 func (h *OPDSHandler) recentBooks(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	baseURL := opdsBaseURL(r)
-	page := parsePage(r)
-	offset := (page - 1) * opdsPageSize
-
-	books, total, err := h.DB.ListRecentBooks(ctx, opdsPageSize, offset)
-	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list recent books", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, baseURL+"/recent", "Failed to list books")
-		return
-	}
-
-	entries := h.bookEntries(ctx, books, baseURL)
-	feed := &opdsFeed{
-		XMLNS:     xmlnsAtom,
-		XMLNSOPDS: xmlnsOPDS,
-		ID:        baseURL + "/recent",
-		Title:     "Recent Books",
-		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     paginationLinks(baseURL+"/recent", page, total, opdsPageSize, opdsAcqContentType),
-		Entries:   entries,
-	}
-	writeOPDSFeed(r, w, opdsAcqContentType, feed)
+	h.writeBooksFeed(w, r, "/recent", "Recent Books", nil, h.DB.ListRecentBooks)
 }
 
 func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
@@ -151,10 +153,6 @@ func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
 
 func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
 	ctx := r.Context()
-	baseURL := opdsBaseURL(r)
-	page := parsePage(r)
-	offset := (page - 1) * opdsPageSize
-
 	author, err := h.DB.GetAuthor(ctx, authorID)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: author not found",
@@ -165,27 +163,13 @@ func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, author
 		return
 	}
 
-	books, total, err := h.DB.ListBooksByAuthorPaginated(ctx, authorID, opdsPageSize, offset)
-	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list books by author", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, baseURL+"/authors/"+authorID, "Failed to list books")
-		return
-	}
-
-	entries := h.bookEntries(ctx, books, baseURL)
-	selfURL := baseURL + "/authors/" + authorID
-	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsAcqContentType)
-	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
-	feed := &opdsFeed{
-		XMLNS:     xmlnsAtom,
-		XMLNSOPDS: xmlnsOPDS,
-		ID:        selfURL,
-		Title:     "Books by " + author.Name,
-		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     links,
-		Entries:   entries,
-	}
-	writeOPDSFeed(r, w, opdsAcqContentType, feed)
+	baseURL := opdsBaseURL(r)
+	extraLinks := []opdsLink{{Rel: relStart, Href: baseURL, Type: opdsNavContentType}}
+	h.writeBooksFeed(w, r, "/authors/"+authorID, "Books by "+author.Name, extraLinks,
+		func(c context.Context, limit, offset int) ([]db.Book, int, error) {
+			return h.DB.ListBooksByAuthorPaginated(c, authorID, limit, offset)
+		},
+	)
 }
 
 func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
@@ -230,10 +214,6 @@ func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
 
 func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, seriesID string) {
 	ctx := r.Context()
-	baseURL := opdsBaseURL(r)
-	page := parsePage(r)
-	offset := (page - 1) * opdsPageSize
-
 	series, err := h.DB.GetSeries(ctx, seriesID)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: series not found",
@@ -244,27 +224,13 @@ func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, series
 		return
 	}
 
-	books, total, err := h.DB.ListBooksBySeriesPaginated(ctx, seriesID, opdsPageSize, offset)
-	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list books by series", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, baseURL+"/series/"+seriesID, "Failed to list books")
-		return
-	}
-
-	entries := h.bookEntries(ctx, books, baseURL)
-	selfURL := baseURL + "/series/" + seriesID
-	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsAcqContentType)
-	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
-	feed := &opdsFeed{
-		XMLNS:     xmlnsAtom,
-		XMLNSOPDS: xmlnsOPDS,
-		ID:        selfURL,
-		Title:     series.Name,
-		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     links,
-		Entries:   entries,
-	}
-	writeOPDSFeed(r, w, opdsAcqContentType, feed)
+	baseURL := opdsBaseURL(r)
+	extraLinks := []opdsLink{{Rel: relStart, Href: baseURL, Type: opdsNavContentType}}
+	h.writeBooksFeed(w, r, "/series/"+seriesID, series.Name, extraLinks,
+		func(c context.Context, limit, offset int) ([]db.Book, int, error) {
+			return h.DB.ListBooksBySeriesPaginated(c, seriesID, limit, offset)
+		},
+	)
 }
 
 func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {

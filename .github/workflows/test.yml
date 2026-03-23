@@ -30,6 +30,12 @@ permissions:
   # Optional: allow read access to pull requests. Use with `only-new-issues` option.
   pull-requests: read
 
+# Cancel in-progress runs for the same branch/PR when a new push arrives.
+# Main-branch runs are never cancelled so merge results are always recorded.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   frontend-checks:
     runs-on: ubuntu-latest
