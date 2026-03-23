@@ -14,11 +14,9 @@ var (
 	ErrInvalidSeriesName = errors.New("invalid series name")
 )
 
-// NormalizeSeriesName trims leading/trailing whitespace and collapses internal
-// runs of whitespace to a single space while preserving capitalization.
-func NormalizeSeriesName(name string) string {
-	return NormalizeAuthorName(name)
-}
+// NormalizeSeriesName normalizes a series name by trimming whitespace and
+// collapsing internal runs to a single space while preserving capitalization.
+func NormalizeSeriesName(name string) string { return normalizeName(name) }
 
 type Series struct {
 	ID            string    `json:"id"`

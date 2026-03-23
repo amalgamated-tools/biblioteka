@@ -18,16 +18,20 @@ var (
 
 var collapseSpaces = regexp.MustCompile(`\s+`)
 
-// NormalizeAuthorName trims leading/trailing whitespace and collapses internal
-// runs of whitespace to a single space. It preserves the caller's
-// capitalization so names like "McCaffrey" or "de la Cruz" are stored as-is.
-func NormalizeAuthorName(name string) string {
+// normalizeName trims leading/trailing whitespace and collapses internal runs
+// of whitespace to a single space. It preserves the caller's capitalization.
+func normalizeName(name string) string {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return name
 	}
 	return collapseSpaces.ReplaceAllString(name, " ")
 }
+
+// NormalizeAuthorName normalizes an author name by trimming whitespace and
+// collapsing internal runs to a single space. Names like "McCaffrey" or
+// "de la Cruz" are stored as-is.
+func NormalizeAuthorName(name string) string { return normalizeName(name) }
 
 type Author struct {
 	ID            string    `json:"id"`

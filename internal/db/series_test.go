@@ -40,13 +40,15 @@ func TestCreateSeries_NormalizesWhitespace(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		s, err := d.CreateSeries(context.Background(), tt.input, nil, nil, nil)
-		if err != nil {
-			t.Fatalf("CreateSeries(%q) error: %v", tt.input, err)
-		}
-		if s.Name != tt.want {
-			t.Errorf("CreateSeries(%q).Name = %q, want %q", tt.input, s.Name, tt.want)
-		}
+		t.Run(tt.input, func(t *testing.T) {
+			s, err := d.CreateSeries(context.Background(), tt.input, nil, nil, nil)
+			if err != nil {
+				t.Fatalf("CreateSeries(%q) error: %v", tt.input, err)
+			}
+			if s.Name != tt.want {
+				t.Errorf("CreateSeries(%q).Name = %q, want %q", tt.input, s.Name, tt.want)
+			}
+		})
 	}
 }
 
