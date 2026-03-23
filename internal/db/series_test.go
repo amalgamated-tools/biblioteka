@@ -304,6 +304,9 @@ func TestListSeriesPaginated(t *testing.T) {
 	if page1[0].Name != "Discworld" {
 		t.Errorf("page1[0].Name = %q, want %q", page1[0].Name, "Discworld")
 	}
+	if page1[1].Name != "Dune" {
+		t.Errorf("page1[1].Name = %q, want %q", page1[1].Name, "Dune")
+	}
 
 	// Second page: remaining 2 series.
 	page2, total2, err := d.ListSeriesPaginated(context.Background(), 2, 2)
@@ -318,6 +321,9 @@ func TestListSeriesPaginated(t *testing.T) {
 	}
 	if page2[0].Name != "Foundation" {
 		t.Errorf("page2[0].Name = %q, want %q", page2[0].Name, "Foundation")
+	}
+	if page2[1].Name != "The Dark Tower" {
+		t.Errorf("page2[1].Name = %q, want %q", page2[1].Name, "The Dark Tower")
 	}
 
 	// Empty table: total should be 0.
