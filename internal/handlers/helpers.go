@@ -157,7 +157,13 @@ func deleteResource[T any](
 		meta = auditMeta(entity)
 	}
 	if err := d.CreateAuditLog(ctx, userID, auditAction, resource, id, meta); err != nil {
-		slog.WarnContext(ctx, "failed to write audit log", slog.Any(otelkeys.Error, err))
+		slog.WarnContext(
+			ctx,
+			"failed to write audit log",
+			slog.String(otelkeys.Resource, resource),
+			slog.String(idKey, id),
+			slog.Any(otelkeys.Error, err),
+		) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 	}
 
 	w.WriteHeader(http.StatusNoContent)
