@@ -146,3 +146,6 @@ generate:
 # Serve documentation locally with MkDocs
 docs-serve:
 	mkdocs serve
+
+db-dump:
+	sqlite3 db/biblioteka.db .dump > db/schema.sql
