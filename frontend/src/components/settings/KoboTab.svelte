@@ -208,6 +208,7 @@
                 >
                 <button
                   onclick={() => handleDeleteToken(token.id, token.name)}
+                  aria-label={`Delete token ${token.name}`}
                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                 >
                   <Trash2 class="w-3.5 h-3.5" />
@@ -225,7 +226,9 @@
                 </code>
                 <button
                   onclick={() => copyToClipboard(url, token.id)}
-                  title="Copy sync URL"
+                  aria-label={copiedTokenId === token.id
+                    ? `Copied sync URL for ${token.name}`
+                    : `Copy sync URL for ${token.name}`}
                   class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {copiedTokenId ===
                   token.id
                     ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
@@ -242,7 +245,7 @@
                 </div>
                 <button
                   disabled
-                  title="Token value is only shown once"
+                  aria-label={`Copy unavailable for ${token.name} — token value is only shown once`}
                   class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500 cursor-not-allowed"
                 >
                   <Copy class="w-4 h-4" />
