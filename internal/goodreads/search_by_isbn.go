@@ -192,6 +192,11 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 		result BookResult
 	}
 
+	// Bail early if context is already done before spinning up goroutines.
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
 	resultsCh := make(chan indexedResult, len(entries))
 	var wg sync.WaitGroup
 
