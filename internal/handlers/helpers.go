@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -137,7 +138,7 @@ func deleteResource[T any](
 			return
 		}
 		slog.ErrorContext(ctx, "failed to get "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get "+resource)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
 		return
 	}
 
@@ -153,7 +154,7 @@ func deleteResource[T any](
 
 	userID := auth.UserIDFromContext(ctx)
 	var meta map[string]any
-	if auditMeta != nil {
+	if auditMeta != nil && !isNilValue(entity) {
 		meta = auditMeta(entity)
 	}
 	if err := d.CreateAuditLog(ctx, userID, auditAction, resource, id, meta); err != nil {
@@ -167,6 +168,21 @@ func deleteResource[T any](
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// isNilValue reports whether v is a nil pointer, channel, function, interface,
+// map, or slice. For value types it always returns false.
+func isNilValue(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Ptr, reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Slice:
+		return rv.IsNil()
+	default:
+		return false
+	}
 }
 
 // requireAdmin checks whether the authenticated user is an admin and writes the
