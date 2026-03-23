@@ -1,6 +1,17 @@
 package db
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
+
+// allowedPaginatedTables is the set of tables that listPaginated may query.
+// Any table not in this set is rejected at runtime to prevent accidental SQL
+// injection if a caller ever passes a dynamic value.
+var allowedPaginatedTables = map[string]bool{
+	"authors": true,
+	"series":  true,
+}
 
 type paginatedQuery interface {
 	table() string
@@ -15,7 +26,8 @@ type paginatedQuery interface {
 //
 // query must be a package-defined type whose methods return hardcoded SQL
 // identifiers and dialect-derived ORDER BY clauses. Never pass user-supplied
-// input into those methods.
+// input into those methods. table is additionally validated against
+// allowedPaginatedTables at runtime.
 func listPaginated[T any](
 	ctx context.Context,
 	d *DB,
@@ -27,7 +39,13 @@ func listPaginated[T any](
 	columns := query.columns()
 	orderBy := query.orderBy(d)
 	items := make([]T, 0, max(0, limit))
+
+	if !allowedPaginatedTables[table] {
+		return nil, 0, fmt.Errorf("listPaginated: unknown table %q", table)
+	}
+
 	var total int
+	// safe: table validated against allowedPaginatedTables above
 	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM `+table).Scan(&total); err != nil {
 		return nil, 0, err
 	}
@@ -35,6 +53,7 @@ func listPaginated[T any](
 		return items, 0, nil
 	}
 
+	// safe: table, columns, and orderBy are hardcoded caller-provided identifiers
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+columns+` FROM `+table+` `+orderBy+` LIMIT $1 OFFSET $2`,
 		limit, offset,
