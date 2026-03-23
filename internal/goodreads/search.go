@@ -25,7 +25,7 @@ func (c *Client) Search(ctx context.Context, query string) ([]BookResult, error)
 			slog.DebugContext(
 				ctx,
 				"unexpected edge type in Goodreads search results",
-				slog.Any(otelkeys.EdgeType, fmt.Sprintf("%T", e)),
+				slog.String(otelkeys.EdgeType, fmt.Sprintf("%T", e)),
 			)
 			continue
 		}
@@ -37,7 +37,7 @@ func (c *Client) Search(ctx context.Context, query string) ([]BookResult, error)
 				ctx,
 				"failed to load book result from Goodreads search result",
 				slog.Any(otelkeys.Error, err),
-				slog.Any(otelkeys.WorkID, res.Work.Id),
+				slog.String(otelkeys.WorkID, res.Work.Id),
 			)
 			continue
 		}
@@ -51,8 +51,8 @@ func (c *Client) Search(ctx context.Context, query string) ([]BookResult, error)
 				slog.DebugContext(
 					ctx,
 					"skipping duplicate Goodreads search result",
-					slog.Any(otelkeys.BookID, result.BookID),
-					slog.Any(otelkeys.WorkID, result.WorkID),
+					slog.String(otelkeys.BookID, result.BookID),
+					slog.String(otelkeys.WorkID, result.WorkID),
 				)
 				continue
 			}

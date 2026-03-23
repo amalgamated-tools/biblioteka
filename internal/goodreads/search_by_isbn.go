@@ -42,7 +42,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		slog.ErrorContext(
 			ctx,
 			"invalid ISBN length",
-			slog.Any(otelkeys.ISBN, isbn),
+			slog.String(otelkeys.ISBN, isbn),
 		)
 		return nil, fmt.Errorf("invalid ISBN: %s", isbn)
 	}
@@ -50,7 +50,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		slog.ErrorContext(
 			ctx,
 			"invalid ISBN-10 check digit",
-			slog.Any(otelkeys.ISBN, isbn),
+			slog.String(otelkeys.ISBN, isbn),
 		)
 		return nil, fmt.Errorf("invalid ISBN-10 check digit: %s", isbn)
 	}
@@ -58,7 +58,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		slog.ErrorContext(
 			ctx,
 			"invalid ISBN-13 check digit",
-			slog.Any(otelkeys.ISBN, isbn),
+			slog.String(otelkeys.ISBN, isbn),
 		)
 		return nil, fmt.Errorf("invalid ISBN-13 check digit: %s", isbn)
 	}
@@ -70,9 +70,9 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		slog.ErrorContext(
 			ctx,
 			"failed to create HTTP request for Goodreads ISBN search",
-			slog.Any(otelkeys.Query, isbn),
+			slog.String(otelkeys.Query, isbn),
 			slog.Any(otelkeys.Error, err),
-			slog.Any(otelkeys.URL, searchURL),
+			slog.String(otelkeys.URL, searchURL),
 		)
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
@@ -82,9 +82,9 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		slog.ErrorContext(
 			ctx,
 			"HTTP request failed for Goodreads ISBN search",
-			slog.Any(otelkeys.Query, isbn),
+			slog.String(otelkeys.Query, isbn),
 			slog.Any(otelkeys.Error, err),
-			slog.Any(otelkeys.URL, searchURL),
+			slog.String(otelkeys.URL, searchURL),
 		)
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
@@ -94,9 +94,9 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		slog.ErrorContext(
 			ctx,
 			"goodreads ISBN search returned non-OK status",
-			slog.Any(otelkeys.Query, isbn),
-			slog.Any(otelkeys.StatusCode, resp.StatusCode),
-			slog.Any(otelkeys.URL, searchURL),
+			slog.String(otelkeys.Query, isbn),
+			slog.Int(otelkeys.StatusCode, resp.StatusCode),
+			slog.String(otelkeys.URL, searchURL),
 		)
 		return nil, fmt.Errorf("goodreads ISBN search returned status %d", resp.StatusCode)
 	}
@@ -106,9 +106,9 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		slog.ErrorContext(
 			ctx,
 			"failed to read response body for Goodreads ISBN search",
-			slog.Any(otelkeys.Query, isbn),
+			slog.String(otelkeys.Query, isbn),
 			slog.Any(otelkeys.Error, err),
-			slog.Any(otelkeys.URL, searchURL),
+			slog.String(otelkeys.URL, searchURL),
 		)
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -118,9 +118,9 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		slog.ErrorContext(
 			ctx,
 			"failed to parse Goodreads ISBN search response",
-			slog.Any(otelkeys.Query, isbn),
+			slog.String(otelkeys.Query, isbn),
 			slog.Any(otelkeys.Error, err),
-			slog.Any(otelkeys.URL, searchURL),
+			slog.String(otelkeys.URL, searchURL),
 		)
 		return nil, fmt.Errorf("failed to parse Goodreads ISBN search response: %w", err)
 	}
@@ -224,7 +224,7 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 				"missing required fields in Goodreads ISBN search result",
 				slog.Int64(otelkeys.BookLegacyID, bookID),
 				slog.Int64(otelkeys.WorkLegacyID, workID),
-				slog.Any(otelkeys.Title, title),
+				slog.String(otelkeys.Title, title),
 			)
 			return
 		}
