@@ -94,6 +94,44 @@ db/migrations/
 - Extract resource IDs with `extractPathID(r.URL.Path, "/api/books/")` — there are no named URL parameters. To extract a resource ID **and** an optional sub-resource segment, use `extractPathSegments(r.URL.Path, "/api/books/")` which returns `(id, sub, ok)`.
 - After fetching a resource by ID, use `handleDBErr(r.Context(), w, err, "book")` to write the error response and return early. It returns `true` when it wrote a response (caller should `return`), `false` when `err == nil`. Maps `sql.ErrNoRows` → `404 Not Found`; all other errors → `500 Internal Server Error`.
 - For paginated list endpoints, use `parseLimitOffset(r, defaultPageLimit, maxPageLimit)` from `internal/handlers/pagination.go` to parse `limit` and `offset` query parameters. It silently clamps out-of-range values to safe defaults (`defaultPageLimit = 50`, `maxPageLimit = 200`).
+- For named-resource create and update handlers, use `handleNameErr(r.Context(), w, err, db.ErrInvalidXxxName, db.ErrXxxNameExists, "an xxx")` after a failed write to translate sentinel errors into the correct HTTP responses. It returns `true` when it wrote a response (caller should `return`); returns `false` when `err` does not match either sentinel (caller handles the remaining error):
+
+  ```go
+  if err := h.DB.CreateAuthor(r.Context(), &author); err != nil {
+      if handleNameErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author") {
+          return
+      }
+      slog.ErrorContext(r.Context(), "failed to create author", slog.Any(otelkeys.Error, err))
+      writeError(r.Context(), w, http.StatusInternalServerError, "failed to create author")
+      return
+  }
+  ```
+
+`ErrInvalidXxxName` maps to `400 Bad Request` ("name is required"); `ErrXxxNameExists` maps to `409 Conflict` ("an xxx with that name already exists").
+
+### Deleting a resource
+
+For DELETE handlers, use the generic `deleteResource` helper instead of hand-rolling the fetch-delete-audit pattern:
+
+```go
+deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
+    h.DB.GetAuthor, h.DB.DeleteAuthor,
+    db.AuditActionAuthorDeleted,
+    func(a *db.Author) map[string]any { return map[string]any{"name": a.Name} },
+)
+```
+
+`deleteResource` is a package-level generic function in `internal/handlers/helpers.go`. It fetches the entity (to capture audit metadata), deletes it, writes an audit log entry via `db.CreateAuditLog`, and responds with `204 No Content`. A failed audit write is logged as a warning and never blocks the response. Pass `nil` for `auditMeta` when no extra metadata is needed. Always `return` immediately after the call — `deleteResource` always writes the HTTP response itself.
+
+### Audit logging (non-`deleteResource` actions)
+
+For actions not covered by `deleteResource`, call `logAudit` after the database write succeeds:
+
+```go
+logAudit(r.Context(), h.DB, userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title})
+```
+
+`logAudit` is a package-level function in `internal/handlers/helpers.go`. It calls `db.CreateAuditLog` and logs a warning on failure without propagating the error, so a failed audit write never causes a request to fail. The caller must supply `userID`, typically obtained via `auth.UserIDFromContext(r.Context())`.
 
 ### Deleting a resource
 
