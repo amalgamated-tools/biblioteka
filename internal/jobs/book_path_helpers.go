@@ -157,7 +157,7 @@ func linkExistingBookAndSkip(ctx context.Context, database *db.DB, bf *db.BookFi
 	)
 	if libraryID != "" {
 		if err := database.AddBookToLibrary(ctx, libraryID, bf.BookID); err != nil {
-		slog.WarnContext(ctx, "failed to associate existing book with library",
+			slog.WarnContext(ctx, "failed to associate existing book with library",
 				slog.Any(otelkeys.Error, err),
 				slog.String(otelkeys.Path, path),
 				slog.String(otelkeys.BookID, bf.BookID),
