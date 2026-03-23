@@ -179,6 +179,13 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 		return []BookResult{}, nil
 	}
 
+	// Cap results to avoid excessive outbound requests; the top entries from
+	// Goodreads autocomplete are the most relevant.
+	const maxResults = 5
+	if len(entries) > maxResults {
+		entries = entries[:maxResults]
+	}
+
 	// Phase 2: Enrich entries via concurrent GraphQL lookups.
 	type indexedResult struct {
 		index  int

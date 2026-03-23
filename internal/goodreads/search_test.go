@@ -621,6 +621,42 @@ func TestParseISBNSearchResponse_ConcurrentGraphQLCalls(t *testing.T) {
 	require.Equal(t, "Book Three", results[2].BookTitle)
 }
 
+func TestParseISBNSearchResponse_CapsResultsAtFive(t *testing.T) {
+	var callCount atomic.Int32
+
+	client := &Client{
+		client: &mockGraphQLClient{
+			handler: func(req *graphql.Request, resp *graphql.Response) error {
+				callCount.Add(1)
+				resp.Data = nil
+				return errors.New("mock error for cap test")
+			},
+		},
+	}
+
+	// Build a JSON array with 8 entries — only the first 5 should be processed.
+	body := `[
+		{"bookId": "1", "workId": "10", "title": "Book One"},
+		{"bookId": "2", "workId": "20", "title": "Book Two"},
+		{"bookId": "3", "workId": "30", "title": "Book Three"},
+		{"bookId": "4", "workId": "40", "title": "Book Four"},
+		{"bookId": "5", "workId": "50", "title": "Book Five"},
+		{"bookId": "6", "workId": "60", "title": "Book Six"},
+		{"bookId": "7", "workId": "70", "title": "Book Seven"},
+		{"bookId": "8", "workId": "80", "title": "Book Eight"}
+	]`
+	results, err := client.parseISBNSearchResponse(context.Background(), []byte(body))
+	require.NoError(t, err)
+	require.Len(t, results, 5)
+
+	// Only 5 GraphQL calls should have been made.
+	require.Equal(t, int32(5), callCount.Load())
+
+	// Verify the first 5 entries were kept in order.
+	require.Equal(t, "Book One", results[0].BookTitle)
+	require.Equal(t, "Book Five", results[4].BookTitle)
+}
+
 func TestSearchByISBN_PropagatesContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
