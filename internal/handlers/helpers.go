@@ -161,9 +161,9 @@ func deleteResource[T any](
 			ctx,
 			"failed to write audit log",
 			slog.String(otelkeys.Resource, resource),
-			slog.String(idKey, id),
+			slog.String(idKey, id), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 			slog.Any(otelkeys.Error, err),
-		) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+		)
 	}
 
 	w.WriteHeader(http.StatusNoContent)
