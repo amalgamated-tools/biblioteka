@@ -148,12 +148,10 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionSMTPConfigUpdated, "config", "smtp", map[string]any{
+	logAudit(r.Context(), h.DB, userID, db.AuditActionSMTPConfigUpdated, "config", "smtp", map[string]any{
 		"host": host,
 		"from": params.From,
-	}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	})
 
 	msg := "SMTP configuration saved successfully"
 	if os.Getenv("SMTP_HOST") != "" {

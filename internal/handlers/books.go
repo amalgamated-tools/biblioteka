@@ -345,9 +345,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title})
 
 	writeJSON(r.Context(), w, http.StatusCreated, dto)
 }
@@ -439,9 +437,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionBookUpdated, "book", b.ID, map[string]any{"title": b.Title}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionBookUpdated, "book", b.ID, map[string]any{"title": b.Title})
 
 	writeJSON(r.Context(), w, http.StatusOK, dto)
 }

@@ -160,9 +160,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 	)
 
 	userID := auth.UserIDFromContext(r.Context())
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionAuthorCreated, "author", a.ID, map[string]any{"name": a.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionAuthorCreated, "author", a.ID, map[string]any{"name": a.Name})
 
 	writeJSON(r.Context(), w, http.StatusCreated, toAuthorDTO(a))
 }
@@ -243,9 +241,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionAuthorUpdated, "author", a.ID, map[string]any{"name": a.Name}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
+	logAudit(r.Context(), h.DB, userID, db.AuditActionAuthorUpdated, "author", a.ID, map[string]any{"name": a.Name})
 
 	writeJSON(r.Context(), w, http.StatusOK, toAuthorDTO(a))
 }
