@@ -220,13 +220,8 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) [
 
 		authorID, err := jsonparser.GetInt(value, "author", "id")
 		if err != nil {
-			// this is a problem
-			slog.ErrorContext(
-				ctx,
-				"failed to get author ID from Goodreads ISBN search result",
-				slog.Any(otelkeys.Error, err),
-			)
-			return
+			// we don't care if this is missing, so we won't return an error
+			slog.DebugContext(ctx, "missing author ID in Goodreads search result", slog.Any(otelkeys.Error, err))
 		}
 
 		authorName, err := jsonparser.GetString(value, "author", "name")
