@@ -336,7 +336,7 @@ When `<library-id>` is supplied the directory is also used as the `library_root`
 
 > **Note:** The CLI uses the same database configuration as the server (environment variables). See [docs/metadata.md](docs/metadata.md) for the full list of extracted fields per format.
 
-See [docs/metadata.md](docs/metadata.md) for a full description of extracted fields, fallback behaviour, and how to extend the extractor.
+See [docs/metadata.md](docs/metadata.md) for a full description of extracted fields, fallback behaviour, and how to extend the extractor. The CLI also provides Goodreads catalog lookup commands (`goodreads-search`, `goodreads-search-isbn`, `goodreads-get-by-asin`, `goodreads-get-by-id`, `goodreads-get-by-legacy-id`) for enriching book records with Goodreads IDs — see the [Goodreads lookup](docs/metadata.md#goodreads-lookup) section for details.
 
 ## Project Layout
 
