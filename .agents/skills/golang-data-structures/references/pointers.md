@@ -31,11 +31,11 @@ p := &Point{X: 1}     // *Point with initialized fields — preferred
 
 ## `unsafe.Pointer`
 
-`unsafe.Pointer` bypasses Go's type system for FFI and low-level memory manipulation. Only the 6 patterns from the Go spec are safe; any other pattern is undefined behavior.
+`unsafe.Pointer` bypasses Go's type system for FFI and low-level memory manipulation. Only certain patterns from the Go spec are considered safe; any other pattern is undefined behavior.
 
-### The 6 Valid Patterns (from the Go spec)
+### Valid Patterns (from the Go spec)
 
-These are the ONLY safe ways to use `unsafe.Pointer`. Any other pattern is undefined behavior.
+These are the ONLY documented safe ways to use `unsafe.Pointer` in this guide. Any other pattern is undefined behavior.
 
 **Pattern 1: Convert `*T` to `*U` via `unsafe.Pointer`**
 
