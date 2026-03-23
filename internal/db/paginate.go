@@ -38,6 +38,9 @@ func listPaginated[T any](
 	if limit <= 0 {
 		return make([]T, 0), 0, nil
 	}
+	if offset < 0 {
+		offset = 0
+	}
 
 	table := query.table()
 
