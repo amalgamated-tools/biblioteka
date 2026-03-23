@@ -11,7 +11,7 @@ on:
     branches: [main]
     paths-ignore:
       - "docs/**"
-      - "*.md"
+      - "**/*.md"
   workflow_dispatch:
 
 concurrency:
