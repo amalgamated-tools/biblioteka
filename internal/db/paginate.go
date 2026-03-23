@@ -16,10 +16,10 @@ type paginatedQuery interface {
 // query must be a package-defined type whose methods return hardcoded SQL
 // identifiers and dialect-derived ORDER BY clauses. Never pass user-supplied
 // input into those methods.
-func listPaginated[T any, Q paginatedQuery](
+func listPaginated[T any](
 	ctx context.Context,
 	d *DB,
-	query Q,
+	query paginatedQuery,
 	limit, offset int,
 	scan func(interface{ Scan(...any) error }) (*T, error),
 ) ([]T, int, error) {
