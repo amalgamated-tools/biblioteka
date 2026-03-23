@@ -807,7 +807,7 @@ Delete a library. Returns `204 No Content`.
 
 ### `GET /api/libraries/{id}/books` 🔒
 
-List books that belong to a specific library, with pagination.
+List books that belong to a specific library, with pagination. Results are sorted by `title` ascending.
 
 **Query parameters:**
 
@@ -831,7 +831,7 @@ List books that belong to a specific library, with pagination.
 
 ### `GET /api/authors` 🔒
 
-List all authors.
+List all authors. Results are sorted by `name` ascending.
 
 **Response body (`200`):** Array of author objects (see below).
 
@@ -924,7 +924,7 @@ Delete an author. Returns `204 No Content`.
 
 ### `GET /api/series` 🔒
 
-List all series.
+List all series. Results are sorted by `name` ascending.
 
 **Response body (`200`):** Array of series objects (see below).
 
@@ -942,6 +942,8 @@ Create a series.
 | `goodreads_id`    | string |          | Goodreads series ID |
 | `hardcover_id`    | string |          | Hardcover series ID |
 | `google_books_id` | string |          | Google Books series ID |
+
+> **Name trimming:** Before storage, the server trims leading/trailing whitespace from the name. A name that is blank after trimming is rejected with `400`.
 
 **Response:** `201 Created` with the series object.
 
@@ -979,7 +981,7 @@ Get a single series by ID.
 
 Update a series (full update).
 
-**Request body:** Same fields as `POST /api/series`.
+**Request body:** Same fields as `POST /api/series`. The same name trimming applies.
 
 **Response body (`200`):** Updated series object.
 
@@ -1005,7 +1007,7 @@ Delete a series. Returns `204 No Content`.
 
 ### `GET /api/books` 🔒
 
-List books (summary objects — no nested authors, series, or files), with pagination.
+List books (summary objects — no nested authors, series, or files), with pagination. Results are sorted by `title` ascending.
 
 **Query parameters:**
 
@@ -1207,7 +1209,7 @@ Delete a book. Returns `204 No Content`.
 
 ### `GET /api/books/{id}/authors` 🔒
 
-List the authors linked to a book.
+List the authors linked to a book. Results are sorted by `name` ascending.
 
 **Response body (`200`):** Array of [author objects](#post-apiauthors).
 
@@ -1229,7 +1231,7 @@ Replace the author list for a book.
 
 ### `GET /api/books/{id}/series` 🔒
 
-List the series entries linked to a book.
+List the series entries linked to a book. Results are sorted by series `name` ascending.
 
 **Response body (`200`):** Array of series entry objects.
 
