@@ -27,6 +27,8 @@ type GoodreadsMetadata struct {
 	ISBN10                  *string   `json:"isbn10"`
 	ISBN13                  *string   `json:"isbn13"`
 	GoodreadsID             *string   `json:"goodreads_id"`
+	HardcoverID             *string   `json:"hardcover_id"`
+	GoogleBooksID           *string   `json:"google_books_id"`
 	PublicationDate         *string   `json:"publication_date"`
 	Publisher               *string   `json:"publisher"`
 	Language                *string   `json:"language"`
@@ -42,14 +44,15 @@ type GoodreadsMetadata struct {
 	UpdatedAt               Timestamp `json:"updated_at"`
 }
 
-const goodreadsMetadataColumns = `id, user_id, book_id, status, title, description, asin, isbn10, isbn13, goodreads_id, publication_date, publisher, language, cover_image_url, author_name, author_goodreads_id, author_image_url, goodreads_work_id, goodreads_book_legacy_id, goodreads_work_legacy_id, goodreads_author_legacy_id, created_at, updated_at`
+const goodreadsMetadataColumns = `id, user_id, book_id, status, title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url, author_name, author_goodreads_id, author_image_url, goodreads_work_id, goodreads_book_legacy_id, goodreads_work_legacy_id, goodreads_author_legacy_id, created_at, updated_at`
 
 func scanGoodreadsMetadata(row interface{ Scan(...any) error }) (*GoodreadsMetadata, error) {
 	var gm GoodreadsMetadata
 	err := row.Scan(
 		&gm.ID, &gm.UserID, &gm.BookID, &gm.Status,
 		&gm.Title, &gm.Description, &gm.ASIN, &gm.ISBN10, &gm.ISBN13,
-		&gm.GoodreadsID, &gm.PublicationDate, &gm.Publisher, &gm.Language,
+		&gm.GoodreadsID, &gm.HardcoverID, &gm.GoogleBooksID,
+		&gm.PublicationDate, &gm.Publisher, &gm.Language,
 		&gm.CoverImageURL, &gm.AuthorName, &gm.AuthorGoodreadsID, &gm.AuthorImageURL,
 		&gm.GoodreadsWorkID, &gm.GoodreadsBookLegacyID, &gm.GoodreadsWorkLegacyID,
 		&gm.GoodreadsAuthorLegacyID, &gm.CreatedAt, &gm.UpdatedAt,
@@ -61,11 +64,11 @@ func scanGoodreadsMetadata(row interface{ Scan(...any) error }) (*GoodreadsMetad
 }
 
 // CreateGoodreadsMetadata inserts a new goodreads_metadata row and returns it.
-func (d *DB) CreateGoodreadsMetadata(ctx context.Context, userID string, bookID, title, description, asin, isbn10, isbn13, goodreadsID, publicationDate, publisher, language, coverImageURL, authorName, authorGoodreadsID, authorImageURL, goodreadsWorkID *string, goodreadsBookLegacyID, goodreadsWorkLegacyID, goodreadsAuthorLegacyID *int64) (*GoodreadsMetadata, error) {
+func (d *DB) CreateGoodreadsMetadata(ctx context.Context, userID string, bookID, title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL, authorName, authorGoodreadsID, authorImageURL, goodreadsWorkID *string, goodreadsBookLegacyID, goodreadsWorkLegacyID, goodreadsAuthorLegacyID *int64) (*GoodreadsMetadata, error) {
 	slog.DebugContext(ctx, "db: creating goodreads metadata", slog.String(otelkeys.UserID, userID))
 	return scanGoodreadsMetadata(d.QueryRowContext(ctx,
-		`INSERT INTO goodreads_metadata (user_id, book_id, title, description, asin, isbn10, isbn13, goodreads_id, publication_date, publisher, language, cover_image_url, author_name, author_goodreads_id, author_image_url, goodreads_work_id, goodreads_book_legacy_id, goodreads_work_legacy_id, goodreads_author_legacy_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING `+goodreadsMetadataColumns,
-		userID, bookID, title, description, asin, isbn10, isbn13, goodreadsID, publicationDate, publisher, language, coverImageURL, authorName, authorGoodreadsID, authorImageURL, goodreadsWorkID, goodreadsBookLegacyID, goodreadsWorkLegacyID, goodreadsAuthorLegacyID,
+		`INSERT INTO goodreads_metadata (user_id, book_id, title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url, author_name, author_goodreads_id, author_image_url, goodreads_work_id, goodreads_book_legacy_id, goodreads_work_legacy_id, goodreads_author_legacy_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING `+goodreadsMetadataColumns,
+		userID, bookID, title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL, authorName, authorGoodreadsID, authorImageURL, goodreadsWorkID, goodreadsBookLegacyID, goodreadsWorkLegacyID, goodreadsAuthorLegacyID,
 	))
 }
 

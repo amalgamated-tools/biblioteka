@@ -21,7 +21,7 @@ func TestCreateGoodreadsMetadata(t *testing.T) {
 
 	gm, err := d.CreateGoodreadsMetadata(
 		context.Background(), user.ID,
-		nil, &title, nil, nil, nil, &isbn13, &grID, nil, nil, nil, nil,
+		nil, &title, nil, nil, nil, &isbn13, &grID, nil, nil, nil, nil, nil, nil,
 		&authorName, nil, nil, nil,
 		&bookLegacyID, nil, nil,
 	)
@@ -64,7 +64,7 @@ func TestGetGoodreadsMetadata(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		context.Background(), user.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil,
 		nil, nil, nil,
 	)
@@ -111,7 +111,7 @@ func TestGetGoodreadsMetadata_WrongUser(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		context.Background(), user1.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil,
 		nil, nil, nil,
 	)
@@ -136,7 +136,7 @@ func TestListGoodreadsMetadataByUser(t *testing.T) {
 	title2 := "Book Two"
 	_, err = d.CreateGoodreadsMetadata(
 		context.Background(), user.ID,
-		nil, &title1, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, &title1, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil,
 		nil, nil, nil,
 	)
@@ -145,7 +145,7 @@ func TestListGoodreadsMetadataByUser(t *testing.T) {
 	}
 	_, err = d.CreateGoodreadsMetadata(
 		context.Background(), user.ID,
-		nil, &title2, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, &title2, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil,
 		nil, nil, nil,
 	)
@@ -172,7 +172,7 @@ func TestListGoodreadsMetadataByStatus(t *testing.T) {
 	title1 := "Pending Book"
 	gm1, err := d.CreateGoodreadsMetadata(
 		context.Background(), user.ID,
-		nil, &title1, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, &title1, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil,
 		nil, nil, nil,
 	)
@@ -189,7 +189,7 @@ func TestListGoodreadsMetadataByStatus(t *testing.T) {
 	title2 := "Still Pending"
 	_, err = d.CreateGoodreadsMetadata(
 		context.Background(), user.ID,
-		nil, &title2, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, &title2, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil,
 		nil, nil, nil,
 	)
@@ -227,7 +227,7 @@ func TestUpdateGoodreadsMetadataStatus(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		context.Background(), user.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil,
 		nil, nil, nil,
 	)
@@ -254,7 +254,7 @@ func TestDeleteGoodreadsMetadata(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		context.Background(), user.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil,
 		nil, nil, nil,
 	)
@@ -287,7 +287,7 @@ func TestDeleteGoodreadsMetadata_WrongUser(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		context.Background(), user1.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil,
 		nil, nil, nil,
 	)
@@ -322,7 +322,7 @@ func TestCreateGoodreadsMetadata_WithBookID(t *testing.T) {
 	title := "Updated Metadata"
 	gm, err := d.CreateGoodreadsMetadata(
 		context.Background(), user.ID,
-		&book.ID, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		&book.ID, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil,
 		nil, nil, nil,
 	)
