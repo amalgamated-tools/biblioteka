@@ -107,11 +107,11 @@ deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
 )
 ```
 
-`deleteResource` is a package-level generic function in `internal/handlers/helpers.go`. It fetches the entity (to capture audit metadata), deletes it, writes an audit log entry via `db.CreateAuditLog`, and responds with `204 No Content`. Pass `nil` for `auditMeta` when no extra metadata is needed.
+`deleteResource` is a package-level generic function in `internal/handlers/helpers.go`. It fetches the entity (to capture audit metadata), deletes it, writes an audit log entry via `db.CreateAuditLog`, and responds with `204 No Content`. A failed audit write is logged as a warning and never blocks the response. Pass `nil` for `auditMeta` when no extra metadata is needed.
 
-### Audit logging (non-delete actions)
+### Audit logging (non-deleteResource actions)
 
-For create and update actions, call `logAudit` after the database write succeeds:
+For actions not covered by `deleteResource`, call `logAudit` after the database write succeeds:
 
 ```go
 logAudit(r.Context(), h.DB, userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title})
