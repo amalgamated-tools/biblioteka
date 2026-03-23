@@ -26,14 +26,19 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		)
 		return nil, fmt.Errorf("ISBN cannot be empty")
 	}
-	// these can be 10 or 13 characters long, and can contain dashes, but we will just remove the dashes and check the length of the remaining string
-	var isbnDigits strings.Builder
+	// Strip common ISBN formatting before validating and querying Goodreads.
+	var normalizedISBN strings.Builder
 	for _, r := range isbn {
-		if r >= '0' && r <= '9' {
-			isbnDigits.WriteString(string(r))
+		if r == '-' || r == ' ' {
+			continue
 		}
+		if r == 'x' {
+			r = 'X'
+		}
+		normalizedISBN.WriteRune(r)
 	}
-	if len(isbnDigits.String()) != 10 && len(isbnDigits.String()) != 13 {
+	isbnValue := normalizedISBN.String()
+	if len(isbnValue) != 10 && len(isbnValue) != 13 {
 		slog.ErrorContext(
 			ctx,
 			"invalid ISBN length",
@@ -41,7 +46,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		)
 		return nil, fmt.Errorf("invalid ISBN: %s", isbn)
 	}
-	if len(isbnDigits.String()) == 10 && !ValidISBN10CheckDigit(isbn) {
+	if len(isbnValue) == 10 && !ValidISBN10CheckDigit(isbnValue) {
 		slog.ErrorContext(
 			ctx,
 			"invalid ISBN-10 check digit",
@@ -49,7 +54,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		)
 		return nil, fmt.Errorf("invalid ISBN-10 check digit: %s", isbn)
 	}
-	if len(isbnDigits.String()) == 13 && !ValidISBN13CheckDigit(isbn) {
+	if len(isbnValue) == 13 && !ValidISBN13CheckDigit(isbnValue) {
 		slog.ErrorContext(
 			ctx,
 			"invalid ISBN-13 check digit",
@@ -58,7 +63,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		return nil, fmt.Errorf("invalid ISBN-13 check digit: %s", isbn)
 	}
 
-	searchURL := fmt.Sprintf("https://goodreads.com/book/auto_complete?format=json&q=%s", url.QueryEscape(isbn))
+	searchURL := fmt.Sprintf("https://goodreads.com/book/auto_complete?format=json&q=%s", url.QueryEscape(isbnValue))
 
 	req, err := http.NewRequestWithContext(ctx, "GET", searchURL, nil)
 	if err != nil {

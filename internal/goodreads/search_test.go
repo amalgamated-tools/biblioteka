@@ -247,6 +247,48 @@ func Test_SearchByISBN(t *testing.T) {
 	require.Equal(t, expected.AuthorProfileImageURL, r.AuthorProfileImageURL)
 }
 
+func Test_SearchByISBN_NormalizesQuery(t *testing.T) {
+	tests := []struct {
+		name      string
+		isbn      string
+		wantQuery string
+	}{
+		{
+			name:      "strips ISBN-13 separators",
+			isbn:      "978-0-306-40615-7",
+			wantQuery: "9780306406157",
+		},
+		{
+			name:      "preserves ISBN-10 X check digit",
+			isbn:      "0-8044-2957-x",
+			wantQuery: "080442957X",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotQuery string
+			client := &Client{
+				httpClient: &mockHTTPClient{
+					handler: func(req *http.Request) (*http.Response, error) {
+						gotQuery = req.URL.Query().Get("q")
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							Body:       io.NopCloser(bytes.NewReader([]byte("[]"))),
+							Header:     make(http.Header),
+						}, nil
+					},
+				},
+			}
+
+			results, err := client.SearchByISBN(t.Context(), tt.isbn)
+			require.NoError(t, err)
+			require.Empty(t, results)
+			require.Equal(t, tt.wantQuery, gotQuery)
+		})
+	}
+}
+
 func TestParseISBNSearchResponse_Success(t *testing.T) {
 	var response GetBookByLegacyIdResponse
 	err := json.Unmarshal(GetBookByLegacyID_54493401, &response)
