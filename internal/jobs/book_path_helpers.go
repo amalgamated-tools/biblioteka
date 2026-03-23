@@ -162,6 +162,7 @@ func linkExistingBookAndSkip(ctx context.Context, database *db.DB, bf *db.BookFi
 				slog.String(otelkeys.Path, path),
 				slog.String(otelkeys.BookID, bf.BookID),
 				slog.String(otelkeys.LibraryID, libraryID),
+				slog.String(otelkeys.LibraryID, libraryID),
 			)
 		}
 	}
