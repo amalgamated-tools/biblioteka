@@ -938,7 +938,7 @@ Create a series.
 
 | Field             | Type   | Required | Description |
 |-------------------|--------|----------|-------------|
-| `name`            | string | ✓        | Series name (must be unique) |
+| `name`            | string | ✓        | Series name (must be unique, case-insensitive) |
 | `goodreads_id`    | string |          | Goodreads series ID |
 | `hardcover_id`    | string |          | Hardcover series ID |
 | `google_books_id` | string |          | Google Books series ID |
@@ -952,7 +952,7 @@ Create a series.
 | Status | Meaning |
 |--------|---------|
 | `400` | Invalid request (malformed JSON, missing name, or name is blank after normalization) |
-| `409` | A series with that name already exists |
+| `409` | A series with that name already exists (comparison is case-insensitive) |
 | `500` | Unexpected server error |
 
 **Series object:**
@@ -999,7 +999,7 @@ Update a series (full update).
 |--------|---------|
 | `400` | Invalid request (malformed JSON, missing name, or name is blank after normalization) |
 | `404` | Series not found |
-| `409` | A series with that name already exists |
+| `409` | A series with that name already exists (comparison is case-insensitive) |
 
 ---
 
