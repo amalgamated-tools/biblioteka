@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -130,7 +132,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Name == "" {
+	if strings.TrimSpace(req.Name) == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 		return
 	}
@@ -139,6 +141,10 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 
 	a, err := h.DB.CreateAuthor(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 	if err != nil {
+		if errors.Is(err, db.ErrInvalidAuthorName) {
+			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
+			return
+		}
 		if err == db.ErrAuthorNameExists {
 			writeError(r.Context(), w, http.StatusConflict, "an author with that name already exists")
 			return
@@ -207,7 +213,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
-	if req.Name == "" {
+	if strings.TrimSpace(req.Name) == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 		return
 	}
@@ -221,6 +227,10 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(r.Context(), w, http.StatusNotFound, "author not found")
+			return
+		}
+		if err == db.ErrInvalidAuthorName {
+			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 			return
 		}
 		if err == db.ErrAuthorNameExists {
