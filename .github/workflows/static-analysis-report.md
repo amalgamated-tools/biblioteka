@@ -8,7 +8,7 @@ permissions:
   actions: read
   issues: read
   pull-requests: read
-engine: claude
+# engine: claude
 tools:
   agentic-workflows:
   github:

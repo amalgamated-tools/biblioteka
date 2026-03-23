@@ -13,9 +13,7 @@ permissions:
   pull-requests: read
 
 tracker-id: daily-doc-updater
-engine:
-  id: claude
-  api-target: api.githubcopilot.com
+engine: copilot
 
 network:
   allowed:
