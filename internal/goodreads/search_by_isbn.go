@@ -236,16 +236,11 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 	}
 
 	// Collect results and restore original order.
-	collected := make([]indexedResult, 0, len(entries))
+	ordered := make(map[int]BookResult, len(entries))
 	for ir := range resultsCh {
-		collected = append(collected, ir)
-	}
-	// Sort by original index to produce deterministic output.
-	results := make([]BookResult, 0, len(collected))
-	ordered := make(map[int]BookResult, len(collected))
-	for _, ir := range collected {
 		ordered[ir.index] = ir.result
 	}
+	results := make([]BookResult, 0, len(ordered))
 	for i := range entries {
 		if r, ok := ordered[i]; ok {
 			results = append(results, r)
