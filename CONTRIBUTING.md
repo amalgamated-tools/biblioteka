@@ -451,7 +451,7 @@ The frontend job uses pnpm's built-in cache via `actions/setup-node` (`cache: 'p
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
 
-> **Concurrency:** The workflow uses a concurrency group keyed on the branch ref. A new push to a PR branch automatically cancels any in-progress run for that branch. Runs on `main` are never cancelled.
+> **Concurrency:** The workflow uses a concurrency group keyed on the workflow + ref (`github.ref`: branch ref for pushes, PR merge ref for pull requests). A new push to a PR branch automatically cancels any in-progress run for that branch. Runs on `main` are never cancelled.
 
 ### E2E workflow (`.github/workflows/e2etest.yml`)
 
@@ -481,7 +481,7 @@ On completion, the `playwright-report/` artifact is uploaded and retained for **
 
 > **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the E2E workflow. If you need E2E tests to run on a docs-only PR, trigger the workflow manually via **Actions → E2E Tests → Run workflow**.
 
-> **Concurrency:** The workflow uses a concurrency group keyed on the branch ref. A new push automatically cancels any in-progress run for that branch. Runs on `main` and `develop` are never cancelled.
+> **Concurrency:** The workflow uses a concurrency group keyed on the workflow name and branch ref. A new push automatically cancels any in-progress run for that branch. Runs on `main` and `develop` are never cancelled.
 
 ### Other CI workflows
 
