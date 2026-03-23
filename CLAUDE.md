@@ -121,9 +121,9 @@ deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
 )
 ```
 
-`deleteResource` is a package-level generic function in `internal/handlers/helpers.go`. It fetches the entity (to capture audit metadata), deletes it, writes an audit log entry via `db.CreateAuditLog`, and responds with `204 No Content`. A failed audit write is logged as a warning and never blocks the response. Pass `nil` for `auditMeta` when no extra metadata is needed.
+`deleteResource` is a package-level generic function in `internal/handlers/helpers.go`. It fetches the entity (to capture audit metadata), deletes it, writes an audit log entry via `db.CreateAuditLog`, and responds with `204 No Content`. A failed audit write is logged as a warning and never blocks the response. Pass `nil` for `auditMeta` when no extra metadata is needed. Always `return` immediately after the call — `deleteResource` always writes the HTTP response itself.
 
-### Audit logging (non-deleteResource actions)
+### Audit logging (non-`deleteResource` actions)
 
 For actions not covered by `deleteResource`, call `logAudit` after the database write succeeds:
 
@@ -131,7 +131,7 @@ For actions not covered by `deleteResource`, call `logAudit` after the database 
 logAudit(r.Context(), h.DB, userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title})
 ```
 
-`logAudit` is a package-level function in `internal/handlers/helpers.go`. It calls `db.CreateAuditLog` and logs a warning on failure without propagating the error, so a failed audit write never causes a request to fail.
+`logAudit` is a package-level function in `internal/handlers/helpers.go`. It calls `db.CreateAuditLog` and logs a warning on failure without propagating the error, so a failed audit write never causes a request to fail. The caller must supply `userID`, typically obtained via `auth.UserIDFromContext(r.Context())`.
 
 ### Admin protection
 
