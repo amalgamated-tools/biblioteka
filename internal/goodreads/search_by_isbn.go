@@ -29,13 +29,17 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 	// Strip common ISBN formatting before validating and querying Goodreads.
 	var normalizedISBN strings.Builder
 	for _, r := range isbn {
-		if r == '-' || r == ' ' {
+		switch {
+		case r == '-' || r == ' ':
 			continue
+		case r >= '0' && r <= '9':
+			normalizedISBN.WriteRune(r)
+		case (r == 'x' || r == 'X') && normalizedISBN.Len() == 9:
+			normalizedISBN.WriteRune('X')
+		default:
+			slog.ErrorContext(ctx, "invalid character in ISBN", slog.String(otelkeys.ISBN, isbn))
+			return nil, fmt.Errorf("invalid ISBN: %s (unexpected character %q)", isbn, r)
 		}
-		if r == 'x' {
-			r = 'X'
-		}
-		normalizedISBN.WriteRune(r)
 	}
 	isbnValue := normalizedISBN.String()
 	if len(isbnValue) != 10 && len(isbnValue) != 13 {
@@ -237,7 +241,7 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 
 		authorID, err := jsonparser.GetInt(value, "author", "id")
 		if err != nil {
-			// we don't care if this is missing, so we won't return an error
+			// Missing or unparseable author ID is non-fatal; zero signals "unknown".
 			slog.DebugContext(ctx, "missing author ID in Goodreads search result", slog.Any(otelkeys.Error, err))
 		}
 
@@ -248,6 +252,8 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 		}
 
 		results = append(results, BookResult{
+			BookID:            strconv.FormatInt(bookID, 10),
+			WorkID:            strconv.FormatInt(workID, 10),
 			BookImageURL:      imageURL,
 			BookLegacyID:      bookID,
 			WorkLegacyID:      workID,
