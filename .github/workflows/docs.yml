@@ -7,6 +7,7 @@ on:
     paths:
       - "docs/**"
       - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions:
@@ -28,7 +29,7 @@ jobs:
         with:
           python-version: "3.x"
 
-      - run: pip install mkdocs-material
+      - run: pip install mkdocs-material==9.6.11
 
       - run: mkdocs build
 
