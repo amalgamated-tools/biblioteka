@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -14,6 +13,10 @@ var (
 	ErrSeriesNameExists  = errors.New("series name already exists")
 	ErrInvalidSeriesName = errors.New("invalid series name")
 )
+
+// NormalizeSeriesName normalizes a series name by trimming whitespace and
+// collapsing internal runs to a single space while preserving capitalization.
+func NormalizeSeriesName(name string) string { return normalizeName(name) }
 
 type Series struct {
 	ID            string    `json:"id"`
@@ -37,7 +40,7 @@ func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
 }
 
 func (d *DB) CreateSeries(ctx context.Context, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
-	name = strings.TrimSpace(name)
+	name = NormalizeSeriesName(name)
 	if name == "" {
 		return nil, ErrInvalidSeriesName
 	}
@@ -125,7 +128,7 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 }
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
-	name = strings.TrimSpace(name)
+	name = NormalizeSeriesName(name)
 	if name == "" {
 		return nil, ErrInvalidSeriesName
 	}
@@ -150,7 +153,7 @@ func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, har
 // it, creating a new one if it doesn't exist. Handles concurrent insert races
 // gracefully.
 func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, error) {
-	name = strings.TrimSpace(name)
+	name = NormalizeSeriesName(name)
 	if name == "" {
 		return nil, ErrInvalidSeriesName
 	}
