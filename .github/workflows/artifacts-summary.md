@@ -20,7 +20,7 @@ tools:
     toolsets: [actions, repos]
 safe-outputs:
   create-discussion:
-    category: "artifacts"
+    category: "announcements"
     max: 1
     close-older-discussions: true
 timeout-minutes: 15
