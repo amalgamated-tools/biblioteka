@@ -22,7 +22,7 @@ safe-outputs:
   upload-asset:
   create-discussion:
     expires: 3d
-    category: "audits"
+    category: "announcements"
     title-prefix: "[daily performance] "
     max: 1
     close-older-discussions: true

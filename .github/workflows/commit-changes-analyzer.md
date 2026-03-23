@@ -23,7 +23,7 @@ tools:
 safe-outputs:
   create-discussion:
     expires: 1d
-    category: "development"
+    category: "announcements"
     max: 1
 timeout-minutes: 30
 imports:
