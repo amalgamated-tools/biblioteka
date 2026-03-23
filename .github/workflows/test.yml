@@ -55,14 +55,9 @@ jobs:
         working-directory: ./frontend
         run: pnpm install --frozen-lockfile
 
-      - name: Build frontend
-        working-directory: ./frontend
-        run: pnpm run build
-
-      - name: Check TypeScript
-        working-directory: ./frontend
-        run: pnpm run check
-
+      # Fail fast: run cheap static checks before the expensive build step.
+      # prettier, eslint, svelte-check, and vitest all operate on source files
+      # and do not require the production build output.
       - name: Check formatting
         working-directory: ./frontend
         run: |
@@ -75,9 +70,20 @@ jobs:
         working-directory: ./frontend
         run: pnpm run lint
 
+      - name: Check TypeScript
+        working-directory: ./frontend
+        run: pnpm run check
+
       - name: Run frontend tests
         working-directory: ./frontend
         run: pnpm run test
+
+      # Build last: catches Vite-specific bundling errors after all source-level
+      # checks have passed, so fast-failing checks above aren't blocked by a
+      # slow build.
+      - name: Build frontend
+        working-directory: ./frontend
+        run: pnpm run build
   frontend-all:
     needs: [frontend-checks]
     runs-on: ubuntu-latest
@@ -160,7 +166,7 @@ jobs:
           exiftool -ver
 
       - name: Run Go tests
-        run: go test -v ./...
+        run: go test ./...
 
   go-all:
     needs: [go-lint, go-test]
