@@ -136,6 +136,10 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 
 	s, err := h.DB.CreateSeries(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
 	if err != nil {
+		if err == db.ErrInvalidSeriesName {
+			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
+			return
+		}
 		if err == db.ErrSeriesNameExists {
 			writeError(r.Context(), w, http.StatusConflict, "a series with that name already exists")
 			return
@@ -218,6 +222,10 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(r.Context(), w, http.StatusNotFound, "series not found")
+			return
+		}
+		if err == db.ErrInvalidSeriesName {
+			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 			return
 		}
 		if err == db.ErrSeriesNameExists {
