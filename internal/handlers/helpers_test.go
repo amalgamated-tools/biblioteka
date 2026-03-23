@@ -197,7 +197,7 @@ func Test_HandleDBErr(t *testing.T) {
 func Test_LogAudit(t *testing.T) {
 	d := newTestDB(t)
 
-	logAudit(t.Context(), d, "", db.AuditActionBookCreated, "book", "book-1", map[string]any{"title": "Audited"})
+	logAudit(t.Context(), d, "user-42", db.AuditActionBookCreated, "book", "book-1", map[string]any{"title": "Audited"})
 
 	logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
 	if err != nil {
@@ -205,6 +205,9 @@ func Test_LogAudit(t *testing.T) {
 	}
 	if len(logs) != 1 {
 		t.Fatalf("len(logs) = %d, want 1", len(logs))
+	}
+	if logs[0].UserID == nil || *logs[0].UserID != "user-42" {
+		t.Errorf("user id = %v, want %q", logs[0].UserID, "user-42")
 	}
 	if logs[0].Action != db.AuditActionBookCreated {
 		t.Errorf("action = %q, want %q", logs[0].Action, db.AuditActionBookCreated)
