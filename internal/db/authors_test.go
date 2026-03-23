@@ -274,3 +274,55 @@ func TestDeleteAuthor_NotFound(t *testing.T) {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
 }
+
+func TestListAuthorsPaginated(t *testing.T) {
+	d := newTestDB(t)
+
+	names := []string{"Brandon Sanderson", "Isaac Asimov", "Stephen King", "Ursula K. Le Guin"}
+	for _, name := range names {
+		_, err := d.CreateAuthor(context.Background(), name, nil, nil, nil, nil)
+		if err != nil {
+			t.Fatalf("CreateAuthor(%q) error: %v", name, err)
+		}
+	}
+
+	// First page: 2 of 4 authors.
+	page1, total, err := d.ListAuthorsPaginated(context.Background(), 2, 0)
+	if err != nil {
+		t.Fatalf("ListAuthorsPaginated() error: %v", err)
+	}
+	if total != 4 {
+		t.Errorf("total = %d, want 4", total)
+	}
+	if len(page1) != 2 {
+		t.Fatalf("len(page1) = %d, want 2", len(page1))
+	}
+	if page1[0].Name != "Brandon Sanderson" {
+		t.Errorf("page1[0].Name = %q, want %q", page1[0].Name, "Brandon Sanderson")
+	}
+
+	// Second page: remaining 2 authors.
+	page2, total2, err := d.ListAuthorsPaginated(context.Background(), 2, 2)
+	if err != nil {
+		t.Fatalf("ListAuthorsPaginated() page 2 error: %v", err)
+	}
+	if total2 != 4 {
+		t.Errorf("page 2 total = %d, want 4", total2)
+	}
+	if len(page2) != 2 {
+		t.Fatalf("len(page2) = %d, want 2", len(page2))
+	}
+
+	// Empty table: total should be 0.
+	d2 := newTestDB(t)
+	empty, total3, err := d2.ListAuthorsPaginated(context.Background(), 10, 0)
+	if err != nil {
+		t.Fatalf("ListAuthorsPaginated() empty error: %v", err)
+	}
+	if total3 != 0 {
+		t.Errorf("empty total = %d, want 0", total3)
+	}
+	if len(empty) != 0 {
+		t.Errorf("empty result len = %d, want 0", len(empty))
+	}
+}

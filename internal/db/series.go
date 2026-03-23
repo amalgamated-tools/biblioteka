@@ -94,31 +94,7 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
-
-	var total int
-	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM series`).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	orderBy := d.dialectOrderBy("name", "ASC")
-	rows, err := d.QueryContext(ctx,
-		`SELECT `+seriesColumns+` FROM series `+orderBy+` LIMIT $1 OFFSET $2`,
-		limit, offset,
-	)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-
-	var list []Series
-	for rows.Next() {
-		s, err := scanSeries(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		list = append(list, *s)
-	}
-	return list, total, rows.Err()
+	return listPaginated(ctx, d, "series", seriesColumns, d.dialectOrderBy("name", "ASC"), limit, offset, scanSeries)
 }
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
