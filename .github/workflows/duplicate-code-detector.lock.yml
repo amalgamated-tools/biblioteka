@@ -28,7 +28,7 @@
 #   Imports:
 #     - shared/mood.md
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"333f10453f05fd84274dcffa8ae24ad44fe3882862f9bd7209cb04ec3e62ed83","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"4ff450875280dce881507245809e2d65018ce62ba7fd3c75217b3429d060b7e4","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
 
 name: "Duplicate Code Detector"
 "on":

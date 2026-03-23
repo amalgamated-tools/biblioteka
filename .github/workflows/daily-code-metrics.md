@@ -8,7 +8,7 @@ permissions:
   issues: read
   pull-requests: read
 tracker-id: daily-code-metrics
-# engine: claude
+engine: copilot
 tools:
   repo-memory:
     branch-prefix: daily
@@ -20,7 +20,7 @@ safe-outputs:
   upload-asset:
   create-discussion:
     expires: 3d
-    category: "audits"
+    category: "Audits"
     max: 1
     close-older-discussions: true
 timeout-minutes: 30

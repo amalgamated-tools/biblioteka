@@ -214,6 +214,105 @@ Use `cmd/cli` to import a single file and verify what Biblioteka extracts before
 
 ---
 
+## Goodreads lookup
+
+The CLI includes commands for querying the Goodreads catalog by text query, ISBN, ASIN, or Goodreads ID. These are useful for enriching book records with Goodreads IDs and supplementary metadata before or after an import.
+
+> **No configuration required.** The Goodreads client uses bundled credentials and requires no API key setup from the user.
+
+### Commands
+
+#### `goodreads-search` — search by text query
+
+Searches the Goodreads catalog for books matching a free-text query. Returns up to the first page of results.
+
+```bash
+./biblioteka-cli goodreads-search "The Name of the Wind"
+./biblioteka-cli goodreads-search "Patrick Rothfuss kingkiller"
+```
+
+#### `goodreads-search-isbn` — search by ISBN
+
+Looks up books by ISBN-10 or ISBN-13. Hyphens in the ISBN are accepted and stripped automatically.
+
+```bash
+./biblioteka-cli goodreads-search-isbn 9780756404741
+./biblioteka-cli goodreads-search-isbn 978-0-7564-0474-1
+./biblioteka-cli goodreads-search-isbn 0756404746
+```
+
+#### `goodreads-get-by-asin` — fetch by Amazon ASIN
+
+Retrieves a single book record using its Amazon ASIN.
+
+```bash
+./biblioteka-cli goodreads-get-by-asin B0034P1031
+```
+
+#### `goodreads-get-by-id` — fetch by Goodreads ID
+
+Retrieves a single book record using its Goodreads KCA book ID (e.g. `kca://book/amzn1.gr.book.v1.xyz`).
+
+```bash
+./biblioteka-cli goodreads-get-by-id "kca://book/amzn1.gr.book.v1.xyz"
+```
+
+#### `goodreads-get-by-legacy-id` — fetch by legacy integer ID
+
+Retrieves a single book record using the legacy numeric Goodreads book ID shown in older Goodreads URLs.
+
+```bash
+./biblioteka-cli goodreads-get-by-legacy-id 186074
+```
+
+### Output format
+
+**Search commands** (`goodreads-search`, `goodreads-search-isbn`) print one line per result:
+
+```
+N. <title> by <author> (Goodreads ID: <id>)
+```
+
+Example:
+
+```
+Goodreads search results for query: The Name of the Wind
+1. The Name of the Wind by Patrick Rothfuss (Goodreads ID: kca://book/amzn1.gr.book.v1.xyz)
+```
+
+**Single-result commands** (`goodreads-get-by-asin`, `goodreads-get-by-id`, `goodreads-get-by-legacy-id`) print the following fields:
+
+| Printed field | Commands |
+|---------------|----------|
+| `Title` | All three |
+| `Author` | All three |
+| `ASIN` | `goodreads-get-by-id`, `goodreads-get-by-legacy-id` |
+| `Goodreads ID` | All three |
+
+Example (`goodreads-get-by-legacy-id`):
+
+```
+Goodreads search result for legacy ID: 186074
+Title: The Name of the Wind
+Author: Patrick Rothfuss
+ASIN: B0034P1031
+Goodreads ID: kca://book/amzn1.gr.book.v1.xyz
+```
+
+> **Note:** The underlying `BookResult` struct contains additional fields (`work_id`, `work_legacy_id`, `book_legacy_id`, `book_image_url`, `book_isbn`, `book_isbn13`, `book_language`, `book_number_of_pages`, `author_id`, `author_legacy_id`, `author_profile_image_url`) that are not currently included in CLI output.
+
+---
+
+## What's next
+
+The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) extracts and stores `Title`, `ISBN`, `Description`, `Publisher`, `Language`, `PublicationDate`, embedded EPUB cover art, and links extracted `Author` names to book records. Planned future improvements include:
+
+1. **More cover formats** — extend embedded cover extraction beyond EPUB (currently only EPUB files get an extracted `CoverImageURL`; the sidecar cover write already supports JPEG, PNG, WebP, and AVIF once a URL is present).
+
+Use `cmd/cli` to import a single file and verify what Biblioteka extracts before a full library scan.
+
+---
+
 ## Contributing
 
 To add support for a new field or format:
