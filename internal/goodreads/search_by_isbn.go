@@ -105,7 +105,8 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 		return nil, fmt.Errorf("goodreads ISBN search returned status %d", resp.StatusCode)
 	}
 
-	bodyText, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // 1 MB limit
+	const maxResponseSize = 1 << 20 // 1 MB
+	bodyText, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize+1))
 	if err != nil {
 		slog.ErrorContext(
 			ctx,
@@ -115,6 +116,15 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 			slog.String(otelkeys.URL, searchURL),
 		)
 		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+	if len(bodyText) > maxResponseSize {
+		slog.ErrorContext(
+			ctx,
+			"response body too large for Goodreads ISBN search",
+			slog.String(otelkeys.Query, isbn),
+			slog.String(otelkeys.URL, searchURL),
+		)
+		return nil, fmt.Errorf("goodreads ISBN search response too large (exceeded %d bytes)", maxResponseSize)
 	}
 
 	results, err := c.parseISBNSearchResponse(ctx, bodyText)
@@ -222,6 +232,8 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 			return
 		}
 
+		// Guard against semantically invalid zero IDs (e.g. "0" in JSON) and empty titles.
+		// Parse failures are caught above; these checks handle valid-but-unusable values.
 		if workID == 0 || bookID == 0 || title == "" {
 			slog.ErrorContext(
 				ctx,
@@ -251,6 +263,9 @@ func (c *Client) parseISBNSearchResponse(ctx context.Context, bodyText []byte) (
 			slog.DebugContext(ctx, "missing author name in Goodreads search result", slog.Any(otelkeys.Error, err))
 		}
 
+		// NOTE: fallback path only has legacy integer IDs; BookID and WorkID will be
+		// integer strings (e.g. "123"), not KCA URIs (e.g. "kca://book/...").
+		// Callers must not assume the same format as the primary GraphQL path.
 		results = append(results, BookResult{
 			BookID:            strconv.FormatInt(bookID, 10),
 			WorkID:            strconv.FormatInt(workID, 10),
