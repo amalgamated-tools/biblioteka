@@ -5,13 +5,14 @@
       "id": 1,
       "name": "readme-section-order",
       "prompt": "Write a README.md for a Go library called `github.com/acme/taskflow` that provides a DAG-based task execution engine. It supports parallel execution, dependency resolution, cycle detection, and retry policies. Include installation instructions, a usage example, license info, and any other sections you think are appropriate for a Go open-source library.",
-      "trap": "Model will produce a reasonable README but likely not follow the exact section order: Title > Badges > Summary > Demo > Getting Started > Features > Contributing > License",
+      "trap": "Model will produce a reasonable README but likely not follow the exact section order: Title > Badges > Summary > Demo > Getting Started > Features > Contributing > Contributors > License",
       "assertions": [
         { "id": "1.1", "text": "Badges section appears immediately after the title heading, before any prose" },
         { "id": "1.2", "text": "A short summary (1-2 sentences) appears after badges, before any code block or Getting Started section" },
         { "id": "1.3", "text": "A demo/example code snippet appears before the Getting Started/Installation section" },
         { "id": "1.4", "text": "Getting Started section with `go get` appears after the demo and before Features" },
-        { "id": "1.5", "text": "Features section is the longest section, appearing after Getting Started" }
+        { "id": "1.5", "text": "Features section is the longest section, appearing after Getting Started" },
+        { "id": "1.6", "text": "A Contributors section appears between the Contributing and License sections" }
       ]
     },
     {
@@ -24,7 +25,8 @@
         { "id": "2.2", "text": "The summary sentence ('A high-performance...') appears after badges, before the demo code" },
         { "id": "2.3", "text": "The demo code snippet (limiter := ...) appears before the Getting Started section" },
         { "id": "2.4", "text": "Getting Started appears after demo and before Features" },
-        { "id": "2.5", "text": "Contributing and License appear at the end, after Features" }
+        { "id": "2.5", "text": "The final sections, in order, are Contributing, then Contributors, then License, all appearing at the end after Features" },
+        { "id": "2.6", "text": "A Contributors section appears between the Contributing and License sections" }
       ]
     },
     {

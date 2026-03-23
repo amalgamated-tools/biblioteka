@@ -107,6 +107,7 @@ Please read the [contributing guide](CONTRIBUTING.md) before submitting a PR.
 We thank all the people who have contributed to this project.
 
 You can find the full list of contributors in the [GitHub contributors page](https://github.com/{owner}/{repo}/graphs/contributors).
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
