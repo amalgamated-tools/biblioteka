@@ -95,6 +95,30 @@ db/migrations/
 - After fetching a resource by ID, use `handleDBErr(r.Context(), w, err, "book")` to write the error response and return early. It returns `true` when it wrote a response (caller should `return`), `false` when `err == nil`. Maps `sql.ErrNoRows` → `404 Not Found`; all other errors → `500 Internal Server Error`.
 - For paginated list endpoints, use `parseLimitOffset(r, defaultPageLimit, maxPageLimit)` from `internal/handlers/pagination.go` to parse `limit` and `offset` query parameters. It silently clamps out-of-range values to safe defaults (`defaultPageLimit = 50`, `maxPageLimit = 200`).
 
+### Deleting a resource
+
+For DELETE handlers, use the generic `deleteResource` helper instead of hand-rolling the fetch-delete-audit pattern:
+
+```go
+deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
+    h.DB.GetAuthor, h.DB.DeleteAuthor,
+    db.AuditActionAuthorDeleted,
+    func(a *db.Author) map[string]any { return map[string]any{"name": a.Name} },
+)
+```
+
+`deleteResource` is a package-level generic function in `internal/handlers/helpers.go`. It fetches the entity (to capture audit metadata), deletes it, writes an audit log entry via `db.CreateAuditLog`, and responds with `204 No Content`. A failed audit write is logged as a warning and never blocks the response. Pass `nil` for `auditMeta` when no extra metadata is needed.
+
+### Audit logging (non-delete actions)
+
+For create and update actions, call `logAudit` after the database write succeeds:
+
+```go
+logAudit(r.Context(), h.DB, userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title})
+```
+
+`logAudit` is a package-level function in `internal/handlers/helpers.go`. It calls `db.CreateAuditLog` and logs a warning on failure without propagating the error, so a failed audit write never causes a request to fail.
+
 ### Admin protection
 
 ```go
