@@ -12,7 +12,7 @@ permissions:
   pull-requests: read
   actions: read
 
-engine: claude
+# engine: claude
 tools:
   agentic-workflows:
   cache-memory: true

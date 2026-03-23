@@ -8,7 +8,7 @@ permissions:
   discussions: read
   issues: read
   pull-requests: read
-engine: claude
+# engine: claude
 tools:
   edit:
   bash: ["*"]
