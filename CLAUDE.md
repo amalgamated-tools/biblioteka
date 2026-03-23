@@ -2,6 +2,8 @@
 
 Biblioteka is a personal digital library management system for cataloging and organizing books. It is a full-stack web application with a Go backend and a Svelte 5 frontend.
 
+NOTE: Use American English spelling in all code, comments, and documentation (e.g., "catalog" not "catalogue").
+
 ## Tech Stack
 
 - **Backend**: Go 1.26.1, standard `net/http` (no router framework), `database/sql`
