@@ -260,7 +260,9 @@
     {/if}
 
     <span aria-live="polite" class="sr-only">
-      {copiedTokenId ? `Copied sync URL for ${tokenList.find(t => t.id === copiedTokenId)?.name ?? ''}` : ''}
+      {copiedTokenId
+        ? `Copied sync URL for ${tokenList.find((t) => t.id === copiedTokenId)?.name ?? ""}`
+        : ""}
     </span>
   </div>
 
