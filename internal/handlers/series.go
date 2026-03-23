@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -137,11 +138,11 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 
 	s, err := h.DB.CreateSeries(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
 	if err != nil {
-		if err == db.ErrInvalidSeriesName {
+		if errors.Is(err, db.ErrInvalidSeriesName) {
 			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 			return
 		}
-		if err == db.ErrSeriesNameExists {
+		if errors.Is(err, db.ErrSeriesNameExists) {
 			writeError(r.Context(), w, http.StatusConflict, "a series with that name already exists")
 			return
 		}
@@ -221,15 +222,15 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 
 	s, err := h.DB.UpdateSeries(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusNotFound, "series not found")
 			return
 		}
-		if err == db.ErrInvalidSeriesName {
+		if errors.Is(err, db.ErrInvalidSeriesName) {
 			writeError(r.Context(), w, http.StatusBadRequest, "name is required")
 			return
 		}
-		if err == db.ErrSeriesNameExists {
+		if errors.Is(err, db.ErrSeriesNameExists) {
 			writeError(r.Context(), w, http.StatusConflict, "a series with that name already exists")
 			return
 		}
@@ -264,7 +265,7 @@ func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id 
 
 	s, err := h.DB.GetSeries(r.Context(), id)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusNotFound, "series not found")
 			return
 		}
@@ -274,7 +275,7 @@ func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id 
 	}
 
 	if err := h.DB.DeleteSeries(r.Context(), id); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusNotFound, "series not found")
 			return
 		}
