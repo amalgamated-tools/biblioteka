@@ -14,7 +14,7 @@ func (c *Client) GetBookByLegacyID(ctx context.Context, legacyID int64) (*BookRe
 		slog.ErrorContext(
 			ctx,
 			"failed to get book by legacy ID",
-			slog.Any(otelkeys.BookLegacyID, legacyID),
+			slog.Int64(otelkeys.BookLegacyID, legacyID),
 			slog.Any(otelkeys.Error, err),
 		)
 		return nil, fmt.Errorf("failed to get book by legacy ID: %w", err)
@@ -29,7 +29,7 @@ func (c *Client) GetBookByID(ctx context.Context, grID string) (*BookResult, err
 		slog.ErrorContext(
 			ctx,
 			"failed to get book by Goodreads ID",
-			slog.Any(otelkeys.BookID, grID),
+			slog.String(otelkeys.BookID, grID),
 			slog.Any(otelkeys.Error, err),
 		)
 		return nil, fmt.Errorf("failed to get book by Goodreads ID: %w", err)
@@ -43,7 +43,7 @@ func (c *Client) GetBookByASIN(ctx context.Context, asin string) (*BookResult, e
 		slog.ErrorContext(
 			ctx,
 			"failed to get book by ASIN",
-			slog.Any(otelkeys.BookASIN, asin),
+			slog.String(otelkeys.BookASIN, asin),
 			slog.Any(otelkeys.Error, err),
 		)
 		return nil, fmt.Errorf("failed to get book by ASIN: %w", err)
