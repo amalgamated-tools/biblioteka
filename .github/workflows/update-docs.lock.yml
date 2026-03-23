@@ -26,19 +26,23 @@
 # plain English), ensures single source of truth, and creates draft PRs with documentation
 # updates. Supports documentation-as-code philosophy.
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"61e230c89ef5d536e11a2f22b955b18c134de8138144606cce19872c0d82f390","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"c486542b4073cad9919692e94a844c148b298c70325f67d47886a250e7d27565","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot"}
 
 name: "Update Docs"
 "on":
   push:
     branches:
     - main
+    paths-ignore:
+    - docs/**
+    - "*.md"
   workflow_dispatch:
 
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-${{ github.ref || github.run_id }}"
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
 
 run-name: "Update Docs"
 
