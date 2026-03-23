@@ -185,9 +185,8 @@ Add a `Play:` line linking to a runnable Go Playground example of a public libra
 //
 // Play: https://go.dev/play/p/abc123xyz
 //
-// Example:
-//
 //	doubled := Map([]int{1, 2, 3}, func(x int) int { return x * 2 })
+//	// doubled: [2, 4, 6]
 //	// doubled: [2, 4, 6]
 func Map[T any, U any](s []T, fn func(T) U) []U {
 ```

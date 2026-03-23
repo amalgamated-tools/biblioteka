@@ -99,20 +99,14 @@ Please read the [contributing guide](CONTRIBUTING.md) before submitting a PR.
 
 <!-- Or if the contributing guide is very short:
 
-```bash
-# Build
-go build -o myapp ./cmd/main.go
 
-# Run unit test
-go test -race ./...
+## 👥 Contributors
 
-# Run integration test
-go test -race -tags=integration -timeout=300s ./...
+<!-- Update this section to match your project's contributor conventions. -->
 
-# Run linter
-golangci-lint run --fix ./...
--->
+We thank all the people who have contributed to this project.
 
+You can find the full list of contributors in the [GitHub contributors page](https://github.com/{owner}/{repo}/graphs/contributors).
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

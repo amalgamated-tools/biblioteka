@@ -16,7 +16,7 @@ git clone https://github.com/{owner}/{repo}.git
 cd {repo}
 
 # Build
-go build -o myapp ./cmd/main.go
+go build -o {repo} ./cmd/main.go
 
 # Run unit test
 go test -race ./...

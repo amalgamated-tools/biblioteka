@@ -66,6 +66,7 @@ package mypackage_test
 
 import (
     "fmt"
+    "strings"
     "github.com/{owner}/{repo}"
 )
 
