@@ -354,10 +354,3 @@ func TestToAuditLogDTO_ValidMetadata(t *testing.T) {
 		t.Errorf("EntityID = %q, want %q", dto.EntityID, "book-3")
 	}
 }
-
-// strPtr is a helper that returns a pointer to the given string.
-//
-//go:fix inline
-func strPtr(s string) *string {
-	return new(s)
-}
