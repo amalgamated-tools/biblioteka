@@ -170,19 +170,13 @@ func deleteResource[T any](
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// isNilValue reports whether v is a nil pointer, channel, function, interface,
-// map, or slice. For value types it always returns false.
+// isNilValue reports whether v, when passed as any, wraps a nil pointer.
 func isNilValue(v any) bool {
 	if v == nil {
 		return true
 	}
 	rv := reflect.ValueOf(v)
-	switch rv.Kind() {
-	case reflect.Ptr, reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Slice:
-		return rv.IsNil()
-	default:
-		return false
-	}
+	return rv.Kind() == reflect.Ptr && rv.IsNil()
 }
 
 // requireAdmin checks whether the authenticated user is an admin and writes the
