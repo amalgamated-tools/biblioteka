@@ -26,7 +26,7 @@ func listPaginated[T any](
 	table := query.table()
 	columns := query.columns()
 	orderBy := query.orderBy(d)
-	items := make([]T, 0, limit)
+	items := make([]T, 0, max(0, limit))
 	var total int
 	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM `+table).Scan(&total); err != nil {
 		return nil, 0, err
