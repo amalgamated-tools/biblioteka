@@ -710,6 +710,28 @@ func TestDeleteLibrary_NonAdminForbidden(t *testing.T) {
 	}
 }
 
+func TestDeleteLibrary_NotFound(t *testing.T) {
+	h, adminID, _ := setupLibraryHandler(t)
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/libraries/nonexistent-id", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleLibrary(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+
+	var resp errorResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.Error != "library not found" {
+		t.Errorf("error = %q, want %q", resp.Error, "library not found")
+	}
+}
+
 func TestListLibraries_NonAdminAllowed(t *testing.T) {
 	h, _, regularID := setupLibraryHandler(t)
 

@@ -460,33 +460,9 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 //	@Failure		500	{object}	errorResponse
 //	@Router			/books/{id} [delete]
 func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "deleting book", slog.String(otelkeys.BookID, id))
-
-	book, err := h.DB.GetBook(r.Context(), id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "book not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get book", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete book")
-		return
-	}
-
-	if err := h.DB.DeleteBook(r.Context(), id); err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "book not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to delete book", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete book")
-		return
-	}
-
-	userID := auth.UserIDFromContext(r.Context())
-	if err := h.DB.CreateAuditLog(r.Context(), userID, db.AuditActionBookDeleted, "book", id, map[string]any{"title": book.Title}); err != nil {
-		slog.WarnContext(r.Context(), "failed to write audit log", slog.Any(otelkeys.Error, err))
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	deleteResource(h.DB, w, r, id, "book", otelkeys.BookID,
+		h.DB.GetBook, h.DB.DeleteBook,
+		db.AuditActionBookDeleted,
+		func(b *db.Book) map[string]any { return map[string]any{"title": b.Title} },
+	)
 }
