@@ -77,7 +77,13 @@ func (h *OPDSHandler) writeBooksFeed(
 
 	books, total, err := listFn(ctx, opdsPageSize, offset)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list books", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(
+			ctx,
+			"OPDS: failed to list books",
+			slog.String(otelkeys.URL, selfURL),
+			slog.String(otelkeys.Title, title),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, selfURL, "Failed to list books")
 		return
 	}
