@@ -126,7 +126,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  goodreads-get-by-asin <asin>          Get a book from Goodreads by ASIN\n")
 	fmt.Fprintf(os.Stderr, "  goodreads-get-by-id <goodreads-id>    Get a book from Goodreads by ID\n")
 	fmt.Fprintf(os.Stderr, "  goodreads-get-by-legacy-id <legacy-id> Get a book from Goodreads by legacy ID\n")
-	fmt.Fprintf(os.Stderr, "  version                                Print the version of the application\n")
+	fmt.Fprintf(os.Stderr, "  db-migrate                            Run database migrations\n")
 }
 
 func runDBMigrate(ctx context.Context) error {
