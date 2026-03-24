@@ -380,7 +380,6 @@ func TestListAuthorsPaginatedZeroLimit(t *testing.T) {
 		t.Error("items = nil, want empty slice")
 	}
 
-	// Negative limit should behave the same way.
 	items2, total2, err := d.ListAuthorsPaginated(context.Background(), -1, 0)
 	if err != nil {
 		t.Fatalf("ListAuthorsPaginated(limit=-1) error: %v", err)
@@ -391,4 +390,6 @@ func TestListAuthorsPaginatedZeroLimit(t *testing.T) {
 	if len(items2) != 0 {
 		t.Errorf("len(items) = %d, want 0", len(items2))
 	}
-}
+	if items2 == nil {
+		t.Error("items2 = nil, want empty slice")
+	}
