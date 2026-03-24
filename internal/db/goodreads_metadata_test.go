@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"testing"
 )
 
@@ -241,6 +242,33 @@ func TestUpdateGoodreadsMetadataStatus(t *testing.T) {
 	}
 	if updated.Status != GoodreadsMetadataStatusRejected {
 		t.Errorf("Status = %q, want %q", updated.Status, GoodreadsMetadataStatusRejected)
+	}
+}
+
+func TestUpdateGoodreadsMetadataStatus_InvalidStatus(t *testing.T) {
+	d := newTestDB(t)
+	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "hash")
+	if err != nil {
+		t.Fatalf("CreateUser() error: %v", err)
+	}
+
+	title := "Test Book"
+	created, err := d.CreateGoodreadsMetadata(
+		context.Background(), user.ID,
+		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil,
+		nil, nil, nil,
+	)
+	if err != nil {
+		t.Fatalf("CreateGoodreadsMetadata() error: %v", err)
+	}
+
+	_, err = d.UpdateGoodreadsMetadataStatus(context.Background(), user.ID, created.ID, "oops")
+	if err == nil {
+		t.Fatal("expected error for invalid status, got nil")
+	}
+	if !errors.Is(err, ErrInvalidGoodreadsMetadataStatus) {
+		t.Errorf("expected ErrInvalidGoodreadsMetadataStatus, got %v", err)
 	}
 }
 

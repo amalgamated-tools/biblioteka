@@ -14,15 +14,15 @@ import (
 
 // CreateLinkNonce godoc
 //
-// @Summary		Create OIDC link nonce
-// @Description	Generate a short-lived nonce for linking an OIDC account
-// @Tags		OIDC
-// @Produce		json
-// @Security	BearerAuth
-// @Failure		401	{object}	errorResponse
-// @Success		200	{object}	object{nonce=string}
-// @Failure		500	{object}	errorResponse
-// @Router		/auth/oidc/link-nonce [post]
+//	@Summary		Create OIDC link nonce
+//	@Description	Generate a short-lived nonce for linking an OIDC account
+//	@Tags			OIDC
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Success		200	{object}	object{nonce=string}
+//	@Failure		500	{object}	errorResponse
+//	@Router			/auth/oidc/link-nonce [post]
 func (h *OIDCHandler) CreateLinkNonce(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
@@ -74,16 +74,16 @@ func (h *OIDCHandler) consumeLinkNonce(nonce string) string {
 
 // Link godoc
 //
-// @Summary		Link OIDC account
-// @Description	Redirects to OIDC provider to link account (requires nonce)
-// @Tags		OIDC
-// @Param		nonce	query	string	true	"Link nonce from CreateLinkNonce"
-// @Success		302	"Redirect to OIDC provider"
-// @Failure		400	{object}	errorResponse
-// @Failure		401	{object}	errorResponse
-// @Failure		409	{object}	errorResponse
-// @Failure		500	{object}	errorResponse
-// @Router		/auth/oidc/link [get]
+//	@Summary		Link OIDC account
+//	@Description	Redirects to OIDC provider to link account (requires nonce)
+//	@Tags			OIDC
+//	@Param			nonce	query	string	true	"Link nonce from CreateLinkNonce"
+//	@Success		302		"Redirect to OIDC provider"
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		409		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/auth/oidc/link [get]
 func (h *OIDCHandler) Link(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
