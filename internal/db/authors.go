@@ -189,13 +189,5 @@ func (d *DB) FindOrCreateAuthor(ctx context.Context, name string) (*Author, erro
 
 func (d *DB) DeleteAuthor(ctx context.Context, id string) error {
 	slog.DebugContext(ctx, "db: deleting author", slog.String(otelkeys.ID, id))
-	res, err := d.ExecContext(ctx, `DELETE FROM authors WHERE id = $1`, id)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `DELETE FROM authors WHERE id = $1`, id)
 }

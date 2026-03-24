@@ -120,29 +120,13 @@ func (d *DB) GetUserByOIDCSubject(ctx context.Context, subject string) (*User, e
 // LinkOIDCSubject sets the OIDC subject on an existing user.
 func (d *DB) LinkOIDCSubject(ctx context.Context, userID, oidcSubject string) error {
 	slog.DebugContext(ctx, "db: linking OIDC subject", slog.String(otelkeys.UserID, userID))
-	res, err := d.ExecContext(ctx, `UPDATE users SET oidc_subject = $1 WHERE id = $2`, oidcSubject, userID)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `UPDATE users SET oidc_subject = $1 WHERE id = $2`, oidcSubject, userID)
 }
 
 // UpdatePassword updates a user's password hash.
 func (d *DB) UpdatePassword(ctx context.Context, userID, newPasswordHash string) error {
 	slog.DebugContext(ctx, "db: updating password", slog.String(otelkeys.UserID, userID))
-	res, err := d.ExecContext(ctx, `UPDATE users SET password_hash = $1 WHERE id = $2`, newPasswordHash, userID)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `UPDATE users SET password_hash = $1 WHERE id = $2`, newPasswordHash, userID)
 }
 
 // IsAdmin returns true if the given user has the admin role.
@@ -161,15 +145,7 @@ func (d *DB) SetAdmin(ctx context.Context, userID string, isAdmin bool) error {
 		slog.String(otelkeys.UserID, userID),
 		slog.Bool(otelkeys.IsAdmin, isAdmin),
 	)
-	res, err := d.ExecContext(ctx, `UPDATE users SET is_admin = $1 WHERE id = $2`, isAdmin, userID)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `UPDATE users SET is_admin = $1 WHERE id = $2`, isAdmin, userID)
 }
 
 // ListUsers returns all users ordered by creation time.

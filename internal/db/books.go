@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -223,15 +222,7 @@ func (d *DB) UpdateBook(ctx context.Context, id, title string, description, asin
 // DeleteBook removes a book by ID.
 func (d *DB) DeleteBook(ctx context.Context, id string) error {
 	slog.DebugContext(ctx, "db: deleting book", slog.String(otelkeys.ID, id))
-	res, err := d.ExecContext(ctx, `DELETE FROM books WHERE id = $1`, id)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `DELETE FROM books WHERE id = $1`, id)
 }
 
 // AddBookToLibrary creates an association between a book and a library.
@@ -253,18 +244,10 @@ func (d *DB) RemoveBookFromLibrary(ctx context.Context, libraryID, bookID string
 		slog.String(otelkeys.LibraryID, libraryID),
 		slog.String(otelkeys.BookID, bookID),
 	)
-	res, err := d.ExecContext(ctx,
+	return d.execAffected(ctx,
 		`DELETE FROM library_books WHERE library_id = $1 AND book_id = $2`,
 		libraryID, bookID,
 	)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
 }
 
 // bookColumnsWithPrefix returns book columns with a table alias prefix.
