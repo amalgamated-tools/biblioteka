@@ -48,7 +48,7 @@ func listAll[T any](
 	}
 	defer rows.Close()
 
-	var items []T
+	items := make([]T, 0)
 	for rows.Next() {
 		item, err := scan(rows)
 		if err != nil {
@@ -75,9 +75,6 @@ func listPaginated[T any](
 	limit, offset int,
 	scan func(interface{ Scan(...any) error }) (*T, error),
 ) ([]T, int, error) {
-	if limit <= 0 {
-		return make([]T, 0), 0, nil
-	}
 	if offset < 0 {
 		offset = 0
 	}
@@ -90,16 +87,16 @@ func listPaginated[T any](
 
 	columns := query.columns()
 	orderBy := query.orderBy(d)
-	items := make([]T, 0, limit)
 
 	var total int
 	// safe: table validated against allowedListTables above
 	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM `+table).Scan(&total); err != nil {
 		return nil, 0, err
 	}
-	if total == 0 {
-		return items, 0, nil
+	if total == 0 || limit <= 0 {
+		return make([]T, 0), total, nil
 	}
+	items := make([]T, 0, limit)
 
 	// safe: table, columns, and orderBy are hardcoded caller-provided identifiers
 	rows, err := d.QueryContext(ctx,
