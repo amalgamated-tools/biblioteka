@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -89,13 +88,5 @@ func (d *DB) DeleteKoboToken(ctx context.Context, id, userID string) error {
 		slog.String(otelkeys.ID, id),
 		slog.String(otelkeys.UserID, userID),
 	)
-	res, err := d.ExecContext(ctx, `DELETE FROM kobo_tokens WHERE id = $1 AND user_id = $2`, id, userID)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `DELETE FROM kobo_tokens WHERE id = $1 AND user_id = $2`, id, userID)
 }
