@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"os"
 	"testing"
 )
 
@@ -10,7 +9,7 @@ import (
 // It registers a cleanup function so the database is closed when the test ends.
 func newTestDB(t *testing.T) *DB {
 	t.Helper()
-	os.Setenv("BIBLIOTEKA_ENV", "test")
+	t.Setenv("BIBLIOTEKA_ENV", "test")
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
 		t.Fatalf("newTestDB: open: %v", err)

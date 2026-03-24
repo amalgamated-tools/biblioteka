@@ -25,13 +25,23 @@ func RunMigrations(ctx context.Context, sqlDB *sql.DB, dialect Dialect) error {
 // runMigrations reads and executes all SQL migration files
 // Supports dbmate format with '-- migrate:up' and '-- migrate:down' markers
 func runMigrations(ctx context.Context, d *DB) error {
+	// Create migrations table if it doesn't exist
+	if _, err := d.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version TEXT PRIMARY KEY,
+			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	`); err != nil {
+		return fmt.Errorf("failed to create schema_migrations table: %w", err)
+	}
+
 	// Select migration directory based on dialect
 	subdir := "sqlite"
 	if d.Dialect == DialectPostgres {
 		subdir = "postgres"
 	}
 	migrationsDir := filepath.Join(getProjectRoot(), "db", "migrations", subdir)
-
+	slog.InfoContext(ctx, "Running database migrations", slog.String("migrationsDir", migrationsDir))
 	entries, err := os.ReadDir(migrationsDir)
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory %s: %w", migrationsDir, err)

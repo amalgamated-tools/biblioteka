@@ -26,7 +26,7 @@ elif command -v brew >/dev/null 2>&1; then
     echo "Installing dbmate via Homebrew..."
     brew install dbmate
 else
-    echo "Error: Homebrew not found. Install dbmate manually:"
+    echo "Error: Homebrew not found. Install dbmate manually: https://github.com/amacneil/dbmate"
     echo ""
 fi
 

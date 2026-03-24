@@ -136,6 +136,11 @@ func runDBMigrate(ctx context.Context) error {
 	}
 	defer func() { _ = database.Close() }()
 
+	if err := db.RunMigrations(ctx, database.DB, database.Dialect); err != nil {
+		return fmt.Errorf("failed to run database migrations: %w", err)
+	}
+
+	fmt.Println("Database migrations completed successfully")
 	return nil
 }
 

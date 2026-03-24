@@ -148,4 +148,5 @@ docs-serve:
 	mkdocs serve
 
 db-dump: clean
-	dbmate -u "sqlite:db/biblioteka.db" -d "db/migrations/sqlite" up
+	go run cmd/cli/main.go db-migrate
+	dbmate -u "sqlite:db/biblioteka.db" -d "db/migrations/sqlite" dump
