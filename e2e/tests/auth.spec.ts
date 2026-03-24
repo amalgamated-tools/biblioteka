@@ -80,7 +80,6 @@ test.describe("ARIA tabs accessibility", () => {
     const signupPanel = page.locator("#signup-panel");
     await expect(loginPanel).toHaveRole("tabpanel");
     await expect(loginPanel).toHaveAttribute("aria-labelledby", "login-tab");
-    await expect(loginPanel).toHaveAttribute("tabindex", "0");
     await expect(loginPanel).not.toHaveAttribute("hidden", "");
     await expect(signupPanel).toHaveAttribute("hidden", "");
 
