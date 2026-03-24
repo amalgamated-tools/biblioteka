@@ -526,7 +526,7 @@ All database access lives in the `internal/db/` package. The books domain is spl
 
 | File | Responsibility |
 |------|----------------|
-| `db.go` | `DB` struct definition, `Timestamp` custom type, dialect constants (`DialectSQLite`, `DialectPostgres`) |
+| `db.go` | `DB` struct definition, `Timestamp` custom type, dialect constants (`DialectSQLite`, `DialectPostgres`); `execAffected` internal helper that runs a write query and returns `sql.ErrNoRows` when zero rows are affected |
 | `setup.go` | `SetupDatabase`: opens the correct backend (SQLite or PostgreSQL), applies PRAGMAs, and runs embedded migrations |
 | `migrations.go` | Embedded migration runner used by `SetupDatabase` |
 | `books.go` | `Book` struct; core CRUD: `CreateBook`, `CreateBookWithFile`, `GetBook`, `ListBooks`, `ListBooksByLibrary[Paginated]`, `UpdateBook`, `DeleteBook`, `AddBookToLibrary`, `RemoveBookFromLibrary` |
@@ -545,7 +545,7 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `kosync.go` | `KOSyncCredential` struct; `GetKOSyncCredentialByUserID`, `GetKOSyncCredentialByUsername`, `UpsertKOSyncCredential`, `DeleteKOSyncCredential`; `ReadingProgress` struct; `GetReadingProgress`, `UpsertReadingProgress` |
 | `audit_logs.go` | `AuditLog` struct; `CreateAuditLog`, `ListAuditLogs` |
 | `goodreads_metadata.go` | `GoodreadsMetadata` struct; `CreateGoodreadsMetadata`, `GetGoodreadsMetadata`, `ListGoodreadsMetadataByUser`, `ListGoodreadsMetadataByStatus`, `UpdateGoodreadsMetadataStatus`, `DeleteGoodreadsMetadata` |
-| `paginate.go` | Internal `listPaginated[T]` generic helper: issues a `COUNT(*)` query then a paginated `SELECT`; used by `ListAuthorsPaginated` and `ListSeriesPaginated`. Validates table names against an allowlist to prevent SQL injection |
+| `paginate.go` | Two internal generic helpers sharing the `listQuery` interface and `allowedListTables` allowlist: `listAll[T]` — full-table SELECT with no limit; used by `ListAuthors`, `ListSeries`, `ListLibraries`; `listPaginated[T]` — issues a `COUNT(*)` then a paginated SELECT; used by `ListAuthorsPaginated` and `ListSeriesPaginated`. Both validate table names against the allowlist to prevent SQL injection |
 | `kobo_tokens_migration.go` | `backfillKoboTokenHashes`: one-time data migration that populates the `token_hash` column from existing plain `token` values; called during startup when the column is present but hashes are absent |
 | `sql_parser.go` | Internal helpers for parsing embedded SQL migration files |
 
