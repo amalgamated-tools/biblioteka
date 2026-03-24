@@ -39,6 +39,14 @@ func scanUser(row interface{ Scan(...any) error }) (*User, error) {
 
 const userColumns = `id, name, email, password_hash, oidc_subject, is_admin, created_at`
 
+type userListQuery struct{}
+
+func (userListQuery) table() string   { return "users" }
+func (userListQuery) columns() string { return userColumns }
+func (userListQuery) orderBy(d *DB) string {
+	return d.dialectOrderBy("created_at", "ASC")
+}
+
 // CreateUser inserts a new user and returns it.
 // Returns ErrEmailExists if the email is already registered.
 // The first user created is automatically promoted to admin.
@@ -151,20 +159,5 @@ func (d *DB) SetAdmin(ctx context.Context, userID string, isAdmin bool) error {
 // ListUsers returns all users ordered by creation time.
 func (d *DB) ListUsers(ctx context.Context) ([]User, error) {
 	slog.DebugContext(ctx, "db: listing users")
-	orderBy := d.dialectOrderBy("created_at", "ASC")
-	rows, err := d.QueryContext(ctx, `SELECT `+userColumns+` FROM users `+orderBy)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var users []User
-	for rows.Next() {
-		u, err := scanUser(rows)
-		if err != nil {
-			return nil, err
-		}
-		users = append(users, *u)
-	}
-	return users, rows.Err()
+	return listAll(ctx, d, userListQuery{}, scanUser)
 }

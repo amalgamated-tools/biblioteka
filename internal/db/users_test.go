@@ -284,3 +284,18 @@ func TestListUsers(t *testing.T) {
 		t.Error("second user should not be admin")
 	}
 }
+
+func TestListUsersEmptyTable(t *testing.T) {
+	d := newTestDB(t)
+
+	users, err := d.ListUsers(context.Background())
+	if err != nil {
+		t.Fatalf("ListUsers() error: %v", err)
+	}
+	if len(users) != 0 {
+		t.Errorf("len(users) = %d, want 0", len(users))
+	}
+	if users == nil {
+		t.Error("users = nil, want empty slice")
+	}
+}
