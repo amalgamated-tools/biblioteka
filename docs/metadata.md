@@ -73,6 +73,24 @@ go build -o biblioteka-cli ./cmd/cli
 
 > **Note:** The CLI requires a database to be configured via the same environment variables as the server (see [deployment.md](deployment.md)).
 
+### `db-migrate` — run database migrations
+
+Applies any pending database migrations and exits. Useful for running migrations without starting the full HTTP server — for example, in a one-off init container or a CI schema-dump step.
+
+```bash
+./biblioteka-cli db-migrate
+```
+
+**Output on success:**
+
+```
+Database migrations completed successfully
+```
+
+The server runs the same migrations automatically on startup via `db.SetupDatabase`, so this command is only needed when you want to migrate without binding to a port (e.g. in a container init container, a `make db-dump` step, or to verify the schema before running tests).
+
+---
+
 ### `process-file` — import a single book file
 
 Extracts metadata from one file, stores a book and book_file record in the database, and creates an author record when one is found. Records are written directly to the database rather than going through the background job queue.
