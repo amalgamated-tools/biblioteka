@@ -32,6 +32,7 @@ users ────────────────────────�
   ├──── api_keys                  settings             ▼
   ├──── opds_credentials                       audit_logs
   ├──── kobo_tokens
+  ├──── goodreads_metadata
   └──── kobo_reading_states ─────────────── books ──── book_authors ──── authors
                                                │
 libraries ──── library_books ─────────────────┤
@@ -463,13 +464,57 @@ Stores KOReader reading progress for each user–document pair. The `document` f
 
 ---
 
+### `goodreads_metadata`
+
+Stores Goodreads (and compatible catalog) metadata candidates fetched on behalf of a user. Each row is an imported snapshot of book metadata that can be reviewed and applied to a book record. The `status` field tracks whether the candidate has been accepted, rejected, or is awaiting review.
+
+| Column                        | Type     | Nullable | Default    | Description                                                          |
+|-------------------------------|----------|----------|------------|----------------------------------------------------------------------|
+| `id`                          | TEXT     | NOT NULL | auto-gen   | Primary key                                                          |
+| `user_id`                     | TEXT     | NOT NULL | —          | FK → `users.id` ON DELETE CASCADE                                    |
+| `book_id`                     | TEXT     | NULL     | NULL       | FK → `books.id` ON DELETE SET NULL; the book this metadata targets   |
+| `status`                      | TEXT     | NOT NULL | `'pending'`| Review status: `'pending'`, `'applied'`, or `'rejected'`             |
+| `title`                       | TEXT     | NULL     | NULL       | Book title from the catalog                                          |
+| `description`                 | TEXT     | NULL     | NULL       | Synopsis or blurb from the catalog                                   |
+| `asin`                        | TEXT     | NULL     | NULL       | Amazon ASIN                                                          |
+| `isbn10`                      | TEXT     | NULL     | NULL       | ISBN-10                                                              |
+| `isbn13`                      | TEXT     | NULL     | NULL       | ISBN-13                                                              |
+| `goodreads_id`                | TEXT     | NULL     | NULL       | Goodreads book ID                                                    |
+| `hardcover_id`                | TEXT     | NULL     | NULL       | Hardcover book ID                                                    |
+| `google_books_id`             | TEXT     | NULL     | NULL       | Google Books volume ID                                               |
+| `publication_date`            | TEXT     | NULL     | NULL       | ISO 8601 publication date string                                     |
+| `publisher`                   | TEXT     | NULL     | NULL       | Publisher name                                                       |
+| `language`                    | TEXT     | NULL     | NULL       | BCP 47 language tag (e.g. `"en"`)                                   |
+| `cover_image_url`             | TEXT     | NULL     | NULL       | URL to the cover image from the catalog                              |
+| `author_name`                 | TEXT     | NULL     | NULL       | Primary author name from the catalog                                 |
+| `author_goodreads_id`         | TEXT     | NULL     | NULL       | Goodreads author ID                                                  |
+| `author_image_url`            | TEXT     | NULL     | NULL       | URL to the author photo from the catalog                             |
+| `goodreads_work_id`           | TEXT     | NULL     | NULL       | Goodreads work ID                                                    |
+| `goodreads_book_legacy_id`    | INTEGER  | NULL     | NULL       | Goodreads legacy integer book ID                                     |
+| `goodreads_work_legacy_id`    | INTEGER  | NULL     | NULL       | Goodreads legacy integer work ID                                     |
+| `goodreads_author_legacy_id`  | INTEGER  | NULL     | NULL       | Goodreads legacy integer author ID                                   |
+| `created_at`                  | DATETIME | NOT NULL | `now()`    | Creation time                                                        |
+| `updated_at`                  | DATETIME | NOT NULL | `now()`    | Last update time                                                     |
+
+**Indexes:**
+- `idx_goodreads_metadata_user_id` — fast user-scoped lookups
+- `idx_goodreads_metadata_user_status_created_at_id` — composite index on `(user_id, status, created_at DESC, id DESC)` for efficient paginated listing filtered by status
+- `idx_goodreads_metadata_user_created_at_id` — composite index on `(user_id, created_at DESC, id DESC)` for efficient paginated listing of all records for a user
+
+**Notes:**
+- Rows are scoped per user; every query filters by `user_id`.
+- `book_id` is nullable: a metadata row may be imported before it has been linked to a book, or the linked book may be deleted (ON DELETE SET NULL keeps the metadata row for auditing).
+- Status transitions: `pending` → `applied` (metadata accepted and written to the book) or `pending` → `rejected` (candidate discarded).
+
+---
+
 ## Cascade Deletion Summary
 
 | Deleted entity | Also deletes                                      |
 |----------------|---------------------------------------------------|
-| `users`        | `api_keys`, `opds_credentials`, `kobo_tokens`, `kobo_reading_states`, `kosync_credentials`, `reading_progress` for that user |
+| `users`        | `api_keys`, `opds_credentials`, `kobo_tokens`, `kobo_reading_states`, `kosync_credentials`, `reading_progress`, `goodreads_metadata` for that user |
 | `libraries`    | `library_books` entries for that library          |
-| `books`        | `book_files`, `book_authors`, `book_series`, `library_books`, `kobo_reading_states` entries for that book |
+| `books`        | `book_files`, `book_authors`, `book_series`, `library_books`, `kobo_reading_states` entries for that book; sets `goodreads_metadata.book_id = NULL` for linked candidates |
 | `authors`      | `book_authors` entries for that author            |
 | `series`       | `book_series` entries for that series             |
 
@@ -499,6 +544,7 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `kobo_reading_states.go` | `KoboReadingState` struct; `GetKoboReadingState`, `UpsertKoboReadingState`, `ListKoboReadingStatesSince`, `GetReadingStatesForBooks` |
 | `kosync.go` | `KOSyncCredential` struct; `GetKOSyncCredentialByUserID`, `GetKOSyncCredentialByUsername`, `UpsertKOSyncCredential`, `DeleteKOSyncCredential`; `ReadingProgress` struct; `GetReadingProgress`, `UpsertReadingProgress` |
 | `audit_logs.go` | `AuditLog` struct; `CreateAuditLog`, `ListAuditLogs` |
+| `goodreads_metadata.go` | `GoodreadsMetadata` struct; `CreateGoodreadsMetadata`, `GetGoodreadsMetadata`, `ListGoodreadsMetadataByUser`, `ListGoodreadsMetadataByStatus`, `UpdateGoodreadsMetadataStatus`, `DeleteGoodreadsMetadata` |
 | `paginate.go` | Internal `listPaginated[T]` generic helper: issues a `COUNT(*)` query then a paginated `SELECT`; used by `ListAuthorsPaginated` and `ListSeriesPaginated`. Validates table names against an allowlist to prevent SQL injection |
 | `kobo_tokens_migration.go` | `backfillKoboTokenHashes`: one-time data migration that populates the `token_hash` column from existing plain `token` values; called during startup when the column is present but hashes are absent |
 | `sql_parser.go` | Internal helpers for parsing embedded SQL migration files |
