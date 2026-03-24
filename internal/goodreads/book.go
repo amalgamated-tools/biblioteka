@@ -59,7 +59,6 @@ type workData struct {
 	bookASIN, bookISBN, bookISBN13, bookLanguage string
 	authorName, authorID, authorProfileImageURL  string
 	workLegacyID, bookLegacyID, authorLegacyID   int64
-	bookNumberOfPages                            int64
 }
 
 func (d *workData) toBookResult() *BookResult {
@@ -74,7 +73,6 @@ func (d *workData) toBookResult() *BookResult {
 		BookISBN:              d.bookISBN,
 		BookISBN13:            d.bookISBN13,
 		BookLanguage:          d.bookLanguage,
-		BookNumberOfPages:     d.bookNumberOfPages,
 		AuthorName:            d.authorName,
 		AuthorID:              d.authorID,
 		AuthorLegacyID:        d.authorLegacyID,
@@ -98,8 +96,7 @@ func loadBookResult(ctx context.Context, work any) (*BookResult, error) {
 			bookImageURL: book.ImageUrl, bookTitle: book.Title,
 			bookASIN: book.Details.Asin, bookISBN: book.Details.Isbn,
 			bookISBN13: book.Details.Isbn13, bookLanguage: book.Details.Language.Name,
-			bookNumberOfPages: book.Details.NumPages,
-			authorName:        author.Name, authorID: author.Id,
+			authorName: author.Name, authorID: author.Id,
 			authorLegacyID: author.LegacyId, authorProfileImageURL: author.ProfileImageUrl,
 		}
 	case GetBookByLegacyIdGetBookByLegacyIdBookWork:
@@ -111,8 +108,7 @@ func loadBookResult(ctx context.Context, work any) (*BookResult, error) {
 			bookImageURL: book.ImageUrl, bookTitle: book.Title,
 			bookASIN: book.Details.Asin, bookISBN: book.Details.Isbn,
 			bookISBN13: book.Details.Isbn13, bookLanguage: book.Details.Language.Name,
-			bookNumberOfPages: book.Details.NumPages,
-			authorName:        author.Name, authorID: author.Id,
+			authorName: author.Name, authorID: author.Id,
 			authorLegacyID: author.LegacyId, authorProfileImageURL: author.ProfileImageUrl,
 		}
 	case GetBookByAsinGetBookByAsinBookWork:
@@ -124,8 +120,7 @@ func loadBookResult(ctx context.Context, work any) (*BookResult, error) {
 			bookImageURL: book.ImageUrl, bookTitle: book.Title,
 			bookASIN: book.Details.Asin, bookISBN: book.Details.Isbn,
 			bookISBN13: book.Details.Isbn13, bookLanguage: book.Details.Language.Name,
-			bookNumberOfPages: book.Details.NumPages,
-			authorName:        author.Name, authorID: author.Id,
+			authorName: author.Name, authorID: author.Id,
 			authorLegacyID: author.LegacyId, authorProfileImageURL: author.ProfileImageUrl,
 		}
 	case GetBookGetBookWork:
@@ -137,8 +132,7 @@ func loadBookResult(ctx context.Context, work any) (*BookResult, error) {
 			bookImageURL: book.ImageUrl, bookTitle: book.Title,
 			bookASIN: book.Details.Asin, bookISBN: book.Details.Isbn,
 			bookISBN13: book.Details.Isbn13, bookLanguage: book.Details.Language.Name,
-			bookNumberOfPages: book.Details.NumPages,
-			authorName:        author.Name, authorID: author.Id,
+			authorName: author.Name, authorID: author.Id,
 			authorLegacyID: author.LegacyId, authorProfileImageURL: author.ProfileImageUrl,
 		}
 	default:

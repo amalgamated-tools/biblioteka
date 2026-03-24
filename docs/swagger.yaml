@@ -27,6 +27,34 @@ definitions:
       oidc_linked:
         type: boolean
     type: object
+  internal_handlers.apiKeyCreateResponse:
+    properties:
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      id:
+        type: string
+      key:
+        type: string
+      key_prefix:
+        type: string
+      last_used_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      name:
+        type: string
+    type: object
+  internal_handlers.apiKeyDTO:
+    properties:
+      created_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      id:
+        type: string
+      key_prefix:
+        type: string
+      last_used_at:
+        $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      name:
+        type: string
+    type: object
   internal_handlers.auditLogDTO:
     properties:
       action:
@@ -130,8 +158,6 @@ definitions:
         type: string
       language:
         type: string
-      num_pages:
-        type: integer
       publication_date:
         type: string
       publisher:
@@ -166,6 +192,19 @@ definitions:
       updated_at:
         $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
+  internal_handlers.bookListDTO:
+    properties:
+      books:
+        items:
+          $ref: '#/definitions/internal_handlers.bookSummaryDTO'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
   internal_handlers.bookRequest:
     properties:
       asin:
@@ -186,8 +225,6 @@ definitions:
         type: string
       language:
         type: string
-      num_pages:
-        type: integer
       publication_date:
         type: string
       publisher:
@@ -226,8 +263,6 @@ definitions:
         type: string
       language:
         type: string
-      num_pages:
-        type: integer
       publication_date:
         type: string
       publisher:
@@ -249,6 +284,8 @@ definitions:
       is_admin:
         type: boolean
       oidc_configured:
+        type: boolean
+      smtp_configured:
         type: boolean
     type: object
   internal_handlers.createBookFileRequest:
@@ -386,6 +423,23 @@ definitions:
       password:
         type: string
     type: object
+  internal_handlers.smtpConfigResponse:
+    properties:
+      env_override:
+        type: boolean
+      from:
+        type: string
+      host:
+        type: string
+      password_set:
+        type: boolean
+      port:
+        type: string
+      tls:
+        type: string
+      username:
+        type: string
+    type: object
   internal_handlers.userDTO:
     properties:
       email:
@@ -406,6 +460,11 @@ definitions:
     properties:
       enabled:
         type: boolean
+    type: object
+  internal_server.versionResponse:
+    properties:
+      version:
+        type: string
     type: object
 info:
   contact: {}
@@ -494,6 +553,124 @@ paths:
       summary: Set user admin status
       tags:
       - Admin
+  /api-keys:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        List all API keys for the authenticated user with GET /api/api-keys.
+        Create a new API key for the authenticated user with POST /api/api-keys.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List API keys
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.apiKeyDTO'
+            type: array
+        "201":
+          description: API key created
+          schema:
+            $ref: '#/definitions/internal_handlers.apiKeyCreateResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List and create API keys
+      tags:
+      - api-keys
+    post:
+      consumes:
+      - application/json
+      description: |-
+        List all API keys for the authenticated user with GET /api/api-keys.
+        Create a new API key for the authenticated user with POST /api/api-keys.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List API keys
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.apiKeyDTO'
+            type: array
+        "201":
+          description: API key created
+          schema:
+            $ref: '#/definitions/internal_handlers.apiKeyCreateResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List and create API keys
+      tags:
+      - api-keys
+  /api-keys/{id}:
+    delete:
+      description: Delete a specific API key owned by the authenticated user.
+      parameters:
+      - description: API key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: API key deleted
+        "400":
+          description: Invalid API key ID
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: API key not found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an API key
+      tags:
+      - api-keys
   /audit-logs:
     get:
       description: Returns a paginated list of all audit log entries (admin only)
@@ -1059,16 +1236,23 @@ paths:
       - BookFiles
   /books:
     get:
-      description: Returns all books (summary without relations)
+      description: Returns paginated books (summary without relations)
+      parameters:
+      - description: Max items per page (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip (default 0)
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/internal_handlers.bookSummaryDTO'
-            type: array
+            $ref: '#/definitions/internal_handlers.bookListDTO'
         "401":
           description: Unauthorized
           schema:
@@ -1528,9 +1712,111 @@ paths:
       summary: Set OIDC configuration
       tags:
       - Config
+  /config/smtp:
+    get:
+      consumes:
+      - application/json
+      description: GET returns current SMTP config (admin only). PUT updates SMTP
+        config (admin only).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.smtpConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get or update SMTP configuration
+      tags:
+      - Config
+    put:
+      consumes:
+      - application/json
+      description: GET returns current SMTP config (admin only). PUT updates SMTP
+        config (admin only).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.smtpConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get or update SMTP configuration
+      tags:
+      - Config
+  /config/smtp/test:
+    post:
+      description: Sends a test email to the authenticated admin user's email address
+        (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Send SMTP test email
+      tags:
+      - Config
   /config/status:
     get:
-      description: Returns OIDC configuration status and admin status
+      description: Returns OIDC and SMTP configuration status and admin status
       produces:
       - application/json
       responses:
@@ -1611,6 +1897,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
@@ -1642,6 +1932,10 @@ paths:
             $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
@@ -1724,6 +2018,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
@@ -1743,26 +2041,28 @@ paths:
       - Libraries
   /libraries/{id}/books:
     get:
-      description: Returns all books belonging to a specific library
+      description: Returns paginated books belonging to a specific library
       parameters:
       - description: Library ID
         in: path
         name: id
         required: true
         type: string
+      - description: Max items per page (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip (default 0)
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/internal_handlers.bookSummaryDTO'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
+            $ref: '#/definitions/internal_handlers.bookListDTO'
         "401":
           description: Unauthorized
           schema:
@@ -1961,6 +2261,19 @@ paths:
       summary: Update a series
       tags:
       - Series
+  /version:
+    get:
+      description: Returns the server version
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.versionResponse'
+      summary: Get server version
+      tags:
+      - System
 securityDefinitions:
   BearerAuth:
     description: Enter "Bearer {token}"

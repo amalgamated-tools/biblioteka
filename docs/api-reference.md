@@ -1049,7 +1049,6 @@ List books (summary objects — no nested authors, series, or files), with pagin
       "publication_date": "1813-01-28",
       "publisher": "Penguin Classics",
       "language": "en",
-      "num_pages": 432,
       "cover_image_url": null,
       "created_at": "2026-03-14T02:00:00Z",
       "updated_at": "2026-03-14T02:00:00Z"
@@ -1077,7 +1076,6 @@ List books (summary objects — no nested authors, series, or files), with pagin
 | `publication_date` | string\|null | ISO date (`YYYY-MM-DD`) |
 | `publisher`        | string\|null | Publisher name |
 | `language`         | string\|null | BCP 47 language tag |
-| `num_pages`        | integer\|null | Page count |
 | `cover_image_url`  | string\|null | Cover art URL or `data:image/...;base64,...` string. For EPUB books imported with an embedded cover, this field is automatically set to a base64-encoded `data:` URL; the encoded value can be up to 20 MB. For other formats or manually set covers it is a plain `https://` URL. Prefer the [OPDS cover endpoint](#get-opdscoversbookid) to serve cover images rather than decoding this field in application code. |
 | `created_at`       | string  | ISO 8601 creation timestamp |
 | `updated_at`       | string  | ISO 8601 last-updated timestamp |
@@ -1103,7 +1101,6 @@ Create a book.
 | `publication_date` | string  |          | ISO date (`YYYY-MM-DD`) |
 | `publisher`        | string  |          | Publisher name |
 | `language`         | string  |          | BCP 47 language tag (e.g., `"en"`) |
-| `num_pages`        | integer |          | Page count |
 | `cover_image_url`  | string  |          | Cover art URL or a `data:image/...;base64,...` string. Accepts both a plain `https://` URL and a base64-encoded `data:` URL. For EPUB books, the import pipeline sets this field automatically from the embedded cover; for all other formats, set it manually. The 20 MB decoded-size cap applies on read — see [book summary object](#get-apibooks) for details. |
 
 **Response:** `201 Created` with the full book object (includes `authors`, `series`, `files` arrays).
@@ -1130,7 +1127,6 @@ Get a single book with its full details: authors, series entries, and associated
   "publication_date": "1813-01-28",
   "publisher": "Penguin Classics",
   "language": "en",
-  "num_pages": 432,
   "cover_image_url": null,
   "authors": [
     {

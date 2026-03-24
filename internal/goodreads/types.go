@@ -11,7 +11,6 @@ type BookResult struct {
 	BookISBN              string `json:"book_isbn"`
 	BookISBN13            string `json:"book_isbn13"`
 	BookLanguage          string `json:"book_language"`
-	BookNumberOfPages     int64  `json:"book_number_of_pages"`
 	AuthorID              string `json:"author_id"`
 	AuthorName            string `json:"author_name"`
 	AuthorLegacyID        int64  `json:"author_legacy_id"`

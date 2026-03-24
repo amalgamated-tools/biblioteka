@@ -28,7 +28,6 @@ type bookRequest struct {
 	PublicationDate *string `json:"publication_date"`
 	Publisher       *string `json:"publisher"`
 	Language        *string `json:"language"`
-	NumPages        *int    `json:"num_pages"`
 	CoverImageURL   *string `json:"cover_image_url"`
 }
 
@@ -78,7 +77,6 @@ type bookSummaryDTO struct {
 	PublicationDate *string      `json:"publication_date"`
 	Publisher       *string      `json:"publisher"`
 	Language        *string      `json:"language"`
-	NumPages        *int         `json:"num_pages"`
 	CoverImageURL   *string      `json:"cover_image_url"`
 	CreatedAt       db.Timestamp `json:"created_at"`
 	UpdatedAt       db.Timestamp `json:"updated_at"`
@@ -105,7 +103,6 @@ func toBookSummaryDTO(b *db.Book) bookSummaryDTO {
 		PublicationDate: b.PublicationDate,
 		Publisher:       b.Publisher,
 		Language:        b.Language,
-		NumPages:        b.NumPages,
 		CoverImageURL:   b.CoverImageURL,
 		CreatedAt:       b.CreatedAt,
 		UpdatedAt:       b.UpdatedAt,
@@ -127,7 +124,6 @@ type bookDTO struct {
 	PublicationDate *string              `json:"publication_date"`
 	Publisher       *string              `json:"publisher"`
 	Language        *string              `json:"language"`
-	NumPages        *int                 `json:"num_pages"`
 	CoverImageURL   *string              `json:"cover_image_url"`
 	Authors         []authorDTO          `json:"authors"`
 	Series          []bookSeriesEntryDTO `json:"series"`
@@ -150,7 +146,6 @@ func (h *BookHandler) toBookDTO(ctx context.Context, b *db.Book) (bookDTO, error
 		PublicationDate: b.PublicationDate,
 		Publisher:       b.Publisher,
 		Language:        b.Language,
-		NumPages:        b.NumPages,
 		CoverImageURL:   b.CoverImageURL,
 		Authors:         []authorDTO{},
 		Series:          []bookSeriesEntryDTO{},
@@ -327,7 +322,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "creating book", slog.String(otelkeys.Title, req.Title))
 
-	b, err := h.DB.CreateBook(r.Context(), req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
+	b, err := h.DB.CreateBook(r.Context(), req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.CoverImageURL)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create book", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book")
@@ -415,7 +410,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		slog.String(otelkeys.Title, req.Title),
 	)
 
-	b, err := h.DB.UpdateBook(r.Context(), id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.NumPages, req.CoverImageURL)
+	b, err := h.DB.UpdateBook(r.Context(), id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.CoverImageURL)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			writeError(r.Context(), w, http.StatusNotFound, "book not found")

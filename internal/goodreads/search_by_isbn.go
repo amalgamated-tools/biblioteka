@@ -150,7 +150,6 @@ type autocompleteEntry struct {
 	workID     int64
 	title      string
 	imageURL   string
-	numPages   int64
 	authorID   int64
 	authorName string
 }
@@ -318,11 +317,6 @@ func parseAutocompleteEntries(ctx context.Context, bodyText []byte) ([]autocompl
 			slog.DebugContext(ctx, "missing imageUrl in Goodreads search result", slog.Any(otelkeys.Error, err))
 		}
 
-		numPages, err := jsonparser.GetInt(value, "numPages")
-		if err != nil {
-			slog.DebugContext(ctx, "missing numPages in Goodreads search result", slog.Any(otelkeys.Error, err))
-		}
-
 		authorID, err := jsonparser.GetInt(value, "author", "id")
 		if err != nil {
 			slog.DebugContext(ctx, "missing author ID in Goodreads search result", slog.Any(otelkeys.Error, err))
@@ -338,7 +332,6 @@ func parseAutocompleteEntries(ctx context.Context, bodyText []byte) ([]autocompl
 			workID:     workID,
 			title:      title,
 			imageURL:   imageURL,
-			numPages:   numPages,
 			authorID:   authorID,
 			authorName: authorName,
 		})
@@ -354,14 +347,13 @@ func buildFallbackResult(e autocompleteEntry) BookResult {
 	// integer strings (e.g. "123"), not KCA URIs (e.g. "kca://book/...").
 	// Callers must not assume the same format as the primary GraphQL path.
 	return BookResult{
-		BookID:            strconv.FormatInt(e.bookID, 10),
-		WorkID:            strconv.FormatInt(e.workID, 10),
-		BookImageURL:      e.imageURL,
-		BookLegacyID:      e.bookID,
-		WorkLegacyID:      e.workID,
-		BookTitle:         e.title,
-		BookNumberOfPages: e.numPages,
-		AuthorLegacyID:    e.authorID,
-		AuthorName:        e.authorName,
+		BookID:         strconv.FormatInt(e.bookID, 10),
+		WorkID:         strconv.FormatInt(e.workID, 10),
+		BookImageURL:   e.imageURL,
+		BookLegacyID:   e.bookID,
+		WorkLegacyID:   e.workID,
+		BookTitle:      e.title,
+		AuthorLegacyID: e.authorID,
+		AuthorName:     e.authorName,
 	}
 }

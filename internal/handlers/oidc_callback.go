@@ -16,16 +16,16 @@ import (
 
 // Callback godoc
 //
-// @Summary		OIDC callback
-// @Description	Handles the OIDC provider's redirect after authentication
-// @Tags		OIDC
-// @Param		state	query	string	true	"OIDC state parameter"
-// @Param		code	query	string	true	"Authorization code"
-// @Success		302	"Redirect to frontend with token"
-// @Failure		400	{object}	errorResponse
-// @Failure		401	{object}	errorResponse
-// @Failure		500	{object}	errorResponse
-// @Router		/auth/oidc/callback [get]
+//	@Summary		OIDC callback
+//	@Description	Handles the OIDC provider's redirect after authentication
+//	@Tags			OIDC
+//	@Param			state	query	string	true	"OIDC state parameter"
+//	@Param			code	query	string	true	"Authorization code"
+//	@Success		302		"Redirect to frontend with token"
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/auth/oidc/callback [get]
 func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")

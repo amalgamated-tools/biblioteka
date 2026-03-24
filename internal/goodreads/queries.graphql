@@ -19,7 +19,6 @@ query GetBookByAsin($asin: String!) {
           language {
             name
           }
-          numPages
         }
         primaryContributorEdge {
           role
@@ -56,7 +55,6 @@ query GetBook($id: ID!) {
           language {
             name
           }
-          numPages
         }
         primaryContributorEdge {
           role
@@ -93,7 +91,6 @@ query GetBookByLegacyId($legacyId: Int!) {
           language {
             name
           }
-          numPages
         }
         primaryContributorEdge {
           role

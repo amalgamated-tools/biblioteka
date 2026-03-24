@@ -71,7 +71,6 @@ func TestSearch_Success(t *testing.T) {
 											Language: SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetailsLanguage{
 												Name: "English",
 											},
-											NumPages: 476,
 										},
 										PrimaryContributorEdge: SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdge{
 											Node: SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor{
@@ -131,9 +130,6 @@ func TestSearch_Success(t *testing.T) {
 	}
 	if r.BookLanguage != "English" {
 		t.Errorf("BookLanguage = %q, want %q", r.BookLanguage, "English")
-	}
-	if r.BookNumberOfPages != 476 {
-		t.Errorf("BookNumberOfPages = %d, want %d", r.BookNumberOfPages, 476)
 	}
 	if r.AuthorName != "Andy Weir" {
 		t.Errorf("AuthorName = %q, want %q", r.AuthorName, "Andy Weir")
@@ -213,7 +209,6 @@ func TestSearch_DeduplicatesBooks(t *testing.T) {
 									Language: SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookDetailsLanguage{
 										Name: "English",
 									},
-									NumPages: 476,
 								},
 								PrimaryContributorEdge: SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdge{
 									Node: SearchGetSearchSuggestionsSearchResultsConnectionEdgesSearchBookEdgeNodeBookWorkBestBookPrimaryContributorEdgeBookContributorEdgeNodeContributor{
@@ -296,7 +291,6 @@ func Test_SearchByISBN(t *testing.T) {
 	require.Equal(t, expected.BookISBN, r.BookISBN)
 	require.Equal(t, expected.BookISBN13, r.BookISBN13)
 	require.Equal(t, expected.BookLanguage, r.BookLanguage)
-	require.Equal(t, expected.BookNumberOfPages, r.BookNumberOfPages)
 	require.Equal(t, expected.AuthorID, r.AuthorID)
 	require.Equal(t, expected.AuthorName, r.AuthorName)
 	require.Equal(t, expected.AuthorLegacyID, r.AuthorLegacyID)
@@ -384,7 +378,6 @@ func TestParseISBNSearchResponse_Success(t *testing.T) {
 	require.Equal(t, expected.BookISBN, r.BookISBN)
 	require.Equal(t, expected.BookISBN13, r.BookISBN13)
 	require.Equal(t, expected.BookLanguage, r.BookLanguage)
-	require.Equal(t, expected.BookNumberOfPages, r.BookNumberOfPages)
 	require.Equal(t, expected.AuthorID, r.AuthorID)
 	require.Equal(t, expected.AuthorName, r.AuthorName)
 	require.Equal(t, expected.AuthorLegacyID, r.AuthorLegacyID)
@@ -476,9 +469,6 @@ func TestParseISBNSearchResponse_OptionalFieldsMissing(t *testing.T) {
 	if r.BookImageURL != "" {
 		t.Errorf("BookImageURL = %q, want empty", r.BookImageURL)
 	}
-	if r.BookNumberOfPages != 0 {
-		t.Errorf("BookNumberOfPages = %d, want 0", r.BookNumberOfPages)
-	}
 	if r.AuthorName != "" {
 		t.Errorf("AuthorName = %q, want empty", r.AuthorName)
 	}
@@ -500,8 +490,8 @@ func TestParseISBNSearchResponse_InvalidJSON(t *testing.T) {
 
 func TestParseISBNSearchResponse_MultipleResults(t *testing.T) {
 	body := `[
-		{"bookId": "111", "workId": "222", "title": "Book One", "numPages": 100, "author": {"id": 1, "name": "Author A"}},
-		{"bookId": "333", "workId": "444", "title": "Book Two", "numPages": 200, "author": {"id": 2, "name": "Author B"}}
+		{"bookId": "111", "workId": "222", "title": "Book One", "author": {"id": 1, "name": "Author A"}},
+		{"bookId": "333", "workId": "444", "title": "Book Two", "author": {"id": 2, "name": "Author B"}}
 	]`
 	results, err := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
 	require.NoError(t, err)

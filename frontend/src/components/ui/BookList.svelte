@@ -168,11 +168,6 @@
             <th scope="col" class="px-4 py-3 font-medium hidden md:table-cell"
               >Language</th
             >
-            <th
-              scope="col"
-              class="px-4 py-3 font-medium hidden md:table-cell text-right"
-              >Pages</th
-            >
             <th scope="col" class="px-4 py-3 font-medium hidden lg:table-cell"
               >Published</th
             >
@@ -218,11 +213,6 @@
                 class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden md:table-cell"
               >
                 {book.language ?? "—"}
-              </td>
-              <td
-                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden md:table-cell text-right"
-              >
-                {book.num_pages ?? "—"}
               </td>
               <td
                 class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden lg:table-cell"

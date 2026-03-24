@@ -80,7 +80,6 @@ type GetBookByAsinGetBookByAsinBookWorkBestBookDetails struct {
 	Isbn     string                                                    `json:"isbn"`
 	Isbn13   string                                                    `json:"isbn13"`
 	Language GetBookByAsinGetBookByAsinBookWorkBestBookDetailsLanguage `json:"language"`
-	NumPages int64                                                     `json:"numPages"`
 }
 
 // GetAsin returns GetBookByAsinGetBookByAsinBookWorkBestBookDetails.Asin, and is useful for accessing the field via an interface.
@@ -96,9 +95,6 @@ func (v *GetBookByAsinGetBookByAsinBookWorkBestBookDetails) GetIsbn13() string {
 func (v *GetBookByAsinGetBookByAsinBookWorkBestBookDetails) GetLanguage() GetBookByAsinGetBookByAsinBookWorkBestBookDetailsLanguage {
 	return v.Language
 }
-
-// GetNumPages returns GetBookByAsinGetBookByAsinBookWorkBestBookDetails.NumPages, and is useful for accessing the field via an interface.
-func (v *GetBookByAsinGetBookByAsinBookWorkBestBookDetails) GetNumPages() int64 { return v.NumPages }
 
 // GetBookByAsinGetBookByAsinBookWorkBestBookDetailsLanguage includes the requested fields of the GraphQL type Language.
 type GetBookByAsinGetBookByAsinBookWorkBestBookDetailsLanguage struct {
@@ -246,7 +242,6 @@ type GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetails struct {
 	Isbn     string                                                            `json:"isbn"`
 	Isbn13   string                                                            `json:"isbn13"`
 	Language GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetailsLanguage `json:"language"`
-	NumPages int64                                                             `json:"numPages"`
 }
 
 // GetAsin returns GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetails.Asin, and is useful for accessing the field via an interface.
@@ -263,11 +258,6 @@ func (v *GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetails) GetIsbn13() 
 // GetLanguage returns GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetails.Language, and is useful for accessing the field via an interface.
 func (v *GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetails) GetLanguage() GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetailsLanguage {
 	return v.Language
-}
-
-// GetNumPages returns GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetails.NumPages, and is useful for accessing the field via an interface.
-func (v *GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetails) GetNumPages() int64 {
-	return v.NumPages
 }
 
 // GetBookByLegacyIdGetBookByLegacyIdBookWorkBestBookDetailsLanguage includes the requested fields of the GraphQL type Language.
@@ -412,7 +402,6 @@ type GetBookGetBookWorkBestBookDetails struct {
 	Isbn     string                                    `json:"isbn"`
 	Isbn13   string                                    `json:"isbn13"`
 	Language GetBookGetBookWorkBestBookDetailsLanguage `json:"language"`
-	NumPages int64                                     `json:"numPages"`
 }
 
 // GetAsin returns GetBookGetBookWorkBestBookDetails.Asin, and is useful for accessing the field via an interface.
@@ -428,9 +417,6 @@ func (v *GetBookGetBookWorkBestBookDetails) GetIsbn13() string { return v.Isbn13
 func (v *GetBookGetBookWorkBestBookDetails) GetLanguage() GetBookGetBookWorkBestBookDetailsLanguage {
 	return v.Language
 }
-
-// GetNumPages returns GetBookGetBookWorkBestBookDetails.NumPages, and is useful for accessing the field via an interface.
-func (v *GetBookGetBookWorkBestBookDetails) GetNumPages() int64 { return v.NumPages }
 
 // GetBookGetBookWorkBestBookDetailsLanguage includes the requested fields of the GraphQL type Language.
 type GetBookGetBookWorkBestBookDetailsLanguage struct {
@@ -898,7 +884,6 @@ query GetBook ($id: ID!) {
 					language {
 						name
 					}
-					numPages
 				}
 				primaryContributorEdge {
 					role
@@ -963,7 +948,6 @@ query GetBookByAsin ($asin: String!) {
 					language {
 						name
 					}
-					numPages
 				}
 				primaryContributorEdge {
 					role
@@ -1028,7 +1012,6 @@ query GetBookByLegacyId ($legacyId: Int!) {
 					language {
 						name
 					}
-					numPages
 				}
 				primaryContributorEdge {
 					role
