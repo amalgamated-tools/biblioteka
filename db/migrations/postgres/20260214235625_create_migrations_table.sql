@@ -1,7 +1,7 @@
 -- migrate:up
 CREATE TABLE IF NOT EXISTS "schema_migrations" (
 	version varchar(128) primary key,
-	applied_at DATETIME NOT NULL DEFAULT (datetime('now'))
+	applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- migrate:down
