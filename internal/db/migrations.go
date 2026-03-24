@@ -122,7 +122,7 @@ func runMigrations(ctx context.Context, d *DB) error {
 		if err := tx.Commit(); err != nil {
 			return fmt.Errorf("failed to commit migration %s: %w", filename, err)
 		}
-		slog.InfoContext(ctx, "Migration applied", slog.String(otelkeys.Version, version))
+		slog.DebugContext(ctx, "Migration applied", slog.String(otelkeys.Version, version))
 	}
 
 	if err := backfillKoboTokenHashes(ctx, d); err != nil {

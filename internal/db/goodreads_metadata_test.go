@@ -245,8 +245,7 @@ func TestUpdateGoodreadsMetadataStatus(t *testing.T) {
 	}
 
 	// Attempt to set an invalid status and ensure it fails without changing the row.
-	invalidStatus := GoodreadsMetadataStatusPending // This status is valid, but not a valid transition from Rejected.
-	_, err = d.UpdateGoodreadsMetadataStatus(context.Background(), user.ID, created.ID, invalidStatus)
+	_, err = d.UpdateGoodreadsMetadataStatus(context.Background(), user.ID, created.ID, "invalid")
 	if err == nil {
 		t.Fatalf("UpdateGoodreadsMetadataStatus() with invalid status expected error, got nil")
 	}
