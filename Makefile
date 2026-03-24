@@ -146,3 +146,7 @@ generate:
 # Serve documentation locally with MkDocs
 docs-serve:
 	mkdocs serve
+
+db-dump: clean
+	go run cmd/cli/main.go db-migrate
+	dbmate -u "sqlite:db/biblioteka.db" -d "db/migrations/sqlite" dump

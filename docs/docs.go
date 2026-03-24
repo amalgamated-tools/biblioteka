@@ -143,6 +143,184 @@ const docTemplate = `{
                 }
             }
         },
+        "/api-keys": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List all API keys for the authenticated user with GET /api/api-keys.\nCreate a new API key for the authenticated user with POST /api/api-keys.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api-keys"
+                ],
+                "summary": "List and create API keys",
+                "responses": {
+                    "200": {
+                        "description": "List API keys",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_handlers.apiKeyDTO"
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "API key created",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.apiKeyCreateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List all API keys for the authenticated user with GET /api/api-keys.\nCreate a new API key for the authenticated user with POST /api/api-keys.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api-keys"
+                ],
+                "summary": "List and create API keys",
+                "responses": {
+                    "200": {
+                        "description": "List API keys",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_handlers.apiKeyDTO"
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "API key created",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.apiKeyCreateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api-keys/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a specific API key owned by the authenticated user.",
+                "tags": [
+                    "api-keys"
+                ],
+                "summary": "Delete an API key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API key ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "API key deleted"
+                    },
+                    "400": {
+                        "description": "Invalid API key ID",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "API key not found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/audit-logs": {
             "get": {
                 "security": [
@@ -1027,7 +1205,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns all books (summary without relations)",
+                "description": "Returns paginated books (summary without relations)",
                 "produces": [
                     "application/json"
                 ],
@@ -1035,14 +1213,25 @@ const docTemplate = `{
                     "Books"
                 ],
                 "summary": "List books",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Max items per page (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to skip (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/internal_handlers.bookSummaryDTO"
-                            }
+                            "$ref": "#/definitions/internal_handlers.bookListDTO"
                         }
                     },
                     "401": {
@@ -1757,6 +1946,162 @@ const docTemplate = `{
                 }
             }
         },
+        "/config/smtp": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "GET returns current SMTP config (admin only). PUT updates SMTP config (admin only).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get or update SMTP configuration",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.smtpConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "GET returns current SMTP config (admin only). PUT updates SMTP config (admin only).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get or update SMTP configuration",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.smtpConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/config/smtp/test": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sends a test email to the authenticated admin user's email address (admin only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Send SMTP test email",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/config/status": {
             "get": {
                 "security": [
@@ -1764,7 +2109,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns OIDC configuration status and admin status",
+                "description": "Returns OIDC and SMTP configuration status and admin status",
                 "produces": [
                     "application/json"
                 ],
@@ -1890,6 +2235,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
@@ -2020,6 +2371,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -2076,6 +2433,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -2098,7 +2461,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns all books belonging to a specific library",
+                "description": "Returns paginated books belonging to a specific library",
                 "produces": [
                     "application/json"
                 ],
@@ -2113,22 +2476,25 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Max items per page (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to skip (default 0)",
+                        "name": "offset",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/internal_handlers.bookSummaryDTO"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                            "$ref": "#/definitions/internal_handlers.bookListDTO"
                         }
                     },
                     "401": {
@@ -2434,6 +2800,26 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/version": {
+            "get": {
+                "description": "Returns the server version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Get server version",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.versionResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2476,6 +2862,49 @@ const docTemplate = `{
                 },
                 "oidc_linked": {
                     "type": "boolean"
+                }
+            }
+        },
+        "internal_handlers.apiKeyCreateResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "key_prefix": {
+                    "type": "string"
+                },
+                "last_used_at": {
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handlers.apiKeyDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "key_prefix": {
+                    "type": "string"
+                },
+                "last_used_at": {
+                    "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
@@ -2636,9 +3065,6 @@ const docTemplate = `{
                 "language": {
                     "type": "string"
                 },
-                "num_pages": {
-                    "type": "integer"
-                },
                 "publication_date": {
                     "type": "string"
                 },
@@ -2691,6 +3117,26 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_handlers.bookListDTO": {
+            "type": "object",
+            "properties": {
+                "books": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_handlers.bookSummaryDTO"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "internal_handlers.bookRequest": {
             "type": "object",
             "properties": {
@@ -2720,9 +3166,6 @@ const docTemplate = `{
                 },
                 "language": {
                     "type": "string"
-                },
-                "num_pages": {
-                    "type": "integer"
                 },
                 "publication_date": {
                     "type": "string"
@@ -2782,9 +3225,6 @@ const docTemplate = `{
                 "language": {
                     "type": "string"
                 },
-                "num_pages": {
-                    "type": "integer"
-                },
                 "publication_date": {
                     "type": "string"
                 },
@@ -2817,6 +3257,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "oidc_configured": {
+                    "type": "boolean"
+                },
+                "smtp_configured": {
                     "type": "boolean"
                 }
             }
@@ -3030,6 +3473,32 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_handlers.smtpConfigResponse": {
+            "type": "object",
+            "properties": {
+                "env_override": {
+                    "type": "boolean"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "password_set": {
+                    "type": "boolean"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "tls": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_handlers.userDTO": {
             "type": "object",
             "properties": {
@@ -3060,6 +3529,14 @@ const docTemplate = `{
             "properties": {
                 "enabled": {
                     "type": "boolean"
+                }
+            }
+        },
+        "internal_server.versionResponse": {
+            "type": "object",
+            "properties": {
+                "version": {
+                    "type": "string"
                 }
             }
         }

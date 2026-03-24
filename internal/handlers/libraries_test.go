@@ -312,7 +312,7 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	}
 
 	// Create a book and link it to the library.
-	book, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -367,7 +367,7 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 	const totalBooks = 3
 	for i := range totalBooks {
 		title := fmt.Sprintf("Book %d", i+1)
-		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			t.Fatalf("create book %d: %v", i+1, err)
 		}
@@ -421,7 +421,7 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 	const totalBooks = 3
 	for i := range totalBooks {
 		title := fmt.Sprintf("Invalid Book %d", i+1)
-		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			t.Fatalf("create book %d: %v", i+1, err)
 		}
@@ -475,7 +475,7 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 	const totalBooks = 10
 	for i := range totalBooks {
 		title := fmt.Sprintf("Clamped Book %d", i+1)
-		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			t.Fatalf("create book %d: %v", i+1, err)
 		}

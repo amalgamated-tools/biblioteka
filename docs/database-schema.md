@@ -200,7 +200,6 @@ Core book metadata. All fields except `title` are optional.
 | `publication_date`| TEXT    | NULL     | NULL     | ISO 8601 date string (e.g. `2026-03-15`) |
 | `publisher`       | TEXT    | NULL     | NULL     | Publisher name                         |
 | `language`        | TEXT    | NULL     | NULL     | BCP 47 language tag (e.g. `"en"`)     |
-| `num_pages`       | INTEGER | NULL     | NULL     | Page count                             |
 | `cover_image_url` | TEXT    | NULL     | NULL     | URL to cover image                     |
 | `created_at`      | DATETIME| NOT NULL | `now()`  | Creation time                          |
 | `updated_at`      | DATETIME| NOT NULL | `now()`  | Last update time                       |

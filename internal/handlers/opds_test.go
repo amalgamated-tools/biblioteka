@@ -168,8 +168,8 @@ func TestAllBooks_WithBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook(ctx, "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(ctx, "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -194,7 +194,7 @@ func TestAllBooks_WithDescription(t *testing.T) {
 	ctx := context.Background()
 
 	desc := "A great book"
-	h.DB.CreateBook(ctx, "Alpha", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(ctx, "Alpha", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -220,7 +220,7 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	book, _ := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, _ := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	author, _ := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
 	h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID})
 	h.DB.CreateBookFile(ctx, book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
@@ -258,8 +258,8 @@ func TestRecentBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	h.DB.CreateBook(ctx, "First", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook(ctx, "Second", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(ctx, "First", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(ctx, "Second", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/recent", nil)
 	w := httptest.NewRecorder()
@@ -338,7 +338,7 @@ func TestAuthorBooks(t *testing.T) {
 	ctx := context.Background()
 
 	author, _ := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
-	book, _ := h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, _ := h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID})
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors/"+author.ID, nil)
@@ -426,7 +426,7 @@ func TestSeriesBooks(t *testing.T) {
 	ctx := context.Background()
 
 	series, _ := h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil)
-	book, _ := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, _ := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	pos := 1.0
 	h.DB.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}})
 
@@ -471,9 +471,9 @@ func TestSearch_WithResults(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook(ctx, "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(ctx, "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=The", nil)
 	w := httptest.NewRecorder()
@@ -513,8 +513,8 @@ func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	h.DB.CreateBook(ctx, "100% Pure", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook(ctx, "Other Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(ctx, "100% Pure", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h.DB.CreateBook(ctx, "Other Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Search for "%" should not match everything due to LIKE wildcard escaping.
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=%25", nil) // %25 = URL-encoded "%"
@@ -583,7 +583,7 @@ func TestDownload_Success(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	book, _ := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, _ := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Create a temp file to serve.
 	tmpDir := t.TempDir()
@@ -628,7 +628,7 @@ func TestDownload_FileMissing(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	book, _ := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, _ := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	bf, _ := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 100, nil, "/nonexistent/path.epub")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/download/"+bf.ID, nil)
@@ -644,7 +644,7 @@ func TestDownload_UnknownFileType(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	book, _ := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, _ := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.xyz")
@@ -674,7 +674,7 @@ func TestAllBooks_Pagination(t *testing.T) {
 
 	// Create enough books to have a second page (opdsPageSize is 50).
 	for i := range 55 {
-		h.DB.CreateBook(ctx, "Book "+padInt(i), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		h.DB.CreateBook(ctx, "Book "+padInt(i), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	}
 
 	// Page 1: should have "next" link but no "previous" link.
@@ -797,7 +797,7 @@ func TestCoverImageInFeed(t *testing.T) {
 	ctx := context.Background()
 
 	coverURL := "https://example.com/cover.png"
-	h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL)
+	h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL)
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -826,7 +826,7 @@ func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
 
 	pngBytes := testutils.TinyPNG()
 	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, _ := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
+	book, _ := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -859,7 +859,7 @@ func TestServeCover_DataURL(t *testing.T) {
 
 	pngBytes := testutils.TinyPNG()
 	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, _ := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
+	book, _ := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
 	w := httptest.NewRecorder()
