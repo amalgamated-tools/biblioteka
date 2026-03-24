@@ -545,11 +545,11 @@ The Login/Sign Up toggle implements the [ARIA tab widget pattern](https://www.w3
   >Sign Up</button>
 </div>
 
-<!-- Panels: one per tab -->
-<div id="login-panel"  role="tabpanel" tabindex="0" aria-labelledby="login-tab"  hidden={!isLogin}>
+<!-- Panels: one per tab (no tabindex — each panel contains focusable form elements) -->
+<div id="login-panel"  role="tabpanel" aria-labelledby="login-tab"  hidden={!isLogin}>
   <!-- login form -->
 </div>
-<div id="signup-panel" role="tabpanel" tabindex="0" aria-labelledby="signup-tab" hidden={isLogin}>
+<div id="signup-panel" role="tabpanel" aria-labelledby="signup-tab" hidden={isLogin}>
   <!-- sign-up form -->
 </div>
 ```
@@ -566,11 +566,12 @@ The Login/Sign Up toggle implements the [ARIA tab widget pattern](https://www.w3
 | `tabindex={isActive ? 0 : -1}` | Each tab | Implements the **roving tabindex** (see below) |
 | `role="tabpanel"` | Each form panel | Declares the container as a tab panel |
 | `aria-labelledby` | Each panel | Links the panel back to its controlling tab |
-| `tabindex="0"` | Each panel | Makes the panel itself focusable so keyboard users can reach its content |
 | `hidden` | Inactive panel | Hides the inactive panel from both display and the accessibility tree |
 
+> **Note on `tabindex` for tabpanels:** These panels intentionally omit `tabindex="0"`. Each panel contains natively focusable elements (inputs and buttons), so adding `tabindex="0"` would create a redundant extra tab stop on the panel container before the first form control. Only panels with *no* focusable descendants should add `tabindex="0"` to remain reachable via keyboard. See [WAI-ARIA Authoring Practices — Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
+
 **Roving tabindex:**
-Only the active tab sits in the natural tab order (`tabindex="0"`); inactive tabs are removed from it (`tabindex="-1"`) but remain focusable programmatically. This means `Tab` enters the tab bar once and then moves directly to the active panel's content — inactive tabs are skipped, matching the expected [APG tab pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) behaviour.
+Only the active tab sits in the natural tab order (`tabindex="0"`); inactive tabs are removed from it (`tabindex="-1"`) but remain focusable programmatically. When the user tabs away from the active tab, focus moves to the first focusable element inside the active panel — inactive tabs are skipped, matching the expected [APG tab pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) behaviour.
 
 **Keyboard navigation (`handleTabKeydown`):**
 
