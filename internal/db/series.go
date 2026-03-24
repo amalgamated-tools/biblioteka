@@ -30,11 +30,11 @@ type Series struct {
 
 const seriesColumns = `id, name, goodreads_id, hardcover_id, google_books_id, created_at, updated_at`
 
-type seriesPaginatedQuery struct{}
+type seriesListQuery struct{}
 
-func (seriesPaginatedQuery) table() string   { return "series" }
-func (seriesPaginatedQuery) columns() string { return seriesColumns }
-func (seriesPaginatedQuery) orderBy(d *DB) string {
+func (seriesListQuery) table() string   { return "series" }
+func (seriesListQuery) columns() string { return seriesColumns }
+func (seriesListQuery) orderBy(d *DB) string {
 	return d.dialectOrderBy("name", "ASC")
 }
 
@@ -76,7 +76,7 @@ func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
 
 func (d *DB) ListSeries(ctx context.Context) ([]Series, error) {
 	slog.DebugContext(ctx, "db: listing series")
-	return listAll(ctx, d, seriesPaginatedQuery{}, scanSeries)
+	return listAll(ctx, d, seriesListQuery{}, scanSeries)
 }
 
 // ListSeriesPaginated returns series ordered by name with pagination and total count.
@@ -85,7 +85,7 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
-	return listPaginated(ctx, d, seriesPaginatedQuery{}, limit, offset, scanSeries)
+	return listPaginated(ctx, d, seriesListQuery{}, limit, offset, scanSeries)
 }
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {

@@ -46,11 +46,11 @@ type Author struct {
 
 const authorColumns = `id, name, goodreads_id, hardcover_id, google_books_id, image_url, created_at, updated_at`
 
-type authorPaginatedQuery struct{}
+type authorListQuery struct{}
 
-func (authorPaginatedQuery) table() string   { return "authors" }
-func (authorPaginatedQuery) columns() string { return authorColumns }
-func (authorPaginatedQuery) orderBy(d *DB) string {
+func (authorListQuery) table() string   { return "authors" }
+func (authorListQuery) columns() string { return authorColumns }
+func (authorListQuery) orderBy(d *DB) string {
 	return d.dialectOrderBy("name", "ASC")
 }
 
@@ -105,7 +105,7 @@ func (d *DB) GetAuthorByName(ctx context.Context, name string) (*Author, error) 
 
 func (d *DB) ListAuthors(ctx context.Context) ([]Author, error) {
 	slog.DebugContext(ctx, "db: listing authors")
-	return listAll(ctx, d, authorPaginatedQuery{}, scanAuthor)
+	return listAll(ctx, d, authorListQuery{}, scanAuthor)
 }
 
 // ListAuthorsPaginated returns authors ordered by name with pagination and total count.
@@ -114,7 +114,7 @@ func (d *DB) ListAuthorsPaginated(ctx context.Context, limit, offset int) ([]Aut
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
-	return listPaginated(ctx, d, authorPaginatedQuery{}, limit, offset, scanAuthor)
+	return listPaginated(ctx, d, authorListQuery{}, limit, offset, scanAuthor)
 }
 
 func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {

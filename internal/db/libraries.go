@@ -51,11 +51,11 @@ type Library struct {
 
 const libraryColumns = `id, name, paths, organization_type, monitored, created_at, updated_at`
 
-type libraryListAllQuery struct{}
+type libraryListQuery struct{}
 
-func (libraryListAllQuery) table() string   { return "libraries" }
-func (libraryListAllQuery) columns() string { return libraryColumns }
-func (libraryListAllQuery) orderBy(d *DB) string {
+func (libraryListQuery) table() string   { return "libraries" }
+func (libraryListQuery) columns() string { return libraryColumns }
+func (libraryListQuery) orderBy(d *DB) string {
 	return d.dialectOrderBy("created_at", "ASC")
 }
 
@@ -98,7 +98,7 @@ func (d *DB) GetLibrary(ctx context.Context, id string) (*Library, error) {
 // ListLibraries returns all libraries ordered by creation time.
 func (d *DB) ListLibraries(ctx context.Context) ([]Library, error) {
 	slog.DebugContext(ctx, "db: listing libraries")
-	return listAll(ctx, d, libraryListAllQuery{}, scanLibrary)
+	return listAll(ctx, d, libraryListQuery{}, scanLibrary)
 }
 
 // UpdateLibrary updates a library's fields and returns the updated library.

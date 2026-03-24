@@ -14,7 +14,7 @@ var allowedListTables = map[string]bool{
 	"series":    true,
 }
 
-type paginatedQuery interface {
+type listQuery interface {
 	table() string
 	columns() string
 	orderBy(*DB) string
@@ -30,7 +30,7 @@ type paginatedQuery interface {
 func listAll[T any](
 	ctx context.Context,
 	d *DB,
-	query paginatedQuery,
+	query listQuery,
 	scan func(interface{ Scan(...any) error }) (*T, error),
 ) ([]T, error) {
 	table := query.table()
@@ -71,7 +71,7 @@ func listAll[T any](
 func listPaginated[T any](
 	ctx context.Context,
 	d *DB,
-	query paginatedQuery,
+	query listQuery,
 	limit, offset int,
 	scan func(interface{ Scan(...any) error }) (*T, error),
 ) ([]T, int, error) {
