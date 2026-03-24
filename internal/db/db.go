@@ -108,7 +108,10 @@ func (d *DB) execAffected(ctx context.Context, query string, args ...any) error 
 	if err != nil {
 		return err
 	}
-	n, _ := res.RowsAffected()
+	n, raErr := res.RowsAffected()
+	if raErr != nil {
+		return raErr
+	}
 	if n == 0 {
 		return sql.ErrNoRows
 	}
