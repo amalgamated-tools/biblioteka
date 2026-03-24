@@ -27,7 +27,7 @@ elif command -v brew >/dev/null 2>&1; then
     brew install dbmate
 else
     echo "Error: Homebrew not found. Install dbmate manually: https://github.com/amacneil/dbmate"
-    echo ""
+    exit 1
 fi
 
 echo "==> Bootstrap complete"
