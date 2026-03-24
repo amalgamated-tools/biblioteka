@@ -243,6 +243,22 @@ func TestUpdateGoodreadsMetadataStatus(t *testing.T) {
 	if updated.Status != GoodreadsMetadataStatusRejected {
 		t.Errorf("Status = %q, want %q", updated.Status, GoodreadsMetadataStatusRejected)
 	}
+
+	// Attempt to set an invalid status and ensure it fails without changing the row.
+	invalidStatus := GoodreadsMetadataStatus("invalid")
+	_, err = d.UpdateGoodreadsMetadataStatus(context.Background(), user.ID, created.ID, invalidStatus)
+	if err == nil {
+		t.Fatalf("UpdateGoodreadsMetadataStatus() with invalid status expected error, got nil")
+	}
+
+	// Verify that the status in the database remains unchanged after the failed update.
+	fetched, err := d.GetGoodreadsMetadata(context.Background(), user.ID, created.ID)
+	if err != nil {
+		t.Fatalf("GetGoodreadsMetadata() error after invalid status update: %v", err)
+	}
+	if fetched.Status != updated.Status {
+		t.Errorf("Status changed after invalid status update: got %q, want %q", fetched.Status, updated.Status)
+	}
 }
 
 func TestUpdateGoodreadsMetadataStatus_InvalidStatus(t *testing.T) {
