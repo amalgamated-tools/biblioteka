@@ -105,24 +105,7 @@ func (d *DB) GetAuthorByName(ctx context.Context, name string) (*Author, error) 
 
 func (d *DB) ListAuthors(ctx context.Context) ([]Author, error) {
 	slog.DebugContext(ctx, "db: listing authors")
-	orderBy := d.dialectOrderBy("name", "ASC")
-	rows, err := d.QueryContext(ctx,
-		`SELECT `+authorColumns+` FROM authors `+orderBy,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var authors []Author
-	for rows.Next() {
-		a, err := scanAuthor(rows)
-		if err != nil {
-			return nil, err
-		}
-		authors = append(authors, *a)
-	}
-	return authors, rows.Err()
+	return listAll(ctx, d, authorPaginatedQuery{}, scanAuthor)
 }
 
 // ListAuthorsPaginated returns authors ordered by name with pagination and total count.

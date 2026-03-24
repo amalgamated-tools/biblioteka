@@ -76,24 +76,7 @@ func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
 
 func (d *DB) ListSeries(ctx context.Context) ([]Series, error) {
 	slog.DebugContext(ctx, "db: listing series")
-	orderBy := d.dialectOrderBy("name", "ASC")
-	rows, err := d.QueryContext(ctx,
-		`SELECT `+seriesColumns+` FROM series `+orderBy,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var list []Series
-	for rows.Next() {
-		s, err := scanSeries(rows)
-		if err != nil {
-			return nil, err
-		}
-		list = append(list, *s)
-	}
-	return list, rows.Err()
+	return listAll(ctx, d, seriesPaginatedQuery{}, scanSeries)
 }
 
 // ListSeriesPaginated returns series ordered by name with pagination and total count.
