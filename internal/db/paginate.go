@@ -109,7 +109,7 @@ func listAll[T any](
 	}
 	defer rows.Close()
 
-	var items []T
+	items := make([]T, 0)
 	for rows.Next() {
 		item, err := scan(rows)
 		if err != nil {
