@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS goodreads_metadata (
 	id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
 	user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	book_id TEXT REFERENCES books(id) ON DELETE SET NULL,
-	status TEXT NOT NULL DEFAULT 'pending',
+	status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'applied', 'rejected')),
 	title TEXT,
 	description TEXT,
 	asin TEXT,
@@ -31,7 +31,11 @@ CREATE INDEX IF NOT EXISTS idx_goodreads_metadata_user_id
 CREATE INDEX IF NOT EXISTS idx_goodreads_metadata_user_status_created_at_id
 	ON goodreads_metadata (user_id, status, created_at DESC, id DESC);
 
+CREATE INDEX IF NOT EXISTS idx_goodreads_metadata_user_created_at_id
+	ON goodreads_metadata (user_id, created_at DESC, id DESC);
+
 -- migrate:down
+DROP INDEX IF EXISTS idx_goodreads_metadata_user_created_at_id;
 DROP INDEX IF EXISTS idx_goodreads_metadata_user_status_created_at_id;
 DROP INDEX IF EXISTS idx_goodreads_metadata_user_id;
 DROP TABLE IF EXISTS goodreads_metadata;

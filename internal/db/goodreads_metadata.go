@@ -120,7 +120,7 @@ func (d *DB) ListGoodreadsMetadataByStatus(ctx context.Context, userID, status s
 		slog.Int(otelkeys.Offset, offset),
 	)
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+goodreadsMetadataColumns+` FROM goodreads_metadata WHERE user_id = $1 AND status = $2 ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
+		`SELECT `+goodreadsMetadataColumns+` FROM goodreads_metadata WHERE user_id = $1 AND status = $2 ORDER BY created_at DESC, id DESC LIMIT $3 OFFSET $4`,
 		userID, status, limit, offset,
 	)
 	if err != nil {
