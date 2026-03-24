@@ -393,3 +393,4 @@ func TestListAuthorsPaginatedZeroLimit(t *testing.T) {
 	if items2 == nil {
 		t.Error("items2 = nil, want empty slice")
 	}
+}
