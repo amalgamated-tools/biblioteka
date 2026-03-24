@@ -207,6 +207,7 @@ CREATE INDEX idx_goodreads_metadata_user_created_at_id
 	ON goodreads_metadata (user_id, created_at DESC, id DESC);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
+  ('20260214235625'),
   ('20260214235631'),
   ('20260222200000'),
   ('20260222210000'),

@@ -25,16 +25,6 @@ func RunMigrations(ctx context.Context, sqlDB *sql.DB, dialect Dialect) error {
 // runMigrations reads and executes all SQL migration files
 // Supports dbmate format with '-- migrate:up' and '-- migrate:down' markers
 func runMigrations(ctx context.Context, d *DB) error {
-	// Create migrations table if it doesn't exist
-	if _, err := d.ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS schema_migrations (
-			version TEXT PRIMARY KEY,
-			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-		)
-	`); err != nil {
-		return fmt.Errorf("failed to create schema_migrations table: %w", err)
-	}
-
 	// Select migration directory based on dialect
 	subdir := "sqlite"
 	if d.Dialect == DialectPostgres {
@@ -122,7 +112,9 @@ func runMigrations(ctx context.Context, d *DB) error {
 		if err := tx.Commit(); err != nil {
 			return fmt.Errorf("failed to commit migration %s: %w", filename, err)
 		}
-		slog.DebugContext(ctx, "Migration applied", slog.String(otelkeys.Version, version))
+		if env := os.Getenv("BIBLIOTEKA_ENV"); env != "test" {
+			slog.InfoContext(ctx, "Migration applied", slog.String(otelkeys.Version, version))
+		}
 	}
 
 	if err := backfillKoboTokenHashes(ctx, d); err != nil {
