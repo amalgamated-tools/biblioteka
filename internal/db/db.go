@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -99,6 +100,23 @@ const (
 type DB struct {
 	*sql.DB
 	Dialect Dialect
+}
+
+// execAffected executes a statement and returns the driver error from RowsAffected
+// if one occurs, or sql.ErrNoRows when it affects no rows.
+func (d *DB) execAffected(ctx context.Context, query string, args ...any) error {
+	res, err := d.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	n, raErr := res.RowsAffected()
+	if raErr != nil {
+		return raErr
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // now returns the SQL expression for the current timestamp in the active dialect.

@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 	"strings"
 
@@ -99,15 +98,7 @@ func (d *DB) GetBookFileByPath(ctx context.Context, filePath string) (*BookFile,
 // DeleteBookFile removes a book file by ID.
 func (d *DB) DeleteBookFile(ctx context.Context, id string) error {
 	slog.DebugContext(ctx, "db: deleting book file", slog.String(otelkeys.ID, id))
-	res, err := d.ExecContext(ctx, `DELETE FROM book_files WHERE id = $1`, id)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `DELETE FROM book_files WHERE id = $1`, id)
 }
 
 // GetFilesForBooks returns book files grouped by book ID for the given book IDs.
