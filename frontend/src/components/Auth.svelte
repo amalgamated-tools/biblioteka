@@ -164,7 +164,6 @@
       <div
         id="login-panel"
         role="tabpanel"
-        tabindex="0"
         aria-labelledby="login-tab"
         hidden={!isLogin}
       >
@@ -224,7 +223,6 @@
       <div
         id="signup-panel"
         role="tabpanel"
-        tabindex="0"
         aria-labelledby="signup-tab"
         hidden={isLogin}
       >
