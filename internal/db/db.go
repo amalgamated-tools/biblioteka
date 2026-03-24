@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -125,4 +126,17 @@ func (d *DB) dialectOrderBy(column, direction string) string {
 		tiebreaker = column[:idx+1] + tiebreaker
 	}
 	return fmt.Sprintf("ORDER BY %s %s, %s %s", column, direction, tiebreaker, direction)
+}
+
+// execAffected runs query and returns sql.ErrNoRows if no rows were affected.
+func (d *DB) execAffected(ctx context.Context, query string, args ...any) error {
+	res, err := d.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }

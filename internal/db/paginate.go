@@ -5,12 +5,13 @@ import (
 	"fmt"
 )
 
-// allowedPaginatedTables is the set of tables that listPaginated may query.
-// Any table not in this set is rejected at runtime to prevent accidental SQL
-// injection if a caller ever passes a dynamic value.
+// allowedPaginatedTables is the set of tables that listPaginated and listAll
+// may query. Any table not in this set is rejected at runtime to prevent
+// accidental SQL injection if a caller ever passes a dynamic value.
 var allowedPaginatedTables = map[string]bool{
-	"authors": true,
-	"series":  true,
+	"authors":   true,
+	"libraries": true,
+	"series":    true,
 }
 
 type paginatedQuery interface {
@@ -79,4 +80,42 @@ func listPaginated[T any](
 		items = append(items, *item)
 	}
 	return items, total, rows.Err()
+}
+
+// listAll runs a SELECT over a table using the provided columns and ORDER BY
+// clause and scans every row using scan. query must be a package-defined type
+// whose methods return hardcoded SQL identifiers.
+func listAll[T any](
+	ctx context.Context,
+	d *DB,
+	query paginatedQuery,
+	scan func(interface{ Scan(...any) error }) (*T, error),
+) ([]T, error) {
+	table := query.table()
+
+	if !allowedPaginatedTables[table] {
+		return nil, fmt.Errorf("listAll: unknown table %q", table)
+	}
+
+	columns := query.columns()
+	orderBy := query.orderBy(d)
+
+	// safe: table, columns, and orderBy are hardcoded caller-provided identifiers
+	rows, err := d.QueryContext(ctx,
+		`SELECT `+columns+` FROM `+table+` `+orderBy,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []T
+	for rows.Next() {
+		item, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, *item)
+	}
+	return items, rows.Err()
 }

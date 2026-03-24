@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"strings"
@@ -93,13 +92,5 @@ func isUsernameUniqueViolation(err error) bool {
 // DeleteOPDSCredential removes the OPDS credential for a user.
 func (d *DB) DeleteOPDSCredential(ctx context.Context, userID string) error {
 	slog.DebugContext(ctx, "db: deleting OPDS credential", slog.String(otelkeys.UserID, userID))
-	res, err := d.ExecContext(ctx, `DELETE FROM opds_credentials WHERE user_id = $1`, userID)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `DELETE FROM opds_credentials WHERE user_id = $1`, userID)
 }

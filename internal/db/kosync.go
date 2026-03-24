@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"strings"
@@ -85,15 +84,7 @@ func isKOSyncUsernameUniqueViolation(err error) bool {
 // DeleteKOSyncCredential removes the KOSync credential for a user.
 func (d *DB) DeleteKOSyncCredential(ctx context.Context, userID string) error {
 	slog.DebugContext(ctx, "db: deleting KOSync credential", slog.String(otelkeys.UserID, userID))
-	res, err := d.ExecContext(ctx, `DELETE FROM kosync_credentials WHERE user_id = $1`, userID)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `DELETE FROM kosync_credentials WHERE user_id = $1`, userID)
 }
 
 // ReadingProgress represents a row in the reading_progress table.

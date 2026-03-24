@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"slices"
@@ -51,6 +50,14 @@ type Library struct {
 
 const libraryColumns = `id, name, paths, organization_type, monitored, created_at, updated_at`
 
+type libraryPaginatedQuery struct{}
+
+func (libraryPaginatedQuery) table() string   { return "libraries" }
+func (libraryPaginatedQuery) columns() string { return libraryColumns }
+func (libraryPaginatedQuery) orderBy(d *DB) string {
+	return d.dialectOrderBy("created_at", "ASC")
+}
+
 // scanLibrary scans a library row into a Library struct.
 func scanLibrary(row interface{ Scan(...any) error }) (*Library, error) {
 	var lib Library
@@ -90,24 +97,7 @@ func (d *DB) GetLibrary(ctx context.Context, id string) (*Library, error) {
 // ListLibraries returns all libraries ordered by creation time.
 func (d *DB) ListLibraries(ctx context.Context) ([]Library, error) {
 	slog.DebugContext(ctx, "db: listing libraries")
-	orderBy := d.dialectOrderBy("created_at", "ASC")
-	rows, err := d.QueryContext(ctx,
-		`SELECT `+libraryColumns+` FROM libraries `+orderBy,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var libraries []Library
-	for rows.Next() {
-		lib, err := scanLibrary(rows)
-		if err != nil {
-			return nil, err
-		}
-		libraries = append(libraries, *lib)
-	}
-	return libraries, rows.Err()
+	return listAll[Library](ctx, d, libraryPaginatedQuery{}, scanLibrary)
 }
 
 // UpdateLibrary updates a library's fields and returns the updated library.
@@ -135,15 +125,7 @@ func (d *DB) UpdateLibrary(ctx context.Context, id, name, paths, organizationTyp
 // Returns sql.ErrNoRows if the library doesn't exist.
 func (d *DB) DeleteLibrary(ctx context.Context, id string) error {
 	slog.DebugContext(ctx, "db: deleting library", slog.String(otelkeys.ID, id))
-	res, err := d.ExecContext(ctx, `DELETE FROM libraries WHERE id = $1`, id)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `DELETE FROM libraries WHERE id = $1`, id)
 }
 
 // isUniqueViolation checks if an error is a unique constraint violation.

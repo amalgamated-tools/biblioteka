@@ -105,24 +105,7 @@ func (d *DB) GetAuthorByName(ctx context.Context, name string) (*Author, error) 
 
 func (d *DB) ListAuthors(ctx context.Context) ([]Author, error) {
 	slog.DebugContext(ctx, "db: listing authors")
-	orderBy := d.dialectOrderBy("name", "ASC")
-	rows, err := d.QueryContext(ctx,
-		`SELECT `+authorColumns+` FROM authors `+orderBy,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var authors []Author
-	for rows.Next() {
-		a, err := scanAuthor(rows)
-		if err != nil {
-			return nil, err
-		}
-		authors = append(authors, *a)
-	}
-	return authors, rows.Err()
+	return listAll[Author](ctx, d, authorPaginatedQuery{}, scanAuthor)
 }
 
 // ListAuthorsPaginated returns authors ordered by name with pagination and total count.
@@ -189,13 +172,5 @@ func (d *DB) FindOrCreateAuthor(ctx context.Context, name string) (*Author, erro
 
 func (d *DB) DeleteAuthor(ctx context.Context, id string) error {
 	slog.DebugContext(ctx, "db: deleting author", slog.String(otelkeys.ID, id))
-	res, err := d.ExecContext(ctx, `DELETE FROM authors WHERE id = $1`, id)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `DELETE FROM authors WHERE id = $1`, id)
 }

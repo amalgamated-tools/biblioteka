@@ -76,24 +76,7 @@ func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
 
 func (d *DB) ListSeries(ctx context.Context) ([]Series, error) {
 	slog.DebugContext(ctx, "db: listing series")
-	orderBy := d.dialectOrderBy("name", "ASC")
-	rows, err := d.QueryContext(ctx,
-		`SELECT `+seriesColumns+` FROM series `+orderBy,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var list []Series
-	for rows.Next() {
-		s, err := scanSeries(rows)
-		if err != nil {
-			return nil, err
-		}
-		list = append(list, *s)
-	}
-	return list, rows.Err()
+	return listAll[Series](ctx, d, seriesPaginatedQuery{}, scanSeries)
 }
 
 // ListSeriesPaginated returns series ordered by name with pagination and total count.
@@ -162,13 +145,5 @@ func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, erro
 
 func (d *DB) DeleteSeries(ctx context.Context, id string) error {
 	slog.DebugContext(ctx, "db: deleting series", slog.String(otelkeys.ID, id))
-	res, err := d.ExecContext(ctx, `DELETE FROM series WHERE id = $1`, id)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return sql.ErrNoRows
-	}
-	return nil
+	return d.execAffected(ctx, `DELETE FROM series WHERE id = $1`, id)
 }
