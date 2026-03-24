@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.1.2...v0.2.0) (2026-03-24)
+
+
+### Features
+
+* **db:** remove num_pages from books and add goodreads_metadata table ([#792](https://github.com/amalgamated-tools/biblioteka/issues/792)) ([e6b0b32](https://github.com/amalgamated-tools/biblioteka/commit/e6b0b329884bd120a432fa9e00f5e4645e203b2e))
+
+
+### Bug Fixes
+
+* **accessibility:** add ARIA live regions to status and error messages ([#786](https://github.com/amalgamated-tools/biblioteka/issues/786)) ([653862c](https://github.com/amalgamated-tools/biblioteka/commit/653862ca6f92e2ba561ab11bc39380d8cf0e4b36))
+* **accessibility:** remove tabindex="0" from Auth tabpanels with focusable content ([#807](https://github.com/amalgamated-tools/biblioteka/issues/807)) ([6f942c6](https://github.com/amalgamated-tools/biblioteka/commit/6f942c66ac50f93cca183df650987582dde46937))
+* **accessibility:** unique aria-labels for Kobo sync token copy/delete buttons and API key delete buttons ([#787](https://github.com/amalgamated-tools/biblioteka/issues/787)) ([939645b](https://github.com/amalgamated-tools/biblioteka/commit/939645b553cb526c75352aa9b76d6e5f9923dccb))
+* double posting ([f72f714](https://github.com/amalgamated-tools/biblioteka/commit/f72f7148e57a16e3ee90acd486c730d8f9ff9b09))
+
 ## [0.1.2](https://github.com/amalgamated-tools/biblioteka/compare/v0.1.0...v0.1.2) (2026-03-23)
 
 
