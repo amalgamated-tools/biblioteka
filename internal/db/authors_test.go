@@ -192,6 +192,21 @@ func TestListAuthors(t *testing.T) {
 	}
 }
 
+func TestListAuthorsEmptyTable(t *testing.T) {
+	d := newTestDB(t)
+
+	authors, err := d.ListAuthors(context.Background())
+	if err != nil {
+		t.Fatalf("ListAuthors() error: %v", err)
+	}
+	if len(authors) != 0 {
+		t.Errorf("len(authors) = %d, want 0", len(authors))
+	}
+	if authors == nil {
+		t.Error("authors = nil, want empty slice")
+	}
+}
+
 func TestUpdateAuthor(t *testing.T) {
 	d := newTestDB(t)
 
@@ -336,5 +351,46 @@ func TestListAuthorsPaginated(t *testing.T) {
 	}
 	if empty == nil {
 		t.Error("empty result = nil, want empty slice")
+	}
+}
+
+func TestListAuthorsPaginatedZeroLimit(t *testing.T) {
+	d := newTestDB(t)
+
+	names := []string{"Brandon Sanderson", "Isaac Asimov"}
+	for _, name := range names {
+		_, err := d.CreateAuthor(context.Background(), name, nil, nil, nil, nil)
+		if err != nil {
+			t.Fatalf("CreateAuthor(%q) error: %v", name, err)
+		}
+	}
+
+	// limit=0 should return the real total with an empty items slice.
+	items, total, err := d.ListAuthorsPaginated(context.Background(), 0, 0)
+	if err != nil {
+		t.Fatalf("ListAuthorsPaginated(limit=0) error: %v", err)
+	}
+	if total != 2 {
+		t.Errorf("total = %d, want 2", total)
+	}
+	if len(items) != 0 {
+		t.Errorf("len(items) = %d, want 0", len(items))
+	}
+	if items == nil {
+		t.Error("items = nil, want empty slice")
+	}
+
+	items2, total2, err := d.ListAuthorsPaginated(context.Background(), -1, 0)
+	if err != nil {
+		t.Fatalf("ListAuthorsPaginated(limit=-1) error: %v", err)
+	}
+	if total2 != 2 {
+		t.Errorf("total = %d, want 2", total2)
+	}
+	if len(items2) != 0 {
+		t.Errorf("len(items) = %d, want 0", len(items2))
+	}
+	if items2 == nil {
+		t.Error("items2 = nil, want empty slice")
 	}
 }
