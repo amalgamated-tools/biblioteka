@@ -41,7 +41,7 @@ func runMigrations(ctx context.Context, d *DB) error {
 		subdir = "postgres"
 	}
 	migrationsDir := filepath.Join(getProjectRoot(), "db", "migrations", subdir)
-	slog.InfoContext(ctx, "Running database migrations", slog.String("migrationsDir", migrationsDir))
+
 	entries, err := os.ReadDir(migrationsDir)
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory %s: %w", migrationsDir, err)
