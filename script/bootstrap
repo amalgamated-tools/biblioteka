@@ -19,4 +19,15 @@ else
     exit 1
 fi
 
+# dbmate (for database dumps)
+if command -v dbmate >/dev/null 2>&1; then
+    echo "dbmate $(dbmate --version) already installed"
+elif command -v brew >/dev/null 2>&1; then
+    echo "Installing dbmate via Homebrew..."
+    brew install dbmate
+else
+    echo "Error: Homebrew not found. Install dbmate manually:"
+    echo ""
+fi
+
 echo "==> Bootstrap complete"
