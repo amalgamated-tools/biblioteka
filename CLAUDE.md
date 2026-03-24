@@ -94,6 +94,14 @@ db/migrations/
 - Extract resource IDs with `extractPathID(r.URL.Path, "/api/books/")` — there are no named URL parameters. To extract a resource ID **and** an optional sub-resource segment, use `extractPathSegments(r.URL.Path, "/api/books/")` which returns `(id, sub, ok)`.
 - After fetching a resource by ID, use `handleDBErr(r.Context(), w, err, "book")` to write the error response and return early. It returns `true` when it wrote a response (caller should `return`), `false` when `err == nil`. Maps `sql.ErrNoRows` → `404 Not Found`; all other errors → `500 Internal Server Error`.
 - For paginated list endpoints, use `parseLimitOffset(r, defaultPageLimit, maxPageLimit)` from `internal/handlers/pagination.go` to parse `limit` and `offset` query parameters. It silently clamps out-of-range values to safe defaults (`defaultPageLimit = 50`, `maxPageLimit = 200`).
+- Before writing a named resource to the database, call `validateName(r.Context(), w, req.Name)` to guard against blank names. It returns `true` when the name is non-blank; on failure it writes a `400 Bad Request` response and returns `false`, so callers can simply return:
+
+  ```go
+  if !validateName(r.Context(), w, req.Name) {
+      return
+  }
+  ```
+
 - For named-resource create and update handlers, use `handleNameErr(r.Context(), w, err, db.ErrInvalidXxxName, db.ErrXxxNameExists, "an xxx")` after a failed write to translate sentinel errors into the correct HTTP responses. It returns `true` when it wrote a response (caller should `return`); returns `false` when `err` does not match either sentinel (caller handles the remaining error):
 
   ```go
