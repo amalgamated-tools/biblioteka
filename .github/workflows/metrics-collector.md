@@ -1,6 +1,8 @@
 ---
 description: Collects daily performance metrics for the agent ecosystem and stores them in repo-memory
-on: daily
+on:
+  schedule: daily
+  workflow_dispatch:
 permissions:
   contents: read
   issues: read
