@@ -194,7 +194,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 	)
 
 	s, err := h.DB.UpdateSeries(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
-	if handleUpdateErr(r.Context(), w, err, db.ErrInvalidSeriesName, db.ErrSeriesNameExists, "a series", "series") {
+	if handleUpdateErr(r.Context(), w, err, db.ErrInvalidSeriesName, db.ErrSeriesNameExists, "a series", "series", id) {
 		return
 	}
 

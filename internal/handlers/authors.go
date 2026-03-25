@@ -197,7 +197,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 	)
 
 	a, err := h.DB.UpdateAuthor(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
-	if handleUpdateErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author", "author") {
+	if handleUpdateErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author", "author", id) {
 		return
 	}
 

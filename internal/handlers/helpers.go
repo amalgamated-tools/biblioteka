@@ -151,7 +151,7 @@ func handleNameErr(ctx context.Context, w http.ResponseWriter, err, errInvalid, 
 // handlers: sql.ErrNoRows → 404, invalid/duplicate name errors via handleNameErr,
 // and a generic 500 fallback. Returns true when it wrote a response (caller should
 // return).
-func handleUpdateErr(ctx context.Context, w http.ResponseWriter, err, errInvalid, errExists error, resourceArticle, resource string) bool {
+func handleUpdateErr(ctx context.Context, w http.ResponseWriter, err, errInvalid, errExists error, resourceArticle, resource, id string) bool {
 	if err == nil {
 		return false
 	}
@@ -162,7 +162,10 @@ func handleUpdateErr(ctx context.Context, w http.ResponseWriter, err, errInvalid
 	if handleNameErr(ctx, w, err, errInvalid, errExists, resourceArticle) {
 		return true
 	}
-	slog.ErrorContext(ctx, "failed to update "+resource, slog.Any(otelkeys.Error, err))
+	slog.ErrorContext(ctx, "failed to update "+resource,
+		slog.String(otelkeys.ID, id),
+		slog.Any(otelkeys.Error, err),
+	)
 	writeError(ctx, w, http.StatusInternalServerError, "failed to update "+resource)
 	return true
 }
