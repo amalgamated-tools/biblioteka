@@ -147,6 +147,59 @@ func handleNameErr(ctx context.Context, w http.ResponseWriter, err, errInvalid, 
 	return false
 }
 
+// handleUpdateErr handles the full error block common to named-entity update
+// handlers: sql.ErrNoRows → 404, invalid/duplicate name errors via handleNameErr,
+// and a generic 500 fallback. Returns true when it wrote a response (caller should
+// return).
+func handleUpdateErr(ctx context.Context, w http.ResponseWriter, err, errInvalid, errExists error, resourceArticle, resource, id string) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(ctx, w, http.StatusNotFound, resource+" not found")
+		return true
+	}
+	if handleNameErr(ctx, w, err, errInvalid, errExists, resourceArticle) {
+		return true
+	}
+	slog.ErrorContext(ctx, "failed to update "+resource,
+		slog.String(otelkeys.ID, id),
+		slog.Any(otelkeys.Error, err),
+	)
+	writeError(ctx, w, http.StatusInternalServerError, "failed to update "+resource)
+	return true
+}
+
+// listEntities is a generic helper that implements the list-and-convert pattern
+// common to named-entity list handlers. It fetches all entities, converts them
+// to DTOs, and writes the JSON response.
+func listEntities[T any, DTO any](
+	w http.ResponseWriter,
+	r *http.Request,
+	resource string,
+	list func(context.Context) ([]T, error),
+	toDTO func(*T) DTO,
+) {
+	ctx := r.Context()
+	slog.DebugContext(ctx, "listing "+resource)
+
+	entities, err := list(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to list "+resource, slog.Any(otelkeys.Error, err))
+		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+resource)
+		return
+	}
+
+	slog.DebugContext(ctx, resource+" listed", slog.Int(otelkeys.Count, len(entities)))
+
+	dtos := make([]DTO, 0, len(entities))
+	for i := range entities {
+		dtos = append(dtos, toDTO(&entities[i]))
+	}
+
+	writeJSON(ctx, w, http.StatusOK, dtos)
+}
+
 // deleteResource is a generic helper that implements the fetch-then-delete-then-audit
 // pattern common to all resource deletion handlers. It fetches the resource (to
 // capture audit metadata), deletes it, writes an audit log entry, and responds

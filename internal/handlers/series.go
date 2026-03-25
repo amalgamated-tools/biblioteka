@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
-	"errors"
 	"log/slog"
 	"net/http"
 
@@ -89,22 +87,7 @@ func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{object}	errorResponse
 //	@Router			/series [get]
 func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
-	slog.DebugContext(r.Context(), "listing series")
-	list, err := h.DB.ListSeries(r.Context())
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list series", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list series")
-		return
-	}
-
-	slog.DebugContext(r.Context(), "series listed", slog.Int(otelkeys.Count, len(list)))
-
-	dtos := make([]seriesDTO, 0, len(list))
-	for i := range list {
-		dtos = append(dtos, toSeriesDTO(&list[i]))
-	}
-
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
+	listEntities(w, r, "series", h.DB.ListSeries, toSeriesDTO)
 }
 
 // createSeries godoc
@@ -211,16 +194,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 	)
 
 	s, err := h.DB.UpdateSeries(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "series not found")
-			return
-		}
-		if handleNameErr(r.Context(), w, err, db.ErrInvalidSeriesName, db.ErrSeriesNameExists, "a series") {
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to update series", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update series")
+	if handleUpdateErr(r.Context(), w, err, db.ErrInvalidSeriesName, db.ErrSeriesNameExists, "a series", "series", id) {
 		return
 	}
 
