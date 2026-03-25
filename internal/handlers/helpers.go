@@ -205,6 +205,64 @@ func deleteResource[T any](
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// deleteUserOwnedResource is a generic helper that implements the
+// fetch-then-delete-then-audit pattern for user-scoped resources such as API
+// keys and Kobo tokens. It mirrors deleteResource but accepts get/delete
+// functions that require both a resource ID and a user ID.
+func deleteUserOwnedResource[T any](
+	d *db.DB,
+	w http.ResponseWriter,
+	r *http.Request,
+	id string,
+	resource string,
+	idKey string,
+	get func(context.Context, string, string) (T, error),
+	del func(context.Context, string, string) error,
+	auditAction string,
+	auditMeta func(T) map[string]any,
+) {
+	ctx := r.Context()
+	userID := auth.UserIDFromContext(ctx)
+	slog.DebugContext(ctx, "deleting "+resource, slog.String(idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+
+	entity, err := get(ctx, id, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(ctx, w, http.StatusNotFound, resource+" not found")
+			return
+		}
+		slog.ErrorContext(ctx, "failed to get "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
+		return
+	}
+
+	if err := del(ctx, id, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(ctx, w, http.StatusNotFound, resource+" not found")
+			return
+		}
+		slog.ErrorContext(ctx, "failed to delete "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
+		return
+	}
+
+	var meta map[string]any
+	if auditMeta != nil && !isNilValue(entity) {
+		meta = auditMeta(entity)
+	}
+	if err := d.CreateAuditLog(ctx, userID, auditAction, resource, id, meta); err != nil {
+		slog.WarnContext(
+			ctx,
+			"failed to write audit log",
+			slog.String(otelkeys.Resource, resource),
+			slog.String(idKey, id), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+			slog.Any(otelkeys.Error, err),
+		)
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // isNilValue reports whether v, when passed as any, wraps a nil pointer.
 func isNilValue(v any) bool {
 	if v == nil {

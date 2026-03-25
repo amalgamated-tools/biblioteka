@@ -2,9 +2,7 @@ package handlers
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
-	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -121,7 +119,7 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logAudit(r.Context(), h.DB, userID, db.AuditActionKoboTokenCreated, "kobo_token", koboToken.ID, map[string]any{"name": name})
+	logAudit(r.Context(), h.DB, userID, db.AuditActionKoboTokenCreated, "Kobo token", koboToken.ID, map[string]any{"name": name})
 
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
@@ -133,30 +131,9 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *KoboHandler) deleteKoboToken(w http.ResponseWriter, r *http.Request, id string) {
-	userID := auth.UserIDFromContext(r.Context())
-
-	token, err := h.DB.GetKoboToken(r.Context(), id, userID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "Kobo token not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to fetch kobo token", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete Kobo token")
-		return
-	}
-
-	if err := h.DB.DeleteKoboToken(r.Context(), id, userID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "Kobo token not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to delete kobo token", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete Kobo token")
-		return
-	}
-
-	logAudit(r.Context(), h.DB, userID, db.AuditActionKoboTokenDeleted, "kobo_token", id, map[string]any{"name": token.Name})
-
-	w.WriteHeader(http.StatusNoContent)
+	deleteUserOwnedResource(h.DB, w, r, id, "Kobo token", otelkeys.KoboTokenID,
+		h.DB.GetKoboToken, h.DB.DeleteKoboToken,
+		db.AuditActionKoboTokenDeleted,
+		func(t *db.KoboToken) map[string]any { return map[string]any{"name": t.Name} },
+	)
 }
