@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
-	"errors"
 	"log/slog"
 	"net/http"
 
@@ -92,22 +90,7 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{object}	errorResponse
 //	@Router			/authors [get]
 func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
-	slog.DebugContext(r.Context(), "listing authors")
-	authors, err := h.DB.ListAuthors(r.Context())
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list authors", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list authors")
-		return
-	}
-
-	slog.DebugContext(r.Context(), "authors listed", slog.Int(otelkeys.Count, len(authors)))
-
-	dtos := make([]authorDTO, 0, len(authors))
-	for i := range authors {
-		dtos = append(dtos, toAuthorDTO(&authors[i]))
-	}
-
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
+	listEntities(w, r, "authors", h.DB.ListAuthors, toAuthorDTO)
 }
 
 // createAuthor godoc
@@ -214,16 +197,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 	)
 
 	a, err := h.DB.UpdateAuthor(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "author not found")
-			return
-		}
-		if handleNameErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author") {
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to update author", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update author")
+	if handleUpdateErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author", "author") {
 		return
 	}
 

@@ -364,3 +364,103 @@ func Test_LogAudit(t *testing.T) {
 		t.Fatal("metadata = nil, want JSON metadata")
 	}
 }
+
+func Test_HandleUpdateErr(t *testing.T) {
+	var (
+		errInvalid = errors.New("invalid name")
+		errExists  = errors.New("name exists")
+		errOther   = errors.New("other error")
+	)
+
+	tests := []struct {
+		name        string
+		err         error
+		resourceArt string
+		resource    string
+		wantHandled bool
+		wantCode    int
+		wantErrMsg  string
+	}{
+		{
+			name:        "nil error not handled",
+			err:         nil,
+			resourceArt: "an author",
+			resource:    "author",
+			wantHandled: false,
+		},
+		{
+			name:        "not found yields 404",
+			err:         sql.ErrNoRows,
+			resourceArt: "an author",
+			resource:    "author",
+			wantHandled: true,
+			wantCode:    http.StatusNotFound,
+			wantErrMsg:  "author not found",
+		},
+		{
+			name:        "wrapped not found yields 404",
+			err:         fmt.Errorf("db: %w", sql.ErrNoRows),
+			resourceArt: "a series",
+			resource:    "series",
+			wantHandled: true,
+			wantCode:    http.StatusNotFound,
+			wantErrMsg:  "series not found",
+		},
+		{
+			name:        "invalid name yields 400",
+			err:         errInvalid,
+			resourceArt: "an author",
+			resource:    "author",
+			wantHandled: true,
+			wantCode:    http.StatusBadRequest,
+			wantErrMsg:  "name is required",
+		},
+		{
+			name:        "duplicate name yields 409",
+			err:         errExists,
+			resourceArt: "a series",
+			resource:    "series",
+			wantHandled: true,
+			wantCode:    http.StatusConflict,
+			wantErrMsg:  "a series with that name already exists",
+		},
+		{
+			name:        "other error yields 500",
+			err:         errOther,
+			resourceArt: "an author",
+			resource:    "author",
+			wantHandled: true,
+			wantCode:    http.StatusInternalServerError,
+			wantErrMsg:  "failed to update author",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			got := handleUpdateErr(t.Context(), w, tt.err, errInvalid, errExists, tt.resourceArt, tt.resource)
+			if got != tt.wantHandled {
+				t.Fatalf("handleUpdateErr() = %v, want %v", got, tt.wantHandled)
+			}
+			if !tt.wantHandled {
+				if w.Code != http.StatusOK {
+					t.Errorf("expected no response written, but got status %d", w.Code)
+				}
+				if w.Body.Len() != 0 {
+					t.Errorf("expected empty body, but got %q", w.Body.String())
+				}
+				return
+			}
+			if w.Code != tt.wantCode {
+				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
+			}
+			var result map[string]string
+			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+				t.Fatalf("failed to unmarshal: %v", err)
+			}
+			if result["error"] != tt.wantErrMsg {
+				t.Errorf("error = %q, want %q", result["error"], tt.wantErrMsg)
+			}
+		})
+	}
+}
