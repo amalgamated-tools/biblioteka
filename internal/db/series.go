@@ -74,6 +74,20 @@ func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
 	))
 }
 
+// GetSeriesByName looks up a series by name using case-insensitive matching
+// after normalizing whitespace. The returned Series.Name preserves the
+// capitalization stored in the database from when the row was created or
+// last updated, which may differ from the capitalization used for lookup.
+// Callers do not need to pre-normalize the input; this method handles it.
+func (d *DB) GetSeriesByName(ctx context.Context, name string) (*Series, error) {
+	name = NormalizeSeriesName(name)
+	slog.DebugContext(ctx, "db: fetching series by name", slog.String(otelkeys.Name, name))
+	return scanSeries(d.QueryRowContext(ctx,
+		`SELECT `+seriesColumns+` FROM series WHERE LOWER(name) = LOWER($1)`,
+		name,
+	))
+}
+
 func (d *DB) ListSeries(ctx context.Context) ([]Series, error) {
 	slog.DebugContext(ctx, "db: listing series")
 	return listAll(ctx, d, seriesListQuery{}, scanSeries)
@@ -119,16 +133,16 @@ func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, erro
 		return nil, ErrInvalidSeriesName
 	}
 	slog.DebugContext(ctx, "db: find or create series", slog.String(otelkeys.Name, name))
-	s, err := scanSeries(d.QueryRowContext(ctx,
-		`SELECT `+seriesColumns+` FROM series WHERE LOWER(name) = LOWER($1)`,
-		name,
-	))
+
+	// Look up using the same case-insensitive predicate as GetSeriesByName.
+	s, err := d.GetSeriesByName(ctx, name)
 	if err == nil {
 		return s, nil
 	}
 	if err != sql.ErrNoRows {
 		return nil, err
 	}
+	// Not found — insert.
 	s, err = d.CreateSeries(ctx, name, nil, nil, nil)
 	if err == nil {
 		return s, nil
@@ -136,11 +150,8 @@ func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, erro
 	if err != ErrSeriesNameExists {
 		return nil, err
 	}
-	// Concurrent insert won the race — fetch with case-insensitive match.
-	return scanSeries(d.QueryRowContext(ctx,
-		`SELECT `+seriesColumns+` FROM series WHERE LOWER(name) = LOWER($1)`,
-		name,
-	))
+	// Concurrent insert won the race — fetch.
+	return d.GetSeriesByName(ctx, name)
 }
 
 func (d *DB) DeleteSeries(ctx context.Context, id string) error {
