@@ -106,4 +106,14 @@ describe("Sidebar navigation accessibility", () => {
       screen.getByRole("heading", { name: "Libraries", level: 2 }),
     ).toBeVisible();
   });
+
+  it("does not render the app name as a heading", () => {
+    render(Sidebar, {
+      props: { currentView: "dashboard", open: true, onClose: () => {} },
+    });
+
+    expect(
+      screen.queryByRole("heading", { name: "biblioteka" }),
+    ).not.toBeInTheDocument();
+  });
 });
