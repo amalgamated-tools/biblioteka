@@ -141,6 +141,38 @@ func TestGetSeries_NotFound(t *testing.T) {
 	}
 }
 
+func TestGetSeriesByName(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateSeries() error: %v", err)
+	}
+
+	// All case variants should find the same series.
+	for _, name := range []string{"The Dark Tower", "the dark tower", "THE DARK TOWER", "the Dark Tower"} {
+		found, err := d.GetSeriesByName(context.Background(), name)
+		if err != nil {
+			t.Fatalf("GetSeriesByName(%q) error: %v", name, err)
+		}
+		if found.ID != created.ID {
+			t.Errorf("GetSeriesByName(%q) ID = %q, want %q", name, found.ID, created.ID)
+		}
+		if found.Name != "The Dark Tower" {
+			t.Errorf("GetSeriesByName(%q) Name = %q, want %q", name, found.Name, "The Dark Tower")
+		}
+	}
+}
+
+func TestGetSeriesByName_NotFound(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.GetSeriesByName(context.Background(), "Nonexistent Series")
+	if err != sql.ErrNoRows {
+		t.Errorf("expected sql.ErrNoRows, got %v", err)
+	}
+}
+
 func TestListSeries(t *testing.T) {
 	d := newTestDB(t)
 
