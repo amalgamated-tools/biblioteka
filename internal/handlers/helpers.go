@@ -208,13 +208,17 @@ func deleteResource[T any](
 // deleteUserOwnedResource is a generic helper that implements the
 // fetch-then-delete-then-audit pattern for user-scoped resources such as API
 // keys and Kobo tokens. It mirrors deleteResource but accepts get/delete
-// functions that require both a resource ID and a user ID.
+// functions that require both a resource ID and a user ID. The resource
+// parameter is a human-readable display name used in error messages (e.g.
+// "API key"), while auditEntityType is a stable snake_case identifier written
+// to the audit log (e.g. "api_key").
 func deleteUserOwnedResource[T any](
 	d *db.DB,
 	w http.ResponseWriter,
 	r *http.Request,
 	id string,
 	resource string,
+	auditEntityType string,
 	idKey string,
 	get func(context.Context, string, string) (T, error),
 	del func(context.Context, string, string) error,
@@ -250,11 +254,11 @@ func deleteUserOwnedResource[T any](
 	if auditMeta != nil && !isNilValue(entity) {
 		meta = auditMeta(entity)
 	}
-	if err := d.CreateAuditLog(ctx, userID, auditAction, resource, id, meta); err != nil {
+	if err := d.CreateAuditLog(ctx, userID, auditAction, auditEntityType, id, meta); err != nil {
 		slog.WarnContext(
 			ctx,
 			"failed to write audit log",
-			slog.String(otelkeys.Resource, resource),
+			slog.String(otelkeys.Resource, auditEntityType),
 			slog.String(idKey, id), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 			slog.Any(otelkeys.Error, err),
 		)

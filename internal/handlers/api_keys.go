@@ -167,7 +167,7 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyCreated, "API key", apiKey.ID, map[string]any{"name": name})
+	logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyCreated, "api_key", apiKey.ID, map[string]any{"name": name})
 
 	resp := apiKeyCreateResponse{
 		apiKeyDTO: toAPIKeyDTO(apiKey),
@@ -182,7 +182,7 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIKeyHandler) deleteAPIKey(w http.ResponseWriter, r *http.Request, id string) {
-	deleteUserOwnedResource(h.DB, w, r, id, "API key", otelkeys.APIKeyID,
+	deleteUserOwnedResource(h.DB, w, r, id, "API key", "api_key", otelkeys.APIKeyID,
 		h.DB.GetAPIKey, h.DB.DeleteAPIKey,
 		db.AuditActionAPIKeyDeleted,
 		func(k *db.APIKey) map[string]any { return map[string]any{"name": k.Name} },

@@ -119,7 +119,7 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logAudit(r.Context(), h.DB, userID, db.AuditActionKoboTokenCreated, "Kobo token", koboToken.ID, map[string]any{"name": name})
+	logAudit(r.Context(), h.DB, userID, db.AuditActionKoboTokenCreated, "kobo_token", koboToken.ID, map[string]any{"name": name})
 
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
@@ -131,7 +131,7 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *KoboHandler) deleteKoboToken(w http.ResponseWriter, r *http.Request, id string) {
-	deleteUserOwnedResource(h.DB, w, r, id, "Kobo token", otelkeys.KoboTokenID,
+	deleteUserOwnedResource(h.DB, w, r, id, "Kobo token", "kobo_token", otelkeys.KoboTokenID,
 		h.DB.GetKoboToken, h.DB.DeleteKoboToken,
 		db.AuditActionKoboTokenDeleted,
 		func(t *db.KoboToken) map[string]any { return map[string]any{"name": t.Name} },
