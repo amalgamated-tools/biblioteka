@@ -1,0 +1,370 @@
+ExifTool Version Number	13.50
+File Name	hail.epub
+Directory	/Users/veverkap/Code/personal/books
+File Size	2.6 MB
+File Modification Date/Time	2026:03:24 17:38:01-04:00
+File Access Date/Time	2026:03:24 17:38:01-04:00
+File Inode Change Date/Time	2026:03:24 17:38:17-04:00
+File Permissions	-rw-r--r--
+File Type	EPUB
+File Type Extension	epub
+MIME Type	application/epub+zip
+Identifier Id	uid
+Identifier	3279219163
+Identifier Scheme	calibre
+Identifier	8ece7b56-e3bb-42e7-93da-613c4e824b05
+Identifier Scheme	MOBI-ASIN
+Identifier	B08FHBV4ZX
+Identifier Scheme	ISBN
+Identifier	9780593135204
+Identifier Scheme	AMAZON
+Identifier	B08FHBV4ZX
+Identifier Scheme	GOODREADS
+Identifier	54493401
+Identifier Scheme	GOOGLE
+Identifier	QbyGzQEACAAJ
+Identifier	urn:isbn:9780593135204
+Identifier	urn:isbn:0593135202
+Identifier	urn:amazon:B08FHBV4ZX
+Identifier	urn:goodreads:54493401
+Identifier	urn:google:GrYsEAAAQBAJ
+Identifier	urn:hardcover:project-hail-mary
+Identifier	urn:hardcoverbook:427578
+Title	Project Hail Mary
+Creator File-as	Weir, Andy
+Creator Role	aut
+Creator	Andy Weir
+Language	en
+Date	2021:05:15
+Publisher	Ballantine Books
+Description	THE #1 NEW YORK TIMES BESTSELLER FROM THE AUTHOR OF THE MARTIAN • Soon to be a major motion picture starring Ryan Gosling, directed by Phil Lord and Christopher Miller, with a screenplay by Drew Goddard From the author of The Martian, a lone astronaut must save the earth from disaster in this “propulsive” (Entertainment Weekly), cinematic thriller full of suspense, humor, and fascinating science. HUGO AWARD FINALIST • ONE OF THE YEAR’S BEST BOOKS: Bill Gates, GatesNotes, New York Public Library, Parade, Newsweek, Polygon, Shelf Awareness, She Reads, Kirkus Reviews, Library Journal • New York Times Readers Pick: 100 Best Books of the 21st Century “An epic story of redemption, discovery and cool speculative sci-fi.”—USA Today “If you loved The Martian, you’ll go crazy for Weir’s latest.”—The Washington Post Ryland Grace is the sole survivor on a desperate, last-chance mission—and if he fails, humanity and the earth itself will perish. Except that right now, he doesn’t know that. He can’t even remember his own name, let alone the nature of his assignment or how to complete it. All he knows is that he’s been asleep for a very, very long time. And he’s just been awakened to find himself millions of miles from home, with nothing but two corpses for company. His crewmates dead, his memories fuzzily returning, Ryland realizes that an impossible task now confronts him. Hurtling through space on this tiny ship, it’s up to him to puzzle out an impossible scientific mystery—and conquer an extinction-level threat to our species. And with the clock ticking down and the nearest human being light-years away, he’s got to do it all alone. Or does he? An irresistible interstellar adventure as only Andy Weir could deliver, Project Hail Mary is a tale of discovery, speculation, and survival to rival The Martian—while taking us to places it never dreamed of going.
+Subject	Thriller, Fantasy, Adult, Mystery, Science Fiction
+Meta Content	utf-8
+Meta Name	output encoding
+Meta Content	horizontal-lr
+Meta Name	primary-writing-mode
+Meta Content	cover
+Meta Name	cover
+Meta Content	A Novel
+Meta Name	booklore:subtitle
+Meta Content	497
+Meta Name	booklore:page_count
+Meta Content	4.5
+Meta Name	booklore:goodreads_rating
+Meta Content	1254392
+Meta Name	booklore:goodreads_review_count
+Meta Content	4.49
+Meta Name	booklore:hardcover_rating
+Meta Content	5138
+Meta Name	booklore:hardcover_review_count
+Meta Content	["Tense", "Adventurous", "Hopeful", "Emotional", "Funny"]
+Meta Name	booklore:moods
+Meta Content	["Character Driven", "Space", "Not Diverse Characters", "Plot Driven", "Loveable Characters", "A Mix Driven", "Diverse Characters", "Strong Character Development", "Unloveable Characters", "Weak Character Development"]
+Meta Name	booklore:tags
+Manifest Item Href	Text/titlepage.xhtml
+Manifest Item Id	titlepage
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0000.xhtml
+Manifest Item Id	x_tp
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0001.xhtml
+Manifest Item Id	x_cop
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0002.xhtml
+Manifest Item Id	x_inlinetoc
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0003.xhtml
+Manifest Item Id	x_fm-sup
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0004.xhtml
+Manifest Item Id	x_fm-sup1
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0005.xhtml
+Manifest Item Id	x_c001
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0006.xhtml
+Manifest Item Id	x_c002
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0007.xhtml
+Manifest Item Id	x_c003
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0008.xhtml
+Manifest Item Id	x_c004
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0009.xhtml
+Manifest Item Id	x_c005
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0010.xhtml
+Manifest Item Id	x_c006
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0011.xhtml
+Manifest Item Id	x_c007
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0012.xhtml
+Manifest Item Id	x_c008
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0013.xhtml
+Manifest Item Id	x_c009
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0014.xhtml
+Manifest Item Id	x_c010
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0015.xhtml
+Manifest Item Id	x_c011
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0016.xhtml
+Manifest Item Id	x_c012
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0017.xhtml
+Manifest Item Id	x_c013
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0018.xhtml
+Manifest Item Id	x_c014
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0019.xhtml
+Manifest Item Id	x_c015
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0020.xhtml
+Manifest Item Id	x_c016
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0021.xhtml
+Manifest Item Id	x_c017
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0022.xhtml
+Manifest Item Id	x_c018
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0023.xhtml
+Manifest Item Id	x_c019
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0024.xhtml
+Manifest Item Id	x_c020
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0025.xhtml
+Manifest Item Id	x_c021
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0026.xhtml
+Manifest Item Id	x_c022
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0027.xhtml
+Manifest Item Id	x_c023
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0028.xhtml
+Manifest Item Id	x_c024
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0029.xhtml
+Manifest Item Id	x_c025
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0030.xhtml
+Manifest Item Id	x_c026
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0031.xhtml
+Manifest Item Id	x_c027
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0032.xhtml
+Manifest Item Id	x_c028
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0033.xhtml
+Manifest Item Id	x_c029
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0034.xhtml
+Manifest Item Id	x_c030
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0035.xhtml
+Manifest Item Id	x_ded
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0036.xhtml
+Manifest Item Id	x_ack
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0037.xhtml
+Manifest Item Id	x_adc
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0038.xhtml
+Manifest Item Id	x_ata
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	Text/part0039.xhtml
+Manifest Item Id	x_next-reads.xhtml
+Manifest Item Media-type	application/xhtml+xml
+Manifest Item Href	toc.ncx
+Manifest Item Id	ncx
+Manifest Item Media-type	application/x-dtbncx+xml
+Manifest Item Href	Styles/style0001.css
+Manifest Item Id	item41
+Manifest Item Media-type	text/css
+Manifest Item Href	Styles/style0002.css
+Manifest Item Id	item42
+Manifest Item Media-type	text/css
+Manifest Item Href	Styles/style0003.css
+Manifest Item Id	item43
+Manifest Item Media-type	text/css
+Manifest Item Href	Styles/style0004.css
+Manifest Item Id	item44
+Manifest Item Media-type	text/css
+Manifest Item Href	Styles/style0005.css
+Manifest Item Id	item45
+Manifest Item Media-type	text/css
+Manifest Item Href	Images/cover.jpeg
+Manifest Item Id	cover
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00328.jpeg
+Manifest Item Id	item46
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00330.jpeg
+Manifest Item Id	item48
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00331.jpeg
+Manifest Item Id	item49
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00332.jpeg
+Manifest Item Id	item50
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00333.jpeg
+Manifest Item Id	item51
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00334.jpeg
+Manifest Item Id	item52
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00335.jpeg
+Manifest Item Id	item53
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00336.jpeg
+Manifest Item Id	item54
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00337.jpeg
+Manifest Item Id	item55
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00338.jpeg
+Manifest Item Id	item56
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00339.jpeg
+Manifest Item Id	item57
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00340.jpeg
+Manifest Item Id	item58
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00341.jpeg
+Manifest Item Id	item59
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00342.jpeg
+Manifest Item Id	item60
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00343.jpeg
+Manifest Item Id	item61
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00344.jpeg
+Manifest Item Id	item62
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00345.jpeg
+Manifest Item Id	item63
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00346.jpeg
+Manifest Item Id	item64
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00347.jpeg
+Manifest Item Id	item65
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00348.jpeg
+Manifest Item Id	item66
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00349.jpeg
+Manifest Item Id	item67
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00350.jpeg
+Manifest Item Id	item68
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00351.jpeg
+Manifest Item Id	item69
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00352.jpeg
+Manifest Item Id	item70
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00353.jpeg
+Manifest Item Id	item71
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00354.jpeg
+Manifest Item Id	item72
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00355.jpeg
+Manifest Item Id	item73
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00356.jpeg
+Manifest Item Id	item74
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00357.jpeg
+Manifest Item Id	item75
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00358.jpeg
+Manifest Item Id	item76
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00359.jpeg
+Manifest Item Id	item77
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00360.jpeg
+Manifest Item Id	item78
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00361.jpeg
+Manifest Item Id	item79
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00362.jpeg
+Manifest Item Id	item80
+Manifest Item Media-type	image/jpeg
+Manifest Item Href	Images/image00363.jpeg
+Manifest Item Id	item81
+Manifest Item Media-type	image/jpeg
+Spine Toc	ncx
+Spine Itemref Idref	titlepage
+Spine Itemref Idref	x_tp
+Spine Itemref Idref	x_cop
+Spine Itemref Idref	x_inlinetoc
+Spine Itemref Idref	x_fm-sup
+Spine Itemref Idref	x_fm-sup1
+Spine Itemref Idref	x_c001
+Spine Itemref Idref	x_c002
+Spine Itemref Idref	x_c003
+Spine Itemref Idref	x_c004
+Spine Itemref Idref	x_c005
+Spine Itemref Idref	x_c006
+Spine Itemref Idref	x_c007
+Spine Itemref Idref	x_c008
+Spine Itemref Idref	x_c009
+Spine Itemref Idref	x_c010
+Spine Itemref Idref	x_c011
+Spine Itemref Idref	x_c012
+Spine Itemref Idref	x_c013
+Spine Itemref Idref	x_c014
+Spine Itemref Idref	x_c015
+Spine Itemref Idref	x_c016
+Spine Itemref Idref	x_c017
+Spine Itemref Idref	x_c018
+Spine Itemref Idref	x_c019
+Spine Itemref Idref	x_c020
+Spine Itemref Idref	x_c021
+Spine Itemref Idref	x_c022
+Spine Itemref Idref	x_c023
+Spine Itemref Idref	x_c024
+Spine Itemref Idref	x_c025
+Spine Itemref Idref	x_c026
+Spine Itemref Idref	x_c027
+Spine Itemref Idref	x_c028
+Spine Itemref Idref	x_c029
+Spine Itemref Idref	x_c030
+Spine Itemref Idref	x_ded
+Spine Itemref Idref	x_ack
+Spine Itemref Idref	x_adc
+Spine Itemref Idref	x_ata
+Spine Itemref Idref	x_next-reads.xhtml
+Tours	
+Guide Reference Href	Text/part0001.xhtml
+Guide Reference Title	Copyright
+Guide Reference Type	copyright-page
+Guide Reference Href	Text/part0003.xhtml
+Guide Reference Title	Start
+Guide Reference Type	text
+Guide Reference Href	Text/part0000.xhtml
+Guide Reference Title	Title Page
+Guide Reference Type	other.titlepage
+Guide Reference Href	Text/part0002.xhtml
+Guide Reference Title	Contents
+Guide Reference Type	toc
+Guide Reference Href	Text/titlepage.xhtml
+Guide Reference Title	Cover
+Guide Reference Type	cover

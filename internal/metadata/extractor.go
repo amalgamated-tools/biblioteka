@@ -13,10 +13,9 @@ import (
 	pathpkg "path"
 	"path/filepath"
 	"strings"
-	"sync"
 
+	"github.com/amalgamated-tools/biblioteka/internal/exif"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"github.com/barasher/go-exiftool"
 )
 
 var ErrExifToolUnavailable = errors.New("exiftool is not available on this system")
@@ -36,12 +35,11 @@ type BookMetadata struct {
 // Extractor extracts metadata from book files. Concurrent ExtractMetadata calls are safe,
 // but Close must not be called concurrently with other methods.
 type Extractor struct {
-	mu sync.Mutex
-	et *exiftool.Exiftool
+	et *exif.Exiftool
 }
 
 func NewExtractor(ctx context.Context) (*Extractor, error) {
-	et, err := exiftool.NewExiftool()
+	et, err := exif.NewExiftool()
 	if err != nil {
 		slog.WarnContext(ctx, "exiftool not available; all metadata extraction disabled — only filename-derived metadata will be used", slog.Any(otelkeys.Error, err))
 		return &Extractor{}, nil
@@ -50,8 +48,6 @@ func NewExtractor(ctx context.Context) (*Extractor, error) {
 }
 
 func (e *Extractor) Close() {
-	e.mu.Lock()
-	defer e.mu.Unlock()
 
 	if e.et != nil {
 		e.et.Close()
@@ -66,14 +62,8 @@ func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*BookMeta
 	return e.extractExif(ctx, path)
 }
 
-func (e *Extractor) lockedExtractMetadata(path string) []exiftool.FileMetadata {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	return e.et.ExtractMetadata(path)
-}
-
 func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
-	results := e.lockedExtractMetadata(path)
+	results := e.et.ExtractMetadata(path)
 
 	if len(results) == 0 {
 		return nil, fmt.Errorf("no metadata found for %s", path)
@@ -143,7 +133,7 @@ type epubCoverRef struct {
 	MIMEType string
 }
 
-func extractEPUBCoverDataURL(ctx context.Context, book *exiftool.FileMetadata, filePath string) (string, error) {
+func extractEPUBCoverDataURL(ctx context.Context, book *exif.FileMetadata, filePath string) (string, error) {
 	ref, ok := findEPUBCoverRef(ctx, book)
 	if !ok {
 		return "", nil
@@ -157,7 +147,7 @@ func extractEPUBCoverDataURL(ctx context.Context, book *exiftool.FileMetadata, f
 	return "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(coverBytes), nil
 }
 
-func findEPUBCoverRef(ctx context.Context, book *exiftool.FileMetadata) (epubCoverRef, bool) {
+func findEPUBCoverRef(ctx context.Context, book *exif.FileMetadata) (epubCoverRef, bool) {
 	manifestIDs, _ := book.GetStrings("ManifestItemId")
 	manifestHrefs, _ := book.GetStrings("ManifestItemHref")
 	manifestMIMETypes, _ := book.GetStrings("ManifestItemMedia-type")
@@ -370,7 +360,7 @@ func itemAt(items []string, i int) string {
 }
 
 // getStringOr extracts a string tag from an exiftool result, returning fallback if not found.
-func getStringOr(fm *exiftool.FileMetadata, tag string, fallback string) string {
+func getStringOr(fm *exif.FileMetadata, tag string, fallback string) string {
 	v, err := fm.GetString(tag)
 	if err != nil {
 		return fallback

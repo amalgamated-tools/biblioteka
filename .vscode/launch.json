@@ -21,7 +21,7 @@
             "mode": "auto",
             "args": [
                 "process-file",
-                "${workspaceFolder}/books/Alice's Adventures in Wonderland by Lewis Carroll.epub"
+                "/Users/veverkap/Code/personal/books/hail.epub"
             ],
             "program": "cmd/cli/main.go",
             "envFile": "${workspaceFolder}/.env",

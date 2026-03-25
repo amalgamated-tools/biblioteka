@@ -10,13 +10,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/exif"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
-	"github.com/barasher/go-exiftool"
 )
 
 // exiftool returns the underlying *exiftool.Exiftool instance.
 // It is intended for use only within the metadata package (e.g., in tests).
-func (e *Extractor) exiftool() *exiftool.Exiftool {
+func (e *Extractor) exiftool() *exif.Exiftool {
 	return e.et
 }
 
