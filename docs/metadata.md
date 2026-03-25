@@ -87,7 +87,7 @@ Applies any pending database migrations and exits. Useful for running migrations
 Database migrations completed successfully
 ```
 
-The server runs the same migrations automatically on startup via `db.SetupDatabase`, so this command is only needed when you want to migrate without binding to a port (e.g. in a container init container, a `make db-dump` step, or to verify the schema before running tests).
+The server runs the same migrations automatically on startup via `db.SetupDatabase`, so this command is only needed when you want to migrate without binding to a port (e.g. in an init container, a `make db-dump` step, or to verify the schema before running tests).
 
 ---
 
