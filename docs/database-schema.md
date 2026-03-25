@@ -534,7 +534,7 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `book_relations.go` | Book–author and book–series associations: `GetBookAuthors`, `SetBookAuthors`, `GetBookSeries`, `SetBookSeries`, `GetAuthorsForBooks` |
 | `book_files.go` | `BookFile` struct; file lifecycle: `CreateBookFile`, `GetBookFile`, `ListBookFiles`, `GetBookFileByPath`, `DeleteBookFile`, `GetFilesForBooks` |
 | `authors.go` | `Author` struct; `CreateAuthor`, `GetAuthor[ByName]`, `ListAuthors[Paginated]`, `UpdateAuthor`, `FindOrCreateAuthor`, `DeleteAuthor` |
-| `series.go` | `Series` / `BookSeriesEntry` structs; `CreateSeries`, `GetSeries`, `ListSeries[Paginated]`, `UpdateSeries`, `FindOrCreateSeries`, `DeleteSeries` |
+| `series.go` | `Series` / `BookSeriesEntry` structs; `CreateSeries`, `GetSeries`, `GetSeriesByName`, `ListSeries[Paginated]`, `UpdateSeries`, `FindOrCreateSeries`, `DeleteSeries` |
 | `libraries.go` | `Library` struct; `CreateLibrary`, `GetLibrary`, `ListLibraries`, `UpdateLibrary`, `DeleteLibrary` |
 | `settings.go` | `Setting` struct; `GetSetting`, `SetSetting`, `SetSettings` (transactional multi-key save) |
 | `users.go` | `User` struct; `CreateUser`, `CreateOIDCUser`, `GetUser*`, `LinkOIDCSubject`, `UpdatePassword`, `IsAdmin`, `SetAdmin`, `ListUsers` |
