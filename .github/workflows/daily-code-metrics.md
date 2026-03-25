@@ -5,8 +5,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
   issues: read
   pull-requests: read
+  discussions: read
 tracker-id: daily-code-metrics
 engine: copilot
 tools:
