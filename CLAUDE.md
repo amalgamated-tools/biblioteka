@@ -151,7 +151,7 @@ deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
 
 ### Deleting a user-owned resource
 
-For DELETE handlers on **user-scoped** resources (API keys, Kobo tokens), use `deleteUserOwnedResource` instead of `deleteResource`. The difference is that the get/delete functions also accept a `userID` parameter, and there is a separate `auditEntityType` argument (a stable snake_case string written to the audit log, distinct from the human-readable display name):
+For user-owned resources (such as API keys and Kobo tokens) where the get and delete functions accept both a resource ID and a user ID, use `deleteUserOwnedResource` instead:
 
 ```go
 deleteUserOwnedResource(h.DB, w, r, id, "API key", "api_key", otelkeys.APIKeyID,
@@ -161,7 +161,7 @@ deleteUserOwnedResource(h.DB, w, r, id, "API key", "api_key", otelkeys.APIKeyID,
 )
 ```
 
-`deleteUserOwnedResource` resolves `userID` from context and passes it to both `get` and `del`. It otherwise behaves identically to `deleteResource`. Always `return` immediately after the call.
+`deleteUserOwnedResource` mirrors `deleteResource` in behavior — it fetches the entity, deletes it, writes an audit log entry, and responds with `204 No Content`. Pass the human-readable display name as `resource` (e.g. `"API key"`) and the stable snake_case identifier as `auditEntityType` (e.g. `"api_key"`). Pass `nil` for `auditMeta` when no extra metadata is needed. The user ID is extracted from context automatically via `auth.UserIDFromContext`. Always `return` immediately after the call.
 
 ### Audit logging (non-`deleteResource` actions)
 
