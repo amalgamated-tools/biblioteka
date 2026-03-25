@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"log/slog"
@@ -183,31 +182,9 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIKeyHandler) deleteAPIKey(w http.ResponseWriter, r *http.Request, id string) {
-	userID := auth.UserIDFromContext(r.Context())
-
-	// Fetch the key first for audit log metadata.
-	apiKey, err := h.DB.GetAPIKey(r.Context(), id, userID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "API key not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to fetch API key", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete API key")
-		return
-	}
-
-	if err := h.DB.DeleteAPIKey(r.Context(), id, userID); err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "API key not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to delete API key", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete API key")
-		return
-	}
-
-	logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyDeleted, "api_key", id, map[string]any{"name": apiKey.Name})
-
-	w.WriteHeader(http.StatusNoContent)
+	deleteUserOwnedResource(h.DB, w, r, id, "API key", "api_key", otelkeys.APIKeyID,
+		h.DB.GetAPIKey, h.DB.DeleteAPIKey,
+		db.AuditActionAPIKeyDeleted,
+		func(k *db.APIKey) map[string]any { return map[string]any{"name": k.Name} },
+	)
 }

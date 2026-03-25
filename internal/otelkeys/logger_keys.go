@@ -5,6 +5,7 @@ package otelkeys
 const (
 	Action              string = "action"
 	Address             string = "address"
+	APIKeyID            string = "api_key_id"
 	Author              string = "author"
 	AuthorCount         string = "author_count"
 	AuthorID            string = "author_id"
@@ -50,6 +51,7 @@ const (
 	IssuerURL           string = "issuer_url"
 	Job                 string = "job"
 	Key                 string = "key"
+	KoboTokenID         string = "kobo_token_id"
 	KOSyncUsername      string = "kosync_username"
 	Level               string = "level"
 	LibrariesEnqueued   string = "libraries_enqueued"
