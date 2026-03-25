@@ -11,6 +11,9 @@ on:
       - 'go.mod'
       - 'go.sum'
       - '.golangci.yml'
+      # docs/docs.go is auto-generated Swagger code imported by internal/server;
+      # a bad regeneration would break compilation but wouldn't touch internal/**
+      - 'docs/docs.go'
       - '.github/workflows/test.yml'
   pull_request:
     branches: [main]
@@ -22,6 +25,9 @@ on:
       - 'go.mod'
       - 'go.sum'
       - '.golangci.yml'
+      # docs/docs.go is auto-generated Swagger code imported by internal/server;
+      # a bad regeneration would break compilation but wouldn't touch internal/**
+      - 'docs/docs.go'
       - '.github/workflows/test.yml'
 
 permissions:
