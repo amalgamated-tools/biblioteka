@@ -74,8 +74,11 @@ func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
 	))
 }
 
-// GetSeriesByName looks up a series by name using case-insensitive matching.
-// The stored name preserves the original capitalization provided by the caller.
+// GetSeriesByName looks up a series by name using case-insensitive matching
+// after normalizing whitespace. The returned Series.Name preserves the
+// capitalization stored in the database from when the row was created or
+// last updated, which may differ from the capitalization used for lookup.
+// Callers do not need to pre-normalize the input; this method handles it.
 func (d *DB) GetSeriesByName(ctx context.Context, name string) (*Series, error) {
 	name = NormalizeSeriesName(name)
 	slog.DebugContext(ctx, "db: fetching series by name", slog.String(otelkeys.Name, name))
