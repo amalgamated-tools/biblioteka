@@ -554,3 +554,50 @@ func Test_ListEntities(t *testing.T) {
 		}
 	})
 }
+
+func Test_MapSlice(t *testing.T) {
+	type entity struct {
+		ID   int
+		Name string
+	}
+	type dto struct {
+		Label string
+	}
+	toDTO := func(e *entity) dto {
+		return dto{Label: e.Name}
+	}
+
+	t.Run("converts elements", func(t *testing.T) {
+		items := []entity{{ID: 1, Name: "Alpha"}, {ID: 2, Name: "Beta"}}
+		result := mapSlice(items, toDTO)
+		if len(result) != 2 {
+			t.Fatalf("len = %d, want 2", len(result))
+		}
+		if result[0].Label != "Alpha" {
+			t.Errorf("result[0].Label = %q, want %q", result[0].Label, "Alpha")
+		}
+		if result[1].Label != "Beta" {
+			t.Errorf("result[1].Label = %q, want %q", result[1].Label, "Beta")
+		}
+	})
+
+	t.Run("empty input returns empty slice", func(t *testing.T) {
+		result := mapSlice([]entity{}, toDTO)
+		if result == nil {
+			t.Fatal("result is nil, want non-nil empty slice")
+		}
+		if len(result) != 0 {
+			t.Errorf("len = %d, want 0", len(result))
+		}
+	})
+
+	t.Run("nil input returns empty slice", func(t *testing.T) {
+		result := mapSlice(nil, toDTO)
+		if result == nil {
+			t.Fatal("result is nil, want non-nil empty slice")
+		}
+		if len(result) != 0 {
+			t.Errorf("len = %d, want 0", len(result))
+		}
+	})
+}
