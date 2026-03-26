@@ -16,11 +16,7 @@ func (h *BookHandler) respondBookAuthors(ctx context.Context, w http.ResponseWri
 		writeError(ctx, w, http.StatusInternalServerError, "failed to get book authors")
 		return
 	}
-	dtos := make([]authorDTO, 0, len(authors))
-	for i := range authors {
-		dtos = append(dtos, toAuthorDTO(&authors[i]))
-	}
-	writeJSON(ctx, w, http.StatusOK, dtos)
+	writeJSON(ctx, w, http.StatusOK, mapSlice(authors, toAuthorDTO))
 }
 
 // setBookAuthorsRequest is the request body for setting book authors.
