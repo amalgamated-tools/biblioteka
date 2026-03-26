@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -50,13 +51,7 @@ func (h *BookFileHandler) HandleBookFile(w http.ResponseWriter, r *http.Request)
 func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id string) {
 	slog.DebugContext(r.Context(), "fetching book file", slog.String(otelkeys.BookFileID, id))
 	bf, err := h.DB.GetBookFile(r.Context(), id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "book file not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get book file", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get book file")
+	if handleDBErr(r.Context(), w, err, "book file") {
 		return
 	}
 
@@ -80,18 +75,12 @@ func (h *BookFileHandler) deleteBookFile(w http.ResponseWriter, r *http.Request,
 	slog.DebugContext(r.Context(), "deleting book file", slog.String(otelkeys.BookFileID, id))
 
 	bf, err := h.DB.GetBookFile(r.Context(), id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "book file not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get book file", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete book file")
+	if handleDBErr(r.Context(), w, err, "book file") {
 		return
 	}
 
 	if err := h.DB.DeleteBookFile(r.Context(), id); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusNotFound, "book file not found")
 			return
 		}
