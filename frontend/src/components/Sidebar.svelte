@@ -71,9 +71,7 @@
         <BookCheck class="w-5 h-5 text-white" />
       </div>
       <div>
-        <p class="text-lg font-display font-bold tracking-tight">
-          biblioteka
-        </p>
+        <p class="text-lg font-display font-bold tracking-tight">biblioteka</p>
         <p class="text-xs text-ink-400 truncate">{authStore.user?.email}</p>
       </div>
     </div>
