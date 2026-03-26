@@ -378,6 +378,51 @@ Always commit the updated spec files alongside the handler changes that prompted
       return
   }
   ```
+- **Name validation**: Before writing a named resource (author, series) to the database, call `validateName(r.Context(), w, req.Name)`. It returns `true` when the name is non-blank; on failure it writes a `400 Bad Request` response and returns `false`:
+  ```go
+  if !validateName(r.Context(), w, req.Name) {
+      return
+  }
+  ```
+- **Name error handling**: For named-resource create handlers, use `handleNameErr(r.Context(), w, err, db.ErrInvalidXxxName, db.ErrXxxNameExists, "an xxx")` after a failed DB write. Returns `true` when it wrote a response (caller should `return`); returns `false` when `err` doesn't match either sentinel:
+  ```go
+  if handleNameErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author") {
+      return
+  }
+  ```
+  `ErrInvalidXxxName` → `400 Bad Request`; `ErrXxxNameExists` → `409 Conflict`.
+- **Update error handling**: For named-resource update handlers, use `handleUpdateErr(r.Context(), w, err, db.ErrInvalidXxxName, db.ErrXxxNameExists, "an xxx", "xxx", id)` to cover the full error block (not-found → 404, name errors, fallback → 500) in one call:
+  ```go
+  if handleUpdateErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author", "author", id) {
+      return
+  }
+  ```
+- **List handlers**: For simple unpaginated list handlers, use the generic `listEntities[T, DTO](w, r, resource, listFn, toDTO)` helper instead of hand-rolling the fetch-convert-respond pattern:
+  ```go
+  func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
+      listEntities(w, r, "authors", h.DB.ListAuthors, toAuthorDTO)
+  }
+  ```
+- **Deleting a resource**: For DELETE handlers on global resources, use `deleteResource` from `internal/handlers/helpers.go` instead of hand-rolling the fetch-delete-audit pattern. It fetches the entity, deletes it, writes an audit log entry, and responds with `204 No Content`. Always `return` immediately after the call:
+  ```go
+  deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
+      h.DB.GetAuthor, h.DB.DeleteAuthor,
+      db.AuditActionAuthorDeleted,
+      func(a *db.Author) map[string]any { return map[string]any{"name": a.Name} },
+  )
+  ```
+- **Deleting a user-owned resource**: For DELETE handlers on user-scoped resources (API keys, Kobo tokens), use `deleteUserOwnedResource` instead of `deleteResource`. The get/delete functions also accept a `userID`, and there is a separate `auditEntityType` parameter:
+  ```go
+  deleteUserOwnedResource(h.DB, w, r, id, "API key", "api_key", otelkeys.APIKeyID,
+      h.DB.GetAPIKey, h.DB.DeleteAPIKey,
+      db.AuditActionAPIKeyDeleted,
+      func(k *db.APIKey) map[string]any { return map[string]any{"name": k.Name} },
+  )
+  ```
+- **Audit logging**: For create/update actions not covered by `deleteResource`, call `logAudit` after the DB write succeeds. A failed audit write is logged as a warning and never fails the request:
+  ```go
+  logAudit(r.Context(), h.DB, userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title})
+  ```
 - **Logging**: Use `log/slog` for structured logging. Always call the **context-aware variants** — `slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`, `slog.WarnContext(ctx, ...)`, `slog.DebugContext(ctx, ...)` — passing `r.Context()` in HTTP handlers or a propagated `context.Context` elsewhere. The non-context versions (`slog.Info`, `slog.Error`, etc.) are **forbidden** by the `sloglint` linter. `log.Print*`, `log.Fatal*`, and `log.Panic*` are also forbidden. For log field keys, use the predefined constants from `internal/otelkeys/logger_keys.go` (e.g. `otelkeys.UserID`, `otelkeys.BookID`) — never raw string literals. If you need a new field key, add a constant there first.
 - **User scoping**: All data queries must include `user_id` to enforce per-user data isolation.
 - **Formatting**: Run `go fmt ./...` before committing Go code.

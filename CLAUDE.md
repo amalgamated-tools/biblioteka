@@ -149,6 +149,20 @@ deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
 
 `deleteResource` is a package-level generic function in `internal/handlers/helpers.go`. It fetches the entity (to capture audit metadata), deletes it, writes an audit log entry via `db.CreateAuditLog`, and responds with `204 No Content`. A failed audit write is logged as a warning and never blocks the response. Pass `nil` for `auditMeta` when no extra metadata is needed. Always `return` immediately after the call — `deleteResource` always writes the HTTP response itself.
 
+### Deleting a user-owned resource
+
+For DELETE handlers on **user-scoped** resources (API keys, Kobo tokens), use `deleteUserOwnedResource` instead of `deleteResource`. The difference is that the get/delete functions also accept a `userID` parameter, and there is a separate `auditEntityType` argument (a stable snake_case string written to the audit log, distinct from the human-readable display name):
+
+```go
+deleteUserOwnedResource(h.DB, w, r, id, "API key", "api_key", otelkeys.APIKeyID,
+    h.DB.GetAPIKey, h.DB.DeleteAPIKey,
+    db.AuditActionAPIKeyDeleted,
+    func(k *db.APIKey) map[string]any { return map[string]any{"name": k.Name} },
+)
+```
+
+`deleteUserOwnedResource` resolves `userID` from context and passes it to both `get` and `del`. It otherwise behaves identically to `deleteResource`. Always `return` immediately after the call.
+
 ### Audit logging (non-`deleteResource` actions)
 
 For actions not covered by `deleteResource`, call `logAudit` after the database write succeeds:
