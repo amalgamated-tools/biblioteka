@@ -117,6 +117,24 @@ db/migrations/
 
 `ErrInvalidXxxName` maps to `400 Bad Request` ("name is required"); `ErrXxxNameExists` maps to `409 Conflict` ("an xxx with that name already exists").
 
+- For update handlers, consolidate the full error block with `handleUpdateErr` instead of calling `handleNameErr` and writing a 404 by hand:
+
+  ```go
+  if handleUpdateErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author", "author", id) {
+      return
+  }
+  ```
+
+  `handleUpdateErr` returns `true` when it wrote a response (caller should `return`), `false` when `err == nil`. It covers: `sql.ErrNoRows` → `404 Not Found`; `ErrInvalidXxxName` → `400 Bad Request`; `ErrXxxNameExists` → `409 Conflict`; any other error → logs and returns `500 Internal Server Error`.
+
+- For list endpoints that return a slice of DTOs, use the generic `listEntities` helper instead of hand-rolling the list-and-convert pattern:
+
+  ```go
+  listEntities(w, r, "authors", h.DB.ListAuthors, toAuthorDTO)
+  ```
+
+  `listEntities` is a generic function in `internal/handlers/helpers.go`. It calls the `list` function, converts each entity to a DTO via `toDTO`, and writes a `200 OK` JSON response. On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
+
 ### Deleting a resource
 
 For DELETE handlers, use the generic `deleteResource` helper instead of hand-rolling the fetch-delete-audit pattern:
