@@ -6,6 +6,7 @@ on:
 permissions:
   contents: read
   actions: read
+  discussions: write
   issues: read
   pull-requests: read
 tracker-id: portfolio-analyst-weekly

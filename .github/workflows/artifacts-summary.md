@@ -6,6 +6,7 @@ on:
 permissions:
   contents: read
   actions: read
+  discussions: write
 engine: copilot
 network:
   allowed:
