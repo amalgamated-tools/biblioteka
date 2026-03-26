@@ -6,9 +6,9 @@ on:
 permissions:
   contents: read
   actions: read
+  discussions: write
   issues: read
   pull-requests: read
-  discussions: read
 tracker-id: daily-code-metrics
 engine: copilot
 tools:

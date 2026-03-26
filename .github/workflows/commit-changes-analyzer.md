@@ -10,6 +10,7 @@ on:
         type: string
 permissions:
   contents: read
+  discussions: write
   issues: read
   pull-requests: read
 engine:
