@@ -34,6 +34,15 @@
     | "users"
     | "api-keys"
     | "kobo";
+  const tabLabels: Record<SettingsTab, string> = {
+    account: "Account",
+    preferences: "Preferences",
+    oidc: "OIDC / SSO",
+    smtp: "Email / SMTP",
+    users: "Users",
+    "api-keys": "API Keys",
+    kobo: "Kobo Sync",
+  };
   const validTabs: SettingsTab[] = [
     "account",
     "preferences",
@@ -161,7 +170,7 @@
       </nav>
     </div>
 
-    <section class="flex-1">
+    <section class="flex-1" aria-label="{tabLabels[activeTab]} settings">
       {#if activeTab === "account"}
         <AccountTab {oidcConfigured} />
       {/if}
