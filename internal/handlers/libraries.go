@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -282,19 +281,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 	)
 
 	lib, err := h.DB.UpdateLibrary(r.Context(), id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "library not found")
-			return
-		}
-		if errors.Is(err, db.ErrLibraryNameExists) {
-			writeError(r.Context(), w, http.StatusConflict, "a library with that name already exists")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to update library",
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update library")
+	if handleUpdateErr(r.Context(), w, err, nil, db.ErrLibraryNameExists, "a library", "library", id) {
 		return
 	}
 
