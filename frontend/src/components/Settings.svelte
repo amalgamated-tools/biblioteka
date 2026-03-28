@@ -176,7 +176,7 @@
       </nav>
     </div>
 
-    <section class="flex-1" aria-label="Settings details">
+    <section class="flex-1" aria-label="{tabLabels[activeTab]} settings">
       {#if activeTab === "account"}
         <AccountTab {oidcConfigured} />
       {/if}
