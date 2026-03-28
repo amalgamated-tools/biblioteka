@@ -7,6 +7,7 @@ class AuthorStore {
   loaded = $state(false);
 
   async load(): Promise<void> {
+    if (this.loading || this.loaded) return;
     this.loading = true;
     try {
       const data = await api.listAuthors();
