@@ -135,6 +135,14 @@ db/migrations/
 
   `listEntities` is a generic function in `internal/handlers/helpers.go`. It calls the `list` function, converts each entity to a DTO via `toDTO`, and writes a `200 OK` JSON response. On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
 
+- When you need to convert a slice of entities to DTOs outside of `listEntities` (for example, in sub-resource handlers whose list function requires additional parameters such as a parent resource ID), use the generic `mapSlice` helper:
+
+  ```go
+  writeJSON(ctx, w, http.StatusOK, mapSlice(authors, toAuthorDTO))
+  ```
+
+  `mapSlice` is a generic function in `internal/handlers/helpers.go`. It applies `toDTO` to every element of `items` and returns the resulting slice. Use it whenever you hold the fetched slice yourself and only need the DTO conversion step (no automatic list call or error handling). The `toDTO` function must accept a **pointer** to the entity type (e.g. `func toAuthorDTO(a *db.Author) AuthorDTO`) — `mapSlice` passes a pointer to each element internally.
+
 ### Deleting a resource
 
 For DELETE handlers, use the generic `deleteResource` helper instead of hand-rolling the fetch-delete-audit pattern:
@@ -207,6 +215,24 @@ Every database query that reads or writes user-owned data **must** filter by `us
 - Migrations run automatically on server startup.
 - SQLite connections use `PRAGMA journal_mode=WAL`, `synchronous=NORMAL`, and `foreign_keys=ON`.
 - Use `db.Timestamp` for time columns and `db.now()` for dialect-aware current-time expressions.
+
+### FindOrCreate pattern
+
+When implementing a `FindOrCreate*` function for a new named entity (such as a tag or publisher), use the unexported `findOrCreate` generic helper from `internal/db/find_or_create.go` instead of re-implementing the lookup → insert → race-fetch sequence:
+
+```go
+func (d *DB) FindOrCreateTag(ctx context.Context, name string) (*Tag, error) {
+    return findOrCreate(ctx, name, "tag",
+        NormalizeTagName, ErrInvalidTagName, ErrTagNameExists,
+        d.GetTagByName,
+        func(ctx context.Context, n string) (*Tag, error) {
+            return d.CreateTag(ctx, n)
+        },
+    )
+}
+```
+
+`findOrCreate` normalizes the name, validates it against `errInvalid`, handles concurrent-insert races (unique-constraint violation → retry fetch), and emits a debug log. Pass the raw (un-normalized) name — normalization is performed inside the helper.
 
 ## Frontend Conventions
 
