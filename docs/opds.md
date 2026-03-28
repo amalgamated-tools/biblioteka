@@ -135,6 +135,16 @@ Authorization: Bearer <jwt>
 
 Returns the current OPDS username and timestamps, or `404` if no credentials are configured.
 
+**Response `200 OK`:**
+
+```json
+{
+  "username": "alice",
+  "created_at": "2026-03-17T12:00:00Z",
+  "updated_at": "2026-03-17T12:00:00Z"
+}
+```
+
 ### Create or update credentials
 
 ```http
@@ -156,6 +166,16 @@ Creates OPDS credentials if they don't exist, or replaces the current credential
 |------------|--------|----------|----------------------------------------------------------------------|
 | `username` | string | ✓        | OPDS username (max 256 chars, case-insensitive, must be globally unique) |
 | `password` | string | ✓        | OPDS password (min 6 chars)                                          |
+
+**Response `200 OK`:**
+
+```json
+{
+  "username": "alice",
+  "created_at": "2026-03-17T12:00:00Z",
+  "updated_at": "2026-03-18T09:30:00Z"
+}
+```
 
 **Error responses:**
 
