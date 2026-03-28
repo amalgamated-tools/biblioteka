@@ -199,7 +199,10 @@ func TestProcessFileHandler_EmptyPath(t *testing.T) {
 	defer extractor.Close()
 	handler := NewProcessFileHandler(database, extractor)
 
-	payload, _ := json.Marshal(ProcessFilePayload{Path: ""})
+	payload, err := json.Marshal(ProcessFilePayload{Path: ""})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
 	err = handler(context.Background(), payload)
 	if err == nil {
 		t.Fatal("expected error for empty path")

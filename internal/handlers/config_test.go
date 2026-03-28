@@ -739,12 +739,18 @@ func TestHandleSetSMTPConfig_DefaultsPortAndTLS(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
-	port, _ := h.DB.GetSetting(context.Background(), settingSMTPPort)
+	port, err := h.DB.GetSetting(context.Background(), settingSMTPPort)
+	if err != nil {
+		t.Fatalf("get setting: %v", err)
+	}
 	if port != "587" {
 		t.Errorf("default port = %q, want %q", port, "587")
 	}
 
-	tlsMode, _ := h.DB.GetSetting(context.Background(), settingSMTPTLS)
+	tlsMode, err := h.DB.GetSetting(context.Background(), settingSMTPTLS)
+	if err != nil {
+		t.Fatalf("get setting: %v", err)
+	}
 	if tlsMode != "starttls" {
 		t.Errorf("default tls = %q, want %q", tlsMode, "starttls")
 	}
