@@ -3139,6 +3139,9 @@ const docTemplate = `{
         },
         "internal_handlers.bookRequest": {
             "type": "object",
+            "required": [
+                "title"
+            ],
             "properties": {
                 "asin": {
                     "type": "string"
