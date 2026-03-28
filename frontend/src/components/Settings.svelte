@@ -106,6 +106,7 @@
       >
         {#each userTabs as tab (tab.key)}
           {@const isActive = activeTab === tab.key}
+          {@const Icon = tab.icon}
           <a
             href="#settings/{tab.key}"
             aria-current={isActive ? "page" : undefined}
@@ -113,7 +114,7 @@
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
               : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
           >
-            <tab.icon class="w-5 h-5" />
+            <Icon class="w-5 h-5" />
             {tab.label}
           </a>
         {/each}
@@ -131,6 +132,7 @@
           ></div>
           {#each adminTabs as tab (tab.key)}
             {@const isActive = activeTab === tab.key}
+            {@const Icon = tab.icon}
             <a
               href="#settings/{tab.key}"
               aria-current={isActive ? "page" : undefined}
@@ -138,7 +140,7 @@
                 ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
                 : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
             >
-              <tab.icon class="w-5 h-5" />
+              <Icon class="w-5 h-5" />
               {tab.label}
             </a>
           {/each}
