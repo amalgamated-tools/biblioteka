@@ -2152,7 +2152,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET lists all Kobo sync tokens for the authenticated user.\nPOST creates a new Kobo sync token. The raw token is returned only in the creation response and is never retrievable again.",
+                "description": "GET lists all Kobo sync tokens for the authenticated user.\nPOST creates a new Kobo sync token. The raw token is returned only in the creation response and is never retrievable again.\nPOST body: {\"name\": \"string\"} (required)",
                 "consumes": [
                     "application/json"
                 ],
@@ -2163,16 +2163,6 @@
                     "kobo-tokens"
                 ],
                 "summary": "List and create Kobo sync tokens",
-                "parameters": [
-                    {
-                        "description": "Token data (required for POST)",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.koboTokenCreateRequest"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "List of Kobo tokens",
@@ -2221,7 +2211,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET lists all Kobo sync tokens for the authenticated user.\nPOST creates a new Kobo sync token. The raw token is returned only in the creation response and is never retrievable again.",
+                "description": "GET lists all Kobo sync tokens for the authenticated user.\nPOST creates a new Kobo sync token. The raw token is returned only in the creation response and is never retrievable again.\nPOST body: {\"name\": \"string\"} (required)",
                 "consumes": [
                     "application/json"
                 ],
@@ -2232,16 +2222,6 @@
                     "kobo-tokens"
                 ],
                 "summary": "List and create Kobo sync tokens",
-                "parameters": [
-                    {
-                        "description": "Token data (required for POST)",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.koboTokenCreateRequest"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "List of Kobo tokens",
@@ -2313,6 +2293,12 @@
                     "204": {
                         "description": "Token deleted"
                     },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
@@ -2347,36 +2333,20 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).\nPUT creates or updates the current user's KOSync credential.\nDELETE removes the current user's KOSync credential.",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "kosync-credentials"
                 ],
-                "summary": "Manage KOSync credentials",
-                "parameters": [
-                    {
-                        "description": "Credential data (required for PUT)",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.credentialRequest"
-                        }
-                    }
-                ],
+                "summary": "Get KOSync credentials",
                 "responses": {
                     "200": {
-                        "description": "Credential returned or updated",
+                        "description": "Credential returned",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
-                    },
-                    "204": {
-                        "description": "Credential deleted"
                     },
                     "400": {
                         "description": "Bad request",
@@ -2402,12 +2372,6 @@
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
-                    "409": {
-                        "description": "Username already taken",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.errorResponse"
-                        }
-                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -2422,7 +2386,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).\nPUT creates or updates the current user's KOSync credential.\nDELETE removes the current user's KOSync credential.",
+                "description": "PUT creates or updates the current user's KOSync credential.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2432,7 +2396,7 @@
                 "tags": [
                     "kosync-credentials"
                 ],
-                "summary": "Manage KOSync credentials",
+                "summary": "Create or update KOSync credentials",
                 "parameters": [
                     {
                         "description": "Credential data (required for PUT)",
@@ -2445,13 +2409,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Credential returned or updated",
+                        "description": "Credential created or updated",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
-                    },
-                    "204": {
-                        "description": "Credential deleted"
                     },
                     "400": {
                         "description": "Bad request",
@@ -2497,34 +2458,15 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).\nPUT creates or updates the current user's KOSync credential.\nDELETE removes the current user's KOSync credential.",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "DELETE removes the current user's KOSync credential.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "kosync-credentials"
                 ],
-                "summary": "Manage KOSync credentials",
-                "parameters": [
-                    {
-                        "description": "Credential data (required for PUT)",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.credentialRequest"
-                        }
-                    }
-                ],
+                "summary": "Delete KOSync credentials",
                 "responses": {
-                    "200": {
-                        "description": "Credential returned or updated",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.credentialResponse"
-                        }
-                    },
                     "204": {
                         "description": "Credential deleted"
                     },
@@ -2548,12 +2490,6 @@
                     },
                     "405": {
                         "description": "Method not allowed",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.errorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Username already taken",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
@@ -2939,36 +2875,20 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET returns the current user's OPDS credential.\nPUT creates or replaces the current user's OPDS credential (username and hashed password).\nDELETE removes the current user's OPDS credential.",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "GET returns the current user's OPDS credential.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "opds-credentials"
                 ],
-                "summary": "Manage OPDS credentials",
-                "parameters": [
-                    {
-                        "description": "Credential data (required for PUT)",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.credentialRequest"
-                        }
-                    }
-                ],
+                "summary": "Get OPDS credentials",
                 "responses": {
                     "200": {
-                        "description": "Credential returned or updated",
+                        "description": "Credential returned",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
-                    },
-                    "204": {
-                        "description": "Credential deleted"
                     },
                     "400": {
                         "description": "Bad request",
@@ -2994,12 +2914,6 @@
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
-                    "409": {
-                        "description": "Username already taken",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.errorResponse"
-                        }
-                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -3014,7 +2928,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET returns the current user's OPDS credential.\nPUT creates or replaces the current user's OPDS credential (username and hashed password).\nDELETE removes the current user's OPDS credential.",
+                "description": "PUT creates or replaces the current user's OPDS credential (username and password, with the password hashed server-side).",
                 "consumes": [
                     "application/json"
                 ],
@@ -3024,7 +2938,7 @@
                 "tags": [
                     "opds-credentials"
                 ],
-                "summary": "Manage OPDS credentials",
+                "summary": "Create or update OPDS credentials",
                 "parameters": [
                     {
                         "description": "Credential data (required for PUT)",
@@ -3037,13 +2951,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Credential returned or updated",
+                        "description": "Credential created or updated",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
-                    },
-                    "204": {
-                        "description": "Credential deleted"
                     },
                     "400": {
                         "description": "Bad request",
@@ -3089,34 +3000,15 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET returns the current user's OPDS credential.\nPUT creates or replaces the current user's OPDS credential (username and hashed password).\nDELETE removes the current user's OPDS credential.",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "DELETE removes the current user's OPDS credential.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "opds-credentials"
                 ],
-                "summary": "Manage OPDS credentials",
-                "parameters": [
-                    {
-                        "description": "Credential data (required for PUT)",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.credentialRequest"
-                        }
-                    }
-                ],
+                "summary": "Delete OPDS credentials",
                 "responses": {
-                    "200": {
-                        "description": "Credential returned or updated",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.credentialResponse"
-                        }
-                    },
                     "204": {
                         "description": "Credential deleted"
                     },
@@ -3140,12 +3032,6 @@
                     },
                     "405": {
                         "description": "Method not allowed",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.errorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Username already taken",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
@@ -3954,14 +3840,6 @@
             "type": "object",
             "properties": {
                 "error": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_handlers.koboTokenCreateRequest": {
-            "type": "object",
-            "properties": {
-                "name": {
                     "type": "string"
                 }
             }

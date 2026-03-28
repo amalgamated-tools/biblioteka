@@ -44,29 +44,64 @@ type kosyncProgressRequest struct {
 
 // ---- Biblioteka credential-management API (JWT-protected) ----
 
-// HandleKOSyncCredentials dispatches GET/PUT/DELETE for /api/kosync/credentials.
+// GetKOSyncCredentials handles GET /api/kosync/credentials.
 //
-//	@Summary	Manage KOSync credentials
-//	@Description
+//	@Summary		Get KOSync credentials
 //	@Description	GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).
+//	@Tags			kosync-credentials
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Success		200	{object}	credentialResponse	"Credential returned"
+//	@Failure		400	{object}	errorResponse	"Bad request"
+//	@Failure		401	{object}	errorResponse	"Unauthorized"
+//	@Failure		404	{object}	errorResponse	"No KOSync credentials configured"
+//	@Failure		405	{object}	errorResponse	"Method not allowed"
+//	@Failure		500	{object}	errorResponse	"Internal server error"
+//	@Router			/kosync/credentials [get]
+func (h *KOSyncHandler) GetKOSyncCredentials(w http.ResponseWriter, r *http.Request) {
+	handleCredentials(h.credOps(), w, r)
+}
+
+// PutKOSyncCredentials handles PUT /api/kosync/credentials.
+//
+//	@Summary		Create or update KOSync credentials
 //	@Description	PUT creates or updates the current user's KOSync credential.
-//	@Description	DELETE removes the current user's KOSync credential.
 //	@Tags			kosync-credentials
 //	@Security		BearerAuth
 //	@Accept			json
 //	@Produce		json
 //	@Param			body	body		credentialRequest	false	"Credential data (required for PUT)"
-//	@Success		200		{object}	credentialResponse	"Credential returned or updated"
-//	@Success		204		"Credential deleted"
-//	@Failure		400		{object}	errorResponse	"Bad request"
-//	@Failure		401		{object}	errorResponse	"Unauthorized"
-//	@Failure		404		{object}	errorResponse	"No KOSync credentials configured"
-//	@Failure		405		{object}	errorResponse	"Method not allowed"
-//	@Failure		409		{object}	errorResponse	"Username already taken"
-//	@Failure		500		{object}	errorResponse	"Internal server error"
-//	@Router			/kosync/credentials [get]
+//	@Success		200	{object}	credentialResponse	"Credential created or updated"
+//	@Failure		400	{object}	errorResponse	"Bad request"
+//	@Failure		401	{object}	errorResponse	"Unauthorized"
+//	@Failure		404	{object}	errorResponse	"No KOSync credentials configured"
+//	@Failure		405	{object}	errorResponse	"Method not allowed"
+//	@Failure		409	{object}	errorResponse	"Username already taken"
+//	@Failure		500	{object}	errorResponse	"Internal server error"
 //	@Router			/kosync/credentials [put]
+func (h *KOSyncHandler) PutKOSyncCredentials(w http.ResponseWriter, r *http.Request) {
+	handleCredentials(h.credOps(), w, r)
+}
+
+// DeleteKOSyncCredentials handles DELETE /api/kosync/credentials.
+//
+//	@Summary		Delete KOSync credentials
+//	@Description	DELETE removes the current user's KOSync credential.
+//	@Tags			kosync-credentials
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Success		204	"Credential deleted"
+//	@Failure		400	{object}	errorResponse	"Bad request"
+//	@Failure		401	{object}	errorResponse	"Unauthorized"
+//	@Failure		404	{object}	errorResponse	"No KOSync credentials configured"
+//	@Failure		405	{object}	errorResponse	"Method not allowed"
+//	@Failure		500	{object}	errorResponse	"Internal server error"
 //	@Router			/kosync/credentials [delete]
+func (h *KOSyncHandler) DeleteKOSyncCredentials(w http.ResponseWriter, r *http.Request) {
+	handleCredentials(h.credOps(), w, r)
+}
+
+// HandleKOSyncCredentials dispatches GET/PUT/DELETE for /api/kosync/credentials.
 func (h *KOSyncHandler) HandleKOSyncCredentials(w http.ResponseWriter, r *http.Request) {
 	handleCredentials(h.credOps(), w, r)
 }

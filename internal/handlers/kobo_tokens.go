@@ -45,11 +45,11 @@ func toKoboTokenDTO(token *db.KoboToken) koboTokenDTO {
 //	@Description
 //	@Description	GET lists all Kobo sync tokens for the authenticated user.
 //	@Description	POST creates a new Kobo sync token. The raw token is returned only in the creation response and is never retrievable again.
+//	@Description	POST body: {"name": "string"} (required)
 //	@Tags			kobo-tokens
 //	@Security		BearerAuth
 //	@Accept			json
 //	@Produce		json
-//	@Param			body	body		koboTokenCreateRequest	false	"Token data (required for POST)"
 //	@Success		200		{array}		koboTokenDTO			"List of Kobo tokens"
 //	@Success		201		{object}	koboTokenCreateResponse	"Kobo token created"
 //	@Failure		400		{object}	errorResponse			"Bad request"
@@ -78,6 +78,7 @@ func (h *KoboHandler) HandleKoboTokens(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			id	path	string	true	"Kobo token ID"
 //	@Success		204	"Token deleted"
+//	@Failure		400	{object}	errorResponse	"Bad request"
 //	@Failure		401	{object}	errorResponse	"Unauthorized"
 //	@Failure		404	{object}	errorResponse	"Token not found"
 //	@Failure		405	{object}	errorResponse	"Method not allowed"
