@@ -30,7 +30,10 @@ func TestCreateBook(t *testing.T) {
 func TestGetBook(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	created, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
 
 	found, err := d.GetBook(context.Background(), created.ID)
 	if err != nil {
@@ -56,8 +59,12 @@ func TestGetBook_NotFound(t *testing.T) {
 func TestListBooks(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	_, _ = d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if _, err := d.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("CreateBook() for A Game of Thrones error: %v", err)
+	}
+	if _, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("CreateBook() for The Gunslinger error: %v", err)
+	}
 
 	books, err := d.ListBooks(context.Background())
 	if err != nil {
@@ -74,7 +81,10 @@ func TestListBooks(t *testing.T) {
 func TestUpdateBook(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateBook(context.Background(), "Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	created, err := d.CreateBook(context.Background(), "Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
 
 	updated, err := d.UpdateBook(context.Background(), created.ID, "The Gunslinger", new("Revised edition"), nil, nil, nil, nil, nil, nil, nil, nil, new("en"), nil)
 	if err != nil {
@@ -88,9 +98,12 @@ func TestUpdateBook(t *testing.T) {
 func TestDeleteBook(t *testing.T) {
 	d := newTestDB(t)
 
-	b, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
 
-	err := d.DeleteBook(context.Background(), b.ID)
+	err = d.DeleteBook(context.Background(), b.ID)
 	if err != nil {
 		t.Fatalf("DeleteBook() error: %v", err)
 	}
@@ -200,16 +213,27 @@ func TestListBooksByLibraryPaginated(t *testing.T) {
 func TestRemoveBookFromLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, _ := d.CreateLibrary(context.Background(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	_ = d.AddBookToLibrary(context.Background(), lib.ID, book.ID)
+	lib, err := d.CreateLibrary(context.Background(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
+	if err != nil {
+		t.Fatalf("CreateLibrary() error: %v", err)
+	}
+	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
+	if err := d.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
+		t.Fatalf("AddBookToLibrary() error: %v", err)
+	}
 
-	err := d.RemoveBookFromLibrary(context.Background(), lib.ID, book.ID)
+	err = d.RemoveBookFromLibrary(context.Background(), lib.ID, book.ID)
 	if err != nil {
 		t.Fatalf("RemoveBookFromLibrary() error: %v", err)
 	}
 
-	books, _ := d.ListBooksByLibrary(context.Background(), lib.ID)
+	books, err := d.ListBooksByLibrary(context.Background(), lib.ID)
+	if err != nil {
+		t.Fatalf("ListBooksByLibrary() error: %v", err)
+	}
 	if len(books) != 0 {
 		t.Errorf("ListBooksByLibrary() returned %d, want 0", len(books))
 	}
@@ -218,11 +242,20 @@ func TestRemoveBookFromLibrary(t *testing.T) {
 func TestSetBookAuthors(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	a1, _ := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
-	a2, _ := d.CreateAuthor(context.Background(), "Peter Straub", nil, nil, nil, nil)
+	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
+	a1, err := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() for Stephen King error: %v", err)
+	}
+	a2, err := d.CreateAuthor(context.Background(), "Peter Straub", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() for Peter Straub error: %v", err)
+	}
 
-	err := d.SetBookAuthors(context.Background(), book.ID, []string{a1.ID, a2.ID})
+	err = d.SetBookAuthors(context.Background(), book.ID, []string{a1.ID, a2.ID})
 	if err != nil {
 		t.Fatalf("SetBookAuthors() error: %v", err)
 	}
@@ -239,18 +272,32 @@ func TestSetBookAuthors(t *testing.T) {
 func TestSetBookAuthors_Replace(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook(context.Background(), "The Talisman", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	a1, _ := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
-	a2, _ := d.CreateAuthor(context.Background(), "Peter Straub", nil, nil, nil, nil)
+	book, err := d.CreateBook(context.Background(), "The Talisman", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
+	a1, err := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() for Stephen King error: %v", err)
+	}
+	a2, err := d.CreateAuthor(context.Background(), "Peter Straub", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() for Peter Straub error: %v", err)
+	}
 
-	_ = d.SetBookAuthors(context.Background(), book.ID, []string{a1.ID})
+	if err := d.SetBookAuthors(context.Background(), book.ID, []string{a1.ID}); err != nil {
+		t.Fatalf("SetBookAuthors() initial error: %v", err)
+	}
 
-	err := d.SetBookAuthors(context.Background(), book.ID, []string{a2.ID})
+	err = d.SetBookAuthors(context.Background(), book.ID, []string{a2.ID})
 	if err != nil {
 		t.Fatalf("SetBookAuthors() replace error: %v", err)
 	}
 
-	authors, _ := d.GetBookAuthors(context.Background(), book.ID)
+	authors, err := d.GetBookAuthors(context.Background(), book.ID)
+	if err != nil {
+		t.Fatalf("GetBookAuthors() error: %v", err)
+	}
 	if len(authors) != 1 {
 		t.Fatalf("GetBookAuthors() returned %d, want 1", len(authors))
 	}
@@ -365,17 +412,32 @@ func TestGetAuthorsForBooks(t *testing.T) {
 func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	a, _ := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
-	s, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
+	a, err := d.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateAuthor() error: %v", err)
+	}
+	s, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateSeries() error: %v", err)
+	}
 
-	_ = d.SetBookAuthors(context.Background(), book.ID, []string{a.ID})
-	_ = d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.1)}})
+	if err := d.SetBookAuthors(context.Background(), book.ID, []string{a.ID}); err != nil {
+		t.Fatalf("SetBookAuthors() error: %v", err)
+	}
+	if err := d.SetBookSeries(context.Background(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.1)}}); err != nil {
+		t.Fatalf("SetBookSeries() error: %v", err)
+	}
 
-	_ = d.DeleteBook(context.Background(), book.ID)
+	if err := d.DeleteBook(context.Background(), book.ID); err != nil {
+		t.Fatalf("DeleteBook() error: %v", err)
+	}
 
 	// Author and series should still exist (only join table entries are cascaded)
-	_, err := d.GetAuthor(context.Background(), a.ID)
+	_, err = d.GetAuthor(context.Background(), a.ID)
 	if err != nil {
 		t.Errorf("author should still exist after book delete, got: %v", err)
 	}
@@ -492,11 +554,21 @@ func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
 func TestDeleteLibrary_DoesNotDeleteBook(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, _ := d.CreateLibrary(context.Background(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
-	book, _ := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	_ = d.AddBookToLibrary(context.Background(), lib.ID, book.ID)
+	lib, err := d.CreateLibrary(context.Background(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
+	if err != nil {
+		t.Fatalf("CreateLibrary() error: %v", err)
+	}
+	book, err := d.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateBook() error: %v", err)
+	}
+	if err := d.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
+		t.Fatalf("AddBookToLibrary() error: %v", err)
+	}
 
-	_ = d.DeleteLibrary(context.Background(), lib.ID)
+	if err := d.DeleteLibrary(context.Background(), lib.ID); err != nil {
+		t.Fatalf("DeleteLibrary() error: %v", err)
+	}
 
 	// Book should still exist
 	found, err := d.GetBook(context.Background(), book.ID)

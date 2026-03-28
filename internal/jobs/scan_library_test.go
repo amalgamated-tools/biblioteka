@@ -38,10 +38,13 @@ func TestScanLibraryHandler(t *testing.T) {
 	enq := &genericMockEnqueuer{}
 	handler := NewScanLibraryHandler(enq)
 
-	payload, _ := json.Marshal(ScanLibraryPayload{
+	payload, err := json.Marshal(ScanLibraryPayload{
 		LibraryID: "lib1",
 		Paths:     []string{"/books/fiction", "/books/scifi"},
 	})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
 	if err := handler(context.Background(), payload); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
@@ -67,7 +70,10 @@ func TestScanLibraryHandler_EmptyPaths(t *testing.T) {
 	enq := &genericMockEnqueuer{}
 	handler := NewScanLibraryHandler(enq)
 
-	payload, _ := json.Marshal(ScanLibraryPayload{LibraryID: "lib1"})
+	payload, err := json.Marshal(ScanLibraryPayload{LibraryID: "lib1"})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
 	if err := handler(context.Background(), payload); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
@@ -81,10 +87,13 @@ func TestScanLibraryHandler_EnqueueError(t *testing.T) {
 	enq := &genericMockEnqueuer{err: errors.New("redis unavailable")}
 	handler := NewScanLibraryHandler(enq)
 
-	payload, _ := json.Marshal(ScanLibraryPayload{
+	payload, err := json.Marshal(ScanLibraryPayload{
 		LibraryID: "lib1",
 		Paths:     []string{"/books/fiction", "/books/scifi"},
 	})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
 	if err := handler(context.Background(), payload); err != nil {
 		t.Fatalf("handler should not fail on enqueue errors: %v", err)
 	}
@@ -98,7 +107,10 @@ func TestScanLibraryHandler_MissingLibraryID(t *testing.T) {
 	enq := &genericMockEnqueuer{}
 	handler := NewScanLibraryHandler(enq)
 
-	payload, _ := json.Marshal(ScanLibraryPayload{Paths: []string{"/books/fiction"}})
+	payload, err := json.Marshal(ScanLibraryPayload{Paths: []string{"/books/fiction"}})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
 	if err := handler(context.Background(), payload); err == nil {
 		t.Fatal("expected error when library_id is missing")
 	}

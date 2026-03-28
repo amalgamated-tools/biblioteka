@@ -220,10 +220,21 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	book, _ := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	author, _ := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
-	h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID})
-	h.DB.CreateBookFile(ctx, book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	book, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	author, err := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+	if err := h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}); err != nil {
+		t.Fatalf("set book authors: %v", err)
+	}
+	_, err = h.DB.CreateBookFile(ctx, book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -337,8 +348,14 @@ func TestAuthorBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	author, _ := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
-	book, _ := h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	author, err := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+	book, err := h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 	h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID})
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors/"+author.ID, nil)
@@ -425,10 +442,18 @@ func TestSeriesBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	series, _ := h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil)
-	book, _ := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	series, err := h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create series: %v", err)
+	}
+	book, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 	pos := 1.0
-	h.DB.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}})
+	if err := h.DB.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}}); err != nil {
+		t.Fatalf("set book series: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series/"+series.ID, nil)
 	w := httptest.NewRecorder()
@@ -583,7 +608,10 @@ func TestDownload_Success(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	book, _ := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	// Create a temp file to serve.
 	tmpDir := t.TempDir()
@@ -592,7 +620,10 @@ func TestDownload_Success(t *testing.T) {
 		t.Fatalf("write temp file: %v", err)
 	}
 
-	bf, _ := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 17, nil, filePath)
+	bf, err := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 17, nil, filePath)
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/download/"+bf.ID, nil)
 	w := httptest.NewRecorder()
@@ -628,8 +659,14 @@ func TestDownload_FileMissing(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	book, _ := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	bf, _ := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 100, nil, "/nonexistent/path.epub")
+	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	bf, err := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 100, nil, "/nonexistent/path.epub")
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/download/"+bf.ID, nil)
 	w := httptest.NewRecorder()
@@ -644,7 +681,10 @@ func TestDownload_UnknownFileType(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	book, _ := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.xyz")
@@ -652,7 +692,10 @@ func TestDownload_UnknownFileType(t *testing.T) {
 		t.Fatalf("write temp file: %v", err)
 	}
 
-	bf, _ := h.DB.CreateBookFile(ctx, book.ID, "xyz", "test.xyz", 4, nil, filePath)
+	bf, err := h.DB.CreateBookFile(ctx, book.ID, "xyz", "test.xyz", 4, nil, filePath)
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/download/"+bf.ID, nil)
 	w := httptest.NewRecorder()
@@ -826,7 +869,10 @@ func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
 
 	pngBytes := testutils.TinyPNG()
 	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, _ := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
+	book, err := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -859,7 +905,10 @@ func TestServeCover_DataURL(t *testing.T) {
 
 	pngBytes := testutils.TinyPNG()
 	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, _ := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
+	book, err := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
 	w := httptest.NewRecorder()

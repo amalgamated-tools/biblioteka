@@ -50,7 +50,10 @@ func TestCreateUser_DuplicateEmail(t *testing.T) {
 func TestGetUserByEmail(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateUser(context.Background(), "Bob", "bob@example.com", "pw")
+	created, err := d.CreateUser(context.Background(), "Bob", "bob@example.com", "pw")
+	if err != nil {
+		t.Fatalf("CreateUser() error: %v", err)
+	}
 
 	found, err := d.GetUserByEmail(context.Background(), "bob@example.com")
 	if err != nil {
@@ -73,7 +76,10 @@ func TestGetUserByEmail_NotFound(t *testing.T) {
 func TestGetUserByID(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateUser(context.Background(), "Carol", "carol@example.com", "pw")
+	created, err := d.CreateUser(context.Background(), "Carol", "carol@example.com", "pw")
+	if err != nil {
+		t.Fatalf("CreateUser() error: %v", err)
+	}
 
 	found, err := d.GetUserByID(context.Background(), created.ID)
 	if err != nil {
@@ -111,7 +117,10 @@ func TestCreateOIDCUser(t *testing.T) {
 func TestGetUserByOIDCSubject(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateOIDCUser(context.Background(), "Eve", "eve@example.com", "oidc-sub-eve")
+	created, err := d.CreateOIDCUser(context.Background(), "Eve", "eve@example.com", "oidc-sub-eve")
+	if err != nil {
+		t.Fatalf("CreateOIDCUser() error: %v", err)
+	}
 
 	found, err := d.GetUserByOIDCSubject(context.Background(), "oidc-sub-eve")
 	if err != nil {
@@ -125,13 +134,19 @@ func TestGetUserByOIDCSubject(t *testing.T) {
 func TestLinkOIDCSubject(t *testing.T) {
 	d := newTestDB(t)
 
-	user, _ := d.CreateUser(context.Background(), "Frank", "frank@example.com", "pw")
+	user, err := d.CreateUser(context.Background(), "Frank", "frank@example.com", "pw")
+	if err != nil {
+		t.Fatalf("CreateUser() error: %v", err)
+	}
 
 	if err := d.LinkOIDCSubject(context.Background(), user.ID, "oidc-sub-frank"); err != nil {
 		t.Fatalf("LinkOIDCSubject() error: %v", err)
 	}
 
-	found, _ := d.GetUserByOIDCSubject(context.Background(), "oidc-sub-frank")
+	found, err := d.GetUserByOIDCSubject(context.Background(), "oidc-sub-frank")
+	if err != nil {
+		t.Fatalf("GetUserByOIDCSubject() error: %v", err)
+	}
 	if found.ID != user.ID {
 		t.Errorf("ID after linking = %q, want %q", found.ID, user.ID)
 	}
@@ -149,13 +164,19 @@ func TestLinkOIDCSubject_NotFound(t *testing.T) {
 func TestUpdatePassword(t *testing.T) {
 	d := newTestDB(t)
 
-	user, _ := d.CreateUser(context.Background(), "Grace", "grace@example.com", "oldhash")
+	user, err := d.CreateUser(context.Background(), "Grace", "grace@example.com", "oldhash")
+	if err != nil {
+		t.Fatalf("CreateUser() error: %v", err)
+	}
 
 	if err := d.UpdatePassword(context.Background(), user.ID, "newhash"); err != nil {
 		t.Fatalf("UpdatePassword() error: %v", err)
 	}
 
-	found, _ := d.GetUserByEmail(context.Background(), "grace@example.com")
+	found, err := d.GetUserByEmail(context.Background(), "grace@example.com")
+	if err != nil {
+		t.Fatalf("GetUserByEmail() error: %v", err)
+	}
 	if found.PasswordHash != "newhash" {
 		t.Errorf("PasswordHash = %q, want %q", found.PasswordHash, "newhash")
 	}
@@ -173,8 +194,14 @@ func TestUpdatePassword_NotFound(t *testing.T) {
 func TestCreateUser_SecondUserNotAdmin(t *testing.T) {
 	d := newTestDB(t)
 
-	u1, _ := d.CreateUser(context.Background(), "First", "first@example.com", "pw")
-	u2, _ := d.CreateUser(context.Background(), "Second", "second@example.com", "pw")
+	u1, err := d.CreateUser(context.Background(), "First", "first@example.com", "pw")
+	if err != nil {
+		t.Fatalf("CreateUser() for First error: %v", err)
+	}
+	u2, err := d.CreateUser(context.Background(), "Second", "second@example.com", "pw")
+	if err != nil {
+		t.Fatalf("CreateUser() for Second error: %v", err)
+	}
 
 	if !u1.IsAdmin {
 		t.Error("first user should be admin")
@@ -195,7 +222,10 @@ func TestCreateOIDCUser_FirstUserIsAdmin(t *testing.T) {
 		t.Error("first OIDC user should be admin")
 	}
 
-	u2, _ := d.CreateOIDCUser(context.Background(), "Second", "second@example.com", "oidc-sub-2")
+	u2, err := d.CreateOIDCUser(context.Background(), "Second", "second@example.com", "oidc-sub-2")
+	if err != nil {
+		t.Fatalf("CreateOIDCUser() for Second error: %v", err)
+	}
 	if u2.IsAdmin {
 		t.Error("second OIDC user should not be admin")
 	}
@@ -204,8 +234,14 @@ func TestCreateOIDCUser_FirstUserIsAdmin(t *testing.T) {
 func TestIsAdmin(t *testing.T) {
 	d := newTestDB(t)
 
-	u1, _ := d.CreateUser(context.Background(), "First", "first@example.com", "pw")
-	u2, _ := d.CreateUser(context.Background(), "Second", "second@example.com", "pw")
+	u1, err := d.CreateUser(context.Background(), "First", "first@example.com", "pw")
+	if err != nil {
+		t.Fatalf("CreateUser() for First error: %v", err)
+	}
+	u2, err := d.CreateUser(context.Background(), "Second", "second@example.com", "pw")
+	if err != nil {
+		t.Fatalf("CreateUser() for Second error: %v", err)
+	}
 
 	isAdmin, err := d.IsAdmin(context.Background(), u1.ID)
 	if err != nil {
@@ -227,15 +263,23 @@ func TestIsAdmin(t *testing.T) {
 func TestSetAdmin(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateUser(context.Background(), "First", "first@example.com", "pw")
-	u2, _ := d.CreateUser(context.Background(), "Second", "second@example.com", "pw")
+	if _, err := d.CreateUser(context.Background(), "First", "first@example.com", "pw"); err != nil {
+		t.Fatalf("CreateUser() for First error: %v", err)
+	}
+	u2, err := d.CreateUser(context.Background(), "Second", "second@example.com", "pw")
+	if err != nil {
+		t.Fatalf("CreateUser() for Second error: %v", err)
+	}
 
 	// Promote second user
 	if err := d.SetAdmin(context.Background(), u2.ID, true); err != nil {
 		t.Fatalf("SetAdmin(true) error: %v", err)
 	}
 
-	isAdmin, _ := d.IsAdmin(context.Background(), u2.ID)
+	isAdmin, err := d.IsAdmin(context.Background(), u2.ID)
+	if err != nil {
+		t.Fatalf("IsAdmin() after promotion error: %v", err)
+	}
 	if !isAdmin {
 		t.Error("second user should be admin after promotion")
 	}
@@ -245,7 +289,10 @@ func TestSetAdmin(t *testing.T) {
 		t.Fatalf("SetAdmin(false) error: %v", err)
 	}
 
-	isAdmin, _ = d.IsAdmin(context.Background(), u2.ID)
+	isAdmin, err = d.IsAdmin(context.Background(), u2.ID)
+	if err != nil {
+		t.Fatalf("IsAdmin() after demotion error: %v", err)
+	}
 	if isAdmin {
 		t.Error("second user should not be admin after demotion")
 	}
@@ -263,9 +310,15 @@ func TestSetAdmin_NotFound(t *testing.T) {
 func TestListUsers(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateUser(context.Background(), "Alice", "alice@example.com", "pw")
-	_, _ = d.CreateUser(context.Background(), "Bob", "bob@example.com", "pw")
-	_, _ = d.CreateUser(context.Background(), "Carol", "carol@example.com", "pw")
+	if _, err := d.CreateUser(context.Background(), "Alice", "alice@example.com", "pw"); err != nil {
+		t.Fatalf("CreateUser() for Alice error: %v", err)
+	}
+	if _, err := d.CreateUser(context.Background(), "Bob", "bob@example.com", "pw"); err != nil {
+		t.Fatalf("CreateUser() for Bob error: %v", err)
+	}
+	if _, err := d.CreateUser(context.Background(), "Carol", "carol@example.com", "pw"); err != nil {
+		t.Fatalf("CreateUser() for Carol error: %v", err)
+	}
 
 	users, err := d.ListUsers(context.Background())
 	if err != nil {

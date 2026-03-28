@@ -84,8 +84,14 @@ func TestValidateToken_ExpiredToken(t *testing.T) {
 }
 
 func TestValidateToken_WrongSecret(t *testing.T) {
-	jm1, _ := NewJWTManager("secret1", time.Hour)
-	jm2, _ := NewJWTManager("secret2", time.Hour)
+	jm1, err := NewJWTManager("secret1", time.Hour)
+	if err != nil {
+		t.Fatalf("NewJWTManager() error: %v", err)
+	}
+	jm2, err := NewJWTManager("secret2", time.Hour)
+	if err != nil {
+		t.Fatalf("NewJWTManager() error: %v", err)
+	}
 
 	token, err := jm1.CreateToken(t.Context(), "user-123")
 	if err != nil {
@@ -99,8 +105,11 @@ func TestValidateToken_WrongSecret(t *testing.T) {
 }
 
 func TestValidateToken_Empty(t *testing.T) {
-	jm, _ := NewJWTManager("testsecret", time.Hour)
-	_, err := jm.ValidateToken(t.Context(), "")
+	jm, err := NewJWTManager("testsecret", time.Hour)
+	if err != nil {
+		t.Fatalf("NewJWTManager() error: %v", err)
+	}
+	_, err = jm.ValidateToken(t.Context(), "")
 	if !errors.Is(err, ErrInvalidToken) {
 		t.Errorf("ValidateToken() with empty token: got %v, want ErrInvalidToken", err)
 	}

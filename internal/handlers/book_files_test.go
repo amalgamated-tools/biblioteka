@@ -22,8 +22,14 @@ func setupBookFileHandler(t *testing.T) (*BookFileHandler, string) {
 func TestGetBookFile_Handler(t *testing.T) {
 	h, userID := setupBookFileHandler(t)
 
-	book, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	bf, _ := h.DB.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	book, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	bf, err := h.DB.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/book-files/"+bf.ID, nil)
 	r = withUserID(r, userID)
@@ -61,8 +67,14 @@ func TestGetBookFile_NotFound(t *testing.T) {
 func TestDeleteBookFile_Handler(t *testing.T) {
 	h, userID := setupBookFileHandler(t)
 
-	book, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	bf, _ := h.DB.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	book, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	bf, err := h.DB.CreateBookFile(context.Background(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/book-files/"+bf.ID, nil)
 	r = withUserID(r, userID)

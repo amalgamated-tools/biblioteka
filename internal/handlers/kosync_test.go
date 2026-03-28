@@ -133,7 +133,7 @@ func TestKOSyncCredentials_Put_UsernameTooLong(t *testing.T) {
 	h, userID := setupKOSyncHandler(t)
 
 	longUsername := strings.Repeat("a", maxUsernameLen+1)
-	body, _ := json.Marshal(credentialRequest{Username: longUsername, Password: "secretpass"})
+	body := mustMarshal(t, credentialRequest{Username: longUsername, Password: "secretpass"})
 	r := httptest.NewRequest(http.MethodPut, "/api/kosync/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()

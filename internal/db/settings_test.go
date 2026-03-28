@@ -34,8 +34,12 @@ func TestGetSetting_NotFound(t *testing.T) {
 func TestSetSetting_Upsert(t *testing.T) {
 	d := newTestDB(t)
 
-	_ = d.SetSetting(context.Background(), "color", "blue")
-	_ = d.SetSetting(context.Background(), "color", "red")
+	if err := d.SetSetting(context.Background(), "color", "blue"); err != nil {
+		t.Fatalf("SetSetting() for blue error: %v", err)
+	}
+	if err := d.SetSetting(context.Background(), "color", "red"); err != nil {
+		t.Fatalf("SetSetting() for red error: %v", err)
+	}
 
 	val, err := d.GetSetting(context.Background(), "color")
 	if err != nil {
