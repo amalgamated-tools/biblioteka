@@ -199,7 +199,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 
 	lib, err := h.DB.CreateLibrary(r.Context(), req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
-		if err == db.ErrLibraryNameExists {
+		if errors.Is(err, db.ErrLibraryNameExists) {
 			writeError(r.Context(), w, http.StatusConflict, "a library with that name already exists")
 			return
 		}
