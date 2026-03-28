@@ -4142,6 +4142,18 @@
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
+        },
+        "KOSyncKey": {
+            "description": "KOSync authentication key (hex-encoded MD5 of password)",
+            "type": "apiKey",
+            "name": "x-auth-key",
+            "in": "header"
+        },
+        "KOSyncUser": {
+            "description": "KOSync username",
+            "type": "apiKey",
+            "name": "x-auth-user",
+            "in": "header"
         }
     }
 }

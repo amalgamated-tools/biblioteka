@@ -2675,4 +2675,14 @@ securityDefinitions:
     in: header
     name: Authorization
     type: apiKey
+  KOSyncKey:
+    description: KOSync authentication key (hex-encoded MD5 of password)
+    in: header
+    name: x-auth-key
+    type: apiKey
+  KOSyncUser:
+    description: KOSync username
+    in: header
+    name: x-auth-user
+    type: apiKey
 swagger: "2.0"
