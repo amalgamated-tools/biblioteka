@@ -116,12 +116,7 @@ func (h *APIKeyHandler) listAPIKeys(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dtos := make([]apiKeyDTO, 0, len(keys))
-	for i := range keys {
-		dtos = append(dtos, toAPIKeyDTO(&keys[i]))
-	}
-
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, mapSlice(keys, toAPIKeyDTO))
 }
 
 func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
