@@ -5,7 +5,7 @@
   import * as api from "../lib/api";
 
   let initialOffset = $derived(
-    parseInt(routerStore.queryParams.get("offset") ?? "0", 10) || 0,
+    Math.max(0, parseInt(routerStore.queryParams.get("offset") ?? "0", 10) || 0),
   );
 
   function handlePageChange(offset: number) {
