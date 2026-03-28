@@ -172,7 +172,8 @@
     </div>
 
     {#if smtpTestMessage}
-      <AlertBanner variant="success" class="mb-4">{smtpTestMessage}</AlertBanner>
+      <AlertBanner variant="success" class="mb-4">{smtpTestMessage}</AlertBanner
+      >
     {/if}
 
     {#if smtpTestError}
@@ -340,11 +341,7 @@
       {/if}
 
       {#if !smtpEnvOverride}
-        <Button
-          type="submit"
-          disabled={smtpLoading}
-          class="w-full px-4 py-2.5"
-        >
+        <Button type="submit" disabled={smtpLoading} class="w-full px-4 py-2.5">
           {smtpLoading
             ? "Saving..."
             : smtpConfigured

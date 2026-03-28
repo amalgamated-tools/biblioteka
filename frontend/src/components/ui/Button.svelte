@@ -32,7 +32,9 @@
   {type}
   {disabled}
   {onclick}
-  class="font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed {variantClasses[variant]} {extraClass ?? ''}"
+  class="font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed {variantClasses[
+    variant
+  ]} {extraClass ?? ''}"
 >
   {@render children()}
 </button>

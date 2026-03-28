@@ -38,7 +38,7 @@
   bind:value
   {placeholder}
   {disabled}
-  autocomplete={autocomplete}
+  {autocomplete}
   {maxlength}
   aria-label={ariaLabel}
   aria-required={ariaRequired}
@@ -47,5 +47,6 @@
   {oninput}
   class="px-4 border border-ink-200 dark:border-ink-700 rounded-xl transition-all {disabled
     ? 'bg-ink-50 dark:bg-ink-800 text-ink-500 dark:text-ink-400 cursor-not-allowed'
-    : 'focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 placeholder:text-ink-300 dark:placeholder:text-ink-500'} {extraClass ?? ''}"
+    : 'focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 placeholder:text-ink-300 dark:placeholder:text-ink-500'} {extraClass ??
+    ''}"
 />
