@@ -21,7 +21,7 @@ type auditLogDTO struct {
 	Action     string          `json:"action"`
 	EntityType string          `json:"entity_type"`
 	EntityID   string          `json:"entity_id"`
-	Metadata   json.RawMessage `json:"metadata,omitempty"`
+	Metadata   json.RawMessage `json:"metadata,omitempty" swaggertype:"object"`
 	CreatedAt  db.Timestamp    `json:"created_at"`
 }
 
