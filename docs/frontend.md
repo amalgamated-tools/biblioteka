@@ -120,13 +120,16 @@ Client-side routing uses the browser's URL hash (`#`). No router library is need
 
 `routerStore` exposes:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `hash` | `string` | Raw hash value (e.g. `"settings/account"`) |
-| `currentView` | `AppView` | Top-level view segment (`"dashboard"` \| `"books"` \| `"my-library"` \| `"libraries"` \| `"settings"`) |
+| Property / Method | Type | Description |
+|-------------------|------|-------------|
+| `hash` | `string` | Raw hash path without query string (e.g. `"settings/account"`) |
+| `currentView` | `AppView` | Top-level view segment (`"dashboard"` \| `"books"` \| `"my-library"` \| `"libraries"` \| `"settings"`); falls back to `"dashboard"` for unknown hashes |
 | `subPath` | `string` | Sub-path after the first segment (e.g. `"account"`) |
+| `queryParams` | `SvelteURLSearchParams` | Reactive query parameters embedded in the hash (e.g. `#books?offset=48` → `queryParams.get("offset") === "48"`) |
+| `isKnownView` | `boolean` | `true` when the current hash maps to a known `AppView`; `false` for unrecognised routes |
 | `pageTitle` | `string` | Human-readable page title for the current view (e.g. `"Dashboard – biblioteka"`); used to update `document.title` on every navigation |
-| `navigate(path)` | `void` | Sets the hash and updates the store |
+| `navigate(path, params?)` | `void` | Sets the hash and optionally attaches initial query parameters |
+| `setQueryParam(key, value)` | `void` | Updates a single query parameter in the current hash via `history.replaceState` without pushing a history entry; pass `null` to remove the key |
 
 **Navigating programmatically:**
 
@@ -134,6 +137,9 @@ Client-side routing uses the browser's URL hash (`#`). No router library is need
 import { routerStore } from "../stores/router.svelte";
 
 routerStore.navigate("settings/account");
+
+// Navigate with initial query parameters
+routerStore.navigate("books", { offset: "48" });
 ```
 
 ### Sub-path routing
@@ -171,6 +177,30 @@ let mode = $derived.by(() => {
 ```
 
 When a view component renders, it reads `routerStore.subPath` as a `$derived` value so it re-renders reactively whenever navigation occurs — no lifecycle hook is needed for the navigation itself.
+
+### Query parameter routing
+
+The hash may carry query parameters after a `?` (e.g. `#books?offset=48`). The router splits the hash into a path and a `SvelteURLSearchParams` object, keeping both in sync with the browser URL.
+
+Use `queryParams` to read values on mount and `setQueryParam` to write them back without pushing a history entry:
+
+```ts
+// Read offset from URL on mount (e.g. #books?offset=48)
+let initialOffset = parseInt(routerStore.queryParams.get("offset") ?? "0", 10) || 0;
+
+// After the user pages forward, persist the new offset to the URL in place
+function handlePageChange(offset: number) {
+  routerStore.setQueryParam("offset", offset === 0 ? null : String(offset));
+}
+```
+
+Navigating away clears query parameters automatically — `hashchange` resets `queryParams` to the new hash's parameter set.
+
+### 404 handling
+
+When `routerStore.isKnownView` is `false`, `App.svelte` renders the `NotFound` component instead of the normal view switch. The page title is set to `"Page Not Found – biblioteka"`.
+
+Unknown routes do **not** redirect; the hash stays in the browser's address bar so the user can correct a mistyped URL. A "Go to Dashboard" button in the `NotFound` component lets the user return to a valid view.
 
 ## API client
 
@@ -211,9 +241,11 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 
 1. Create `frontend/src/components/MyView.svelte`.
 2. Add the new route identifier to the `AppView` union type in `router.svelte.ts`.
-3. Add the route to the `valid` array in `RouterStore.currentView`.
+3. Add the route to the `valid` array inside both `isKnownView` and `currentView` in `RouterStore`.
 4. Import and render `<MyView />` in `App.svelte` inside the `{#if … }` routing block.
 5. Add a navigation entry in `Sidebar.svelte`.
+
+> **Note:** `isKnownView` must include the new route in its `valid` array. If it is missing, navigating to the new hash will render the `NotFound` page instead of the view component.
 
 ## UI components
 
@@ -476,7 +508,7 @@ $effect(() => {
 | `settings/users` | `User Management – biblioteka` |
 | `settings/api-keys` | `API Keys – biblioteka` |
 | `settings/kobo` | `Kobo Sync – biblioteka` |
-| Unknown hash | `biblioteka` |
+| Unknown hash | `Page Not Found – biblioteka` |
 
 **When adding a new view or settings tab**, update both the corresponding union type (`AppView` or `SettingsSubPath`) and the matching title lookup table in `router.svelte.ts`. If you skip the lookup entry, `pageTitle` falls back to the top-level view title, which may be insufficiently descriptive.
 
@@ -1126,9 +1158,9 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `router.test.ts`
 
-`frontend/src/stores/router.test.ts` exercises `routerStore`, the hash-based navigation store. Tests set `window.location.hash` and dispatch synthetic `hashchange` events, then assert the store's reactive properties. Fourteen tests across two `describe` blocks:
+`frontend/src/stores/router.test.ts` exercises `routerStore`, the hash-based navigation store. Tests set `window.location.hash` and dispatch synthetic `hashchange` events, then assert the store's reactive properties. Tests are organised across four `describe` blocks:
 
-**Core routing:**
+**Core routing (10 tests):**
 
 1. **`defaults to 'dashboard' when hash is empty`** — asserts `currentView` is `"dashboard"` and `subPath` is `""` on load.
 2. **`parses 'books' from hash`** — sets `#books`; asserts `currentView` is `"books"` with empty `subPath`.
@@ -1141,11 +1173,32 @@ The following test suites cover reactive stores and the API client. Unlike the a
 9. **`responds to hashchange events`** — dispatches a `hashchange` event after changing the hash; asserts `routerStore.hash` updates reactively.
 10. **`handles hash with leading slash`** — sets `#/books`; asserts the leading slash is stripped and `currentView` is `"books"`.
 
+**`isKnownView` sub-suite (4 tests):**
+
+1. **`returns true for valid views`** — iterates all five `AppView` values; asserts `isKnownView` is `true` for each.
+2. **`returns true for empty hash (dashboard default)`** — asserts `isKnownView` is `true` when hash is empty.
+3. **`returns false for unknown routes`** — sets `#unknown-page`; asserts `isKnownView` is `false`.
+4. **`returns false for completely invalid routes`** — sets `#this-does-not-exist`; asserts `isKnownView` is `false`.
+
+**`query parameters` sub-suite (10 tests):**
+
+1. **`parses query params from hash`** — sets `#books?offset=48`; asserts `currentView` is `"books"` and `queryParams.get("offset")` is `"48"`.
+2. **`parses multiple query params from hash`** — sets `#books?offset=24&view=table`; asserts both params are readable.
+3. **`returns empty URLSearchParams when no query params in hash`** — sets `#books`; asserts `queryParams.get("offset")` is `null`.
+4. **`clears query params when navigating to a plain hash`** — sets `#books?offset=48` then `#settings`; asserts `offset` param is gone.
+5. **`navigate sets query params from object`** — calls `routerStore.navigate("books", { offset: "48" })`; asserts hash is `"#books?offset=48"` and `queryParams.get("offset")` is `"48"`.
+6. **`navigate with no params sets no query string`** — calls `routerStore.navigate("books")`; asserts hash has no `?`.
+7. **`setQueryParam adds a query param to the current hash`** — sets `#books` then calls `setQueryParam("offset", "24")`; asserts param is set.
+8. **`setQueryParam removes a query param when value is null`** — sets `#books?offset=48` then calls `setQueryParam("offset", null)`; asserts param is removed.
+9. **`setQueryParam updates existing query param`** — sets `#books?offset=24` then calls `setQueryParam("offset", "48")`; asserts param is updated.
+10. **`setQueryParam does not change the current view`** — sets `#books`, calls `setQueryParam`; asserts `currentView` and `hash` are unchanged.
+
 **`pageTitle` sub-suite:**
 
-11. **Parameterised title tests** — asserts the correct page title string for each of the eleven known hash values (e.g. `#dashboard` → `"Dashboard – biblioteka"`, `#settings/account` → `"Account Settings – biblioteka"`).
-12. **`falls back to 'Settings – biblioteka' for unknown settings sub-path`** — sets `#settings/unknown`; asserts `pageTitle` returns the top-level settings title.
-13. **`falls back to 'biblioteka' for invalid hash`** — sets `#invalid-page`; asserts `pageTitle` is just `"biblioteka"`.
+- **Parameterised title tests** — asserts the correct page title string for each of the eleven known hash values (e.g. `#dashboard` → `"Dashboard – biblioteka"`, `#settings/account` → `"Account Settings – biblioteka"`).
+- **`falls back to 'Settings – biblioteka' for unknown settings sub-path`** — sets `#settings/unknown`; asserts `pageTitle` returns the top-level settings title.
+- **`returns 'Page Not Found – biblioteka' for invalid hash`** — sets `#invalid-page`; asserts `pageTitle` is `"Page Not Found – biblioteka"`.
+- **`preserves page title when hash has query params`** — sets `#books?offset=48`; asserts `pageTitle` is `"All Books – biblioteka"`.
 
 ### `auth.test.ts`
 
