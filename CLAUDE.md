@@ -216,6 +216,24 @@ Every database query that reads or writes user-owned data **must** filter by `us
 - SQLite connections use `PRAGMA journal_mode=WAL`, `synchronous=NORMAL`, and `foreign_keys=ON`.
 - Use `db.Timestamp` for time columns and `db.now()` for dialect-aware current-time expressions.
 
+### FindOrCreate pattern
+
+When implementing a `FindOrCreate*` function for a new named entity (such as a tag or publisher), use the unexported `findOrCreate` generic helper from `internal/db/find_or_create.go` instead of re-implementing the lookup → insert → race-fetch sequence:
+
+```go
+func (d *DB) FindOrCreateTag(ctx context.Context, name string) (*Tag, error) {
+    return findOrCreate(ctx, name, "tag",
+        NormalizeTagName, ErrInvalidTagName, ErrTagNameExists,
+        d.GetTagByName,
+        func(ctx context.Context, n string) (*Tag, error) {
+            return d.CreateTag(ctx, n)
+        },
+    )
+}
+```
+
+`findOrCreate` normalizes the name, validates it against `errInvalid`, handles concurrent-insert races (unique-constraint violation → retry fetch), and emits a debug log. Pass the raw (un-normalized) name — normalization is performed inside the helper.
+
 ## Frontend Conventions
 
 - Use TypeScript strict mode; put shared types in `src/types.ts`.
