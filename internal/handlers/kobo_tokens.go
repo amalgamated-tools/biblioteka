@@ -78,11 +78,7 @@ func (h *KoboHandler) listKoboTokens(w http.ResponseWriter, r *http.Request) {
 		tokens = []db.KoboToken{}
 	}
 
-	dtos := make([]koboTokenDTO, 0, len(tokens))
-	for i := range tokens {
-		dtos = append(dtos, toKoboTokenDTO(&tokens[i]))
-	}
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, mapSlice(tokens, toKoboTokenDTO))
 }
 
 func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
