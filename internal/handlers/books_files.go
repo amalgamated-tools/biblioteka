@@ -29,11 +29,7 @@ func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookI
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list book files")
 		return
 	}
-	dtos := make([]bookFileDTO, 0, len(files))
-	for i := range files {
-		dtos = append(dtos, toBookFileDTO(&files[i]))
-	}
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, mapSlice(files, toBookFileDTO))
 }
 
 // createBookFileRequest is the request body for creating a book file.
