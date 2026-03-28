@@ -228,7 +228,9 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create author: %v", err)
 	}
-	h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID})
+	if err := h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}); err != nil {
+		t.Fatalf("set book authors: %v", err)
+	}
 	_, err = h.DB.CreateBookFile(ctx, book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 	if err != nil {
 		t.Fatalf("create book file: %v", err)
