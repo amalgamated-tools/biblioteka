@@ -50,35 +50,35 @@ func reorganizedCandidatePaths(ctx context.Context, p ProcessFilePayload, pathIn
 	return candidates
 }
 
+// validateField returns a wrapped "invalid payload" error if value is blank,
+// logging the error at ERROR level with any extra slog attrs provided.
+func validateField(ctx context.Context, fieldName, value string, attrs ...slog.Attr) error {
+	if strings.TrimSpace(value) == "" {
+		err := fmt.Errorf("process book file: payload %s is empty", fieldName)
+		args := []any{slog.Any(otelkeys.Error, err)}
+		for _, a := range attrs {
+			args = append(args, a)
+		}
+		slog.ErrorContext(ctx, "book processing failed: empty "+fieldName+" in payload", args...)
+		return fmt.Errorf("invalid payload: %w", err)
+	}
+	return nil
+}
+
 // validatePayload checks that required payload string fields are non-empty.
 func validatePayload(ctx context.Context, p ProcessFilePayload) error {
-	if strings.TrimSpace(p.Path) == "" {
-		err := fmt.Errorf("process book file: payload path is empty")
-		slog.ErrorContext(ctx, "book processing failed: empty path in payload",
-			slog.Any(otelkeys.Error, err),
-		)
-		return fmt.Errorf("invalid payload: %w", err)
+	if err := validateField(ctx, "path", p.Path); err != nil {
+		return err
 	}
-
-	if strings.TrimSpace(p.FileName) == "" {
-		err := fmt.Errorf("process book file: payload file name is empty")
-		slog.ErrorContext(ctx, "book processing failed: empty file name in payload",
-			slog.Any(otelkeys.Error, err),
-			slog.String(otelkeys.Path, p.Path),
-		)
-		return fmt.Errorf("invalid payload: %w", err)
+	if err := validateField(ctx, "file name", p.FileName,
+		slog.String(otelkeys.Path, p.Path)); err != nil {
+		return err
 	}
-
-	if strings.TrimSpace(p.FileType) == "" {
-		err := fmt.Errorf("process book file: payload file type is empty")
-		slog.ErrorContext(ctx, "book processing failed: empty file type in payload",
-			slog.Any(otelkeys.Error, err),
-			slog.String(otelkeys.Path, p.Path),
-			slog.String(otelkeys.FileName, p.FileName),
-		)
-		return fmt.Errorf("invalid payload: %w", err)
+	if err := validateField(ctx, "file type", p.FileType,
+		slog.String(otelkeys.Path, p.Path),
+		slog.String(otelkeys.FileName, p.FileName)); err != nil {
+		return err
 	}
-
 	return nil
 }
 
