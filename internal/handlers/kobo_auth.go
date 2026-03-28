@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -45,16 +44,6 @@ func (h *KoboHandler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		"TrackingId":   trackingID,
 		"UserKey":      userKey,
 	})
-}
-
-// generateBase64Token generates a cryptographically random token of n bytes
-// and returns it as a Base64-encoded string.
-func generateBase64Token(n int) (string, error) {
-	buf := make([]byte, n)
-	if _, err := rand.Read(buf); err != nil {
-		return "", fmt.Errorf("generate token: %w", err)
-	}
-	return base64.StdEncoding.EncodeToString(buf), nil
 }
 
 // koboRandomUUID generates a random UUID v4-like string.
