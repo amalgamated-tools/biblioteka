@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { setOidcConfig } from "../../lib/api";
+  import { required, validate } from "../../lib/validation";
   import { Shield } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
 
@@ -49,22 +50,14 @@
     oidcError = null;
     oidcSuccess = false;
 
-    if (!oidcIssuerUrl.trim()) {
-      oidcError = "Issuer URL is required";
-      return;
-    }
-    if (!oidcClientId.trim()) {
-      oidcError = "Client ID is required";
-      return;
-    }
-    if (!oidcClientSecret.trim() && !oidcConfigured) {
-      oidcError = "Client Secret is required";
-      return;
-    }
-    if (!oidcRedirectUri.trim()) {
-      oidcError = "Redirect URI is required";
-      return;
-    }
+    oidcError =
+      validate(oidcIssuerUrl, [required("Issuer URL is required")]) ??
+      validate(oidcClientId, [required("Client ID is required")]) ??
+      (!oidcConfigured
+        ? validate(oidcClientSecret, [required("Client Secret is required")])
+        : null) ??
+      validate(oidcRedirectUri, [required("Redirect URI is required")]);
+    if (oidcError) return;
 
     oidcLoading = true;
 
