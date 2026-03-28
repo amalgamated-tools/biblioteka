@@ -135,6 +135,14 @@ db/migrations/
 
   `listEntities` is a generic function in `internal/handlers/helpers.go`. It calls the `list` function, converts each entity to a DTO via `toDTO`, and writes a `200 OK` JSON response. On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
 
+- When you need to convert a slice of entities to DTOs outside of `listEntities` (for example, in sub-resource handlers whose list function requires additional parameters such as a parent resource ID), use the generic `mapSlice` helper:
+
+  ```go
+  writeJSON(ctx, w, http.StatusOK, mapSlice(authors, toAuthorDTO))
+  ```
+
+  `mapSlice` is a generic function in `internal/handlers/helpers.go`. It applies `toDTO` to every element of `items` and returns the resulting slice. Use it whenever you hold the fetched slice yourself and only need the DTO conversion step (no automatic list call or error handling).
+
 ### Deleting a resource
 
 For DELETE handlers, use the generic `deleteResource` helper instead of hand-rolling the fetch-delete-audit pattern:
