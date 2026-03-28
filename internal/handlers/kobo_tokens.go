@@ -1,11 +1,8 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -39,7 +36,25 @@ func toKoboTokenDTO(token *db.KoboToken) koboTokenDTO {
 	}
 }
 
-// HandleKoboTokens handles GET/POST /api/kobo/tokens.
+// HandleKoboTokens handles GET /api/kobo/tokens and POST /api/kobo/tokens.
+//
+//	@Summary	List and create Kobo sync tokens
+//	@Description
+//	@Description	GET lists all Kobo sync tokens for the authenticated user.
+//	@Description	POST creates a new Kobo sync token. The raw token is returned only in the creation response and is never retrievable again.
+//	@Description	POST body: {"name": "string"} (required)
+//	@Tags			kobo-tokens
+//	@Security		BearerAuth
+//	@Accept			json
+//	@Produce		json
+//	@Success		200		{array}		koboTokenDTO			"List of Kobo tokens"
+//	@Success		201		{object}	koboTokenCreateResponse	"Kobo token created"
+//	@Failure		400		{object}	errorResponse			"Bad request"
+//	@Failure		401		{object}	errorResponse			"Unauthorized"
+//	@Failure		405		{object}	errorResponse			"Method not allowed"
+//	@Failure		500		{object}	errorResponse			"Internal server error"
+//	@Router			/kobo/tokens [get]
+//	@Router			/kobo/tokens [post]
 func (h *KoboHandler) HandleKoboTokens(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -52,6 +67,20 @@ func (h *KoboHandler) HandleKoboTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleKoboToken handles DELETE /api/kobo/tokens/{id}.
+//
+//	@Summary		Delete a Kobo sync token
+//	@Description	Delete a Kobo sync token by ID. The device using this token will receive 401 on its next sync.
+//	@Tags			kobo-tokens
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Param			id	path	string	true	"Kobo token ID"
+//	@Success		204	"Token deleted"
+//	@Failure		400	{object}	errorResponse	"Bad request"
+//	@Failure		401	{object}	errorResponse	"Unauthorized"
+//	@Failure		404	{object}	errorResponse	"Token not found"
+//	@Failure		405	{object}	errorResponse	"Method not allowed"
+//	@Failure		500	{object}	errorResponse	"Internal server error"
+//	@Router			/kobo/tokens/{id} [delete]
 func (h *KoboHandler) HandleKoboToken(w http.ResponseWriter, r *http.Request) {
 	id, ok := extractPathID(r.URL.Path, "/api/kobo/tokens/")
 	if !ok {
@@ -87,24 +116,18 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
-		return
-	}
-	if len(name) > 100 {
-		writeError(r.Context(), w, http.StatusBadRequest, "name must be at most 100 characters")
+	name, ok := validateTokenName(r.Context(), w, req.Name)
+	if !ok {
 		return
 	}
 
 	// Generate a random 32-byte hex token (64 hex chars).
-	raw := make([]byte, 32)
-	if _, err := rand.Read(raw); err != nil {
+	token, err := generateRandomHex(32)
+	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to generate random bytes", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate Kobo token")
 		return
 	}
-	token := hex.EncodeToString(raw)
 	tokenHash := auth.HashKoboToken(token)
 
 	userID := auth.UserIDFromContext(r.Context())
@@ -117,13 +140,11 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionKoboTokenCreated, "kobo_token", koboToken.ID, map[string]any{"name": name})
 
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Pragma", "no-cache")
 	resp := koboTokenCreateResponse{
 		koboTokenDTO: toKoboTokenDTO(koboToken),
 		Token:        token,
 	}
-	writeJSON(r.Context(), w, http.StatusCreated, resp)
+	writeSecretTokenResponse(r.Context(), w, http.StatusCreated, resp)
 }
 
 func (h *KoboHandler) deleteKoboToken(w http.ResponseWriter, r *http.Request, id string) {

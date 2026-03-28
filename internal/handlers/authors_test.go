@@ -23,7 +23,7 @@ func setupAuthorHandler(t *testing.T) (*AuthorHandler, string) {
 func TestCreateAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	body, _ := json.Marshal(authorRequest{Name: "Stephen King"})
+	body := mustMarshal(t, authorRequest{Name: "Stephen King"})
 	r := httptest.NewRequest(http.MethodPost, "/api/authors", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -46,7 +46,7 @@ func TestCreateAuthor_Handler(t *testing.T) {
 func TestCreateAuthor_MissingName(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	body, _ := json.Marshal(authorRequest{})
+	body := mustMarshal(t, authorRequest{})
 	r := httptest.NewRequest(http.MethodPost, "/api/authors", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -61,7 +61,7 @@ func TestCreateAuthor_MissingName(t *testing.T) {
 func TestCreateAuthor_WhitespaceOnlyName(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	body, _ := json.Marshal(authorRequest{Name: "   "})
+	body := mustMarshal(t, authorRequest{Name: "   "})
 	r := httptest.NewRequest(http.MethodPost, "/api/authors", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -76,9 +76,12 @@ func TestCreateAuthor_WhitespaceOnlyName(t *testing.T) {
 func TestUpdateAuthor_WhitespaceOnlyName(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, _ := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create author: %v", err)
+	}
 
-	body, _ := json.Marshal(authorRequest{Name: "   "})
+	body := mustMarshal(t, authorRequest{Name: "   "})
 	r := httptest.NewRequest(http.MethodPut, "/api/authors/"+a.ID, bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -93,7 +96,7 @@ func TestUpdateAuthor_WhitespaceOnlyName(t *testing.T) {
 func TestCreateAuthor_Duplicate(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	body, _ := json.Marshal(authorRequest{Name: "Stephen King"})
+	body := mustMarshal(t, authorRequest{Name: "Stephen King"})
 	r := httptest.NewRequest(http.MethodPost, "/api/authors", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -112,8 +115,12 @@ func TestCreateAuthor_Duplicate(t *testing.T) {
 func TestListAuthors_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
-	h.DB.CreateAuthor(context.Background(), "Brandon Sanderson", nil, nil, nil, nil)
+	if _, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil); err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+	if _, err := h.DB.CreateAuthor(context.Background(), "Brandon Sanderson", nil, nil, nil, nil); err != nil {
+		t.Fatalf("create author: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors", nil)
 	r = withUserID(r, userID)
@@ -137,7 +144,10 @@ func TestListAuthors_Handler(t *testing.T) {
 func TestGetAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, _ := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create author: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID, nil)
 	r = withUserID(r, userID)
@@ -167,7 +177,10 @@ func TestGetAuthor_NotFound(t *testing.T) {
 func TestDeleteAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, _ := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create author: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/authors/"+a.ID, nil)
 	r = withUserID(r, userID)

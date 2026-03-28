@@ -65,7 +65,7 @@ func TestCreateLibrary_ValidPath(t *testing.T) {
 	h, adminID, _ := setupLibraryHandler(t)
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir},
 	})
@@ -95,7 +95,7 @@ func TestCreateLibrary_ValidPath(t *testing.T) {
 func TestCreateLibrary_NonexistentPath(t *testing.T) {
 	h, adminID, _ := setupLibraryHandler(t)
 
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{"/nonexistent/path/that/does/not/exist"},
 	})
@@ -128,7 +128,7 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{filePath},
 	})
@@ -156,7 +156,7 @@ func TestCreateLibrary_MixedValidAndInvalidPaths(t *testing.T) {
 	h, adminID, _ := setupLibraryHandler(t)
 
 	validDir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{validDir, "/nonexistent/path"},
 	})
@@ -178,7 +178,7 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 	h.Enqueuer = mock
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir},
 	})
@@ -215,7 +215,7 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 
 	dir1 := t.TempDir()
 	dir2 := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir1, dir2},
 	})
@@ -256,7 +256,7 @@ func TestCreateLibrary_EnqueueErrorDoesNotFailRequest(t *testing.T) {
 	h.Enqueuer = mock
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir},
 	})
@@ -277,7 +277,7 @@ func TestCreateLibrary_NilEnqueuerDoesNotPanic(t *testing.T) {
 	// h.Enqueuer is nil by default from setupLibraryHandler
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir},
 	})
@@ -298,7 +298,7 @@ func TestListLibraryBooks_Success(t *testing.T) {
 
 	// Create a library.
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{Name: "Fiction", Paths: []string{dir}})
+	body := mustMarshal(t, libraryRequest{Name: "Fiction", Paths: []string{dir}})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
@@ -350,7 +350,7 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 
 	// Create a library.
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{Name: "Paginated", Paths: []string{dir}})
+	body := mustMarshal(t, libraryRequest{Name: "Paginated", Paths: []string{dir}})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -404,7 +404,7 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 
 	// Create a library.
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{Name: "InvalidPagination", Paths: []string{dir}})
+	body := mustMarshal(t, libraryRequest{Name: "InvalidPagination", Paths: []string{dir}})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -458,7 +458,7 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 
 	// Create a library.
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{Name: "MaxLimit", Paths: []string{dir}})
+	body := mustMarshal(t, libraryRequest{Name: "MaxLimit", Paths: []string{dir}})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -525,7 +525,7 @@ func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
 
 	// Create a library first.
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{Name: "Fiction", Paths: []string{dir}})
+	body := mustMarshal(t, libraryRequest{Name: "Fiction", Paths: []string{dir}})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
@@ -554,7 +554,7 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 
 	// Create a library with a valid path first.
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir},
 	})
@@ -573,7 +573,7 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 	}
 
 	// Update with an invalid path.
-	updateBody, _ := json.Marshal(libraryRequest{
+	updateBody := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{"/nonexistent/update/path"},
 	})
@@ -595,7 +595,7 @@ func TestUpdateLibrary_ValidPath(t *testing.T) {
 	dir2 := t.TempDir()
 
 	// Create with dir1.
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir1},
 	})
@@ -614,7 +614,7 @@ func TestUpdateLibrary_ValidPath(t *testing.T) {
 	}
 
 	// Update to dir2.
-	updateBody, _ := json.Marshal(libraryRequest{
+	updateBody := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir2},
 	})
@@ -633,7 +633,7 @@ func TestCreateLibrary_NonAdminForbidden(t *testing.T) {
 	h, _, regularID := setupLibraryHandler(t)
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir},
 	})
@@ -654,7 +654,7 @@ func TestUpdateLibrary_NonAdminForbidden(t *testing.T) {
 
 	// Create a library as admin first.
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{Name: "Books", Paths: []string{dir}})
+	body := mustMarshal(t, libraryRequest{Name: "Books", Paths: []string{dir}})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
@@ -668,7 +668,7 @@ func TestUpdateLibrary_NonAdminForbidden(t *testing.T) {
 	}
 
 	// Attempt update as regular user.
-	updateBody, _ := json.Marshal(libraryRequest{Name: "Updated", Paths: []string{dir}})
+	updateBody := mustMarshal(t, libraryRequest{Name: "Updated", Paths: []string{dir}})
 	r2 := httptest.NewRequest(http.MethodPut, "/api/libraries/"+created.ID, bytes.NewReader(updateBody))
 	r2 = withUserID(r2, regularID)
 	w2 := httptest.NewRecorder()
@@ -685,7 +685,7 @@ func TestDeleteLibrary_NonAdminForbidden(t *testing.T) {
 
 	// Create a library as admin first.
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{Name: "Books", Paths: []string{dir}})
+	body := mustMarshal(t, libraryRequest{Name: "Books", Paths: []string{dir}})
 	r := httptest.NewRequest(http.MethodPost, "/api/libraries", bytes.NewReader(body))
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
@@ -750,7 +750,7 @@ func TestCreateLibrary_InvalidOrganizationType(t *testing.T) {
 	h, adminID, _ := setupLibraryHandler(t)
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:             "Books",
 		Paths:            []string{dir},
 		OrganizationType: "invalid_type",
@@ -781,7 +781,7 @@ func TestCreateLibrary_ValidOrganizationTypes(t *testing.T) {
 			h, adminID, _ := setupLibraryHandler(t)
 
 			dir := t.TempDir()
-			body, _ := json.Marshal(libraryRequest{
+			body := mustMarshal(t, libraryRequest{
 				Name:             "Books-" + orgType,
 				Paths:            []string{dir},
 				OrganizationType: orgType,
@@ -812,7 +812,7 @@ func TestCreateLibrary_EmptyOrganizationTypeDefaultsToBookPerFolder(t *testing.T
 	h, adminID, _ := setupLibraryHandler(t)
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir},
 		// OrganizationType intentionally omitted (empty string)
@@ -841,7 +841,7 @@ func TestUpdateLibrary_InvalidOrganizationType(t *testing.T) {
 	h, adminID, _ := setupLibraryHandler(t)
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
 		Paths: []string{dir},
 	})
@@ -859,7 +859,7 @@ func TestUpdateLibrary_InvalidOrganizationType(t *testing.T) {
 		t.Fatalf("unmarshal created: %v", err)
 	}
 
-	updateBody, _ := json.Marshal(libraryRequest{
+	updateBody := mustMarshal(t, libraryRequest{
 		Name:             "Books",
 		Paths:            []string{dir},
 		OrganizationType: "flat_organize",
@@ -879,7 +879,7 @@ func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T)
 	h, adminID, _ := setupLibraryHandler(t)
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(libraryRequest{
+	body := mustMarshal(t, libraryRequest{
 		Name:             "Books",
 		Paths:            []string{dir},
 		OrganizationType: db.LibraryOrganizationNone,
@@ -898,7 +898,7 @@ func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T)
 		t.Fatalf("unmarshal created: %v", err)
 	}
 
-	updateBody, _ := json.Marshal(libraryRequest{
+	updateBody := mustMarshal(t, libraryRequest{
 		Name:  "Books Updated",
 		Paths: []string{dir},
 	})
