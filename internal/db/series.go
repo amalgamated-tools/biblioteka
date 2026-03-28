@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 
@@ -128,30 +127,14 @@ func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, har
 // it, creating a new one if it doesn't exist. Handles concurrent insert races
 // gracefully.
 func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, error) {
-	name = NormalizeSeriesName(name)
-	if name == "" {
-		return nil, ErrInvalidSeriesName
-	}
-	slog.DebugContext(ctx, "db: find or create series", slog.String(otelkeys.Name, name))
-
-	// Look up using the same case-insensitive predicate as GetSeriesByName.
-	s, err := d.GetSeriesByName(ctx, name)
-	if err == nil {
-		return s, nil
-	}
-	if err != sql.ErrNoRows {
-		return nil, err
-	}
-	// Not found — insert.
-	s, err = d.CreateSeries(ctx, name, nil, nil, nil)
-	if err == nil {
-		return s, nil
-	}
-	if err != ErrSeriesNameExists {
-		return nil, err
-	}
-	// Concurrent insert won the race — fetch.
-	return d.GetSeriesByName(ctx, name)
+	slog.DebugContext(ctx, "db: find or create series", slog.String(otelkeys.Name, NormalizeSeriesName(name)))
+	return findOrCreate(ctx, name,
+		NormalizeSeriesName, ErrInvalidSeriesName, ErrSeriesNameExists,
+		d.GetSeriesByName,
+		func(ctx context.Context, n string) (*Series, error) {
+			return d.CreateSeries(ctx, n, nil, nil, nil)
+		},
+	)
 }
 
 func (d *DB) DeleteSeries(ctx context.Context, id string) error {
