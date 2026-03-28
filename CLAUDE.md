@@ -208,6 +208,8 @@ func (h *MyProtocolHandler) HandleMyProtocolCredentials(w http.ResponseWriter, r
         upsert:      func(ctx context.Context, userID, username, hash string) (credentialEntity, error) { ... },
         del:         h.DB.DeleteMyProtocolCredential,
     }, w, r)
+    // NOTE: handleCredentials writes the HTTP response; always return immediately after calling it.
+    return
     return // handleCredentials always writes the HTTP response
 }
 ```
