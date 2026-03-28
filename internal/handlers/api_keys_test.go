@@ -77,7 +77,7 @@ func TestCreateAPIKey_EmptyName(t *testing.T) {
 func TestCreateAPIKey_NameTooLong(t *testing.T) {
 	h, userID := setupAPIKeyHandler(t)
 
-	longName := strings.Repeat("a", maxAPIKeyNameLength+1)
+	longName := strings.Repeat("a", maxTokenNameLength+1)
 	body := mustMarshal(t, apiKeyCreateRequest{Name: longName})
 	r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 	r = withUserID(r, userID)

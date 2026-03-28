@@ -1,11 +1,8 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -87,24 +84,18 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
-		return
-	}
-	if len(name) > 100 {
-		writeError(r.Context(), w, http.StatusBadRequest, "name must be at most 100 characters")
+	name, ok := validateTokenName(r.Context(), w, req.Name)
+	if !ok {
 		return
 	}
 
 	// Generate a random 32-byte hex token (64 hex chars).
-	raw := make([]byte, 32)
-	if _, err := rand.Read(raw); err != nil {
+	token, err := generateRandomHex(32)
+	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to generate random bytes", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate Kobo token")
 		return
 	}
-	token := hex.EncodeToString(raw)
 	tokenHash := auth.HashKoboToken(token)
 
 	userID := auth.UserIDFromContext(r.Context())
@@ -117,13 +108,11 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionKoboTokenCreated, "kobo_token", koboToken.ID, map[string]any{"name": name})
 
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Pragma", "no-cache")
 	resp := koboTokenCreateResponse{
 		koboTokenDTO: toKoboTokenDTO(koboToken),
 		Token:        token,
 	}
-	writeJSON(r.Context(), w, http.StatusCreated, resp)
+	writeSecretTokenResponse(r.Context(), w, http.StatusCreated, resp)
 }
 
 func (h *KoboHandler) deleteKoboToken(w http.ResponseWriter, r *http.Request, id string) {
