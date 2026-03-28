@@ -127,7 +127,8 @@ func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, har
 // it, creating a new one if it doesn't exist. Handles concurrent insert races
 // gracefully.
 func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, error) {
-	slog.DebugContext(ctx, "db: find or create series", slog.String(otelkeys.Name, NormalizeSeriesName(name)))
+	name = NormalizeSeriesName(name)
+	slog.DebugContext(ctx, "db: find or create series", slog.String(otelkeys.Name, name))
 	return findOrCreate(ctx, name,
 		NormalizeSeriesName, ErrInvalidSeriesName, ErrSeriesNameExists,
 		d.GetSeriesByName,
