@@ -498,8 +498,8 @@ Stores Goodreads (and compatible catalog) metadata candidates fetched on behalf 
 
 **Indexes:**
 - `idx_goodreads_metadata_user_id` — fast user-scoped lookups
-- `idx_goodreads_metadata_user_status_created_at_id` — composite index on `(user_id, status, created_at DESC, id DESC)` for efficient paginated listing filtered by status
-- `idx_goodreads_metadata_user_created_at_id` — composite index on `(user_id, created_at DESC, id DESC)` for efficient paginated listing of all records for a user
+- `idx_goodreads_metadata_user_status_created_at_id` (SQLite) / `idx_goodreads_metadata_user_status_created_at_id_desc` (PostgreSQL) — composite index on `(user_id, status, created_at DESC, id DESC)` for efficient paginated listing filtered by status
+- `idx_goodreads_metadata_user_created_at_id` (SQLite) / `idx_goodreads_metadata_user_created_at_id_desc` (PostgreSQL) — composite index on `(user_id, created_at DESC, id DESC)` for efficient paginated listing of all records for a user
 
 **Notes:**
 - **This table is internal-only and is not exposed through the REST API.** It is used exclusively by internal server-side logic and background jobs.
