@@ -74,16 +74,5 @@ func writeKoboJSON(w http.ResponseWriter, status int, data any) {
 
 // schemeAndHost returns the scheme and host for building absolute URLs.
 func schemeAndHost(r *http.Request) string {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
-		normalized := strings.ToLower(strings.TrimSpace(proto))
-		if normalized == "http" || normalized == "https" {
-			scheme = normalized
-		}
-	}
-	host := r.Host
-	return scheme + "://" + host
+	return requestScheme(r) + "://" + r.Host
 }
