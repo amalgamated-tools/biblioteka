@@ -170,6 +170,17 @@ func handleUpdateErr(ctx context.Context, w http.ResponseWriter, err, errInvalid
 	return true
 }
 
+// mapSlice converts a slice of T to a slice of DTO using the provided converter.
+// It is a low-level slice transformer; for complete list endpoints (fetch → log → respond),
+// prefer listEntities instead.
+func mapSlice[T any, DTO any](items []T, toDTO func(*T) DTO) []DTO {
+	dtos := make([]DTO, 0, len(items))
+	for i := range items {
+		dtos = append(dtos, toDTO(&items[i]))
+	}
+	return dtos
+}
+
 // listEntities is a generic helper that implements the list-and-convert pattern
 // common to named-entity list handlers. It fetches all entities, converts them
 // to DTOs, and writes the JSON response.
@@ -192,12 +203,7 @@ func listEntities[T any, DTO any](
 
 	slog.DebugContext(ctx, resource+" listed", slog.Int(otelkeys.Count, len(entities)))
 
-	dtos := make([]DTO, 0, len(entities))
-	for i := range entities {
-		dtos = append(dtos, toDTO(&entities[i]))
-	}
-
-	writeJSON(ctx, w, http.StatusOK, dtos)
+	writeJSON(ctx, w, http.StatusOK, mapSlice(entities, toDTO))
 }
 
 // deleteResource is a generic helper that implements the fetch-then-delete-then-audit
