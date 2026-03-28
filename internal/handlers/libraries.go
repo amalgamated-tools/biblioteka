@@ -113,22 +113,7 @@ func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{object}	errorResponse
 //	@Router			/libraries [get]
 func (h *LibraryHandler) listLibraries(w http.ResponseWriter, r *http.Request) {
-	slog.DebugContext(r.Context(), "listing libraries")
-	libraries, err := h.DB.ListLibraries(r.Context())
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list libraries", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list libraries")
-		return
-	}
-
-	slog.DebugContext(r.Context(), "libraries listed", slog.Int(otelkeys.Count, len(libraries)))
-
-	dtos := make([]libraryDTO, 0, len(libraries))
-	for i := range libraries {
-		dtos = append(dtos, toLibraryDTO(&libraries[i]))
-	}
-
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
+	listEntities(w, r, "libraries", h.DB.ListLibraries, toLibraryDTO)
 }
 
 func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *libraryRequest, defaultOrganizationType string) (pathsJSON string, ok bool) {
