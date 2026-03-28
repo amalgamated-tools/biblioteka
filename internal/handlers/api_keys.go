@@ -1,12 +1,8 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"encoding/hex"
-	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -46,8 +42,6 @@ func toAPIKeyDTO(k *db.APIKey) apiKeyDTO {
 		CreatedAt:  k.CreatedAt,
 	}
 }
-
-const maxAPIKeyNameLength = 100
 
 // HandleAPIKeys handles GET /api/api-keys and POST /api/api-keys.
 //
@@ -125,25 +119,19 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
-		return
-	}
-
-	if len(name) > maxAPIKeyNameLength {
-		writeError(r.Context(), w, http.StatusBadRequest, fmt.Sprintf("name must be at most %d characters", maxAPIKeyNameLength))
+	name, ok := validateTokenName(r.Context(), w, req.Name)
+	if !ok {
 		return
 	}
 
 	// Generate 32 random hex characters (16 bytes).
-	randomBytes := make([]byte, 16)
-	if _, err := rand.Read(randomBytes); err != nil {
+	hexKey, err := generateRandomHex(16)
+	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to generate random bytes", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate API key")
 		return
 	}
-	fullKey := auth.APIKeyPrefix + hex.EncodeToString(randomBytes)
+	fullKey := auth.APIKeyPrefix + hexKey
 
 	// Hash the full key with SHA-256. This is appropriate because API keys are
 	// high-entropy random tokens (128 bits), not user-chosen passwords. Expensive
@@ -151,8 +139,7 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 	keyHash := auth.HashAPIKey(fullKey)
 
 	// Store a longer display prefix: static prefix + the first apiKeyDisplayPrefixHexLen hex characters.
-	hexPart := fullKey[len(auth.APIKeyPrefix):]
-	keyPrefix := auth.APIKeyPrefix + hexPart[:apiKeyDisplayPrefixHexLen]
+	keyPrefix := auth.APIKeyPrefix + hexKey[:apiKeyDisplayPrefixHexLen]
 
 	userID := auth.UserIDFromContext(r.Context())
 	apiKey, err := h.DB.CreateAPIKey(r.Context(), userID, name, keyHash, keyPrefix)
@@ -170,10 +157,7 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Prevent caching of the response that contains the full API key.
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Pragma", "no-cache")
-
-	writeJSON(r.Context(), w, http.StatusCreated, resp)
+	writeSecretTokenResponse(r.Context(), w, http.StatusCreated, resp)
 }
 
 func (h *APIKeyHandler) deleteAPIKey(w http.ResponseWriter, r *http.Request, id string) {
