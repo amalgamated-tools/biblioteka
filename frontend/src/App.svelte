@@ -68,7 +68,7 @@
   <div class="min-h-screen bg-cream-50 dark:bg-ink-950 relative bg-texture">
     <a
       href="#main-content"
-      onclick={(e: MouseEvent) => {
+      onclick={(e) => {
         e.preventDefault();
         document.getElementById("main-content")?.focus();
       }}
