@@ -5,6 +5,8 @@
   import { required, minLength, matches, validate } from "../../lib/validation";
   import { Lock, Mail, Link } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
+  import Button from "../ui/Button.svelte";
+  import TextInput from "../ui/TextInput.svelte";
 
   interface Props {
     oidcConfigured: boolean;
@@ -90,12 +92,12 @@
         >
           Email Address
         </label>
-        <input
+        <TextInput
           id="email-display"
           type="email"
           value={authStore.user?.email || ""}
           disabled
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl bg-ink-50 dark:bg-ink-800 text-ink-500 dark:text-ink-400 cursor-not-allowed"
+          class="w-full py-2.5"
         />
         <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
           Contact support to change your email address
@@ -136,14 +138,14 @@
         <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
           Link your account to the SSO provider to enable single sign-on login.
         </p>
-        <button
+        <Button
           onclick={handleLinkSso}
           disabled={linkSsoLoading}
-          class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
+          class="inline-flex items-center gap-2 px-4 py-2.5"
         >
           <Link class="w-4 h-4" />
           {linkSsoLoading ? "Redirecting..." : "Link SSO Account"}
-        </button>
+        </Button>
       {/if}
     </div>
 
@@ -165,12 +167,12 @@
         >
           Current Password
         </label>
-        <input
+        <TextInput
           id="current-password"
           type="password"
           bind:value={currentPassword}
           autocomplete="current-password"
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder="••••••••"
           disabled={passwordLoading}
         />
@@ -183,12 +185,12 @@
         >
           New Password
         </label>
-        <input
+        <TextInput
           id="new-password"
           type="password"
           bind:value={newPassword}
           autocomplete="new-password"
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder="••••••••"
           disabled={passwordLoading}
         />
@@ -201,12 +203,12 @@
         >
           Confirm New Password
         </label>
-        <input
+        <TextInput
           id="confirm-password"
           type="password"
           bind:value={confirmPassword}
           autocomplete="new-password"
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder="••••••••"
           disabled={passwordLoading}
         />
@@ -222,13 +224,13 @@
         >
       {/if}
 
-      <button
+      <Button
         type="submit"
         disabled={passwordLoading}
-        class="w-full px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
+        class="w-full px-4 py-2.5"
       >
         {passwordLoading ? "Updating..." : "Update Password"}
-      </button>
+      </Button>
     </form>
   </div>
 </div>

@@ -4,6 +4,8 @@
   import { required, validate } from "../../lib/validation";
   import { Shield } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
+  import Button from "../ui/Button.svelte";
+  import TextInput from "../ui/TextInput.svelte";
 
   interface Props {
     initialOidcConfigured: boolean;
@@ -134,11 +136,11 @@
         >
           Issuer URL
         </label>
-        <input
+        <TextInput
           id="oidc-issuer-url"
           type="url"
           bind:value={oidcIssuerUrl}
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder="https://auth.example.com"
           disabled={oidcLoading}
         />
@@ -155,11 +157,11 @@
         >
           Client ID
         </label>
-        <input
+        <TextInput
           id="oidc-client-id"
           type="text"
           bind:value={oidcClientId}
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder="your-client-id"
           disabled={oidcLoading}
         />
@@ -172,11 +174,11 @@
         >
           Client Secret
         </label>
-        <input
+        <TextInput
           id="oidc-client-secret"
           type="password"
           bind:value={oidcClientSecret}
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder={oidcConfigured
             ? "Enter new secret to update"
             : "Enter your client secret"}
@@ -196,11 +198,11 @@
         >
           Redirect URI
         </label>
-        <input
+        <TextInput
           id="oidc-redirect-uri"
           type="url"
           bind:value={oidcRedirectUri}
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder="http://localhost:8080/api/auth/oidc/callback"
           disabled={oidcLoading}
         />
@@ -219,17 +221,13 @@
         >
       {/if}
 
-      <button
-        type="submit"
-        disabled={oidcLoading}
-        class="w-full px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
-      >
+      <Button type="submit" disabled={oidcLoading} class="w-full px-4 py-2.5">
         {oidcLoading
           ? "Saving..."
           : oidcConfigured
             ? "Update Configuration"
             : "Save Configuration"}
-      </button>
+      </Button>
     </form>
   </div>
 </div>
