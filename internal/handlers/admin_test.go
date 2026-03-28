@@ -201,7 +201,10 @@ func TestHandleSetAdmin_AdminDemotesUser(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
-	isAdmin, _ := h.DB.IsAdmin(context.Background(), regularID)
+	isAdmin, err := h.DB.IsAdmin(context.Background(), regularID)
+	if err != nil {
+		t.Fatalf("check admin: %v", err)
+	}
 	if isAdmin {
 		t.Error("user should no longer be admin")
 	}
