@@ -6,7 +6,7 @@
     type KoboToken,
   } from "../../lib/api";
   import { BookOpen, Copy, Trash2 } from "lucide-svelte";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   type KoboTokenDisplay = KoboToken & { token?: string };
 
@@ -15,8 +15,6 @@
   let tokensError: string | null = $state(null);
   let newTokenName = $state("");
   let createTokenLoading = $state(false);
-  let tokensLoaded = $state(false);
-  let tokensTried = $state(false);
 
   // Per-token "copied" state
   let copiedTokenId: string | null = $state(null);
@@ -30,11 +28,8 @@
     }
   });
 
-  $effect(() => {
-    if (!tokensLoaded && !tokensLoading && !tokensTried) {
-      tokensTried = true;
-      void loadTokens();
-    }
+  onMount(() => {
+    void loadTokens();
   });
 
   async function loadTokens() {
@@ -42,7 +37,6 @@
     tokensError = null;
     try {
       tokenList = await listKoboTokens();
-      tokensLoaded = true;
     } catch (err) {
       tokensError =
         err instanceof Error ? err.message : "Failed to load Kobo tokens";

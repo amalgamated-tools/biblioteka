@@ -6,7 +6,7 @@
     type APIKey,
   } from "../../lib/api";
   import { KeyRound, Copy, Trash2 } from "lucide-svelte";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   let apiKeyList: APIKey[] = $state.raw([]);
   let apiKeysLoading = $state(false);
@@ -14,9 +14,7 @@
   let newKeyName = $state("");
   let newlyCreatedKey: string | null = $state(null);
   let createKeyLoading = $state(false);
-  let apiKeysLoaded = $state(false);
   let keyCopied = $state(false);
-  let apiKeysTried = $state(false);
   let keyCopiedTimeout: number | null = null;
 
   onDestroy(() => {
@@ -26,11 +24,8 @@
     }
   });
 
-  $effect(() => {
-    if (!apiKeysLoaded && !apiKeysLoading && !apiKeysTried) {
-      apiKeysTried = true;
-      void loadAPIKeys();
-    }
+  onMount(() => {
+    void loadAPIKeys();
   });
 
   async function loadAPIKeys() {
@@ -38,7 +33,6 @@
     apiKeysError = null;
     try {
       apiKeyList = await listAPIKeys();
-      apiKeysLoaded = true;
     } catch (err) {
       apiKeysError =
         err instanceof Error ? err.message : "Failed to load API keys";
