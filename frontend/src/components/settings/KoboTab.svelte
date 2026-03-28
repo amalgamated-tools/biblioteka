@@ -254,7 +254,7 @@
                   type="button"
                   aria-disabled="true"
                   aria-label={`Copy unavailable for ${token.name} — token value is only shown once`}
-                  onclick={(e) => e.preventDefault()}
+                  onclick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                   class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500 cursor-not-allowed"
                 >
                   <Copy class="w-4 h-4" aria-hidden="true" />
