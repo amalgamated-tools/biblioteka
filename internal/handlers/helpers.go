@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"reflect"
@@ -41,6 +44,48 @@ func validateName(ctx context.Context, w http.ResponseWriter, name string) bool 
 		return false
 	}
 	return true
+}
+
+// maxTokenNameLength is the shared maximum length for API key and Kobo token names.
+const maxTokenNameLength = 100
+
+// validateTokenName trims whitespace from name, then validates that it is
+// non-empty and does not exceed maxTokenNameLength. It returns the trimmed name
+// and true on success. On failure it writes the appropriate 400 error response
+// and returns "", false so callers can simply return.
+func validateTokenName(ctx context.Context, w http.ResponseWriter, name string) (string, bool) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		writeError(ctx, w, http.StatusBadRequest, "name is required")
+		return "", false
+	}
+	if len(name) > maxTokenNameLength {
+		writeError(ctx, w, http.StatusBadRequest, fmt.Sprintf("name must be at most %d characters", maxTokenNameLength))
+		return "", false
+	}
+	return name, true
+}
+
+// generateRandomHex generates n random bytes and returns them as a lowercase
+// hex-encoded string. It wraps crypto/rand.Read and returns an error if the
+// random source fails.
+func generateRandomHex(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate random bytes: %w", err)
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// writeSecretTokenResponse sets cache-prevention headers and writes a JSON
+// response. It should be used whenever the response body contains a plaintext
+// secret token or key that should not be stored in HTTP caches. Note that
+// these headers cannot fully prevent storage in browser history or other
+// user-controlled storage.
+func writeSecretTokenResponse(ctx context.Context, w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+	writeJSON(ctx, w, status, data)
 }
 
 // decodeJSON reads and decodes the JSON request body into v.
