@@ -5,6 +5,7 @@
     deleteKoboToken,
     type KoboToken,
   } from "../../lib/api";
+  import { copyToClipboard } from "../../lib/clipboard";
   import { BookOpen, Copy, Trash2 } from "lucide-svelte";
   import { onDestroy } from "svelte";
 
@@ -93,7 +94,7 @@
     return `${window.location.origin}/kobo/${token.token}/v1/initialization`;
   }
 
-  async function copyToClipboard(
+  async function handleCopyURL(
     text: string,
     tokenId: string,
     tokenName: string,
@@ -101,28 +102,7 @@
     tokensError = null;
 
     try {
-      if (
-        typeof navigator !== "undefined" &&
-        navigator.clipboard &&
-        typeof navigator.clipboard.writeText === "function"
-      ) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        // Fallback for browsers/contexts without the async Clipboard API
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-        const successful = document.execCommand("copy");
-        document.body.removeChild(textarea);
-
-        if (!successful) {
-          throw new Error("clipboard copy command was rejected");
-        }
-      }
+      await copyToClipboard(text);
 
       copiedTokenId = tokenId;
       liveMessage = `Copied sync URL for ${tokenName}`;
@@ -232,7 +212,7 @@
                   {url}
                 </code>
                 <button
-                  onclick={() => copyToClipboard(url, token.id, token.name)}
+                  onclick={() => handleCopyURL(url, token.id, token.name)}
                   aria-label={copiedTokenId === token.id
                     ? `Copied sync URL for ${token.name}`
                     : `Copy sync URL for ${token.name}`}
