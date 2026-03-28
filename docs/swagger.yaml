@@ -68,9 +68,7 @@ definitions:
       id:
         type: string
       metadata:
-        items:
-          type: integer
-        type: array
+        type: object
       user_id:
         type: string
     type: object
