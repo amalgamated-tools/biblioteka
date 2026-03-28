@@ -63,14 +63,7 @@ func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentT
 }
 
 func opdsBaseURL(r *http.Request) string {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	if proto := r.Header.Get("X-Forwarded-Proto"); proto == "http" || proto == "https" {
-		scheme = proto
-	}
-	return scheme + "://" + r.Host + "/opds"
+	return requestScheme(r) + "://" + r.Host + "/opds"
 }
 
 func parsePage(r *http.Request) int {
