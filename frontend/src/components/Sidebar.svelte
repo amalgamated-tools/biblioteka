@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { authStore } from "../stores/auth.svelte";
   import type { AppView } from "../stores/router.svelte";
   import { libraryStore } from "../stores/libraries.svelte";
@@ -30,16 +31,14 @@
     }
   });
 
-  $effect(() => {
-    if (!version) {
-      getVersion()
-        .then((v) => {
-          version = v;
-        })
-        .catch(() => {
-          // version stays blank; suppress unhandled-rejection noise
-        });
-    }
+  onMount(() => {
+    getVersion()
+      .then((v) => {
+        version = v;
+      })
+      .catch(() => {
+        // version stays blank; suppress unhandled-rejection noise
+      });
   });
 
   async function handleLogout() {
