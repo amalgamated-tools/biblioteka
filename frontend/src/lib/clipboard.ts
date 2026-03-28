@@ -32,8 +32,4 @@ export async function copyToClipboard(text: string): Promise<void> {
   } finally {
     document.body.removeChild(textarea);
   }
-
-  if (!successful) {
-    throw new Error("clipboard copy command was rejected");
-  }
 }

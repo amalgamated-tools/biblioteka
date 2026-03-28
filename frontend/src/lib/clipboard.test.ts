@@ -1,7 +1,21 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { copyToClipboard } from "./clipboard";
 
+let originalExecCommand: PropertyDescriptor | undefined;
+
+beforeEach(() => {
+  originalExecCommand = Object.getOwnPropertyDescriptor(
+    document,
+    "execCommand",
+  );
+});
+
 afterEach(() => {
+  if (originalExecCommand) {
+    Object.defineProperty(document, "execCommand", originalExecCommand);
+  } else {
+    delete (document as unknown as Record<string, unknown>)["execCommand"];
+  }
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
