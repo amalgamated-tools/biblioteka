@@ -2,6 +2,7 @@
   import { onDestroy } from "svelte";
   import { authStore } from "../../stores/auth.svelte";
   import { changePassword, createOidcLinkNonce } from "../../lib/api";
+  import { required, minLength, matches, validate } from "../../lib/validation";
   import { Lock, Mail, Link } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
 
@@ -42,25 +43,14 @@
     passwordError = null;
     passwordSuccess = false;
 
-    if (!currentPassword) {
-      passwordError = "Current password is required";
-      return;
-    }
-
-    if (!newPassword) {
-      passwordError = "New password is required";
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      passwordError = "New password must be at least 6 characters";
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      passwordError = "Passwords do not match";
-      return;
-    }
+    passwordError =
+      validate(currentPassword, [required("Current password is required")]) ??
+      validate(newPassword, [
+        required("New password is required"),
+        minLength(6, "New password must be at least 6 characters"),
+      ]) ??
+      validate(confirmPassword, [matches(newPassword, "Passwords do not match")]);
+    if (passwordError) return;
 
     passwordLoading = true;
 

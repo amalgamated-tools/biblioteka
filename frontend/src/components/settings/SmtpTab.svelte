@@ -6,6 +6,7 @@
     setSmtpConfig,
     testSmtpConfig,
   } from "../../lib/api";
+  import { required, validate } from "../../lib/validation";
   import { Mail, Send } from "lucide-svelte";
 
   interface Props {
@@ -66,14 +67,11 @@
     smtpError = null;
     smtpSuccessMessage = null;
 
-    if (!smtpHost.trim()) {
-      smtpError = "SMTP Host is required";
-      return;
-    }
-    if (!smtpFrom.trim()) {
-      smtpError = "From Address is required";
-      return;
-    }
+    smtpError =
+      validate(smtpHost, [required("SMTP Host is required")]) ??
+      validate(smtpFrom, [required("From Address is required")]);
+    if (smtpError) return;
+
     if (
       !smtpPassword.trim() &&
       smtpUsername.trim() &&

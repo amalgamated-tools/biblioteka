@@ -3,6 +3,7 @@
   import { BookCheck } from "lucide-svelte";
   import { authStore } from "../stores/auth.svelte";
   import { getOidcEnabled } from "../lib/api";
+  import { required, minLength, validate } from "../lib/validation";
   import AlertBanner from "./ui/AlertBanner.svelte";
 
   let isLogin = $state(true);
@@ -44,14 +45,18 @@
     error = null;
     loading = true;
 
-    if (!email || !password || (!isLogin && !name)) {
+    const requiredFields = isLogin ? [email, password] : [name, email, password];
+    if (requiredFields.some((f) => required()(f) !== null)) {
       error = "Please fill in all fields";
       loading = false;
       return;
     }
 
-    if (password.length < 6) {
-      error = "Password must be at least 6 characters";
+    const pwdError = validate(password, [
+      minLength(6, "Password must be at least 6 characters"),
+    ]);
+    if (pwdError) {
+      error = pwdError;
       loading = false;
       return;
     }
