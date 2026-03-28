@@ -23,7 +23,7 @@ func setupSeriesHandler(t *testing.T) (*SeriesHandler, string) {
 func TestCreateSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	body, _ := json.Marshal(seriesRequest{Name: "The Dark Tower"})
+	body := mustMarshal(t, seriesRequest{Name: "The Dark Tower"})
 	r := httptest.NewRequest(http.MethodPost, "/api/series", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -46,7 +46,7 @@ func TestCreateSeries_Handler(t *testing.T) {
 func TestCreateSeries_MissingName(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	body, _ := json.Marshal(seriesRequest{})
+	body := mustMarshal(t, seriesRequest{})
 	r := httptest.NewRequest(http.MethodPost, "/api/series", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -61,7 +61,7 @@ func TestCreateSeries_MissingName(t *testing.T) {
 func TestCreateSeries_WhitespaceOnlyName(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	body, _ := json.Marshal(seriesRequest{Name: "   "})
+	body := mustMarshal(t, seriesRequest{Name: "   "})
 	r := httptest.NewRequest(http.MethodPost, "/api/series", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -76,9 +76,12 @@ func TestCreateSeries_WhitespaceOnlyName(t *testing.T) {
 func TestUpdateSeries_WhitespaceOnlyName(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	s, _ := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create series: %v", err)
+	}
 
-	body, _ := json.Marshal(seriesRequest{Name: "   "})
+	body := mustMarshal(t, seriesRequest{Name: "   "})
 	r := httptest.NewRequest(http.MethodPut, "/api/series/"+s.ID, bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -93,7 +96,7 @@ func TestUpdateSeries_WhitespaceOnlyName(t *testing.T) {
 func TestCreateSeries_Duplicate(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	body, _ := json.Marshal(seriesRequest{Name: "The Dark Tower"})
+	body := mustMarshal(t, seriesRequest{Name: "The Dark Tower"})
 	r := httptest.NewRequest(http.MethodPost, "/api/series", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -112,8 +115,12 @@ func TestCreateSeries_Duplicate(t *testing.T) {
 func TestListSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	h.DB.CreateSeries(context.Background(), "Discworld", nil, nil, nil)
-	h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if _, err := h.DB.CreateSeries(context.Background(), "Discworld", nil, nil, nil); err != nil {
+		t.Fatalf("create series: %v", err)
+	}
+	if _, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil); err != nil {
+		t.Fatalf("create series: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/series", nil)
 	r = withUserID(r, userID)
@@ -137,7 +144,10 @@ func TestListSeries_Handler(t *testing.T) {
 func TestGetSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	s, _ := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create series: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/series/"+s.ID, nil)
 	r = withUserID(r, userID)
@@ -167,7 +177,10 @@ func TestGetSeries_NotFound(t *testing.T) {
 func TestDeleteSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	s, _ := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create series: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/series/"+s.ID, nil)
 	r = withUserID(r, userID)
