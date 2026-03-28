@@ -451,7 +451,9 @@ func TestSeriesBooks(t *testing.T) {
 		t.Fatalf("create book: %v", err)
 	}
 	pos := 1.0
-	h.DB.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}})
+	if err := h.DB.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}}); err != nil {
+		t.Fatalf("set book series: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series/"+series.ID, nil)
 	w := httptest.NewRecorder()
