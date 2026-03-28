@@ -25,7 +25,7 @@ func setupBookHandler(t *testing.T) (*BookHandler, string) {
 func TestCreateBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	body, _ := json.Marshal(bookRequest{Title: "The Gunslinger"})
+	body := mustMarshal(t, bookRequest{Title: "The Gunslinger"})
 	r := httptest.NewRequest(http.MethodPost, "/api/books", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -57,7 +57,7 @@ func TestCreateBook_Handler(t *testing.T) {
 func TestCreateBook_MissingTitle(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	body, _ := json.Marshal(bookRequest{})
+	body := mustMarshal(t, bookRequest{})
 	r := httptest.NewRequest(http.MethodPost, "/api/books", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -241,7 +241,10 @@ func TestListBooks_MaxLimitClamping(t *testing.T) {
 func TestGetBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID, nil)
 	r = withUserID(r, userID)
@@ -271,7 +274,10 @@ func TestGetBook_NotFound(t *testing.T) {
 func TestDeleteBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/books/"+b.ID, nil)
 	r = withUserID(r, userID)
@@ -309,11 +315,17 @@ func TestDeleteBook_NotFound(t *testing.T) {
 func TestBookAuthors_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	a, _ := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create author: %v", err)
+	}
 
 	// Set authors
-	body, _ := json.Marshal(map[string][]string{"author_ids": {a.ID}})
+	body := mustMarshal(t, map[string][]string{"author_ids": {a.ID}})
 	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/authors", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -350,11 +362,17 @@ func TestBookAuthors_Handler(t *testing.T) {
 func TestBookSeries_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	s, _ := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create series: %v", err)
+	}
 
 	pos := 1.0
-	body, _ := json.Marshal(map[string][]db.BookSeriesInput{
+	body := mustMarshal(t, map[string][]db.BookSeriesInput{
 		"entries": {{SeriesID: s.ID, Position: &pos}},
 	})
 	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/series", bytes.NewReader(body))
@@ -393,10 +411,13 @@ func TestBookSeries_Handler(t *testing.T) {
 func TestBookFiles_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, _ := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	// Create a file
-	body, _ := json.Marshal(map[string]any{
+	body := mustMarshal(t, map[string]any{
 		"file_type": "epub",
 		"file_name": "gunslinger.epub",
 		"file_size": 1024,
