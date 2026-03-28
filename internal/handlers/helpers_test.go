@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -600,4 +601,38 @@ func Test_MapSlice(t *testing.T) {
 			t.Errorf("len = %d, want 0", len(result))
 		}
 	})
+}
+
+func TestRequestScheme(t *testing.T) {
+	tests := []struct {
+		name   string
+		tls    bool
+		header string // X-Forwarded-Proto value
+		want   string
+	}{
+		{name: "plain HTTP", tls: false, header: "", want: "http"},
+		{name: "TLS connection", tls: true, header: "", want: "https"},
+		{name: "forwarded https", tls: false, header: "https", want: "https"},
+		{name: "forwarded http", tls: true, header: "http", want: "http"},
+		{name: "uppercase HTTPS", tls: false, header: "HTTPS", want: "https"},
+		{name: "mixed case Https", tls: false, header: "Https", want: "https"},
+		{name: "padded whitespace", tls: false, header: "  https  ", want: "https"},
+		{name: "invalid proto ignored", tls: false, header: "javascript:", want: "http"},
+		{name: "empty proto ignored", tls: false, header: "", want: "http"},
+		{name: "ftp proto ignored", tls: false, header: "ftp", want: "http"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			if tt.tls {
+				r.TLS = &tls.ConnectionState{}
+			}
+			if tt.header != "" {
+				r.Header.Set("X-Forwarded-Proto", tt.header)
+			}
+			if got := requestScheme(r); got != tt.want {
+				t.Errorf("requestScheme() = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
