@@ -135,6 +135,16 @@ Authorization: Bearer <jwt>
 
 Returns the current OPDS username and timestamps, or `404` if no credentials are configured.
 
+**Response `200 OK`:**
+
+```json
+{
+  "username": "alice",
+  "created_at": "2026-03-17T12:00:00Z",
+  "updated_at": "2026-03-17T12:00:00Z"
+}
+```
+
 ### Create or update credentials
 
 ```http
@@ -148,7 +158,32 @@ Content-Type: application/json
 }
 ```
 
-Creates OPDS credentials if they don't exist, or replaces the current credentials. Returns `409 Conflict` if the username is taken by another user.
+Creates OPDS credentials if they don't exist, or replaces the current credentials.
+
+**Request body:**
+
+| Field      | Type   | Required | Description                                                          |
+|------------|--------|----------|----------------------------------------------------------------------|
+| `username` | string | ✓        | OPDS username (max 256 chars, case-insensitive, must be globally unique) |
+| `password` | string | ✓        | OPDS password (min 6 chars)                                          |
+
+**Response `200 OK`:**
+
+```json
+{
+  "username": "alice",
+  "created_at": "2026-03-17T12:00:00Z",
+  "updated_at": "2026-03-18T09:30:00Z"
+}
+```
+
+**Error responses:**
+
+| Status | Condition |
+|--------|-----------|
+| `400 Bad Request` | `username` or `password` missing, empty, or fails validation (username too long, password too short) |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `409 Conflict` | Username already taken by another user |
 
 ### Delete credentials
 
