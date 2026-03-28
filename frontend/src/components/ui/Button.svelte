@@ -21,7 +21,7 @@
 
   const variantClasses = {
     primary:
-      "bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white shadow-md shadow-accent-600/20",
+      "bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white shadow-md shadow-accent-600/20 hover:shadow-lg hover:shadow-accent-600/30",
     secondary:
       "border border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800",
     danger: "bg-danger-600 text-white hover:bg-danger-700",
