@@ -43,10 +43,16 @@ frontend/
         AlertBanner.svelte   Dismissible alert / error banner
         BookCard.svelte      Card widget displaying a single book summary
         BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback
+        Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
+        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
       api.ts            Centralised API client
       api.test.ts       API client unit tests
+      clipboard.ts      Async clipboard helper with `execCommand` fallback
+      clipboard.test.ts Clipboard helper unit tests
+      validation.ts     Composable form-validation rule functions
+      validation.test.ts Form-validation unit tests
   vite.config.ts      Vite configuration: build output, dev proxy, Vitest setup, and the restoreGitkeep plugin
 ```
 
@@ -200,6 +206,52 @@ TypeScript types are split between two files based on their purpose:
 
 Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. If a type is shared across more than one component or store, move it to `types.ts`.
 
+## Utility modules
+
+Two small utility modules live in `frontend/src/lib/` alongside `api.ts`.
+
+### `validation.ts`
+
+Composable form-validation helpers. Each exported function returns a `ValidationRule` — a function `(value: string) => string | null` that returns an error message or `null` when the value passes.
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `ValidationRule` | `type` | A validation rule function |
+| `required` | `(message?: string) => ValidationRule` | Fails when the trimmed value is empty |
+| `minLength` | `(min: number, message?: string) => ValidationRule` | Fails when the value is shorter than `min` characters |
+| `matches` | `(other: string, message?: string) => ValidationRule` | Fails when the value does not equal `other` |
+| `validate` | `(value: string, rules: ValidationRule[]) => string \| null` | Runs rules in order; returns the first error or `null` |
+
+**Usage:**
+
+```ts
+import { validate, required, minLength, matches } from "../lib/validation";
+
+const passwordError = validate(password, [
+  required("Password is required"),
+  minLength(8, "Password must be at least 8 characters"),
+]);
+
+const confirmError = validate(confirm, [
+  required("Please confirm your password"),
+  matches(password, "Passwords do not match"),
+]);
+```
+
+Store the result in a `$state` variable and bind it to a `TextInput` with `aria-invalid` and `aria-describedby` to surface inline errors accessibly (see [Form accessibility](#form-accessibility)).
+
+### `clipboard.ts`
+
+A single exported async function that copies text to the system clipboard.
+
+```ts
+import { copyToClipboard } from "../lib/clipboard";
+
+await copyToClipboard(apiKey);
+```
+
+`copyToClipboard` uses the modern async Clipboard API (`navigator.clipboard.writeText`) when available, and falls back to `document.execCommand('copy')` for environments where the Clipboard API is unavailable. It throws an `Error` if the copy operation fails through both paths.
+
 ## Adding a new store
 
 1. Create `frontend/src/stores/<name>.svelte.ts`.
@@ -217,7 +269,7 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 
 ## UI components
 
-The three reusable components in `frontend/src/components/ui/` are shared across multiple page-level components. They accept only typed props — no global store access — and are safe to use in any context.
+The five reusable components in `frontend/src/components/ui/` are shared across multiple page-level components. They accept only typed props — no global store access — and are safe to use in any context.
 
 ### `AlertBanner.svelte`
 
@@ -247,6 +299,84 @@ Displays a dismissible inline alert in either an error or success style.
 ```
 
 The `variant` value controls both the colour scheme and the default ARIA `role`: `"error"` maps to `role="alert"` (announces immediately in screen readers) and `"success"` maps to `role="status"` (polite announcement). Override with the `role` prop when the default is not appropriate.
+
+---
+
+### `Button.svelte`
+
+A styled button with three visual variants. Use this instead of a raw `<button>` element whenever a button appears in the application UI, so styling is consistent.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `variant` | `"primary" \| "secondary" \| "danger"` | | `"primary"` | Visual style |
+| `type` | `"button" \| "submit" \| "reset"` | | `"button"` | HTML button type |
+| `disabled` | `boolean` | | `false` | Disables the button and applies reduced-opacity styling |
+| `class` | `string` | | — | Additional Tailwind classes appended to the button |
+| `onclick` | `(e: MouseEvent) => void` | | — | Click handler |
+| `children` | `Snippet` | ✓ | — | Button label rendered as slot content |
+
+**Variants:**
+
+| Variant | When to use |
+|---------|-------------|
+| `primary` | Primary call-to-action; accent-coloured gradient background |
+| `secondary` | Secondary action; transparent background with a subtle border |
+| `danger` | Destructive actions such as delete or revoke; red background |
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import Button from "./ui/Button.svelte";
+
+  function handleSave() { … }
+  function handleDelete() { … }
+</script>
+
+<Button onclick={handleSave}>Save</Button>
+<Button variant="secondary" onclick={() => routerStore.navigate("dashboard")}>Cancel</Button>
+<Button variant="danger" onclick={handleDelete}>Delete</Button>
+
+<!-- Inside a form -->
+<Button type="submit" variant="primary">Submit</Button>
+```
+
+---
+
+### `TextInput.svelte`
+
+A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `value` | `string` | | `""` | Bindable current value |
+| `type` | `"text" \| "email" \| "password" \| "url"` | | `"text"` | Input type |
+| `disabled` | `boolean` | | — | Disables the input and applies reduced-opacity styling |
+| `class` | `string` | | — | Additional Tailwind classes appended to the input |
+| *…rest* | `HTMLInputAttributes` | | — | Any standard `<input>` attribute (e.g. `placeholder`, `aria-required`, `aria-describedby`, `maxlength`) |
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import TextInput from "./ui/TextInput.svelte";
+
+  let email = $state("");
+</script>
+
+<TextInput
+  bind:value={email}
+  type="email"
+  placeholder="you@example.com"
+  aria-required="true"
+/>
+```
+
+When a form field has an associated validation error, set `aria-invalid="true"` and `aria-describedby="<error-element-id>"` on the `TextInput` to meet WCAG 3.3.1. See [Form accessibility](#form-accessibility) for the full pattern.
 
 ---
 
