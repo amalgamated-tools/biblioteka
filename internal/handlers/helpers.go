@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -396,6 +397,24 @@ func isNilValue(v any) bool {
 	}
 	rv := reflect.ValueOf(v)
 	return rv.Kind() == reflect.Ptr && rv.IsNil()
+}
+
+const maxTokenSizeBytes = 64 * 1024
+
+// generateBase64Token generates a cryptographically random token of n bytes
+// and returns it as a Base64-encoded string.
+func generateBase64Token(n int) (string, error) {
+	if n <= 0 {
+		return "", fmt.Errorf("generate token: n must be positive")
+	}
+	if n > maxTokenSizeBytes {
+		return "", fmt.Errorf("generate token: n too large (max %d bytes)", maxTokenSizeBytes)
+	}
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("generate token: %w", err)
+	}
+	return base64.StdEncoding.EncodeToString(buf), nil
 }
 
 // requireAdmin checks whether the authenticated user is an admin and writes the
