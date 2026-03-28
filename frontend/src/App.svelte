@@ -35,9 +35,11 @@
     document.title = routerStore.pageTitle;
   });
 
-  // Close the mobile sidebar whenever the active view changes
+  // Close the mobile sidebar whenever the active route changes.
+  // Track `hash` (not `currentView`) so that navigating from the real
+  // dashboard to an unknown route still triggers a close.
   $effect(() => {
-    void routerStore.currentView;
+    void routerStore.hash;
     sidebarOpen = false;
   });
 </script>
@@ -79,7 +81,9 @@
     </a>
 
     <Sidebar
-      currentView={routerStore.currentView}
+      currentView={routerStore.isKnownView
+        ? routerStore.currentView
+        : undefined}
       subPath={routerStore.subPath}
       open={sidebarOpen}
       onClose={() => (sidebarOpen = false)}
@@ -105,7 +109,7 @@
 
     <main id="main-content" tabindex="-1" class="md:ml-64 p-4 md:p-8">
       <div class="max-w-6xl mx-auto animate-fade-in">
-        {#if !routerStore.isKnownView}
+        {#if routerStore.isKnownView === false}
           <NotFound />
         {:else if routerStore.currentView === "dashboard"}
           <Dashboard />

@@ -32,7 +32,14 @@
   );
   let books: BookSummary[] = $state([]);
   let total = $state(0);
-  let offset = $state(untrack(() => initialOffset));
+  let offset = $state(
+    untrack(() => {
+      const raw = Number.isFinite(initialOffset) ? initialOffset : 0;
+      const nonNegative = Math.max(0, raw);
+      const size = Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE));
+      return Math.floor(nonNegative / size) * size;
+    }),
+  );
   let loading = $state(true);
   let error: string | null = $state(null);
   let viewMode: "grid" | "table" = $state("grid");
