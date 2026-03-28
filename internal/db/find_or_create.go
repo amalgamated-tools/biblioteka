@@ -3,6 +3,10 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"log/slog"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // findOrCreate implements the lookup → insert → race-fetch pattern common
@@ -11,9 +15,15 @@ import (
 // is blank; errExists is the sentinel returned by create on a unique-constraint
 // violation, which triggers a final getByName to retrieve the row that won
 // the race.
+//
+// Normalization and blank-name validation are owned entirely by this function.
+// Callers should pass the raw (un-normalized) name. The provided callbacks
+// (getByName, create) may re-normalize internally — that is harmless because
+// normalization is idempotent — but they are not required to.
 func findOrCreate[T any](
 	ctx context.Context,
 	name string,
+	entityLabel string,
 	normalize func(string) string,
 	errInvalid error,
 	errExists error,
@@ -25,11 +35,13 @@ func findOrCreate[T any](
 		return nil, errInvalid
 	}
 
+	slog.DebugContext(ctx, "db: find or create "+entityLabel, slog.String(otelkeys.Name, name))
+
 	t, err := getByName(ctx, name)
 	if err == nil {
 		return t, nil
 	}
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
@@ -38,7 +50,7 @@ func findOrCreate[T any](
 	if err == nil {
 		return t, nil
 	}
-	if err != errExists {
+	if !errors.Is(err, errExists) {
 		return nil, err
 	}
 
