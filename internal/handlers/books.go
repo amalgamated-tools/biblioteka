@@ -167,10 +167,7 @@ func (h *BookHandler) toBookDTO(ctx context.Context, b *db.Book) (bookDTO, error
 		return bookDTO{}, err
 	}
 	for _, e := range entries {
-		dto.Series = append(dto.Series, bookSeriesEntryDTO{
-			Series:   toSeriesDTO(&e.Series),
-			Position: e.Position,
-		})
+		dto.Series = append(dto.Series, toBookSeriesEntryDTO(&e))
 	}
 
 	files, err := h.DB.ListBookFiles(ctx, b.ID)
