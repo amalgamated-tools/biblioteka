@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/md5" // #nosec G501 -- MD5 is required by the KOReader kosync protocol
 	"database/sql"
 	"encoding/hex"
@@ -13,28 +14,12 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // KOSyncHandler implements the KOReader kosync-compatible progress sync API
 // and the Biblioteka credential-management API for KOSync.
 type KOSyncHandler struct {
 	DB *db.DB
-}
-
-// kosyncCredentialResponse is the JSON representation of a KOSync credential
-// returned by the Biblioteka management API.
-type kosyncCredentialResponse struct {
-	Username  string       `json:"username"`
-	CreatedAt db.Timestamp `json:"created_at"`
-	UpdatedAt db.Timestamp `json:"updated_at"`
-}
-
-// kosyncCredentialRequest is the body for creating/updating KOSync credentials
-// via the Biblioteka management API.
-type kosyncCredentialRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
 }
 
 // kosyncProgressResponse is the wire format returned by the progress endpoints.
@@ -61,128 +46,34 @@ type kosyncProgressRequest struct {
 
 // HandleKOSyncCredentials dispatches GET/PUT/DELETE for /api/kosync/credentials.
 func (h *KOSyncHandler) HandleKOSyncCredentials(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		h.getCredentials(w, r)
-	case http.MethodPut:
-		h.upsertCredentials(w, r)
-	case http.MethodDelete:
-		h.deleteCredentials(w, r)
-	default:
-		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
-	}
+	handleCredentials(h.credOps(), w, r)
 }
 
-func (h *KOSyncHandler) getCredentials(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userID := auth.UserIDFromContext(ctx)
-
-	cred, err := h.DB.GetKOSyncCredentialByUserID(ctx, userID)
-	if errors.Is(err, sql.ErrNoRows) {
-		writeError(ctx, w, http.StatusNotFound, "no KOSync credentials configured")
-		return
+func (h *KOSyncHandler) credOps() credentialOps {
+	return credentialOps{
+		db:              h.DB,
+		protocol:        "KOSync",
+		auditEntityType: "kosync_credential",
+		auditUpsert:     db.AuditActionKOSyncCredentialUpdated,
+		auditDelete:     db.AuditActionKOSyncCredentialDeleted,
+		errConflict:     db.ErrKOSyncUsernameExists,
+		getByUserID: func(ctx context.Context, userID string) (credentialEntity, error) {
+			c, err := h.DB.GetKOSyncCredentialByUserID(ctx, userID)
+			if err != nil {
+				return credentialEntity{}, err
+			}
+			return credentialEntity{ID: c.ID, Username: c.Username, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt}, nil
+		},
+		upsert: func(ctx context.Context, userID, username, hash string) (credentialEntity, error) {
+			c, err := h.DB.UpsertKOSyncCredential(ctx, userID, username, hash)
+			if err != nil {
+				return credentialEntity{}, err
+			}
+			return credentialEntity{ID: c.ID, Username: c.Username, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt}, nil
+		},
+		del:       h.DB.DeleteKOSyncCredential,
+		deriveKey: kosyncProtocolKey,
 	}
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get KOSync credentials", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get credentials")
-		return
-	}
-
-	writeJSON(ctx, w, http.StatusOK, kosyncCredentialResponse{
-		Username:  cred.Username,
-		CreatedAt: cred.CreatedAt,
-		UpdatedAt: cred.UpdatedAt,
-	})
-}
-
-func (h *KOSyncHandler) upsertCredentials(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userID := auth.UserIDFromContext(ctx)
-
-	var req kosyncCredentialRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-
-	req.Username = strings.ToLower(strings.TrimSpace(req.Username))
-	if req.Username == "" {
-		writeError(ctx, w, http.StatusBadRequest, "username is required")
-		return
-	}
-	if len(req.Username) > maxUsernameLen {
-		writeError(ctx, w, http.StatusBadRequest, "username too long")
-		return
-	}
-
-	if msg := validatePassword(req.Password); msg != "" {
-		writeError(ctx, w, http.StatusBadRequest, msg)
-		return
-	}
-
-	// KOReader sends the hex-encoded MD5 digest of the plain password as x-auth-key.
-	// We therefore hash md5(password) with bcrypt so that the stored hash can be
-	// verified directly against the value KOReader sends.
-	md5Hex := kosyncProtocolKey(req.Password)
-	hash, err := bcrypt.GenerateFromPassword([]byte(md5Hex), bcrypt.DefaultCost)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to hash KOSync password", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to create credentials")
-		return
-	}
-
-	cred, err := h.DB.UpsertKOSyncCredential(ctx, userID, req.Username, string(hash))
-	if errors.Is(err, db.ErrKOSyncUsernameExists) {
-		writeError(ctx, w, http.StatusConflict, "username already taken")
-		return
-	}
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to upsert KOSync credentials", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to create credentials")
-		return
-	}
-
-	_ = h.DB.CreateAuditLog(ctx, userID, db.AuditActionKOSyncCredentialUpdated, "kosync_credential", cred.ID, map[string]any{
-		"username": cred.Username,
-	})
-
-	writeJSON(ctx, w, http.StatusOK, kosyncCredentialResponse{
-		Username:  cred.Username,
-		CreatedAt: cred.CreatedAt,
-		UpdatedAt: cred.UpdatedAt,
-	})
-}
-
-func (h *KOSyncHandler) deleteCredentials(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userID := auth.UserIDFromContext(ctx)
-
-	// Fetch first so we can reference the credential ID in the audit log.
-	cred, err := h.DB.GetKOSyncCredentialByUserID(ctx, userID)
-	if errors.Is(err, sql.ErrNoRows) {
-		writeError(ctx, w, http.StatusNotFound, "no KOSync credentials configured")
-		return
-	}
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get KOSync credentials for deletion", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to delete credentials")
-		return
-	}
-
-	if err := h.DB.DeleteKOSyncCredential(ctx, userID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, "no KOSync credentials configured")
-			return
-		}
-		slog.ErrorContext(ctx, "failed to delete KOSync credentials", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to delete credentials")
-		return
-	}
-
-	_ = h.DB.CreateAuditLog(ctx, userID, db.AuditActionKOSyncCredentialDeleted, "kosync_credential", cred.ID, map[string]any{
-		"username": cred.Username,
-	})
-
-	w.WriteHeader(http.StatusNoContent)
 }
 
 // ---- KOReader kosync-compatible protocol endpoints ----
@@ -233,7 +124,6 @@ const (
 	maxDocumentLen = 1024
 	maxProgressLen = 4096
 	maxDeviceLen   = 256
-	maxUsernameLen = 256
 )
 
 func (h *KOSyncHandler) putProgress(w http.ResponseWriter, r *http.Request) {
