@@ -394,3 +394,51 @@ func TestListAuthorsPaginatedZeroLimit(t *testing.T) {
 		t.Error("items2 = nil, want empty slice")
 	}
 }
+
+func TestFindOrCreateAuthor_BlankName(t *testing.T) {
+	d := newTestDB(t)
+
+	for _, name := range []string{"", " ", "  \t  "} {
+		_, err := d.FindOrCreateAuthor(context.Background(), name)
+		if err != ErrInvalidAuthorName {
+			t.Errorf("FindOrCreateAuthor(%q) = %v, want ErrInvalidAuthorName", name, err)
+		}
+	}
+}
+
+func TestFindOrCreateAuthor_CaseInsensitive(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.FindOrCreateAuthor(context.Background(), "Stephen King")
+	if err != nil {
+		t.Fatalf("first FindOrCreateAuthor() error: %v", err)
+	}
+
+	found, err := d.FindOrCreateAuthor(context.Background(), "stephen king")
+	if err != nil {
+		t.Fatalf("second FindOrCreateAuthor() error: %v", err)
+	}
+	if found.ID != created.ID {
+		t.Errorf("expected same author ID, got %q and %q", found.ID, created.ID)
+	}
+}
+
+func TestFindOrCreateAuthor_NormalizesWhitespace(t *testing.T) {
+	d := newTestDB(t)
+
+	created, err := d.FindOrCreateAuthor(context.Background(), "Brandon Sanderson")
+	if err != nil {
+		t.Fatalf("first FindOrCreateAuthor() error: %v", err)
+	}
+
+	found, err := d.FindOrCreateAuthor(context.Background(), "  Brandon   Sanderson  ")
+	if err != nil {
+		t.Fatalf("second FindOrCreateAuthor() error: %v", err)
+	}
+	if found.ID != created.ID {
+		t.Errorf("expected same author ID, got %q and %q", found.ID, created.ID)
+	}
+	if found.Name != "Brandon Sanderson" {
+		t.Errorf("FindOrCreateAuthor().Name = %q, want %q", found.Name, "Brandon Sanderson")
+	}
+}

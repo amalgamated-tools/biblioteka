@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"regexp"
@@ -144,30 +143,14 @@ func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, har
 // it, creating a new one if it doesn't exist. Handles concurrent insert races
 // gracefully.
 func (d *DB) FindOrCreateAuthor(ctx context.Context, name string) (*Author, error) {
-	name = NormalizeAuthorName(name)
-	if name == "" {
-		return nil, ErrInvalidAuthorName
-	}
-	slog.DebugContext(ctx, "db: find or create author", slog.String(otelkeys.Name, name))
-
-	// Look up using the same case-insensitive predicate as GetAuthorByName.
-	a, err := d.GetAuthorByName(ctx, name)
-	if err == nil {
-		return a, nil
-	}
-	if err != sql.ErrNoRows {
-		return nil, err
-	}
-	// Not found — insert.
-	a, err = d.CreateAuthor(ctx, name, nil, nil, nil, nil)
-	if err == nil {
-		return a, nil
-	}
-	if err != ErrAuthorNameExists {
-		return nil, err
-	}
-	// Concurrent insert won the race — fetch.
-	return d.GetAuthorByName(ctx, name)
+	slog.DebugContext(ctx, "db: find or create author", slog.String(otelkeys.Name, NormalizeAuthorName(name)))
+	return findOrCreate(ctx, name,
+		NormalizeAuthorName, ErrInvalidAuthorName, ErrAuthorNameExists,
+		d.GetAuthorByName,
+		func(ctx context.Context, n string) (*Author, error) {
+			return d.CreateAuthor(ctx, n, nil, nil, nil, nil)
+		},
+	)
 }
 
 func (d *DB) DeleteAuthor(ctx context.Context, id string) error {
