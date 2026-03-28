@@ -189,7 +189,7 @@
               type="email"
               bind:value={email}
               autocomplete="email"
-              class="w-full py-3 bg-white text-ink-900"
+              class="w-full py-3"
               placeholder="you@example.com"
               disabled={loading}
             />
@@ -207,7 +207,7 @@
               type="password"
               bind:value={password}
               autocomplete="current-password"
-              class="w-full py-3 bg-white text-ink-900"
+              class="w-full py-3"
               placeholder="••••••••"
               disabled={loading}
             />
@@ -248,7 +248,7 @@
               type="text"
               bind:value={name}
               autocomplete="name"
-              class="w-full py-3 bg-white text-ink-900"
+              class="w-full py-3"
               placeholder="Your name"
               disabled={loading}
             />
@@ -266,7 +266,7 @@
               type="email"
               bind:value={email}
               autocomplete="email"
-              class="w-full py-3 bg-white text-ink-900"
+              class="w-full py-3"
               placeholder="you@example.com"
               disabled={loading}
             />
@@ -284,7 +284,7 @@
               type="password"
               bind:value={password}
               autocomplete="new-password"
-              class="w-full py-3 bg-white text-ink-900"
+              class="w-full py-3"
               placeholder="••••••••"
               disabled={loading}
             />
