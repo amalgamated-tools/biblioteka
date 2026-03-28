@@ -67,6 +67,97 @@ describe("router store", () => {
     expect(routerStore.currentView).toBe("books");
   });
 
+  describe("isKnownView", () => {
+    it("returns true for valid views", () => {
+      for (const view of [
+        "dashboard",
+        "books",
+        "my-library",
+        "libraries",
+        "settings",
+      ]) {
+        setHash(`#${view}`);
+        expect(routerStore.isKnownView).toBe(true);
+      }
+    });
+
+    it("returns true for empty hash (dashboard default)", () => {
+      setHash("");
+      expect(routerStore.isKnownView).toBe(true);
+    });
+
+    it("returns false for unknown routes", () => {
+      setHash("#unknown-page");
+      expect(routerStore.isKnownView).toBe(false);
+    });
+
+    it("returns false for completely invalid routes", () => {
+      setHash("#this-does-not-exist");
+      expect(routerStore.isKnownView).toBe(false);
+    });
+  });
+
+  describe("query parameters", () => {
+    it("parses query params from hash", () => {
+      setHash("#books?offset=48");
+      expect(routerStore.currentView).toBe("books");
+      expect(routerStore.queryParams.get("offset")).toBe("48");
+    });
+
+    it("parses multiple query params from hash", () => {
+      setHash("#books?offset=24&view=table");
+      expect(routerStore.queryParams.get("offset")).toBe("24");
+      expect(routerStore.queryParams.get("view")).toBe("table");
+    });
+
+    it("returns empty URLSearchParams when no query params in hash", () => {
+      setHash("#books");
+      expect(routerStore.queryParams.get("offset")).toBeNull();
+    });
+
+    it("clears query params when navigating to a plain hash", () => {
+      setHash("#books?offset=48");
+      setHash("#settings");
+      expect(routerStore.queryParams.get("offset")).toBeNull();
+    });
+
+    it("navigate sets query params from object", () => {
+      routerStore.navigate("books", { offset: "48" });
+      expect(window.location.hash).toBe("#books?offset=48");
+      expect(routerStore.queryParams.get("offset")).toBe("48");
+    });
+
+    it("navigate with no params sets no query string", () => {
+      routerStore.navigate("books");
+      expect(window.location.hash).toBe("#books");
+    });
+
+    it("setQueryParam adds a query param to the current hash", () => {
+      setHash("#books");
+      routerStore.setQueryParam("offset", "24");
+      expect(routerStore.queryParams.get("offset")).toBe("24");
+    });
+
+    it("setQueryParam removes a query param when value is null", () => {
+      setHash("#books?offset=48");
+      routerStore.setQueryParam("offset", null);
+      expect(routerStore.queryParams.get("offset")).toBeNull();
+    });
+
+    it("setQueryParam updates existing query param", () => {
+      setHash("#books?offset=24");
+      routerStore.setQueryParam("offset", "48");
+      expect(routerStore.queryParams.get("offset")).toBe("48");
+    });
+
+    it("setQueryParam does not change the current view", () => {
+      setHash("#books");
+      routerStore.setQueryParam("offset", "24");
+      expect(routerStore.currentView).toBe("books");
+      expect(routerStore.hash).toBe("books");
+    });
+  });
+
   describe("pageTitle", () => {
     it.each([
       ["#dashboard", "Dashboard – biblioteka"],
@@ -90,9 +181,14 @@ describe("router store", () => {
       expect(routerStore.pageTitle).toBe("Settings – biblioteka");
     });
 
-    it("falls back to 'biblioteka' for invalid hash", () => {
+    it("returns 'Page Not Found – biblioteka' for invalid hash", () => {
       setHash("#invalid-page");
-      expect(routerStore.pageTitle).toBe("biblioteka");
+      expect(routerStore.pageTitle).toBe("Page Not Found – biblioteka");
+    });
+
+    it("preserves page title when hash has query params", () => {
+      setHash("#books?offset=48");
+      expect(routerStore.pageTitle).toBe("All Books – biblioteka");
     });
   });
 });

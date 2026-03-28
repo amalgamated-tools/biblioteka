@@ -8,6 +8,7 @@
   import Books from "./components/Books.svelte";
   import MyLibrary from "./components/MyLibrary.svelte";
   import Libraries from "./components/Libraries.svelte";
+  import NotFound from "./components/NotFound.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import Settings from "./components/Settings.svelte";
   import { Menu } from "lucide-svelte";
@@ -104,7 +105,9 @@
 
     <main id="main-content" tabindex="-1" class="md:ml-64 p-4 md:p-8">
       <div class="max-w-6xl mx-auto animate-fade-in">
-        {#if routerStore.currentView === "dashboard"}
+        {#if !routerStore.isKnownView}
+          <NotFound />
+        {:else if routerStore.currentView === "dashboard"}
           <Dashboard />
         {:else if routerStore.currentView === "books"}
           <Books />

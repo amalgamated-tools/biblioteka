@@ -1,7 +1,16 @@
 <script lang="ts">
   import { BookOpen } from "lucide-svelte";
   import BookList from "./ui/BookList.svelte";
+  import { routerStore } from "../stores/router.svelte";
   import * as api from "../lib/api";
+
+  let initialOffset = $derived(
+    parseInt(routerStore.queryParams.get("offset") ?? "0", 10) || 0,
+  );
+
+  function handlePageChange(offset: number) {
+    routerStore.setQueryParam("offset", offset === 0 ? null : String(offset));
+  }
 </script>
 
 <div>
@@ -18,5 +27,5 @@
     </h1>
   </div>
 
-  <BookList fetchBooks={api.listBooks} />
+  <BookList fetchBooks={api.listBooks} {initialOffset} onPageChange={handlePageChange} />
 </div>
