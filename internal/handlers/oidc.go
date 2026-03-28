@@ -114,10 +114,12 @@ func (h *OIDCHandler) Login(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, h.Config.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier)), http.StatusFound)
 }
 
+// generateState generates a 32-byte cryptographically random state parameter
+// using URL-safe Base64 encoding (suitable for use in URL query parameters).
 func generateState() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
-		return "", err
+		return "", fmt.Errorf("generate state: %w", err)
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
 }
