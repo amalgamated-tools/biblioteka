@@ -33,6 +33,8 @@ safe-outputs:
     protected-files: allowed
     allowed-files:
       - .github/workflows/*
+      - docs/*
+      - e2e/*
     github-token-for-extra-empty-commit: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
     github-token: ${{ secrets.GH_AW_PUSH_TOKEN }}
 timeout-minutes: 30

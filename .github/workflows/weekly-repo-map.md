@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  discussions: write
+  discussions: read
   issues: read
   pull-requests: read
 engine: copilot
