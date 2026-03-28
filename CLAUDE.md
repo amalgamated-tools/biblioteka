@@ -183,6 +183,36 @@ if !requireAdmin(h.DB, w, r) {
 
 `requireAdmin` is a package-level function in `internal/handlers/helpers.go`. It writes the error response itself; return immediately when it returns `false`.
 
+### Protocol credential handlers
+
+When adding a new protocol that requires user-set credentials (username + bcrypt-hashed password), use `credentialOps` and `handleCredentials` from `internal/handlers/credentials.go` instead of hand-rolling GET/PUT/DELETE logic:
+
+```go
+func (h *MyProtocolHandler) HandleMyProtocolCredentials(w http.ResponseWriter, r *http.Request) {
+    handleCredentials(credentialOps{
+        db:              h.DB,
+        protocol:        "MyProtocol",
+        auditEntityType: "myprotocol_credential",
+        auditUpsert:     db.AuditActionMyProtocolCredentialUpdated,
+        auditDelete:     db.AuditActionMyProtocolCredentialDeleted,
+        errConflict:     db.ErrMyProtocolUsernameExists,
+        getByUserID: func(ctx context.Context, userID string) (credentialEntity, error) { ... },
+        upsert:      func(ctx context.Context, userID, username, hash string) (credentialEntity, error) { ... },
+        del:         h.DB.DeleteMyProtocolCredential,
+    }, w, r)
+}
+```
+
+`handleCredentials` dispatches GET, PUT, and DELETE to the appropriate inner function. It handles:
+
+- Username normalization (lowercase, trimmed) and length validation (≤ 256 characters)
+- Password validation and bcrypt hashing
+- Upsert semantics with username-conflict detection (`errConflict` → `409 Conflict`)
+- Audit logging for both upsert and delete actions
+- Structured error responses for all failure cases
+
+Set `deriveKey` when the protocol requires a password transformation before hashing (KOSync uses MD5 to match the KOReader protocol specification). Leave `deriveKey` as `nil` to hash the plaintext password directly (OPDS).
+
 ### User data isolation
 
 Every database query that reads or writes user-owned data **must** filter by `user_id`. Never return data across users.
