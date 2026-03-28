@@ -8,6 +8,9 @@
   } from "../../lib/api";
   import { required, validate } from "../../lib/validation";
   import { Mail, Send } from "lucide-svelte";
+  import Button from "../ui/Button.svelte";
+  import TextInput from "../ui/TextInput.svelte";
+  import AlertBanner from "../ui/AlertBanner.svelte";
 
   interface Props {
     initialSmtpConfigured: boolean;
@@ -157,33 +160,23 @@
         Email / SMTP Configuration
       </h2>
       {#if smtpConfigured}
-        <button
+        <Button
           onclick={handleSmtpTest}
           disabled={smtpTestLoading}
-          class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-600 to-accent-700 text-white text-sm font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm"
         >
           <Mail class="w-4 h-4" />
           {smtpTestLoading ? "Sending..." : "Send Test Email"}
-        </button>
+        </Button>
       {/if}
     </div>
 
     {#if smtpTestMessage}
-      <div
-        role="status"
-        class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
-      >
-        {smtpTestMessage}
-      </div>
+      <AlertBanner variant="success" class="mb-4">{smtpTestMessage}</AlertBanner>
     {/if}
 
     {#if smtpTestError}
-      <div
-        role="alert"
-        class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in mb-4"
-      >
-        {smtpTestError}
-      </div>
+      <AlertBanner variant="error" class="mb-4">{smtpTestError}</AlertBanner>
     {/if}
 
     <div class="mb-4">
@@ -229,11 +222,11 @@
         >
           SMTP Host
         </label>
-        <input
+        <TextInput
           id="smtp-host"
           type="text"
           bind:value={smtpHost}
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder="smtp.example.com"
           disabled={smtpLoading || smtpEnvOverride}
         />
@@ -246,11 +239,11 @@
         >
           Port
         </label>
-        <input
+        <TextInput
           id="smtp-port"
           type="text"
           bind:value={smtpPort}
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder="587"
           disabled={smtpLoading || smtpEnvOverride}
         />
@@ -263,11 +256,11 @@
         >
           Username
         </label>
-        <input
+        <TextInput
           id="smtp-username"
           type="text"
           bind:value={smtpUsername}
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder="user@example.com"
           disabled={smtpLoading || smtpEnvOverride}
         />
@@ -281,11 +274,11 @@
           >
             Password
           </label>
-          <input
+          <TextInput
             id="smtp-password"
             type="password"
             bind:value={smtpPassword}
-            class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+            class="w-full py-2.5"
             placeholder={smtpPasswordSet
               ? "Enter new password to update"
               : "Enter your SMTP password"}
@@ -306,11 +299,11 @@
         >
           From Address
         </label>
-        <input
+        <TextInput
           id="smtp-from"
           type="email"
           bind:value={smtpFrom}
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full py-2.5"
           placeholder="noreply@example.com"
           disabled={smtpLoading || smtpEnvOverride}
         />
@@ -339,35 +332,25 @@
       </div>
 
       {#if smtpError}
-        <div
-          role="alert"
-          class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
-        >
-          {smtpError}
-        </div>
+        <AlertBanner variant="error">{smtpError}</AlertBanner>
       {/if}
 
       {#if smtpSuccessMessage}
-        <div
-          role="status"
-          class="bg-success-50 dark:bg-green-900/20 border border-success-600/20 dark:border-green-700/30 text-success-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm animate-scale-in"
-        >
-          {smtpSuccessMessage}
-        </div>
+        <AlertBanner variant="success">{smtpSuccessMessage}</AlertBanner>
       {/if}
 
       {#if !smtpEnvOverride}
-        <button
+        <Button
           type="submit"
           disabled={smtpLoading}
-          class="w-full px-4 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20"
+          class="w-full px-4 py-2.5"
         >
           {smtpLoading
             ? "Saving..."
             : smtpConfigured
               ? "Update Configuration"
               : "Save Configuration"}
-        </button>
+        </Button>
       {/if}
     </form>
   </div>
