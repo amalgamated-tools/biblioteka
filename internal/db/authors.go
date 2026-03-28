@@ -143,7 +143,8 @@ func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, har
 // it, creating a new one if it doesn't exist. Handles concurrent insert races
 // gracefully.
 func (d *DB) FindOrCreateAuthor(ctx context.Context, name string) (*Author, error) {
-	slog.DebugContext(ctx, "db: find or create author", slog.String(otelkeys.Name, NormalizeAuthorName(name)))
+	name = NormalizeAuthorName(name)
+	slog.DebugContext(ctx, "db: find or create author", slog.String(otelkeys.Name, name))
 	return findOrCreate(ctx, name,
 		NormalizeAuthorName, ErrInvalidAuthorName, ErrAuthorNameExists,
 		d.GetAuthorByName,
