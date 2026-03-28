@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
   actions: read
-  discussions: write
+  discussions: read
   issues: read
   pull-requests: read
 tracker-id: daily-copilot-token-report

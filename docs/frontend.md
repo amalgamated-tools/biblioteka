@@ -27,7 +27,7 @@ frontend/
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
-      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; icon-only action links (Create library, Library settings) carry `aria-label` and `aria-hidden="true"` on their icons (WCAG 4.1.2); nav link clusters are wrapped in `role="group"` containers labelled by `role="heading" aria-level="2"` spans (WCAG 1.3.1)
+      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label` and `aria-hidden="true"` on their icons (WCAG 4.1.2); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       libraries/          Reusable sub-components for the Libraries view
         LibraryForm.svelte   Create / edit library form
         LibraryView.svelte   Library detail with book listing
@@ -584,6 +584,41 @@ Only the active tab sits in the natural tab order (`tabindex="0"`); inactive tab
 **Why `hidden` instead of Svelte `{#if}`:**
 The `hidden` HTML attribute is used on inactive panels rather than Svelte's `{#if}` block. Both panels stay in the DOM, so `aria-controls` references always point to a valid element. Removing a panel with `{#if}` would leave a dangling `aria-controls` reference and break the ARIA association.
 
+### Page heading hierarchy
+
+**WCAG criterion:** [1.3.1 Info and Relationships](https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html) (Level A) · [2.4.6 Headings and Labels](https://www.w3.org/WAI/WCAG21/Understanding/headings-and-labels.html) (Level AA)
+
+Each page should contain exactly one visible `<h1>` when displaying primary content. In the authenticated app shell, the `<h1>` is owned by the active view component — not by any persistent shell element such as the sidebar.
+
+```
+App.svelte (shell)
+├── Sidebar.svelte — brand name rendered as <p>, not <h1>
+└── <main id="main-content">
+    └── Dashboard.svelte (or Books.svelte, Libraries.svelte, …)
+        └── <h1>Dashboard</h1>   ← the page's only <h1>
+```
+
+**Composite views:** Some view components delegate to sub-components that render their own heading hierarchy. For example, `Libraries.svelte` delegates to `LibraryView.svelte` (which contains the `<h1>`) or `LibraryForm.svelte` (which uses `<h2>` as the top heading within a card). Empty or transitional states (e.g., "Select a library") may omit the `<h1>` when there is no meaningful page title to display.
+
+The sidebar brand name ("biblioteka") is styled to look prominent but uses a `<p>` element so the document outline contains exactly one `<h1>` per view:
+
+```svelte
+<!-- Sidebar.svelte — brand name -->
+<p class="text-lg font-display font-bold tracking-tight">biblioteka</p>
+```
+
+Using `<h1>` here would create a second top-level heading on every authenticated page, corrupting the document outline seen by screen readers and automated accessibility tools.
+
+**Heading levels in use:**
+
+| Level | Where | Element / role |
+|-------|-------|----------------|
+| `h1` | Active view component (`Dashboard.svelte`, `Books.svelte`, etc.) | Native `<h1>` |
+| `h2` | Sidebar navigation group labels | Native `<h2>` |
+| `h2` and below | Content-area section headers | Native `<h2>`, `<h3>`, etc. |
+
+**When adding a new page view**, the top-level heading for that page must be a native `<h1>`. Do not add an `<h1>` inside persistent shell elements (sidebar, header bar, footer).
+
 ### `aria-current` on active navigation links
 
 **WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
@@ -633,19 +668,17 @@ Whenever you add a navigation link that points to a distinct view or sub-page, a
 
 The navigation sidebar groups its links into named clusters (currently **Home** and **Libraries**). Without explicit semantics, these group labels are purely visual — assistive technologies see only a list of links and cannot determine which links belong to which group.
 
-Each cluster is wrapped in a `role="group"` container labelled by a sibling span that carries `role="heading"` and `aria-level="2"`. The span is given a stable `id` so the group references it via `aria-labelledby`:
+Each cluster is wrapped in a `role="group"` container labelled by a native `<h2>` heading. The heading is given a stable `id` so the group references it via `aria-labelledby`:
 
 ```svelte
 <!-- Home group -->
 <div role="group" aria-labelledby="sidebar-home-heading">
-  <span
+  <h2
     id="sidebar-home-heading"
-    role="heading"
-    aria-level="2"
-    class="block px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
+    class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
   >
     Home
-  </span>
+  </h2>
   <div class="space-y-0.5">
     <a href="#dashboard" …>Dashboard</a>
     <a href="#books"     …>All Books</a>
@@ -655,14 +688,12 @@ Each cluster is wrapped in a `role="group"` container labelled by a sibling span
 <!-- Libraries group -->
 <div role="group" aria-labelledby="sidebar-libraries-heading">
   <div class="flex items-center justify-between px-3 mb-2">
-    <span
+    <h2
       id="sidebar-libraries-heading"
-      role="heading"
-      aria-level="2"
       class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
     >
       Libraries
-    </span>
+    </h2>
     …
   </div>
   …library links…
@@ -671,14 +702,11 @@ Each cluster is wrapped in a `role="group"` container labelled by a sibling span
 
 **Why `role="group"` instead of `<nav>`?** The outer `<nav aria-label="Primary navigation">` already provides the landmark for the whole sidebar. Adding a second `<nav>` per cluster would inflate the number of navigation landmarks, making landmark-based navigation noisier. A `role="group"` groups the links semantically without creating extra landmarks.
 
-**Why `role="heading" aria-level="2"` on a `<span>`?** The group labels must appear in the document outline so screen-reader users can skim headings and locate a section. A native `<h2>` would conflict with the content area's own `<h1>` / `<h2>` hierarchy. Using `role="heading" aria-level="2"` on a `<span>` achieves the same outline entry while keeping the heading level consistent without imposing a native heading element that could collide with content headings.
-
 **When adding a new navigation group:**
 
 1. Wrap the cluster in `<div role="group" aria-labelledby="sidebar-<name>-heading">`.
-2. Give the visual group label a unique `id="sidebar-<name>-heading"`.
-3. Add `role="heading" aria-level="2"` to the label element.
-4. Add a test assertion in `Sidebar.test.ts` that `screen.getByRole("heading", { name: "<Name>", level: 2 })` is visible.
+2. Add an `<h2 id="sidebar-<name>-heading">` as the visual group label.
+3. Add a test assertion in `Sidebar.test.ts` that `screen.getByRole("heading", { name: "<Name>", level: 2 })` is visible.
 
 ### Accessible labels for icon-only controls
 
@@ -755,8 +783,9 @@ When editing the app shell or adding new persistent navigation elements:
 7. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"`. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
 8. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
 9. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. State-toggle buttons in table rows must use action-oriented `aria-label` values. See [Table accessibility](#table-accessibility) below.
-10. Sidebar navigation groups must use `role="group"` with `aria-labelledby` pointing to a `role="heading"` + `aria-level="2"` element so screen readers announce the section name. See [Labelled navigation groups](#labelled-navigation-groups-sidebarsvelte) above.
-11. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+10. Sidebar navigation groups must use `role="group"` with `aria-labelledby` pointing to a native `<h2>` heading so screen readers announce the section name. See [Labelled navigation groups](#labelled-navigation-groups-sidebarsvelte) above.
+11. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
+12. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
 ### Form accessibility
 
