@@ -75,13 +75,7 @@ func (h *BookFileHandler) deleteBookFile(w http.ResponseWriter, r *http.Request,
 	slog.DebugContext(r.Context(), "deleting book file", slog.String(otelkeys.BookFileID, id))
 
 	bf, err := h.DB.GetBookFile(r.Context(), id)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "book file not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to delete book file", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete book file")
+	if handleDBErr(r.Context(), w, err, "book file") {
 		return
 	}
 
