@@ -4,7 +4,7 @@
  * Uses the modern async Clipboard API when available, and falls back to
  * `document.execCommand('copy')` for environments that don't support it.
  *
- * @throws {Error} when the copy operation fails in both the Clipboard API and the fallback
+ * @throws {Error} when the copy operation fails using the available mechanism
  */
 export async function copyToClipboard(text: string): Promise<void> {
   if (
@@ -24,8 +24,14 @@ export async function copyToClipboard(text: string): Promise<void> {
   document.body.appendChild(textarea);
   textarea.focus();
   textarea.select();
-  const successful = document.execCommand("copy");
-  document.body.removeChild(textarea);
+  try {
+    const successful = document.execCommand("copy");
+    if (!successful) {
+      throw new Error("clipboard copy command was rejected");
+    }
+  } finally {
+    document.body.removeChild(textarea);
+  }
 
   if (!successful) {
     throw new Error("clipboard copy command was rejected");
