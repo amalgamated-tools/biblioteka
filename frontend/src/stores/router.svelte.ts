@@ -1,6 +1,20 @@
-function getHash(): string {
-  const h = window.location.hash.replace(/^#\/?/, "");
-  return h || "dashboard";
+import { SvelteURLSearchParams } from "svelte/reactivity";
+
+/** Parse the hash into its path and query-parameter components.
+ *
+ * The hash may optionally carry query parameters after a `?`, e.g.:
+ *   `#books?offset=48` → path = "books", params = { offset: "48" }
+ */
+function parseHash(): { path: string; params: URLSearchParams } {
+  const raw = window.location.hash.replace(/^#\/?/, "");
+  const qIdx = raw.indexOf("?");
+  if (qIdx === -1) {
+    return { path: raw || "dashboard", params: new URLSearchParams() };
+  }
+  return {
+    path: raw.slice(0, qIdx) || "dashboard",
+    params: new URLSearchParams(raw.slice(qIdx + 1)),
+  };
 }
 
 export type AppView =
@@ -40,10 +54,13 @@ const settingsSubTitles: Record<SettingsSubPath, string> = {
 };
 
 class RouterStore {
-  hash = $state(getHash());
+  hash = $state(parseHash().path);
+  queryParams: SvelteURLSearchParams = $state(
+    new SvelteURLSearchParams(parseHash().params.toString()),
+  );
 
   /** Whether the current hash maps to a known view */
-  private isKnownView: boolean = $derived.by(() => {
+  isKnownView: boolean = $derived.by(() => {
     const segment = this.hash.split("/")[0];
     const valid: AppView[] = [
       "dashboard",
@@ -78,7 +95,7 @@ class RouterStore {
 
   /** Page title reflecting the current view and settings sub-page */
   pageTitle: string = $derived.by(() => {
-    if (!this.isKnownView) return "biblioteka";
+    if (!this.isKnownView) return `Page Not Found${APP_TITLE_SUFFIX}`;
     if (this.currentView === "settings" && this.subPath) {
       const subTitle = settingsSubTitles[this.subPath as SettingsSubPath];
       if (subTitle) return subTitle;
@@ -90,15 +107,40 @@ class RouterStore {
     // Keep store in sync with browser navigation
     if (typeof window !== "undefined") {
       window.addEventListener("hashchange", () => {
-        this.hash = getHash();
+        const { path, params } = parseHash();
+        this.hash = path;
+        this.queryParams = new SvelteURLSearchParams(params.toString());
       });
     }
   }
 
-  /** Navigate by setting the hash */
-  navigate(path: string): void {
-    window.location.hash = `#${path}`;
+  /** Navigate by setting the hash, optionally with query parameters. */
+  navigate(path: string, params?: Record<string, string>): void {
+    const sp = new SvelteURLSearchParams(params);
+    const qs = sp.size > 0 ? `?${sp.toString()}` : "";
+    window.location.hash = `#${path}${qs}`;
     this.hash = path.replace(/^#\/?/, "");
+    this.queryParams = sp;
+  }
+
+  /**
+   * Update a single query parameter in the current hash without triggering a
+   * navigation (uses `history.replaceState`). Pass `null` to remove the key.
+   */
+  setQueryParam(key: string, value: string | null): void {
+    const newParams = new SvelteURLSearchParams(this.queryParams.toString());
+    if (value === null) {
+      newParams.delete(key);
+    } else {
+      newParams.set(key, value);
+    }
+    const qs = newParams.size > 0 ? `?${newParams.toString()}` : "";
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#${this.hash}${qs}`,
+    );
+    this.queryParams = newParams;
   }
 }
 

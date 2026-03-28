@@ -16,7 +16,7 @@
   } from "lucide-svelte";
 
   interface Props {
-    currentView: AppView;
+    currentView?: AppView;
     subPath?: string;
     open: boolean;
     onClose: () => void;

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { BookSummary, PaginatedBooks } from "../../types";
   import {
     BookOpen,
@@ -13,18 +14,32 @@
   interface Props {
     fetchBooks: (limit: number, offset: number) => Promise<PaginatedBooks>;
     pageSize?: number;
+    initialOffset?: number;
+    onPageChange?: (offset: number) => void;
   }
 
   const MAX_PAGE_SIZE = 200;
 
-  let { fetchBooks, pageSize = 24 }: Props = $props();
+  let {
+    fetchBooks,
+    pageSize = 24,
+    initialOffset = 0,
+    onPageChange,
+  }: Props = $props();
 
   let effectivePageSize = $derived(
     Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE)),
   );
   let books: BookSummary[] = $state([]);
   let total = $state(0);
-  let offset = $state(0);
+  let offset = $state(
+    untrack(() => {
+      const raw = Number.isFinite(initialOffset) ? initialOffset : 0;
+      const nonNegative = Math.max(0, raw);
+      const size = Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE));
+      return Math.floor(nonNegative / size) * size;
+    }),
+  );
   let loading = $state(true);
   let error: string | null = $state(null);
   let viewMode: "grid" | "table" = $state("grid");
@@ -63,16 +78,38 @@
     }
   }
 
-  // Reset offset when the data source or page size changes
+  // Track whether this is the first run of the reset effect so that
+  // `initialOffset` is honoured on mount.
+  let hasInitialized = false;
+
+  // Reset offset when the data source or page size changes (but not on first
+  // mount, so that `initialOffset` is respected for the initial page load).
   $effect(() => {
     void fetchBooks;
     void effectivePageSize;
+    if (!hasInitialized) {
+      hasInitialized = true;
+      return;
+    }
     offset = 0;
   });
 
   // Load books whenever offset, page size, or fetch fn changes
   $effect(() => {
     load(fetchBooks, effectivePageSize, offset);
+  });
+
+  // Notify the parent whenever the offset changes so it can persist it in the
+  // URL. Skips the first run to avoid redundant updates when the component
+  // mounts with the same offset already in the URL.
+  let hasNotified = false;
+  $effect(() => {
+    void offset;
+    if (!hasNotified) {
+      hasNotified = true;
+      return;
+    }
+    onPageChange?.(offset);
   });
 
   function prevPage() {
