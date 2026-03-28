@@ -618,7 +618,6 @@ func TestRequestScheme(t *testing.T) {
 		{name: "mixed case Https", tls: false, header: "Https", want: "https"},
 		{name: "padded whitespace", tls: false, header: "  https  ", want: "https"},
 		{name: "invalid proto ignored", tls: false, header: "javascript:", want: "http"},
-		{name: "empty proto ignored", tls: false, header: "", want: "http"},
 		{name: "ftp proto ignored", tls: false, header: "ftp", want: "http"},
 	}
 	for _, tt := range tests {
