@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -23,23 +22,16 @@ func (h *KoboHandler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	buf := make([]byte, 24)
-	if n, err := rand.Read(buf); err != nil {
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate auth response")
-		return
-	} else if n != len(buf) {
+	accessToken, err := generateBase64Token(24)
+	if err != nil {
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate auth response")
 		return
 	}
-	accessToken := base64.StdEncoding.EncodeToString(buf)
-	if n, err := rand.Read(buf); err != nil {
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate auth response")
-		return
-	} else if n != len(buf) {
+	refreshToken, err := generateBase64Token(24)
+	if err != nil {
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate auth response")
 		return
 	}
-	refreshToken := base64.StdEncoding.EncodeToString(buf)
 	trackingID, err := koboRandomUUID()
 	if err != nil {
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate auth response")
@@ -55,13 +47,21 @@ func (h *KoboHandler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// generateBase64Token generates a cryptographically random token of n bytes
+// and returns it as a Base64-encoded string.
+func generateBase64Token(n int) (string, error) {
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("generate token: %w", err)
+	}
+	return base64.StdEncoding.EncodeToString(buf), nil
+}
+
 // koboRandomUUID generates a random UUID v4-like string.
 func koboRandomUUID() (string, error) {
 	b := make([]byte, 16)
-	if n, err := rand.Read(b); err != nil {
+	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("generate tracking id: %w", err)
-	} else if n != len(b) {
-		return "", fmt.Errorf("generate tracking id: %w", io.ErrUnexpectedEOF)
 	}
 	b[6] = (b[6] & 0x0f) | 0x40
 	b[8] = (b[8] & 0x3f) | 0x80
