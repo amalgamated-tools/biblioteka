@@ -15,6 +15,24 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// requestScheme returns the HTTP scheme for the given request. It checks
+// r.TLS first, then honors the X-Forwarded-Proto header (normalized to
+// lowercase, trimmed). Only "http" and "https" are accepted; any other
+// value is ignored and the function falls back to the TLS-based default.
+func requestScheme(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+		normalized := strings.ToLower(strings.TrimSpace(proto))
+		if normalized == "http" || normalized == "https" {
+			scheme = normalized
+		}
+	}
+	return scheme
+}
+
 // validateName returns true if name is non-blank. On failure it writes a 400
 // error response and returns false, so callers can simply return.
 func validateName(ctx context.Context, w http.ResponseWriter, name string) bool {
