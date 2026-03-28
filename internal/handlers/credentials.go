@@ -135,7 +135,7 @@ func upsertCredential(ops credentialOps, w http.ResponseWriter, r *http.Request)
 	}
 
 	cred, err := ops.upsert(ctx, userID, req.Username, string(hash))
-	if errors.Is(err, ops.errConflict) {
+	if ops.errConflict != nil && errors.Is(err, ops.errConflict) {
 		writeError(ctx, w, http.StatusConflict, "username already taken")
 		return
 	}
