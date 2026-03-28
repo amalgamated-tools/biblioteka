@@ -193,7 +193,7 @@ if !requireAdmin(h.DB, w, r) {
 
 ### Protocol credential handlers
 
-When adding a new protocol that requires user-set credentials (username + bcrypt-hashed password), use `credentialOps` and `handleCredentials` from `internal/handlers/credentials.go` instead of hand-rolling GET/PUT/DELETE logic:
+When adding a new protocol that requires user-set credentials (username + bcrypt-hashed password), use `credentialOps` and `handleCredentials` from `internal/handlers/credentials.go` instead of hand-rolling GET/PUT/DELETE logic. Both are unexported, so new protocol handlers must live in the `internal/handlers` package:
 
 ```go
 func (h *MyProtocolHandler) HandleMyProtocolCredentials(w http.ResponseWriter, r *http.Request) {
@@ -208,12 +208,13 @@ func (h *MyProtocolHandler) HandleMyProtocolCredentials(w http.ResponseWriter, r
         upsert:      func(ctx context.Context, userID, username, hash string) (credentialEntity, error) { ... },
         del:         h.DB.DeleteMyProtocolCredential,
     }, w, r)
+    return // handleCredentials always writes the HTTP response
 }
 ```
 
 `handleCredentials` dispatches GET, PUT, and DELETE to the appropriate inner function. It handles:
 
-- Username normalization (lowercase, trimmed) and length validation (≤ 256 characters)
+- Username normalization (lowercase, trimmed) and length validation (≤ 256 bytes; see `maxUsernameLen`)
 - Password validation and bcrypt hashing
 - Upsert semantics with username-conflict detection (`errConflict` → `409 Conflict`)
 - Audit logging for both upsert and delete actions
