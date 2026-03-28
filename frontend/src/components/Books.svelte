@@ -27,5 +27,9 @@
     </h1>
   </div>
 
-  <BookList fetchBooks={api.listBooks} {initialOffset} onPageChange={handlePageChange} />
+  <BookList
+    fetchBooks={api.listBooks}
+    {initialOffset}
+    onPageChange={handlePageChange}
+  />
 </div>

@@ -20,8 +20,12 @@
 
   const MAX_PAGE_SIZE = 200;
 
-  let { fetchBooks, pageSize = 24, initialOffset = 0, onPageChange }: Props =
-    $props();
+  let {
+    fetchBooks,
+    pageSize = 24,
+    initialOffset = 0,
+    onPageChange,
+  }: Props = $props();
 
   let effectivePageSize = $derived(
     Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE)),
