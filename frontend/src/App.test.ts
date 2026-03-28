@@ -18,6 +18,8 @@ vi.mock("./stores/auth.svelte", () => ({
 vi.mock("./stores/router.svelte", () => ({
   routerStore: {
     currentView: "dashboard",
+    hash: "dashboard",
+    isKnownView: true,
     pageTitle: "Dashboard – biblioteka",
     navigate: vi.fn(),
   },
