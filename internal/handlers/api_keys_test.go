@@ -27,7 +27,7 @@ func setupAPIKeyHandler(t *testing.T) (*APIKeyHandler, string) {
 func TestCreateAPIKey_Success(t *testing.T) {
 	h, userID := setupAPIKeyHandler(t)
 
-	body, _ := json.Marshal(apiKeyCreateRequest{Name: "CI Pipeline"})
+	body := mustMarshal(t, apiKeyCreateRequest{Name: "CI Pipeline"})
 	r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -62,7 +62,7 @@ func TestCreateAPIKey_Success(t *testing.T) {
 func TestCreateAPIKey_EmptyName(t *testing.T) {
 	h, userID := setupAPIKeyHandler(t)
 
-	body, _ := json.Marshal(apiKeyCreateRequest{Name: ""})
+	body := mustMarshal(t, apiKeyCreateRequest{Name: ""})
 	r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -78,7 +78,7 @@ func TestCreateAPIKey_NameTooLong(t *testing.T) {
 	h, userID := setupAPIKeyHandler(t)
 
 	longName := strings.Repeat("a", maxAPIKeyNameLength+1)
-	body, _ := json.Marshal(apiKeyCreateRequest{Name: longName})
+	body := mustMarshal(t, apiKeyCreateRequest{Name: longName})
 	r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -196,7 +196,7 @@ func TestDeleteAPIKey_Success(t *testing.T) {
 	h, userID := setupAPIKeyHandler(t)
 
 	// Create a key.
-	body, _ := json.Marshal(apiKeyCreateRequest{Name: "Ephemeral"})
+	body := mustMarshal(t, apiKeyCreateRequest{Name: "Ephemeral"})
 	r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -259,7 +259,7 @@ func TestDeleteAPIKey_OtherUserCannotDelete(t *testing.T) {
 	}
 
 	// Create a key as user1.
-	body, _ := json.Marshal(apiKeyCreateRequest{Name: "User1 Key"})
+	body := mustMarshal(t, apiKeyCreateRequest{Name: "User1 Key"})
 	r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 	r = withUserID(r, user1.ID)
 	w := httptest.NewRecorder()
@@ -284,7 +284,7 @@ func TestDeleteAPIKey_OtherUserCannotDelete(t *testing.T) {
 func TestCreateAPIKey_AuditLog(t *testing.T) {
 	h, userID := setupAPIKeyHandler(t)
 
-	body, _ := json.Marshal(apiKeyCreateRequest{Name: "Audited Key"})
+	body := mustMarshal(t, apiKeyCreateRequest{Name: "Audited Key"})
 	r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -315,7 +315,7 @@ func TestDeleteAPIKey_AuditLog(t *testing.T) {
 	h, userID := setupAPIKeyHandler(t)
 
 	// Create then delete.
-	body, _ := json.Marshal(apiKeyCreateRequest{Name: "ToDelete"})
+	body := mustMarshal(t, apiKeyCreateRequest{Name: "ToDelete"})
 	r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()

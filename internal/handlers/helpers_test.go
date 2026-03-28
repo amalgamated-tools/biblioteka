@@ -14,6 +14,16 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 )
 
+// mustMarshal marshals v to JSON and fails the test if marshaling fails.
+func mustMarshal(t *testing.T, v any) []byte {
+	t.Helper()
+	data, err := json.Marshal(v)
+	if err != nil {
+		t.Fatalf("mustMarshal: %v", err)
+	}
+	return data
+}
+
 func Test_WriteJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	writeJSON(t.Context(), w, http.StatusOK, map[string]string{"key": "value"})

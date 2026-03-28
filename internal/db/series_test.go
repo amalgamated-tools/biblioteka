@@ -94,7 +94,10 @@ func TestCreateSeries_BlankName(t *testing.T) {
 func TestUpdateSeries_BlankName(t *testing.T) {
 	d := newTestDB(t)
 
-	s, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateSeries() error: %v", err)
+	}
 
 	for _, name := range []string{"", " ", "  \t  "} {
 		_, err := d.UpdateSeries(context.Background(), s.ID, name, nil, nil, nil)
@@ -118,7 +121,10 @@ func TestFindOrCreateSeries_BlankName(t *testing.T) {
 func TestGetSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	created, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateSeries() error: %v", err)
+	}
 
 	found, err := d.GetSeries(context.Background(), created.ID)
 	if err != nil {
@@ -176,8 +182,12 @@ func TestGetSeriesByName_NotFound(t *testing.T) {
 func TestListSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateSeries(context.Background(), "Discworld", nil, nil, nil)
-	_, _ = d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if _, err := d.CreateSeries(context.Background(), "Discworld", nil, nil, nil); err != nil {
+		t.Fatalf("CreateSeries() for Discworld error: %v", err)
+	}
+	if _, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil); err != nil {
+		t.Fatalf("CreateSeries() for The Dark Tower error: %v", err)
+	}
 
 	list, err := d.ListSeries(context.Background())
 	if err != nil {
@@ -194,7 +204,10 @@ func TestListSeries(t *testing.T) {
 func TestUpdateSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	created, _ := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
+	created, err := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateSeries() error: %v", err)
+	}
 
 	updated, err := d.UpdateSeries(context.Background(), created.ID, "The Dark Tower", new("dt-456"), nil, nil)
 	if err != nil {
@@ -228,10 +241,15 @@ func TestUpdateSeries_NormalizesWhitespace(t *testing.T) {
 func TestUpdateSeries_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
-	s2, _ := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
+	if _, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil); err != nil {
+		t.Fatalf("CreateSeries() for The Dark Tower error: %v", err)
+	}
+	s2, err := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateSeries() for Dark Tower error: %v", err)
+	}
 
-	_, err := d.UpdateSeries(context.Background(), s2.ID, "The Dark Tower", nil, nil, nil)
+	_, err = d.UpdateSeries(context.Background(), s2.ID, "The Dark Tower", nil, nil, nil)
 	if err != ErrSeriesNameExists {
 		t.Errorf("expected ErrSeriesNameExists, got %v", err)
 	}
@@ -240,10 +258,15 @@ func TestUpdateSeries_DuplicateName(t *testing.T) {
 func TestUpdateSeries_DuplicateNameCaseInsensitive(t *testing.T) {
 	d := newTestDB(t)
 
-	_, _ = d.CreateSeries(context.Background(), "Mistborn", nil, nil, nil)
-	s2, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if _, err := d.CreateSeries(context.Background(), "Mistborn", nil, nil, nil); err != nil {
+		t.Fatalf("CreateSeries() for Mistborn error: %v", err)
+	}
+	s2, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateSeries() for The Dark Tower error: %v", err)
+	}
 
-	_, err := d.UpdateSeries(context.Background(), s2.ID, "mistborn", nil, nil, nil)
+	_, err = d.UpdateSeries(context.Background(), s2.ID, "mistborn", nil, nil, nil)
 	if err != ErrSeriesNameExists {
 		t.Errorf("expected ErrSeriesNameExists, got %v", err)
 	}
@@ -289,9 +312,12 @@ func TestFindOrCreateSeries_NormalizesWhitespace(t *testing.T) {
 func TestDeleteSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	s, _ := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("CreateSeries() error: %v", err)
+	}
 
-	err := d.DeleteSeries(context.Background(), s.ID)
+	err = d.DeleteSeries(context.Background(), s.ID)
 	if err != nil {
 		t.Fatalf("DeleteSeries() error: %v", err)
 	}
