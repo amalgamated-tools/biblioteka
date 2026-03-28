@@ -27,6 +27,16 @@ var version = "dev"
 //	@in							header
 //	@name						Authorization
 //	@description				Enter "Bearer {token}"
+//
+//	@securityDefinitions.apikey	KOSyncUser
+//	@in							header
+//	@name						x-auth-user
+//	@description				KOSync username
+//
+//	@securityDefinitions.apikey	KOSyncKey
+//	@in							header
+//	@name						x-auth-key
+//	@description				KOSync authentication key (hex-encoded MD5 of password)
 
 func main() {
 	cancelCtx, cancelAll := context.WithCancel(context.Background())
