@@ -9,6 +9,14 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// toBookSeriesEntryDTO converts a BookSeriesEntry to a bookSeriesEntryDTO.
+func toBookSeriesEntryDTO(e *db.BookSeriesEntry) bookSeriesEntryDTO {
+	return bookSeriesEntryDTO{
+		Series:   toSeriesDTO(&e.Series),
+		Position: e.Position,
+	}
+}
+
 // respondBookSeries fetches and writes the series list for a book as JSON.
 func (h *BookHandler) respondBookSeries(ctx context.Context, w http.ResponseWriter, bookID string) {
 	entries, err := h.DB.GetBookSeries(ctx, bookID)
@@ -17,14 +25,7 @@ func (h *BookHandler) respondBookSeries(ctx context.Context, w http.ResponseWrit
 		writeError(ctx, w, http.StatusInternalServerError, "failed to get book series")
 		return
 	}
-	dtos := make([]bookSeriesEntryDTO, 0, len(entries))
-	for _, e := range entries {
-		dtos = append(dtos, bookSeriesEntryDTO{
-			Series:   toSeriesDTO(&e.Series),
-			Position: e.Position,
-		})
-	}
-	writeJSON(ctx, w, http.StatusOK, dtos)
+	writeJSON(ctx, w, http.StatusOK, mapSlice(entries, toBookSeriesEntryDTO))
 }
 
 // setBookSeriesRequest is the request body for setting book series.
