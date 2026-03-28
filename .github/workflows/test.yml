@@ -151,8 +151,6 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
-      - run: go version
-
       - name: Cache exiftool apt package
         id: exiftool-cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
