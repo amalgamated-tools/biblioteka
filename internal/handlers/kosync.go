@@ -45,6 +45,28 @@ type kosyncProgressRequest struct {
 // ---- Biblioteka credential-management API (JWT-protected) ----
 
 // HandleKOSyncCredentials dispatches GET/PUT/DELETE for /api/kosync/credentials.
+//
+//	@Summary	Manage KOSync credentials
+//	@Description
+//	@Description	GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).
+//	@Description	PUT creates or updates the current user's KOSync credential.
+//	@Description	DELETE removes the current user's KOSync credential.
+//	@Tags			kosync-credentials
+//	@Security		BearerAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		credentialRequest	false	"Credential data (required for PUT)"
+//	@Success		200		{object}	credentialResponse	"Credential returned or updated"
+//	@Success		204		"Credential deleted"
+//	@Failure		400		{object}	errorResponse	"Bad request"
+//	@Failure		401		{object}	errorResponse	"Unauthorized"
+//	@Failure		404		{object}	errorResponse	"No KOSync credentials configured"
+//	@Failure		405		{object}	errorResponse	"Method not allowed"
+//	@Failure		409		{object}	errorResponse	"Username already taken"
+//	@Failure		500		{object}	errorResponse	"Internal server error"
+//	@Router			/kosync/credentials [get]
+//	@Router			/kosync/credentials [put]
+//	@Router			/kosync/credentials [delete]
 func (h *KOSyncHandler) HandleKOSyncCredentials(w http.ResponseWriter, r *http.Request) {
 	handleCredentials(h.credOps(), w, r)
 }

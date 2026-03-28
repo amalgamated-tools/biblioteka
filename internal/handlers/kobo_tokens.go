@@ -39,7 +39,25 @@ func toKoboTokenDTO(token *db.KoboToken) koboTokenDTO {
 	}
 }
 
-// HandleKoboTokens handles GET/POST /api/kobo/tokens.
+// HandleKoboTokens handles GET /api/kobo/tokens and POST /api/kobo/tokens.
+//
+//	@Summary	List and create Kobo sync tokens
+//	@Description
+//	@Description	GET lists all Kobo sync tokens for the authenticated user.
+//	@Description	POST creates a new Kobo sync token. The raw token is returned only in the creation response and is never retrievable again.
+//	@Tags			kobo-tokens
+//	@Security		BearerAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		koboTokenCreateRequest	false	"Token data (required for POST)"
+//	@Success		200		{array}		koboTokenDTO			"List of Kobo tokens"
+//	@Success		201		{object}	koboTokenCreateResponse	"Kobo token created"
+//	@Failure		400		{object}	errorResponse			"Bad request"
+//	@Failure		401		{object}	errorResponse			"Unauthorized"
+//	@Failure		405		{object}	errorResponse			"Method not allowed"
+//	@Failure		500		{object}	errorResponse			"Internal server error"
+//	@Router			/kobo/tokens [get]
+//	@Router			/kobo/tokens [post]
 func (h *KoboHandler) HandleKoboTokens(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -52,6 +70,19 @@ func (h *KoboHandler) HandleKoboTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleKoboToken handles DELETE /api/kobo/tokens/{id}.
+//
+//	@Summary		Delete a Kobo sync token
+//	@Description	Delete a Kobo sync token by ID. The device using this token will receive 401 on its next sync.
+//	@Tags			kobo-tokens
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Param			id	path	string	true	"Kobo token ID"
+//	@Success		204	"Token deleted"
+//	@Failure		401	{object}	errorResponse	"Unauthorized"
+//	@Failure		404	{object}	errorResponse	"Token not found"
+//	@Failure		405	{object}	errorResponse	"Method not allowed"
+//	@Failure		500	{object}	errorResponse	"Internal server error"
+//	@Router			/kobo/tokens/{id} [delete]
 func (h *KoboHandler) HandleKoboToken(w http.ResponseWriter, r *http.Request) {
 	id, ok := extractPathID(r.URL.Path, "/api/kobo/tokens/")
 	if !ok {

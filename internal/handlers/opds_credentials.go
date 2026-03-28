@@ -13,6 +13,28 @@ type OPDSCredentialHandler struct {
 }
 
 // HandleOPDSCredentials dispatches GET/PUT/DELETE for /api/opds/credentials.
+//
+//	@Summary	Manage OPDS credentials
+//	@Description
+//	@Description	GET returns the current user's OPDS credential.
+//	@Description	PUT creates or replaces the current user's OPDS credential (username and hashed password).
+//	@Description	DELETE removes the current user's OPDS credential.
+//	@Tags			opds-credentials
+//	@Security		BearerAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		credentialRequest	false	"Credential data (required for PUT)"
+//	@Success		200		{object}	credentialResponse	"Credential returned or updated"
+//	@Success		204		"Credential deleted"
+//	@Failure		400		{object}	errorResponse	"Bad request"
+//	@Failure		401		{object}	errorResponse	"Unauthorized"
+//	@Failure		404		{object}	errorResponse	"No OPDS credentials configured"
+//	@Failure		405		{object}	errorResponse	"Method not allowed"
+//	@Failure		409		{object}	errorResponse	"Username already taken"
+//	@Failure		500		{object}	errorResponse	"Internal server error"
+//	@Router			/opds/credentials [get]
+//	@Router			/opds/credentials [put]
+//	@Router			/opds/credentials [delete]
 func (h *OPDSCredentialHandler) HandleOPDSCredentials(w http.ResponseWriter, r *http.Request) {
 	handleCredentials(h.credOps(), w, r)
 }
