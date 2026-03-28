@@ -6,7 +6,7 @@ on:
     events: [pull_request_comment, pull_request_review_comment]
 permissions:
   contents: read
-  pull-requests: write
+  pull-requests: read
 tools:
   cache-memory: true
   github:
