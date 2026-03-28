@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -66,7 +67,7 @@ func TestKOSyncCredentials_Put_Success(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
-	var resp kosyncCredentialResponse
+	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
@@ -89,7 +90,7 @@ func TestKOSyncCredentials_Put_LowercasesUsername(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
-	var resp kosyncCredentialResponse
+	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
@@ -128,6 +129,22 @@ func TestKOSyncCredentials_Put_ShortPassword(t *testing.T) {
 	}
 }
 
+func TestKOSyncCredentials_Put_UsernameTooLong(t *testing.T) {
+	h, userID := setupKOSyncHandler(t)
+
+	longUsername := strings.Repeat("a", maxUsernameLen+1)
+	body, _ := json.Marshal(credentialRequest{Username: longUsername, Password: "secretpass"})
+	r := httptest.NewRequest(http.MethodPut, "/api/kosync/credentials", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleKOSyncCredentials(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+}
+
 func TestKOSyncCredentials_Get_AfterPut(t *testing.T) {
 	h, userID := setupKOSyncHandler(t)
 
@@ -150,7 +167,7 @@ func TestKOSyncCredentials_Get_AfterPut(t *testing.T) {
 		t.Errorf("GET status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 
-	var resp kosyncCredentialResponse
+	var resp credentialResponse
 	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode GET response: %v", err)
 	}
