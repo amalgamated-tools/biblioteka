@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -183,7 +183,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 
 	lib, err := h.DB.CreateLibrary(r.Context(), req.Name, pathsJSON, req.OrganizationType, req.Monitored)
 	if err != nil {
-		if err == db.ErrLibraryNameExists {
+		if errors.Is(err, db.ErrLibraryNameExists) {
 			writeError(r.Context(), w, http.StatusConflict, "a library with that name already exists")
 			return
 		}
@@ -266,13 +266,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 	}
 
 	existing, err := h.DB.GetLibrary(r.Context(), id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "library not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get library", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get library")
+	if handleDBErr(r.Context(), w, err, "library") {
 		return
 	}
 
@@ -287,19 +281,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 	)
 
 	lib, err := h.DB.UpdateLibrary(r.Context(), id, req.Name, pathsJSON, req.OrganizationType, req.Monitored)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			writeError(r.Context(), w, http.StatusNotFound, "library not found")
-			return
-		}
-		if err == db.ErrLibraryNameExists {
-			writeError(r.Context(), w, http.StatusConflict, "a library with that name already exists")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to update library",
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update library")
+	if handleUpdateErr(r.Context(), w, err, nil, db.ErrLibraryNameExists, "a library", "library", id) {
 		return
 	}
 
@@ -371,15 +353,7 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 	// If no books found, check whether the library actually exists.
 	if total == 0 {
 		_, err := h.DB.GetLibrary(r.Context(), id)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				writeError(r.Context(), w, http.StatusNotFound, "library not found")
-				return
-			}
-			slog.ErrorContext(r.Context(), "failed to get library",
-				slog.Any(otelkeys.Error, err),
-			)
-			writeError(r.Context(), w, http.StatusInternalServerError, "failed to get library")
+		if handleDBErr(r.Context(), w, err, "library") {
 			return
 		}
 	}

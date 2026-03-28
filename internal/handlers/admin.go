@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -28,6 +29,17 @@ type setAdminRequest struct {
 	IsAdmin bool `json:"is_admin"`
 }
 
+func toAdminUserDTO(u *db.User) adminUserDTO {
+	return adminUserDTO{
+		ID:         u.ID,
+		Name:       u.Name,
+		Email:      u.Email,
+		IsAdmin:    u.IsAdmin,
+		OIDCLinked: u.OIDCSubject != nil,
+		CreatedAt:  u.CreatedAt,
+	}
+}
+
 // HandleListUsers godoc
 //
 //	@Summary		List all users
@@ -52,27 +64,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := h.DB.ListUsers(r.Context())
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list users", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list users")
-		return
-	}
-
-	slog.DebugContext(r.Context(), "users listed", slog.Int(otelkeys.Count, len(users)))
-	dtos := make([]adminUserDTO, 0, len(users))
-	for _, u := range users {
-		dtos = append(dtos, adminUserDTO{
-			ID:         u.ID,
-			Name:       u.Name,
-			Email:      u.Email,
-			IsAdmin:    u.IsAdmin,
-			OIDCLinked: u.OIDCSubject != nil,
-			CreatedAt:  u.CreatedAt,
-		})
-	}
-
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
+	listEntities(w, r, "users", h.DB.ListUsers, toAdminUserDTO)
 }
 
 // HandleSetAdmin godoc
@@ -128,7 +120,7 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.DB.SetAdmin(r.Context(), targetID, req.IsAdmin); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusNotFound, "user not found")
 			return
 		}

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -409,7 +410,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 
 	b, err := h.DB.UpdateBook(r.Context(), id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.CoverImageURL)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			writeError(r.Context(), w, http.StatusNotFound, "book not found")
 			return
 		}

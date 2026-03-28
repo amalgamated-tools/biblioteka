@@ -34,6 +34,21 @@
     | "users"
     | "api-keys"
     | "kobo";
+
+  const userTabLabels = userTabs.reduce(
+    (acc, tab) => {
+      acc[tab.key as SettingsTab] = tab.label;
+      return acc;
+    },
+    {} as Partial<Record<SettingsTab, string>>,
+  );
+
+  const tabLabels: Record<SettingsTab, string> = {
+    ...(userTabLabels as Record<SettingsTab, string>),
+    oidc: "OIDC / SSO",
+    smtp: "Email / SMTP",
+    users: "Users",
+  };
   const validTabs: SettingsTab[] = [
     "account",
     "preferences",
@@ -161,7 +176,7 @@
       </nav>
     </div>
 
-    <section class="flex-1">
+    <section class="flex-1" aria-label="{tabLabels[activeTab]} settings">
       {#if activeTab === "account"}
         <AccountTab {oidcConfigured} />
       {/if}
