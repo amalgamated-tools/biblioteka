@@ -11,13 +11,6 @@
     KeyRound,
     BookOpen,
   } from "lucide-svelte";
-
-  const userTabs: { key: string; label: string; icon: typeof Mail }[] = [
-    { key: "account", label: "Account", icon: Mail },
-    { key: "api-keys", label: "API Keys", icon: KeyRound },
-    { key: "kobo", label: "Kobo Sync", icon: BookOpen },
-    { key: "preferences", label: "Preferences", icon: Palette },
-  ];
   import AccountTab from "./settings/AccountTab.svelte";
   import OidcTab from "./settings/OidcTab.svelte";
   import SmtpTab from "./settings/SmtpTab.svelte";
@@ -35,29 +28,26 @@
     | "api-keys"
     | "kobo";
 
-  const userTabLabels = userTabs.reduce(
-    (acc, tab) => {
-      acc[tab.key as SettingsTab] = tab.label;
-      return acc;
-    },
-    {} as Partial<Record<SettingsTab, string>>,
-  );
+  type TabDef = { key: SettingsTab; label: string; icon: typeof Mail };
 
-  const tabLabels: Record<SettingsTab, string> = {
-    ...(userTabLabels as Record<SettingsTab, string>),
-    oidc: "OIDC / SSO",
-    smtp: "Email / SMTP",
-    users: "Users",
-  };
-  const validTabs: SettingsTab[] = [
-    "account",
-    "preferences",
-    "oidc",
-    "smtp",
-    "users",
-    "api-keys",
-    "kobo",
+  const userTabs: TabDef[] = [
+    { key: "account", label: "Account", icon: Mail },
+    { key: "api-keys", label: "API Keys", icon: KeyRound },
+    { key: "kobo", label: "Kobo Sync", icon: BookOpen },
+    { key: "preferences", label: "Preferences", icon: Palette },
   ];
+
+  const adminTabs: TabDef[] = [
+    { key: "oidc", label: "OIDC / SSO", icon: Shield },
+    { key: "smtp", label: "Email / SMTP", icon: Send },
+    { key: "users", label: "Users", icon: Users },
+  ];
+
+  const allTabs = [...userTabs, ...adminTabs];
+  const validTabs = allTabs.map((t) => t.key);
+  const tabLabels = Object.fromEntries(
+    allTabs.map((t) => [t.key, t.label]),
+  ) as Record<SettingsTab, string>;
 
   let activeTab: SettingsTab = $derived(
     validTabs.includes(routerStore.subPath as SettingsTab)
@@ -116,6 +106,7 @@
       >
         {#each userTabs as tab (tab.key)}
           {@const isActive = activeTab === tab.key}
+          {@const Icon = tab.icon}
           <a
             href="#settings/{tab.key}"
             aria-current={isActive ? "page" : undefined}
@@ -123,7 +114,7 @@
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
               : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
           >
-            <tab.icon class="w-5 h-5" />
+            <Icon class="w-5 h-5" />
             {tab.label}
           </a>
         {/each}
@@ -139,39 +130,20 @@
           <div
             class="sm:hidden w-px bg-ink-200 dark:bg-ink-700 self-stretch my-1"
           ></div>
-          {@const isOidcActive = activeTab === "oidc"}
-          <a
-            href="#settings/oidc"
-            aria-current={isOidcActive ? "page" : undefined}
-            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isOidcActive
-              ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
-          >
-            <Shield class="w-5 h-5" />
-            OIDC / SSO
-          </a>
-          {@const isSmtpActive = activeTab === "smtp"}
-          <a
-            href="#settings/smtp"
-            aria-current={isSmtpActive ? "page" : undefined}
-            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isSmtpActive
-              ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
-          >
-            <Send class="w-5 h-5" />
-            Email / SMTP
-          </a>
-          {@const isUsersActive = activeTab === "users"}
-          <a
-            href="#settings/users"
-            aria-current={isUsersActive ? "page" : undefined}
-            class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isUsersActive
-              ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
-          >
-            <Users class="w-5 h-5" />
-            Users
-          </a>
+          {#each adminTabs as tab (tab.key)}
+            {@const isActive = activeTab === tab.key}
+            {@const Icon = tab.icon}
+            <a
+              href="#settings/{tab.key}"
+              aria-current={isActive ? "page" : undefined}
+              class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isActive
+                ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
+                : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+            >
+              <Icon class="w-5 h-5" />
+              {tab.label}
+            </a>
+          {/each}
         {/if}
       </nav>
     </div>
