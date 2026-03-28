@@ -16,7 +16,7 @@ import (
 )
 
 // requestScheme returns the HTTP scheme for the given request. It checks
-// r.TLS first, then honours the X-Forwarded-Proto header (normalised to
+// r.TLS first, then honors the X-Forwarded-Proto header (normalized to
 // lowercase, trimmed). Only "http" and "https" are accepted; any other
 // value is ignored and the function falls back to the TLS-based default.
 func requestScheme(r *http.Request) string {
