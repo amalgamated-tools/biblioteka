@@ -105,8 +105,11 @@ func TestScanPathHandler_EmptyPath(t *testing.T) {
 	mock := &mockEnqueuer{}
 	handler := NewScanPathHandler(mock)
 
-	payload, _ := json.Marshal(ScanPathPayload{Path: ""})
-	err := handler(context.Background(), payload)
+	payload, err := json.Marshal(ScanPathPayload{Path: ""})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	err = handler(context.Background(), payload)
 	if err == nil {
 		t.Fatal("expected error for empty path")
 	}
@@ -116,8 +119,11 @@ func TestScanPathHandler_NonexistentPath(t *testing.T) {
 	mock := &mockEnqueuer{}
 	handler := NewScanPathHandler(mock)
 
-	payload, _ := json.Marshal(ScanPathPayload{Path: "/nonexistent/path/that/does/not/exist"})
-	err := handler(context.Background(), payload)
+	payload, err := json.Marshal(ScanPathPayload{Path: "/nonexistent/path/that/does/not/exist"})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	err = handler(context.Background(), payload)
 	if err == nil {
 		t.Fatal("expected error for nonexistent path")
 	}
@@ -128,7 +134,10 @@ func TestScanPathHandler_EmptyDirectory(t *testing.T) {
 	handler := NewScanPathHandler(mock)
 
 	dir := t.TempDir()
-	payload, _ := json.Marshal(ScanPathPayload{Path: dir})
+	payload, err := json.Marshal(ScanPathPayload{Path: dir})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
 
 	if err := handler(context.Background(), payload); err != nil {
 		t.Fatalf("handler: %v", err)

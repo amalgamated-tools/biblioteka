@@ -100,7 +100,7 @@ func (c *testKoboTokenChecker) GetKoboTokenByToken(ctx context.Context, token st
 func TestKoboTokenCreate_Success(t *testing.T) {
 	h, userID := setupKoboHandler(t)
 
-	body, _ := json.Marshal(koboTokenCreateRequest{Name: "My Kobo"})
+	body := mustMarshal(t, koboTokenCreateRequest{Name: "My Kobo"})
 	r := httptest.NewRequest(http.MethodPost, "/api/kobo/tokens", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -151,7 +151,7 @@ func TestHandleCoverImage_DataURL(t *testing.T) {
 func TestKoboTokenCreate_EmptyName(t *testing.T) {
 	h, userID := setupKoboHandler(t)
 
-	body, _ := json.Marshal(koboTokenCreateRequest{Name: ""})
+	body := mustMarshal(t, koboTokenCreateRequest{Name: ""})
 	r := httptest.NewRequest(http.MethodPost, "/api/kobo/tokens", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -204,7 +204,7 @@ func TestKoboTokenDelete_NotFound(t *testing.T) {
 // createTestKoboToken is a helper that creates a token and returns the token value.
 func createTestKoboToken(t *testing.T, h *KoboHandler, userID string) string {
 	t.Helper()
-	body, _ := json.Marshal(koboTokenCreateRequest{Name: "test"})
+	body := mustMarshal(t, koboTokenCreateRequest{Name: "test"})
 	rCreate := httptest.NewRequest(http.MethodPost, "/api/kobo/tokens", bytes.NewReader(body))
 	rCreate = withUserID(rCreate, userID)
 	wCreate := httptest.NewRecorder()

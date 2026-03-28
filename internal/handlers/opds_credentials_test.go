@@ -53,7 +53,7 @@ func TestOPDSCredentials_GetNotFound(t *testing.T) {
 func TestOPDSCredentials_PutSuccess(t *testing.T) {
 	h, userID := setupOPDSCredentialHandler(t)
 
-	body, _ := json.Marshal(credentialRequest{Username: "myreader", Password: "secret123"})
+	body := mustMarshal(t, credentialRequest{Username: "myreader", Password: "secret123"})
 	r := httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -76,7 +76,7 @@ func TestOPDSCredentials_GetAfterPut(t *testing.T) {
 	h, userID := setupOPDSCredentialHandler(t)
 
 	// Create credentials first.
-	body, _ := json.Marshal(credentialRequest{Username: "myreader", Password: "secret123"})
+	body := mustMarshal(t, credentialRequest{Username: "myreader", Password: "secret123"})
 	r := httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -108,7 +108,7 @@ func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
 	h, userID := setupOPDSCredentialHandler(t)
 
 	// Create initial credentials.
-	body, _ := json.Marshal(credentialRequest{Username: "oldname", Password: "secret123"})
+	body := mustMarshal(t, credentialRequest{Username: "oldname", Password: "secret123"})
 	r := httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -119,7 +119,7 @@ func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
 	}
 
 	// Update with new username.
-	body, _ = json.Marshal(credentialRequest{Username: "newname", Password: "secret456"})
+	body = mustMarshal(t, credentialRequest{Username: "newname", Password: "secret456"})
 	r = httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w = httptest.NewRecorder()
@@ -140,7 +140,7 @@ func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
 func TestOPDSCredentials_PutEmptyUsername(t *testing.T) {
 	h, userID := setupOPDSCredentialHandler(t)
 
-	body, _ := json.Marshal(credentialRequest{Username: "", Password: "secret123"})
+	body := mustMarshal(t, credentialRequest{Username: "", Password: "secret123"})
 	r := httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -155,7 +155,7 @@ func TestOPDSCredentials_PutEmptyUsername(t *testing.T) {
 func TestOPDSCredentials_PutShortPassword(t *testing.T) {
 	h, userID := setupOPDSCredentialHandler(t)
 
-	body, _ := json.Marshal(credentialRequest{Username: "myreader", Password: "abc"})
+	body := mustMarshal(t, credentialRequest{Username: "myreader", Password: "abc"})
 	r := httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -171,7 +171,7 @@ func TestOPDSCredentials_PutUsernameTooLong(t *testing.T) {
 	h, userID := setupOPDSCredentialHandler(t)
 
 	longUsername := strings.Repeat("a", maxUsernameLen+1)
-	body, _ := json.Marshal(credentialRequest{Username: longUsername, Password: "secret123"})
+	body := mustMarshal(t, credentialRequest{Username: longUsername, Password: "secret123"})
 	r := httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -200,7 +200,7 @@ func TestOPDSCredentials_PutInvalidJSON(t *testing.T) {
 func TestOPDSCredentials_PutUsernameLowercased(t *testing.T) {
 	h, userID := setupOPDSCredentialHandler(t)
 
-	body, _ := json.Marshal(credentialRequest{Username: "MyReader", Password: "secret123"})
+	body := mustMarshal(t, credentialRequest{Username: "MyReader", Password: "secret123"})
 	r := httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -234,7 +234,7 @@ func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
 	}
 
 	// User1 creates credentials with username "reader".
-	body, _ := json.Marshal(credentialRequest{Username: "reader", Password: "secret123"})
+	body := mustMarshal(t, credentialRequest{Username: "reader", Password: "secret123"})
 	r := httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, user1.ID)
 	w := httptest.NewRecorder()
@@ -245,7 +245,7 @@ func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
 	}
 
 	// User2 tries to use the same username.
-	body, _ = json.Marshal(credentialRequest{Username: "reader", Password: "secret456"})
+	body = mustMarshal(t, credentialRequest{Username: "reader", Password: "secret456"})
 	r = httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, user2.ID)
 	w = httptest.NewRecorder()
@@ -260,7 +260,7 @@ func TestOPDSCredentials_DeleteSuccess(t *testing.T) {
 	h, userID := setupOPDSCredentialHandler(t)
 
 	// Create credentials first.
-	body, _ := json.Marshal(credentialRequest{Username: "myreader", Password: "secret123"})
+	body := mustMarshal(t, credentialRequest{Username: "myreader", Password: "secret123"})
 	r := httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
@@ -308,7 +308,7 @@ func TestOPDSCredentials_DeleteNotFound(t *testing.T) {
 func TestOPDSCredentials_PutUsernameTrimmed(t *testing.T) {
 	h, userID := setupOPDSCredentialHandler(t)
 
-	body, _ := json.Marshal(credentialRequest{Username: "  spacey  ", Password: "secret123"})
+	body := mustMarshal(t, credentialRequest{Username: "  spacey  ", Password: "secret123"})
 	r := httptest.NewRequest(http.MethodPut, "/api/opds/credentials", bytes.NewReader(body))
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
