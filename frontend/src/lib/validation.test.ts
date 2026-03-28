@@ -45,9 +45,9 @@ describe("minLength", () => {
   });
 
   it("uses the custom message when supplied", () => {
-    expect(
-      minLength(6, "Password must be at least 6 characters")("abc"),
-    ).toBe("Password must be at least 6 characters");
+    expect(minLength(6, "Password must be at least 6 characters")("abc")).toBe(
+      "Password must be at least 6 characters",
+    );
   });
 
   it("returns an error for an empty string", () => {
@@ -81,15 +81,11 @@ describe("matches", () => {
 
 describe("validate", () => {
   it("returns null when all rules pass", () => {
-    expect(
-      validate("hello", [required(), minLength(3)]),
-    ).toBeNull();
+    expect(validate("hello", [required(), minLength(3)])).toBeNull();
   });
 
   it("returns the first error when the first rule fails", () => {
-    expect(validate("", [required("Required"), minLength(3)])).toBe(
-      "Required",
-    );
+    expect(validate("", [required("Required"), minLength(3)])).toBe("Required");
   });
 
   it("returns the error from the first failing rule in order", () => {

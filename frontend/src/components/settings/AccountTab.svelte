@@ -49,7 +49,9 @@
         required("New password is required"),
         minLength(6, "New password must be at least 6 characters"),
       ]) ??
-      validate(confirmPassword, [matches(newPassword, "Passwords do not match")]);
+      validate(confirmPassword, [
+        matches(newPassword, "Passwords do not match"),
+      ]);
     if (passwordError) return;
 
     passwordLoading = true;

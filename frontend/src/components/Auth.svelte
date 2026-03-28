@@ -45,7 +45,9 @@
     error = null;
     loading = true;
 
-    const requiredFields = isLogin ? [email, password] : [name, email, password];
+    const requiredFields = isLogin
+      ? [email, password]
+      : [name, email, password];
     if (requiredFields.some((f) => required()(f) !== null)) {
       error = "Please fill in all fields";
       loading = false;
