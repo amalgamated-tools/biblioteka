@@ -79,7 +79,9 @@ func generateRandomHex(n int) (string, error) {
 
 // writeSecretTokenResponse sets cache-prevention headers and writes a JSON
 // response. It should be used whenever the response body contains a plaintext
-// secret token or key that must not be stored in caches or browser history.
+// secret token or key that should not be stored in HTTP caches. Note that
+// these headers cannot fully prevent storage in browser history or other
+// user-controlled storage.
 func writeSecretTokenResponse(ctx context.Context, w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
