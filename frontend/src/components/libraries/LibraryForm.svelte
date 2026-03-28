@@ -6,6 +6,7 @@
     LIBRARY_ORGANIZATION_TYPES,
     type LibraryOrganizationType,
   } from "../../types";
+  import { required, validate } from "../../lib/validation";
   import { Plus, FolderOpen, Trash2, X } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
 
@@ -89,10 +90,8 @@
     pathsError = null;
 
     const name = formName.trim();
-    if (!name) {
-      nameError = "Name is required";
-      return;
-    }
+    nameError = validate(name, [required("Name is required")]);
+    if (nameError) return;
 
     const paths = formPaths
       .map((entry) => entry.value.trim())
