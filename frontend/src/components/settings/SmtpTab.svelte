@@ -39,6 +39,11 @@
   let smtpTestMessageTimeout: ReturnType<typeof setTimeout> | null = null;
   let smtpTestErrorTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  let smtpSubmitLabel = $derived.by(() => {
+    if (smtpLoading) return "Saving...";
+    return smtpConfigured ? "Update Configuration" : "Save Configuration";
+  });
+
   onMount(async () => {
     try {
       const smtp = await getSmtpConfig();
@@ -342,11 +347,7 @@
 
       {#if !smtpEnvOverride}
         <Button type="submit" disabled={smtpLoading} class="w-full px-4 py-2.5">
-          {smtpLoading
-            ? "Saving..."
-            : smtpConfigured
-              ? "Update Configuration"
-              : "Save Configuration"}
+          {smtpSubmitLabel}
         </Button>
       {/if}
     </form>

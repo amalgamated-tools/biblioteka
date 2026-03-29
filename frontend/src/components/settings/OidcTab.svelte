@@ -43,6 +43,11 @@
   let oidcLoading = $state(false);
   let successTimer: ReturnType<typeof setTimeout> | undefined;
 
+  let submitLabel = $derived.by(() => {
+    if (oidcLoading) return "Saving...";
+    return oidcConfigured ? "Update Configuration" : "Save Configuration";
+  });
+
   onDestroy(() => {
     if (successTimer) clearTimeout(successTimer);
   });
@@ -222,11 +227,7 @@
       {/if}
 
       <Button type="submit" disabled={oidcLoading} class="w-full px-4 py-2.5">
-        {oidcLoading
-          ? "Saving..."
-          : oidcConfigured
-            ? "Update Configuration"
-            : "Save Configuration"}
+        {submitLabel}
       </Button>
     </form>
   </div>
