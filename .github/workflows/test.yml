@@ -100,6 +100,9 @@ jobs:
     needs: [frontend-checks]
     runs-on: ubuntu-latest
     if: always()
+    # This job only runs a shell check; 2 minutes is more than enough.
+    # Without a timeout, a hung runner would default to 6 hours.
+    timeout-minutes: 2
     steps:
       - name: Verify frontend checks job passed
         run: |
@@ -182,6 +185,9 @@ jobs:
     needs: [go-lint, go-test]
     runs-on: ubuntu-latest
     if: always()
+    # This job only runs a shell check; 2 minutes is more than enough.
+    # Without a timeout, a hung runner would default to 6 hours.
+    timeout-minutes: 2
     steps:
       - name: Check all Go jobs passed
         run: |
