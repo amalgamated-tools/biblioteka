@@ -1,12 +1,9 @@
 package handlers
 
 import (
-	"context"
-	"log/slog"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
-	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // toBookSeriesEntryDTO converts a BookSeriesEntry to a bookSeriesEntryDTO.
@@ -15,17 +12,6 @@ func toBookSeriesEntryDTO(e *db.BookSeriesEntry) bookSeriesEntryDTO {
 		Series:   toSeriesDTO(&e.Series),
 		Position: e.Position,
 	}
-}
-
-// respondBookSeries fetches and writes the series list for a book as JSON.
-func (h *BookHandler) respondBookSeries(ctx context.Context, w http.ResponseWriter, bookID string) {
-	entries, err := h.DB.GetBookSeries(ctx, bookID)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get book series", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get book series")
-		return
-	}
-	writeJSON(ctx, w, http.StatusOK, mapSlice(entries, toBookSeriesEntryDTO))
 }
 
 // setBookSeriesRequest is the request body for setting book series.
@@ -47,7 +33,7 @@ type setBookSeriesRequest struct {
 //	@Failure		500	{object}	errorResponse
 //	@Router			/books/{id}/series [get]
 func (h *BookHandler) getBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
-	h.respondBookSeries(r.Context(), w, bookID)
+	respondBookSubResource(r.Context(), w, bookID, h.DB.GetBookSeries, toBookSeriesEntryDTO, "book series")
 }
 
 // putBookSeries godoc
@@ -66,14 +52,7 @@ func (h *BookHandler) getBookSeries(w http.ResponseWriter, r *http.Request, book
 //	@Failure		500		{object}	errorResponse
 //	@Router			/books/{id}/series [put]
 func (h *BookHandler) putBookSeries(w http.ResponseWriter, r *http.Request, bookID string) {
-	var req setBookSeriesRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-	if err := h.DB.SetBookSeries(r.Context(), bookID, req.Entries); err != nil {
-		slog.ErrorContext(r.Context(), "failed to set book series", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to set book series")
-		return
-	}
-	h.respondBookSeries(r.Context(), w, bookID)
+	putBookSubResource(w, r, bookID, h.DB.GetBookSeries, h.DB.SetBookSeries,
+		func(req *setBookSeriesRequest) []db.BookSeriesInput { return req.Entries },
+		toBookSeriesEntryDTO, "book series")
 }
