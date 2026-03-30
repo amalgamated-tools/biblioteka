@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"log/slog"
+	"context"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -96,55 +96,31 @@ func (h *KoboHandler) HandleKoboToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *KoboHandler) listKoboTokens(w http.ResponseWriter, r *http.Request) {
-	userID := auth.UserIDFromContext(r.Context())
-	tokens, err := h.DB.ListKoboTokens(r.Context(), userID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list kobo tokens", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list Kobo tokens")
-		return
-	}
-	if tokens == nil {
-		tokens = []db.KoboToken{}
-	}
-
-	writeJSON(r.Context(), w, http.StatusOK, mapSlice(tokens, toKoboTokenDTO))
+	listUserEntities(w, r, "Kobo tokens", h.DB.ListKoboTokens, toKoboTokenDTO)
 }
 
 func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
-	var req koboTokenCreateRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
+	handleTokenCreate(tokenOps{
+		db:              h.DB,
+		resource:        "Kobo token",
+		auditEntityType: "kobo_token",
+		auditCreate:     db.AuditActionKoboTokenCreated,
+		create: func(ctx context.Context, userID, name string) (string, any, error) {
+			// Generate a random 32-byte hex token (64 hex chars).
+			token, err := generateRandomHex(32)
+			if err != nil {
+				return "", nil, err
+			}
+			tokenHash := auth.HashKoboToken(token)
 
-	name, ok := validateTokenName(r.Context(), w, req.Name)
-	if !ok {
-		return
-	}
+			koboToken, err := h.DB.CreateKoboToken(ctx, userID, name, tokenHash)
+			if err != nil {
+				return "", nil, err
+			}
 
-	// Generate a random 32-byte hex token (64 hex chars).
-	token, err := generateRandomHex(32)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to generate random bytes", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate Kobo token")
-		return
-	}
-	tokenHash := auth.HashKoboToken(token)
-
-	userID := auth.UserIDFromContext(r.Context())
-	koboToken, err := h.DB.CreateKoboToken(r.Context(), userID, name, tokenHash)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create kobo token", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create Kobo token")
-		return
-	}
-
-	logAudit(r.Context(), h.DB, userID, db.AuditActionKoboTokenCreated, "kobo_token", koboToken.ID, map[string]any{"name": name})
-
-	resp := koboTokenCreateResponse{
-		koboTokenDTO: toKoboTokenDTO(koboToken),
-		Token:        token,
-	}
-	writeSecretTokenResponse(r.Context(), w, http.StatusCreated, resp)
+			return koboToken.ID, koboTokenCreateResponse{koboTokenDTO: toKoboTokenDTO(koboToken), Token: token}, nil
+		},
+	}, w, r)
 }
 
 func (h *KoboHandler) deleteKoboToken(w http.ResponseWriter, r *http.Request, id string) {
