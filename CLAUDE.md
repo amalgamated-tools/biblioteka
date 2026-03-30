@@ -143,6 +143,14 @@ db/migrations/
 
   `mapSlice` is a generic function in `internal/handlers/helpers.go`. It applies `toDTO` to every element of `items` and returns the resulting slice. Use it whenever you hold the fetched slice yourself and only need the DTO conversion step (no automatic list call or error handling). The `toDTO` function must accept a **pointer** to the entity type (e.g. `func toAuthorDTO(a *db.Author) AuthorDTO`) — `mapSlice` passes a pointer to each element internally.
 
+- For list endpoints that return a slice of **user-owned** DTOs (where the list function accepts a `userID` as a second argument), use the generic `listUserEntities` helper instead of `listEntities`:
+
+  ```go
+  listUserEntities(w, r, "API keys", h.DB.ListAPIKeys, toAPIKeyDTO)
+  ```
+
+  `listUserEntities` is a generic function in `internal/handlers/helpers.go`. It extracts the authenticated user ID from context via `auth.UserIDFromContext`, calls `list(ctx, userID)`, converts entities to DTOs, and writes a `200 OK` JSON response (never `null`). On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
+
 ### Deleting a resource
 
 For DELETE handlers, use the generic `deleteResource` helper instead of hand-rolling the fetch-delete-audit pattern:
@@ -170,6 +178,37 @@ deleteUserOwnedResource(h.DB, w, r, id, "API key", "api_key", otelkeys.APIKeyID,
 ```
 
 `deleteUserOwnedResource` mirrors `deleteResource` in behavior — it fetches the entity, deletes it, writes an audit log entry, and responds with `204 No Content`. Pass the human-readable display name as `resource` (e.g. `"API key"`) and the stable snake_case identifier as `auditEntityType` (e.g. `"api_key"`). Pass `nil` for `auditMeta` when no extra metadata is needed. The user ID is extracted from context automatically via `auth.UserIDFromContext`. Always `return` immediately after the call.
+
+### Creating user-owned tokens
+
+When adding a new token type (a high-entropy random secret stored by hash, such as an API key or Kobo sync token), use `tokenOps` and `handleTokenCreate` from `internal/handlers/tokens.go` instead of hand-rolling the decode → validate → generate → hash → persist → audit flow:
+
+```go
+func (h *MyTokenHandler) createMyToken(w http.ResponseWriter, r *http.Request) {
+    handleTokenCreate(tokenOps{
+        db:              h.DB,
+        resource:        "my token",
+        auditEntityType: "my_token",
+        auditCreate:     db.AuditActionMyTokenCreated,
+        create: func(ctx context.Context, userID, name string) (string, any, error) {
+            raw, err := generateRandomHex(32) // 64-char hex token
+            if err != nil {
+                return "", nil, err
+            }
+            hash := auth.HashMyToken(raw)
+            token, err := h.DB.CreateMyToken(ctx, userID, name, hash)
+            if err != nil {
+                return "", nil, err
+            }
+            return token.ID, myTokenCreateResponse{myTokenDTO: toMyTokenDTO(token), Token: raw}, nil
+        },
+    }, w, r)
+}
+```
+
+`handleTokenCreate` implements the full creation lifecycle: decode the `{"name": "..."}` request body, validate and trim the name (≤ 100 characters; see `maxTokenNameLength`), call `ops.create`, write an audit log entry, and respond with `201 Created` via `writeSecretTokenResponse` (which sets `Cache-Control: no-store` to prevent caching of the plaintext secret). The raw token is returned only in the creation response and cannot be retrieved again.
+
+Use `generateRandomHex(n)` from `internal/handlers/helpers.go` to generate a cryptographically secure random token of `n` bytes (returned as a `2n`-character lowercase hex string).
 
 ### Audit logging (non-`deleteResource` actions)
 
