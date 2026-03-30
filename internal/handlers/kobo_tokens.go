@@ -109,7 +109,7 @@ func (h *KoboHandler) createKoboToken(w http.ResponseWriter, r *http.Request) {
 			// Generate a random 32-byte hex token (64 hex chars).
 			token, err := generateRandomHex(32)
 			if err != nil {
-				return "", nil, err
+				return "", nil, &tokenError{err: err, message: "failed to generate Kobo token"}
 			}
 			tokenHash := auth.HashKoboToken(token)
 
