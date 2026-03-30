@@ -115,7 +115,7 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 			// Generate 32 random hex characters (16 bytes).
 			hexKey, err := generateRandomHex(16)
 			if err != nil {
-				return "", nil, err
+				return "", nil, &tokenError{err: err, message: "failed to generate API key"}
 			}
 			fullKey := auth.APIKeyPrefix + hexKey
 

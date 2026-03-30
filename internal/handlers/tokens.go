@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -9,6 +10,17 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
+
+// tokenError wraps an error with a client-facing message so that
+// handleTokenCreate can surface distinct HTTP responses for different failure
+// modes (e.g. token generation vs database persistence).
+type tokenError struct {
+	err     error
+	message string
+}
+
+func (e *tokenError) Error() string { return e.err.Error() }
+func (e *tokenError) Unwrap() error { return e.err }
 
 // tokenOps captures the token-type-specific details for token create handlers.
 // Both APIKeyHandler and KoboHandler implement the same token creation lifecycle;
@@ -26,6 +38,10 @@ type tokenOps struct {
 
 // handleTokenCreate implements the common token creation flow:
 // decode name → validate → create (generate+hash+persist) → audit → respond.
+//
+// If the create closure returns a *tokenError, its message is used as the
+// client-facing HTTP error and the log message. Otherwise a generic
+// "failed to create <resource>" message is used for both.
 func handleTokenCreate(ops tokenOps, w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name string `json:"name"`
@@ -43,8 +59,13 @@ func handleTokenCreate(ops tokenOps, w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(ctx)
 	entityID, resp, err := ops.create(ctx, userID, name)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create "+ops.resource, slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to create "+ops.resource)
+		msg := "failed to create " + ops.resource
+		var te *tokenError
+		if errors.As(err, &te) {
+			msg = te.message
+		}
+		slog.ErrorContext(ctx, msg, slog.Any(otelkeys.Error, err))
+		writeError(ctx, w, http.StatusInternalServerError, msg)
 		return
 	}
 
