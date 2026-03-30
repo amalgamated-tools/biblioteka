@@ -206,7 +206,9 @@ func (h *MyTokenHandler) createMyToken(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-`handleTokenCreate` implements the full creation lifecycle: decode the `{"name": "..."}` request body, validate and trim the name (≤ 100 characters; see `maxTokenNameLength`), call `ops.create`, write an audit log entry, and respond with `201 Created` via `writeSecretTokenResponse` (which sets `Cache-Control: no-store` to prevent caching of the plaintext secret). The raw token is returned only in the creation response and cannot be retrieved again.
+`handleTokenCreate` implements the full creation lifecycle: decode the `{"name": "..."}` request body, validate and trim the name (≤ 100 characters; see `maxTokenNameLength`), call `ops.create`, write an audit log entry, and respond with `201 Created` via `writeSecretTokenResponse` (which sets `Cache-Control: no-store` and `Pragma: no-cache` to prevent caching of the plaintext secret). The raw token is returned only in the creation response and cannot be retrieved again.
+
+If the `create` closure returns a `*tokenError{err: err, message: "..."}`, that message is used as the client-facing error text (still a 500). Use this to surface known failure modes (e.g. duplicate name) with a descriptive message instead of the generic `"failed to create <resource>"`.
 
 Use `generateRandomHex(n)` from `internal/handlers/helpers.go` to generate a cryptographically secure random token of `n` bytes (returned as a `2n`-character lowercase hex string).
 
