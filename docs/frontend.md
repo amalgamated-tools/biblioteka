@@ -195,6 +195,34 @@ const book = await api.createBook({ title: "Dune", … });
 
 Never call `fetch` directly from components or stores — always go through `api.ts`.
 
+## Clipboard utility
+
+`frontend/src/lib/clipboard.ts` exports a single async function, `copyToClipboard`, that provides a unified cross-browser interface for writing text to the system clipboard.
+
+```ts
+import { copyToClipboard } from "../../lib/clipboard"; // path is relative to the calling file
+
+await copyToClipboard(token);
+```
+
+### Behaviour
+
+| Environment | Mechanism |
+|-------------|-----------|
+| Modern browsers (secure context) | `navigator.clipboard.writeText()` |
+| Older browsers or non-secure contexts | Hidden `<textarea>` + `document.execCommand('copy')` fallback |
+
+The function throws an `Error` if:
+
+- The async Clipboard API rejects (e.g. the user denied the `clipboard-write` permission).
+- The `execCommand` fallback returns `false` (the browser blocked the copy command).
+
+> **Guidance:** Always surface copy failures to the user — for example, by displaying an error banner. Do not silently swallow the thrown error.
+
+### When to use
+
+Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs, share links, etc.) to the clipboard. Do **not** inline `navigator.clipboard.writeText` calls in components, as the fallback path would not be covered.
+
 ## TypeScript types
 
 TypeScript types are split between two files based on their purpose:
@@ -1323,6 +1351,18 @@ The following test suites cover reactive stores and the API client. Unlike the a
 **`Config API` (four tests):** covers `getConfigStatus`, `getOidcConfig`, `setOidcConfig`, and `createOidcLinkNonce`.
 
 **`Admin API` (two tests):** covers `listUsers` and `setUserAdmin`.
+
+### `clipboard.test.ts`
+
+`frontend/src/lib/clipboard.test.ts` exercises the `copyToClipboard` utility. Tests stub `navigator` and `document.execCommand` to isolate the function from real browser APIs. Tests are grouped in one `describe` block:
+
+**`copyToClipboard` (four tests):**
+- Asserts the async Clipboard API (`navigator.clipboard.writeText`) is used when available, and called with the correct text.
+- Asserts the `execCommand` fallback path is taken when `navigator.clipboard` is absent, and that `document.execCommand('copy')` is invoked.
+- Asserts an `Error` is thrown when `execCommand` returns `false`.
+- Asserts errors thrown by the async Clipboard API are propagated to the caller.
+
+> **Mocking note:** `beforeEach` captures the original `execCommand` property descriptor, and `afterEach` restores it alongside `vi.unstubAllGlobals()` and `vi.restoreAllMocks()`. This prevents global state leaking between tests.
 
 ---
 
