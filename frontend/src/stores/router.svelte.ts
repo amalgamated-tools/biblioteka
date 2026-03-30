@@ -35,6 +35,14 @@ export type SettingsSubPath =
 
 const APP_TITLE_SUFFIX = " – biblioteka";
 
+const VALID_VIEWS: AppView[] = [
+  "dashboard",
+  "books",
+  "my-library",
+  "libraries",
+  "settings",
+];
+
 const viewTitles: Record<AppView, string> = {
   dashboard: `Dashboard${APP_TITLE_SUFFIX}`,
   books: `All Books${APP_TITLE_SUFFIX}`,
@@ -53,36 +61,24 @@ const settingsSubTitles: Record<SettingsSubPath, string> = {
   kobo: `Kobo Sync${APP_TITLE_SUFFIX}`,
 };
 
+const _initialHash = parseHash();
+
 class RouterStore {
-  hash = $state(parseHash().path);
+  hash = $state(_initialHash.path);
   queryParams: SvelteURLSearchParams = $state(
-    new SvelteURLSearchParams(parseHash().params.toString()),
+    new SvelteURLSearchParams(_initialHash.params.toString()),
   );
 
   /** Whether the current hash maps to a known view */
   isKnownView: boolean = $derived.by(() => {
     const segment = this.hash.split("/")[0];
-    const valid: AppView[] = [
-      "dashboard",
-      "books",
-      "my-library",
-      "libraries",
-      "settings",
-    ];
-    return segment === "" || valid.includes(segment as AppView);
+    return segment === "" || VALID_VIEWS.includes(segment as AppView);
   });
 
   /** Top-level view derived from hash */
   currentView: AppView = $derived.by(() => {
     const segment = this.hash.split("/")[0];
-    const valid: AppView[] = [
-      "dashboard",
-      "books",
-      "my-library",
-      "libraries",
-      "settings",
-    ];
-    return valid.includes(segment as AppView)
+    return VALID_VIEWS.includes(segment as AppView)
       ? (segment as AppView)
       : "dashboard";
   });
