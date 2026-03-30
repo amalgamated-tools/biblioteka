@@ -10,6 +10,9 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # This job only invokes a single action; 5 minutes is more than enough.
+    # Without a timeout, a hung runner would default to 6 hours.
+    timeout-minutes: 5
     steps:
       - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
