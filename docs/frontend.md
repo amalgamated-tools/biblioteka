@@ -230,31 +230,59 @@ const book = await api.createBook({ title: "Dune", … });
 
 Never call `fetch` directly from components or stores — always go through `api.ts`.
 
-## Clipboard utility
+## Utility modules
 
-`frontend/src/lib/clipboard.ts` exports a single async function, `copyToClipboard`, that provides a unified cross-browser interface for writing text to the system clipboard.
+Two small utility modules live in `frontend/src/lib/` alongside `api.ts`.
+
+### `validation.ts`
+
+Composable form-validation helpers. Each exported function returns a `ValidationRule` — a function `(value: string) => string | null` that returns an error message or `null` when the value passes.
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `ValidationRule` | `type` | A validation rule function |
+| `required` | `(message?: string) => ValidationRule` | Fails when the trimmed value is empty |
+| `minLength` | `(min: number, message?: string) => ValidationRule` | Fails when the value is shorter than `min` characters |
+| `matches` | `(other: string, message?: string) => ValidationRule` | Fails when the value does not equal `other` |
+| `validate` | `(value: string, rules: ValidationRule[]) => string \| null` | Runs rules in order; returns the first error or `null` |
+
+**Usage:**
 
 ```ts
-import { copyToClipboard } from "../../lib/clipboard"; // path is relative to the calling file
+import { validate, required, minLength, matches } from "../lib/validation";
 
-await copyToClipboard(token);
+const passwordError = validate(password, [
+  required("Password is required"),
+  minLength(8, "Password must be at least 8 characters"),
+]);
+
+const confirmError = validate(confirm, [
+  required("Please confirm your password"),
+  matches(password, "Passwords do not match"),
+]);
 ```
 
-### Behaviour
+Store the result in a `$state` variable and bind it to a `TextInput` with `aria-invalid` and `aria-describedby` to surface inline errors accessibly (see [Form accessibility](#form-accessibility)).
 
-| Environment | Mechanism |
-|-------------|-----------|
-| Modern browsers (secure context) | `navigator.clipboard.writeText()` |
-| Older browsers or non-secure contexts | Hidden `<textarea>` + `document.execCommand('copy')` fallback |
+### `clipboard.ts`
 
-The function throws an `Error` if:
+`frontend/src/lib/clipboard.ts` exports a single async function, `copyToClipboard`, that provides a cross-browser interface for writing text to the system clipboard.
 
-- The async Clipboard API rejects (e.g. the user denied the `clipboard-write` permission).
+```ts
+import { copyToClipboard } from "../lib/clipboard";
+
+await copyToClipboard(apiKey);
+```
+
+`copyToClipboard` uses the modern async Clipboard API (`navigator.clipboard.writeText`) when available. In environments where the Clipboard API is absent, it falls back to `document.execCommand('copy')` using a hidden `<textarea>`.
+
+> **Note:** The fallback is selected by *availability*, not by failure. If the Clipboard API is present but the browser rejects it (e.g. due to a missing `clipboard-write` permission), the error propagates immediately — the `execCommand` path is not attempted in that case.
+
+It throws an `Error` if the active path fails:
+- The Clipboard API rejects (e.g. the user denied the `clipboard-write` permission).
 - The `execCommand` fallback returns `false` (the browser blocked the copy command).
 
 > **Guidance:** Always surface copy failures to the user — for example, by displaying an error banner. Do not silently swallow the thrown error.
-
-### When to use
 
 Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs, share links, etc.) to the clipboard. Do **not** inline `navigator.clipboard.writeText` calls in components, as the fallback path would not be covered.
 
@@ -332,7 +360,7 @@ await copyToClipboard(apiKey);
 
 ## UI components
 
-The five reusable components in `frontend/src/components/ui/` are shared across multiple page-level components. They accept only typed props — no global store access — and are safe to use in any context.
+The reusable components in `frontend/src/components/ui/` are shared across multiple page-level components. They accept only typed props — no global store access — and are safe to use in any context.
 
 ### `AlertBanner.svelte`
 
@@ -536,7 +564,7 @@ A styled button with three visual variants. Use this instead of a raw `<button>`
 
 | Variant | When to use |
 |---------|-------------|
-| `primary` | Primary call-to-action; accent-coloured gradient background |
+| `primary` | Primary call-to-action; accent-colored gradient background |
 | `secondary` | Secondary action; transparent background with a subtle border |
 | `danger` | Destructive actions such as delete or revoke; red background |
 
@@ -554,11 +582,9 @@ A styled button with three visual variants. Use this instead of a raw `<button>`
 <Button onclick={handleSave}>Save</Button>
 <Button variant="secondary" onclick={handleCancel}>Cancel</Button>
 <Button variant="danger" onclick={handleDelete}>Delete</Button>
-
-<!-- Inside a form -->
-<Button type="submit" variant="primary">Submit</Button>
 ```
 
+Padding is intentionally left to the caller via the `class` prop to avoid Tailwind cascade conflicts.
 ---
 
 ### `TextInput.svelte`
@@ -569,30 +595,30 @@ A styled text input that forwards all standard HTML `<input>` attributes. Use th
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
-| `value` | `string` | | `""` | Bindable current value |
-| `type` | `"text" \| "email" \| "password" \| "url"` | | `"text"` | Input type |
-| `disabled` | `boolean` | | — | Disables the input and applies muted background/text styling with a not-allowed cursor |
-| `class` | `string` | | — | Additional Tailwind classes appended to the input |
-| *…rest* | `HTMLInputAttributes` | | — | Any standard `<input>` attribute (e.g. `placeholder`, `aria-required`, `aria-describedby`, `maxlength`) |
+| `value` | `string` | | `""` | Bindable current value (`$bindable()`). Supports both `bind:value` and controlled (`value` + `oninput`) patterns. |
+| `type` | `"text" \| "email" \| "password" \| "url"` | | `"text"` | Input type — only these four HTML input types are accepted. |
+| `disabled` | `boolean` | | `false` | Disables the input with muted colors and `cursor-not-allowed` |
+| `class` | `string` | | — | Additional Tailwind classes |
+| `...restProps` | `HTMLInputAttributes` | | — | Any standard `<input>` attributes (`aria-required`, `aria-invalid`, `aria-describedby`, `placeholder`, `maxlength`, etc.) are forwarded to the underlying element |
 
-**Usage:**
+**Usage — controlled (bind):**
 
 ```svelte
 <script lang="ts">
   import TextInput from "./ui/TextInput.svelte";
-
   let email = $state("");
 </script>
 
-<TextInput
-  bind:value={email}
-  type="email"
-  placeholder="you@example.com"
-  aria-required="true"
-/>
+<TextInput bind:value={email} type="email" placeholder="you@example.com" />
 ```
 
-When a form field has an associated validation error, set `aria-invalid="true"` and `aria-describedby="<error-element-id>"` on the `TextInput` to meet WCAG 3.3.1. See [Form accessibility](#form-accessibility) for the full pattern.
+**Usage — uncontrolled (no initial value needed):**
+
+```svelte
+<TextInput type="password" aria-label="Password" />
+```
+
+For inline validation errors, pass `aria-invalid` and `aria-describedby` through `restProps` and wire them to your validation state (see [Form accessibility](#form-accessibility)).
 
 ---
 
@@ -1456,6 +1482,20 @@ The following test suites cover reactive stores and the API client. Unlike the a
 **`Config API` (four tests):** covers `getConfigStatus`, `getOidcConfig`, `setOidcConfig`, and `createOidcLinkNonce`.
 
 **`Admin API` (two tests):** covers `listUsers` and `setUserAdmin`.
+
+### `clipboard.test.ts`
+
+`frontend/src/lib/clipboard.test.ts` exercises the `copyToClipboard` utility. Tests stub `navigator` and `document.execCommand` to isolate the function from real browser APIs. Tests are grouped in one `describe` block:
+
+**`copyToClipboard` (four tests):**
+- Asserts the async Clipboard API (`navigator.clipboard.writeText`) is used when available, and called with the correct text.
+- Asserts the `execCommand` fallback path is taken when `navigator.clipboard` is absent, and that `document.execCommand('copy')` is invoked.
+- Asserts an `Error` is thrown when `execCommand` returns `false`.
+- Asserts errors thrown by the async Clipboard API are propagated to the caller.
+
+> **Mocking note:** `beforeEach` captures the original `execCommand` property descriptor, and `afterEach` restores it alongside `vi.unstubAllGlobals()` and `vi.restoreAllMocks()`. This prevents global state leaking between tests.
+
+---
 
 ### `clipboard.test.ts`
 
