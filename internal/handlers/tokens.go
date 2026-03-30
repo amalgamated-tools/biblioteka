@@ -34,19 +34,20 @@ func handleTokenCreate(ops tokenOps, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name, ok := validateTokenName(r.Context(), w, req.Name)
+	ctx := r.Context()
+	name, ok := validateTokenName(ctx, w, req.Name)
 	if !ok {
 		return
 	}
 
-	userID := auth.UserIDFromContext(r.Context())
-	entityID, resp, err := ops.create(r.Context(), userID, name)
+	userID := auth.UserIDFromContext(ctx)
+	entityID, resp, err := ops.create(ctx, userID, name)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create "+ops.resource, slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create "+ops.resource)
+		slog.ErrorContext(ctx, "failed to create "+ops.resource, slog.Any(otelkeys.Error, err))
+		writeError(ctx, w, http.StatusInternalServerError, "failed to create "+ops.resource)
 		return
 	}
 
-	logAudit(r.Context(), ops.db, userID, ops.auditCreate, ops.auditEntityType, entityID, map[string]any{"name": name})
-	writeSecretTokenResponse(r.Context(), w, http.StatusCreated, resp)
+	logAudit(ctx, ops.db, userID, ops.auditCreate, ops.auditEntityType, entityID, map[string]any{"name": name})
+	writeSecretTokenResponse(ctx, w, http.StatusCreated, resp)
 }
