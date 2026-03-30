@@ -11,6 +11,13 @@
 
   let { variant, children, role, testId, class: extraClass }: Props = $props();
 
+  const resolvedRole = $derived(
+    role ?? (variant === "error" ? "alert" : "status"),
+  );
+  const liveRegion = $derived(
+    resolvedRole === "alert" ? "assertive" : "polite",
+  );
+
   const styles = {
     error:
       "bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400",
@@ -23,10 +30,8 @@
   class="px-4 py-3 rounded-xl text-sm animate-scale-in {styles[
     variant
   ]} {extraClass ?? ''}"
-  role={role ?? (variant === "error" ? "alert" : "status")}
-  aria-live={role === "alert" || (!role && variant === "error")
-    ? "assertive"
-    : "polite"}
+  role={resolvedRole}
+  aria-live={liveRegion}
   data-testid={testId}
 >
   {@render children()}
