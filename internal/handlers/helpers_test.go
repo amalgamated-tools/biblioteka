@@ -784,6 +784,12 @@ func Test_HandleTokenCreate(t *testing.T) {
 	})
 
 	t.Run("create error yields 500", func(t *testing.T) {
+		d := newTestDB(t)
+		user, err := d.CreateUser(t.Context(), "Error User", "error@example.com", "password1")
+		if err != nil {
+			t.Fatalf("create user: %v", err)
+		}
+
 		ops := tokenOps{
 			db:              d,
 			resource:        "test token",
@@ -802,6 +808,15 @@ func Test_HandleTokenCreate(t *testing.T) {
 
 		if w.Code != http.StatusInternalServerError {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+		}
+
+		// Verify no audit log written on error.
+		logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
+		if err != nil {
+			t.Fatalf("list audit logs: %v", err)
+		}
+		if len(logs) != 0 {
+			t.Errorf("expected no audit logs on error, got %d", len(logs))
 		}
 	})
 
@@ -875,6 +890,41 @@ func Test_HandleTokenCreate(t *testing.T) {
 		}
 		if !found {
 			t.Error("expected audit log entry for created token")
+		}
+	})
+
+	t.Run("tokenError returns specific message", func(t *testing.T) {
+		d := newTestDB(t)
+		user, err := d.CreateUser(t.Context(), "Test User", "test3@example.com", "password1")
+		if err != nil {
+			t.Fatalf("create user: %v", err)
+		}
+
+		ops := tokenOps{
+			db:              d,
+			resource:        "widget",
+			auditEntityType: "widget",
+			auditCreate:     db.AuditActionAPIKeyCreated,
+			create: func(_ context.Context, _, _ string) (string, any, error) {
+				return "", nil, &tokenError{err: errors.New("rng failure"), message: "failed to generate widget"}
+			},
+		}
+
+		body := mustMarshal(t, map[string]string{"name": "My Widget"})
+		r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+		r = withUserID(r, user.ID)
+		w := httptest.NewRecorder()
+		handleTokenCreate(ops, w, r)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+		}
+		var result map[string]string
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if result["error"] != "failed to generate widget" {
+			t.Errorf("error = %q, want %q", result["error"], "failed to generate widget")
 		}
 	})
 }

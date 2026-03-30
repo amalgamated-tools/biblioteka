@@ -1,10 +1,9 @@
 package handlers
 
 import (
-	"log/slog"
+	"context"
 	"net/http"
 
-	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -40,6 +39,31 @@ func toSeriesDTO(s *db.Series) seriesDTO {
 		GoogleBooksID: s.GoogleBooksID,
 		CreatedAt:     s.CreatedAt,
 		UpdatedAt:     s.UpdatedAt,
+	}
+}
+
+// seriesOps returns the namedEntityOps configuration for the Series entity.
+func (h *SeriesHandler) seriesOps() namedEntityOps[db.Series, seriesDTO, seriesRequest] {
+	return namedEntityOps[db.Series, seriesDTO, seriesRequest]{
+		db:             h.DB,
+		entityLabel:    "series",
+		entityArticle:  "a series",
+		idKey:          otelkeys.SeriesID,
+		errInvalidName: db.ErrInvalidSeriesName,
+		errNameExists:  db.ErrSeriesNameExists,
+		auditCreate:    db.AuditActionSeriesCreated,
+		auditUpdate:    db.AuditActionSeriesUpdated,
+		get:            h.DB.GetSeries,
+		create: func(ctx context.Context, req seriesRequest) (*db.Series, error) {
+			return h.DB.CreateSeries(ctx, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
+		},
+		update: func(ctx context.Context, id string, req seriesRequest) (*db.Series, error) {
+			return h.DB.UpdateSeries(ctx, id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
+		},
+		reqName:    func(req seriesRequest) string { return req.Name },
+		entityName: func(s *db.Series) string { return s.Name },
+		entityID:   func(s *db.Series) string { return s.ID },
+		toDTO:      toSeriesDTO,
 	}
 }
 
@@ -106,36 +130,7 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500		{object}	errorResponse
 //	@Router			/series [post]
 func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
-	var req seriesRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-
-	if !validateName(r.Context(), w, req.Name) {
-		return
-	}
-
-	slog.DebugContext(r.Context(), "creating series", slog.String(otelkeys.Name, req.Name))
-
-	s, err := h.DB.CreateSeries(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
-	if err != nil {
-		if handleNameErr(r.Context(), w, err, db.ErrInvalidSeriesName, db.ErrSeriesNameExists, "a series") {
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to create series", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create series")
-		return
-	}
-
-	slog.DebugContext(r.Context(), "series created",
-		slog.String(otelkeys.SeriesID, s.ID),
-		slog.String(otelkeys.Name, s.Name),
-	)
-
-	userID := auth.UserIDFromContext(r.Context())
-	logAudit(r.Context(), h.DB, userID, db.AuditActionSeriesCreated, "series", s.ID, map[string]any{"name": s.Name})
-
-	writeJSON(r.Context(), w, http.StatusCreated, toSeriesDTO(s))
+	createNamedEntity(h.seriesOps(), w, r)
 }
 
 // getSeries godoc
@@ -153,12 +148,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{object}	errorResponse
 //	@Router			/series/{id} [get]
 func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "fetching series", slog.String(otelkeys.SeriesID, id))
-	s, err := h.DB.GetSeries(r.Context(), id)
-	if handleDBErr(r.Context(), w, err, "series") {
-		return
-	}
-	writeJSON(r.Context(), w, http.StatusOK, toSeriesDTO(s))
+	getNamedEntity(h.seriesOps(), w, r, id)
 }
 
 // updateSeries godoc
@@ -179,29 +169,7 @@ func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id str
 //	@Failure		500		{object}	errorResponse
 //	@Router			/series/{id} [put]
 func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id string) {
-	var req seriesRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-
-	if !validateName(r.Context(), w, req.Name) {
-		return
-	}
-
-	slog.DebugContext(r.Context(), "updating series",
-		slog.String(otelkeys.SeriesID, id),
-		slog.String(otelkeys.Name, req.Name),
-	)
-
-	s, err := h.DB.UpdateSeries(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID)
-	if handleUpdateErr(r.Context(), w, err, db.ErrInvalidSeriesName, db.ErrSeriesNameExists, "a series", "series", id) {
-		return
-	}
-
-	userID := auth.UserIDFromContext(r.Context())
-	logAudit(r.Context(), h.DB, userID, db.AuditActionSeriesUpdated, "series", s.ID, map[string]any{"name": s.Name})
-
-	writeJSON(r.Context(), w, http.StatusOK, toSeriesDTO(s))
+	updateNamedEntity(h.seriesOps(), w, r, id)
 }
 
 // deleteSeries godoc

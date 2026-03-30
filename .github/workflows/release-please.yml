@@ -12,6 +12,9 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    # Release Please should complete in well under 10 minutes.
+    # Without a timeout, a hung runner would default to 6 hours.
+    timeout-minutes: 10
     steps:
       - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         with:

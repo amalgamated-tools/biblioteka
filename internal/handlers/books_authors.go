@@ -1,23 +1,6 @@
 package handlers
 
-import (
-	"context"
-	"log/slog"
-	"net/http"
-
-	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-)
-
-// respondBookAuthors fetches and writes the author list for a book as JSON.
-func (h *BookHandler) respondBookAuthors(ctx context.Context, w http.ResponseWriter, bookID string) {
-	authors, err := h.DB.GetBookAuthors(ctx, bookID)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get book authors", slog.Any(otelkeys.Error, err))
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get book authors")
-		return
-	}
-	writeJSON(ctx, w, http.StatusOK, mapSlice(authors, toAuthorDTO))
-}
+import "net/http"
 
 // setBookAuthorsRequest is the request body for setting book authors.
 type setBookAuthorsRequest struct {
@@ -38,7 +21,7 @@ type setBookAuthorsRequest struct {
 //	@Failure		500	{object}	errorResponse
 //	@Router			/books/{id}/authors [get]
 func (h *BookHandler) getBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
-	h.respondBookAuthors(r.Context(), w, bookID)
+	respondBookSubResource(r.Context(), w, bookID, h.DB.GetBookAuthors, toAuthorDTO, "book authors")
 }
 
 // putBookAuthors godoc
@@ -57,14 +40,7 @@ func (h *BookHandler) getBookAuthors(w http.ResponseWriter, r *http.Request, boo
 //	@Failure		500		{object}	errorResponse
 //	@Router			/books/{id}/authors [put]
 func (h *BookHandler) putBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
-	var req setBookAuthorsRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-	if err := h.DB.SetBookAuthors(r.Context(), bookID, req.AuthorIDs); err != nil {
-		slog.ErrorContext(r.Context(), "failed to set book authors", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to set book authors")
-		return
-	}
-	h.respondBookAuthors(r.Context(), w, bookID)
+	putBookSubResource(w, r, bookID, h.DB.GetBookAuthors, h.DB.SetBookAuthors,
+		func(req *setBookAuthorsRequest) []string { return req.AuthorIDs },
+		toAuthorDTO, "book authors")
 }
