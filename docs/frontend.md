@@ -212,7 +212,7 @@ Two small utility modules live in `frontend/src/lib/` alongside `api.ts`.
 
 ### `validation.ts`
 
-Composable form-validation helpers. Each exported function returns a `ValidationRule` — a function `(value: string) => string | null` that returns an error message or `null` when the value passes.
+Composable form-validation helpers. A `ValidationRule` is a function `(value: string) => string | null` that returns an error message or `null` when the value passes; helpers like `required`, `minLength`, and `matches` create these rules, and `validate` runs one or more rules and returns the first error (or `null`).
 
 | Export | Signature | Description |
 |--------|-----------|-------------|
@@ -250,7 +250,7 @@ import { copyToClipboard } from "../lib/clipboard";
 await copyToClipboard(apiKey);
 ```
 
-`copyToClipboard` uses the modern async Clipboard API (`navigator.clipboard.writeText`) when available, and falls back to `document.execCommand('copy')` for environments where the Clipboard API is unavailable. It throws an `Error` if the copy operation fails through both paths.
+`copyToClipboard` uses the modern async Clipboard API (`navigator.clipboard.writeText`) when available. In environments where the Clipboard API is absent, it falls back to `document.execCommand('copy')`. It throws an `Error` if the active path fails — if the Clipboard API is present but the browser denies permission, the rejection propagates directly without attempting the `execCommand` fallback.
 
 ## Adding a new store
 
@@ -299,84 +299,6 @@ Displays a dismissible inline alert in either an error or success style.
 ```
 
 The `variant` value controls both the colour scheme and the default ARIA `role`: `"error"` maps to `role="alert"` (announces immediately in screen readers) and `"success"` maps to `role="status"` (polite announcement). Override with the `role` prop when the default is not appropriate.
-
----
-
-### `Button.svelte`
-
-A styled button with three visual variants. Use this instead of a raw `<button>` element whenever a button appears in the application UI, so styling is consistent.
-
-**Props:**
-
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `variant` | `"primary" \| "secondary" \| "danger"` | | `"primary"` | Visual style |
-| `type` | `"button" \| "submit" \| "reset"` | | `"button"` | HTML button type |
-| `disabled` | `boolean` | | `false` | Disables the button and applies reduced-opacity styling |
-| `class` | `string` | | — | Additional Tailwind classes appended to the button |
-| `onclick` | `(e: MouseEvent) => void` | | — | Click handler |
-| `children` | `Snippet` | ✓ | — | Button label rendered as slot content |
-
-**Variants:**
-
-| Variant | When to use |
-|---------|-------------|
-| `primary` | Primary call-to-action; accent-coloured gradient background |
-| `secondary` | Secondary action; transparent background with a subtle border |
-| `danger` | Destructive actions such as delete or revoke; red background |
-
-**Usage:**
-
-```svelte
-<script lang="ts">
-  import Button from "./ui/Button.svelte";
-
-  function handleSave() { … }
-  function handleDelete() { … }
-</script>
-
-<Button onclick={handleSave}>Save</Button>
-<Button variant="secondary" onclick={() => routerStore.navigate("dashboard")}>Cancel</Button>
-<Button variant="danger" onclick={handleDelete}>Delete</Button>
-
-<!-- Inside a form -->
-<Button type="submit" variant="primary">Submit</Button>
-```
-
----
-
-### `TextInput.svelte`
-
-A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent.
-
-**Props:**
-
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `value` | `string` | | `""` | Bindable current value |
-| `type` | `"text" \| "email" \| "password" \| "url"` | | `"text"` | Input type |
-| `disabled` | `boolean` | | — | Disables the input and applies reduced-opacity styling |
-| `class` | `string` | | — | Additional Tailwind classes appended to the input |
-| *…rest* | `HTMLInputAttributes` | | — | Any standard `<input>` attribute (e.g. `placeholder`, `aria-required`, `aria-describedby`, `maxlength`) |
-
-**Usage:**
-
-```svelte
-<script lang="ts">
-  import TextInput from "./ui/TextInput.svelte";
-
-  let email = $state("");
-</script>
-
-<TextInput
-  bind:value={email}
-  type="email"
-  placeholder="you@example.com"
-  aria-required="true"
-/>
-```
-
-When a form field has an associated validation error, set `aria-invalid="true"` and `aria-describedby="<error-element-id>"` on the `TextInput` to meet WCAG 3.3.1. See [Form accessibility](#form-accessibility) for the full pattern.
 
 ---
 
@@ -459,6 +381,85 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 - On mount and whenever `fetchBooks` or `pageSize` changes, `offset` resets to `0` and a fresh fetch is triggered.
 - If items are deleted and the current page becomes empty (but earlier pages still have items), `BookList` automatically clamps back to the last valid page.
 - Stale responses from superseded fetches are silently discarded via an internal request-ID counter.
+
+---
+
+### `Button.svelte`
+
+A styled button with three visual variants. Use this instead of a raw `<button>` element whenever a button appears in the application UI, so styling is consistent.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `variant` | `"primary" \| "secondary" \| "danger"` | | `"primary"` | Visual style |
+| `type` | `"button" \| "submit" \| "reset"` | | `"button"` | HTML button type |
+| `disabled` | `boolean` | | `false` | Disables the button and applies reduced-opacity styling |
+| `class` | `string` | | — | Additional Tailwind classes appended to the button |
+| `onclick` | `(e: MouseEvent) => void` | | — | Click handler |
+| `children` | `Snippet` | ✓ | — | Button label rendered as slot content |
+
+**Variants:**
+
+| Variant | When to use |
+|---------|-------------|
+| `primary` | Primary call-to-action; accent-coloured gradient background |
+| `secondary` | Secondary action; transparent background with a subtle border |
+| `danger` | Destructive actions such as delete or revoke; red background |
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import Button from "./ui/Button.svelte";
+
+  function handleSave() { … }
+  function handleCancel() { … }
+  function handleDelete() { … }
+</script>
+
+<Button onclick={handleSave}>Save</Button>
+<Button variant="secondary" onclick={handleCancel}>Cancel</Button>
+<Button variant="danger" onclick={handleDelete}>Delete</Button>
+
+<!-- Inside a form -->
+<Button type="submit" variant="primary">Submit</Button>
+```
+
+---
+
+### `TextInput.svelte`
+
+A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `value` | `string` | | `""` | Bindable current value |
+| `type` | `"text" \| "email" \| "password" \| "url"` | | `"text"` | Input type |
+| `disabled` | `boolean` | | — | Disables the input and applies muted background/text styling with a not-allowed cursor |
+| `class` | `string` | | — | Additional Tailwind classes appended to the input |
+| *…rest* | `HTMLInputAttributes` | | — | Any standard `<input>` attribute (e.g. `placeholder`, `aria-required`, `aria-describedby`, `maxlength`) |
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import TextInput from "./ui/TextInput.svelte";
+
+  let email = $state("");
+</script>
+
+<TextInput
+  bind:value={email}
+  type="email"
+  placeholder="you@example.com"
+  aria-required="true"
+/>
+```
+
+When a form field has an associated validation error, set `aria-invalid="true"` and `aria-describedby="<error-element-id>"` on the `TextInput` to meet WCAG 3.3.1. See [Form accessibility](#form-accessibility) for the full pattern.
 
 ---
 
