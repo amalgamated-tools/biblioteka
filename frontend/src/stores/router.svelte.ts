@@ -35,14 +35,6 @@ export type SettingsSubPath =
 
 const APP_TITLE_SUFFIX = " – biblioteka";
 
-const VALID_VIEWS: AppView[] = [
-  "dashboard",
-  "books",
-  "my-library",
-  "libraries",
-  "settings",
-];
-
 const viewTitles: Record<AppView, string> = {
   dashboard: `Dashboard${APP_TITLE_SUFFIX}`,
   books: `All Books${APP_TITLE_SUFFIX}`,
@@ -50,6 +42,8 @@ const viewTitles: Record<AppView, string> = {
   libraries: `Libraries${APP_TITLE_SUFFIX}`,
   settings: `Settings${APP_TITLE_SUFFIX}`,
 };
+
+const VALID_VIEWS = Object.keys(viewTitles) as AppView[];
 
 const settingsSubTitles: Record<SettingsSubPath, string> = {
   account: `Account Settings${APP_TITLE_SUFFIX}`,
