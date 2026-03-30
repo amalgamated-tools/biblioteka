@@ -78,7 +78,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 					// username enumeration.
 					_ = bcrypt.CompareHashAndPassword(cfg.dummyHash, []byte(secret))
 					slog.InfoContext(r.Context(), cfg.protocolName+": unknown username",
-						slog.String(cfg.usernameKey, normUsername),
+						slog.Attr{Key: cfg.usernameKey, Value: slog.StringValue(normUsername)},
 					)
 					cfg.writeUnauthorized(w, r)
 				}
@@ -87,7 +87,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 
 			if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(secret)); err != nil {
 				slog.InfoContext(r.Context(), cfg.protocolName+": invalid credential",
-					slog.String(cfg.usernameKey, normUsername),
+					slog.Attr{Key: cfg.usernameKey, Value: slog.StringValue(normUsername)},
 				)
 				cfg.writeUnauthorized(w, r)
 				return
@@ -95,7 +95,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 
 			slog.DebugContext(r.Context(), cfg.protocolName+": authentication successful",
 				slog.String(otelkeys.UserID, userID),
-				slog.String(cfg.usernameKey, normUsername),
+				slog.Attr{Key: cfg.usernameKey, Value: slog.StringValue(normUsername)},
 			)
 			ctx := context.WithValue(r.Context(), userIDKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
