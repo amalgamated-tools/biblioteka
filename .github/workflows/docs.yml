@@ -20,6 +20,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # mkdocs build should complete well within 10 minutes; guards against runaway hangs.
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -39,6 +41,8 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # Pages deployment should complete in under 5 minutes; guards against runaway hangs.
+    timeout-minutes: 5
     permissions:
       pages: write
       id-token: write
