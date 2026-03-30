@@ -4,12 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
-	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // OPDSCredentialResult holds the fields needed by the OPDS Basic Auth middleware.
@@ -53,39 +50,33 @@ func writeOPDSError(_ context.Context, w http.ResponseWriter, status int, messag
 // credentials using HTTP Basic Authentication and injects the user ID into
 // the request context.
 func OPDSBasicAuthMiddleware(checker OPDSCredentialChecker) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			username, password, ok := r.BasicAuth()
+	return bcryptCredMiddleware(bcryptCredConfig{
+		protocolName: "OPDS",
+		dummyHash:    dummyOPDSBcryptHash,
+		usernameKey:  otelkeys.OPDSUsername,
+		extractCreds: func(r *http.Request) (username, secret string, ok bool) {
+			username, secret, ok = r.BasicAuth()
 			if !ok || username == "" {
-				slog.InfoContext(r.Context(), "OPDS: missing credentials")
-				w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
-				writeOPDSError(r.Context(), w, http.StatusUnauthorized, "authentication required")
-				return
+				return "", "", false
 			}
-
-			cred, err := checker.GetOPDSCredential(r.Context(), strings.ToLower(username))
+			return username, secret, true
+		},
+		lookupCredential: func(ctx context.Context, username string) (string, string, error) {
+			cred, err := checker.GetOPDSCredential(ctx, username)
 			if err != nil {
-				// Perform a dummy bcrypt comparison to prevent timing-based username enumeration.
-				_ = bcrypt.CompareHashAndPassword(dummyOPDSBcryptHash, []byte(password))
-				slog.InfoContext(r.Context(), "OPDS: unknown username", slog.String(otelkeys.OPDSUsername, username))
-				w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
-				writeOPDSError(r.Context(), w, http.StatusUnauthorized, "invalid credentials")
-				return
+				return "", "", err
 			}
-
-			if err := bcrypt.CompareHashAndPassword([]byte(cred.PasswordHash), []byte(password)); err != nil {
-				slog.InfoContext(r.Context(), "OPDS: invalid password", slog.String(otelkeys.OPDSUsername, username))
-				w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
-				writeOPDSError(r.Context(), w, http.StatusUnauthorized, "invalid credentials")
-				return
-			}
-
-			slog.DebugContext(r.Context(), "OPDS: authentication successful",
-				slog.String(otelkeys.UserID, cred.UserID),
-				slog.String(otelkeys.OPDSUsername, username),
-			)
-			ctx := context.WithValue(r.Context(), userIDKey, cred.UserID)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	}
+			return cred.UserID, cred.PasswordHash, nil
+		},
+		writeMissing: func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
+			writeOPDSError(r.Context(), w, http.StatusUnauthorized, "authentication required")
+		},
+		writeUnauthorized: func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
+			writeOPDSError(r.Context(), w, http.StatusUnauthorized, "invalid credentials")
+		},
+		// writeServiceUnavailable is nil: OPDS treats all lookup errors as
+		// "unknown user" and returns 401 to avoid leaking DB availability.
+	})
 }
