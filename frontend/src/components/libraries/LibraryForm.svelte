@@ -9,6 +9,8 @@
   import { required, validate } from "../../lib/validation";
   import { Plus, FolderOpen, Trash2, X } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
+  import Button from "../ui/Button.svelte";
+  import TextInput from "../ui/TextInput.svelte";
 
   interface Props {
     mode: "create" | "edit";
@@ -167,14 +169,13 @@
         class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-1.5"
         >Name <span class="text-danger-600" aria-hidden="true">*</span></label
       >
-      <input
+      <TextInput
         id="lib-name"
-        type="text"
         bind:value={formName}
         placeholder="e.g. Fiction, Audiobooks"
-        class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+        class="w-full py-2.5"
         disabled={saving}
-        aria-required="true"
+        aria-required={true}
         aria-invalid={nameError ? true : undefined}
         aria-describedby={nameError ? "lib-name-error" : undefined}
       />
@@ -202,8 +203,7 @@
               class="w-4 h-4 text-ink-300 flex-shrink-0"
               aria-hidden="true"
             />
-            <input
-              type="text"
+            <TextInput
               id={`lib-folder-${i}`}
               value={entry.value}
               oninput={(e) => {
@@ -216,9 +216,9 @@
                 ? "Folder path"
                 : `Folder path ${i + 1}`}
               placeholder="/path/to/books"
-              class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 font-mono text-sm transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="flex-1 py-2.5 font-mono text-sm"
               disabled={saving}
-              aria-required="true"
+              aria-required={true}
               aria-invalid={pathsError ? true : undefined}
               aria-describedby={pathsError ? "lib-folders-error" : undefined}
             />
@@ -299,25 +299,26 @@
 
     <div class="flex items-center justify-between pt-2">
       <div class="flex gap-3">
-        <button
+        <Button
           type="submit"
           disabled={saving}
-          class="px-5 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all text-sm font-semibold disabled:opacity-50 shadow-md shadow-accent-600/20 active:scale-[0.98]"
+          class="px-5 py-2.5 text-sm active:scale-[0.98]"
         >
           {saving
             ? "Saving..."
             : mode === "edit"
               ? "Update Library"
               : "Create Library"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
           onclick={navigateBack}
           disabled={saving}
-          class="px-5 py-2.5 border border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-300 rounded-xl hover:bg-ink-50 dark:hover:bg-ink-800 transition-all text-sm font-medium"
+          class="px-5 py-2.5 text-sm"
         >
           Cancel
-        </button>
+        </Button>
       </div>
       {#if mode === "edit"}
         {#if showDeleteConfirm}
@@ -325,21 +326,23 @@
             <span class="text-sm text-danger-600 dark:text-red-400"
               >Delete this library?</span
             >
-            <button
+            <Button
               type="button"
+              variant="danger"
               onclick={handleDelete}
               disabled={saving}
-              class="px-3 py-1.5 text-sm bg-danger-600 text-white rounded-lg hover:bg-danger-700 transition-colors disabled:opacity-50"
+              class="px-3 py-1.5 text-sm"
             >
               Yes
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               onclick={() => (showDeleteConfirm = false)}
-              class="px-3 py-1.5 text-sm border border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-300 rounded-lg hover:bg-ink-50 dark:hover:bg-ink-800 transition-colors"
+              class="px-3 py-1.5 text-sm"
             >
               No
-            </button>
+            </Button>
           </div>
         {:else}
           <button
