@@ -76,7 +76,22 @@ class ExampleStore {
   loading = $state(false);
   loaded  = $state(false);
 
-  async load(): Promise<void> { … }
+  async load(): Promise<void> {
+    // Idempotency guard: skip if a fetch is already in flight or the data
+    // has been loaded at least once. This makes it safe to call load() from
+    // multiple components or from onMount in a component that may re-mount.
+    if (this.loading || this.loaded) return;
+    this.loading = true;
+    try {
+      this.items = await api.listFoos();
+      this.loaded = true;
+    } catch {
+      // Silently fail — individual pages can handle errors
+    } finally {
+      this.loading = false;
+    }
+  }
+
   async add(input: FooInput): Promise<Foo> { … }
   async edit(id: string, input: FooInput): Promise<Foo> { … }
   async remove(id: string): Promise<void> { … }
@@ -120,6 +135,8 @@ Stores are plain class instances — no special `$` prefix import is needed for 
   <p>{lib.name}</p>
 {/each}
 ```
+
+> **Always use `onMount` for initial data fetching**, not `$effect`. `$effect` re-runs whenever its reactive dependencies change — using it to trigger `store.load()` can cause repeated fetches or subtle ordering bugs. `onMount` runs exactly once after the component mounts and is the correct place for a one-time side-effect such as seeding a store.
 
 ## Routing
 
@@ -347,8 +364,9 @@ await copyToClipboard(apiKey);
 
 1. Create `frontend/src/stores/<name>.svelte.ts`.
 2. Define a class with `$state` / `$state.raw` properties. Use `$state.raw` for array properties and `$state` for scalars and nullable objects (see the [`$state` vs `$state.raw`](#reactive-stores) note above).
-3. Export a singleton: `export const myStore = new MyStore();`.
-4. Add an entry for the new store in the table above.
+3. Implement `load()` with the idempotency guard: `if (this.loading || this.loaded) return;`. This ensures that calling `load()` from multiple `onMount` handlers never issues a duplicate request.
+4. Export a singleton: `export const myStore = new MyStore();`.
+5. Add an entry for the new store in the table above.
 
 ## Adding a new view
 
