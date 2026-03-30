@@ -10,6 +10,9 @@ jobs:
   dependabot:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
+    # Metadata fetch + two gh CLI calls should complete in well under 5 minutes.
+    # Without a timeout, a hung runner would default to 6 hours.
+    timeout-minutes: 5
     steps:
       - name: Fetch Dependabot metadata
         id: metadata
