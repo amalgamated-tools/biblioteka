@@ -91,7 +91,7 @@ func getNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.Res
 		return
 	}
 	if entity == nil {
-		slog.ErrorContext(r.Context(), "get returned nil entity without error", slog.String(ops.idKey, id))
+		slog.ErrorContext(r.Context(), "get returned nil entity without error", slog.String(ops.idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to fetch "+ops.entityLabel)
 		return
 	}
@@ -121,7 +121,7 @@ func updateNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 		return
 	}
 	if entity == nil {
-		slog.ErrorContext(r.Context(), "update returned nil entity without error", slog.String(ops.idKey, id))
+		slog.ErrorContext(r.Context(), "update returned nil entity without error", slog.String(ops.idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update "+ops.entityLabel)
 		return
 	}
