@@ -338,8 +338,9 @@ Set `deriveKey` when the protocol requires a password transformation before hash
 
 ### Protocol authentication middleware
 
-When adding a new protocol that authenticates incoming requests with a bcrypt-hashed credential (e.g., a new sync protocol using custom headers or Basic Auth), use `bcryptCredMiddleware` from `internal/auth/credential_middleware.go` instead of hand-rolling the extract → lookup → compare → inject flow:
+When adding a new protocol that authenticates incoming requests with a bcrypt-hashed credential (e.g., a new sync protocol using custom headers or Basic Auth), use `bcryptCredMiddleware` from `internal/auth/credential_middleware.go` instead of hand-rolling the extract → lookup → compare → inject flow.
 
+Because `bcryptCredMiddleware` is unexported and lives in `internal/auth`, any new protocol auth middleware that uses it must also be implemented in the `internal/auth` package (similar to how unexported helpers require handlers to live in `internal/handlers`).
 ```go
 func MyProtocolAuthMiddleware(checker MyProtocolCredentialChecker) func(http.Handler) http.Handler {
     return bcryptCredMiddleware(bcryptCredConfig{
@@ -352,7 +353,7 @@ func MyProtocolAuthMiddleware(checker MyProtocolCredentialChecker) func(http.Han
         lookupCredential: func(ctx context.Context, username string) (string, string, error) {
             cred, err := checker.GetMyProtocolCredential(ctx, username)
             if err != nil {
-                return "", "", err
+                return "", "", err // must be (wrapped) sql.ErrNoRows for "user not found"
             }
             return cred.UserID, cred.PasswordHash, nil
         },
