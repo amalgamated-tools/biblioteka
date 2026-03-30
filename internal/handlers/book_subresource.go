@@ -43,14 +43,15 @@ func putBookSubResource[T any, DTO any, Req any, Payload any](
 	toDTO func(*T) DTO,
 	resourceName string,
 ) {
+	ctx := r.Context()
 	var req Req
 	if !decodeJSON(r, w, &req) {
 		return
 	}
-	if err := setFn(r.Context(), bookID, extractPayload(&req)); err != nil {
-		slog.ErrorContext(r.Context(), "failed to set "+resourceName, slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to set "+resourceName)
+	if err := setFn(ctx, bookID, extractPayload(&req)); err != nil {
+		slog.ErrorContext(ctx, "failed to set "+resourceName, slog.Any(otelkeys.Error, err))
+		writeError(ctx, w, http.StatusInternalServerError, "failed to set "+resourceName)
 		return
 	}
-	respondBookSubResource(r.Context(), w, bookID, getFn, toDTO, resourceName)
+	respondBookSubResource(ctx, w, bookID, getFn, toDTO, resourceName)
 }
