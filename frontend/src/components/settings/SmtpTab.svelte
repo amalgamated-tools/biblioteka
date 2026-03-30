@@ -289,10 +289,15 @@
               ? "Enter new password to update"
               : "Enter your SMTP password"}
             disabled={smtpLoading}
-            aria-describedby={smtpPasswordSet ? "smtp-password-hint" : undefined}
+            aria-describedby={smtpPasswordSet
+              ? "smtp-password-hint"
+              : undefined}
           />
           {#if smtpPasswordSet}
-            <p id="smtp-password-hint" class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+            <p
+              id="smtp-password-hint"
+              class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+            >
               Leave blank to keep the existing password
             </p>
           {/if}
@@ -315,7 +320,10 @@
           disabled={smtpLoading || smtpEnvOverride}
           aria-describedby="smtp-from-hint"
         />
-        <p id="smtp-from-hint" class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+        <p
+          id="smtp-from-hint"
+          class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+        >
           The email address that outgoing messages will be sent from
         </p>
       </div>
