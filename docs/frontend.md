@@ -22,7 +22,8 @@ frontend/
     types.ts            Shared TypeScript interfaces for API entities
     components/         Page-level Svelte components (PascalCase)
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
-      Books.svelte        Book listing and detail view
+      Books.svelte        Book listing and detail view; reads `initialOffset` from the URL hash query string (`#books?offset=48`) and writes page changes back via `routerStore.setQueryParam`
+      NotFound.svelte     404 page rendered when the router encounters an unknown hash path
       Dashboard.svelte    Home screen; library overview
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
@@ -126,20 +127,54 @@ Client-side routing uses the browser's URL hash (`#`). No router library is need
 
 `routerStore` exposes:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `hash` | `string` | Raw hash value (e.g. `"settings/account"`) |
+| Property / Method | Type | Description |
+|-------------------|------|-------------|
+| `hash` | `string` | Raw hash value (e.g. `"books"`) |
 | `currentView` | `AppView` | Top-level view segment (`"dashboard"` \| `"books"` \| `"my-library"` \| `"libraries"` \| `"settings"`) |
 | `subPath` | `string` | Sub-path after the first segment (e.g. `"account"`) |
+| `queryParams` | `SvelteURLSearchParams` | Reactive map of query parameters embedded in the hash (e.g. `?offset=48`). Read with `.get(key)`. |
+| `isKnownView` | `boolean` | `true` when `hash` matches a registered view; `false` for unknown routes (triggers the 404 page) |
 | `pageTitle` | `string` | Human-readable page title for the current view (e.g. `"Dashboard – biblioteka"`); used to update `document.title` on every navigation |
-| `navigate(path)` | `void` | Sets the hash and updates the store |
+| `navigate(path, params?)` | `void` | Sets the hash and optionally populates initial query parameters. `params` is a `Record<string, string>`. |
+| `setQueryParam(key, value \| null)` | `void` | Updates a single query parameter in the hash via `history.replaceState` without pushing a history entry. Pass `null` to remove the key. |
 
 **Navigating programmatically:**
 
 ```ts
 import { routerStore } from "../stores/router.svelte";
 
+// Navigate to a view
 routerStore.navigate("settings/account");
+
+// Navigate with initial query params
+routerStore.navigate("books", { offset: "48" });
+```
+
+### 404 handling
+
+When the URL hash does not match any registered view, `routerStore.isKnownView` is `false`. `App.svelte` checks this condition before the view switch and renders `NotFound.svelte` instead of silently falling back to the dashboard. The document title is set to `"Page Not Found – biblioteka"` in this case.
+
+### URL-synced pagination
+
+The `Books` view keeps its pagination offset in the URL hash query string so that the page survives a refresh and can be bookmarked or shared.
+
+- Navigating directly to `#books?offset=48` opens the correct page immediately.
+- Turning pages updates the URL in place via `routerStore.setQueryParam("offset", …)` without creating a browser history entry.
+- Setting offset back to `0` removes the `offset` parameter from the URL entirely.
+
+**Reading a query parameter:**
+
+```ts
+const raw = routerStore.queryParams.get("offset") ?? "0";
+const offset = parseInt(raw, 10) || 0;
+```
+
+**Writing a query parameter on page change:**
+
+```ts
+function handlePageChange(offset: number) {
+  routerStore.setQueryParam("offset", offset === 0 ? null : String(offset));
+}
 ```
 
 ### Sub-path routing
@@ -330,6 +365,74 @@ The `variant` value controls both the colour scheme and the default ARIA `role`:
 
 ---
 
+### `Button.svelte`
+
+A styled button with three visual variants.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `variant` | `"primary" \| "secondary" \| "danger"` | | `"primary"` | Visual style |
+| `disabled` | `boolean` | | `false` | Disables the button and applies muted styling |
+| `type` | `"button" \| "submit" \| "reset"` | | `"button"` | HTML button type |
+| `class` | `string` | | — | Additional Tailwind classes (e.g. padding, width) |
+| `onclick` | `(e: MouseEvent) => void` | | — | Click handler |
+| `children` | `Snippet` | ✓ | — | Button label content |
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import Button from "./ui/Button.svelte";
+</script>
+
+<Button variant="primary" type="submit">Save</Button>
+<Button variant="secondary" onclick={cancel}>Cancel</Button>
+<Button variant="danger" onclick={deleteItem}>Delete</Button>
+```
+
+Padding is intentionally left to the caller via the `class` prop to avoid Tailwind cascade conflicts.
+
+---
+
+### `TextInput.svelte`
+
+A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `value` | `string` | | `""` | Bindable input value (`$bindable()`). Supports both `bind:value` and controlled (`value` + `oninput`) patterns. |
+| `type` | `"text" \| "email" \| "password" \| "url"` | | `"text"` | Input type — only these four HTML input types are accepted |
+| `disabled` | `boolean` | | `false` | Disables the input with muted colors and `cursor-not-allowed` |
+| `class` | `string` | | — | Additional Tailwind classes |
+| `...restProps` | `HTMLInputAttributes` | | — | Any standard `<input>` attributes (`aria-required`, `aria-invalid`, `aria-describedby`, `placeholder`, `maxlength`, etc.) are forwarded to the underlying element |
+
+**Usage — bind pattern:**
+
+```svelte
+<script lang="ts">
+  import TextInput from "./ui/TextInput.svelte";
+  let name = $state("");
+</script>
+
+<TextInput bind:value={name} placeholder="Enter name" aria-required="true" />
+```
+
+**Usage — controlled pattern:**
+
+```svelte
+<TextInput
+  value={name}
+  oninput={(e) => (name = e.currentTarget.value)}
+  aria-invalid={name.length === 0}
+/>
+```
+
+---
+
 ### `BookCard.svelte`
 
 Renders a single book as a card tile: cover art if available, falling back to a placeholder icon, with the title and publisher below.
@@ -367,6 +470,8 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 |------|------|----------|---------|-------------|
 | `fetchBooks` | `(limit: number, offset: number) => Promise<PaginatedBooks>` | ✓ | — | Called whenever the page or page size changes. Use `api.listBooks` or `api.listLibraryBooks` as the value. |
 | `pageSize` | `number` | | `24` | Number of books per page. Clamped to `[1, 200]` at runtime. |
+| `initialOffset` | `number` | | `0` | Starting page offset read **once** on mount. Use this to restore a bookmarked page (e.g., from the URL query string). Changes after mount are ignored. |
+| `onPageChange` | `(offset: number) => void` | | — | Called after each page turn (not on the initial mount). Use this to write the new offset back to the URL via `routerStore.setQueryParam`. |
 
 **Internal state exposed to the template (not props):**
 
