@@ -1,10 +1,9 @@
 package handlers
 
 import (
-	"log/slog"
+	"context"
 	"net/http"
 
-	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -43,6 +42,31 @@ func toAuthorDTO(a *db.Author) authorDTO {
 		ImageURL:      a.ImageURL,
 		CreatedAt:     a.CreatedAt,
 		UpdatedAt:     a.UpdatedAt,
+	}
+}
+
+// authorOps returns the namedEntityOps configuration for the Author entity.
+func (h *AuthorHandler) authorOps() namedEntityOps[db.Author, authorDTO, authorRequest] {
+	return namedEntityOps[db.Author, authorDTO, authorRequest]{
+		db:             h.DB,
+		entityLabel:    "author",
+		entityArticle:  "an author",
+		idKey:          otelkeys.AuthorID,
+		errInvalidName: db.ErrInvalidAuthorName,
+		errNameExists:  db.ErrAuthorNameExists,
+		auditCreate:    db.AuditActionAuthorCreated,
+		auditUpdate:    db.AuditActionAuthorUpdated,
+		get:            h.DB.GetAuthor,
+		create: func(ctx context.Context, req authorRequest) (*db.Author, error) {
+			return h.DB.CreateAuthor(ctx, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
+		},
+		update: func(ctx context.Context, id string, req authorRequest) (*db.Author, error) {
+			return h.DB.UpdateAuthor(ctx, id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
+		},
+		reqName:    func(req authorRequest) string { return req.Name },
+		entityName: func(a *db.Author) string { return a.Name },
+		entityID:   func(a *db.Author) string { return a.ID },
+		toDTO:      toAuthorDTO,
 	}
 }
 
@@ -109,36 +133,7 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500		{object}	errorResponse
 //	@Router			/authors [post]
 func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
-	var req authorRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-
-	if !validateName(r.Context(), w, req.Name) {
-		return
-	}
-
-	slog.DebugContext(r.Context(), "creating author", slog.String(otelkeys.Name, req.Name))
-
-	a, err := h.DB.CreateAuthor(r.Context(), req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
-	if err != nil {
-		if handleNameErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author") {
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to create author", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create author")
-		return
-	}
-
-	slog.DebugContext(r.Context(), "author created",
-		slog.String(otelkeys.AuthorID, a.ID),
-		slog.String(otelkeys.Name, a.Name),
-	)
-
-	userID := auth.UserIDFromContext(r.Context())
-	logAudit(r.Context(), h.DB, userID, db.AuditActionAuthorCreated, "author", a.ID, map[string]any{"name": a.Name})
-
-	writeJSON(r.Context(), w, http.StatusCreated, toAuthorDTO(a))
+	createNamedEntity(h.authorOps(), w, r)
 }
 
 // getAuthor godoc
@@ -156,12 +151,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{object}	errorResponse
 //	@Router			/authors/{id} [get]
 func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "fetching author", slog.String(otelkeys.AuthorID, id))
-	a, err := h.DB.GetAuthor(r.Context(), id)
-	if handleDBErr(r.Context(), w, err, "author") {
-		return
-	}
-	writeJSON(r.Context(), w, http.StatusOK, toAuthorDTO(a))
+	getNamedEntity(h.authorOps(), w, r, id)
 }
 
 // updateAuthor godoc
@@ -182,29 +172,7 @@ func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id str
 //	@Failure		500		{object}	errorResponse
 //	@Router			/authors/{id} [put]
 func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	var req authorRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
-
-	if !validateName(r.Context(), w, req.Name) {
-		return
-	}
-
-	slog.DebugContext(r.Context(), "updating author",
-		slog.String(otelkeys.AuthorID, id),
-		slog.String(otelkeys.Name, req.Name),
-	)
-
-	a, err := h.DB.UpdateAuthor(r.Context(), id, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
-	if handleUpdateErr(r.Context(), w, err, db.ErrInvalidAuthorName, db.ErrAuthorNameExists, "an author", "author", id) {
-		return
-	}
-
-	userID := auth.UserIDFromContext(r.Context())
-	logAudit(r.Context(), h.DB, userID, db.AuditActionAuthorUpdated, "author", a.ID, map[string]any{"name": a.Name})
-
-	writeJSON(r.Context(), w, http.StatusOK, toAuthorDTO(a))
+	updateNamedEntity(h.authorOps(), w, r, id)
 }
 
 // deleteAuthor godoc
