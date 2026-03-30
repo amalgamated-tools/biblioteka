@@ -143,6 +143,62 @@ db/migrations/
 
   `mapSlice` is a generic function in `internal/handlers/helpers.go`. It applies `toDTO` to every element of `items` and returns the resulting slice. Use it whenever you hold the fetched slice yourself and only need the DTO conversion step (no automatic list call or error handling). The `toDTO` function must accept a **pointer** to the entity type (e.g. `func toAuthorDTO(a *db.Author) AuthorDTO`) — `mapSlice` passes a pointer to each element internally.
 
+- For list endpoints that return a slice of **user-owned** DTOs (where the list function accepts a `userID` as a second argument), use the generic `listUserEntities` helper instead of `listEntities`:
+
+  ```go
+  listUserEntities(w, r, "API keys", h.DB.ListAPIKeys, toAPIKeyDTO)
+  ```
+
+  `listUserEntities` is a generic function in `internal/handlers/helpers.go`. It extracts the authenticated user ID from context via `auth.UserIDFromContext`, calls `list(ctx, userID)`, converts entities to DTOs, and writes a `200 OK` JSON response (never `null`). On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
+
+### Named-entity CRUD handlers
+
+When adding a new entity type that has a name, a GET-by-ID, a create, and an update endpoint (e.g., an author or a series), use `namedEntityOps` and its three generic helpers from `internal/handlers/named_entity.go` instead of hand-rolling the decode → validate → write → audit flow for each operation:
+
+```go
+func (h *TagHandler) tagOps() namedEntityOps[db.Tag, tagDTO, tagRequest] {
+    return namedEntityOps[db.Tag, tagDTO, tagRequest]{
+        db:             h.DB,
+        entityLabel:    "tag",
+        entityArticle:  "a tag",
+        idKey:          otelkeys.TagID,
+        errInvalidName: db.ErrInvalidTagName,
+        errNameExists:  db.ErrTagNameExists,
+        auditCreate:    db.AuditActionTagCreated,
+        auditUpdate:    db.AuditActionTagUpdated,
+        get:            h.DB.GetTag,
+        create:         func(ctx context.Context, req tagRequest) (*db.Tag, error) { return h.DB.CreateTag(ctx, req.Name) },
+        update:         func(ctx context.Context, id string, req tagRequest) (*db.Tag, error) { return h.DB.UpdateTag(ctx, id, req.Name) },
+        reqName:        func(req tagRequest) string { return req.Name },
+        entityName:     func(t *db.Tag) string { return t.Name },
+        entityID:       func(t *db.Tag) string { return t.ID },
+        toDTO:          toTagDTO,
+    }
+}
+
+func (h *TagHandler) HandleTag(w http.ResponseWriter, r *http.Request) {
+    id, ok := extractPathID(r.URL.Path, "/api/tags/")
+    if !ok {
+        writeError(r.Context(), w, http.StatusBadRequest, "invalid tag ID")
+        return
+    }
+    switch r.Method {
+    case http.MethodGet:
+        getNamedEntity(h.tagOps(), w, r, id)
+    case http.MethodPut:
+        updateNamedEntity(h.tagOps(), w, r, id)
+    default:
+        writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+    }
+}
+```
+
+- `createNamedEntity(ops, w, r)` — decode request → validate name → call `ops.create` → handle name errors → audit → `201 Created`
+- `getNamedEntity(ops, w, r, id)` — call `ops.get` → handle DB errors → `200 OK`
+- `updateNamedEntity(ops, w, r, id)` — decode request → validate name → call `ops.update` → handle name/not-found errors → audit → `200 OK`
+
+For list and delete, continue using `listEntities` (or `listUserEntities`) and `deleteResource` directly — `namedEntityOps` covers only the create, get, and update flows.
+
 ### Deleting a resource
 
 For DELETE handlers, use the generic `deleteResource` helper instead of hand-rolling the fetch-delete-audit pattern:
@@ -170,6 +226,37 @@ deleteUserOwnedResource(h.DB, w, r, id, "API key", "api_key", otelkeys.APIKeyID,
 ```
 
 `deleteUserOwnedResource` mirrors `deleteResource` in behavior — it fetches the entity, deletes it, writes an audit log entry, and responds with `204 No Content`. Pass the human-readable display name as `resource` (e.g. `"API key"`) and the stable snake_case identifier as `auditEntityType` (e.g. `"api_key"`). Pass `nil` for `auditMeta` when no extra metadata is needed. The user ID is extracted from context automatically via `auth.UserIDFromContext`. Always `return` immediately after the call.
+
+### Creating user-owned tokens
+
+When adding a new token type (a high-entropy random secret stored by hash, such as an API key or Kobo sync token), use `tokenOps` and `handleTokenCreate` from `internal/handlers/tokens.go` instead of hand-rolling the decode → validate → generate → hash → persist → audit flow. Both are unexported, so new token handlers must live in the `internal/handlers` package:
+
+```go
+func (h *MyTokenHandler) createMyToken(w http.ResponseWriter, r *http.Request) {
+    handleTokenCreate(tokenOps{
+        db:              h.DB,
+        resource:        "my token",
+        auditEntityType: "my_token",
+        auditCreate:     db.AuditActionMyTokenCreated,
+        create: func(ctx context.Context, userID, name string) (string, any, error) {
+            raw, err := generateRandomHex(32) // 64-char hex token
+            if err != nil {
+                return "", nil, &tokenError{err: err, message: "failed to generate my token"}
+            }
+            hash := auth.HashMyToken(raw)
+            token, err := h.DB.CreateMyToken(ctx, userID, name, hash)
+            if err != nil {
+                return "", nil, err
+            }
+            return token.ID, myTokenCreateResponse{myTokenDTO: toMyTokenDTO(token), Token: raw}, nil
+        },
+    }, w, r)
+}
+```
+
+`handleTokenCreate` implements the full creation lifecycle: decode the `{"name": "..."}` request body, validate and trim the name (≤ 100 characters; see `maxTokenNameLength`), call `ops.create`, write an audit log entry, and respond with `201 Created` via `writeSecretTokenResponse` (which sets `Cache-Control: no-store` and `Pragma: no-cache` to prevent caching of the plaintext secret). The raw token is returned only in the creation response and cannot be retrieved again.
+
+Use `generateRandomHex(n)` from `internal/handlers/helpers.go` to generate a cryptographically secure random token of `n` bytes (returned as a `2n`-character lowercase hex string).
 
 ### Audit logging (non-`deleteResource` actions)
 
