@@ -148,8 +148,9 @@
           class="w-full py-2.5"
           placeholder="https://auth.example.com"
           disabled={oidcLoading}
+          aria-describedby="oidc-issuer-url-hint"
         />
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+        <p id="oidc-issuer-url-hint" class="text-xs text-ink-400 dark:text-ink-500 mt-1">
           The OIDC provider's issuer URL (must support
           .well-known/openid-configuration)
         </p>
@@ -188,9 +189,10 @@
             ? "Enter new secret to update"
             : "Enter your client secret"}
           disabled={oidcLoading}
+          aria-describedby={oidcConfigured ? "oidc-client-secret-hint" : undefined}
         />
         {#if oidcConfigured}
-          <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+          <p id="oidc-client-secret-hint" class="text-xs text-ink-400 dark:text-ink-500 mt-1">
             Leave blank to keep the existing secret
           </p>
         {/if}
@@ -210,8 +212,9 @@
           class="w-full py-2.5"
           placeholder="http://localhost:8080/api/auth/oidc/callback"
           disabled={oidcLoading}
+          aria-describedby="oidc-redirect-uri-hint"
         />
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-1">
+        <p id="oidc-redirect-uri-hint" class="text-xs text-ink-400 dark:text-ink-500 mt-1">
           Must match the redirect URI registered with your OIDC provider
         </p>
       </div>
