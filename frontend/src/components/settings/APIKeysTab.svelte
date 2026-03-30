@@ -5,6 +5,7 @@
     deleteAPIKey,
     type APIKey,
   } from "../../lib/api";
+  import { copyToClipboard } from "../../lib/clipboard";
   import { KeyRound, Copy, Trash2 } from "lucide-svelte";
   import { onDestroy, onMount } from "svelte";
   import Button from "../ui/Button.svelte";
@@ -94,9 +95,9 @@
     }
   }
 
-  async function copyToClipboard(text: string) {
+  async function handleCopyKey(text: string) {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyToClipboard(text);
       keyCopied = true;
       if (keyCopiedTimeout !== null) {
         clearTimeout(keyCopiedTimeout);
@@ -107,31 +108,8 @@
         keyCopiedTimeout = null;
       }, 2000);
     } catch {
-      // Clipboard API unavailable (insecure context or denied permission).
-      // Fallback: use a temporary textarea to select+copy the text.
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      try {
-        document.execCommand("copy");
-        keyCopied = true;
-        if (keyCopiedTimeout !== null) {
-          clearTimeout(keyCopiedTimeout);
-          keyCopiedTimeout = null;
-        }
-        keyCopiedTimeout = window.setTimeout(() => {
-          keyCopied = false;
-          keyCopiedTimeout = null;
-        }, 2000);
-      } catch {
-        apiKeysError =
-          "Failed to copy to clipboard. Please select and copy the key manually.";
-      } finally {
-        document.body.removeChild(textarea);
-      }
+      apiKeysError =
+        "Failed to copy to clipboard. Please select and copy the key manually.";
     }
   }
 </script>
@@ -189,7 +167,7 @@
           </code>
           <button
             onclick={async () => {
-              await copyToClipboard(newlyCreatedKey!);
+              await handleCopyKey(newlyCreatedKey!);
               if (keyCopied) {
                 newlyCreatedKey = null;
               }
