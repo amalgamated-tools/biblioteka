@@ -229,7 +229,7 @@ deleteUserOwnedResource(h.DB, w, r, id, "API key", "api_key", otelkeys.APIKeyID,
 
 ### Creating user-owned tokens
 
-When adding a new token type (a high-entropy random secret stored by hash, such as an API key or Kobo sync token), use `tokenOps` and `handleTokenCreate` from `internal/handlers/tokens.go` instead of hand-rolling the decode → validate → generate → hash → persist → audit flow:
+When adding a new token type (a high-entropy random secret stored by hash, such as an API key or Kobo sync token), use `tokenOps` and `handleTokenCreate` from `internal/handlers/tokens.go` instead of hand-rolling the decode → validate → generate → hash → persist → audit flow. Both are unexported, so new token handlers must live in the `internal/handlers` package:
 
 ```go
 func (h *MyTokenHandler) createMyToken(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +254,7 @@ func (h *MyTokenHandler) createMyToken(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-`handleTokenCreate` implements the full creation lifecycle: decode the `{"name": "..."}` request body, validate and trim the name (≤ 100 characters; see `maxTokenNameLength`), call `ops.create`, write an audit log entry, and respond with `201 Created` via `writeSecretTokenResponse` (which sets `Cache-Control: no-store` to prevent caching of the plaintext secret). The raw token is returned only in the creation response and cannot be retrieved again.
+`handleTokenCreate` implements the full creation lifecycle: decode the `{"name": "..."}` request body, validate and trim the name (≤ 100 characters; see `maxTokenNameLength`), call `ops.create`, write an audit log entry, and respond with `201 Created` via `writeSecretTokenResponse` (which sets `Cache-Control: no-store` and `Pragma: no-cache` to prevent caching of the plaintext secret). The raw token is returned only in the creation response and cannot be retrieved again.
 
 Use `generateRandomHex(n)` from `internal/handlers/helpers.go` to generate a cryptographically secure random token of `n` bytes (returned as a `2n`-character lowercase hex string).
 
