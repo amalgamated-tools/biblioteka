@@ -2,14 +2,11 @@ package auth
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -44,43 +41,33 @@ var dummyKOSyncBcryptHash = mustGenerateDummyBcryptHash("dummy-kosync-key", "KOS
 // The stored password hash must therefore be bcrypt(md5_hex) so that
 // bcrypt.CompareHashAndPassword(stored, received_md5_hex) succeeds.
 func KOSyncHeaderAuthMiddleware(checker KOSyncCredentialChecker) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			username := strings.TrimSpace(r.Header.Get(kosyncAuthUserHeader))
-			authKey := r.Header.Get(kosyncAuthKeyHeader)
-
-			if username == "" || authKey == "" {
-				slog.InfoContext(r.Context(), "KOSync: missing credentials")
-				jsonError(w, http.StatusUnauthorized, "Unauthorized")
-				return
+	return bcryptCredMiddleware(bcryptCredConfig{
+		protocolName: "KOSync",
+		dummyHash:    dummyKOSyncBcryptHash,
+		usernameAttr: func(v string) slog.Attr { return slog.String(otelkeys.KOSyncUsername, v) },
+		extractCreds: func(r *http.Request) (username, secret string, ok bool) {
+			username = strings.TrimSpace(r.Header.Get(kosyncAuthUserHeader))
+			secret = r.Header.Get(kosyncAuthKeyHeader)
+			if username == "" || secret == "" {
+				return "", "", false
 			}
-
-			cred, err := checker.GetKOSyncCredential(r.Context(), strings.ToLower(username))
+			return username, secret, true
+		},
+		lookupCredential: func(ctx context.Context, username string) (string, string, error) {
+			cred, err := checker.GetKOSyncCredential(ctx, username)
 			if err != nil {
-				if errors.Is(err, sql.ErrNoRows) {
-					// Perform a dummy bcrypt comparison to prevent timing-based username enumeration.
-					_ = bcrypt.CompareHashAndPassword(dummyKOSyncBcryptHash, []byte(authKey))
-					slog.InfoContext(r.Context(), "KOSync: unknown username", slog.String(otelkeys.KOSyncUsername, username))
-					jsonError(w, http.StatusUnauthorized, "Unauthorized")
-				} else {
-					slog.ErrorContext(r.Context(), "KOSync: credential lookup failed", slog.Any(otelkeys.Error, err))
-					jsonError(w, http.StatusServiceUnavailable, "Service temporarily unavailable")
-				}
-				return
+				return "", "", err
 			}
-
-			if err := bcrypt.CompareHashAndPassword([]byte(cred.PasswordHash), []byte(authKey)); err != nil {
-				slog.InfoContext(r.Context(), "KOSync: invalid auth key", slog.String(otelkeys.KOSyncUsername, username))
-				jsonError(w, http.StatusUnauthorized, "Unauthorized")
-				return
-			}
-
-			slog.DebugContext(r.Context(), "KOSync: authentication successful",
-				slog.String(otelkeys.UserID, cred.UserID),
-				slog.String(otelkeys.KOSyncUsername, username),
-			)
-			ctx := context.WithValue(r.Context(), userIDKey, cred.UserID)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	}
+			return cred.UserID, cred.PasswordHash, nil
+		},
+		writeMissing: func(w http.ResponseWriter, r *http.Request) {
+			jsonError(w, http.StatusUnauthorized, "Unauthorized")
+		},
+		writeUnauthorized: func(w http.ResponseWriter, r *http.Request) {
+			jsonError(w, http.StatusUnauthorized, "Unauthorized")
+		},
+		writeServiceUnavailable: func(w http.ResponseWriter, r *http.Request) {
+			jsonError(w, http.StatusServiceUnavailable, "Service temporarily unavailable")
+		},
+	})
 }
