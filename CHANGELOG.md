@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.3.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.2.0...v0.3.0) (2026-03-30)
+
+
+### Features
+
+* add Swagger annotations for Kobo tokens, OPDS credentials, KOSync credentials, and KOSync protocol endpoints ([#931](https://github.com/amalgamated-tools/biblioteka/issues/931)) ([1755a38](https://github.com/amalgamated-tools/biblioteka/commit/1755a389e3a9b8169c6f823f639b4a42ed959217))
+* **frontend:** extract Button, TextInput, and AlertBanner as reusable UI components ([#947](https://github.com/amalgamated-tools/biblioteka/issues/947)) ([0244dab](https://github.com/amalgamated-tools/biblioteka/commit/0244dabfb418437363fa15b3ffa6ec259045dfcc))
+* **frontend:** extract shared form validation utility ([#953](https://github.com/amalgamated-tools/biblioteka/issues/953)) ([7000d8e](https://github.com/amalgamated-tools/biblioteka/commit/7000d8ecb8b215776a95e8cc3ac5ac549907ae07))
+* **router:** 404 handling and hash-embedded query parameter support ([#951](https://github.com/amalgamated-tools/biblioteka/issues/951)) ([8f64403](https://github.com/amalgamated-tools/biblioteka/commit/8f64403789613a923627f0f7350d257d5b92033d))
+* **stores:** standardize idempotency guard across author and series stores ([#949](https://github.com/amalgamated-tools/biblioteka/issues/949)) ([5c38cd5](https://github.com/amalgamated-tools/biblioteka/commit/5c38cd576f14642d680dd7fc5526ca10d7002230))
+* **swagger:** mark bookRequest.title as required ([#932](https://github.com/amalgamated-tools/biblioteka/issues/932)) ([f511f2a](https://github.com/amalgamated-tools/biblioteka/commit/f511f2aa7630c24a3e7ce8c8623cedcfc00144cc))
+
+
+### Bug Fixes
+
+* **accessibility:** add aria-label to Settings content section ([#867](https://github.com/amalgamated-tools/biblioteka/issues/867)) ([2d46e49](https://github.com/amalgamated-tools/biblioteka/commit/2d46e4936cb2044d5c734a41af11d12ca39607f8))
+* **accessibility:** add onclick guard and aria-hidden to disabled Copy button in KoboTab ([#903](https://github.com/amalgamated-tools/biblioteka/issues/903)) ([14dafb2](https://github.com/amalgamated-tools/biblioteka/commit/14dafb25b38ffb29af7d3dbfde00ea1419725223))
+* **accessibility:** link form helper text to inputs via aria-describedby ([#1002](https://github.com/amalgamated-tools/biblioteka/issues/1002)) ([5575a72](https://github.com/amalgamated-tools/biblioteka/commit/5575a72eb4bb9d7f71ed73a964a00a0e99956965))
+* **accessibility:** replace sidebar `<h1>` with `<p>` to eliminate duplicate top-level headings ([#846](https://github.com/amalgamated-tools/biblioteka/issues/846)) ([a224f0b](https://github.com/amalgamated-tools/biblioteka/commit/a224f0b5bf578f563db1cb3f50db60f312b00e8f))
+* **ci:** expand sparse-checkout in push_repo_memory to include metrics dir ([#1012](https://github.com/amalgamated-tools/biblioteka/issues/1012)) ([e16c8be](https://github.com/amalgamated-tools/biblioteka/commit/e16c8beacd9ed3ff7c96fe1d9ed63a70e996035a))
+* **code-simplifier:** refactor(db): extend listAll to cover ListUsers ([#818](https://github.com/amalgamated-tools/biblioteka/issues/818)) ([f6a6183](https://github.com/amalgamated-tools/biblioteka/commit/f6a618301cf304bf579aed0426a4a0eb2586f82f))
+* **code-simplifier:** refactor(frontend): extract derived values to eliminate nested ternaries ([#980](https://github.com/amalgamated-tools/biblioteka/issues/980)) ([b125942](https://github.com/amalgamated-tools/biblioteka/commit/b125942ed48bbf4e6c819ade95832305126b54d6))
+* **code-simplifier:** refactor(handlers): apply listEntities, handleDBErr, and handleUpdateErr to libraries and admin ([#887](https://github.com/amalgamated-tools/biblioteka/issues/887)) ([2079734](https://github.com/amalgamated-tools/biblioteka/commit/2079734e4d50e1bf762ca30194089d8318e36383))
+* **code-simplifier:** refactor(router): extract VALID_VIEWS constant and deduplicate parseHash call ([#1005](https://github.com/amalgamated-tools/biblioteka/issues/1005)) ([40f6583](https://github.com/amalgamated-tools/biblioteka/commit/40f65834d31a7e65227880f657cc8ed82fbd3f82))
+* correct `auditLogDTO.Metadata` swagger type from `array[integer]` to `object` ([#930](https://github.com/amalgamated-tools/biblioteka/issues/930)) ([c469b39](https://github.com/amalgamated-tools/biblioteka/commit/c469b39f6dc1c99507f19fae404aa985fec0b735))
+* **frontend:** replace $effect guard pattern with onMount for initial data fetching ([#957](https://github.com/amalgamated-tools/biblioteka/issues/957)) ([06c6e1c](https://github.com/amalgamated-tools/biblioteka/commit/06c6e1c43cf14a662abaccd6c740314d2e5ddec0))
+* **frontend:** upgrade picomatch to 4.0.4 to patch ReDoS vulnerability (CVE-2026-33671) ([#965](https://github.com/amalgamated-tools/biblioteka/issues/965)) ([b1f74b7](https://github.com/amalgamated-tools/biblioteka/commit/b1f74b76054c530418ef2b92db387bd534d8293a))
+* **frontend:** use onMount instead of $effect for version fetch in Sidebar ([#955](https://github.com/amalgamated-tools/biblioteka/issues/955)) ([449dddd](https://github.com/amalgamated-tools/biblioteka/commit/449dddd8a0abe0301f568199bb295e0c6f0bfc40))
+* **workflows:** add missing permissions to daily-code-metrics workflow ([#828](https://github.com/amalgamated-tools/biblioteka/issues/828)) ([bcd52f0](https://github.com/amalgamated-tools/biblioteka/commit/bcd52f06107ecf589cded47b4b3c42e0874bd78b))
+* **workflows:** address 5 critical schema consistency issues in agentic workflow frontmatter ([#847](https://github.com/amalgamated-tools/biblioteka/issues/847)) ([7729469](https://github.com/amalgamated-tools/biblioteka/commit/77294695775882a7973305daeaf1bfc501245912))
+
 ## [0.2.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.1.2...v0.2.0) (2026-03-24)
 
 
