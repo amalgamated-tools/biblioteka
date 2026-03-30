@@ -200,7 +200,7 @@ Never call `fetch` directly from components or stores — always go through `api
 `frontend/src/lib/clipboard.ts` exports a single async function, `copyToClipboard`, that provides a unified cross-browser interface for writing text to the system clipboard.
 
 ```ts
-import { copyToClipboard } from "../lib/clipboard";
+import { copyToClipboard } from "../../lib/clipboard"; // path is relative to the calling file
 
 await copyToClipboard(token);
 ```
