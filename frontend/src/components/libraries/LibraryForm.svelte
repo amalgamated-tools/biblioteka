@@ -35,6 +35,11 @@
   let pathsError: string | null = $state(null);
   let showDeleteConfirm = $state(false);
 
+  const submitLabel = $derived.by(() => {
+    if (saving) return "Saving...";
+    return mode === "edit" ? "Update Library" : "Create Library";
+  });
+
   // React to mode/editId changes to populate form
   $effect(() => {
     if (mode === "create") {
@@ -304,11 +309,7 @@
           disabled={saving}
           class="px-5 py-2.5 text-sm active:scale-[0.98]"
         >
-          {saving
-            ? "Saving..."
-            : mode === "edit"
-              ? "Update Library"
-              : "Create Library"}
+          {submitLabel}
         </Button>
         <Button
           type="button"
