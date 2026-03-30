@@ -349,6 +349,7 @@ A styled button with three visual variants.
 | `disabled` | `boolean` | | `false` | Disables the button and applies muted styling |
 | `type` | `"button" \| "submit" \| "reset"` | | `"button"` | HTML button type |
 | `class` | `string` | | — | Additional Tailwind classes (e.g. padding, width) |
+| `onclick` | `(e: MouseEvent) => void` | | — | Click handler |
 | `children` | `Snippet` | ✓ | — | Button label content |
 
 **Usage:**
@@ -375,8 +376,9 @@ A styled text input with focus ring, dark-mode support, disabled styling, and AR
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
-| `value` | `string` | ✓ | — | Bindable input value (`$bindable()`). Supports both `bind:value` and controlled (`value` + `oninput`) patterns. |
-| `disabled` | `boolean` | | `false` | Disables the input with muted colours and `cursor-not-allowed` |
+| `value` | `string` | | `""` | Bindable input value (`$bindable()`). Supports both `bind:value` and controlled (`value` + `oninput`) patterns. |
+| `type` | `"text" \| "email" \| "password" \| "url"` | | `"text"` | Input type — only these four HTML input types are accepted |
+| `disabled` | `boolean` | | `false` | Disables the input with muted colors and `cursor-not-allowed` |
 | `class` | `string` | | — | Additional Tailwind classes |
 | `...restProps` | `HTMLInputAttributes` | | — | Any standard `<input>` attributes (`aria-required`, `aria-invalid`, `aria-describedby`, `placeholder`, `maxlength`, etc.) are forwarded to the underlying element |
 
