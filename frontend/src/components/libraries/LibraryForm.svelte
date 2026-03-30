@@ -35,7 +35,7 @@
   let pathsError: string | null = $state(null);
   let showDeleteConfirm = $state(false);
 
-  let submitLabel = $derived.by(() => {
+  const submitLabel = $derived.by(() => {
     if (saving) return "Saving...";
     return mode === "edit" ? "Update Library" : "Create Library";
   });
