@@ -64,6 +64,11 @@ func createNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create "+ops.entityLabel)
 		return
 	}
+	if entity == nil {
+		slog.ErrorContext(r.Context(), "create returned nil entity without error")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create "+ops.entityLabel)
+		return
+	}
 
 	slog.DebugContext(r.Context(), ops.entityLabel+" created",
 		slog.String(ops.idKey, ops.entityID(entity)), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
@@ -83,6 +88,11 @@ func getNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.Res
 		slog.String(ops.idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 	entity, err := ops.get(r.Context(), id)
 	if handleDBErr(r.Context(), w, err, ops.entityLabel) {
+		return
+	}
+	if entity == nil {
+		slog.ErrorContext(r.Context(), "get returned nil entity without error", slog.String(ops.idKey, id))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to fetch "+ops.entityLabel)
 		return
 	}
 	writeJSON(r.Context(), w, http.StatusOK, ops.toDTO(entity))
@@ -108,6 +118,11 @@ func updateNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 
 	entity, err := ops.update(r.Context(), id, req)
 	if handleUpdateErr(r.Context(), w, err, ops.errInvalidName, ops.errNameExists, ops.entityArticle, ops.entityLabel, id) {
+		return
+	}
+	if entity == nil {
+		slog.ErrorContext(r.Context(), "update returned nil entity without error", slog.String(ops.idKey, id))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update "+ops.entityLabel)
 		return
 	}
 
