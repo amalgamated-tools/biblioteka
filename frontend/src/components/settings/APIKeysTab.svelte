@@ -7,6 +7,9 @@
   } from "../../lib/api";
   import { KeyRound, Copy, Trash2 } from "lucide-svelte";
   import { onDestroy, onMount } from "svelte";
+  import Button from "../ui/Button.svelte";
+  import TextInput from "../ui/TextInput.svelte";
+  import AlertBanner from "../ui/AlertBanner.svelte";
 
   let apiKeyList: APIKey[] = $state.raw([]);
   let apiKeysLoading = $state(false);
@@ -150,22 +153,21 @@
 
     <form onsubmit={handleCreateAPIKey} class="flex gap-3 mb-6">
       <label for="new-api-key-name" class="sr-only">API key name</label>
-      <input
+      <TextInput
         id="new-api-key-name"
-        type="text"
         bind:value={newKeyName}
-        class="flex-1 px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+        class="flex-1 py-2.5"
         placeholder="Key name (e.g., CI Pipeline)"
         disabled={createKeyLoading}
         maxlength={100}
       />
-      <button
+      <Button
         type="submit"
         disabled={createKeyLoading || !newKeyName.trim()}
-        class="px-5 py-2.5 bg-gradient-to-r from-accent-600 to-accent-700 text-white font-semibold rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 shadow-md shadow-accent-600/20 whitespace-nowrap"
+        class="px-5 py-2.5 whitespace-nowrap"
       >
         {createKeyLoading ? "Creating..." : "Create Key"}
-      </button>
+      </Button>
     </form>
 
     {#if newlyCreatedKey}
@@ -204,12 +206,7 @@
     {/if}
 
     {#if apiKeysError}
-      <div
-        role="alert"
-        class="bg-danger-50 dark:bg-danger-700/10 border border-danger-600/20 dark:border-danger-700/30 text-danger-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm mb-4"
-      >
-        {apiKeysError}
-      </div>
+      <AlertBanner variant="error" class="mb-4">{apiKeysError}</AlertBanner>
     {/if}
 
     {#if apiKeysLoading}

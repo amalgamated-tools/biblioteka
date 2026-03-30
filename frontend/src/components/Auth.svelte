@@ -5,6 +5,8 @@
   import { getOidcEnabled } from "../lib/api";
   import { required, minLength, validate } from "../lib/validation";
   import AlertBanner from "./ui/AlertBanner.svelte";
+  import Button from "./ui/Button.svelte";
+  import TextInput from "./ui/TextInput.svelte";
 
   let isLogin = $state(true);
   let email = $state("");
@@ -182,12 +184,12 @@
             >
               Email
             </label>
-            <input
+            <TextInput
               id="login-email"
               type="email"
               bind:value={email}
               autocomplete="email"
-              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="w-full py-3"
               placeholder="you@example.com"
               disabled={loading}
             />
@@ -200,12 +202,12 @@
             >
               Password
             </label>
-            <input
+            <TextInput
               id="login-password"
               type="password"
               bind:value={password}
               autocomplete="current-password"
-              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="w-full py-3"
               placeholder="••••••••"
               disabled={loading}
             />
@@ -217,13 +219,13 @@
             >
           {/if}
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            class="w-full bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-accent-600/20 hover:shadow-lg hover:shadow-accent-600/30 active:scale-[0.98]"
+            class="w-full py-3 px-4 active:scale-[0.98]"
           >
             {loading ? "Processing..." : "Sign In"}
-          </button>
+          </Button>
         </form>
       </div>
 
@@ -241,12 +243,12 @@
             >
               Name
             </label>
-            <input
+            <TextInput
               id="signup-name"
               type="text"
               bind:value={name}
               autocomplete="name"
-              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="w-full py-3"
               placeholder="Your name"
               disabled={loading}
             />
@@ -259,12 +261,12 @@
             >
               Email
             </label>
-            <input
+            <TextInput
               id="signup-email"
               type="email"
               bind:value={email}
               autocomplete="email"
-              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="w-full py-3"
               placeholder="you@example.com"
               disabled={loading}
             />
@@ -277,12 +279,12 @@
             >
               Password
             </label>
-            <input
+            <TextInput
               id="signup-password"
               type="password"
               bind:value={password}
               autocomplete="new-password"
-              class="w-full px-4 py-3 rounded-xl border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-ink-900 dark:text-cream-100 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-all placeholder:text-ink-300 dark:placeholder:text-ink-500"
+              class="w-full py-3"
               placeholder="••••••••"
               disabled={loading}
             />
@@ -294,13 +296,13 @@
             >
           {/if}
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            class="w-full bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-accent-600/20 hover:shadow-lg hover:shadow-accent-600/30 active:scale-[0.98]"
+            class="w-full py-3 px-4 active:scale-[0.98]"
           >
             {loading ? "Processing..." : "Create Account"}
-          </button>
+          </Button>
         </form>
       </div>
     </div>
