@@ -45,11 +45,9 @@ func KOSyncHeaderAuthMiddleware(checker KOSyncCredentialChecker) func(http.Handl
 		dummyHash:    dummyKOSyncBcryptHash,
 		usernameKey:  otelkeys.KOSyncUsername,
 		extractCreds: func(r *http.Request) (username, secret string, ok bool) {
-			username = r.Header.Get(kosyncAuthUserHeader)
+			username = strings.TrimSpace(r.Header.Get(kosyncAuthUserHeader))
 			secret = r.Header.Get(kosyncAuthKeyHeader)
-			// Trim only for the empty check; normalization is done by the
-			// shared middleware before the credential lookup.
-			if strings.TrimSpace(username) == "" || secret == "" {
+			if username == "" || secret == "" {
 				return "", "", false
 			}
 			return username, secret, true
