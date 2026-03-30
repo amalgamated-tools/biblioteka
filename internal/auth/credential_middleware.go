@@ -21,8 +21,10 @@ type bcryptCredConfig struct {
 	// when a username is not found.
 	dummyHash []byte
 
-	// usernameKey is the slog attribute key used when logging the username.
-	usernameKey string
+	// usernameAttr builds a slog attribute for the username value. Each
+	// protocol provides its own constant key (e.g. otelkeys.KOSyncUsername)
+	// so that sloglint can verify keys are not raw strings.
+	usernameAttr func(value string) slog.Attr
 
 	// extractCreds pulls the username and secret from the request.
 	// Return ok=false when credentials are missing entirely.
@@ -53,7 +55,7 @@ type bcryptCredConfig struct {
 // constant-time dummy comparison when a username is not found to mitigate
 // timing-based username enumeration attacks.
 func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler {
-	if cfg.extractCreds == nil || cfg.lookupCredential == nil || cfg.writeMissing == nil || cfg.writeUnauthorized == nil {
+	if cfg.usernameAttr == nil || cfg.extractCreds == nil || cfg.lookupCredential == nil || cfg.writeMissing == nil || cfg.writeUnauthorized == nil {
 		panic("bcryptCredMiddleware: extractCreds, lookupCredential, writeMissing, and writeUnauthorized must be non-nil")
 	}
 	return func(next http.Handler) http.Handler {
@@ -78,7 +80,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 					// username enumeration.
 					_ = bcrypt.CompareHashAndPassword(cfg.dummyHash, []byte(secret))
 					slog.InfoContext(r.Context(), cfg.protocolName+": unknown username",
-						slog.Attr{Key: cfg.usernameKey, Value: slog.StringValue(normUsername)},
+						cfg.usernameAttr(normUsername),
 					)
 					cfg.writeUnauthorized(w, r)
 				}
@@ -87,7 +89,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 
 			if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(secret)); err != nil {
 				slog.InfoContext(r.Context(), cfg.protocolName+": invalid credential",
-					slog.Attr{Key: cfg.usernameKey, Value: slog.StringValue(normUsername)},
+					cfg.usernameAttr(normUsername),
 				)
 				cfg.writeUnauthorized(w, r)
 				return
@@ -95,7 +97,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 
 			slog.DebugContext(r.Context(), cfg.protocolName+": authentication successful",
 				slog.String(otelkeys.UserID, userID),
-				slog.Attr{Key: cfg.usernameKey, Value: slog.StringValue(normUsername)},
+				cfg.usernameAttr(normUsername),
 			)
 			ctx := context.WithValue(r.Context(), userIDKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))

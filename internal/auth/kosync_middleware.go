@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -43,7 +44,7 @@ func KOSyncHeaderAuthMiddleware(checker KOSyncCredentialChecker) func(http.Handl
 	return bcryptCredMiddleware(bcryptCredConfig{
 		protocolName: "KOSync",
 		dummyHash:    dummyKOSyncBcryptHash,
-		usernameKey:  otelkeys.KOSyncUsername,
+		usernameAttr: func(v string) slog.Attr { return slog.String(otelkeys.KOSyncUsername, v) },
 		extractCreds: func(r *http.Request) (username, secret string, ok bool) {
 			username = strings.TrimSpace(r.Header.Get(kosyncAuthUserHeader))
 			secret = r.Header.Get(kosyncAuthKeyHeader)

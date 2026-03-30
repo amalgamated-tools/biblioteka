@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"log/slog"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -53,7 +54,7 @@ func OPDSBasicAuthMiddleware(checker OPDSCredentialChecker) func(http.Handler) h
 	return bcryptCredMiddleware(bcryptCredConfig{
 		protocolName: "OPDS",
 		dummyHash:    dummyOPDSBcryptHash,
-		usernameKey:  otelkeys.OPDSUsername,
+		usernameAttr: func(v string) slog.Attr { return slog.String(otelkeys.OPDSUsername, v) },
 		extractCreds: func(r *http.Request) (username, secret string, ok bool) {
 			username, secret, ok = r.BasicAuth()
 			if !ok || username == "" {
