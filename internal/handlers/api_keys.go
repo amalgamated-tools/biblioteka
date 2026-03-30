@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"log/slog"
+	"context"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -102,62 +102,39 @@ func (h *APIKeyHandler) HandleAPIKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIKeyHandler) listAPIKeys(w http.ResponseWriter, r *http.Request) {
-	userID := auth.UserIDFromContext(r.Context())
-	keys, err := h.DB.ListAPIKeys(r.Context(), userID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list API keys", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list API keys")
-		return
-	}
-
-	writeJSON(r.Context(), w, http.StatusOK, mapSlice(keys, toAPIKeyDTO))
+	listUserEntities(w, r, "API keys", h.DB.ListAPIKeys, toAPIKeyDTO)
 }
 
 func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
-	var req apiKeyCreateRequest
-	if !decodeJSON(r, w, &req) {
-		return
-	}
+	handleTokenCreate(tokenOps{
+		db:              h.DB,
+		resource:        "API key",
+		auditEntityType: "api_key",
+		auditCreate:     db.AuditActionAPIKeyCreated,
+		create: func(ctx context.Context, userID, name string) (string, any, error) {
+			// Generate 32 random hex characters (16 bytes).
+			hexKey, err := generateRandomHex(16)
+			if err != nil {
+				return "", nil, err
+			}
+			fullKey := auth.APIKeyPrefix + hexKey
 
-	name, ok := validateTokenName(r.Context(), w, req.Name)
-	if !ok {
-		return
-	}
+			// Hash the full key with SHA-256. This is appropriate because API keys are
+			// high-entropy random tokens (128 bits), not user-chosen passwords. Expensive
+			// hashing (bcrypt/argon2) is unnecessary for cryptographically random secrets.
+			keyHash := auth.HashAPIKey(fullKey)
 
-	// Generate 32 random hex characters (16 bytes).
-	hexKey, err := generateRandomHex(16)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to generate random bytes", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to generate API key")
-		return
-	}
-	fullKey := auth.APIKeyPrefix + hexKey
+			// Store a longer display prefix: static prefix + the first apiKeyDisplayPrefixHexLen hex characters.
+			keyPrefix := auth.APIKeyPrefix + hexKey[:apiKeyDisplayPrefixHexLen]
 
-	// Hash the full key with SHA-256. This is appropriate because API keys are
-	// high-entropy random tokens (128 bits), not user-chosen passwords. Expensive
-	// hashing (bcrypt/argon2) is unnecessary for cryptographically random secrets.
-	keyHash := auth.HashAPIKey(fullKey)
+			apiKey, err := h.DB.CreateAPIKey(ctx, userID, name, keyHash, keyPrefix)
+			if err != nil {
+				return "", nil, err
+			}
 
-	// Store a longer display prefix: static prefix + the first apiKeyDisplayPrefixHexLen hex characters.
-	keyPrefix := auth.APIKeyPrefix + hexKey[:apiKeyDisplayPrefixHexLen]
-
-	userID := auth.UserIDFromContext(r.Context())
-	apiKey, err := h.DB.CreateAPIKey(r.Context(), userID, name, keyHash, keyPrefix)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to create API key", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create API key")
-		return
-	}
-
-	logAudit(r.Context(), h.DB, userID, db.AuditActionAPIKeyCreated, "api_key", apiKey.ID, map[string]any{"name": name})
-
-	resp := apiKeyCreateResponse{
-		apiKeyDTO: toAPIKeyDTO(apiKey),
-		Key:       fullKey,
-	}
-
-	// Prevent caching of the response that contains the full API key.
-	writeSecretTokenResponse(r.Context(), w, http.StatusCreated, resp)
+			return apiKey.ID, apiKeyCreateResponse{apiKeyDTO: toAPIKeyDTO(apiKey), Key: fullKey}, nil
+		},
+	}, w, r)
 }
 
 func (h *APIKeyHandler) deleteAPIKey(w http.ResponseWriter, r *http.Request, id string) {

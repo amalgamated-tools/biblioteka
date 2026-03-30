@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"database/sql"
@@ -644,4 +645,236 @@ func TestRequestScheme(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_ListUserEntities(t *testing.T) {
+	type entity struct {
+		ID   int
+		Name string
+	}
+	type dto struct {
+		Label string `json:"label"`
+	}
+	toDTO := func(e *entity) dto {
+		return dto{Label: e.Name}
+	}
+
+	t.Run("error yields 500", func(t *testing.T) {
+		listFn := func(_ context.Context, _ string) ([]entity, error) {
+			return nil, errors.New("db failure")
+		}
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		r = withUserID(r, "user-1")
+		listUserEntities(w, r, "tokens", listFn, toDTO)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+		}
+		var result map[string]string
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if result["error"] != "failed to list tokens" {
+			t.Errorf("error = %q, want %q", result["error"], "failed to list tokens")
+		}
+	})
+
+	t.Run("passes user ID to list function", func(t *testing.T) {
+		var capturedUserID string
+		listFn := func(_ context.Context, userID string) ([]entity, error) {
+			capturedUserID = userID
+			return []entity{{ID: 1, Name: "Alpha"}}, nil
+		}
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		r = withUserID(r, "user-42")
+		listUserEntities(w, r, "tokens", listFn, toDTO)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		}
+		if capturedUserID != "user-42" {
+			t.Errorf("capturedUserID = %q, want %q", capturedUserID, "user-42")
+		}
+	})
+
+	t.Run("nil slice returns empty JSON array", func(t *testing.T) {
+		listFn := func(_ context.Context, _ string) ([]entity, error) {
+			return nil, nil
+		}
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		r = withUserID(r, "user-1")
+		listUserEntities(w, r, "tokens", listFn, toDTO)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		}
+		var dtos []dto
+		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if len(dtos) != 0 {
+			t.Errorf("len = %d, want 0", len(dtos))
+		}
+	})
+
+	t.Run("success converts to DTOs", func(t *testing.T) {
+		listFn := func(_ context.Context, _ string) ([]entity, error) {
+			return []entity{{ID: 1, Name: "Alpha"}, {ID: 2, Name: "Beta"}}, nil
+		}
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		r = withUserID(r, "user-1")
+		listUserEntities(w, r, "tokens", listFn, toDTO)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		}
+		var dtos []dto
+		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if len(dtos) != 2 {
+			t.Fatalf("len = %d, want 2", len(dtos))
+		}
+		if dtos[0].Label != "Alpha" {
+			t.Errorf("dtos[0].Label = %q, want %q", dtos[0].Label, "Alpha")
+		}
+		if dtos[1].Label != "Beta" {
+			t.Errorf("dtos[1].Label = %q, want %q", dtos[1].Label, "Beta")
+		}
+	})
+}
+
+func Test_HandleTokenCreate(t *testing.T) {
+	d := newTestDB(t)
+
+	user, err := d.CreateUser(t.Context(), "Token User", "tokens@example.com", "password1")
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	t.Run("empty name yields 400", func(t *testing.T) {
+		ops := tokenOps{
+			db:              d,
+			resource:        "test token",
+			auditEntityType: "test_token",
+			auditCreate:     db.AuditActionAPIKeyCreated,
+			create: func(_ context.Context, _, _ string) (string, any, error) {
+				t.Fatal("create should not be called for invalid name")
+				return "", nil, nil
+			},
+		}
+
+		body := mustMarshal(t, map[string]string{"name": ""})
+		r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+		r = withUserID(r, user.ID)
+		w := httptest.NewRecorder()
+		handleTokenCreate(ops, w, r)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+		}
+	})
+
+	t.Run("create error yields 500", func(t *testing.T) {
+		ops := tokenOps{
+			db:              d,
+			resource:        "test token",
+			auditEntityType: "test_token",
+			auditCreate:     db.AuditActionAPIKeyCreated,
+			create: func(_ context.Context, _, _ string) (string, any, error) {
+				return "", nil, errors.New("db failure")
+			},
+		}
+
+		body := mustMarshal(t, map[string]string{"name": "My Token"})
+		r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+		r = withUserID(r, user.ID)
+		w := httptest.NewRecorder()
+		handleTokenCreate(ops, w, r)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+		}
+	})
+
+	t.Run("success returns 201 with no-store headers", func(t *testing.T) {
+		type tokenResp struct {
+			ID    string `json:"id"`
+			Token string `json:"token"`
+		}
+		ops := tokenOps{
+			db:              d,
+			resource:        "test token",
+			auditEntityType: "test_token",
+			auditCreate:     db.AuditActionAPIKeyCreated,
+			create: func(_ context.Context, _, _ string) (string, any, error) {
+				return "entity-123", tokenResp{ID: "entity-123", Token: "secret"}, nil
+			},
+		}
+
+		body := mustMarshal(t, map[string]string{"name": "My Token"})
+		r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+		r = withUserID(r, user.ID)
+		w := httptest.NewRecorder()
+		handleTokenCreate(ops, w, r)
+
+		if w.Code != http.StatusCreated {
+			t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		}
+		if cc := w.Header().Get("Cache-Control"); cc != "no-store" {
+			t.Errorf("Cache-Control = %q, want %q", cc, "no-store")
+		}
+		var resp tokenResp
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if resp.Token != "secret" {
+			t.Errorf("token = %q, want %q", resp.Token, "secret")
+		}
+	})
+
+	t.Run("success writes audit log", func(t *testing.T) {
+		ops := tokenOps{
+			db:              d,
+			resource:        "audit token",
+			auditEntityType: "audit_token",
+			auditCreate:     db.AuditActionAPIKeyCreated,
+			create: func(_ context.Context, _, _ string) (string, any, error) {
+				return "audit-entity-1", map[string]string{"token": "val"}, nil
+			},
+		}
+
+		body := mustMarshal(t, map[string]string{"name": "Audited"})
+		r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+		r = withUserID(r, user.ID)
+		w := httptest.NewRecorder()
+		handleTokenCreate(ops, w, r)
+
+		if w.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d", w.Code, http.StatusCreated)
+		}
+
+		logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
+		if err != nil {
+			t.Fatalf("list audit logs: %v", err)
+		}
+		found := false
+		for _, l := range logs {
+			if l.Action == db.AuditActionAPIKeyCreated && l.EntityID == "audit-entity-1" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("expected audit log entry for created token")
+		}
+	})
 }
