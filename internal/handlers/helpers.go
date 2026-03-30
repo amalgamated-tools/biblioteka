@@ -245,6 +245,34 @@ func mapSlice[T any, DTO any](items []T, toDTO func(*T) DTO) []DTO {
 	return dtos
 }
 
+// listUserEntities is like listEntities but filters by the authenticated user ID.
+// It calls list(ctx, userID), converts entities to DTOs, and writes the JSON
+// response. It always writes a JSON array (never null), matching the behavior of
+// listEntities.
+func listUserEntities[T any, DTO any](
+	w http.ResponseWriter,
+	r *http.Request,
+	resource string,
+	list func(context.Context, string) ([]T, error),
+	toDTO func(*T) DTO,
+) {
+	ctx := r.Context()
+	userID := auth.UserIDFromContext(ctx)
+
+	slog.DebugContext(ctx, "listing "+resource)
+
+	entities, err := list(ctx, userID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to list "+resource, slog.Any(otelkeys.Error, err))
+		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+resource)
+		return
+	}
+
+	slog.DebugContext(ctx, resource+" listed", slog.Int(otelkeys.Count, len(entities)))
+
+	writeJSON(ctx, w, http.StatusOK, mapSlice(entities, toDTO))
+}
+
 // listEntities is a generic helper that implements the list-and-convert pattern
 // common to named-entity list handlers. It fetches all entities, converts them
 // to DTOs, and writes the JSON response.
