@@ -151,6 +151,32 @@ db/migrations/
 
   `listUserEntities` is a generic function in `internal/handlers/helpers.go`. It extracts the authenticated user ID from context via `auth.UserIDFromContext`, calls `list(ctx, userID)`, converts entities to DTOs, and writes a `200 OK` JSON response (never `null`). On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
 
+### Book sub-resource handlers
+
+For GET and PUT handlers that operate on a book's associated sub-resources (such as authors or series linked to a book), use `respondBookSubResource` and `putBookSubResource` from `internal/handlers/book_subresource.go` instead of hand-rolling the fetch → convert → respond pattern:
+
+```go
+// GET handler
+func (h *BookHandler) handleGetBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
+    respondBookSubResource(r.Context(), w, bookID, h.DB.GetBookAuthors, toAuthorDTO, "book authors")
+}
+
+// PUT handler
+func (h *BookHandler) handleSetBookAuthors(w http.ResponseWriter, r *http.Request, bookID string) {
+    putBookSubResource(w, r, bookID,
+        h.DB.GetBookAuthors, h.DB.SetBookAuthors,
+        func(req *setBookAuthorsRequest) []string { return req.AuthorIDs },
+        toAuthorDTO,
+        "book authors",
+    )
+}
+```
+
+- `respondBookSubResource[T, DTO](ctx, w, bookID, getFn, toDTO, resourceName)` — calls `getFn(ctx, bookID)`, converts each element via `mapSlice(items, toDTO)`, and writes a `200 OK` JSON response. On error it logs and writes `500 Internal Server Error`.
+- `putBookSubResource[T, DTO, Req, Payload](w, r, bookID, getFn, setFn, extractPayload, toDTO, resourceName)` — decodes the JSON request body into `Req`, extracts the payload via `extractPayload`, calls `setFn` to persist the change, then delegates to `respondBookSubResource` to re-fetch and return the updated resource. On decode or set error it writes the appropriate error response.
+
+Both helpers are unexported and live in `internal/handlers/book_subresource.go`. Use them whenever you add a new relationship endpoint (GET or PUT) that replaces a book's full set of associated entities (e.g., authors, series, tags).
+
 ### Named-entity CRUD handlers
 
 When adding a new entity type that has a name, a GET-by-ID, a create, and an update endpoint (e.g., an author or a series), use `namedEntityOps` and its three generic helpers from `internal/handlers/named_entity.go` instead of hand-rolling the decode → validate → write → audit flow for each operation:
@@ -309,6 +335,48 @@ func (h *MyProtocolHandler) HandleMyProtocolCredentials(w http.ResponseWriter, r
 - Structured error responses for all failure cases
 
 Set `deriveKey` when the protocol requires a password transformation before hashing (KOSync uses MD5 to match the KOReader protocol specification). Leave `deriveKey` as `nil` to hash the plaintext password directly (OPDS).
+
+### Protocol authentication middleware
+
+When adding a new protocol that authenticates incoming requests with a bcrypt-hashed credential (e.g., a new sync protocol using custom headers or Basic Auth), use `bcryptCredMiddleware` from `internal/auth/credential_middleware.go` instead of hand-rolling the extract → lookup → compare → inject flow.
+
+Because `bcryptCredMiddleware` is unexported and lives in `internal/auth`, any new protocol auth middleware that uses it must also be implemented in the `internal/auth` package (similar to how unexported helpers require handlers to live in `internal/handlers`).
+```go
+func MyProtocolAuthMiddleware(checker MyProtocolCredentialChecker) func(http.Handler) http.Handler {
+    return bcryptCredMiddleware(bcryptCredConfig{
+        protocolName: "MyProtocol",
+        dummyHash:    mustGenerateDummyBcryptHash("dummy-myprotocol-password", "MyProtocol"),
+        usernameAttr: func(v string) slog.Attr { return slog.String(otelkeys.MyProtocolUsername, v) },
+        extractCreds: func(r *http.Request) (username, secret string, ok bool) {
+            // pull credentials from headers, Basic Auth, etc.
+        },
+        lookupCredential: func(ctx context.Context, username string) (string, string, error) {
+            cred, err := checker.GetMyProtocolCredential(ctx, username)
+            if err != nil {
+                return "", "", err // must be (wrapped) sql.ErrNoRows for "user not found"
+            }
+            return cred.UserID, cred.PasswordHash, nil
+        },
+        writeMissing: func(w http.ResponseWriter, r *http.Request) {
+            // write 401 when credentials are absent from the request
+        },
+        writeUnauthorized: func(w http.ResponseWriter, r *http.Request) {
+            // write 401 when username is unknown or password is wrong
+        },
+        // writeServiceUnavailable is optional; omit to treat all lookup errors as 401
+    })
+}
+```
+
+`bcryptCredMiddleware` is an unexported function in `internal/auth/` that:
+
+- Extracts credentials via `extractCreds`; calls `writeMissing` and stops when none are present
+- Normalizes the username (lowercase, trimmed) before calling `lookupCredential`
+- Performs a constant-time dummy bcrypt comparison when the username is not found, preventing timing-based username enumeration attacks
+- Calls `bcrypt.CompareHashAndPassword` to verify the credential; calls `writeUnauthorized` on failure
+- On success, injects the authenticated `userID` into `r.Context()` and calls the next handler
+
+Set `writeServiceUnavailable` to surface transient credential-lookup errors as `503 Service Unavailable`; omit it to silently treat all lookup failures as an unknown username (OPDS behavior). Always add a pre-computed `dummyHash` via `mustGenerateDummyBcryptHash` to ensure the dummy comparison uses a valid hash cost.
 
 ### User data isolation
 
