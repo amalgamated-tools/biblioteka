@@ -421,6 +421,31 @@ func (d *DB) FindOrCreateTag(ctx context.Context, name string) (*Tag, error) {
 
 `findOrCreate` normalizes the name, validates it against `errInvalid`, handles concurrent-insert races (unique-constraint violation → retry fetch), and emits a debug log. Pass the raw (un-normalized) name — normalization is performed inside the helper.
 
+### Protocol credential database layer
+
+When implementing the `UpsertXxxCredential` database function for a new sync protocol, the upsert uses `ON CONFLICT (user_id) DO UPDATE` so each user has at most one credential set. If the requested username is already taken by a *different* user, the database raises a unique-constraint violation on the `username` column. Use `isColumnUniqueViolation` (defined in `internal/db/libraries.go` alongside `isUniqueViolation`) to detect this case and return the sentinel error that `credentialOps.errConflict` maps to a `409 Conflict` in the handler:
+
+```go
+func (d *DB) UpsertMyProtocolCredential(ctx context.Context, userID, username, passwordHash string) (*MyProtocolCredential, error) {
+    slog.DebugContext(ctx, "db: upserting MyProtocol credential",
+        slog.String(otelkeys.UserID, userID),
+        slog.String(otelkeys.MyProtocolUsername, username),
+    )
+    query := `INSERT INTO myprotocol_credentials (user_id, username, password_hash, updated_at)
+        VALUES ($1, $2, $3, ` + d.now() + `)
+        ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = ` + d.now() + `
+        RETURNING ` + myProtocolCredentialColumns
+
+    cred, err := scanMyProtocolCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
+    if err != nil && isColumnUniqueViolation(err, "myprotocol_credentials.username", "idx_myprotocol_credentials_username") {
+        return nil, ErrMyProtocolUsernameExists
+    }
+    return cred, err
+}
+```
+
+`isColumnUniqueViolation(err, tableCol, idxName string) bool` first confirms `isUniqueViolation(err)` (SQLite or PostgreSQL dialect), then checks the error message for the specific column name (`tableCol`) or index name (`idxName`). Pass the fully qualified column reference as `tableCol` (e.g. `"myprotocol_credentials.username"`) and the named unique index as `idxName` (e.g. `"idx_myprotocol_credentials_username"`). Both arguments cover dialect differences: SQLite includes the column reference in its message, PostgreSQL includes the index name.
+
 ## Frontend Conventions
 
 - Use TypeScript strict mode; put shared types in `src/types.ts`.
