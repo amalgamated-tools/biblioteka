@@ -8,7 +8,7 @@ import (
 
 func createTestUserForOPDS(t *testing.T, d *DB, email string) *User {
 	t.Helper()
-	user, err := d.CreateUser(context.Background(), "Test User", email, "hashedpw")
+	user, err := d.CreateUser(t.Context(), "Test User", email, "hashedpw")
 	if err != nil {
 		t.Fatalf("CreateUser(%q): %v", email, err)
 	}
