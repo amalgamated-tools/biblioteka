@@ -285,10 +285,15 @@
     </div>
 
     <div class="flex items-center">
-      <label class="relative inline-flex items-center gap-3 cursor-pointer">
+      <label
+        for="lib-monitored"
+        class="relative inline-flex items-center gap-3 cursor-pointer"
+      >
         <input
+          id="lib-monitored"
           type="checkbox"
           role="switch"
+          aria-checked={formMonitored}
           bind:checked={formMonitored}
           class="sr-only peer"
           disabled={saving}
