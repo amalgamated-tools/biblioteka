@@ -57,10 +57,7 @@ func OPDSBasicAuthMiddleware(checker OPDSCredentialChecker) func(http.Handler) h
 		usernameAttr: func(v string) slog.Attr { return slog.String(otelkeys.OPDSUsername, v) },
 		extractCreds: func(r *http.Request) (username, secret string, ok bool) {
 			username, secret, ok = r.BasicAuth()
-			if !ok || username == "" {
-				return "", "", false
-			}
-			return username, secret, true
+			return username, secret, ok && username != ""
 		},
 		lookupCredential: func(ctx context.Context, username string) (string, string, error) {
 			cred, err := checker.GetOPDSCredential(ctx, username)
