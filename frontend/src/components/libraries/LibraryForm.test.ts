@@ -136,6 +136,51 @@ describe("LibraryForm accessibility", () => {
   });
 });
 
+describe("LibraryForm monitor toggle switch", () => {
+  afterEach(() => cleanup());
+
+  it("associates the switch input with its label via for/id", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const label = container.querySelector('label[for="lib-monitored"]');
+    expect(label).toBeInTheDocument();
+
+    const input = container.querySelector("#lib-monitored");
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveAttribute("role", "switch");
+  });
+
+  it("has aria-checked reflecting the unchecked state by default", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const input = container.querySelector("#lib-monitored") as HTMLInputElement;
+    expect(input.checked).toBe(false);
+    expect(input).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("updates aria-checked when toggled", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const input = container.querySelector("#lib-monitored") as HTMLInputElement;
+    expect(input).toHaveAttribute("aria-checked", "false");
+
+    await fireEvent.click(input);
+    await tick();
+
+    expect(input.checked).toBe(true);
+    expect(input).toHaveAttribute("aria-checked", "true");
+  });
+});
+
 describe("LibraryForm organization type dropdown", () => {
   afterEach(() => cleanup());
 
