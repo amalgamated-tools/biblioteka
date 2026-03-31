@@ -56,7 +56,7 @@ type bcryptCredConfig struct {
 // timing-based username enumeration attacks.
 func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler {
 	if cfg.usernameAttr == nil || cfg.extractCreds == nil || cfg.lookupCredential == nil || cfg.writeMissing == nil || cfg.writeUnauthorized == nil {
-		panic("bcryptCredMiddleware: extractCreds, lookupCredential, writeMissing, and writeUnauthorized must be non-nil")
+		panic("bcryptCredMiddleware: usernameAttr, extractCreds, lookupCredential, writeMissing, and writeUnauthorized must be non-nil")
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
