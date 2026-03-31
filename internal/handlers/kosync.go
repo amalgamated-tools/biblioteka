@@ -48,13 +48,12 @@ type kosyncProgressRequest struct {
 //
 //	@Summary		Manage KOSync credentials
 //	@Description	GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).
-//	@Description	PUT creates or updates the current user's KOSync credential.
+//	@Description	PUT creates or updates the current user's KOSync credential using a JSON body matching credentialRequest.
 //	@Description	DELETE removes the current user's KOSync credential.
 //	@Tags			kosync-credentials
 //	@Security		BearerAuth
 //	@Accept			json
 //	@Produce		json
-//	@Param			body	body		credentialRequest	false	"Credential data (required for PUT)"
 //	@Success		200	{object}	credentialResponse	"Credential returned or updated"
 //	@Success		204	"Credential deleted"
 //	@Failure		400	{object}	errorResponse	"Bad request"
