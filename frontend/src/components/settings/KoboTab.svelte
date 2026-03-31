@@ -24,6 +24,7 @@
   let copiedTokenId: string | null = $state(null);
   let copiedTimeout: number | null = null;
   let liveMessage = $state("");
+  let pendingDeleteToken: { id: string; name: string } | null = $state(null);
 
   onDestroy(() => {
     if (copiedTimeout !== null) {
@@ -69,13 +70,13 @@
   }
 
   async function handleDeleteToken(id: string, name: string) {
-    if (
-      !confirm(
-        `Delete Kobo sync token "${name}"? Your Kobo device will stop syncing.`,
-      )
-    ) {
-      return;
-    }
+    pendingDeleteToken = { id, name };
+  }
+
+  async function confirmDeleteToken() {
+    if (!pendingDeleteToken) return;
+    const { id } = pendingDeleteToken;
+    pendingDeleteToken = null;
     tokensError = null;
     try {
       await deleteKoboToken(id);
@@ -184,14 +185,45 @@
                     token.created_at,
                   ).toLocaleDateString()}</span
                 >
-                <button
-                  onclick={() => handleDeleteToken(token.id, token.name)}
-                  aria-label={`Delete token ${token.name} (created ${new Date(token.created_at).toLocaleDateString()})`}
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
-                >
-                  <Trash2 class="w-3.5 h-3.5" />
-                  Delete
-                </button>
+                {#if pendingDeleteToken?.id === token.id}
+                  <div
+                    class="flex items-center gap-2 animate-scale-in"
+                    role="alertdialog"
+                    aria-modal="false"
+                    aria-labelledby="delete-token-confirm-label-{token.id}"
+                  >
+                    <span
+                      id="delete-token-confirm-label-{token.id}"
+                      class="text-xs text-danger-600 dark:text-red-400"
+                      >Delete "{token.name}"?</span
+                    >
+                    <Button
+                      type="button"
+                      variant="danger"
+                      onclick={confirmDeleteToken}
+                      class="px-3 py-1 text-xs"
+                    >
+                      Delete
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onclick={() => (pendingDeleteToken = null)}
+                      class="px-3 py-1 text-xs"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                {:else}
+                  <button
+                    onclick={() => handleDeleteToken(token.id, token.name)}
+                    aria-label={`Delete token ${token.name} (created ${new Date(token.created_at).toLocaleDateString()})`}
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                    Delete
+                  </button>
+                {/if}
               </div>
             </div>
 
