@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -65,20 +64,10 @@ func (d *DB) UpsertKOSyncCredential(ctx context.Context, userID, username, passw
 		RETURNING ` + kosyncCredentialColumns
 
 	cred, err := scanKOSyncCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
-	if err != nil && isKOSyncUsernameUniqueViolation(err) {
+	if err != nil && isColumnUniqueViolation(err, "kosync_credentials.username", "idx_kosync_credentials_username") {
 		return nil, ErrKOSyncUsernameExists
 	}
 	return cred, err
-}
-
-// isKOSyncUsernameUniqueViolation checks if an error is a unique constraint violation
-// specifically on the username column of kosync_credentials.
-func isKOSyncUsernameUniqueViolation(err error) bool {
-	msg := err.Error()
-	// SQLite: "UNIQUE constraint failed: kosync_credentials.username"
-	// PostgreSQL: "...violates unique constraint \"idx_kosync_credentials_username\""
-	return strings.Contains(msg, "kosync_credentials.username") ||
-		strings.Contains(msg, "idx_kosync_credentials_username")
 }
 
 // DeleteKOSyncCredential removes the KOSync credential for a user.
