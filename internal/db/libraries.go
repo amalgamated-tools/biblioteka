@@ -136,3 +136,13 @@ func isUniqueViolation(err error) bool {
 	return strings.Contains(msg, "UNIQUE constraint failed") ||
 		strings.Contains(msg, "duplicate key value violates unique constraint")
 }
+
+// isColumnUniqueViolation reports whether err is a unique constraint violation
+// on the specified table column (SQLite) or named index (PostgreSQL).
+func isColumnUniqueViolation(err error, tableCol, idxName string) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, tableCol) || strings.Contains(msg, idxName)
+}
