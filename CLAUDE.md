@@ -427,6 +427,10 @@ When implementing the `UpsertXxxCredential` database function for a new sync pro
 
 ```go
 func (d *DB) UpsertMyProtocolCredential(ctx context.Context, userID, username, passwordHash string) (*MyProtocolCredential, error) {
+    slog.DebugContext(ctx, "db: upserting MyProtocol credential",
+        slog.String(otelkeys.UserID, userID),
+        slog.String(otelkeys.MyProtocolUsername, username),
+    )
     query := `INSERT INTO myprotocol_credentials (user_id, username, password_hash, updated_at)
         VALUES ($1, $2, $3, ` + d.now() + `)
         ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = ` + d.now() + `
