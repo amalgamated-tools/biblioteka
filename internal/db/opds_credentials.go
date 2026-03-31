@@ -59,18 +59,10 @@ func (d *DB) UpsertOPDSCredential(ctx context.Context, userID, username, passwor
 		slog.String(otelkeys.OPDSUsername, username),
 	)
 
-	var query string
-	if d.Dialect == DialectPostgres {
-		query = `INSERT INTO opds_credentials (user_id, username, password_hash)
-			VALUES ($1, $2, $3)
-			ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = NOW()
-			RETURNING ` + opdsCredentialColumns
-	} else {
-		query = `INSERT INTO opds_credentials (user_id, username, password_hash)
-			VALUES ($1, $2, $3)
-			ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = datetime('now')
-			RETURNING ` + opdsCredentialColumns
-	}
+	query := `INSERT INTO opds_credentials (user_id, username, password_hash, updated_at)
+		VALUES ($1, $2, $3, ` + d.now() + `)
+		ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = ` + d.now() + `
+		RETURNING ` + opdsCredentialColumns
 
 	cred, err := scanOPDSCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
 	if err != nil && isUsernameUniqueViolation(err) {
