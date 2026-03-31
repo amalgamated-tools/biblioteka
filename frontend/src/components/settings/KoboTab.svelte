@@ -11,6 +11,7 @@
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
+  import { autofocusFirstButton } from "../../lib/actions";
 
   type KoboTokenDisplay = KoboToken & { token?: string };
 
@@ -83,13 +84,6 @@
       );
       trigger?.focus();
     }
-  }
-
-  function autofocusFirstButton(node: HTMLElement) {
-    tick().then(() => {
-      const btn = node.querySelector<HTMLElement>("button");
-      btn?.focus();
-    });
   }
 
   async function confirmDeleteToken() {
@@ -209,7 +203,7 @@
                     class="flex items-center gap-2 animate-scale-in"
                     role="alertdialog"
                     aria-modal="false"
-                    aria-labelledby="delete-token-confirm-label-{token.id}"
+                    aria-labelledby={`delete-token-confirm-label-${token.id}`}
                     tabindex="-1"
                     use:autofocusFirstButton
                     onkeydown={(e: KeyboardEvent) => {
@@ -217,7 +211,7 @@
                     }}
                   >
                     <span
-                      id="delete-token-confirm-label-{token.id}"
+                      id={`delete-token-confirm-label-${token.id}`}
                       class="text-xs text-danger-600 dark:text-red-400"
                       >Delete "{token.name}"?</span
                     >

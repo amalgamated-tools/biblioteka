@@ -11,6 +11,7 @@
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
+  import { autofocusFirstButton } from "../../lib/actions";
 
   let apiKeyList: APIKey[] = $state.raw([]);
   let apiKeysLoading = $state(false);
@@ -96,13 +97,6 @@
       );
       trigger?.focus();
     }
-  }
-
-  function autofocusFirstButton(node: HTMLElement) {
-    tick().then(() => {
-      const btn = node.querySelector<HTMLElement>("button");
-      btn?.focus();
-    });
   }
 
   async function confirmDeleteAPIKey() {
@@ -262,7 +256,7 @@
                       class="flex items-center justify-end gap-2 animate-scale-in"
                       role="alertdialog"
                       aria-modal="false"
-                      aria-labelledby="delete-key-confirm-label-{key.id}"
+                      aria-labelledby={`delete-key-confirm-label-${key.id}`}
                       tabindex="-1"
                       use:autofocusFirstButton
                       onkeydown={(e: KeyboardEvent) => {
@@ -270,7 +264,7 @@
                       }}
                     >
                       <span
-                        id="delete-key-confirm-label-{key.id}"
+                        id={`delete-key-confirm-label-${key.id}`}
                         class="text-xs text-danger-600 dark:text-red-400"
                         >Delete "{key.name}"?</span
                       >
