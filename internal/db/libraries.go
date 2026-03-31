@@ -140,7 +140,7 @@ func isUniqueViolation(err error) bool {
 // isColumnUniqueViolation reports whether err is a unique constraint violation
 // on the specified table column (SQLite) or named index (PostgreSQL).
 func isColumnUniqueViolation(err error, tableCol, idxName string) bool {
-	if err == nil {
+	if err == nil || !isUniqueViolation(err) {
 		return false
 	}
 	msg := err.Error()
