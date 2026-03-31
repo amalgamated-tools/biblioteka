@@ -7,7 +7,7 @@
   } from "../../lib/api";
   import { copyToClipboard } from "../../lib/clipboard";
   import { BookOpen, Copy, Trash2 } from "lucide-svelte";
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
@@ -69,8 +69,27 @@
     }
   }
 
-  async function handleDeleteToken(id: string, name: string) {
+  function handleDeleteToken(id: string, name: string) {
     pendingDeleteToken = { id, name };
+  }
+
+  async function cancelDeleteToken() {
+    const id = pendingDeleteToken?.id;
+    pendingDeleteToken = null;
+    await tick();
+    if (id) {
+      const trigger = document.querySelector<HTMLElement>(
+        `[data-delete-trigger="${id}"]`,
+      );
+      trigger?.focus();
+    }
+  }
+
+  function autofocusFirstButton(node: HTMLElement) {
+    tick().then(() => {
+      const btn = node.querySelector<HTMLElement>("button");
+      btn?.focus();
+    });
   }
 
   async function confirmDeleteToken() {
@@ -191,6 +210,11 @@
                     role="alertdialog"
                     aria-modal="false"
                     aria-labelledby="delete-token-confirm-label-{token.id}"
+                    tabindex="-1"
+                    use:autofocusFirstButton
+                    onkeydown={(e: KeyboardEvent) => {
+                      if (e.key === "Escape") cancelDeleteToken();
+                    }}
                   >
                     <span
                       id="delete-token-confirm-label-{token.id}"
@@ -208,7 +232,7 @@
                     <Button
                       type="button"
                       variant="secondary"
-                      onclick={() => (pendingDeleteToken = null)}
+                      onclick={cancelDeleteToken}
                       class="px-3 py-1 text-xs"
                     >
                       Cancel
@@ -216,6 +240,7 @@
                   </div>
                 {:else}
                   <button
+                    data-delete-trigger={token.id}
                     onclick={() => handleDeleteToken(token.id, token.name)}
                     aria-label={`Delete token ${token.name} (created ${new Date(token.created_at).toLocaleDateString()})`}
                     class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"

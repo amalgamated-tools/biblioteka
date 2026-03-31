@@ -7,7 +7,7 @@
   } from "../../lib/api";
   import { copyToClipboard } from "../../lib/clipboard";
   import { KeyRound, Copy, Trash2 } from "lucide-svelte";
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
@@ -82,8 +82,27 @@
     }
   }
 
-  async function handleDeleteAPIKey(id: string, name: string) {
+  function handleDeleteAPIKey(id: string, name: string) {
     pendingDeleteKey = { id, name };
+  }
+
+  async function cancelDeleteAPIKey() {
+    const id = pendingDeleteKey?.id;
+    pendingDeleteKey = null;
+    await tick();
+    if (id) {
+      const trigger = document.querySelector<HTMLElement>(
+        `[data-delete-trigger="${id}"]`,
+      );
+      trigger?.focus();
+    }
+  }
+
+  function autofocusFirstButton(node: HTMLElement) {
+    tick().then(() => {
+      const btn = node.querySelector<HTMLElement>("button");
+      btn?.focus();
+    });
   }
 
   async function confirmDeleteAPIKey() {
@@ -244,6 +263,11 @@
                       role="alertdialog"
                       aria-modal="false"
                       aria-labelledby="delete-key-confirm-label-{key.id}"
+                      tabindex="-1"
+                      use:autofocusFirstButton
+                      onkeydown={(e: KeyboardEvent) => {
+                        if (e.key === "Escape") cancelDeleteAPIKey();
+                      }}
                     >
                       <span
                         id="delete-key-confirm-label-{key.id}"
@@ -261,7 +285,7 @@
                       <Button
                         type="button"
                         variant="secondary"
-                        onclick={() => (pendingDeleteKey = null)}
+                        onclick={cancelDeleteAPIKey}
                         class="px-3 py-1 text-xs"
                       >
                         Cancel
@@ -269,6 +293,7 @@
                     </div>
                   {:else}
                     <button
+                      data-delete-trigger={key.id}
                       onclick={() => handleDeleteAPIKey(key.id, key.name)}
                       aria-label={`Delete API key ${key.name} (${key.key_prefix}...)`}
                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"

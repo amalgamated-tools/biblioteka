@@ -38,6 +38,7 @@ import APIKeysTab from "./APIKeysTab.svelte";
 describe("APIKeysTab delete confirmation", () => {
   afterEach(() => {
     cleanup();
+    vi.clearAllMocks();
   });
 
   it("does not call deleteAPIKey when Delete button is clicked (shows confirmation instead)", async () => {
@@ -128,5 +129,41 @@ describe("APIKeysTab delete confirmation", () => {
     expect(
       screen.getByRole("button", { name: /Delete API key My Script/ }),
     ).toBeInTheDocument();
+  });
+
+  it("dismisses confirmation dialog when Escape is pressed", async () => {
+    render(APIKeysTab);
+    await tick();
+    await tick();
+
+    const deleteButton = screen.getByRole("button", {
+      name: /Delete API key CI Pipeline/,
+    });
+    await fireEvent.click(deleteButton);
+    await tick();
+
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+
+    const dialog = screen.getByRole("alertdialog");
+    await fireEvent.keyDown(dialog, { key: "Escape" });
+    await tick();
+
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("moves focus to the Delete confirm button when dialog opens", async () => {
+    render(APIKeysTab);
+    await tick();
+    await tick();
+
+    const deleteButton = screen.getByRole("button", {
+      name: /Delete API key CI Pipeline/,
+    });
+    await fireEvent.click(deleteButton);
+    await tick();
+    await tick();
+
+    const confirmButton = screen.getByRole("button", { name: "Delete" });
+    expect(document.activeElement).toBe(confirmButton);
   });
 });
