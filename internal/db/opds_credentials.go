@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -65,20 +64,10 @@ func (d *DB) UpsertOPDSCredential(ctx context.Context, userID, username, passwor
 		RETURNING ` + opdsCredentialColumns
 
 	cred, err := scanOPDSCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
-	if err != nil && isUsernameUniqueViolation(err) {
+	if err != nil && isColumnUniqueViolation(err, "opds_credentials.username", "idx_opds_credentials_username") {
 		return nil, ErrOPDSUsernameExists
 	}
 	return cred, err
-}
-
-// isUsernameUniqueViolation checks if an error is a unique constraint violation
-// specifically on the username column, not on user_id or other columns.
-func isUsernameUniqueViolation(err error) bool {
-	msg := err.Error()
-	// SQLite: "UNIQUE constraint failed: opds_credentials.username"
-	// PostgreSQL: "...violates unique constraint \"idx_opds_credentials_username\""
-	return strings.Contains(msg, "opds_credentials.username") ||
-		strings.Contains(msg, "idx_opds_credentials_username")
 }
 
 // DeleteOPDSCredential removes the OPDS credential for a user.
