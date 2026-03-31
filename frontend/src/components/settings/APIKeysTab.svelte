@@ -7,10 +7,11 @@
   } from "../../lib/api";
   import { copyToClipboard } from "../../lib/clipboard";
   import { KeyRound, Copy, Trash2 } from "lucide-svelte";
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
+  import { autofocusFirstButton } from "../../lib/actions";
 
   let apiKeyList: APIKey[] = $state.raw([]);
   let apiKeysLoading = $state(false);
@@ -20,6 +21,7 @@
   let createKeyLoading = $state(false);
   let keyCopied = $state(false);
   let keyCopiedTimeout: number | null = null;
+  let pendingDeleteKey: { id: string; name: string } | null = $state(null);
 
   onDestroy(() => {
     if (keyCopiedTimeout !== null) {
@@ -81,10 +83,26 @@
     }
   }
 
-  async function handleDeleteAPIKey(id: string, name: string) {
-    if (!confirm(`Delete API key "${name}"? This action cannot be undone.`)) {
-      return;
+  function handleDeleteAPIKey(id: string, name: string) {
+    pendingDeleteKey = { id, name };
+  }
+
+  async function cancelDeleteAPIKey() {
+    const id = pendingDeleteKey?.id;
+    pendingDeleteKey = null;
+    await tick();
+    if (id) {
+      const trigger = document.querySelector<HTMLElement>(
+        `[data-delete-trigger="${id}"]`,
+      );
+      trigger?.focus();
     }
+  }
+
+  async function confirmDeleteAPIKey() {
+    if (!pendingDeleteKey) return;
+    const { id } = pendingDeleteKey;
+    pendingDeleteKey = null;
     apiKeysError = null;
     try {
       await deleteAPIKey(id);
@@ -233,14 +251,51 @@
                     : "Never"}
                 </td>
                 <td class="py-3 text-right">
-                  <button
-                    onclick={() => handleDeleteAPIKey(key.id, key.name)}
-                    aria-label={`Delete API key ${key.name} (${key.key_prefix}...)`}
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
-                  >
-                    <Trash2 class="w-3.5 h-3.5" />
-                    Delete
-                  </button>
+                  {#if pendingDeleteKey?.id === key.id}
+                    <div
+                      class="flex items-center justify-end gap-2 animate-scale-in"
+                      role="alertdialog"
+                      aria-modal="false"
+                      aria-labelledby={`delete-key-confirm-label-${key.id}`}
+                      tabindex="-1"
+                      use:autofocusFirstButton
+                      onkeydown={(e: KeyboardEvent) => {
+                        if (e.key === "Escape") cancelDeleteAPIKey();
+                      }}
+                    >
+                      <span
+                        id={`delete-key-confirm-label-${key.id}`}
+                        class="text-xs text-danger-600 dark:text-red-400"
+                        >Delete "{key.name}"?</span
+                      >
+                      <Button
+                        type="button"
+                        variant="danger"
+                        onclick={confirmDeleteAPIKey}
+                        class="px-3 py-1 text-xs"
+                      >
+                        Delete
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onclick={cancelDeleteAPIKey}
+                        class="px-3 py-1 text-xs"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  {:else}
+                    <button
+                      data-delete-trigger={key.id}
+                      onclick={() => handleDeleteAPIKey(key.id, key.name)}
+                      aria-label={`Delete API key ${key.name} (${key.key_prefix}...)`}
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
+                    >
+                      <Trash2 class="w-3.5 h-3.5" />
+                      Delete
+                    </button>
+                  {/if}
                 </td>
               </tr>
             {/each}
