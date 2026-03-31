@@ -444,7 +444,7 @@ func (d *DB) UpsertMyProtocolCredential(ctx context.Context, userID, username, p
 }
 ```
 
-`isColumnUniqueViolation(err, tableCol, idxName string) bool` first confirms `isUniqueViolation(err)` (SQLite or PostgreSQL dialect), then checks the error message for the specific column name (`tableCol`) or index name (`idxName`). Pass the fully qualified column reference as `tableCol` (e.g. `"myprotocol_credentials.username"`) and the named unique index as `idxName` (e.g. `"idx_myprotocol_credentials_username"`). Both arguments cover dialect differences: SQLite includes the column reference in its message, PostgreSQL includes the index name.
+`isColumnUniqueViolation(err, tableCol, idxName string) bool` first confirms `isUniqueViolation(err)` (SQLite or PostgreSQL dialect), then checks the error message for the specific column name (`tableCol`) or index name (`idxName`). Pass the fully qualified column reference as `tableCol` (e.g. `"myprotocol_credentials.username"`) and the named unique index as `idxName` (e.g. `"idx_myprotocol_credentials_username"`). SQLite may reference either the column or the index name in its message, while PostgreSQL references the constraint/index name — hence passing both `tableCol` and `idxName`.
 
 ## Frontend Conventions
 

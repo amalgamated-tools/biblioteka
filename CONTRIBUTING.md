@@ -471,7 +471,7 @@ The `internal/db` package provides two unexported helpers for detecting unique-c
   return cred, err
   ```
 
-  Pass the fully qualified column reference as `tableCol` (e.g. `"myprotocol_credentials.username"`) and the named unique index as `idxName` (e.g. `"idx_myprotocol_credentials_username"`). Both arguments are needed because SQLite includes the column reference in its error message while PostgreSQL includes the index name.
+  Pass the fully qualified column reference as `tableCol` (e.g. `"myprotocol_credentials.username"`) and the named unique index as `idxName` (e.g. `"idx_myprotocol_credentials_username"`). Both arguments are needed because, in SQLite, unique violations may mention either the fully qualified column reference or the unique index name (depending on how the uniqueness is enforced), while PostgreSQL reports the index/constraint name.
 
 ## Continuous Integration
 
