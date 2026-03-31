@@ -159,9 +159,7 @@ describe("LibraryForm monitor toggle switch", () => {
     });
     await tick();
 
-    const input = container.querySelector(
-      "#lib-monitored",
-    ) as HTMLInputElement;
+    const input = container.querySelector("#lib-monitored") as HTMLInputElement;
     expect(input.checked).toBe(false);
     expect(input).toHaveAttribute("aria-checked", "false");
   });
@@ -172,9 +170,7 @@ describe("LibraryForm monitor toggle switch", () => {
     });
     await tick();
 
-    const input = container.querySelector(
-      "#lib-monitored",
-    ) as HTMLInputElement;
+    const input = container.querySelector("#lib-monitored") as HTMLInputElement;
     expect(input).toHaveAttribute("aria-checked", "false");
 
     await fireEvent.click(input);
