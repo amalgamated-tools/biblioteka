@@ -48,10 +48,7 @@ func KOSyncHeaderAuthMiddleware(checker KOSyncCredentialChecker) func(http.Handl
 		extractCreds: func(r *http.Request) (username, secret string, ok bool) {
 			username = strings.TrimSpace(r.Header.Get(kosyncAuthUserHeader))
 			secret = r.Header.Get(kosyncAuthKeyHeader)
-			if username == "" || secret == "" {
-				return "", "", false
-			}
-			return username, secret, true
+			return username, secret, username != "" && secret != ""
 		},
 		lookupCredential: func(ctx context.Context, username string) (string, string, error) {
 			cred, err := checker.GetKOSyncCredential(ctx, username)
