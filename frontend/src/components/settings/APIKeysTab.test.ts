@@ -68,12 +68,8 @@ describe("APIKeysTab delete confirmation", () => {
 
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     expect(screen.getByText(/Delete "CI Pipeline"\?/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Delete" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Cancel" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 
   it("dismisses confirmation dialog when Cancel is clicked", async () => {
