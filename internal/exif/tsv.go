@@ -488,15 +488,63 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 		}
 	}
 
-	// let's see if we have a cover image
+	// Cover image discovery, in priority order:
+	// 1. Already found during manifest flush (id == "cover" with image type)
+	// 2. <meta name="cover" content="ITEM_ID"> pointing to a manifest item
+	// 3. Manifest item with properties="cover-image"
+	// 4. Manifest item whose ID or href contains "cover" and has image type
+	// 5. Single-image fallback (only one image in the manifest)
 	if out.CoverImage == nil {
-		for i, item := range out.ManifestItems {
-			if isLikelyImage(item.Href, item.MediaType) {
-				if strings.EqualFold(item.Properties, "cover-image") || strings.EqualFold(item.ID, "cover") {
+		// Strategy 2: follow <meta name="cover" content="...">
+		coverID := ""
+		for _, mt := range out.MetaTags {
+			if strings.EqualFold(mt.Name, "cover") {
+				coverID = strings.TrimSpace(mt.Content)
+				break
+			}
+		}
+		if coverID != "" {
+			for i, item := range out.ManifestItems {
+				if strings.TrimSpace(item.ID) == coverID && isLikelyImage(item.Href, item.MediaType) {
 					out.CoverImage = &out.ManifestItems[i]
 					break
 				}
 			}
+		}
+	}
+
+	if out.CoverImage == nil {
+		// Strategy 3 & 4: properties="cover-image", or ID/href containing "cover"
+		for i, item := range out.ManifestItems {
+			if !isLikelyImage(item.Href, item.MediaType) {
+				continue
+			}
+			if strings.EqualFold(item.Properties, "cover-image") {
+				out.CoverImage = &out.ManifestItems[i]
+				break
+			}
+			if strings.Contains(strings.ToLower(item.ID), "cover") || strings.Contains(strings.ToLower(item.Href), "cover") {
+				out.CoverImage = &out.ManifestItems[i]
+				break
+			}
+		}
+	}
+
+	if out.CoverImage == nil {
+		// Strategy 5: single-image fallback
+		var onlyImage *ManifestItem
+		imageCount := 0
+		for i, item := range out.ManifestItems {
+			if isLikelyImage(item.Href, item.MediaType) {
+				onlyImage = &out.ManifestItems[i]
+				imageCount++
+				if imageCount > 1 {
+					break
+				}
+			}
+		}
+		if imageCount == 1 {
+			out.CoverImage = onlyImage
 		}
 	}
 

@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -80,24 +79,12 @@ func TestExtractMetadata_EPUB(t *testing.T) {
 
 func TestExtractMetadata_EPUBCoverImage(t *testing.T) {
 	dir := t.TempDir()
-	epubPath := filepath.Join(dir, "hail.epub")
-
-	// Copy from books/hail.epub to the tmp folder
-	src, err := os.Open("../../books/hail.epub")
-	if err != nil {
-		t.Fatalf("open source epub: %v", err)
-	}
-	defer src.Close()
-
-	dst, err := os.Create(epubPath)
-	if err != nil {
-		t.Fatalf("create destination epub: %v", err)
-	}
-	defer dst.Close()
-
-	if _, err := io.Copy(dst, src); err != nil {
-		t.Fatalf("copy epub: %v", err)
-	}
+	epubPath := filepath.Join(dir, "cover.epub")
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "Cover Test", "Author", "urn:isbn:9780000000000", testutils.EPUBOptions{
+		CoverImageData: testutils.TinyPNG(),
+		CoverImageHref: "images/cover.png",
+		CoverMediaType: "image/png",
+	})
 
 	ext := requireExifTool(t)
 	defer ext.Close(t.Context())
@@ -107,8 +94,8 @@ func TestExtractMetadata_EPUBCoverImage(t *testing.T) {
 		t.Fatalf("extract: %v", err)
 	}
 
-	if !strings.HasPrefix(meta.CoverImageURL, "data:image/jpeg;base64,") {
-		t.Fatalf("expected JPEG data URL, got %q", meta.CoverImageURL)
+	if !strings.HasPrefix(meta.CoverImageURL, "data:image/png;base64,") {
+		t.Fatalf("expected PNG data URL, got %q", meta.CoverImageURL)
 	}
 }
 
