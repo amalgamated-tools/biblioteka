@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"os"
 	pathpkg "path"
+	"path/filepath"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -125,6 +126,9 @@ func ParseTSV(ctx context.Context, data, fileFormat string) (*ExifToolOutput, er
 	var curManifest *ManifestItem
 
 	for line := range strings.SplitSeq(data, "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
 		key, value, ok := strings.Cut(line, "\t")
 		if !ok {
 			slog.WarnContext(ctx, "malformed line in exiftool output (no tab separator)", slog.String(otelkeys.Line, line))
@@ -487,10 +491,10 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 
 	// let's see if we have a cover image
 	if out.CoverImage == nil {
-		for _, item := range out.ManifestItems {
+		for i, item := range out.ManifestItems {
 			if isLikelyImage(item.Href, item.MediaType) {
 				if strings.EqualFold(item.Properties, "cover-image") || strings.EqualFold(item.ID, "cover") {
-					out.CoverImage = &item
+					out.CoverImage = &out.ManifestItems[i]
 					break
 				}
 			}
@@ -499,7 +503,7 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 
 	if out.CoverImage != nil {
 		// let's get the cover image
-		coverImageURL, err := extractEPUBCoverDataURL(ctx, out.CoverImage, pathpkg.Join(out.Directory, out.FileName))
+		coverImageURL, err := extractEPUBCoverDataURL(ctx, out.CoverImage, filepath.Join(out.Directory, out.FileName))
 		if err != nil {
 			slog.WarnContext(ctx, "failed to extract cover image", slog.String(otelkeys.Error, err.Error()))
 		} else {
@@ -509,7 +513,7 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 }
 
 func finishMOBI(ctx context.Context, out *ExifToolOutput) {
-	coverImageURL, err := GetMobiCover(ctx, pathpkg.Join(out.Directory, out.FileName))
+	coverImageURL, err := GetMobiCover(ctx, filepath.Join(out.Directory, out.FileName))
 	if err != nil {
 		slog.WarnContext(ctx, "failed to extract MOBI cover image", slog.String(otelkeys.Error, err.Error()))
 	} else {
