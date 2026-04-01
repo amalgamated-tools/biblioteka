@@ -68,7 +68,7 @@ func extractBookMetadata(ctx context.Context, extractor *metadata.Extractor, pat
 		slog.Any(otelkeys.BookMetadata, meta),
 	)
 
-	return &exif.ExifToolOutput{}
+	return meta
 }
 
 // resolveAuthorAndTitle merges metadata-derived and path-derived author and
