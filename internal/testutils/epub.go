@@ -6,11 +6,188 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"os"
 	pathpkg "path"
 	"strings"
 	"testing"
 )
+
+// CreateTestEPUBFromFile reads an existing EPUB, extracts its cover image and
+// basic metadata, then writes a minimal EPUB at dstPath containing only the
+// cover and a blank page.
+func CreateTestEPUBFromFile(t *testing.T, srcPath, dstPath string) {
+	t.Helper()
+
+	r, err := zip.OpenReader(srcPath)
+	if err != nil {
+		t.Fatalf("open source EPUB: %v", err)
+	}
+	defer r.Close()
+
+	rootPath := findRootFilePath(t, r.File)
+	rootDir := pathpkg.Dir(rootPath)
+
+	opfData := readZipEntry(t, r.File, rootPath)
+	opf := parseOPF(t, opfData)
+
+	cover := findCoverItem(opf)
+
+	title := "Unknown"
+	creator := "Unknown"
+	identifier := "unknown-id"
+	lang := "en"
+	if opf.Metadata.Title != "" {
+		title = opf.Metadata.Title
+	}
+	if opf.Metadata.Creator != "" {
+		creator = opf.Metadata.Creator
+	}
+	if opf.Metadata.Identifier.Value != "" {
+		identifier = opf.Metadata.Identifier.Value
+	}
+	if opf.Metadata.Language != "" {
+		lang = opf.Metadata.Language
+	}
+
+	var coverData []byte
+	var coverHref, coverMediaType string
+	if cover != nil {
+		coverHref = cover.Href
+		coverMediaType = cover.MediaType
+
+		// Resolve href relative to the OPF directory.
+		archivePath := pathpkg.Join(rootDir, cover.Href)
+		coverData = readZipEntry(t, r.File, archivePath)
+	}
+
+	opts := EPUBOptions{
+		Language:       lang,
+		CoverImageData: coverData,
+		CoverImageHref: coverHref,
+		CoverMediaType: coverMediaType,
+	}
+	MakeTestEPUBWithOptions(t, dstPath, title, creator, identifier, opts)
+}
+
+// opfPackage is a minimal representation of an EPUB OPF package document.
+type opfPackage struct {
+	XMLName  xml.Name    `xml:"package"`
+	Metadata opfMetadata `xml:"metadata"`
+	Manifest struct {
+		Items []opfManifestItem `xml:"item"`
+	} `xml:"manifest"`
+}
+
+type opfMetadata struct {
+	Title      string           `xml:"title"`
+	Creator    string           `xml:"creator"`
+	Identifier opfIdentifier    `xml:"identifier"`
+	Language   string           `xml:"language"`
+	Meta       []opfMetaElement `xml:"meta"`
+}
+
+type opfIdentifier struct {
+	Value string `xml:",chardata"`
+}
+
+type opfMetaElement struct {
+	Name    string `xml:"name,attr"`
+	Content string `xml:"content,attr"`
+}
+
+type opfManifestItem struct {
+	ID         string `xml:"id,attr"`
+	Href       string `xml:"href,attr"`
+	MediaType  string `xml:"media-type,attr"`
+	Properties string `xml:"properties,attr"`
+}
+
+func findRootFilePath(t *testing.T, files []*zip.File) string {
+	t.Helper()
+	data := readZipEntry(t, files, "META-INF/container.xml")
+
+	var container struct {
+		Rootfiles []struct {
+			FullPath string `xml:"full-path,attr"`
+		} `xml:"rootfiles>rootfile"`
+	}
+	if err := xml.Unmarshal(data, &container); err != nil {
+		t.Fatalf("parse container.xml: %v", err)
+	}
+	if len(container.Rootfiles) == 0 {
+		t.Fatal("container.xml has no rootfiles")
+	}
+	return container.Rootfiles[0].FullPath
+}
+
+func parseOPF(t *testing.T, data []byte) opfPackage {
+	t.Helper()
+	var pkg opfPackage
+	if err := xml.Unmarshal(data, &pkg); err != nil {
+		t.Fatalf("parse OPF: %v", err)
+	}
+	return pkg
+}
+
+// findCoverItem locates the cover image manifest item using three strategies:
+//  1. <meta name="cover" content="ITEM_ID"/> → manifest item with that ID
+//  2. Manifest item with properties="cover-image" (EPUB 3)
+//  3. Manifest item with ID containing "cover" and an image media type
+func findCoverItem(opf opfPackage) *opfManifestItem {
+	items := opf.Manifest.Items
+
+	// Strategy 1: meta tag with name="cover".
+	for _, m := range opf.Metadata.Meta {
+		if strings.EqualFold(m.Name, "cover") && m.Content != "" {
+			for i := range items {
+				if strings.EqualFold(items[i].ID, m.Content) && isImageMediaType(items[i].MediaType) {
+					return &items[i]
+				}
+			}
+		}
+	}
+
+	// Strategy 2: properties="cover-image".
+	for i := range items {
+		if strings.EqualFold(items[i].Properties, "cover-image") && isImageMediaType(items[i].MediaType) {
+			return &items[i]
+		}
+	}
+
+	// Strategy 3: ID contains "cover" with an image media type.
+	for i := range items {
+		if strings.Contains(strings.ToLower(items[i].ID), "cover") && isImageMediaType(items[i].MediaType) {
+			return &items[i]
+		}
+	}
+
+	return nil
+}
+
+func isImageMediaType(mt string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(mt)), "image/")
+}
+
+func readZipEntry(t *testing.T, files []*zip.File, name string) []byte {
+	t.Helper()
+	for _, f := range files {
+		if strings.EqualFold(f.Name, name) {
+			rc, err := f.Open()
+			if err != nil {
+				t.Fatalf("open zip entry %s: %v", name, err)
+			}
+			defer rc.Close()
+			data, err := io.ReadAll(rc)
+			if err != nil {
+				t.Fatalf("read zip entry %s: %v", name, err)
+			}
+			return data
+		}
+	}
+	t.Fatalf("zip entry not found: %s", name)
+	return nil
+}
 
 // MakeTestEPUB creates a minimal valid EPUB file at the given path.
 // The EPUB spec requires: mimetype, META-INF/container.xml, and a content.opf.

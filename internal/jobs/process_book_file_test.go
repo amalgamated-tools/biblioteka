@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -255,16 +256,28 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
-	epubPath := filepath.Join(dir, "covered.epub")
-	testutils.MakeTestEPUBWithOptions(t, epubPath, "Covered Book", "Author", "urn:isbn:9780743273565", testutils.EPUBOptions{
-		CoverImageData: testutils.TinyPNG(),
-		CoverImageHref: "images/cover.png",
-		CoverMediaType: "image/png",
-	})
+	epubPath := filepath.Join(dir, "hail.epub")
+
+	// Copy from books/hail.epub to the tmp folder
+	src, err := os.Open("../../books/hail.epub")
+	if err != nil {
+		t.Fatalf("open source epub: %v", err)
+	}
+	defer src.Close()
+
+	dst, err := os.Create(epubPath)
+	if err != nil {
+		t.Fatalf("create destination epub: %v", err)
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, src); err != nil {
+		t.Fatalf("copy epub: %v", err)
+	}
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:     epubPath,
-		FileName: "covered.epub",
+		FileName: "hail.epub",
 		FileType: "epub",
 		FileSize: 1024,
 	})
@@ -279,7 +292,7 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 	if len(books) != 1 {
 		t.Fatalf("expected 1 book, got %d", len(books))
 	}
-	if books[0].CoverImageURL == nil || !strings.HasPrefix(*books[0].CoverImageURL, "data:image/png;base64,") {
+	if books[0].CoverImageURL == nil || !strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,") {
 		t.Fatalf("expected embedded cover data URL, got %#v", books[0].CoverImageURL)
 	}
 }
