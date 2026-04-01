@@ -60,8 +60,8 @@ func TestExtractMetadata_EPUB(t *testing.T) {
 	if meta.Author != "F. Scott Fitzgerald" {
 		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", meta.Author)
 	}
-	if meta.ISBN != "9780743273565" {
-		t.Errorf("expected ISBN %q, got %q", "9780743273565", meta.ISBN)
+	if meta.ISBN13 != "9780743273565" {
+		t.Errorf("expected ISBN %q, got %q", "9780743273565", meta.ISBN13)
 	}
 	if meta.Description != "A novel about the Jazz Age" {
 		t.Errorf("expected description %q, got %q", "A novel about the Jazz Age", meta.Description)
@@ -146,8 +146,8 @@ func TestExtractMetadata_EPUBWithISBN10(t *testing.T) {
 		t.Fatalf("extract: %v", err)
 	}
 
-	if meta.ISBN != "0743273567" {
-		t.Errorf("expected ISBN %q, got %q", "0743273567", meta.ISBN)
+	if meta.ISBN10 != "0743273567" {
+		t.Errorf("expected ISBN %q, got %q", "0743273567", meta.ISBN10)
 	}
 }
 
@@ -164,8 +164,8 @@ func TestExtractMetadata_EPUBWithNoISBN(t *testing.T) {
 		t.Fatalf("extract: %v", err)
 	}
 
-	if meta.ISBN != "" {
-		t.Errorf("expected ISBN %q, got %q", "", meta.ISBN)
+	if meta.ISBN() != "" {
+		t.Errorf("expected ISBN %q, got %q", "", meta.ISBN())
 	}
 }
 

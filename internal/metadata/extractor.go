@@ -3,7 +3,6 @@ package metadata
 import (
 	"archive/zip"
 	"context"
-	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -23,17 +22,17 @@ import (
 
 var ErrExifToolUnavailable = errors.New("exiftool is not available on this system")
 
-type BookMetadata struct {
-	Author          string
-	CoverImageURL   string
-	Description     string
-	Format          string
-	ISBN            string
-	Language        string
-	PublicationDate string
-	Publisher       string
-	Title           string
-}
+// type BookMetadata struct {
+// 	Author          string
+// 	CoverImageURL   string
+// 	Description     string
+// 	Format          string
+// 	ISBN            string
+// 	Language        string
+// 	PublicationDate string
+// 	Publisher       string
+// 	Title           string
+// }
 
 // Extractor extracts metadata from book files. Concurrent ExtractMetadata calls are safe,
 // but Close must not be called concurrently with other methods.
@@ -58,79 +57,28 @@ func (e *Extractor) Close() {
 	}
 }
 
-func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*BookMetadata, error) {
+func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*exif.ExifToolOutput, error) {
 	if e.et == nil {
 		return nil, ErrExifToolUnavailable
 	}
 	return e.extractExif(ctx, path)
 }
 
-func (e *Extractor) extractExif(ctx context.Context, path string) (*BookMetadata, error) {
-	output, err := e.et.ExtractMetadataFromFile(path)
+func (e *Extractor) extractExif(ctx context.Context, path string) (*exif.ExifToolOutput, error) {
+	output, err := e.et.ExtractMetadataFromFile(ctx, path)
 	if err != nil {
 		return nil, err
 	}
 
-	title := output.Title
-	if title == "" {
-		title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	if output.Title == "" {
+		output.Title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 	}
 
-	// // ExifTool uses "Author" for most formats but "Creator" for EPUBs.
-	// // isbn := getStringOr(&book, "ISBN", "")
-	// // if isbn == "" {
-	// // 	isbn = getStringOr(&book, "Identifier", "")
-	// // }
-	// // isbn = NormalizeISBN(isbn)
+	if output.PublicationDate != "" {
+		output.PublicationDate = normalizeExifDate(output.PublicationDate)
+	}
 
-	// // pubDate := getStringOr(&book, "PublicationDate", "")
-	// // pubDate = normalizeExifDate(pubDate)
-
-	// coverImageURL := ""
-	// switch {
-	// case strings.EqualFold(filepath.Ext(path), ".epub"):
-	// 	var err error
-	// 	coverImageURL, err = extractEPUBCoverDataURL(ctx, &result, path)
-	// 	if err != nil {
-	// 		slog.WarnContext(ctx, "failed to extract embedded EPUB cover image",
-	// 			slog.String(otelkeys.Path, path),
-	// 			slog.Any(otelkeys.Error, err),
-	// 		)
-	// 	}
-	// case strings.EqualFold(filepath.Ext(path), ".mobi"), strings.EqualFold(filepath.Ext(path), ".azw3"):
-	// 	i, err := GetMobiCover(path)
-	// 	if err != nil {
-	// 		slog.WarnContext(ctx, "failed to extract embedded MOBI cover image",
-	// 			slog.String(otelkeys.Path, path),
-	// 			slog.Any(otelkeys.Error, err),
-	// 		)
-	// 	} else {
-	// 		var buf strings.Builder
-	// 		buf.WriteString("data:image/jpeg;base64,")
-	// 		encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	// 		if err := jpeg.Encode(encoder, i, nil); err != nil {
-	// 			slog.WarnContext(ctx, "failed to encode MOBI cover image as JPEG",
-	// 				slog.String(otelkeys.Path, path),
-	// 				slog.Any(otelkeys.Error, err),
-	// 			)
-	// 		} else {
-	// 			encoder.Close()
-	// 			coverImageURL = buf.String()
-	// 		}
-	// 	}
-	// }
-
-	return &BookMetadata{
-		Title:  title,
-		Author: output.Creator,
-		// CoverImageURL: coverImageURL,
-		// Description:     getStringOr(&book, "Description", ""),
-		ISBN: output.ISBN,
-		// Format:          strings.ToUpper(strings.TrimPrefix(filepath.Ext(path), ".")),
-		// Language:        getStringOr(&book, "Language", ""),
-		// PublicationDate: pubDate,
-		// Publisher:       getStringOr(&book, "Publisher", ""),
-	}, nil
+	return output, nil
 }
 
 type epubContainer struct {
@@ -173,35 +121,6 @@ func GetMobiCover(path string) (i image.Image, err error) {
 	}
 
 	return i, nil
-}
-
-func extractEPUBCoverDataURL(ctx context.Context, book *exif.FileMetadata, filePath string) (string, error) {
-	ref, ok := findEPUBCoverRef(ctx, book)
-	if !ok {
-		return "", nil
-	}
-
-	coverBytes, mimeType, err := readEPUBArchiveFile(ctx, filePath, ref)
-	if err != nil {
-		return "", err
-	}
-
-	return "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(coverBytes), nil
-}
-
-func findEPUBCoverRef(ctx context.Context, book *exif.FileMetadata) (epubCoverRef, bool) {
-	if book.Output.CoverImage == nil {
-		return epubCoverRef{}, false
-	}
-
-	// var firstImage *epubCoverRef
-	ref := epubCoverRef{
-		Href:     strings.TrimSpace(book.Output.CoverImage.Href),
-		MIMEType: strings.TrimSpace(book.Output.CoverImage.MediaType),
-	}
-
-	return ref, true
-
 }
 
 func readEPUBArchiveFile(ctx context.Context, filePath string, ref epubCoverRef) ([]byte, string, error) {
@@ -324,34 +243,34 @@ func cleanArchivePath(name string) string {
 	return strings.TrimPrefix(pathpkg.Clean(name), "./")
 }
 
-func isLikelyImage(href, mimeType string) bool {
-	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(mimeType)), "image/") {
-		return true
-	}
+// func isLikelyImage(href, mimeType string) bool {
+// 	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(mimeType)), "image/") {
+// 		return true
+// 	}
 
-	switch strings.ToLower(pathpkg.Ext(href)) {
-	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg":
-		return true
-	default:
-		return false
-	}
-}
+// 	switch strings.ToLower(pathpkg.Ext(href)) {
+// 	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg":
+// 		return true
+// 	default:
+// 		return false
+// 	}
+// }
 
-func itemAt(items []string, i int) string {
-	if i < 0 || i >= len(items) {
-		return ""
-	}
-	return items[i]
-}
+// func itemAt(items []string, i int) string {
+// 	if i < 0 || i >= len(items) {
+// 		return ""
+// 	}
+// 	return items[i]
+// }
 
-// getStringOr extracts a string tag from an exiftool result, returning fallback if not found.
-func getStringOr(fm *exif.FileMetadata, tag string, fallback string) string {
-	v, err := fm.GetString(tag)
-	if err != nil {
-		return fallback
-	}
-	return v
-}
+// // getStringOr extracts a string tag from an exiftool result, returning fallback if not found.
+// func getStringOr(fm *exif.FileMetadata, tag string, fallback string) string {
+// 	v, err := fm.GetString(tag)
+// 	if err != nil {
+// 		return fallback
+// 	}
+// 	return v
+// }
 
 // normalizeExifDate converts ExifTool's "YYYY:MM:DD" date format to "YYYY-MM-DD".
 func normalizeExifDate(s string) string {

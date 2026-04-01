@@ -13,7 +13,7 @@ func TestParseTSV_FullFile(t *testing.T) {
 		t.Fatalf("failed to read test fixture: %v", err)
 	}
 
-	out, err := ParseTSV(string(data), "epub")
+	out, err := ParseTSV(t.Context(), string(data), "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 
 	// Scalars
@@ -23,11 +23,11 @@ func TestParseTSV_FullFile(t *testing.T) {
 	require.Equal(t, out.FileType, "EPUB", "FileType")
 	require.Equal(t, out.MIMEType, "application/epub+zip", "MIMEType")
 	require.Equal(t, out.Title, "Project Hail Mary", "Title")
-	require.Equal(t, out.Creator, "Andy Weir", "Creator")
+	require.Equal(t, out.Author, "Andy Weir", "Creator")
 	require.Equal(t, out.CreatorFileAs, "Weir, Andy", "CreatorFileAs")
 	require.Equal(t, out.CreatorRole, "aut", "CreatorRole")
 	require.Equal(t, out.Language, "en", "Language")
-	require.Equal(t, out.Date, "2021:05:15", "Date")
+	require.Equal(t, out.PublicationDate, "2021:05:15", "Date")
 	require.Equal(t, out.Publisher, "Ballantine Books", "Publisher")
 	require.ElementsMatch(t, out.Subjects, []string{"Thriller",
 		"Fantasy",
@@ -77,7 +77,7 @@ func TestParseTSV_FullFile(t *testing.T) {
 }
 
 func TestParseTSV_EmptyInput(t *testing.T) {
-	out, err := ParseTSV("", "epub")
+	out, err := ParseTSV(t.Context(), "", "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if len(out.Identifiers) != 0 {
 		t.Errorf("expected 0 identifiers, got %d", len(out.Identifiers))
@@ -86,7 +86,7 @@ func TestParseTSV_EmptyInput(t *testing.T) {
 
 func TestParseTSV_IdentifierWithoutScheme(t *testing.T) {
 	input := "Identifier\turn:isbn:1234567890\n"
-	out, err := ParseTSV(input, "epub")
+	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if got := len(out.Identifiers); got != 1 {
 		t.Fatalf("expected 1 identifier, got %d", got)
@@ -97,7 +97,7 @@ func TestParseTSV_IdentifierWithoutScheme(t *testing.T) {
 
 func TestParseTSV_IdentifierWithScheme(t *testing.T) {
 	input := "Identifier Scheme\tAMAZON\nIdentifier\tB08FHBV4ZX\n"
-	out, err := ParseTSV(input, "epub")
+	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if got := len(out.Identifiers); got != 1 {
 		t.Fatalf("expected 1 identifier, got %d", got)
@@ -108,7 +108,7 @@ func TestParseTSV_IdentifierWithScheme(t *testing.T) {
 
 func TestParseTSV_IdentifierIdPrecedesValue(t *testing.T) {
 	input := "Identifier Id\tuid\nIdentifier\t12345\nIdentifier Scheme\tcalibre\nIdentifier\tabcdef\n"
-	out, err := ParseTSV(input, "epub")
+	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if got := len(out.Identifiers); got != 2 {
 		t.Fatalf("expected 2 identifiers, got %d", got)
@@ -123,7 +123,7 @@ func TestParseTSV_IdentifierIdPrecedesValue(t *testing.T) {
 
 func TestParseTSV_MultipleIdentifiers(t *testing.T) {
 	input := "Identifier Scheme\tISBN\nIdentifier\tAAA\nIdentifier Scheme\tAMAZON\nIdentifier\tBBB\nIdentifier\tCCC\n"
-	out, err := ParseTSV(input, "epub")
+	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if got := len(out.Identifiers); got != 3 {
 		t.Fatalf("expected 3 identifiers, got %d", got)
@@ -138,7 +138,7 @@ func TestParseTSV_MultipleIdentifiers(t *testing.T) {
 
 func TestParseTSV_MetaPairs(t *testing.T) {
 	input := "Meta Content\tcover\nMeta Name\tcover\nMeta Content\tA Novel\nMeta Name\tbooklore:subtitle\n"
-	out, err := ParseTSV(input, "epub")
+	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if got := len(out.MetaTags); got != 2 {
 		t.Fatalf("expected 2 meta tags, got %d", got)
@@ -151,7 +151,7 @@ func TestParseTSV_MetaPairs(t *testing.T) {
 
 func TestParseTSV_UnknownFieldsGoToExtra(t *testing.T) {
 	input := "ExifTool Version Number\t13.50\nFile Permissions\t-rw-r--r--\n"
-	out, err := ParseTSV(input, "epub")
+	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	require.Equal(t, out.Extra["ExifTool Version Number"], "13.50", "Extra[ExifTool Version Number]")
 	require.Equal(t, out.Extra["File Permissions"], "-rw-r--r--", "Extra[File Permissions]")

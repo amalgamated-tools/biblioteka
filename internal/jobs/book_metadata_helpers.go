@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/amalgamated-tools/biblioteka/internal/exif"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/pathparser"
@@ -29,7 +30,7 @@ func deriveTitle(ctx context.Context, fileName, fileType, path string) string {
 
 // extractBookMetadata attempts to extract metadata from a book file.
 // Returns nil when extraction fails; errors are logged, not propagated.
-func extractBookMetadata(ctx context.Context, extractor *metadata.Extractor, path, initialTitle string) *metadata.BookMetadata {
+func extractBookMetadata(ctx context.Context, extractor *metadata.Extractor, path, initialTitle string) *exif.ExifToolOutput {
 	meta, err := extractor.ExtractMetadata(ctx, path)
 	if err != nil {
 		// In environments without ExifTool, metadata extraction is expected to fail
@@ -52,11 +53,11 @@ func extractBookMetadata(ctx context.Context, extractor *metadata.Extractor, pat
 	}
 
 	// Normalize ISBN in-place for downstream consumers.
-	if meta.ISBN != "" {
-		if normalized := metadata.NormalizeISBN(meta.ISBN); normalized != "" {
-			meta.ISBN = normalized
+	if meta.ISBN() != "" {
+		if normalized := metadata.NormalizeISBN(meta.ISBN()); normalized != "" {
+			meta.SetISBN(normalized)
 		} else {
-			meta.ISBN = ""
+			meta.SetISBN("")
 		}
 	}
 
@@ -67,12 +68,12 @@ func extractBookMetadata(ctx context.Context, extractor *metadata.Extractor, pat
 		slog.Any(otelkeys.BookMetadata, meta),
 	)
 
-	return meta
+	return &exif.ExifToolOutput{}
 }
 
 // resolveAuthorAndTitle merges metadata-derived and path-derived author and
 // title values into final resolved values.
-func resolveAuthorAndTitle(meta *metadata.BookMetadata, pathInfo pathparser.PathInfo, currentTitle string) (string, string) {
+func resolveAuthorAndTitle(meta *exif.ExifToolOutput, pathInfo pathparser.PathInfo, currentTitle string) (string, string) {
 	title := currentTitle
 
 	// Override title with metadata if available.

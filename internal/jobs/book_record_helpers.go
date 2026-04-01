@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/exif"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/organize"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -106,7 +107,7 @@ func maybeReorganizeFile(ctx context.Context, database *db.DB, filePath, library
 
 // createBookRecord builds a book and book_file record from extracted metadata
 // and payload fields.
-func createBookRecord(ctx context.Context, database *db.DB, title string, meta *metadata.BookMetadata, p ProcessFilePayload, filePath string) (*db.Book, error) {
+func createBookRecord(ctx context.Context, database *db.DB, title string, meta *exif.ExifToolOutput, p ProcessFilePayload, filePath string) (*db.Book, error) {
 	var description, isbn10, isbn13, coverImageURL *string
 	var publicationDate, publisher, language *string
 
@@ -118,8 +119,8 @@ func createBookRecord(ctx context.Context, database *db.DB, title string, meta *
 			v := meta.CoverImageURL
 			coverImageURL = &v
 		}
-		if meta.ISBN != "" {
-			if normalizedISBN := metadata.NormalizeISBN(meta.ISBN); normalizedISBN != "" {
+		if meta.ISBN() != "" {
+			if normalizedISBN := metadata.NormalizeISBN(meta.ISBN()); normalizedISBN != "" {
 				switch len(normalizedISBN) {
 				case 10:
 					v := normalizedISBN

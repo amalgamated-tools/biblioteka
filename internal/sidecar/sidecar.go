@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/amalgamated-tools/biblioteka/internal/metadata"
+	"github.com/amalgamated-tools/biblioteka/internal/exif"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -12,7 +12,7 @@ import (
 // book file. For book_per_file libraries, sidecar names are derived from the
 // book filename so multiple books can share an author directory safely.
 // All operations are best-effort with WARN-level logging on failure.
-func WriteSidecarFiles(ctx context.Context, bookFilePath string, meta *metadata.BookMetadata, title, authorName, organizationType string) {
+func WriteSidecarFiles(ctx context.Context, bookFilePath string, meta *exif.ExifToolOutput, title, authorName, organizationType string) {
 	dir, baseName, err := sidecarTarget(bookFilePath, organizationType)
 	if err != nil {
 		slog.WarnContext(ctx, "failed to resolve sidecar target",
@@ -46,7 +46,7 @@ func WriteSidecarFiles(ctx context.Context, bookFilePath string, meta *metadata.
 		opfData.Language = meta.Language
 		opfData.Date = meta.PublicationDate
 		opfData.Publisher = meta.Publisher
-		opfData.ISBN = meta.ISBN
+		opfData.ISBN = meta.ISBN()
 	}
 
 	if err := WriteOPF(ctx, dir, opfData, baseName); err != nil {
