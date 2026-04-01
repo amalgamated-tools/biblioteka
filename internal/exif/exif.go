@@ -127,9 +127,10 @@ func (e *Exiftool) Close(ctx context.Context) error {
 	defer e.lock.Unlock()
 
 	for _, v := range closeArgs {
-		_, err := fmt.Fprintln(e.stdin, v)
-		if err != nil {
+		if _, err := fmt.Fprintln(e.stdin, v); err != nil {
 			slog.ErrorContext(ctx, "error while sending close command to exiftool", slog.String(otelkeys.Error, err.Error()))
+			_ = e.stdin.Close()
+			_ = e.cmd.Wait()
 			return fmt.Errorf("error while sending close command to exiftool: %w", err)
 		}
 	}
