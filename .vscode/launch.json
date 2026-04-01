@@ -15,13 +15,13 @@
             "showLog": true
         },
         {
-            "name": "Run CLI (AZW3)",
+            "name": "Run CLI (MOBI)",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "args": [
                 "process-file",
-                "/Users/veverkap/Code/personal/books/thelonggame.azw3"
+                "${workspaceFolder}/books/the-prince.mobi"
             ],
             "program": "cmd/cli/main.go",
             "envFile": "${workspaceFolder}/.env",
@@ -34,7 +34,7 @@
             "mode": "auto",
             "args": [
                 "process-file",
-                "/Users/veverkap/Code/personal/books/hail.epub"
+                "${workspaceFolder}/books/alice.epub"
             ],
             "program": "cmd/cli/main.go",
             "envFile": "${workspaceFolder}/.env",
