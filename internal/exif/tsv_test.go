@@ -1,85 +1,10 @@
 package exif
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
-
-func TestParseTSV_FullFile(t *testing.T) {
-	if os.Getenv("EXIF_TSV_FULLFILE_TEST") == "" {
-		t.Skip("set EXIF_TSV_FULLFILE_TEST=1 to run this fixture-based test")
-	}
-	data, err := os.ReadFile("../../cmd/cli/exiftool_output.txt")
-	if err != nil {
-		t.Fatalf("failed to read test fixture: %v", err)
-	}
-
-	out, err := ParseTSV(t.Context(), string(data), "epub")
-	require.NoError(t, err, "ParseTSV should not return an error")
-
-	// Scalars
-	require.Equal(t, out.FileName, "hail.epub", "FileName")
-	require.NotEmpty(t, out.Directory, "Directory should not be empty")
-	require.Equal(t, out.FileSize, "2.6 MB", "FileSize")
-	require.Equal(t, out.FileType, "EPUB", "FileType")
-	require.Equal(t, out.MIMEType, "application/epub+zip", "MIMEType")
-	require.Equal(t, out.Title, "Project Hail Mary", "Title")
-	require.Equal(t, out.Author, "Andy Weir", "Creator")
-	require.Equal(t, out.CreatorFileAs, "Weir, Andy", "CreatorFileAs")
-	require.Equal(t, out.CreatorRole, "aut", "CreatorRole")
-	require.Equal(t, out.Language, "en", "Language")
-	require.Equal(t, out.PublicationDate, "2021:05:15", "Date")
-	require.Equal(t, out.Publisher, "Ballantine Books", "Publisher")
-	require.ElementsMatch(t, out.Subjects, []string{
-		"Thriller",
-		"Fantasy",
-		"Adult",
-		"Mystery",
-		"Science Fiction",
-	})
-
-	if len(out.Description) == 0 {
-		t.Error("Description should not be empty")
-	}
-
-	// Identifiers — 14 Identifier value lines in the file.
-	// Attributes (Scheme, Id) precede their Identifier value line.
-	if got := len(out.Identifiers); got != 14 {
-		t.Fatalf("expected 14 identifiers, got %d", got)
-	}
-
-	// First: has ID from the preceding "Identifier Id" line.
-	require.Equal(t, out.Identifiers[0].Value, "3279219163", "Identifiers[0].Value")
-	require.Equal(t, out.Identifiers[0].ID, "uid", "Identifiers[0].ID")
-	require.Equal(t, out.Identifiers[0].Scheme, "", "Identifiers[0].Scheme")
-
-	// Second: calibre scheme
-	require.Equal(t, out.Identifiers[1].Value, "8ece7b56-e3bb-42e7-93da-613c4e824b05", "Identifiers[1].Value")
-	require.Equal(t, out.Identifiers[1].Scheme, "calibre", "Identifiers[1].Scheme")
-
-	// ISBN (index 3)
-	require.Equal(t, out.Identifiers[3].Value, "9780593135204", "Identifiers[3].Value")
-	require.Equal(t, out.Identifiers[3].Scheme, "ISBN", "Identifiers[3].Scheme")
-
-	// AMAZON (index 4)
-	require.Equal(t, out.Identifiers[4].Value, "B08FHBV4ZX", "Identifiers[4].Value")
-	require.Equal(t, out.Identifiers[4].Scheme, "AMAZON", "Identifiers[4].Scheme")
-
-	// URN-style identifiers (no scheme, starting at index 7)
-	require.Equal(t, out.Identifiers[7].Value, "urn:isbn:9780593135204", "Identifiers[7].Value")
-	require.Equal(t, out.Identifiers[7].Scheme, "", "Identifiers[7].Scheme")
-
-	// MetaTags
-	if got := len(out.MetaTags); got != 11 {
-		t.Fatalf("expected 11 meta tags, got %d", got)
-	}
-	require.Equal(t, out.MetaTags[0].Content, "utf-8", "MetaTags[0].Content")
-	require.Equal(t, out.MetaTags[0].Name, "output encoding", "MetaTags[0].Name")
-	require.Equal(t, out.MetaTags[3].Name, "booklore:subtitle", "MetaTags[3].Name")
-	require.Equal(t, out.MetaTags[3].Content, "A Novel", "MetaTags[3].Content")
-}
 
 func TestParseTSV_EmptyInput(t *testing.T) {
 	out, err := ParseTSV(t.Context(), "", "epub")

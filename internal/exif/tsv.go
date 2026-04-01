@@ -131,7 +131,6 @@ func ParseTSV(ctx context.Context, data, fileFormat string) (*ExifToolOutput, er
 		}
 		key, value, ok := strings.Cut(line, "\t")
 		if !ok {
-			slog.WarnContext(ctx, "malformed line in exiftool output (no tab separator)", slog.String(otelkeys.Line, line))
 			continue
 		}
 		key = strings.TrimSpace(key)
