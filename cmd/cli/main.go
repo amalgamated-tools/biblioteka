@@ -119,7 +119,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s <command> [arguments]\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "       %s <file>                          (legacy) Process a single book file\n\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "Commands:\n")
-	fmt.Fprintf(os.Stderr, "  parse-exif <tsv-file>                  Parse exiftool TSV output into structured JSON\n")
+	// fmt.Fprintf(os.Stderr, "  parse-exif <tsv-file>                  Parse exiftool TSV output into structured JSON\n")
 	fmt.Fprintf(os.Stderr, "  process-file <file>                    Process a single book file\n")
 	fmt.Fprintf(os.Stderr, "  scan-directory <directory> [library-id] Scan a directory and enqueue files for processing\n")
 	fmt.Fprintf(os.Stderr, "  goodreads-search <query>              Search Goodreads for a book by query\n")
