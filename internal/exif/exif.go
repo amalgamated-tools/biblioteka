@@ -58,12 +58,12 @@ type Exiftool struct {
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
 // wrong, a non empty error will be returned.
-func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
+func NewExiftool(ctx context.Context, opts ...func(*Exiftool) error) (*Exiftool, error) {
 	e := Exiftool{}
 
 	for _, opt := range opts {
 		if err := opt(&e); err != nil {
-			slog.Error("error when configuring exiftool", slog.String(otelkeys.Error, err.Error()))
+			slog.ErrorContext(ctx, "error when configuring exiftool", slog.String(otelkeys.Error, err.Error()))
 			return nil, fmt.Errorf("error when configuring exiftool: %w", err)
 		}
 	}
@@ -78,20 +78,20 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 
 	stdout, err := e.cmd.StdoutPipe()
 	if err != nil {
-		slog.Error("error when piping stdout", slog.String(otelkeys.Error, err.Error()))
+		slog.ErrorContext(ctx, "error when piping stdout", slog.String(otelkeys.Error, err.Error()))
 		return nil, fmt.Errorf("error when piping stdout: %w", err)
 	}
 
 	stderr, err := e.cmd.StderrPipe()
 	if err != nil {
-		slog.Error("error when piping stderr", slog.String(otelkeys.Error, err.Error()))
+		slog.ErrorContext(ctx, "error when piping stderr", slog.String(otelkeys.Error, err.Error()))
 		return nil, fmt.Errorf("error when piping stderr: %w", err)
 	}
 
 	e.stdMergedOut = io.MultiReader(stdout, stderr)
 
 	if e.stdin, err = e.cmd.StdinPipe(); err != nil {
-		slog.Error("error when piping stdin", slog.String(otelkeys.Error, err.Error()))
+		slog.ErrorContext(ctx, "error when piping stdin", slog.String(otelkeys.Error, err.Error()))
 		return nil, fmt.Errorf("error when piping stdin: %w", err)
 	}
 
@@ -102,7 +102,7 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	e.scanMergedOut.Split(splitReadyToken)
 
 	if err = e.cmd.Start(); err != nil {
-		slog.Error("error when starting exiftool process", slog.String(otelkeys.Error, err.Error()))
+		slog.ErrorContext(ctx, "error when starting exiftool process", slog.String(otelkeys.Error, err.Error()))
 		return nil, fmt.Errorf("error when starting exiftool process: %w", err)
 	}
 
@@ -110,14 +110,14 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 }
 
 // Close closes exiftool. If anything went wrong, a non empty error will be returned
-func (e *Exiftool) Close() error {
+func (e *Exiftool) Close(ctx context.Context) error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
 	for _, v := range closeArgs {
 		_, err := fmt.Fprintln(e.stdin, v)
 		if err != nil {
-			slog.Error("error while sending close command to exiftool", slog.String(otelkeys.Error, err.Error()))
+			slog.ErrorContext(ctx, "error while sending close command to exiftool", slog.String(otelkeys.Error, err.Error()))
 			return fmt.Errorf("error while sending close command to exiftool: %w", err)
 		}
 	}
@@ -142,11 +142,11 @@ func (e *Exiftool) Close() error {
 	select {
 	case <-ch:
 	case <-time.After(WaitTimeout):
-		errs = append(errs, errors.New("Timed out waiting for exiftool to exit"))
+		errs = append(errs, errors.New("timed out waiting for exiftool to exit"))
 	}
 
 	if len(errs) > 0 {
-		slog.Error("errors while closing exiftool", slog.Any("errors", errs))
+		slog.ErrorContext(ctx, "errors while closing exiftool", slog.Any(otelkeys.Error, errs))
 		return fmt.Errorf("error while closing exiftool: %v", errs)
 	}
 

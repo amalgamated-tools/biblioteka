@@ -202,7 +202,7 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 					out.ISBN10 = isbn
 				} else {
 					// If we already have an ISBN-10, we could log a warning or decide which one to keep. For now, we'll just ignore additional ISBN-10 values.
-					slog.Warn(
+					slog.WarnContext(ctx,
 						"multiple isbn-10 values found; keeping first",
 						slog.String(otelkeys.Existing, out.ISBN10),
 						slog.String(otelkeys.ISBN, isbn))
@@ -212,7 +212,7 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 					out.ISBN13 = isbn
 				} else {
 					// If we already have an ISBN-13, we could log a warning or decide which one to keep. For now, we'll just ignore additional ISBN-13 values.
-					slog.Warn(
+					slog.WarnContext(ctx,
 						"multiple isbn-13 values found; keeping first",
 						slog.String(otelkeys.Existing, out.ISBN13),
 						slog.String(otelkeys.ISBN, isbn))
@@ -223,7 +223,7 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 				out.ASIN = cur.Value
 			} else {
 				// If we already have an ASIN, we could log a warning or decide which one to keep. For now, we'll just ignore additional ASIN values.
-				slog.Warn(
+				slog.WarnContext(ctx,
 					"multiple ASIN values found; keeping first",
 					slog.String(otelkeys.Existing, out.ASIN),
 					slog.String(otelkeys.ASIN, cur.Value))
@@ -233,7 +233,7 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 				out.ASIN = strings.TrimPrefix(cur.Value, "urn:amazon:")
 			} else {
 				// If we already have an ASIN, we could log a warning or decide which one to keep. For now, we'll just ignore additional ASIN values.
-				slog.Warn(
+				slog.WarnContext(ctx,
 					"multiple ASIN values found; keeping first",
 					slog.String(otelkeys.Existing, out.ASIN),
 					slog.String(otelkeys.ASIN, cur.Value))
@@ -243,7 +243,7 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 				out.GoogleID = cur.Value
 			} else {
 				// If we already have a Google ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Google ID values.
-				slog.Warn(
+				slog.WarnContext(ctx,
 					"multiple Google ID values found; keeping first",
 					slog.String(otelkeys.Existing, out.GoogleID),
 					slog.String(otelkeys.GoogleID, cur.Value))
@@ -253,7 +253,7 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 				out.GoodreadsID = cur.Value
 			} else {
 				// If we already have a Goodreads ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Goodreads ID values.
-				slog.Warn(
+				slog.WarnContext(ctx,
 					"multiple Goodreads ID values found; keeping first",
 					slog.String(otelkeys.Existing, out.GoodreadsID),
 					slog.String(otelkeys.GoodreadsID, cur.Value))
@@ -263,7 +263,7 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 				out.HardcoverID = strings.TrimPrefix(cur.Value, "urn:hardcoverbook:")
 			} else {
 				// If we already have a Hardcover ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Hardcover ID values.
-				slog.Warn(
+				slog.WarnContext(ctx,
 					"multiple Hardcover ID values found; keeping first",
 					slog.String(otelkeys.Existing, out.HardcoverID),
 					slog.String(otelkeys.HardcoverID, cur.Value))
@@ -292,6 +292,12 @@ func parseMetaLine(ctx context.Context, key, value string, cur *MetaTag, out *Ex
 
 func flushMeta(ctx context.Context, cur *MetaTag, out *ExifToolOutput) {
 	if cur != nil {
+		slog.DebugContext(
+			ctx,
+			"parsed meta tag",
+			slog.String(otelkeys.MetaName, cur.Name),
+			slog.String(otelkeys.MetaContent, cur.Content),
+		)
 		out.MetaTags = append(out.MetaTags, *cur)
 	}
 }
@@ -327,6 +333,14 @@ func parseManifestLine(ctx context.Context, key, value string, cur *ManifestItem
 func flushManifest(ctx context.Context, cur *ManifestItem, out *ExifToolOutput) {
 	if cur != nil {
 		if strings.EqualFold(cur.ID, "cover") && isLikelyImage(cur.Href, cur.MediaType) {
+			slog.DebugContext(
+				ctx,
+				"identified cover image from manifest item",
+				slog.String(otelkeys.ID, cur.ID),
+				slog.String(otelkeys.Href, cur.Href),
+				slog.String(otelkeys.MediaType, cur.MediaType),
+				slog.String(otelkeys.Properties, cur.Properties),
+			)
 			out.CoverImage = cur
 		}
 		out.ManifestItems = append(out.ManifestItems, *cur)
@@ -483,7 +497,7 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 		// let's get the cover image
 		coverImageURL, err := extractEPUBCoverDataURL(ctx, out.CoverImage, pathpkg.Join(out.Directory, out.FileName))
 		if err != nil {
-			slog.Warn("failed to extract cover image", slog.String(otelkeys.Error, err.Error()))
+			slog.WarnContext(ctx, "failed to extract cover image", slog.String(otelkeys.Error, err.Error()))
 		} else {
 			out.CoverImageURL = coverImageURL
 		}
@@ -493,7 +507,7 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 func finishMOBI(ctx context.Context, out *ExifToolOutput) {
 	coverImageURL, err := GetMobiCover(ctx, pathpkg.Join(out.Directory, out.FileName))
 	if err != nil {
-		slog.Warn("failed to extract MOBI cover image", slog.String(otelkeys.Error, err.Error()))
+		slog.WarnContext(ctx, "failed to extract MOBI cover image", slog.String(otelkeys.Error, err.Error()))
 	} else {
 		out.CoverImageURL = coverImageURL
 	}
@@ -586,12 +600,11 @@ func GetMobiCover(ctx context.Context, path string) (string, error) {
 	}
 
 	ltd := io.LimitReader(f, coverlength)
-	var name string
-	i, name, err = image.Decode(ltd)
+	i, _, err = image.Decode(ltd)
 	if err != nil {
 		return "", fmt.Errorf("unable to decode MOBI cover image: %w", err)
 	}
-	slog.Info("extracted MOBI cover image", slog.String("ok", name))
+	slog.InfoContext(ctx, "extracted MOBI cover image")
 
 	// name is the name of the format that was decoded (e.g. "jpeg", "png"). We want to convert it to a data URL, but image.Decode doesn't give us the original bytes or MIME type, so we'll have to re-encode it as JPEG (since that's the most common format for MOBI covers) and base64-encode that.
 
@@ -599,7 +612,7 @@ func GetMobiCover(ctx context.Context, path string) (string, error) {
 	buf.WriteString("data:image/jpeg;base64,")
 	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
 	if err := jpeg.Encode(encoder, i, nil); err != nil {
-		slog.WarnContext(context.Background(), "failed to encode MOBI cover image as JPEG",
+		slog.WarnContext(ctx, "failed to encode MOBI cover image as JPEG",
 			// slog.String(otelkeys.Path, path),
 			slog.Any(otelkeys.Error, err),
 		)

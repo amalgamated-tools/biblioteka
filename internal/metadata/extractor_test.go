@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"errors"
 	"os"
@@ -44,7 +43,7 @@ func TestExtractMetadata_EPUB(t *testing.T) {
 	})
 
 	ext := requireExifTool(t)
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
 	if err != nil {
@@ -90,9 +89,9 @@ func TestExtractMetadata_EPUBCoverImage(t *testing.T) {
 	})
 
 	ext := requireExifTool(t)
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
-	meta, err := ext.ExtractMetadata(context.Background(), epubPath)
+	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -139,7 +138,7 @@ func TestExtractMetadata_EPUBWithISBN10(t *testing.T) {
 	testutils.MakeTestEPUB(t, epubPath, "Short Book", "Jane Doe", "isbn:0743273567")
 
 	ext := requireExifTool(t)
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
 	if err != nil {
@@ -157,7 +156,7 @@ func TestExtractMetadata_EPUBWithNoISBN(t *testing.T) {
 	testutils.MakeTestEPUB(t, epubPath, "No ISBN Book", "Author", "some-random-uuid-1234")
 
 	ext := requireExifTool(t)
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
 	if err != nil {
@@ -175,7 +174,7 @@ func TestExtractMetadata_EPUBCaseInsensitive(t *testing.T) {
 	testutils.MakeTestEPUB(t, epubPath, "Upper Case", "Author", "urn:isbn:9780743273565")
 
 	ext := requireExifTool(t)
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
 	if err != nil {
@@ -192,7 +191,7 @@ func TestExtractMetadata_PDF(t *testing.T) {
 	pdfPath := filepath.Join(dir, "test.pdf")
 
 	ext := requireExifTool(t)
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author", ext.exiftool())
 
@@ -220,7 +219,7 @@ func TestExtractMetadata_InvalidFile(t *testing.T) {
 	}
 
 	ext := requireExifTool(t)
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	// ExifTool processes the file without error — it just won't find book metadata.
 	// Title falls back to the filename stem.
@@ -235,7 +234,7 @@ func TestExtractMetadata_InvalidFile(t *testing.T) {
 
 func TestExtractMetadata_NonexistentFile(t *testing.T) {
 	ext := requireExifTool(t)
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	_, err := ext.ExtractMetadata(t.Context(), "/nonexistent/file.pdf")
 	if err == nil {

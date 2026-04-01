@@ -156,7 +156,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 				"exiftool reported error while writing metadata",
 				slog.String(otelkeys.Error, err.Error()),
 			)
-			fileMetadata[i].Err = fmt.Errorf("Error writing metadata: %w", err)
+			fileMetadata[i].Err = fmt.Errorf("error writing metadata: %w", err)
 			continue
 		}
 	}
