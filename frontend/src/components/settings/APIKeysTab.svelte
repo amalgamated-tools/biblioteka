@@ -23,12 +23,14 @@
   let keyCopiedTimeout: number | null = null;
   let pendingDeleteKey: { id: string; name: string } | null = $state(null);
 
-  onDestroy(() => {
+  function clearCopyTimeout() {
     if (keyCopiedTimeout !== null) {
       clearTimeout(keyCopiedTimeout);
       keyCopiedTimeout = null;
     }
-  });
+  }
+
+  onDestroy(clearCopyTimeout);
 
   onMount(() => {
     void loadAPIKeys();
@@ -55,10 +57,7 @@
     apiKeysError = null;
     newlyCreatedKey = null;
     // Reset any previous "copied" state when starting to create a new key
-    if (keyCopiedTimeout !== null) {
-      clearTimeout(keyCopiedTimeout);
-      keyCopiedTimeout = null;
-    }
+    clearCopyTimeout();
     keyCopied = false;
 
     try {
@@ -117,10 +116,7 @@
     try {
       await copyToClipboard(text);
       keyCopied = true;
-      if (keyCopiedTimeout !== null) {
-        clearTimeout(keyCopiedTimeout);
-        keyCopiedTimeout = null;
-      }
+      clearCopyTimeout();
       keyCopiedTimeout = window.setTimeout(() => {
         keyCopied = false;
         keyCopiedTimeout = null;
