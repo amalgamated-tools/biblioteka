@@ -22,18 +22,6 @@ import (
 
 var ErrExifToolUnavailable = errors.New("exiftool is not available on this system")
 
-// type BookMetadata struct {
-// 	Author          string
-// 	CoverImageURL   string
-// 	Description     string
-// 	Format          string
-// 	ISBN            string
-// 	Language        string
-// 	PublicationDate string
-// 	Publisher       string
-// 	Title           string
-// }
-
 // Extractor extracts metadata from book files. Concurrent ExtractMetadata calls are safe,
 // but Close must not be called concurrently with other methods.
 type Extractor struct {
@@ -241,35 +229,6 @@ func cleanArchivePath(name string) string {
 	}
 	return strings.TrimPrefix(pathpkg.Clean(name), "./")
 }
-
-// func isLikelyImage(href, mimeType string) bool {
-// 	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(mimeType)), "image/") {
-// 		return true
-// 	}
-
-// 	switch strings.ToLower(pathpkg.Ext(href)) {
-// 	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg":
-// 		return true
-// 	default:
-// 		return false
-// 	}
-// }
-
-// func itemAt(items []string, i int) string {
-// 	if i < 0 || i >= len(items) {
-// 		return ""
-// 	}
-// 	return items[i]
-// }
-
-// // getStringOr extracts a string tag from an exiftool result, returning fallback if not found.
-// func getStringOr(fm *exif.FileMetadata, tag string, fallback string) string {
-// 	v, err := fm.GetString(tag)
-// 	if err != nil {
-// 		return fallback
-// 	}
-// 	return v
-// }
 
 // normalizeExifDate converts ExifTool's "YYYY:MM:DD" date format to "YYYY-MM-DD".
 func normalizeExifDate(s string) string {
