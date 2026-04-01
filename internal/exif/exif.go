@@ -22,12 +22,16 @@ const writeMetadataSuccessToken = "image files updated\n"
 
 var exiftoolBinary = "exiftool"
 
-var executeArg = "-execute"
-var initArgs = []string{"-stay_open", "True", "-@", "-"}
+var (
+	executeArg = "-execute"
+	initArgs   = []string{"-stay_open", "True", "-@", "-"}
+)
 
-var extractArgs = []string{"-ee3", "-U", "-api", "requestall=3", "-api", "largefilesupport", "-t"}
-var closeArgs = []string{"-stay_open", "False", executeArg}
-var readyTokenLen = len(readyToken)
+var (
+	extractArgs   = []string{"-ee3", "-U", "-api", "requestall=3", "-api", "largefilesupport", "-t"}
+	closeArgs     = []string{"-stay_open", "False", executeArg}
+	readyTokenLen = len(readyToken)
+)
 
 // WaitTimeout specifies the duration to wait for exiftool to exit when closing before timing out
 var WaitTimeout = time.Second

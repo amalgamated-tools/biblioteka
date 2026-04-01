@@ -29,11 +29,13 @@ func TestParseTSV_FullFile(t *testing.T) {
 	require.Equal(t, out.Language, "en", "Language")
 	require.Equal(t, out.PublicationDate, "2021:05:15", "Date")
 	require.Equal(t, out.Publisher, "Ballantine Books", "Publisher")
-	require.ElementsMatch(t, out.Subjects, []string{"Thriller",
+	require.ElementsMatch(t, out.Subjects, []string{
+		"Thriller",
 		"Fantasy",
 		"Adult",
 		"Mystery",
-		"Science Fiction"})
+		"Science Fiction",
+	})
 
 	if len(out.Description) == 0 {
 		t.Error("Description should not be empty")
