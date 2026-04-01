@@ -6,18 +6,15 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"image"
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	pathpkg "path"
 	"path/filepath"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/exif"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
-	"github.com/sblinch/mobi"
 )
 
 var ErrExifToolUnavailable = errors.New("exiftool is not available on this system")
@@ -77,37 +74,6 @@ type epubContainer struct {
 type epubCoverRef struct {
 	Href     string
 	MIMEType string
-}
-
-func GetMobiCover(path string) (i image.Image, err error) {
-	e, err := mobi.NewReader(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open MOBI file: %w", err)
-	}
-	defer e.Close()
-
-	coverstart, coverlength := e.CoverOffsetLength()
-	if coverstart <= 0 {
-		return nil, errors.New("no cover found in MOBI file")
-	}
-
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("unable to open MOBI file: %w", err)
-	}
-	defer f.Close()
-
-	if _, err := f.Seek(coverstart, 0); err != nil {
-		return nil, fmt.Errorf("unable to seek to cover offset: %w", err)
-	}
-
-	ltd := io.LimitReader(f, coverlength)
-	i, _, err = image.Decode(ltd)
-	if err != nil {
-		return nil, fmt.Errorf("unable to decode MOBI cover image: %w", err)
-	}
-
-	return i, nil
 }
 
 func readEPUBArchiveFile(ctx context.Context, filePath string, ref epubCoverRef) ([]byte, string, error) {
