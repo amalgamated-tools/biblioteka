@@ -27,12 +27,14 @@
   let liveMessage = $state("");
   let pendingDeleteToken: { id: string; name: string } | null = $state(null);
 
-  onDestroy(() => {
+  function clearCopyTimeout() {
     if (copiedTimeout !== null) {
       clearTimeout(copiedTimeout);
       copiedTimeout = null;
     }
-  });
+  }
+
+  onDestroy(clearCopyTimeout);
 
   onMount(() => {
     void loadTokens();
@@ -117,7 +119,7 @@
 
       copiedTokenId = tokenId;
       liveMessage = `Copied sync URL for ${tokenName}`;
-      if (copiedTimeout !== null) clearTimeout(copiedTimeout);
+      clearCopyTimeout();
       copiedTimeout = window.setTimeout(() => {
         copiedTokenId = null;
         copiedTimeout = null;
