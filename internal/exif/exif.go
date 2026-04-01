@@ -92,7 +92,15 @@ func NewExiftool(ctx context.Context, opts ...func(*Exiftool) error) (*Exiftool,
 		return nil, fmt.Errorf("error when piping stderr: %w", err)
 	}
 
-	e.stdMergedOut = io.MultiReader(stdout, stderr)
+	// Drain stderr in the background so it cannot block the child process.
+	// io.MultiReader would read stdout to EOF before stderr, but in -stay_open
+	// mode stdout never reaches EOF until the process exits, so stderr would
+	// never be drained and could deadlock the child if the pipe buffer fills.
+	go func() {
+		_, _ = io.Copy(io.Discard, stderr)
+	}()
+
+	e.stdMergedOut = stdout
 
 	if e.stdin, err = e.cmd.StdinPipe(); err != nil {
 		slog.ErrorContext(ctx, "error when piping stdin", slog.String(otelkeys.Error, err.Error()))
@@ -131,20 +139,21 @@ func (e *Exiftool) Close(ctx context.Context) error {
 		errs = append(errs, fmt.Errorf("error while closing stdin: %w", err))
 	}
 
-	ch := make(chan struct{})
+	ch := make(chan error, 1)
 	go func() {
 		if e.cmd != nil {
-			if err := e.cmd.Wait(); err != nil {
-				errs = append(errs, fmt.Errorf("error while waiting for exiftool to exit: %w", err))
-			}
+			ch <- e.cmd.Wait()
+		} else {
+			ch <- nil
 		}
-		ch <- struct{}{}
-		close(ch)
 	}()
 
 	// Wait for wait to finish or timeout
 	select {
-	case <-ch:
+	case waitErr := <-ch:
+		if waitErr != nil {
+			errs = append(errs, fmt.Errorf("error while waiting for exiftool to exit: %w", waitErr))
+		}
 	case <-time.After(WaitTimeout):
 		errs = append(errs, errors.New("timed out waiting for exiftool to exit"))
 	}

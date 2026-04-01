@@ -67,9 +67,13 @@ func (e *ExifToolOutput) ISBN() string {
 }
 
 func (e *ExifToolOutput) SetISBN(isbn string) {
-	if len(isbn) == 10 {
+	switch len(isbn) {
+	case 0:
+		e.ISBN10 = ""
+		e.ISBN13 = ""
+	case 10:
 		e.ISBN10 = isbn
-	} else if len(isbn) == 13 {
+	case 13:
 		e.ISBN13 = isbn
 	}
 }
