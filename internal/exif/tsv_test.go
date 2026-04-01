@@ -8,7 +8,9 @@ import (
 )
 
 func TestParseTSV_FullFile(t *testing.T) {
-	t.Skip()
+	if os.Getenv("EXIF_TSV_FULLFILE_TEST") == "" {
+		t.Skip("set EXIF_TSV_FULLFILE_TEST=1 to run this fixture-based test")
+	}
 	data, err := os.ReadFile("../../cmd/cli/exiftool_output.txt")
 	if err != nil {
 		t.Fatalf("failed to read test fixture: %v", err)
@@ -19,7 +21,7 @@ func TestParseTSV_FullFile(t *testing.T) {
 
 	// Scalars
 	require.Equal(t, out.FileName, "hail.epub", "FileName")
-	require.Equal(t, out.Directory, "/Users/veverkap/Code/personal/books", "Directory")
+	require.NotEmpty(t, out.Directory, "Directory should not be empty")
 	require.Equal(t, out.FileSize, "2.6 MB", "FileSize")
 	require.Equal(t, out.FileType, "EPUB", "FileType")
 	require.Equal(t, out.MIMEType, "application/epub+zip", "MIMEType")

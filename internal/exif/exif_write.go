@@ -64,6 +64,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 			}
 		}
 
+		fieldErr := false
 		for k, v := range md.Fields {
 			switch v.(type) {
 			case nil:
@@ -75,7 +76,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 						slog.String(otelkeys.Error, err.Error()),
 					)
 					fileMetadata[i].Err = err
-					continue
+					fieldErr = true
 				}
 			default:
 				strTab, err := md.GetStrings(k)
@@ -87,22 +88,31 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 						slog.String(otelkeys.Error, err.Error()),
 					)
 					fileMetadata[i].Err = err
-					continue
+					fieldErr = true
 				}
-				for _, str := range strTab {
-					// TODO: support writing an empty string via '^='
-					if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+str); err != nil {
-						slog.WarnContext(
-							ctx,
-							"failed to write field value",
-							slog.String(otelkeys.Field, k),
-							slog.String(otelkeys.Error, err.Error()),
-						)
-						fileMetadata[i].Err = err
-						continue
+				if !fieldErr {
+					for _, str := range strTab {
+						// TODO: support writing an empty string via '^='
+						if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+str); err != nil {
+							slog.WarnContext(
+								ctx,
+								"failed to write field value",
+								slog.String(otelkeys.Field, k),
+								slog.String(otelkeys.Error, err.Error()),
+							)
+							fileMetadata[i].Err = err
+							fieldErr = true
+							break
+						}
 					}
 				}
 			}
+			if fieldErr {
+				break
+			}
+		}
+		if fieldErr {
+			continue
 		}
 
 		if _, err := fmt.Fprintln(e.stdin, md.File); err != nil {
