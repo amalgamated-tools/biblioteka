@@ -203,7 +203,7 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 		switch {
 		case strings.EqualFold(cur.Scheme, "ISBN"), strings.HasPrefix(cur.Value, "urn:isbn"):
 			// Normalize ISBNs to 13-digit format with "urn:isbn:" prefix.
-			isbn := NormalizeISBN(ctx, cur.Value)
+			isbn := NormalizeISBN(cur.Value)
 			if len(isbn) == 10 {
 				if out.ISBN10 == "" {
 					out.ISBN10 = isbn
@@ -461,7 +461,7 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 				assumedISBN = ident.Value
 			} else {
 				// let's see if value is 10 or 13 chars and looks like an ISBN
-				assumedISBN = NormalizeISBN(ctx, ident.Value)
+				assumedISBN = NormalizeISBN(ident.Value)
 			}
 			if assumedISBN != "" {
 				if len(assumedISBN) == 10 {
@@ -535,7 +535,7 @@ func isASIN(s string) bool {
 // like an ISBN-10 or ISBN-13: 10 or 13 characters consisting of digits, with
 // ISBN-10 allowing an 'X' (or 'x') as the final checksum character; otherwise it
 // returns "".
-func NormalizeISBN(ctx context.Context, raw string) string {
+func NormalizeISBN(raw string) string {
 	s := strings.TrimSpace(raw)
 	if s == "" {
 		return ""
