@@ -383,8 +383,10 @@ func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
 		out.FileType = value
 	case "MIME Type":
 		out.MIMEType = value
-	case "Title", "Updated Title":
-		out.Title = value
+	case "Title", "Updated Title", "Book Name":
+		if out.Title == "" {
+			out.Title = value
+		}
 	case "Creator File-as":
 		out.CreatorFileAs = value
 	case "Creator Role":
@@ -416,6 +418,10 @@ func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
 			out.ISBN13 = value
 		} else {
 			out.Extra[key] = value
+		}
+	case "ASIN":
+		if out.ASIN == "" {
+			out.ASIN = value
 		}
 	case "Author", "Creator":
 		// Some formats (like MOBI) use "Author" instead of "Creator".
