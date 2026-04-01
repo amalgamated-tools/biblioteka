@@ -30,12 +30,12 @@ frontend/
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
       Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label` and `aria-hidden="true"` on their icons (WCAG 4.1.2); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       libraries/          Reusable sub-components for the Libraries view
-        LibraryForm.svelte   Create / edit library form
+        LibraryForm.svelte   Create / edit library form; the "Monitor for new content" toggle uses `role="switch"` and explicit `aria-checked` to communicate on/off state to assistive technologies (WCAG 4.1.2)
         LibraryView.svelte   Library detail with book listing
       settings/           Tab sub-components for the Settings page (see Settings component architecture below)
         AccountTab.svelte       Account & password management; OIDC linking
-        APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix)
-        KoboTab.svelte          Kobo sync token management; displays setup instructions
+        APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix); delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
+        KoboTab.svelte          Kobo sync token management; displays setup instructions; delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
         PreferencesTab.svelte   Display theme selection
         SmtpTab.svelte          Admin: SMTP mail server configuration
@@ -50,6 +50,7 @@ frontend/
     lib/
       api.ts            Centralised API client
       api.test.ts       API client unit tests
+      actions.ts        Svelte actions for DOM interactions (`autofocusFirstButton`)
       clipboard.ts      Async clipboard helper with `execCommand` fallback
       clipboard.test.ts Clipboard helper unit tests
       validation.ts     Composable form-validation rule functions
@@ -647,8 +648,8 @@ For inline validation errors, pass `aria-invalid` and `aria-describedby` through
 | Component | Route | Visibility | Responsibility |
 |-----------|-------|------------|----------------|
 | `AccountTab.svelte` | `settings/account` | All users | Change password; link OIDC account |
-| `APIKeysTab.svelte` | `settings/api-keys` | All users | Create and revoke long-lived API keys (`bib_` prefix) |
-| `KoboTab.svelte` | `settings/kobo` | All users | Create and revoke Kobo sync tokens; copy device sync URL |
+| `APIKeysTab.svelte` | `settings/api-keys` | All users | Create and revoke long-lived API keys (`bib_` prefix); uses inline `role="alertdialog"` confirmations for delete actions |
+| `KoboTab.svelte` | `settings/kobo` | All users | Create and revoke Kobo sync tokens; copy device sync URL; uses inline `role="alertdialog"` confirmations for delete actions |
 | `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
 | `SmtpTab.svelte` | `settings/smtp` | Admins only | Configure SMTP mail server |
@@ -1241,6 +1242,7 @@ Add `role="switch"` to any `<input type="checkbox">` that renders as a toggle:
 <input
   type="checkbox"
   role="switch"
+  aria-checked={formMonitored}
   bind:checked={formMonitored}
   class="sr-only peer"
 />
@@ -1248,11 +1250,89 @@ Add `role="switch"` to any `<input type="checkbox">` that renders as a toggle:
 
 With `role="switch"`, assistive technologies announce the control as a _switch_ and report its state as _on_ or _off_ (rather than _checked_ or _unchecked_), which is the semantically correct announcement for a toggle.
 
+**Why `aria-checked` must be set explicitly**
+
+`bind:checked` keeps the underlying `checked` DOM property in sync, but some screen reader and browser combinations do not reliably derive the `aria-checked` value from the DOM property when `role="switch"` is present. Setting `aria-checked` explicitly as an attribute ensures the state is always exposed correctly to the accessibility tree.
+
 **Guidelines:**
 
 - Apply `role="switch"` whenever a `<input type="checkbox">` is styled to look like a toggle switch.
+- Always set `aria-checked` explicitly as an attribute bound to the same reactive variable as `bind:checked` (e.g. `aria-checked={myState}`). Do **not** rely solely on `bind:checked` to expose state, as some browser/screen reader combinations do not derive `aria-checked` from the DOM `checked` property when `role="switch"` is present.
 - The control must still have an accessible name — either via a paired `<label>` element (preferred) or `aria-label`.
 - Do **not** use `role="switch"` on checkboxes that genuinely represent a tri-state or multi-select option; use plain `type="checkbox"` there.
+
+#### Inline confirmation dialogs for destructive actions
+
+**WCAG criterion:** [3.3.4 Error Prevention](https://www.w3.org/WAI/WCAG21/Understanding/error-prevention-legal-financial-data.html) (Level AA) and [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
+
+`window.confirm()` blocks the JavaScript thread, is unstyled, cannot be localized, and is inaccessible in some headless and assistive-technology contexts. Instead, show an inline confirmation UI with `role="alertdialog"` directly in the component DOM.
+
+**Pattern:**
+
+```svelte
+<script lang="ts">
+  import { autofocusFirstButton } from "../../lib/actions";
+
+  let pendingDeleteItem: { id: string; name: string } | null = $state(null);
+
+  function requestDelete(id: string, name: string) {
+    pendingDeleteItem = { id, name };
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteItem) return;
+    const { id } = pendingDeleteItem;
+    pendingDeleteItem = null;
+    await deleteItem(id); // your API call
+  }
+
+  async function cancelDelete() {
+    const id = pendingDeleteItem?.id;
+    pendingDeleteItem = null;
+    await tick();
+    // Return focus to the trigger button after cancellation
+    document.querySelector<HTMLElement>(`[data-delete-trigger="${id}"]`)?.focus();
+  }
+</script>
+
+{#if pendingDeleteItem?.id === item.id}
+  <div
+    role="alertdialog"
+    aria-modal="false"
+    aria-labelledby={`confirm-label-${item.id}`}
+    tabindex="-1"
+    use:autofocusFirstButton
+    onkeydown={(e: KeyboardEvent) => { if (e.key === "Escape") cancelDelete(); }}
+  >
+    <span id={`confirm-label-${item.id}`}>Delete "{item.name}"?</span>
+    <button onclick={confirmDelete}>Delete</button>
+    <button onclick={cancelDelete}>Cancel</button>
+  </div>
+{:else}
+  <button
+    data-delete-trigger={item.id}
+    onclick={() => requestDelete(item.id, item.name)}
+    aria-label={`Delete ${item.name}`}
+  >Delete</button>
+{/if}
+```
+
+**Key implementation details:**
+
+- `role="alertdialog"` tells assistive technologies this is a modal alert; `aria-labelledby` points to the confirmation question text.
+- `aria-modal="false"` — because the dialog is inline (not a `<dialog>` overlay), no inert background is applied; the value explicitly communicates this to screen readers.
+- `use:autofocusFirstButton` (from `frontend/src/lib/actions.ts`) moves focus to the first button inside the dialog after it renders, so keyboard users land directly on the primary action without tabbing.
+- `onkeydown` trapping `Escape` allows keyboard users to cancel without reaching the Cancel button.
+- `data-delete-trigger` on the original delete button allows `cancelDelete` to return focus to the element that opened the confirmation, satisfying WCAG 2.4.3 Focus Order.
+- `pendingDeleteItem` tracks which row's confirmation is visible. Clicking a second delete button while one is already open replaces the state, so at most one confirmation is visible at a time.
+
+**Guidelines:**
+
+- Never use `window.confirm()` for destructive actions; use this inline `role="alertdialog"` pattern instead.
+- The confirmation `<div>` must be a sibling of — or replace — the trigger button in the DOM so focus management is straightforward.
+- Use `use:autofocusFirstButton` to move focus into the dialog on open; return focus to the trigger button on cancel.
+- Trap `Escape` to cancel; do not trap Tab (the dialog is not a modal overlay).
+- `APIKeysTab.svelte` and `KoboTab.svelte` are the canonical reference implementations of this pattern in the codebase.
 
 #### Checklist for new forms
 
@@ -1265,7 +1345,7 @@ When adding or editing a form component:
 5. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
 6. Inputs with inline validation errors set `aria-invalid="true"` and `aria-describedby="<error-id>"` when the error is visible. See [`aria-describedby` for inline validation errors](#aria-describedby-for-inline-validation-errors) above.
 7. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
-8. Toggle switches (`<input type="checkbox">` styled as a switch) carry `role="switch"`.
+8. Toggle switches (`<input type="checkbox">` styled as a switch) carry `role="switch"` **and** an explicit `aria-checked` attribute bound to the same reactive variable as `bind:checked`.
 9. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
 10. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
@@ -1405,7 +1485,9 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 #### `LibraryForm.test.ts`
 
-`frontend/src/components/libraries/LibraryForm.test.ts` verifies the accessibility attributes on the library create/edit form (WCAG 1.3.1, 3.3.1, 4.1.2). Six tests are included:
+`frontend/src/components/libraries/LibraryForm.test.ts` verifies the accessibility attributes on the library create/edit form (WCAG 1.3.1, 3.3.1, 4.1.2). Tests are organised in three `describe` blocks.
+
+**"LibraryForm accessibility" — six tests:**
 
 1. **`marks the name input as aria-required`** — asserts the `#lib-name` text input carries `aria-required="true"`.
 2. **`marks folder path inputs as aria-required`** — asserts the folder path input carries `aria-required="true"`.
@@ -1414,7 +1496,43 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 5. **`shows inline folder error with aria-invalid when submitting empty paths`** — fills in the name (to pass name validation) then submits with no folder paths; asserts the folder input becomes `aria-invalid="true"` with `aria-describedby="lib-folders-error"` and the error element carries `role="alert"`.
 6. **`does not show aria-invalid or error messages before submission`** — asserts that neither `aria-invalid` nor the error message elements are present on initial render, preventing premature error announcements.
 
+**"LibraryForm monitor toggle switch" — three tests:**
+
+1. **`associates the switch input with its label via for/id`** — asserts the `#lib-monitored` checkbox is linked to its visible label by the `for`/`id` pairing and carries `role="switch"`.
+2. **`has aria-checked reflecting the unchecked state by default`** — asserts the unchecked toggle exposes `aria-checked="false"` as a DOM attribute (not just the `checked` property).
+3. **`updates aria-checked when toggled`** — fires a click on the input; asserts both `input.checked` becomes `true` and `aria-checked` updates to `"true"`.
+
+**"LibraryForm organization type dropdown" — four tests:** verify that the file-organization `<select>` renders with the correct options, defaults to `book_per_folder` in create mode, and is associated with a visible label.
+
 > **Testing note:** Each test calls `await tick()` after `render()` to flush Svelte 5 reactive state before asserting. `afterEach(cleanup)` removes the rendered component from JSDOM between tests.
+
+#### `APIKeysTab.test.ts`
+
+`frontend/src/components/settings/APIKeysTab.test.ts` verifies the inline destructive confirmation dialog in the API keys settings tab (WCAG 3.3.4, 4.1.2). Seven tests in the **"APIKeysTab delete confirmation"** `describe` block:
+
+1. **`does not call deleteAPIKey when Delete button is clicked (shows confirmation instead)`** — asserts that clicking the initial Delete button does not call `deleteAPIKey` but instead reveals the inline confirmation.
+2. **`shows inline confirmation dialog when Delete is clicked`** — asserts a `role="alertdialog"` element is present in the DOM after clicking Delete.
+3. **`dismisses confirmation dialog when Cancel is clicked`** — asserts the `alertdialog` is removed from the DOM after clicking Cancel.
+4. **`calls deleteAPIKey after confirming deletion`** — asserts `deleteAPIKey` is called with the correct key ID when the Confirm Delete button is clicked.
+5. **`only shows confirmation for the clicked key, not all keys`** — seeds two keys; asserts only one `alertdialog` is rendered regardless of how many rows are present.
+6. **`dismisses confirmation dialog when Escape is pressed`** — fires a `keydown` event with `key: "Escape"` on the dialog; asserts the dialog is removed.
+7. **`moves focus to the Delete confirm button when dialog opens`** — asserts the primary Confirm Delete button receives focus automatically when the dialog is shown (via `autofocusFirstButton`).
+
+> **Mocking note:** `api.listAPIKeys` and `api.deleteAPIKey` are replaced with Vitest mocks so tests run without a backend. `authStore` is seeded with a test user. `afterEach(cleanup)` prevents DOM leakage.
+
+#### `KoboTab.test.ts`
+
+`frontend/src/components/settings/KoboTab.test.ts` verifies the inline destructive confirmation dialog in the Kobo token settings tab (WCAG 3.3.4, 4.1.2). Seven tests in the **"KoboTab delete confirmation"** `describe` block mirror the API keys tab tests:
+
+1. **`does not call deleteKoboToken when Delete button is clicked (shows confirmation instead)`**
+2. **`shows inline confirmation dialog when Delete is clicked`**
+3. **`dismisses confirmation dialog when Cancel is clicked`**
+4. **`calls deleteKoboToken after confirming deletion`**
+5. **`only shows confirmation for the clicked token, not all tokens`**
+6. **`dismisses confirmation dialog when Escape is pressed`**
+7. **`moves focus to the Delete confirm button when dialog opens`**
+
+> **Mocking note:** `api.listKoboTokens` and `api.deleteKoboToken` are replaced with Vitest mocks. `authStore` is seeded with a test user. `afterEach(cleanup)` prevents DOM leakage.
 
 #### `UsersTab.test.ts`
 
