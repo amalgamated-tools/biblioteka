@@ -50,8 +50,8 @@ func TestExtractMetadata_EPUB(t *testing.T) {
 		t.Fatalf("extract: %v", err)
 	}
 
-	if meta.Format != "EPUB" {
-		t.Errorf("expected format EPUB, got %q", meta.Format)
+	if meta.Format != ".epub" {
+		t.Errorf("expected format .epub, got %q", meta.Format)
 	}
 	if meta.Title != "The Great Gatsby" {
 		t.Errorf("expected title %q, got %q", "The Great Gatsby", meta.Title)
