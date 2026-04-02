@@ -690,6 +690,8 @@ func GetMobiCover(ctx context.Context, path string) (string, error) {
 		return "", errors.New("no cover found in MOBI file")
 	}
 
+	// mobi.NewReader opens the file internally but its file handle is unexported,
+	// so we must open the file again to seek to the raw cover bytes.
 	f, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("unable to open MOBI file: %w", err)
@@ -705,20 +707,22 @@ func GetMobiCover(ctx context.Context, path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable to decode MOBI cover image: %w", err)
 	}
-	slog.InfoContext(ctx, "extracted MOBI cover image")
+	slog.InfoContext(ctx, "extracted MOBI cover image", slog.String(otelkeys.Path, path))
 
 	// name is the name of the format that was decoded (e.g. "jpeg", "png"). We want to convert it to a data URL, but image.Decode doesn't give us the original bytes or MIME type, so we'll have to re-encode it as JPEG (since that's the most common format for MOBI covers) and base64-encode that.
 
 	var buf strings.Builder
 	buf.WriteString("data:image/jpeg;base64,")
 	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	defer encoder.Close()
 	if err := jpeg.Encode(encoder, i, nil); err != nil {
 		slog.WarnContext(ctx, "failed to encode MOBI cover image as JPEG",
 			slog.String(otelkeys.Path, path),
 			slog.Any(otelkeys.Error, err),
 		)
 		return "", fmt.Errorf("failed to encode MOBI cover image as JPEG: %w", err)
+	}
+	if err := encoder.Close(); err != nil {
+		return "", fmt.Errorf("failed to finalize base64 encoding: %w", err)
 	}
 	return buf.String(), nil
 }
