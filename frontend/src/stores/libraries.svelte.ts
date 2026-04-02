@@ -11,13 +11,23 @@ class LibraryStore {
   loaded = $state(false);
   // IDs of libraries whose background scan is in progress.
   scanningIds = new SvelteSet<string>();
+  private scanningTimers = new Map<string, ReturnType<typeof setTimeout>>();
   isScanning = $derived(this.scanningIds.size > 0);
 
   clearScanning(id: string): void {
+    const timer = this.scanningTimers.get(id);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      this.scanningTimers.delete(id);
+    }
     this.scanningIds.delete(id);
   }
 
   clearAllScanning(): void {
+    for (const timer of this.scanningTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.scanningTimers.clear();
     this.scanningIds.clear();
   }
 
@@ -41,7 +51,11 @@ class LibraryStore {
     // Mark the library as scanning so the UI can show a progress indicator
     // and poll for books until the background scan completes.
     this.scanningIds.add(created.id);
-    setTimeout(() => this.clearScanning(created.id), SCANNING_TIMEOUT_MS);
+    const timer = setTimeout(
+      () => this.clearScanning(created.id),
+      SCANNING_TIMEOUT_MS,
+    );
+    this.scanningTimers.set(created.id, timer);
     return created;
   }
 

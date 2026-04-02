@@ -128,10 +128,31 @@
   // Stops automatically once books appear (total > 0).
   $effect(() => {
     if (!pollingInterval || total > 0) return;
-    const timerId = setInterval(() => {
-      load(fetchBooks, effectivePageSize, offset);
+
+    // Reset so onBooksFound can fire again for this scan cycle.
+    didNotifyBooksFound = false;
+
+    let cancelled = false;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+
+    const poll = async () => {
+      await load(fetchBooks, effectivePageSize, offset);
+      if (cancelled) return;
+      timerId = setTimeout(() => {
+        void poll();
+      }, pollingInterval);
+    };
+
+    timerId = setTimeout(() => {
+      void poll();
     }, pollingInterval);
-    return () => clearInterval(timerId);
+
+    return () => {
+      cancelled = true;
+      if (timerId !== undefined) {
+        clearTimeout(timerId);
+      }
+    };
   });
 
   function prevPage() {
@@ -167,7 +188,11 @@
           class="w-12 h-12 mx-auto mb-4 rounded-full border-4 border-ink-200 dark:border-ink-700 border-t-accent-500 animate-spin"
           aria-hidden="true"
         ></div>
-        <p class="text-ink-400 dark:text-ink-400 text-lg">
+        <p
+          aria-live="polite"
+          aria-atomic="true"
+          class="text-ink-400 dark:text-ink-400 text-lg"
+        >
           Scanning library...
         </p>
         <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
