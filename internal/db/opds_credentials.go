@@ -21,12 +21,9 @@ type OPDSCredential struct {
 	UpdatedAt    Timestamp `json:"updated_at"`
 }
 
-const opdsCredentialColumns = `id, user_id, username, password_hash, created_at, updated_at`
-
 func scanOPDSCredential(row interface{ Scan(...any) error }) (*OPDSCredential, error) {
 	var c OPDSCredential
-	err := row.Scan(&c.ID, &c.UserID, &c.Username, &c.PasswordHash, &c.CreatedAt, &c.UpdatedAt)
-	if err != nil {
+	if err := scanProtocolCredentialFields(row, &c.ID, &c.UserID, &c.Username, &c.PasswordHash, &c.CreatedAt, &c.UpdatedAt); err != nil {
 		return nil, err
 	}
 	return &c, nil
@@ -36,7 +33,7 @@ func scanOPDSCredential(row interface{ Scan(...any) error }) (*OPDSCredential, e
 func (d *DB) GetOPDSCredentialByUserID(ctx context.Context, userID string) (*OPDSCredential, error) {
 	slog.DebugContext(ctx, "db: fetching OPDS credential by user ID", slog.String(otelkeys.UserID, userID))
 	return scanOPDSCredential(d.QueryRowContext(ctx,
-		`SELECT `+opdsCredentialColumns+` FROM opds_credentials WHERE user_id = $1`,
+		`SELECT `+protocolCredentialColumns+` FROM opds_credentials WHERE user_id = $1`,
 		userID,
 	))
 }
@@ -45,7 +42,7 @@ func (d *DB) GetOPDSCredentialByUserID(ctx context.Context, userID string) (*OPD
 func (d *DB) GetOPDSCredentialByUsername(ctx context.Context, username string) (*OPDSCredential, error) {
 	slog.DebugContext(ctx, "db: fetching OPDS credential by username", slog.String(otelkeys.OPDSUsername, username))
 	return scanOPDSCredential(d.QueryRowContext(ctx,
-		`SELECT `+opdsCredentialColumns+` FROM opds_credentials WHERE LOWER(username) = $1`,
+		`SELECT `+protocolCredentialColumns+` FROM opds_credentials WHERE LOWER(username) = $1`,
 		username,
 	))
 }
@@ -61,7 +58,7 @@ func (d *DB) UpsertOPDSCredential(ctx context.Context, userID, username, passwor
 	query := `INSERT INTO opds_credentials (user_id, username, password_hash, updated_at)
 		VALUES ($1, $2, $3, ` + d.now() + `)
 		ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = ` + d.now() + `
-		RETURNING ` + opdsCredentialColumns
+		RETURNING ` + protocolCredentialColumns
 
 	cred, err := scanOPDSCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
 	if err != nil && isColumnUniqueViolation(err, "opds_credentials.username", "idx_opds_credentials_username") {

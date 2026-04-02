@@ -21,12 +21,9 @@ type KOSyncCredential struct {
 	UpdatedAt    Timestamp `json:"updated_at"`
 }
 
-const kosyncCredentialColumns = `id, user_id, username, password_hash, created_at, updated_at`
-
 func scanKOSyncCredential(row interface{ Scan(...any) error }) (*KOSyncCredential, error) {
 	var c KOSyncCredential
-	err := row.Scan(&c.ID, &c.UserID, &c.Username, &c.PasswordHash, &c.CreatedAt, &c.UpdatedAt)
-	if err != nil {
+	if err := scanProtocolCredentialFields(row, &c.ID, &c.UserID, &c.Username, &c.PasswordHash, &c.CreatedAt, &c.UpdatedAt); err != nil {
 		return nil, err
 	}
 	return &c, nil
@@ -36,7 +33,7 @@ func scanKOSyncCredential(row interface{ Scan(...any) error }) (*KOSyncCredentia
 func (d *DB) GetKOSyncCredentialByUserID(ctx context.Context, userID string) (*KOSyncCredential, error) {
 	slog.DebugContext(ctx, "db: fetching KOSync credential by user ID", slog.String(otelkeys.UserID, userID))
 	return scanKOSyncCredential(d.QueryRowContext(ctx,
-		`SELECT `+kosyncCredentialColumns+` FROM kosync_credentials WHERE user_id = $1`,
+		`SELECT `+protocolCredentialColumns+` FROM kosync_credentials WHERE user_id = $1`,
 		userID,
 	))
 }
@@ -45,7 +42,7 @@ func (d *DB) GetKOSyncCredentialByUserID(ctx context.Context, userID string) (*K
 func (d *DB) GetKOSyncCredentialByUsername(ctx context.Context, username string) (*KOSyncCredential, error) {
 	slog.DebugContext(ctx, "db: fetching KOSync credential by username", slog.String(otelkeys.KOSyncUsername, username))
 	return scanKOSyncCredential(d.QueryRowContext(ctx,
-		`SELECT `+kosyncCredentialColumns+` FROM kosync_credentials WHERE LOWER(username) = $1`,
+		`SELECT `+protocolCredentialColumns+` FROM kosync_credentials WHERE LOWER(username) = $1`,
 		username,
 	))
 }
@@ -61,7 +58,7 @@ func (d *DB) UpsertKOSyncCredential(ctx context.Context, userID, username, passw
 	query := `INSERT INTO kosync_credentials (user_id, username, password_hash, updated_at)
 		VALUES ($1, $2, $3, ` + d.now() + `)
 		ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = ` + d.now() + `
-		RETURNING ` + kosyncCredentialColumns
+		RETURNING ` + protocolCredentialColumns
 
 	cred, err := scanKOSyncCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
 	if err != nil && isColumnUniqueViolation(err, "kosync_credentials.username", "idx_kosync_credentials_username") {
