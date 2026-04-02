@@ -790,6 +790,42 @@ $effect(() => {
 
 **When adding a new view or settings tab**, update both the corresponding union type (`AppView` or `SettingsSubPath`) and the matching title lookup table in `router.svelte.ts`. If you skip the lookup entry, `pageTitle` falls back to the top-level view title, which may be insufficiently descriptive.
 
+### Focus management on SPA navigation
+
+**WCAG criterion:** [2.4.3 Focus Order](https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html) (Level A)
+
+In a standard multi-page website the browser automatically returns keyboard focus to the top of the document after each page load. Single-page applications do not perform real page loads on navigation, so without explicit focus management keyboard-only and screen-reader users remain focused on whichever element they last interacted with — typically a sidebar navigation link — instead of landing on the new page content.
+
+`App.svelte` addresses this by programmatically moving keyboard focus to `<main id="main-content">` after each route change:
+
+```svelte
+<!-- App.svelte -->
+let focusEffectMounted = false;
+$effect(() => {
+  void routerStore.hash; // register hash as a reactive dependency
+  if (!focusEffectMounted) {
+    focusEffectMounted = true;
+    return; // skip initial mount — avoids stealing focus from browser UI on hard refresh
+  }
+  if (authStore.user) {
+    void tick().then(() => {
+      document.getElementById("main-content")?.focus();
+    });
+  }
+});
+```
+
+Key details:
+
+| Detail | Purpose |
+|--------|---------|
+| `void routerStore.hash` | Registers `routerStore.hash` as a reactive dependency so the effect re-runs on every navigation |
+| `focusEffectMounted` guard | Skips the very first execution so a hard refresh does not steal focus from the browser address bar or other browser UI |
+| `tick().then(…)` | Defers `focus()` until after Svelte has flushed DOM updates for the incoming view, so the element is in its final state when focus lands |
+| `tabindex="-1"` on `<main>` | Makes `<main>` programmatically focusable even though it is not a natively interactive element |
+
+**When adding a new view,** no additional changes are required — the focus effect fires automatically whenever `routerStore.hash` changes, regardless of which view component is rendered.
+
 ### ARIA landmarks
 
 The app uses semantic HTML5 landmark elements so screen readers can navigate by region.
@@ -1088,14 +1124,15 @@ When editing the app shell or adding new persistent navigation elements:
 2. If you add a new persistent region that users must bypass, add an additional skip link or update the existing one.
 3. Every page — authenticated or not — must contain exactly one `<main>` landmark. For the authenticated shell this is `<main id="main-content">` in `App.svelte`; for the pre-auth login/signup page this is `<main>` in `Auth.svelte`. Do not remove or replace these elements with a generic `<div>`.
 4. All interactive elements that are not natively focusable must have `tabindex="-1"` (receive focus programmatically only) or `tabindex="0"` (enter the natural tab order). Never use `tabindex` values greater than `0`.
-5. Every icon-only link or button must have `aria-label`; the icon element inside the control must carry `aria-hidden="true"` to suppress redundant announcements; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only controls](#accessible-labels-for-icon-only-controls) above.
-6. Navigation links that represent the active view must carry `aria-current={isActive ? "page" : undefined}`. Tab-style buttons should use `aria-selected` instead (see item 8). See [`aria-current` on active navigation links](#aria-current-on-active-navigation-links) above.
-7. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"` **and** an explicit `aria-checked` attribute, with an explicit `for`/`id` label association. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
-8. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-9. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. State-toggle buttons in table rows must use action-oriented `aria-label` values. See [Table accessibility](#table-accessibility) below.
-10. Sidebar navigation groups must use `role="group"` with `aria-labelledby` pointing to a native `<h2>` heading so screen readers announce the section name. See [Labelled navigation groups](#labelled-navigation-groups-sidebarsvelte) above.
-11. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
-12. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+5. Do not remove the `tabindex="-1"` attribute from `<main id="main-content">`. It is required by both the skip link (WCAG 2.4.1) and the SPA navigation focus effect (WCAG 2.4.3). Without it, `element.focus()` silently no-ops in most browsers.
+6. Every icon-only link or button must have `aria-label`; the icon element inside the control must carry `aria-hidden="true"` to suppress redundant announcements; every unlabelled input must have `aria-label` or `aria-labelledby`. See [Accessible labels for icon-only controls](#accessible-labels-for-icon-only-controls) above.
+7. Navigation links that represent the active view must carry `aria-current={isActive ? "page" : undefined}`. Tab-style buttons should use `aria-selected` instead (see item 9). See [`aria-current` on active navigation links](#aria-current-on-active-navigation-links) above.
+8. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"` **and** an explicit `aria-checked` attribute, with an explicit `for`/`id` label association. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
+9. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
+10. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. State-toggle buttons in table rows must use action-oriented `aria-label` values. See [Table accessibility](#table-accessibility) below.
+11. Sidebar navigation groups must use `role="group"` with `aria-labelledby` pointing to a native `<h2>` heading so screen readers announce the section name. See [Labelled navigation groups](#labelled-navigation-groups-sidebarsvelte) above.
+12. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
+13. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
 ### Form accessibility
 
@@ -1565,6 +1602,7 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 - The `<main>` landmark has `id="main-content"`.
 - The skip link appears **before** the sidebar in DOM order.
 - Clicking the skip link moves keyboard focus to `<main>`.
+- Keyboard focus is **not** moved to `<main>` on initial mount — the `focusEffectMounted` guard prevents the focus effect from running on first render so a hard refresh does not steal focus from the browser UI (WCAG 2.4.3).
 
 #### `Auth.test.ts`
 
