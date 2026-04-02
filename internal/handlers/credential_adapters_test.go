@@ -58,7 +58,7 @@ func TestCredentialGetAdapter_Success(t *testing.T) {
 		}, nil
 	}
 
-	adapted := credentialGetAdapter(fakeFn)
+	adapted := credGetAdapter(fakeFn)
 	entity, err := adapted(context.Background(), "user-1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -76,7 +76,7 @@ func TestCredentialGetAdapter_Error(t *testing.T) {
 		return nil, sql.ErrNoRows
 	}
 
-	adapted := credentialGetAdapter(fakeFn)
+	adapted := credGetAdapter(fakeFn)
 	_, err := adapted(context.Background(), "user-1")
 	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
@@ -95,7 +95,7 @@ func TestCredentialUpsertAdapter_Success(t *testing.T) {
 		}, nil
 	}
 
-	adapted := credentialUpsertAdapter(fakeFn)
+	adapted := credUpsertAdapter(fakeFn)
 	entity, err := adapted(context.Background(), "user-1", "alice", "hash")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -113,9 +113,35 @@ func TestCredentialUpsertAdapter_Error(t *testing.T) {
 		return nil, sql.ErrNoRows
 	}
 
-	adapted := credentialUpsertAdapter(fakeFn)
+	adapted := credUpsertAdapter(fakeFn)
 	_, err := adapted(context.Background(), "user-1", "alice", "hash")
 	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
+	}
+}
+
+func TestConvertCredResult_Success(t *testing.T) {
+	ts := db.Timestamp{Time: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}
+	cred := &db.ProtocolCredential{
+		ID: "id-1", Username: "alice", CreatedAt: ts, UpdatedAt: ts,
+	}
+
+	got, err := convertCredResult(cred, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.ID != "id-1" || got.Username != "alice" {
+		t.Errorf("got %+v, want ID=id-1 Username=alice", got)
+	}
+}
+
+func TestConvertCredResult_Error(t *testing.T) {
+	sentinel := errors.New("db failure")
+	got, err := convertCredResult[*db.ProtocolCredential](nil, sentinel)
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("err = %v, want %v", err, sentinel)
+	}
+	if got != (credentialEntity{}) {
+		t.Errorf("got %+v, want zero value", got)
 	}
 }
