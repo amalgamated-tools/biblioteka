@@ -453,7 +453,24 @@ func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
 	case "Description":
 		out.Description = value
 	case "Subject":
-		out.Subjects = strings.Split(value, ", ")
+		subjects := strings.Split(value, ", ")
+		for _, subject := range subjects {
+			subject = strings.TrimSpace(subject)
+			if subject == "" {
+				continue
+			}
+			// Avoid adding duplicate subjects if multiple Subject lines contain overlapping values.
+			exists := false
+			for _, existing := range out.Subjects {
+				if existing == subject {
+					exists = true
+					break
+				}
+			}
+			if !exists {
+				out.Subjects = append(out.Subjects, subject)
+			}
+		}
 	case "ISBN":
 		rawValue := value
 		value = NormalizeISBN(value)
