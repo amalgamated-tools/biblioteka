@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -107,7 +106,7 @@ func upsertCredential(ops credentialOps, w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	req.Username = strings.ToLower(strings.TrimSpace(req.Username))
+	req.Username = auth.NormalizeUsername(req.Username)
 	if req.Username == "" {
 		writeError(ctx, w, http.StatusBadRequest, "username is required")
 		return

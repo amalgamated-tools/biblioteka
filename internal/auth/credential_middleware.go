@@ -12,6 +12,37 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// NormalizeUsername normalizes a username for storage and lookup by trimming
+// surrounding whitespace and converting to lowercase.
+func NormalizeUsername(username string) string {
+	return strings.ToLower(strings.TrimSpace(username))
+}
+
+// lookupByUsername constructs a lookupCredential closure from a
+// protocol-specific credential-fetch function and a field-extractor. The getFn
+// must return (wrapped) sql.ErrNoRows when the user is not found.
+func lookupByUsername[T any](
+	getFn func(ctx context.Context, username string) (*T, error),
+	extract func(*T) (userID, passwordHash string),
+) func(ctx context.Context, username string) (string, string, error) {
+	return func(ctx context.Context, username string) (string, string, error) {
+		cred, err := getFn(ctx, username)
+		if err != nil {
+			return "", "", err
+		}
+		userID, hash := extract(cred)
+		return userID, hash, nil
+	}
+}
+
+// jsonErrorWriter returns an http.Handler-compatible function that writes a
+// JSON error response with the given HTTP status code and message.
+func jsonErrorWriter(status int, message string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		jsonError(w, status, message)
+	}
+}
+
 // bcryptCredConfig holds protocol-specific callbacks for bcryptCredMiddleware.
 type bcryptCredConfig struct {
 	// protocolName is used in structured log messages (e.g. "KOSync", "OPDS").
@@ -67,7 +98,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 				return
 			}
 
-			normUsername := strings.ToLower(strings.TrimSpace(username))
+			normUsername := NormalizeUsername(username)
 			userID, passwordHash, err := cfg.lookupCredential(r.Context(), normUsername)
 			if err != nil {
 				if cfg.writeServiceUnavailable != nil && !errors.Is(err, sql.ErrNoRows) {
