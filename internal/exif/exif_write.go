@@ -30,7 +30,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 				ctx,
 				"file does not exist",
 				slog.String(otelkeys.File, md.File),
-				slog.String(otelkeys.Error, err.Error()),
+				slog.Any(otelkeys.Error, err),
 			)
 			if os.IsNotExist(err) {
 				fileMetadata[i].Err = ErrNotExist
@@ -45,7 +45,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 				slog.WarnContext(
 					ctx,
 					"failed to set overwrite_original flag for exiftool",
-					slog.String(otelkeys.Error, err.Error()),
+					slog.Any(otelkeys.Error, err),
 				)
 				fileMetadata[i].Err = err
 				continue
@@ -57,7 +57,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 				slog.WarnContext(
 					ctx,
 					"failed to set All= flag for exiftool",
-					slog.String(otelkeys.Error, err.Error()),
+					slog.Any(otelkeys.Error, err),
 				)
 				fileMetadata[i].Err = err
 				continue
@@ -73,7 +73,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 						ctx,
 						"failed to write empty value for field",
 						slog.String(otelkeys.Field, k),
-						slog.String(otelkeys.Error, err.Error()),
+						slog.Any(otelkeys.Error, err),
 					)
 					fileMetadata[i].Err = err
 					fieldErr = true
@@ -85,7 +85,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 						ctx,
 						"failed to convert field value to string slice",
 						slog.String(otelkeys.Field, k),
-						slog.String(otelkeys.Error, err.Error()),
+						slog.Any(otelkeys.Error, err),
 					)
 					fileMetadata[i].Err = err
 					fieldErr = true
@@ -98,7 +98,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 								ctx,
 								"failed to write field value",
 								slog.String(otelkeys.Field, k),
-								slog.String(otelkeys.Error, err.Error()),
+								slog.Any(otelkeys.Error, err),
 							)
 							fileMetadata[i].Err = err
 							fieldErr = true
@@ -120,7 +120,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 				ctx,
 				"failed to write file path",
 				slog.String(otelkeys.File, md.File),
-				slog.String(otelkeys.Error, err.Error()),
+				slog.Any(otelkeys.Error, err),
 			)
 			fileMetadata[i].Err = err
 			continue
@@ -129,7 +129,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 			slog.WarnContext(
 				ctx,
 				"failed to write execute argument",
-				slog.String(otelkeys.Error, err.Error()),
+				slog.Any(otelkeys.Error, err),
 			)
 			fileMetadata[i].Err = err
 			continue
@@ -164,7 +164,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 			slog.WarnContext(
 				ctx,
 				"exiftool reported error while writing metadata",
-				slog.String(otelkeys.Error, err.Error()),
+				slog.Any(otelkeys.Error, err),
 			)
 			fileMetadata[i].Err = fmt.Errorf("error writing metadata: %w", err)
 			continue

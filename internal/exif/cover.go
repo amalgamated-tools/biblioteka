@@ -71,7 +71,7 @@ func readEPUBArchiveFile(ctx context.Context, filePath string, ref epubCoverRef)
 			"failed to open EPUB archive for cover extraction",
 			slog.String(otelkeys.Path, filePath),
 			slog.String(otelkeys.CoverHref, ref.Href),
-			slog.String(otelkeys.Error, err.Error()),
+			slog.Any(otelkeys.Error, err),
 		)
 		return nil, "", fmt.Errorf("open epub archive: %w", err)
 	}
@@ -114,7 +114,7 @@ func readEPUBArchiveFile(ctx context.Context, filePath string, ref epubCoverRef)
 			"failed to open cover asset in EPUB archive",
 			slog.String(otelkeys.Path, filePath),
 			slog.String(otelkeys.CoverHref, ref.Href),
-			slog.String(otelkeys.Error, err.Error()),
+			slog.Any(otelkeys.Error, err),
 		)
 		return nil, "", fmt.Errorf("open cover asset %q: %w", file.Name, err)
 	}
@@ -128,7 +128,7 @@ func readEPUBArchiveFile(ctx context.Context, filePath string, ref epubCoverRef)
 			"failed to read cover asset from EPUB archive",
 			slog.String(otelkeys.Path, filePath),
 			slog.String(otelkeys.CoverHref, ref.Href),
-			slog.String(otelkeys.Error, err.Error()),
+			slog.Any(otelkeys.Error, err),
 		)
 		return nil, "", fmt.Errorf("read cover asset %q: %w", file.Name, err)
 	}
@@ -180,7 +180,7 @@ func readEPUBRootFilePath(ctx context.Context, files []*zip.File) (string, error
 			ctx,
 			"failed to open container.xml in EPUB archive",
 			slog.Int(otelkeys.FilesFound, len(files)),
-			slog.String(otelkeys.Error, err.Error()),
+			slog.Any(otelkeys.Error, err),
 		)
 		return "", fmt.Errorf("open container.xml: %w", err)
 	}
@@ -193,7 +193,7 @@ func readEPUBRootFilePath(ctx context.Context, files []*zip.File) (string, error
 			ctx,
 			"failed to decode container.xml in EPUB archive",
 			slog.Int(otelkeys.FilesFound, len(files)),
-			slog.String(otelkeys.Error, err.Error()),
+			slog.Any(otelkeys.Error, err),
 		)
 		return "", fmt.Errorf("decode container.xml: %w", err)
 	}

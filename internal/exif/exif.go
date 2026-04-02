@@ -67,7 +67,7 @@ func NewExiftool(ctx context.Context, opts ...func(*Exiftool) error) (*Exiftool,
 
 	for _, opt := range opts {
 		if err := opt(&e); err != nil {
-			slog.ErrorContext(ctx, "error when configuring exiftool", slog.String(otelkeys.Error, err.Error()))
+			slog.ErrorContext(ctx, "error when configuring exiftool", slog.Any(otelkeys.Error, err))
 			return nil, fmt.Errorf("error when configuring exiftool: %w", err)
 		}
 	}
@@ -82,13 +82,13 @@ func NewExiftool(ctx context.Context, opts ...func(*Exiftool) error) (*Exiftool,
 
 	stdout, err := e.cmd.StdoutPipe()
 	if err != nil {
-		slog.ErrorContext(ctx, "error when piping stdout", slog.String(otelkeys.Error, err.Error()))
+		slog.ErrorContext(ctx, "error when piping stdout", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("error when piping stdout: %w", err)
 	}
 
 	stderr, err := e.cmd.StderrPipe()
 	if err != nil {
-		slog.ErrorContext(ctx, "error when piping stderr", slog.String(otelkeys.Error, err.Error()))
+		slog.ErrorContext(ctx, "error when piping stderr", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("error when piping stderr: %w", err)
 	}
 
@@ -103,7 +103,7 @@ func NewExiftool(ctx context.Context, opts ...func(*Exiftool) error) (*Exiftool,
 	e.stdMergedOut = stdout
 
 	if e.stdin, err = e.cmd.StdinPipe(); err != nil {
-		slog.ErrorContext(ctx, "error when piping stdin", slog.String(otelkeys.Error, err.Error()))
+		slog.ErrorContext(ctx, "error when piping stdin", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("error when piping stdin: %w", err)
 	}
 
@@ -114,7 +114,7 @@ func NewExiftool(ctx context.Context, opts ...func(*Exiftool) error) (*Exiftool,
 	e.scanMergedOut.Split(splitReadyToken)
 
 	if err = e.cmd.Start(); err != nil {
-		slog.ErrorContext(ctx, "error when starting exiftool process", slog.String(otelkeys.Error, err.Error()))
+		slog.ErrorContext(ctx, "error when starting exiftool process", slog.Any(otelkeys.Error, err))
 		return nil, fmt.Errorf("error when starting exiftool process: %w", err)
 	}
 
@@ -128,7 +128,7 @@ func (e *Exiftool) Close(ctx context.Context) error {
 
 	for _, v := range closeArgs {
 		if _, err := fmt.Fprintln(e.stdin, v); err != nil {
-			slog.ErrorContext(ctx, "error while sending close command to exiftool", slog.String(otelkeys.Error, err.Error()))
+			slog.ErrorContext(ctx, "error while sending close command to exiftool", slog.Any(otelkeys.Error, err))
 			_ = e.stdin.Close()
 			_ = e.cmd.Wait()
 			return fmt.Errorf("error while sending close command to exiftool: %w", err)
@@ -206,7 +206,7 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 			slog.WarnContext(
 				ctx,
 				"failed to write extract argument",
-				slog.String(otelkeys.Error, err.Error()),
+				slog.Any(otelkeys.Error, err),
 			)
 			return nil, err
 		}
@@ -217,7 +217,7 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 			ctx,
 			"failed to write file path",
 			slog.String(otelkeys.Path, file),
-			slog.String(otelkeys.Error, err.Error()),
+			slog.Any(otelkeys.Error, err),
 		)
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 		slog.WarnContext(
 			ctx,
 			"failed to write execute argument",
-			slog.String(otelkeys.Error, err.Error()),
+			slog.Any(otelkeys.Error, err),
 		)
 		return nil, err
 	}

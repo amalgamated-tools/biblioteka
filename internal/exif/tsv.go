@@ -598,7 +598,7 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 		// let's get the cover image
 		coverImageURL, err := extractEPUBCoverDataURL(ctx, out.CoverImage, filepath.Join(out.Directory, out.FileName))
 		if err != nil {
-			slog.WarnContext(ctx, "failed to extract cover image", slog.String(otelkeys.Error, err.Error()))
+			slog.WarnContext(ctx, "failed to extract cover image", slog.Any(otelkeys.Error, err))
 		} else {
 			out.CoverImageURL = coverImageURL
 		}
@@ -608,7 +608,7 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 func finishMOBI(ctx context.Context, out *ExifToolOutput) {
 	coverImageURL, err := GetMobiCover(ctx, filepath.Join(out.Directory, out.FileName))
 	if err != nil {
-		slog.WarnContext(ctx, "failed to extract MOBI cover image", slog.String(otelkeys.Error, err.Error()))
+		slog.WarnContext(ctx, "failed to extract MOBI cover image", slog.Any(otelkeys.Error, err))
 	} else {
 		out.CoverImageURL = coverImageURL
 	}
