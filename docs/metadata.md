@@ -262,7 +262,7 @@ Use `cmd/cli` to import a single file and verify what Biblioteka extracts before
 To add support for a new extracted field:
 
 1. Add the field to `ExifToolOutput` in [`internal/exif/types.go`](../internal/exif/types.go).
-2. Add the corresponding tag-name mapping as a `case` in the `parseScalar` function in the same file.
+2. Add the corresponding tag-name mapping as a `case` in the `parseScalar` function in [`internal/exif/tsv.go`](../internal/exif/tsv.go).
 3. Add or extend tests in [`internal/exif/tsv_test.go`](../internal/exif/tsv_test.go) and [`internal/metadata/extractor_test.go`](../internal/metadata/extractor_test.go).
 4. Update the [Extracted fields](#extracted-fields) table in this document.
 
