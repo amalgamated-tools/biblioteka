@@ -23,6 +23,13 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
+	if e.dead {
+		for i := range fileMetadata {
+			fileMetadata[i].Err = ErrDead
+		}
+		return
+	}
+
 	for i, md := range fileMetadata {
 		fileMetadata[i].Err = nil
 		if _, err := os.Stat(md.File); err != nil {
@@ -42,97 +49,64 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 
 		if !e.backupOriginal {
 			if _, err := fmt.Fprintln(e.stdin, "-overwrite_original"); err != nil {
-				slog.WarnContext(
-					ctx,
-					"failed to set overwrite_original flag for exiftool",
-					slog.Any(otelkeys.Error, err),
-				)
+				slog.WarnContext(ctx, "failed to set overwrite_original flag for exiftool", slog.Any(otelkeys.Error, err))
 				fileMetadata[i].Err = err
-				continue
+				e.markDead()
+				return
 			}
 		}
 
 		if e.clearFieldsBeforeWriting {
 			if _, err := fmt.Fprintln(e.stdin, "-All="); err != nil {
-				slog.WarnContext(
-					ctx,
-					"failed to set All= flag for exiftool",
-					slog.Any(otelkeys.Error, err),
-				)
+				slog.WarnContext(ctx, "failed to set All= flag for exiftool", slog.Any(otelkeys.Error, err))
 				fileMetadata[i].Err = err
-				continue
+				e.markDead()
+				return
 			}
 		}
 
-		fieldErr := false
 		for k, v := range md.Fields {
 			switch v.(type) {
 			case nil:
 				if _, err := fmt.Fprintln(e.stdin, "-"+k+"="); err != nil {
-					slog.WarnContext(
-						ctx,
-						"failed to write empty value for field",
-						slog.String(otelkeys.Field, k),
-						slog.Any(otelkeys.Error, err),
-					)
+					slog.WarnContext(ctx, "failed to write empty value for field", slog.String(otelkeys.Field, k), slog.Any(otelkeys.Error, err))
 					fileMetadata[i].Err = err
-					fieldErr = true
+					e.markDead()
+					return
 				}
 			default:
 				strTab, err := md.GetStrings(k)
 				if err != nil {
-					slog.WarnContext(
-						ctx,
-						"failed to convert field value to string slice",
-						slog.String(otelkeys.Field, k),
-						slog.Any(otelkeys.Error, err),
-					)
+					slog.WarnContext(ctx, "failed to convert field value to string slice", slog.String(otelkeys.Field, k), slog.Any(otelkeys.Error, err))
 					fileMetadata[i].Err = err
-					fieldErr = true
+					// Args may have already been written to stdin for this file
+					// (e.g., -overwrite_original), so the protocol is corrupted.
+					e.markDead()
+					return
 				}
-				if !fieldErr {
-					for _, str := range strTab {
-						// TODO: support writing an empty string via '^='
-						if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+str); err != nil {
-							slog.WarnContext(
-								ctx,
-								"failed to write field value",
-								slog.String(otelkeys.Field, k),
-								slog.Any(otelkeys.Error, err),
-							)
-							fileMetadata[i].Err = err
-							fieldErr = true
-							break
-						}
+				for _, str := range strTab {
+					// TODO: support writing an empty string via '^='
+					if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+str); err != nil {
+						slog.WarnContext(ctx, "failed to write field value", slog.String(otelkeys.Field, k), slog.Any(otelkeys.Error, err))
+						fileMetadata[i].Err = err
+						e.markDead()
+						return
 					}
 				}
 			}
-			if fieldErr {
-				break
-			}
-		}
-		if fieldErr {
-			continue
 		}
 
 		if _, err := fmt.Fprintln(e.stdin, md.File); err != nil {
-			slog.WarnContext(
-				ctx,
-				"failed to write file path",
-				slog.String(otelkeys.File, md.File),
-				slog.Any(otelkeys.Error, err),
-			)
+			slog.WarnContext(ctx, "failed to write file path", slog.String(otelkeys.File, md.File), slog.Any(otelkeys.Error, err))
 			fileMetadata[i].Err = err
-			continue
+			e.markDead()
+			return
 		}
 		if _, err := fmt.Fprintln(e.stdin, executeArg); err != nil {
-			slog.WarnContext(
-				ctx,
-				"failed to write execute argument",
-				slog.Any(otelkeys.Error, err),
-			)
+			slog.WarnContext(ctx, "failed to write execute argument", slog.Any(otelkeys.Error, err))
 			fileMetadata[i].Err = err
-			continue
+			e.markDead()
+			return
 		}
 
 		scanOk := e.scanMergedOut.Scan()

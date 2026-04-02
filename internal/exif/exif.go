@@ -45,9 +45,14 @@ var ErrNotFile = errors.New("can't extract metadata from folder")
 // ErrBufferTooSmall is a sentinel error that is returned when the buffer used to store Exiftool's output is too small.
 var ErrBufferTooSmall = errors.New("exiftool's buffer too small (see Buffer init option)")
 
+// ErrDead is returned when a write failure has corrupted the exiftool stdin protocol.
+// Once this error is returned, the instance cannot be reused.
+var ErrDead = errors.New("exiftool instance is dead due to a previous write failure")
+
 // Exiftool is the exiftool utility wrapper
 type Exiftool struct {
 	lock                     sync.Mutex
+	dead                     bool
 	stdin                    io.WriteCloser
 	stdMergedOut             io.Reader
 	scanMergedOut            *bufio.Scanner
@@ -179,9 +184,24 @@ func (e *Exiftool) Close(ctx context.Context) error {
 	return nil
 }
 
+// markDead poisons the instance after a partial stdin write so that future
+// calls return ErrDead instead of silently corrupting the exiftool protocol.
+// Must be called while e.lock is held.
+func (e *Exiftool) markDead() {
+	e.dead = true
+	_ = e.stdin.Close()
+	if e.cmd != nil {
+		_ = e.cmd.Wait()
+	}
+}
+
 func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*ExifToolOutput, error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
+
+	if e.dead {
+		return nil, ErrDead
+	}
 
 	s, err := os.Stat(file)
 	if err != nil {
@@ -204,31 +224,21 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 
 	for _, curA := range extractArgs {
 		if _, err := fmt.Fprintln(e.stdin, curA); err != nil {
-			slog.WarnContext(
-				ctx,
-				"failed to write extract argument",
-				slog.Any(otelkeys.Error, err),
-			)
+			slog.WarnContext(ctx, "failed to write extract argument", slog.Any(otelkeys.Error, err))
+			e.markDead()
 			return nil, err
 		}
 	}
 
 	if _, err := fmt.Fprintln(e.stdin, file); err != nil {
-		slog.WarnContext(
-			ctx,
-			"failed to write file path",
-			slog.String(otelkeys.Path, file),
-			slog.Any(otelkeys.Error, err),
-		)
+		slog.WarnContext(ctx, "failed to write file path", slog.String(otelkeys.Path, file), slog.Any(otelkeys.Error, err))
+		e.markDead()
 		return nil, err
 	}
 
 	if _, err := fmt.Fprintln(e.stdin, executeArg); err != nil {
-		slog.WarnContext(
-			ctx,
-			"failed to write execute argument",
-			slog.Any(otelkeys.Error, err),
-		)
+		slog.WarnContext(ctx, "failed to write execute argument", slog.Any(otelkeys.Error, err))
+		e.markDead()
 		return nil, err
 	}
 
