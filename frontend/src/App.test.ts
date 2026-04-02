@@ -5,7 +5,6 @@ import {
   render,
   screen,
   fireEvent,
-  waitFor,
 } from "@testing-library/svelte";
 
 vi.mock("./stores/auth.svelte", () => ({
@@ -60,13 +59,15 @@ describe("App", () => {
     expect(document.title).toBe("Dashboard – biblioteka");
   });
 
-  it("moves focus to main content after navigation", async () => {
+  it("does not steal focus on initial mount", async () => {
     render(App);
+    await tick();
 
     const main = screen.getByRole("main");
-    await waitFor(() => {
-      expect(document.activeElement).toBe(main);
-    });
+    // The focus effect skips the first run, so main should NOT be focused
+    // on initial render — this avoids stealing focus from the browser UI
+    // (e.g. address bar) on a hard refresh.
+    expect(document.activeElement).not.toBe(main);
   });
 
   it("provides a functional skip link that moves focus to the main content", async () => {
