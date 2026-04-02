@@ -42,7 +42,9 @@ func MakeTestPDF(t *testing.T, path, title, author string, et *exif.Exiftool) {
 		if exerr != nil {
 			t.Skipf("skipping PDF metadata test: exiftool not available: %v", exerr)
 		}
-		defer et.Close(t.Context())
+		defer func() {
+			_ = et.Close(t.Context())
+		}()
 	}
 
 	fm := exif.EmptyFileMetadata()
