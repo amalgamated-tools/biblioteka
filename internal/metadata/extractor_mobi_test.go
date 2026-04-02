@@ -1,6 +1,10 @@
 package metadata
 
 import (
+	"bytes"
+	"encoding/base64"
+	"image"
+	_ "image/jpeg"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -56,6 +60,15 @@ func TestExtractMetadata_MOBIWithCover(t *testing.T) {
 
 	if !strings.HasPrefix(meta.CoverImageURL, "data:image/jpeg;base64,") {
 		t.Errorf("expected JPEG data URL, got %q", meta.CoverImageURL)
+	}
+
+	b64 := strings.TrimPrefix(meta.CoverImageURL, "data:image/jpeg;base64,")
+	imgBytes, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		t.Fatalf("invalid base64 in cover data URL: %v", err)
+	}
+	if _, _, err := image.Decode(bytes.NewReader(imgBytes)); err != nil {
+		t.Fatalf("cover base64 does not decode as a valid image: %v", err)
 	}
 }
 

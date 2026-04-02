@@ -1,7 +1,11 @@
 package metadata
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
+	"image"
+	_ "image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -97,9 +101,18 @@ func TestExtractMetadata_EPUBCoverImage(t *testing.T) {
 	if !strings.HasPrefix(meta.CoverImageURL, "data:image/png;base64,") {
 		t.Fatalf("expected PNG data URL, got %q", meta.CoverImageURL)
 	}
+
+	b64 := strings.TrimPrefix(meta.CoverImageURL, "data:image/png;base64,")
+	imgBytes, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		t.Fatalf("invalid base64 in cover data URL: %v", err)
+	}
+	if _, _, err := image.Decode(bytes.NewReader(imgBytes)); err != nil {
+		t.Fatalf("cover base64 does not decode as a valid image: %v", err)
+	}
 }
 
-func TestReadEPUBArchiveFile_OversizedCover(t *testing.T) {
+func TestExtractMetadata_EPUBOversizedCover(t *testing.T) {
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "large-cover.epub")
 
@@ -111,13 +124,17 @@ func TestReadEPUBArchiveFile_OversizedCover(t *testing.T) {
 		CoverMediaType: "image/png",
 	})
 
-	ref := epubCoverRef{Href: "images/cover.png", MIMEType: "image/png"}
-	_, _, err := readEPUBArchiveFile(t.Context(), epubPath, ref)
-	if err == nil {
-		t.Fatal("expected error for oversized cover, got nil")
+	ext := requireExifTool(t)
+	defer ext.Close(t.Context())
+
+	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
 	}
-	if !strings.Contains(err.Error(), "exceeds") {
-		t.Errorf("expected error about exceeding limit, got: %v", err)
+
+	// The oversized cover should be silently skipped, not cause an extraction error.
+	if meta.CoverImageURL != "" {
+		t.Errorf("expected empty cover URL for oversized cover, got %d-byte data URL", len(meta.CoverImageURL))
 	}
 }
 
