@@ -8,6 +8,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -361,5 +365,792 @@ func TestEncodeKoboSyncToken_IsValidBase64JSON(t *testing.T) {
 	}
 	if payload["version"] != "1-0-0" {
 		t.Errorf("version = %v, want 1-0-0", payload["version"])
+	}
+}
+
+// ---- koboRandomUUID ----
+
+func TestKoboRandomUUID_Format(t *testing.T) {
+	uuid, err := koboRandomUUID()
+	if err != nil {
+		t.Fatalf("koboRandomUUID: %v", err)
+	}
+	// UUID v4 format: 8-4-4-4-12 hex chars
+	re := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
+	if !re.MatchString(uuid) {
+		t.Errorf("UUID %q does not match v4 pattern", uuid)
+	}
+}
+
+// ---- HandleCoverImage edge cases ----
+
+func TestHandleCoverImage_BookNotFound(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/nonexistent/600/800/false/image.jpg", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleCoverImage(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleCoverImage_NoCover(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+	book, err := h.DB.CreateBook(context.Background(), "No Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleCoverImage(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleCoverImage_ExternalURL(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+	externalURL := "https://example.com/cover.jpg"
+	book, err := h.DB.CreateBook(context.Background(), "External Cover", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &externalURL)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleCoverImage(w, r)
+
+	if w.Code != http.StatusTemporaryRedirect {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusTemporaryRedirect)
+	}
+	if loc := w.Header().Get("Location"); loc != externalURL {
+		t.Errorf("Location = %q, want %q", loc, externalURL)
+	}
+}
+
+func TestHandleCoverImage_EmptyBookID(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleCoverImage(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+// ---- HandleDownload ----
+
+func TestHandleDownload_MissingSegments(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+
+	// Only one segment (no format)
+	r := httptest.NewRequest(http.MethodGet, "/download/onlyone", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleDownload(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestHandleDownload_FormatNotFound(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+	book, err := h.DB.CreateBook(context.Background(), "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	// Book has no files at all, so format won't match.
+	r := httptest.NewRequest(http.MethodGet, "/download/"+book.ID+"/epub", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleDownload(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleDownload_FileNotFoundOnDisk(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+	book, err := h.DB.CreateBook(context.Background(), "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	// Register a file in the DB that doesn't exist on disk.
+	_, err = h.DB.CreateBookFile(context.Background(), book.ID, "epub", "test.epub", 1024, nil, filepath.Join(t.TempDir(), "nonexistent-kobo-test-file.epub"))
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/download/"+book.ID+"/epub", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleDownload(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleDownload_Success(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+
+	// Write a temp file to serve.
+	f, err := os.CreateTemp(t.TempDir(), "test-*.epub")
+	if err != nil {
+		t.Fatalf("create temp file: %v", err)
+	}
+	content := []byte("fake epub content")
+	if _, err := f.Write(content); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+	_ = f.Close()
+
+	book, err := h.DB.CreateBook(context.Background(), "Download Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	_, err = h.DB.CreateBookFile(context.Background(), book.ID, "epub", "test.epub", int64(len(content)), nil, f.Name())
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/download/"+book.ID+"/epub", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleDownload(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !bytes.Equal(w.Body.Bytes(), content) {
+		t.Errorf("body = %q, want %q", w.Body.Bytes(), content)
+	}
+	cd := w.Header().Get("Content-Disposition")
+	if !strings.Contains(cd, "test.epub") {
+		t.Errorf("Content-Disposition = %q, want filename=test.epub", cd)
+	}
+}
+
+// ---- HandleBookMetadata (via device handler) ----
+
+func TestHandleKobo_BookMetadata_NotFound(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/nonexistent-book-id/metadata", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
+	}
+}
+
+func TestHandleKobo_BookMetadata_Success(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	pngBytes := testutils.TinyPNG()
+	cover := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
+	book, err := h.DB.CreateBook(context.Background(), "Metadata Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &cover)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	_, err = h.DB.CreateBookFile(context.Background(), book.ID, "epub", "book.epub", 2048, nil, filepath.Join(t.TempDir(), "metadata-test.epub"))
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/metadata", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	var results []map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &results); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 metadata result, got %d", len(results))
+	}
+	if results[0]["Title"] != "Metadata Test" {
+		t.Errorf("Title = %v, want 'Metadata Test'", results[0]["Title"])
+	}
+	urls, _ := results[0]["DownloadUrls"].([]any)
+	if len(urls) == 0 {
+		t.Error("expected at least one download URL")
+	}
+}
+
+func TestHandleKobo_BookMetadata_NonGET(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	r := httptest.NewRequest(http.MethodPost, "/kobo/"+tokenValue+"/v1/library/some-id/metadata", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	// Non-GET returns 200 with empty array per protocol spec.
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+// ---- HandleBookState (via device handler) ----
+
+func TestHandleKobo_BookState_GetDefault(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	book, err := h.DB.CreateBook(context.Background(), "State Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/state", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	var states []map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &states); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(states) != 1 {
+		t.Fatalf("expected 1 state, got %d", len(states))
+	}
+	statusInfo, _ := states[0]["StatusInfo"].(map[string]any)
+	if statusInfo["Status"] != "ReadyToRead" {
+		t.Errorf("Status = %v, want 'ReadyToRead'", statusInfo["Status"])
+	}
+}
+
+func TestHandleKobo_BookState_GetBookNotFound(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/nonexistent/state", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleKobo_BookState_Update_Success(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	book, err := h.DB.CreateBook(context.Background(), "Reading Progress", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	progress := 42.5
+	updateBody := map[string]any{
+		"ReadingStates": []any{
+			map[string]any{
+				"StatusInfo": map[string]any{"Status": "Reading"},
+				"CurrentBookmark": map[string]any{
+					"ProgressPercent": progress,
+				},
+			},
+		},
+	}
+	bodyBytes, err := json.Marshal(updateBody)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodPut, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/state", bytes.NewReader(bodyBytes))
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp["RequestResult"] != "Success" {
+		t.Errorf("RequestResult = %v, want Success", resp["RequestResult"])
+	}
+}
+
+func TestHandleKobo_BookState_Update_BadRequest(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	book, err := h.DB.CreateBook(context.Background(), "Bad State Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	// Send empty ReadingStates array (invalid).
+	badBody := `{"ReadingStates":[]}`
+	r := httptest.NewRequest(http.MethodPut, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/state",
+		strings.NewReader(badBody))
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestHandleKobo_BookState_Update_BookNotFound(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	updateBody := `{"ReadingStates":[{"StatusInfo":{"Status":"Reading"}}]}`
+	r := httptest.NewRequest(http.MethodPut, "/kobo/"+tokenValue+"/v1/library/nonexistent/state",
+		strings.NewReader(updateBody))
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleKobo_BookState_GetExisting(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	book, err := h.DB.CreateBook(context.Background(), "Existing State", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	pct := 75.0
+	if _, err := h.DB.UpsertKoboReadingState(context.Background(), userID, book.ID, "Finished", &pct, nil, nil, nil); err != nil {
+		t.Fatalf("upsert reading state: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/state", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	var states []map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &states); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(states) != 1 {
+		t.Fatalf("expected 1 state, got %d", len(states))
+	}
+	statusInfo, _ := states[0]["StatusInfo"].(map[string]any)
+	if statusInfo["Status"] != "Finished" {
+		t.Errorf("Status = %v, want 'Finished'", statusInfo["Status"])
+	}
+	bookmark, _ := states[0]["CurrentBookmark"].(map[string]any)
+	if bookmark["ProgressPercent"] != 75.0 {
+		t.Errorf("ProgressPercent = %v, want 75.0", bookmark["ProgressPercent"])
+	}
+}
+
+// ---- HandleSync with downloadable books ----
+
+func TestHandleKobo_Sync_WithBooks(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	// Create a book with a downloadable file so it appears in sync results.
+	book, err := h.DB.CreateBook(context.Background(), "Sync Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	_, err = h.DB.CreateBookFile(context.Background(), book.ID, "epub", "sync.epub", 512, nil, filepath.Join(t.TempDir(), "sync-test.epub"))
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/sync", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var results []map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &results); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 sync result, got %d", len(results))
+	}
+	if results[0]["NewEntitlement"] == nil && results[0]["ChangedEntitlement"] == nil {
+		t.Error("expected NewEntitlement or ChangedEntitlement in sync result")
+	}
+}
+
+func TestHandleKobo_Sync_SkipsBookWithoutFiles(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	// Book with no downloadable files should be skipped.
+	if _, err := h.DB.CreateBook(context.Background(), "No Files Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/sync", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	var results []map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &results); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("expected 0 sync results for book without files, got %d", len(results))
+	}
+	// Sync token must still be present.
+	if w.Header().Get("x-kobo-synctoken") == "" {
+		t.Error("expected x-kobo-synctoken header even when no books returned")
+	}
+}
+
+func TestHandleKobo_Sync_WithReadingState(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	book, err := h.DB.CreateBook(context.Background(), "Read Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	_, err = h.DB.CreateBookFile(context.Background(), book.ID, "epub", "read.epub", 512, nil, filepath.Join(t.TempDir(), "read-test.epub"))
+	if err != nil {
+		t.Fatalf("create book file: %v", err)
+	}
+	pct := 50.0
+	if _, err := h.DB.UpsertKoboReadingState(context.Background(), userID, book.ID, "Reading", &pct, nil, nil, nil); err != nil {
+		t.Fatalf("upsert reading state: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/sync", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var results []map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &results); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 sync result, got %d", len(results))
+	}
+
+	// The entitlement should include the reading state.
+	var entitlement map[string]any
+	if ne, ok := results[0]["NewEntitlement"].(map[string]any); ok {
+		entitlement = ne
+	} else if ce, ok := results[0]["ChangedEntitlement"].(map[string]any); ok {
+		entitlement = ce
+	}
+	if entitlement == nil {
+		t.Fatal("no entitlement in sync result")
+	}
+	if entitlement["ReadingState"] == nil {
+		t.Error("expected ReadingState in sync result for book with reading state")
+	}
+}
+
+// ---- Token management: delete success ----
+
+func TestKoboTokenDelete_Success(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+
+	// Create a token to delete.
+	tokenID := createTestKoboTokenID(t, h, userID)
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/kobo/tokens/"+tokenID, nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleKoboToken(w, r)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNoContent, w.Body.String())
+	}
+
+	// Verify the token is gone.
+	listReq := httptest.NewRequest(http.MethodGet, "/api/kobo/tokens", nil)
+	listReq = withUserID(listReq, userID)
+	listW := httptest.NewRecorder()
+	h.HandleKoboTokens(listW, listReq)
+
+	var tokens []any
+	if err := json.Unmarshal(listW.Body.Bytes(), &tokens); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(tokens) != 0 {
+		t.Errorf("expected 0 tokens after delete, got %d", len(tokens))
+	}
+}
+
+func TestKoboTokenCollection_MethodNotAllowed(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+
+	r := httptest.NewRequest(http.MethodPatch, "/api/kobo/tokens", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleKoboTokens(w, r)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+func TestKoboTokenSingle_MethodNotAllowed(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	tokenID := createTestKoboTokenID(t, h, userID)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/kobo/tokens/"+tokenID, nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleKoboToken(w, r)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+// createTestKoboTokenID creates a token and returns its database ID (not the raw token value).
+func createTestKoboTokenID(t *testing.T, h *KoboHandler, userID string) string {
+	t.Helper()
+	body := mustMarshal(t, koboTokenCreateRequest{Name: "test"})
+	rCreate := httptest.NewRequest(http.MethodPost, "/api/kobo/tokens", bytes.NewReader(body))
+	rCreate = withUserID(rCreate, userID)
+	wCreate := httptest.NewRecorder()
+	h.HandleKoboTokens(wCreate, rCreate)
+	if wCreate.Code != http.StatusCreated {
+		t.Fatalf("create token failed: %s", wCreate.Body.String())
+	}
+	var tok map[string]any
+	if err := json.Unmarshal(wCreate.Body.Bytes(), &tok); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	id, ok := tok["id"].(string)
+	if !ok || id == "" {
+		t.Fatal("expected non-empty id in token response")
+	}
+	return id
+}
+
+// ---- Auxiliary Kobo routes ----
+
+func TestHandleKobo_LoyaltyBenefits(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/user/loyalty/benefits", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp["Benefits"] == nil {
+		t.Error("expected Benefits in loyalty benefits response")
+	}
+}
+
+func TestHandleKobo_AnalyticsGetTests(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/analytics/gettests", nil)
+	r.Host = "localhost:8080"
+	r.Header.Set("X-Kobo-userkey", "testuserkey")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp["Result"] != "Success" {
+		t.Errorf("Result = %v, want Success", resp["Result"])
+	}
+	if resp["TestKey"] != "testuserkey" {
+		t.Errorf("TestKey = %v, want testuserkey", resp["TestKey"])
+	}
+}
+
+func TestHandleKobo_DefaultRoute(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/unknown/endpoint", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestHandleKobo_LibraryRoute_Unknown(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	// A /v1/library/ path that doesn't end in /metadata or /state.
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/some-uuid/prices", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+// ---- koboDownloadURLs helper ----
+
+func TestKoboDownloadURLs_FiltersUnsupportedFormats(t *testing.T) {
+	files := []db.BookFile{
+		{ID: "1", FileType: "epub", FileName: "book.epub", FileSize: 100},
+		{ID: "2", FileType: "txt", FileName: "book.txt", FileSize: 50},
+		{ID: "3", FileType: "pdf", FileName: "book.pdf", FileSize: 200},
+	}
+	urls := koboDownloadURLs("http://localhost", "mytoken", "book-id", files)
+	if len(urls) != 2 {
+		t.Errorf("expected 2 URLs (epub + pdf), got %d", len(urls))
+	}
+	for _, u := range urls {
+		if u["Format"] == "" {
+			t.Error("expected non-empty Format in download URL")
+		}
+		if u["Url"] == "" {
+			t.Error("expected non-empty Url in download URL")
+		}
+	}
+}
+
+// ---- koboBookMetadata with series ----
+
+func TestKoboBookMetadata_WithSeries(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+
+	seriesName := "The Dark Tower"
+	s, err := h.DB.CreateSeries(context.Background(), seriesName, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create series: %v", err)
+	}
+
+	book, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	pos := 1.0
+	series := []db.BookSeriesEntry{{Series: *s, Position: &pos}}
+	meta := koboBookMetadata(book, nil, series, nil)
+
+	seriesMeta, ok := meta["Series"].(map[string]any)
+	if !ok {
+		t.Fatal("expected Series in metadata")
+	}
+	if seriesMeta["Name"] != seriesName {
+		t.Errorf("Series.Name = %v, want %q", seriesMeta["Name"], seriesName)
+	}
+	if seriesMeta["Number"] != 1 {
+		t.Errorf("Series.Number = %v, want 1", seriesMeta["Number"])
+	}
+}
+
+// ---- koboSyncToken with BooksLastID ----
+
+func TestKoboSyncTokenRoundTrip_WithBooksLastID(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	tok := koboSyncToken{
+		BooksLastModified: now,
+		BooksLastID:       "some-book-id",
+	}
+	encoded := encodeKoboSyncToken(tok)
+	decoded := parseKoboSyncToken(encoded)
+	if decoded.BooksLastID != tok.BooksLastID {
+		t.Errorf("BooksLastID: got %q, want %q", decoded.BooksLastID, tok.BooksLastID)
 	}
 }
