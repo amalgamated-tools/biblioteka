@@ -755,6 +755,41 @@ Key details:
 
 **DOM ordering rule:** The skip link must be rendered **before** `<Sidebar />` in the template so it is the first element reached by the Tab key. Do not move it below the sidebar.
 
+### Page title on navigation
+
+**WCAG criterion:** [2.4.2 Page Titled](https://www.w3.org/WAI/WCAG21/Understanding/page-titled.html) (Level A)
+
+In a single-page application the browser does not perform a real page load on navigation, so `document.title` stays unchanged unless the application updates it explicitly. Screen readers and browser history both rely on meaningful, descriptive page titles to help users understand where they are.
+
+`routerStore` exposes a reactive `pageTitle` property derived from the current view and settings sub-path. `App.svelte` writes it to `document.title` via a Svelte `$effect`:
+
+```svelte
+<!-- App.svelte -->
+$effect(() => {
+  document.title = routerStore.pageTitle;
+});
+```
+
+`pageTitle` is built from two lookup tables defined in `router.svelte.ts`:
+
+| View / sub-path | Title |
+|-----------------|-------|
+| `dashboard` | `Dashboard – biblioteka` |
+| `books` | `All Books – biblioteka` |
+| `my-library` | `My Library – biblioteka` |
+| `libraries` | `Libraries – biblioteka` |
+| `settings` (no sub-path) | `Settings – biblioteka` |
+| `settings/account` | `Account Settings – biblioteka` |
+| `settings/preferences` | `Preferences – biblioteka` |
+| `settings/oidc` | `SSO Settings – biblioteka` |
+| `settings/smtp` | `Email Settings – biblioteka` |
+| `settings/users` | `User Management – biblioteka` |
+| `settings/api-keys` | `API Keys – biblioteka` |
+| `settings/kobo` | `Kobo Sync – biblioteka` |
+| Unknown hash | `biblioteka` |
+
+**When adding a new view or settings tab**, update both the corresponding union type (`AppView` or `SettingsSubPath`) and the matching title lookup table in `router.svelte.ts`. If you skip the lookup entry, `pageTitle` falls back to the top-level view title, which may be insufficiently descriptive.
+
 ### Focus management on SPA navigation
 
 **WCAG criterion:** [2.4.3 Focus Order](https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html) (Level A)
@@ -790,41 +825,6 @@ Key details:
 | `tabindex="-1"` on `<main>` | Makes `<main>` programmatically focusable even though it is not a natively interactive element |
 
 **When adding a new view,** no additional changes are required — the focus effect fires automatically whenever `routerStore.hash` changes, regardless of which view component is rendered.
-
-### Page title on navigation
-
-**WCAG criterion:** [2.4.2 Page Titled](https://www.w3.org/WAI/WCAG21/Understanding/page-titled.html) (Level A)
-
-In a single-page application the browser does not perform a real page load on navigation, so `document.title` stays unchanged unless the application updates it explicitly. Screen readers and browser history both rely on meaningful, descriptive page titles to help users understand where they are.
-
-`routerStore` exposes a reactive `pageTitle` property derived from the current view and settings sub-path. `App.svelte` writes it to `document.title` via a Svelte `$effect`:
-
-```svelte
-<!-- App.svelte -->
-$effect(() => {
-  document.title = routerStore.pageTitle;
-});
-```
-
-`pageTitle` is built from two lookup tables defined in `router.svelte.ts`:
-
-| View / sub-path | Title |
-|-----------------|-------|
-| `dashboard` | `Dashboard – biblioteka` |
-| `books` | `All Books – biblioteka` |
-| `my-library` | `My Library – biblioteka` |
-| `libraries` | `Libraries – biblioteka` |
-| `settings` (no sub-path) | `Settings – biblioteka` |
-| `settings/account` | `Account Settings – biblioteka` |
-| `settings/preferences` | `Preferences – biblioteka` |
-| `settings/oidc` | `SSO Settings – biblioteka` |
-| `settings/smtp` | `Email Settings – biblioteka` |
-| `settings/users` | `User Management – biblioteka` |
-| `settings/api-keys` | `API Keys – biblioteka` |
-| `settings/kobo` | `Kobo Sync – biblioteka` |
-| Unknown hash | `biblioteka` |
-
-**When adding a new view or settings tab**, update both the corresponding union type (`AppView` or `SettingsSubPath`) and the matching title lookup table in `router.svelte.ts`. If you skip the lookup entry, `pageTitle` falls back to the top-level view title, which may be insufficiently descriptive.
 
 ### ARIA landmarks
 
