@@ -1,0 +1,762 @@
+package exif
+
+import (
+	"context"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"image"
+	_ "image/gif"
+	"image/jpeg"
+	_ "image/png"
+	"io"
+	"log/slog"
+	"os"
+	pathpkg "path"
+	"path/filepath"
+	"strings"
+
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/sblinch/mobi"
+)
+
+// ExifToolOutput holds the parsed result of exiftool's tab-separated output
+// produced by the wrapper's exiftool invocation (e.g. `exiftool -a -u -f -ee3 -U -api ... -t`).
+type ExifToolOutput struct {
+	// File info
+	Directory       string
+	ExifToolVersion string
+	FileName        string
+	FilePath        string
+	FileSize        string
+	FileType        string
+	Format          string
+	MIMEType        string
+
+	// Book metadata
+	ASIN            string
+	CoverImage      *ManifestItem
+	CoverImageURL   string
+	Author          string
+	CalibreID       string
+	CreatorFileAs   string
+	CreatorRole     string
+	Description     string
+	GoodreadsID     string
+	GoogleID        string
+	HardcoverID     string
+	ISBN10          string
+	ISBN13          string
+	Language        string
+	PublicationDate string
+	Publisher       string
+	Subjects        []string
+	Title           string
+
+	// Repeated/nested structures
+	Identifiers   []Identifier
+	MetaTags      []MetaTag
+	ManifestItems []ManifestItem
+
+	// Catch-all for any unrecognized scalar fields.
+	Extras map[string]string
+}
+
+func (e *ExifToolOutput) ISBN() string {
+	if e.ISBN13 != "" {
+		return e.ISBN13
+	}
+	if e.ISBN10 != "" {
+		return e.ISBN10
+	}
+	return ""
+}
+
+func (e *ExifToolOutput) SetISBN(isbn string) {
+	switch len(isbn) {
+	case 0:
+		e.ISBN10 = ""
+		e.ISBN13 = ""
+	case 10:
+		e.ISBN10 = isbn
+		e.ISBN13 = ""
+	case 13:
+		e.ISBN13 = isbn
+		e.ISBN10 = ""
+	}
+}
+
+// Identifier represents a Dublin Core identifier extracted from EPUB metadata.
+// Scheme may be empty for bare URN-style identifiers.
+type Identifier struct {
+	Value  string
+	Scheme string
+	ID     string
+}
+
+// MetaTag represents a <meta> name/content pair from EPUB metadata.
+type MetaTag struct {
+	Content string
+	Name    string
+}
+
+// ManifestItem represents an OPF manifest entry.
+type ManifestItem struct {
+	Href       string
+	ID         string
+	MediaType  string
+	Properties string
+}
+
+// GuideReference represents an OPF guide reference.
+type GuideReference struct {
+	Href  string
+	Title string
+	Type  string
+}
+
+// ParseTSV parses exiftool's tab-separated output into an ExifToolOutput.
+// Each line is expected to be "Key\tValue". Repeated keys (Identifier,
+// Manifest Item, Meta, Guide Reference) are collected into their
+// respective slices using a flush-on-new-record strategy.
+func ParseTSV(ctx context.Context, data, fileFormat string) (*ExifToolOutput, error) {
+	normalizedFormat := strings.ToLower(strings.TrimPrefix(fileFormat, "."))
+
+	out := &ExifToolOutput{
+		Identifiers:   []Identifier{},
+		MetaTags:      []MetaTag{},
+		ManifestItems: []ManifestItem{},
+		Extras:        map[string]string{},
+		Format:        normalizedFormat,
+	}
+
+	var curIdent *Identifier
+	var curMeta *MetaTag
+	var curManifest *ManifestItem
+
+	for line := range strings.SplitSeq(data, "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "\t")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if key == "" {
+			continue
+		}
+
+		switch {
+		case strings.HasPrefix(key, "Identifier"):
+			curIdent = parseIdentifierLine(ctx, key, value, curIdent, out)
+
+		case strings.HasPrefix(key, "Meta "):
+			curMeta = parseMetaLine(ctx, key, value, curMeta, out)
+
+		case strings.HasPrefix(key, "Manifest Item "):
+			curManifest = parseManifestLine(ctx, key, value, curManifest, out)
+
+		case strings.HasPrefix(key, "Guide Reference "), key == "Spine Toc", key == "Spine Itemref Idref":
+			// Skip this, we don't care
+
+		default:
+			parseScalar(ctx, key, value, out)
+		}
+	}
+
+	// Flush any pending grouped records.
+	flushIdent(ctx, curIdent, out)
+	flushMeta(ctx, curMeta, out)
+	flushManifest(ctx, curManifest, out)
+	finishBook(ctx, out)
+
+	return out, nil
+}
+
+// --- Identifier parsing ---
+func parseIdentifierLine(ctx context.Context, key, value string, cur *Identifier, out *ExifToolOutput) *Identifier {
+	switch key {
+	case "Identifier":
+		// "Identifier" always completes a record. Use the pending
+		// placeholder (created by preceding Scheme/Id lines) or start
+		// fresh, then flush immediately.
+		if cur == nil {
+			cur = &Identifier{}
+		}
+		cur.Value = value
+		flushIdent(ctx, cur, out)
+		return nil // reset — no pending identifier
+	case "Identifier Scheme":
+		// Scheme precedes the Identifier value line it belongs to.
+		if cur == nil {
+			cur = &Identifier{}
+		}
+		cur.Scheme = value
+		return cur
+	case "Identifier Id":
+		// Id precedes the Identifier value line it belongs to.
+		if cur == nil {
+			cur = &Identifier{}
+		}
+		cur.ID = value
+		return cur
+	default:
+		return cur
+	}
+}
+
+func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
+	if cur != nil {
+		switch {
+		case strings.EqualFold(cur.Scheme, "CALIBRE"), strings.HasPrefix(cur.Value, "urn:calibre:"):
+			cur.Value = strings.TrimPrefix(cur.Value, "urn:calibre:")
+			if out.CalibreID == "" || out.CalibreID == cur.Value {
+				out.CalibreID = cur.Value
+			} else {
+				// If we already have a Calibre ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Calibre ID values.
+				slog.DebugContext(ctx,
+					"multiple Calibre ID values found; keeping first",
+					slog.String(otelkeys.Existing, out.CalibreID),
+					slog.String(otelkeys.CalibreID, cur.Value))
+				out.Extras["Duplicate Calibre ID"] = cur.Value
+			}
+		case strings.EqualFold(cur.Scheme, "ISBN"), strings.HasPrefix(cur.Value, "urn:isbn"):
+			// Normalize ISBNs to a digit-only string (10 or 13 characters), without a "urn:isbn:" prefix.
+			isbn := NormalizeISBN(cur.Value)
+			if len(isbn) == 10 {
+				if out.ISBN10 == "" || out.ISBN10 == isbn {
+					out.ISBN10 = isbn
+				} else {
+					// If we already have an ISBN-10, we could log a warning or decide which one to keep. For now, we'll just ignore additional ISBN-10 values.
+					slog.WarnContext(ctx,
+						"multiple isbn-10 values found; keeping first",
+						slog.String(otelkeys.Existing, out.ISBN10),
+						slog.String(otelkeys.ISBN, isbn))
+					out.Extras["Duplicate ISBN-10"] = isbn
+				}
+			} else if len(isbn) == 13 {
+				if out.ISBN13 == "" || out.ISBN13 == isbn {
+					out.ISBN13 = isbn
+				} else {
+					// If we already have an ISBN-13, we could log a warning or decide which one to keep. For now, we'll just ignore additional ISBN-13 values.
+					slog.WarnContext(ctx,
+						"multiple isbn-13 values found; keeping first",
+						slog.String(otelkeys.Existing, out.ISBN13),
+						slog.String(otelkeys.ISBN, isbn))
+					out.Extras["Duplicate ISBN-13"] = isbn
+				}
+			}
+		case strings.EqualFold(cur.Scheme, "GOODREADS"), strings.HasPrefix(cur.Value, "urn:goodreads"):
+			cur.Value = strings.TrimPrefix(cur.Value, "urn:goodreads:")
+			if out.GoodreadsID == "" || out.GoodreadsID == cur.Value {
+				out.GoodreadsID = cur.Value
+			} else {
+				// If we already have a Goodreads ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Goodreads ID values.
+				slog.DebugContext(ctx,
+					"multiple Goodreads ID values found; keeping first",
+					slog.String(otelkeys.Existing, out.GoodreadsID),
+					slog.String(otelkeys.GoodreadsID, cur.Value))
+				out.Extras["Duplicate Goodreads ID"] = cur.Value
+			}
+		case strings.EqualFold(cur.Scheme, "AMAZON"), strings.EqualFold(cur.Scheme, "MOBI-ASIN"), strings.HasPrefix(cur.Value, "urn:amazon"):
+			cur.Value = strings.TrimPrefix(cur.Value, "urn:amazon:")
+			if out.ASIN == "" || out.ASIN == cur.Value {
+				out.ASIN = cur.Value
+			} else {
+				// If we already have an ASIN, we could log a warning or decide which one to keep. For now, we'll just ignore additional ASIN values.
+				slog.DebugContext(ctx,
+					"multiple ASIN values found; keeping first",
+					slog.String(otelkeys.Existing, out.ASIN),
+					slog.String(otelkeys.ASIN, cur.Value))
+				out.Extras["Duplicate ASIN"] = cur.Value
+			}
+		case strings.EqualFold(cur.Scheme, "GOOGLE"), strings.HasPrefix(cur.Value, "urn:google"):
+			cur.Value = strings.TrimPrefix(cur.Value, "urn:google:")
+			if out.GoogleID == "" || out.GoogleID == cur.Value {
+				out.GoogleID = cur.Value
+			} else {
+				// If we already have a Google ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Google ID values.
+				slog.DebugContext(ctx,
+					"multiple Google ID values found; keeping first",
+					slog.String(otelkeys.Existing, out.GoogleID),
+					slog.String(otelkeys.GoogleID, cur.Value))
+				out.Extras["Duplicate Google ID"] = cur.Value
+			}
+		case strings.HasPrefix(cur.Value, "urn:hardcoverbook:"):
+			cur.Value = strings.TrimPrefix(cur.Value, "urn:hardcoverbook:")
+			if out.HardcoverID == "" || out.HardcoverID == cur.Value {
+				out.HardcoverID = cur.Value
+			} else {
+				// If we already have a Hardcover ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Hardcover ID values.
+				slog.DebugContext(ctx,
+					"multiple Hardcover ID values found; keeping first",
+					slog.String(otelkeys.Existing, out.HardcoverID),
+					slog.String(otelkeys.HardcoverID, cur.Value))
+				out.Extras["Duplicate Hardcover ID"] = cur.Value
+			}
+		default:
+			key := cur.Scheme
+			if key == "" {
+				key = cur.ID
+				if key == "" {
+					key = "Unknown"
+				}
+			}
+			out.Extras[fmt.Sprintf("Identifier (%s)", key)] = cur.Value
+		}
+		out.Identifiers = append(out.Identifiers, *cur)
+	}
+}
+
+// --- Meta parsing ---
+func parseMetaLine(ctx context.Context, key, value string, cur *MetaTag, out *ExifToolOutput) *MetaTag {
+	switch key {
+	case "Meta Content":
+		// "Meta Content" always appears first in a pair.
+		flushMeta(ctx, cur, out)
+		return &MetaTag{Content: value}
+	case "Meta Name":
+		if cur != nil {
+			cur.Name = value
+		}
+		return cur
+	default:
+		return cur
+	}
+}
+
+func flushMeta(ctx context.Context, cur *MetaTag, out *ExifToolOutput) {
+	if cur != nil {
+		slog.DebugContext(
+			ctx,
+			"parsed meta tag",
+			slog.String(otelkeys.MetaName, cur.Name),
+			slog.String(otelkeys.MetaContent, cur.Content),
+		)
+		out.MetaTags = append(out.MetaTags, *cur)
+	}
+}
+
+// --- Manifest Item parsing ---
+
+func parseManifestLine(ctx context.Context, key, value string, cur *ManifestItem, out *ExifToolOutput) *ManifestItem {
+	switch key {
+	case "Manifest Item Href":
+		// "Manifest Item Href" starts a new manifest record.
+		flushManifest(ctx, cur, out)
+		return &ManifestItem{Href: value}
+	case "Manifest Item Id":
+		if cur != nil {
+			cur.ID = value
+		}
+		return cur
+	case "Manifest Item Media-type":
+		if cur != nil {
+			cur.MediaType = value
+		}
+		return cur
+	case "Manifest Item Properties":
+		if cur != nil {
+			cur.Properties = value
+		}
+		return cur
+	default:
+		return cur
+	}
+}
+
+func flushManifest(ctx context.Context, cur *ManifestItem, out *ExifToolOutput) {
+	if cur != nil {
+		if strings.EqualFold(cur.ID, "cover") && isLikelyImage(cur.Href, cur.MediaType) {
+			slog.DebugContext(
+				ctx,
+				"identified cover image from manifest item",
+				slog.String(otelkeys.ID, cur.ID),
+				slog.String(otelkeys.Href, cur.Href),
+				slog.String(otelkeys.MediaType, cur.MediaType),
+				slog.String(otelkeys.Properties, cur.Properties),
+			)
+			out.CoverImage = cur
+		}
+		out.ManifestItems = append(out.ManifestItems, *cur)
+	}
+}
+
+func isLikelyImage(href, mimeType string) bool {
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(mimeType)), "image/") {
+		return true
+	}
+
+	switch strings.ToLower(pathpkg.Ext(href)) {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg":
+		return true
+	default:
+		return false
+	}
+}
+
+// --- Guide Reference parsing ---
+
+// --- Scalar fields ---
+
+func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
+	switch key {
+	case "ExifTool Version Number":
+		out.ExifToolVersion = value
+	case "File Name":
+		out.FileName = value
+	case "Directory":
+		out.Directory = value
+	case "File Path":
+		out.FilePath = value
+	case "File Size":
+		out.FileSize = value
+	case "File Type":
+		out.FileType = value
+	case "File Type Extension":
+		out.Format = value
+	case "MIME Type":
+		out.MIMEType = value
+	case "Title", "Updated Title", "Book Name":
+		if out.Title == "" {
+			out.Title = value
+		} else {
+			slog.DebugContext(
+				ctx,
+				"multiple title values found; keeping first",
+				slog.String(otelkeys.Existing, out.Title),
+				slog.String(otelkeys.New, value))
+			out.Extras[fmt.Sprintf("Duplicate Title (%s)", key)] = value
+		}
+	case "Creator File-as":
+		out.CreatorFileAs = value
+	case "Creator Role":
+		out.CreatorRole = value
+	case "Language":
+		out.Language = value
+	case "Date", "Publication Date", "Publish Date":
+		if out.PublicationDate == "" {
+			out.PublicationDate = value
+		} else {
+			// If we already have a publication date, we could log a warning or decide which one to keep. For now, we'll just ignore additional publication date values.
+			slog.DebugContext(
+				ctx,
+				"multiple publication date values found; keeping first",
+				slog.String(otelkeys.Existing, out.PublicationDate),
+				slog.String(otelkeys.New, value),
+			)
+		}
+	case "Publisher":
+		out.Publisher = value
+	case "Description":
+		out.Description = value
+	case "Subject":
+		subjects := strings.Split(value, ", ")
+		for _, subject := range subjects {
+			subject = strings.TrimSpace(subject)
+			if subject == "" {
+				continue
+			}
+			// Avoid adding duplicate subjects if multiple Subject lines contain overlapping values.
+			exists := false
+			for _, existing := range out.Subjects {
+				if existing == subject {
+					exists = true
+					break
+				}
+			}
+			if !exists {
+				out.Subjects = append(out.Subjects, subject)
+			}
+		}
+	case "ISBN":
+		rawValue := value
+		value = NormalizeISBN(value)
+		if len(value) == 10 {
+			out.ISBN10 = value
+		} else if len(value) == 13 {
+			out.ISBN13 = value
+		} else {
+			// Preserve the original, unnormalized ISBN value in Extras
+			out.Extras[key] = rawValue
+		}
+	case "ASIN":
+		if out.ASIN == "" {
+			out.ASIN = value
+		}
+	case "Author", "Creator":
+		// Some formats (like MOBI) use "Author" instead of "Creator".
+		if out.Author == "" {
+			out.Author = value
+		} else {
+			// If we already have a Creator, we could log a warning or decide which one to keep. For now, we'll just ignore additional Author values.
+			slog.DebugContext(
+				ctx,
+				"multiple Author/Creator values found; keeping first",
+				slog.String(otelkeys.Existing, out.Author),
+				slog.String(otelkeys.New, value))
+			out.Extras[key] = value
+		}
+	default:
+		slog.DebugContext(
+			ctx,
+			"unrecognized scalar field in exiftool output; storing in Extra",
+			slog.String(otelkeys.Key, key),
+			slog.String(otelkeys.Value, value),
+		)
+		out.Extras[key] = value
+	}
+}
+
+func finishBook(ctx context.Context, out *ExifToolOutput) {
+	switch out.FileType {
+	case "EPUB":
+		finishEPUB(ctx, out)
+	case "MOBI", "AZW3":
+		finishMOBI(ctx, out)
+	}
+}
+
+func finishEPUB(ctx context.Context, out *ExifToolOutput) {
+	// let's see if we have an ISBN10 or ISBN13
+	if out.ISBN10 == "" && out.ISBN13 == "" {
+		// we don't have either, but maybe we have an identifier that looks like an ISBN
+		for _, ident := range out.Identifiers {
+			// sometimes this gets put into an id of "bookid"
+			// let's see if value is 10 or 13 chars and looks like an ISBN
+			assumedISBN := NormalizeISBN(ident.Value)
+			if assumedISBN != "" {
+				if len(assumedISBN) == 10 {
+					out.ISBN10 = assumedISBN
+				} else if len(assumedISBN) == 13 {
+					out.ISBN13 = assumedISBN
+				}
+			}
+			// if we found something that looks like an ISBN, we can stop looking
+			if out.ISBN10 != "" || out.ISBN13 != "" {
+				break
+			}
+		}
+	}
+
+	// let's see if we have something ASIN-like in our identifiers
+	if out.ASIN == "" {
+		for _, ident := range out.Identifiers {
+			// Skip identifiers with known non-ASIN schemes.
+			switch strings.ToUpper(ident.Scheme) {
+			case "ISBN", "CALIBRE", "GOODREADS", "GOOGLE", "HARDCOVERBOOK":
+				continue
+			}
+			// Skip values that look like ISBNs (all-digit 10/13-char strings).
+			if NormalizeISBN(ident.Value) != "" {
+				continue
+			}
+			// ASINs are 10-character alphanumeric strings, often starting with "B0" for newer books.
+			if len(ident.Value) == 10 && isASIN(ident.Value) {
+				out.ASIN = ident.Value
+				break
+			}
+		}
+	}
+
+	// Cover image discovery, in priority order:
+	// 1. Already found during manifest flush (id == "cover" with image type)
+	// 2. <meta name="cover" content="ITEM_ID"> pointing to a manifest item
+	// 3. Manifest item with properties="cover-image"
+	// 4. Manifest item whose ID or href contains "cover" and has image type
+	// 5. Single-image fallback (only one image in the manifest)
+	if out.CoverImage == nil {
+		// Strategy 2: follow <meta name="cover" content="...">
+		coverID := ""
+		for _, mt := range out.MetaTags {
+			if strings.EqualFold(mt.Name, "cover") {
+				coverID = strings.TrimSpace(mt.Content)
+				break
+			}
+		}
+		if coverID != "" {
+			for i, item := range out.ManifestItems {
+				if strings.TrimSpace(item.ID) == coverID && isLikelyImage(item.Href, item.MediaType) {
+					out.CoverImage = &out.ManifestItems[i]
+					break
+				}
+			}
+		}
+	}
+
+	if out.CoverImage == nil {
+		// Strategy 3 & 4: properties="cover-image", or ID/href containing "cover"
+		for i, item := range out.ManifestItems {
+			if !isLikelyImage(item.Href, item.MediaType) {
+				continue
+			}
+			if strings.EqualFold(item.Properties, "cover-image") {
+				out.CoverImage = &out.ManifestItems[i]
+				break
+			}
+			if strings.Contains(strings.ToLower(item.ID), "cover") || strings.Contains(strings.ToLower(item.Href), "cover") {
+				out.CoverImage = &out.ManifestItems[i]
+				break
+			}
+		}
+	}
+
+	if out.CoverImage == nil {
+		// Strategy 5: single-image fallback
+		var onlyImage *ManifestItem
+		imageCount := 0
+		for i, item := range out.ManifestItems {
+			if isLikelyImage(item.Href, item.MediaType) {
+				onlyImage = &out.ManifestItems[i]
+				imageCount++
+				if imageCount > 1 {
+					break
+				}
+			}
+		}
+		if imageCount == 1 {
+			out.CoverImage = onlyImage
+		}
+	}
+
+	if out.CoverImage != nil {
+		// let's get the cover image
+		coverImageURL, err := extractEPUBCoverDataURL(ctx, out.CoverImage, filepath.Join(out.Directory, out.FileName))
+		if err != nil {
+			slog.WarnContext(ctx, "failed to extract cover image", slog.Any(otelkeys.Error, err))
+		} else {
+			out.CoverImageURL = coverImageURL
+		}
+	}
+}
+
+func finishMOBI(ctx context.Context, out *ExifToolOutput) {
+	coverImageURL, err := GetMobiCover(ctx, filepath.Join(out.Directory, out.FileName))
+	if err != nil {
+		if errors.Is(err, ErrNoCover) {
+			slog.DebugContext(ctx, "no embedded MOBI cover image found", slog.String(otelkeys.Path, out.FileName))
+		} else {
+			slog.WarnContext(ctx, "failed to extract MOBI cover image", slog.Any(otelkeys.Error, err))
+		}
+		return
+	}
+	out.CoverImageURL = coverImageURL
+}
+
+func isASIN(s string) bool {
+	for i := range s {
+		c := s[i]
+		if (c < '0' || c > '9') && (c < 'A' || c > 'Z') && (c < 'a' || c > 'z') {
+			return false
+		}
+	}
+	return true
+}
+
+// NormalizeISBN strips common prefixes (urn:isbn:, isbn:), whitespace, hyphens,
+// and spaces from a raw ISBN string. It returns the cleaned value only if it looks
+// like an ISBN-10 or ISBN-13: 10 or 13 characters consisting of digits, with
+// ISBN-10 allowing an 'X' (or 'x') as the final checksum character; otherwise it
+// returns "".
+func NormalizeISBN(raw string) string {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return ""
+	}
+	lower := strings.ToLower(s)
+	switch {
+	case strings.HasPrefix(lower, "urn:isbn:"):
+		s = s[len("urn:isbn:"):]
+	case strings.HasPrefix(lower, "isbn:"):
+		s = s[len("isbn:"):]
+	}
+	s = strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, "-", "")
+	s = strings.ReplaceAll(s, " ", "")
+	s = strings.TrimSpace(s)
+
+	switch len(s) {
+	case 10:
+		// First 9 characters must be digits.
+		for i := range 9 {
+			if s[i] < '0' || s[i] > '9' {
+				return ""
+			}
+		}
+		// Last character may be a digit or 'X'/'x'.
+		last := s[9]
+		if (last < '0' || last > '9') && last != 'X' && last != 'x' {
+			return ""
+		}
+		// Normalize to upper-case 'X' if present.
+		if last == 'x' {
+			s = s[:9] + "X"
+		}
+		return s
+	case 13:
+		// All characters must be digits.
+		for i := range 13 {
+			if s[i] < '0' || s[i] > '9' {
+				return ""
+			}
+		}
+		return s
+	default:
+		return ""
+	}
+}
+
+func GetMobiCover(ctx context.Context, path string) (string, error) {
+	var i image.Image
+	e, err := mobi.NewReader(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to open MOBI file: %w", err)
+	}
+	defer e.Close()
+
+	coverstart, coverlength := e.CoverOffsetLength()
+	if coverstart <= 0 {
+		return "", ErrNoCover
+	}
+	if coverlength <= 0 {
+		return "", ErrNoCover
+	}
+
+	// mobi.NewReader opens the file internally but its file handle is unexported,
+	// so we must open the file again to seek to the raw cover bytes.
+	f, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("unable to open MOBI file: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := f.Seek(coverstart, 0); err != nil {
+		return "", fmt.Errorf("unable to seek to cover offset: %w", err)
+	}
+
+	ltd := io.LimitReader(f, coverlength)
+	i, _, err = image.Decode(ltd)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode MOBI cover image: %w", err)
+	}
+	slog.DebugContext(ctx, "extracted MOBI cover image", slog.String(otelkeys.Path, path))
+
+	// name is the name of the format that was decoded (e.g. "jpeg", "png"). We want to convert it to a data URL, but image.Decode doesn't give us the original bytes or MIME type, so we'll have to re-encode it as JPEG (since that's the most common format for MOBI covers) and base64-encode that.
+
+	var buf strings.Builder
+	buf.WriteString("data:image/jpeg;base64,")
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	if err := jpeg.Encode(encoder, i, nil); err != nil {
+		slog.WarnContext(ctx, "failed to encode MOBI cover image as JPEG",
+			slog.String(otelkeys.Path, path),
+			slog.Any(otelkeys.Error, err),
+		)
+		return "", fmt.Errorf("failed to encode MOBI cover image as JPEG: %w", err)
+	}
+	if err := encoder.Close(); err != nil {
+		return "", fmt.Errorf("failed to finalize base64 encoding: %w", err)
+	}
+	return buf.String(), nil
+}

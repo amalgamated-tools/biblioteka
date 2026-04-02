@@ -4,7 +4,6 @@ go 1.26.1
 
 require (
 	github.com/Khan/genqlient v0.8.1
-	github.com/barasher/go-exiftool v1.10.0
 	github.com/buger/jsonparser v1.1.2
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -13,6 +12,7 @@ require (
 	github.com/hibiken/asynqmon v0.7.2
 	github.com/jackc/pgx/v5 v5.9.1
 	github.com/justinas/alice v1.2.0
+	github.com/sblinch/mobi v0.0.0-20200306085920-9ddf0dc140e7
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/http-swagger/v2 v2.0.2
 	github.com/swaggo/swag/v2 v2.0.0-rc5

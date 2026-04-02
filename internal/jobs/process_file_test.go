@@ -46,7 +46,7 @@ func TestProcessFileHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
-	defer extractor.Close()
+	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "test.epub")
@@ -124,7 +124,7 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
-	defer extractor.Close()
+	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "rich.epub")
@@ -196,7 +196,7 @@ func TestProcessFileHandler_EmptyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
-	defer extractor.Close()
+	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 
 	payload, err := json.Marshal(ProcessFilePayload{Path: ""})
@@ -215,7 +215,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
-	defer extractor.Close()
+	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 
 	// Create a library to link the book to.
@@ -286,7 +286,7 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
-	defer extractor.Close()
+	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 
 	// Set up: Author/Series/N. Title.epub
@@ -355,7 +355,7 @@ func TestProcessFileHandler_DuplicateSkipped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create metadata extractor: %v", err)
 	}
-	defer extractor.Close()
+	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "test.epub")

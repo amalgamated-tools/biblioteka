@@ -169,7 +169,7 @@ func runProcessFile(ctx context.Context, path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create metadata extractor: %w", err)
 	}
-	defer ext.Close()
+	defer ext.Close(ctx)
 
 	err = jobs.ProcessBookFile(
 		ctx,
