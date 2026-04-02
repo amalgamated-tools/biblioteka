@@ -174,7 +174,9 @@
           Books will appear here once the scan completes.
         </p>
       {:else}
-        <BookOpen class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4" />
+        <BookOpen
+          class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4"
+        />
         <p class="text-ink-400 dark:text-ink-400 text-lg">No books yet.</p>
         <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
           Books will appear here once they are added to your libraries.

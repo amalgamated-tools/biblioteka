@@ -12,7 +12,12 @@ vi.mock("lucide-svelte", () => ({
   ChevronRight: () => {},
 }));
 
-const emptyBooks: PaginatedBooks = { books: [], total: 0, limit: 24, offset: 0 };
+const emptyBooks: PaginatedBooks = {
+  books: [],
+  total: 0,
+  limit: 24,
+  offset: 0,
+};
 
 describe("BookList empty state", () => {
   afterEach(() => cleanup());
