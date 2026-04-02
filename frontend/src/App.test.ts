@@ -1,11 +1,6 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { tick } from "svelte";
-import {
-  cleanup,
-  render,
-  screen,
-  fireEvent,
-} from "@testing-library/svelte";
+import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
 
 vi.mock("./stores/auth.svelte", () => ({
   authStore: {
