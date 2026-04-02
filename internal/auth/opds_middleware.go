@@ -10,15 +10,9 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// OPDSCredentialResult holds the fields needed by the OPDS Basic Auth middleware.
-type OPDSCredentialResult struct {
-	UserID       string
-	PasswordHash string
-}
-
 // OPDSCredentialChecker is implemented by types that can look up OPDS credentials by username.
 type OPDSCredentialChecker interface {
-	GetOPDSCredential(ctx context.Context, username string) (*OPDSCredentialResult, error)
+	GetOPDSCredential(ctx context.Context, username string) (*ProtocolCredentialResult, error)
 }
 
 // dummyOPDSBcryptHash is a precomputed valid bcrypt hash used for timing-safe

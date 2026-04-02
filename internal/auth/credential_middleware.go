@@ -12,6 +12,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// ProtocolCredentialResult holds the fields returned by protocol credential checkers.
+// Both OPDS and KOSync checkers use this shared type.
+type ProtocolCredentialResult struct {
+	UserID       string
+	PasswordHash string
+}
+
 // bcryptCredConfig holds protocol-specific callbacks for bcryptCredMiddleware.
 type bcryptCredConfig struct {
 	// protocolName is used in structured log messages (e.g. "KOSync", "OPDS").

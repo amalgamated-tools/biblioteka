@@ -13,11 +13,11 @@ import (
 
 // mockOPDSChecker implements OPDSCredentialChecker for testing.
 type mockOPDSChecker struct {
-	creds map[string]*OPDSCredentialResult
+	creds map[string]*ProtocolCredentialResult
 	err   error
 }
 
-func (m *mockOPDSChecker) GetOPDSCredential(_ context.Context, username string) (*OPDSCredentialResult, error) {
+func (m *mockOPDSChecker) GetOPDSCredential(_ context.Context, username string) (*ProtocolCredentialResult, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -35,14 +35,14 @@ func newOPDSCheckerWithUser(t *testing.T, username, password, userID string) *mo
 		t.Fatalf("bcrypt hash: %v", err)
 	}
 	return &mockOPDSChecker{
-		creds: map[string]*OPDSCredentialResult{
+		creds: map[string]*ProtocolCredentialResult{
 			username: {UserID: userID, PasswordHash: string(hash)},
 		},
 	}
 }
 
 func TestOPDSBasicAuth_MissingCredentials(t *testing.T) {
-	checker := &mockOPDSChecker{creds: map[string]*OPDSCredentialResult{}}
+	checker := &mockOPDSChecker{creds: map[string]*ProtocolCredentialResult{}}
 	mw := OPDSBasicAuthMiddleware(checker)
 
 	called := false
@@ -69,7 +69,7 @@ func TestOPDSBasicAuth_MissingCredentials(t *testing.T) {
 }
 
 func TestOPDSBasicAuth_UnknownUsername(t *testing.T) {
-	checker := &mockOPDSChecker{creds: map[string]*OPDSCredentialResult{}}
+	checker := &mockOPDSChecker{creds: map[string]*ProtocolCredentialResult{}}
 	mw := OPDSBasicAuthMiddleware(checker)
 
 	called := false
@@ -163,7 +163,7 @@ func TestOPDSBasicAuth_UsernameLowercased(t *testing.T) {
 }
 
 func TestOPDSBasicAuth_EmptyUsername(t *testing.T) {
-	checker := &mockOPDSChecker{creds: map[string]*OPDSCredentialResult{}}
+	checker := &mockOPDSChecker{creds: map[string]*ProtocolCredentialResult{}}
 	mw := OPDSBasicAuthMiddleware(checker)
 
 	called := false
@@ -185,7 +185,7 @@ func TestOPDSBasicAuth_EmptyUsername(t *testing.T) {
 }
 
 func TestOPDSBasicAuth_XMLErrorResponse(t *testing.T) {
-	checker := &mockOPDSChecker{creds: map[string]*OPDSCredentialResult{}}
+	checker := &mockOPDSChecker{creds: map[string]*ProtocolCredentialResult{}}
 	mw := OPDSBasicAuthMiddleware(checker)
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})

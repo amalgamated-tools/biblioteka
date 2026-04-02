@@ -62,6 +62,48 @@ type credentialOps struct {
 	deriveKey func(string) string
 }
 
+// toCredentialEntity maps the common fields shared by all protocol credential
+// types to a credentialEntity. Centralizing this mapping means adding a field
+// to credentialEntity only requires updating this one function.
+func toCredentialEntity(id, username string, createdAt, updatedAt db.Timestamp) credentialEntity {
+	return credentialEntity{
+		ID:        id,
+		Username:  username,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	}
+}
+
+// wrapCredGet wraps a single-argument DB credential lookup function, applying
+// toCredentialEntity so the caller does not repeat the error-or-project pattern.
+func wrapCredGet[C any](
+	fn func(context.Context, string) (*C, error),
+	project func(*C) credentialEntity,
+) func(context.Context, string) (credentialEntity, error) {
+	return func(ctx context.Context, id string) (credentialEntity, error) {
+		c, err := fn(ctx, id)
+		if err != nil {
+			return credentialEntity{}, err
+		}
+		return project(c), nil
+	}
+}
+
+// wrapCredUpsert wraps a three-argument DB credential upsert function, applying
+// toCredentialEntity so the caller does not repeat the error-or-project pattern.
+func wrapCredUpsert[C any](
+	fn func(context.Context, string, string, string) (*C, error),
+	project func(*C) credentialEntity,
+) func(context.Context, string, string, string) (credentialEntity, error) {
+	return func(ctx context.Context, userID, username, hash string) (credentialEntity, error) {
+		c, err := fn(ctx, userID, username, hash)
+		if err != nil {
+			return credentialEntity{}, err
+		}
+		return project(c), nil
+	}
+}
+
 // handleCredentials dispatches GET/PUT/DELETE for a credential endpoint.
 func handleCredentials(ops credentialOps, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {

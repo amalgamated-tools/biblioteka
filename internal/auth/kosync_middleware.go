@@ -17,15 +17,9 @@ const (
 	kosyncAuthKeyHeader = "x-auth-key"
 )
 
-// KOSyncCredentialResult holds the fields needed by the KOSync header auth middleware.
-type KOSyncCredentialResult struct {
-	UserID       string
-	PasswordHash string
-}
-
 // KOSyncCredentialChecker is implemented by types that can look up KOSync credentials by username.
 type KOSyncCredentialChecker interface {
-	GetKOSyncCredential(ctx context.Context, username string) (*KOSyncCredentialResult, error)
+	GetKOSyncCredential(ctx context.Context, username string) (*ProtocolCredentialResult, error)
 }
 
 // dummyKOSyncBcryptHash is a precomputed valid bcrypt hash used for timing-safe
