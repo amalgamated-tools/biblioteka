@@ -64,17 +64,44 @@ func TestScanProtocolCredential_HappyPath(t *testing.T) {
 	}
 }
 
-func TestScanProtocolCredential_PropagatesScanError(t *testing.T) {
+func TestScanProtocolCredential_PropagatesNoRowsError(t *testing.T) {
 	d := memDB(t)
-	_, err := d.Exec(`CREATE TABLE protocol_credentials_test (id TEXT)`)
+	_, err := d.Exec(`CREATE TABLE protocol_credentials_test_norows (id TEXT)`)
 	if err != nil {
 		t.Fatalf("create table: %v", err)
 	}
-	row := d.QueryRowContext(context.Background(), `SELECT id FROM protocol_credentials_test WHERE id = $1`, "missing")
+	row := d.QueryRowContext(context.Background(), `SELECT id FROM protocol_credentials_test_norows WHERE id = $1`, "missing")
 
 	cred, err := scanProtocolCredential(row)
 	if !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("expected sql.ErrNoRows, got %v", err)
+	}
+	if cred != nil {
+		t.Fatalf("expected nil credential on error, got %+v", *cred)
+	}
+}
+
+func TestScanProtocolCredential_PropagatesScanError(t *testing.T) {
+	d := memDB(t)
+	// Create a table with only one column — scanning 6 fields from it triggers a real scan error.
+	_, err := d.Exec(`CREATE TABLE protocol_credentials_test_scan (id TEXT)`)
+	if err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+	_, err = d.Exec(`INSERT INTO protocol_credentials_test_scan (id) VALUES ('row-1')`)
+	if err != nil {
+		t.Fatalf("insert row: %v", err)
+	}
+
+	row := d.QueryRowContext(context.Background(),
+		`SELECT id FROM protocol_credentials_test_scan WHERE id = $1`, "row-1")
+
+	cred, err := scanProtocolCredential(row)
+	if err == nil {
+		t.Fatal("expected scan error, got nil")
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		t.Fatal("expected a scan error, not sql.ErrNoRows")
 	}
 	if cred != nil {
 		t.Fatalf("expected nil credential on error, got %+v", *cred)
