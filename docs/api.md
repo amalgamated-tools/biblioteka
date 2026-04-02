@@ -8,7 +8,7 @@ Biblioteka exposes a JSON REST API under the `/api` base path. This page summari
 
 ## Base URL
 
-All API endpoints live under `/api`. Timestamps are ISO 8601 strings (e.g. `"2026-03-14T02:00:00Z"`). All request and response bodies use JSON.
+All JSON REST API endpoints live under `/api`. Timestamps are ISO 8601 strings (e.g. `"2026-03-14T02:00:00Z"`). All request and response bodies use JSON.
 
 ---
 
@@ -47,7 +47,7 @@ Endpoints marked 🔒 **Admin** require the caller to be a site administrator. N
 
 ## Pagination
 
-List endpoints accept `limit` (default `50`, max `200`) and `offset` (default `0`) query parameters. Paginated responses include `total`, `limit`, and `offset` envelope fields alongside the data array. Most endpoints silently clamp out-of-range values; `GET /api/audit-logs` returns `400 Bad Request` for invalid values instead.
+Paginated list endpoints accept `limit` (default `50`, max `200`) and `offset` (default `0`) query parameters. This applies to endpoints such as `GET /api/books`, `GET /api/libraries/{id}/books`, and `GET /api/audit-logs`; other list endpoints may return the full array without pagination. Paginated responses include `total`, `limit`, and `offset` envelope fields alongside the data array. Most paginated endpoints silently clamp out-of-range values; `GET /api/audit-logs` returns `400 Bad Request` for invalid values instead.
 
 ---
 
@@ -87,8 +87,8 @@ Common HTTP status codes:
 | **Auth** | `POST /api/auth/signup`, `/login`, `/logout`, `GET /api/auth/me`, `PUT /api/auth/password` | Account creation, session management, password change |
 | **OIDC / SSO** | `/api/auth/oidc/*` | OIDC login and account-link flow |
 | **API Keys** | `/api/api-keys`, `/api/api-keys/{id}` | Long-lived `bib_`-prefixed access tokens |
-| **Config** | `/api/config/status`, `/api/config/oidc`, `/api/config/smtp` | Server configuration (admin only) |
-| **Admin** | `/api/admin/users`, `/api/admin/users/{id}` | User management (admin only) |
+| **Config** | `/api/config/status`, `/api/config/oidc`, `/api/config/smtp` | `/api/config/status` — JWT only (any authenticated user); OIDC and SMTP config — admin only |
+| **Config** | `/api/config/status`, `/api/config/oidc`, `/api/config/smtp` | `/api/config/status` — JWT only (any authenticated user); OIDC and SMTP config — admin only |
 | **Libraries** | `/api/libraries`, `/api/libraries/{id}` | Named book collections with file-system paths |
 | **Authors** | `/api/authors`, `/api/authors/{id}` | Author management |
 | **Series** | `/api/series`, `/api/series/{id}` | Series management |
