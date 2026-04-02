@@ -83,6 +83,5 @@ func TestParseTSV_UnknownFieldsGoToExtra(t *testing.T) {
 	input := "ExifTool Version Number\t13.50\nFile Permissions\t-rw-r--r--\n"
 	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
-	require.Equal(t, out.Extra["ExifTool Version Number"], "13.50", "Extra[ExifTool Version Number]")
-	require.Equal(t, out.Extra["File Permissions"], "-rw-r--r--", "Extra[File Permissions]")
+	require.Equal(t, out.Extras["File Permissions"], "-rw-r--r--", "Extra[File Permissions]")
 }

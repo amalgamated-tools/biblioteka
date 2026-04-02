@@ -24,21 +24,24 @@ import (
 // produced by the wrapper's exiftool invocation (e.g. `exiftool -a -u -f -ee3 -U -api ... -t`).
 type ExifToolOutput struct {
 	// File info
-	FileName  string
-	Directory string
-	FileSize  string
-	FileType  string
-	MIMEType  string
+	Directory       string
+	ExifToolVersion string
+	FileName        string
+	FilePath        string
+	FileSize        string
+	FileType        string
+	Format          string
+	MIMEType        string
 
 	// Book metadata
 	ASIN            string
 	CoverImage      *ManifestItem
 	CoverImageURL   string
 	Author          string
+	CalibreID       string
 	CreatorFileAs   string
 	CreatorRole     string
 	Description     string
-	Format          string
 	GoodreadsID     string
 	GoogleID        string
 	HardcoverID     string
@@ -56,7 +59,7 @@ type ExifToolOutput struct {
 	ManifestItems []ManifestItem
 
 	// Catch-all for any unrecognized scalar fields.
-	Extra map[string]string
+	Extras map[string]string
 }
 
 func (e *ExifToolOutput) ISBN() string {
@@ -119,7 +122,7 @@ func ParseTSV(ctx context.Context, data, fileFormat string) (*ExifToolOutput, er
 		Identifiers:   []Identifier{},
 		MetaTags:      []MetaTag{},
 		ManifestItems: []ManifestItem{},
-		Extra:         map[string]string{},
+		Extras:        map[string]string{},
 		Format:        fileFormat,
 	}
 
@@ -203,11 +206,23 @@ func parseIdentifierLine(ctx context.Context, key, value string, cur *Identifier
 func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 	if cur != nil {
 		switch {
+		case strings.EqualFold(cur.Scheme, "CALIBRE"), strings.HasPrefix(cur.Value, "urn:calibre:"):
+			cur.Value = strings.TrimPrefix(cur.Value, "urn:calibre:")
+			if out.CalibreID == "" || out.CalibreID == cur.Value {
+				out.CalibreID = cur.Value
+			} else {
+				// If we already have a Calibre ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Calibre ID values.
+				slog.DebugContext(ctx,
+					"multiple Calibre ID values found; keeping first",
+					slog.String(otelkeys.Existing, out.CalibreID),
+					slog.String(otelkeys.CalibreID, cur.Value))
+				out.Extras["Duplicate Calibre ID"] = cur.Value
+			}
 		case strings.EqualFold(cur.Scheme, "ISBN"), strings.HasPrefix(cur.Value, "urn:isbn"):
 			// Normalize ISBNs to a digit-only string (10 or 13 characters), without a "urn:isbn:" prefix.
 			isbn := NormalizeISBN(cur.Value)
 			if len(isbn) == 10 {
-				if out.ISBN10 == "" {
+				if out.ISBN10 == "" || out.ISBN10 == isbn {
 					out.ISBN10 = isbn
 				} else {
 					// If we already have an ISBN-10, we could log a warning or decide which one to keep. For now, we'll just ignore additional ISBN-10 values.
@@ -215,9 +230,10 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 						"multiple isbn-10 values found; keeping first",
 						slog.String(otelkeys.Existing, out.ISBN10),
 						slog.String(otelkeys.ISBN, isbn))
+					out.Extras["Duplicate ISBN-10"] = isbn
 				}
 			} else if len(isbn) == 13 {
-				if out.ISBN13 == "" {
+				if out.ISBN13 == "" || out.ISBN13 == isbn {
 					out.ISBN13 = isbn
 				} else {
 					// If we already have an ISBN-13, we could log a warning or decide which one to keep. For now, we'll just ignore additional ISBN-13 values.
@@ -225,58 +241,66 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 						"multiple isbn-13 values found; keeping first",
 						slog.String(otelkeys.Existing, out.ISBN13),
 						slog.String(otelkeys.ISBN, isbn))
+					out.Extras["Duplicate ISBN-13"] = isbn
 				}
 			}
-		case strings.EqualFold(cur.Scheme, "AMAZON"), strings.EqualFold(cur.Scheme, "MOBI-ASIN"):
-			if out.ASIN == "" {
-				out.ASIN = cur.Value
-			} else {
-				// If we already have an ASIN, we could log a warning or decide which one to keep. For now, we'll just ignore additional ASIN values.
-				slog.WarnContext(ctx,
-					"multiple ASIN values found; keeping first",
-					slog.String(otelkeys.Existing, out.ASIN),
-					slog.String(otelkeys.ASIN, cur.Value))
-			}
-		case strings.HasPrefix(cur.Value, "urn:amazon"):
-			if out.ASIN == "" {
-				out.ASIN = strings.TrimPrefix(cur.Value, "urn:amazon:")
-			} else {
-				// If we already have an ASIN, we could log a warning or decide which one to keep. For now, we'll just ignore additional ASIN values.
-				slog.WarnContext(ctx,
-					"multiple ASIN values found; keeping first",
-					slog.String(otelkeys.Existing, out.ASIN),
-					slog.String(otelkeys.ASIN, cur.Value))
-			}
-		case strings.EqualFold(cur.Scheme, "GOOGLE"):
-			if out.GoogleID == "" {
-				out.GoogleID = cur.Value
-			} else {
-				// If we already have a Google ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Google ID values.
-				slog.WarnContext(ctx,
-					"multiple Google ID values found; keeping first",
-					slog.String(otelkeys.Existing, out.GoogleID),
-					slog.String(otelkeys.GoogleID, cur.Value))
-			}
-		case strings.EqualFold(cur.Scheme, "GOODREADS"):
-			if out.GoodreadsID == "" {
+		case strings.EqualFold(cur.Scheme, "GOODREADS"), strings.HasPrefix(cur.Value, "urn:goodreads"):
+			cur.Value = strings.TrimPrefix(cur.Value, "urn:goodreads:")
+			if out.GoodreadsID == "" || out.GoodreadsID == cur.Value {
 				out.GoodreadsID = cur.Value
 			} else {
 				// If we already have a Goodreads ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Goodreads ID values.
-				slog.WarnContext(ctx,
+				slog.DebugContext(ctx,
 					"multiple Goodreads ID values found; keeping first",
 					slog.String(otelkeys.Existing, out.GoodreadsID),
 					slog.String(otelkeys.GoodreadsID, cur.Value))
+				out.Extras["Duplicate Goodreads ID"] = cur.Value
+			}
+		case strings.EqualFold(cur.Scheme, "AMAZON"), strings.EqualFold(cur.Scheme, "MOBI-ASIN"), strings.HasPrefix(cur.Value, "urn:amazon"):
+			cur.Value = strings.TrimPrefix(cur.Value, "urn:amazon:")
+			if out.ASIN == "" || out.ASIN == cur.Value {
+				out.ASIN = cur.Value
+			} else {
+				// If we already have an ASIN, we could log a warning or decide which one to keep. For now, we'll just ignore additional ASIN values.
+				slog.DebugContext(ctx,
+					"multiple ASIN values found; keeping first",
+					slog.String(otelkeys.Existing, out.ASIN),
+					slog.String(otelkeys.ASIN, cur.Value))
+				out.Extras["Duplicate ASIN"] = cur.Value
+			}
+		case strings.EqualFold(cur.Scheme, "GOOGLE"), strings.HasPrefix(cur.Value, "urn:google"):
+			cur.Value = strings.TrimPrefix(cur.Value, "urn:google:")
+			if out.GoogleID == "" || out.GoogleID == cur.Value {
+				out.GoogleID = cur.Value
+			} else {
+				// If we already have a Google ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Google ID values.
+				slog.DebugContext(ctx,
+					"multiple Google ID values found; keeping first",
+					slog.String(otelkeys.Existing, out.GoogleID),
+					slog.String(otelkeys.GoogleID, cur.Value))
+				out.Extras["Duplicate Google ID"] = cur.Value
 			}
 		case strings.HasPrefix(cur.Value, "urn:hardcoverbook:"):
-			if out.HardcoverID == "" {
-				out.HardcoverID = strings.TrimPrefix(cur.Value, "urn:hardcoverbook:")
+			cur.Value = strings.TrimPrefix(cur.Value, "urn:hardcoverbook:")
+			if out.HardcoverID == "" || out.HardcoverID == cur.Value {
+				out.HardcoverID = cur.Value
 			} else {
 				// If we already have a Hardcover ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Hardcover ID values.
-				slog.WarnContext(ctx,
+				slog.DebugContext(ctx,
 					"multiple Hardcover ID values found; keeping first",
 					slog.String(otelkeys.Existing, out.HardcoverID),
 					slog.String(otelkeys.HardcoverID, cur.Value))
+				out.Extras["Duplicate Hardcover ID"] = cur.Value
 			}
+		default:
+			key := cur.Scheme
+			if key == "" {
+				key = cur.ID
+				if key == "" {
+					key = "Unknown"
+				}
+			}
+			out.Extras[fmt.Sprintf("Identifier (%s)", key)] = cur.Value
 		}
 		out.Identifiers = append(out.Identifiers, *cur)
 	}
@@ -375,19 +399,32 @@ func isLikelyImage(href, mimeType string) bool {
 
 func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
 	switch key {
+	case "ExifTool Version Number":
+		out.ExifToolVersion = value
 	case "File Name":
 		out.FileName = value
 	case "Directory":
 		out.Directory = value
+	case "File Path":
+		out.FilePath = value
 	case "File Size":
 		out.FileSize = value
 	case "File Type":
 		out.FileType = value
+	case "File Type Extension":
+		out.Format = value
 	case "MIME Type":
 		out.MIMEType = value
 	case "Title", "Updated Title", "Book Name":
 		if out.Title == "" {
 			out.Title = value
+		} else {
+			slog.DebugContext(
+				ctx,
+				"multiple title values found; keeping first",
+				slog.String(otelkeys.Existing, out.Title),
+				slog.String(otelkeys.New, value))
+			out.Extras[fmt.Sprintf("Duplicate Title (%s)", key)] = value
 		}
 	case "Creator File-as":
 		out.CreatorFileAs = value
@@ -420,7 +457,7 @@ func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
 		} else if len(value) == 13 {
 			out.ISBN13 = value
 		} else {
-			out.Extra[key] = value
+			out.Extras[key] = value
 		}
 	case "ASIN":
 		if out.ASIN == "" {
@@ -437,7 +474,7 @@ func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
 				"multiple Author/Creator values found; keeping first",
 				slog.String(otelkeys.Existing, out.Author),
 				slog.String(otelkeys.New, value))
-			out.Extra[key] = value
+			out.Extras[key] = value
 		}
 	default:
 		slog.DebugContext(
@@ -446,7 +483,7 @@ func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
 			slog.String(otelkeys.Key, key),
 			slog.String(otelkeys.Value, value),
 		)
-		out.Extra[key] = value
+		out.Extras[key] = value
 	}
 }
 

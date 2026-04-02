@@ -18,6 +18,7 @@ const (
 	BookID              string = "book_id"
 	BookLegacyID        string = "book_legacy_id"
 	BookMetadata        string = "book_metadata"
+	CalibreID           string = "calibre_id"
 	CallerID            string = "caller_id"
 	Concurrency         string = "concurrency"
 	ContentType         string = "content_type"
