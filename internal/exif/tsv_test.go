@@ -85,3 +85,29 @@ func TestParseTSV_UnknownFieldsGoToExtra(t *testing.T) {
 	require.NoError(t, err, "ParseTSV should not return an error")
 	require.Equal(t, "-rw-r--r--", out.Extras["File Permissions"], "Extra[File Permissions]")
 }
+
+func TestFinishEPUB_ISBN10NotMistakenForASIN(t *testing.T) {
+	// An ISBN-10 identifier should not be treated as an ASIN.
+	input := "Identifier Scheme\tISBN\nIdentifier\t0743273567\nFile Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "0743273567", out.ISBN10, "ISBN10 should be set")
+	require.Equal(t, "", out.ASIN, "ASIN should not be set from an ISBN-10 value")
+}
+
+func TestFinishEPUB_ISBN10WithoutSchemeNotMistakenForASIN(t *testing.T) {
+	// Even without a scheme, a bare ISBN-10 value should not become an ASIN.
+	input := "Identifier\t0743273567\nFile Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "0743273567", out.ISBN10, "ISBN10 should be set from bare identifier")
+	require.Equal(t, "", out.ASIN, "ASIN should not be set from an ISBN-10 value")
+}
+
+func TestFinishEPUB_RealASINIsPreserved(t *testing.T) {
+	// A real ASIN (e.g. B08FHBV4ZX) should still be detected by the heuristic.
+	input := "Identifier\tB08FHBV4ZX\nFile Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "B08FHBV4ZX", out.ASIN, "ASIN should be set from unschemed ASIN-like identifier")
+}

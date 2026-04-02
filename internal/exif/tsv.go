@@ -544,6 +544,15 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 	// let's see if we have something ASIN-like in our identifiers
 	if out.ASIN == "" {
 		for _, ident := range out.Identifiers {
+			// Skip identifiers with known non-ASIN schemes.
+			switch strings.ToUpper(ident.Scheme) {
+			case "ISBN", "CALIBRE", "GOODREADS", "GOOGLE", "HARDCOVERBOOK":
+				continue
+			}
+			// Skip values that look like ISBNs (all-digit 10/13-char strings).
+			if NormalizeISBN(ident.Value) != "" {
+				continue
+			}
 			// ASINs are 10-character alphanumeric strings, often starting with "B0" for newer books.
 			if len(ident.Value) == 10 && isASIN(ident.Value) {
 				out.ASIN = ident.Value
