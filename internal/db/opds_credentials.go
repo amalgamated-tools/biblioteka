@@ -24,12 +24,9 @@ type OPDSCredential struct {
 const opdsCredentialColumns = `id, user_id, username, password_hash, created_at, updated_at`
 
 func scanOPDSCredential(row interface{ Scan(...any) error }) (*OPDSCredential, error) {
-	var c OPDSCredential
-	err := row.Scan(&c.ID, &c.UserID, &c.Username, &c.PasswordHash, &c.CreatedAt, &c.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &c, nil
+	return scanRow(row, func(c *OPDSCredential) []any {
+		return []any{&c.ID, &c.UserID, &c.Username, &c.PasswordHash, &c.CreatedAt, &c.UpdatedAt}
+	})
 }
 
 // GetOPDSCredentialByUserID returns the OPDS credential for a user, or sql.ErrNoRows if not found.
