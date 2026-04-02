@@ -1236,10 +1236,14 @@ When an input has an associated error message that appears inline below it, use 
 
 A visually styled toggle switch implemented with `<input type="checkbox">` does not automatically communicate its "switch" semantics to assistive technologies. Screen readers announce it as a plain checkbox, which is misleading when the control represents a binary on/off state rather than a multi-select option.
 
-Add `role="switch"` to any `<input type="checkbox">` that renders as a toggle:
+Add `role="switch"` **and** `aria-checked` to any `<input type="checkbox">` that renders as a toggle. `role="switch"` alone is insufficient — some assistive technologies cannot reliably infer the current state from the native `checked` property when the element has an overriding ARIA role; `aria-checked` makes the state explicit.
+
+Use an explicit `for`/`id` association between the `<label>` and the input alongside `role="switch"` (supplementing any implicit wrapper-label approach) to maximize cross-browser screen reader compatibility:
 
 ```svelte
+<label for="lib-monitored" class="…">Monitor for new content</label>
 <input
+  id="lib-monitored"
   type="checkbox"
   role="switch"
   aria-checked={formMonitored}
@@ -1248,7 +1252,9 @@ Add `role="switch"` to any `<input type="checkbox">` that renders as a toggle:
 />
 ```
 
-With `role="switch"`, assistive technologies announce the control as a _switch_ and report its state as _on_ or _off_ (rather than _checked_ or _unchecked_), which is the semantically correct announcement for a toggle.
+In Svelte 5 (runes mode), binding a boolean to `aria-checked` is correct: Svelte serializes `aria-*` attributes to their string representation (`"true"` / `"false"`) rather than removing them, so `aria-checked={false}` renders as `aria-checked="false"` as required by the ARIA spec.
+
+With `role="switch"` and `aria-checked`, assistive technologies announce the control as a _switch_ and report its state as _on_ or _off_ (rather than _checked_ or _unchecked_), which is the semantically correct announcement for a toggle.
 
 **Why `aria-checked` must be set explicitly**
 
@@ -1256,18 +1262,38 @@ With `role="switch"`, assistive technologies announce the control as a _switch_ 
 
 **Guidelines:**
 
-- Apply `role="switch"` whenever a `<input type="checkbox">` is styled to look like a toggle switch.
+- Apply `role="switch"` and `aria-checked={booleanState}` whenever a `<input type="checkbox">` is styled to look like a toggle switch.
 - Always set `aria-checked` explicitly as an attribute bound to the same reactive variable as `bind:checked` (e.g. `aria-checked={myState}`). Do **not** rely solely on `bind:checked` to expose state, as some browser/screen reader combinations do not derive `aria-checked` from the DOM `checked` property when `role="switch"` is present.
+- Use an explicit `<label for="…">` / `id="…"` association in addition to any implicit wrapper label.
 - The control must still have an accessible name — either via a paired `<label>` element (preferred) or `aria-label`.
 - Do **not** use `role="switch"` on checkboxes that genuinely represent a tri-state or multi-select option; use plain `type="checkbox"` there.
 
-#### Inline confirmation dialogs for destructive actions
+`LibraryForm.svelte` is the canonical reference implementation.
 
-**WCAG criterion:** [3.3.4 Error Prevention](https://www.w3.org/WAI/WCAG21/Understanding/error-prevention-legal-financial-data.html) (Level AA) and [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A)
+#### Checklist for new forms
 
-`window.confirm()` blocks the JavaScript thread, is unstyled, cannot be localized, and is inaccessible in some headless and assistive-technology contexts. Instead, show an inline confirmation UI with `role="alertdialog"` directly in the component DOM.
+When adding or editing a form component:
 
-**Pattern:**
+1. Every `<input>`, `<select>`, and `<textarea>` has either a `<label for="…">` or an `aria-label`.
+2. `<label for>` values match the corresponding `id` exactly — a mismatch silently breaks the association.
+3. Related inputs that share a common heading are wrapped in a `<fieldset>` with a `<legend>`. See [`fieldset` and `legend` for grouped inputs](#fieldset-and-legend-for-grouped-inputs) above.
+4. Icon-only buttons (`<button>` with SVG content and no text) carry an `aria-label`.
+5. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
+6. Inputs with inline validation errors set `aria-invalid="true"` and `aria-describedby="<error-id>"` when the error is visible. See [`aria-describedby` for inline validation errors](#aria-describedby-for-inline-validation-errors) above.
+7. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
+8. Toggle switches (`<input type="checkbox">` styled as a switch) carry both `role="switch"` and `aria-checked={booleanState}`. Use an explicit `for`/`id` label association. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) above.
+9. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
+10. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+
+### Inline confirmation dialogs for destructive actions
+
+**WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) / [2.1.1 Keyboard](https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html) / [3.3.4 Error Prevention](https://www.w3.org/WAI/WCAG21/Understanding/error-prevention-legal-financial-data.html) (Level A / AA)
+
+Destructive actions such as deleting an API key or Kobo sync token must not use `window.confirm()`. The browser's native confirm dialog has no ARIA role, no focus management, is not styleable, and produces inconsistent screen reader behaviour across browsers. Instead, render an inline `role="alertdialog"` directly in the component.
+
+#### Pattern
+
+Use a piece of reactive state (`pendingDeleteKey`, `pendingDeleteToken`, etc.) to track which item is pending deletion. When the user clicks the initial delete trigger, set that state; the row or card swaps its delete button for an inline confirmation:
 
 ```svelte
 <script lang="ts">
@@ -1276,19 +1302,20 @@ With `role="switch"`, assistive technologies announce the control as a _switch_ 
 
   let pendingDeleteItem: { id: string; name: string } | null = $state(null);
 
-  function requestDelete(id: string, name: string) {
+  function handleDeleteItem(id: string, name: string) {
     pendingDeleteItem = { id, name };
   }
 
-  async function confirmDelete() {
+  async function confirmDeleteItem() {
     if (!pendingDeleteItem) return;
     const { id } = pendingDeleteItem;
     pendingDeleteItem = null;
     await deleteItem(id); // your API call
+    // filter item from list…
   }
 
-  async function cancelDelete() {
-    const id = pendingDeleteItem?.id;
+  async function cancelDeleteItem() {
+    const id = pendingDeleteItem?.id; // capture id BEFORE clearing state
     pendingDeleteItem = null;
     await tick();
     // Return focus to the trigger button after cancellation
@@ -1303,52 +1330,47 @@ With `role="switch"`, assistive technologies announce the control as a _switch_ 
     aria-labelledby={`confirm-label-${item.id}`}
     tabindex="-1"
     use:autofocusFirstButton
-    onkeydown={(e: KeyboardEvent) => { if (e.key === "Escape") cancelDelete(); }}
+    onkeydown={(e: KeyboardEvent) => { if (e.key === "Escape") cancelDeleteItem(); }}
   >
     <span id={`confirm-label-${item.id}`}>Delete "{item.name}"?</span>
-    <button onclick={confirmDelete}>Delete</button>
-    <button onclick={cancelDelete}>Cancel</button>
+    <button onclick={confirmDeleteItem}>Delete</button>
+    <button onclick={cancelDeleteItem}>Cancel</button>
   </div>
 {:else}
   <button
     data-delete-trigger={item.id}
-    onclick={() => requestDelete(item.id, item.name)}
+    onclick={() => handleDeleteItem(item.id, item.name)}
     aria-label={`Delete ${item.name}`}
   >Delete</button>
 {/if}
 ```
 
-**Key implementation details:**
+`APIKeysTab.svelte` and `KoboTab.svelte` are the canonical reference implementations. `LibraryForm.svelte` also uses this pattern via a `showDeleteConfirm` boolean toggle.
 
-- `role="alertdialog"` tells assistive technologies this is an alert-style confirmation dialog; `aria-labelledby` points to the confirmation question text.
-- `aria-modal="false"` — because the dialog is inline (not a `<dialog>` overlay), no inert background is applied; the value explicitly communicates this to screen readers.
-- `use:autofocusFirstButton` (from `frontend/src/lib/actions.ts`) moves focus to the first button inside the dialog after it renders, so keyboard users land directly on the primary action without tabbing.
-- `onkeydown` trapping `Escape` allows keyboard users to cancel without reaching the Cancel button.
-- `data-delete-trigger` on the original delete button allows `cancelDelete` to return focus to the element that opened the confirmation, satisfying WCAG 2.4.3 Focus Order.
-- `pendingDeleteItem` tracks which row's confirmation is visible. Clicking a second delete button while one is already open replaces the state, so at most one confirmation is visible at a time.
+#### `autofocusFirstButton` Svelte action (`lib/actions.ts`)
 
-**Guidelines:**
+`autofocusFirstButton` is a Svelte action that moves keyboard focus to the first `<button>` inside a container after the next microtask, ensuring child elements have rendered before focus is requested:
 
-- Never use `window.confirm()` for destructive actions; use this inline `role="alertdialog"` pattern instead.
-- The confirmation `<div>` must be a sibling of — or replace — the trigger button in the DOM so focus management is straightforward.
-- Use `use:autofocusFirstButton` to move focus into the dialog on open; return focus to the trigger button on cancel.
-- Trap `Escape` to cancel; do not trap Tab (the dialog is not a modal overlay).
-- `APIKeysTab.svelte` and `KoboTab.svelte` are the canonical reference implementations of this pattern in the codebase.
+```ts
+import { autofocusFirstButton } from "../lib/actions";
 
-#### Checklist for new forms
+// In a template:
+// <div use:autofocusFirstButton>…</div>
+```
 
-When adding or editing a form component:
+Apply `use:autofocusFirstButton` to the confirmation dialog container so focus is moved into it automatically when it mounts. This satisfies the keyboard-focus management requirement for modal and inline dialog patterns.
 
-1. Every `<input>`, `<select>`, and `<textarea>` has either a `<label for="…">` or an `aria-label`.
-2. `<label for>` values match the corresponding `id` exactly — a mismatch silently breaks the association.
-3. Related inputs that share a common heading are wrapped in a `<fieldset>` with a `<legend>`. See [`fieldset` and `legend` for grouped inputs](#fieldset-and-legend-for-grouped-inputs) above.
-4. Icon-only buttons (`<button>` with SVG content and no text) carry an `aria-label`.
-5. Repeated inputs in `{#each}` blocks use a dynamic, positionally-distinct `aria-label`.
-6. Inputs with inline validation errors set `aria-invalid="true"` and `aria-describedby="<error-id>"` when the error is visible. See [`aria-describedby` for inline validation errors](#aria-describedby-for-inline-validation-errors) above.
-7. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
-8. Toggle switches (`<input type="checkbox">` styled as a switch) carry `role="switch"` **and** an explicit `aria-checked` attribute bound to the same reactive variable as `bind:checked`.
-9. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-10. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+**Note:** `autofocusFirstButton` focuses the first `<button>` in DOM order. If you want focus to land on the safer Cancel option, place Cancel before Delete in the DOM. The current `APIKeysTab` and `KoboTab` implementations focus the Delete button first; this is a known P2 issue.
+
+#### Guidelines
+
+- Never use `window.confirm()` for destructive confirmations.
+- Use `role="alertdialog"` (not `role="dialog"`) for inline confirmations — `alertdialog` causes screen readers to announce its content immediately.
+- Always capture the pending item's `id` into a local variable **before** clearing the pending state in cancel handlers; clearing state first causes `querySelector` to search for `[data-delete-trigger="undefined"]` and silently drops focus.
+- Add `use:autofocusFirstButton` to the dialog container so keyboard focus enters the dialog when it opens.
+- Add an `onkeydown` Escape handler to dismiss the dialog; call the cancel function.
+- Add `data-delete-trigger` on the original trigger button so focus can be restored on cancel (WCAG 2.4.3 Focus Order).
+- Keep only one confirmation dialog open at a time — the pending state should be a single nullable value, not an array.
 
 ### Table accessibility
 
@@ -1509,31 +1531,31 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 #### `APIKeysTab.test.ts`
 
-`frontend/src/components/settings/APIKeysTab.test.ts` verifies the inline destructive confirmation dialog in the API keys settings tab (WCAG 3.3.4, 4.1.2). Seven tests in the **"APIKeysTab delete confirmation"** `describe` block:
+`frontend/src/components/settings/APIKeysTab.test.ts` verifies the inline destructive confirmation dialog in the API keys settings tab (WCAG 2.1.1, 3.3.4, 4.1.2). Seven tests in the **"APIKeysTab delete confirmation"** `describe` block:
 
-1. **`does not call deleteAPIKey when Delete button is clicked (shows confirmation instead)`** — asserts that clicking the initial Delete button does not call `deleteAPIKey` but instead reveals the inline confirmation.
-2. **`shows inline confirmation dialog when Delete is clicked`** — asserts a `role="alertdialog"` element is present in the DOM after clicking Delete.
-3. **`dismisses confirmation dialog when Cancel is clicked`** — asserts the `alertdialog` is removed from the DOM after clicking Cancel.
-4. **`calls deleteAPIKey after confirming deletion`** — asserts `deleteAPIKey` is called with the correct key ID when the Confirm Delete button is clicked.
-5. **`only shows confirmation for the clicked key, not all keys`** — seeds two keys; asserts only one `alertdialog` is rendered regardless of how many rows are present.
-6. **`dismisses confirmation dialog when Escape is pressed`** — fires a `keydown` event with `key: "Escape"` on the dialog; asserts the dialog is removed.
-7. **`moves focus to the Delete confirm button when dialog opens`** — asserts the primary Confirm Delete button receives focus automatically when the dialog is shown (via `autofocusFirstButton`).
+1. **`does not call deleteAPIKey when Delete button is clicked (shows confirmation instead)`** — clicks the delete trigger for an API key and asserts `deleteAPIKey` is **not** called, confirming that no deletion occurs until the user confirms.
+2. **`shows inline confirmation dialog when Delete is clicked`** — clicks the delete trigger and asserts the `role="alertdialog"` confirmation panel appears in the DOM.
+3. **`dismisses confirmation dialog when Cancel is clicked`** — opens the confirmation, then clicks Cancel; asserts the dialog is removed from the DOM.
+4. **`calls deleteAPIKey after confirming deletion`** — opens the confirmation, clicks the confirm Delete button, and asserts `deleteAPIKey` is called with the correct key ID.
+5. **`only shows confirmation for the clicked key, not all keys`** — seeds two API keys, clicks delete on the first, and asserts the dialog appears only for that key while the second key row remains unaffected.
+6. **`dismisses confirmation dialog when Escape is pressed`** — opens the confirmation dialog, dispatches a `keydown` event with `key="Escape"`, and asserts the dialog is removed.
+7. **`moves focus to the Delete confirm button when dialog opens`** — opens the confirmation dialog and asserts the Delete button inside the `alertdialog` receives focus, verifying the `autofocusFirstButton` action is working.
 
-> **Mocking note:** `api.listAPIKeys` and `api.deleteAPIKey` are replaced with Vitest mocks so tests run without a backend. `afterEach(cleanup)` prevents DOM leakage.
+> **Mocking note:** The test file mocks `api.listAPIKeys` (returns two pre-seeded keys), `api.createAPIKey`, `api.deleteAPIKey` (resolves immediately), `clipboard.copyToClipboard`, and all `lucide-svelte` icon components. `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
 
 #### `KoboTab.test.ts`
 
-`frontend/src/components/settings/KoboTab.test.ts` verifies the inline destructive confirmation dialog in the Kobo token settings tab (WCAG 3.3.4, 4.1.2). Seven tests in the **"KoboTab delete confirmation"** `describe` block mirror the API keys tab tests:
+`frontend/src/components/settings/KoboTab.test.ts` verifies the inline destructive confirmation dialog in the Kobo token settings tab (WCAG 2.1.1, 3.3.4, 4.1.2). Seven tests in the **"KoboTab delete confirmation"** `describe` block, mirroring the structure of `APIKeysTab.test.ts`:
 
-1. **`does not call deleteKoboToken when Delete button is clicked (shows confirmation instead)`**
-2. **`shows inline confirmation dialog when Delete is clicked`**
-3. **`dismisses confirmation dialog when Cancel is clicked`**
-4. **`calls deleteKoboToken after confirming deletion`**
-5. **`only shows confirmation for the clicked token, not all tokens`**
-6. **`dismisses confirmation dialog when Escape is pressed`**
-7. **`moves focus to the Delete confirm button when dialog opens`**
+1. **`does not call deleteKoboToken when Delete button is clicked (shows confirmation instead)`** — asserts deletion does not fire on the first click.
+2. **`shows inline confirmation dialog when Delete is clicked`** — asserts the `role="alertdialog"` panel appears.
+3. **`dismisses confirmation dialog when Cancel is clicked`** — asserts Cancel hides the dialog.
+4. **`calls deleteKoboToken after confirming deletion`** — asserts `deleteKoboToken` is called with the correct token ID after confirmation.
+5. **`only shows confirmation for the clicked token, not all tokens`** — asserts only the target token's row shows the dialog.
+6. **`dismisses confirmation dialog when Escape is pressed`** — asserts the Escape key closes the dialog.
+7. **`moves focus to the Delete confirm button when dialog opens`** — asserts the Delete button inside the `alertdialog` receives focus.
 
-> **Mocking note:** `api.listKoboTokens` and `api.deleteKoboToken` are replaced with Vitest mocks. `afterEach(cleanup)` prevents DOM leakage.
+> **Mocking note:** The test file mocks `api.listKoboTokens`, `api.createKoboToken`, `api.deleteKoboToken`, `clipboard.copyToClipboard`, and all `lucide-svelte` icon components. `afterEach` calls `cleanup()` and `vi.clearAllMocks()`.
 
 #### `UsersTab.test.ts`
 
