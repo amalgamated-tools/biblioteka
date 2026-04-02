@@ -39,7 +39,7 @@ var WaitTimeout = time.Second
 // ErrNotExist is a sentinel error for non existing file
 var ErrNotExist = errors.New("file does not exist")
 
-// ErrNotFile is a sentinel error that is returned when a folder is provided instead of a rerular file
+// ErrNotFile is a sentinel error that is returned when a folder is provided instead of a regular file
 var ErrNotFile = errors.New("can't extract metadata from folder")
 
 // ErrBufferTooSmall is a sentinel error that is returned when the buffer used to store Exiftool's output is too small.
