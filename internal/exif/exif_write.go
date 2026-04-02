@@ -69,7 +69,12 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 			switch v.(type) {
 			case nil:
 				if _, err := fmt.Fprintln(e.stdin, "-"+k+"="); err != nil {
-					slog.WarnContext(ctx, "failed to write empty value for field", slog.String(otelkeys.Field, k), slog.Any(otelkeys.Error, err))
+					slog.WarnContext(
+						ctx,
+						"failed to write empty value for field",
+						slog.String(otelkeys.Field, k),
+						slog.Any(otelkeys.Error, err),
+					)
 					fileMetadata[i].Err = err
 					e.markDead()
 					return
@@ -77,7 +82,12 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 			default:
 				strTab, err := md.GetStrings(k)
 				if err != nil {
-					slog.WarnContext(ctx, "failed to convert field value to string slice", slog.String(otelkeys.Field, k), slog.Any(otelkeys.Error, err))
+					slog.WarnContext(
+						ctx,
+						"failed to convert field value to string slice",
+						slog.String(otelkeys.Field, k),
+						slog.Any(otelkeys.Error, err),
+					)
 					fileMetadata[i].Err = err
 					// Args may have already been written to stdin for this file
 					// (e.g., -overwrite_original), so the protocol is corrupted.
@@ -87,7 +97,12 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 				for _, str := range strTab {
 					// TODO: support writing an empty string via '^='
 					if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+str); err != nil {
-						slog.WarnContext(ctx, "failed to write field value", slog.String(otelkeys.Field, k), slog.Any(otelkeys.Error, err))
+						slog.WarnContext(
+							ctx,
+							"failed to write field value",
+							slog.String(otelkeys.Field, k),
+							slog.Any(otelkeys.Error, err),
+						)
 						fileMetadata[i].Err = err
 						e.markDead()
 						return
@@ -97,7 +112,12 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 		}
 
 		if _, err := fmt.Fprintln(e.stdin, md.File); err != nil {
-			slog.WarnContext(ctx, "failed to write file path", slog.String(otelkeys.File, md.File), slog.Any(otelkeys.Error, err))
+			slog.WarnContext(
+				ctx,
+				"failed to write file path",
+				slog.String(otelkeys.File, md.File),
+				slog.Any(otelkeys.Error, err),
+			)
 			fileMetadata[i].Err = err
 			e.markDead()
 			return

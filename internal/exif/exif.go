@@ -231,7 +231,12 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 	}
 
 	if _, err := fmt.Fprintln(e.stdin, file); err != nil {
-		slog.WarnContext(ctx, "failed to write file path", slog.String(otelkeys.Path, file), slog.Any(otelkeys.Error, err))
+		slog.WarnContext(
+			ctx,
+			"failed to write file path",
+			slog.String(otelkeys.Path, file),
+			slog.Any(otelkeys.Error, err),
+		)
 		e.markDead()
 		return nil, err
 	}
