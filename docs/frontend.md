@@ -1271,6 +1271,7 @@ With `role="switch"`, assistive technologies announce the control as a _switch_ 
 
 ```svelte
 <script lang="ts">
+  import { tick } from "svelte";
   import { autofocusFirstButton } from "../../lib/actions";
 
   let pendingDeleteItem: { id: string; name: string } | null = $state(null);
@@ -1319,7 +1320,7 @@ With `role="switch"`, assistive technologies announce the control as a _switch_ 
 
 **Key implementation details:**
 
-- `role="alertdialog"` tells assistive technologies this is a modal alert; `aria-labelledby` points to the confirmation question text.
+- `role="alertdialog"` tells assistive technologies this is an alert-style confirmation dialog; `aria-labelledby` points to the confirmation question text.
 - `aria-modal="false"` — because the dialog is inline (not a `<dialog>` overlay), no inert background is applied; the value explicitly communicates this to screen readers.
 - `use:autofocusFirstButton` (from `frontend/src/lib/actions.ts`) moves focus to the first button inside the dialog after it renders, so keyboard users land directly on the primary action without tabbing.
 - `onkeydown` trapping `Escape` allows keyboard users to cancel without reaching the Cancel button.
@@ -1518,7 +1519,7 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 6. **`dismisses confirmation dialog when Escape is pressed`** — fires a `keydown` event with `key: "Escape"` on the dialog; asserts the dialog is removed.
 7. **`moves focus to the Delete confirm button when dialog opens`** — asserts the primary Confirm Delete button receives focus automatically when the dialog is shown (via `autofocusFirstButton`).
 
-> **Mocking note:** `api.listAPIKeys` and `api.deleteAPIKey` are replaced with Vitest mocks so tests run without a backend. `authStore` is seeded with a test user. `afterEach(cleanup)` prevents DOM leakage.
+> **Mocking note:** `api.listAPIKeys` and `api.deleteAPIKey` are replaced with Vitest mocks so tests run without a backend. `afterEach(cleanup)` prevents DOM leakage.
 
 #### `KoboTab.test.ts`
 
@@ -1532,7 +1533,7 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 6. **`dismisses confirmation dialog when Escape is pressed`**
 7. **`moves focus to the Delete confirm button when dialog opens`**
 
-> **Mocking note:** `api.listKoboTokens` and `api.deleteKoboToken` are replaced with Vitest mocks. `authStore` is seeded with a test user. `afterEach(cleanup)` prevents DOM leakage.
+> **Mocking note:** `api.listKoboTokens` and `api.deleteKoboToken` are replaced with Vitest mocks. `afterEach(cleanup)` prevents DOM leakage.
 
 #### `UsersTab.test.ts`
 
