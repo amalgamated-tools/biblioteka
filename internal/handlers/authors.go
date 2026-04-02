@@ -48,15 +48,20 @@ func toAuthorDTO(a *db.Author) authorDTO {
 // authorOps returns the namedEntityOps configuration for the Author entity.
 func (h *AuthorHandler) authorOps() namedEntityOps[db.Author, authorDTO, authorRequest] {
 	return namedEntityOps[db.Author, authorDTO, authorRequest]{
-		db:             h.DB,
-		entityLabel:    "author",
-		entityArticle:  "an author",
-		idKey:          otelkeys.AuthorID,
-		errInvalidName: db.ErrInvalidAuthorName,
-		errNameExists:  db.ErrAuthorNameExists,
-		auditCreate:    db.AuditActionAuthorCreated,
-		auditUpdate:    db.AuditActionAuthorUpdated,
-		get:            h.DB.GetAuthor,
+		db:              h.DB,
+		entityLabel:     "author",
+		entityArticle:   "an author",
+		idKey:           otelkeys.AuthorID,
+		errInvalidName:  db.ErrInvalidAuthorName,
+		errNameExists:   db.ErrAuthorNameExists,
+		auditCreate:     db.AuditActionAuthorCreated,
+		auditUpdate:     db.AuditActionAuthorUpdated,
+		auditDelete:     db.AuditActionAuthorDeleted,
+		pathPrefix:      "/api/authors/",
+		collectionLabel: "authors",
+		get:             h.DB.GetAuthor,
+		list:            h.DB.ListAuthors,
+		del:             h.DB.DeleteAuthor,
 		create: func(ctx context.Context, req authorRequest) (*db.Author, error) {
 			return h.DB.CreateAuthor(ctx, req.Name, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.ImageURL)
 		},
@@ -71,38 +76,6 @@ func (h *AuthorHandler) authorOps() namedEntityOps[db.Author, authorDTO, authorR
 }
 
 // HandleAuthors handles GET /api/authors and POST /api/authors.
-func (h *AuthorHandler) HandleAuthors(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		h.listAuthors(w, r)
-	case http.MethodPost:
-		h.createAuthor(w, r)
-	default:
-		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
-	}
-}
-
-// HandleAuthor handles GET/PUT/DELETE /api/authors/{id}.
-func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
-	id, ok := extractPathID(r.URL.Path, "/api/authors/")
-	if !ok {
-		writeError(r.Context(), w, http.StatusBadRequest, "invalid author ID")
-		return
-	}
-
-	switch r.Method {
-	case http.MethodGet:
-		h.getAuthor(w, r, id)
-	case http.MethodPut:
-		h.updateAuthor(w, r, id)
-	case http.MethodDelete:
-		h.deleteAuthor(w, r, id)
-	default:
-		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
-	}
-}
-
-// listAuthors godoc
 //
 //	@Summary		List authors
 //	@Description	Returns all authors
@@ -113,11 +86,6 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{array}		authorDTO
 //	@Failure		500	{object}	errorResponse
 //	@Router			/authors [get]
-func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
-	listEntities(w, r, "authors", h.DB.ListAuthors, toAuthorDTO)
-}
-
-// createAuthor godoc
 //
 //	@Summary		Create an author
 //	@Description	Create a new author
@@ -132,11 +100,11 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 //	@Failure		409		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse
 //	@Router			/authors [post]
-func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
-	createNamedEntity(h.authorOps(), w, r)
+func (h *AuthorHandler) HandleAuthors(w http.ResponseWriter, r *http.Request) {
+	handleNamedEntityCollection(h.authorOps(), w, r)
 }
 
-// getAuthor godoc
+// HandleAuthor handles GET/PUT/DELETE /api/authors/{id}.
 //
 //	@Summary		Get an author
 //	@Description	Returns a single author by ID
@@ -150,11 +118,6 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 //	@Failure		404	{object}	errorResponse
 //	@Failure		500	{object}	errorResponse
 //	@Router			/authors/{id} [get]
-func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	getNamedEntity(h.authorOps(), w, r, id)
-}
-
-// updateAuthor godoc
 //
 //	@Summary		Update an author
 //	@Description	Update an existing author
@@ -171,11 +134,6 @@ func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id str
 //	@Failure		409		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse
 //	@Router			/authors/{id} [put]
-func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	updateNamedEntity(h.authorOps(), w, r, id)
-}
-
-// deleteAuthor godoc
 //
 //	@Summary		Delete an author
 //	@Description	Delete an author by ID
@@ -188,10 +146,6 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 //	@Failure		404	{object}	errorResponse
 //	@Failure		500	{object}	errorResponse
 //	@Router			/authors/{id} [delete]
-func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
-		h.DB.GetAuthor, h.DB.DeleteAuthor,
-		db.AuditActionAuthorDeleted,
-		func(a *db.Author) map[string]any { return map[string]any{"name": a.Name} },
-	)
+func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
+	handleNamedEntitySingle(h.authorOps(), w, r)
 }
