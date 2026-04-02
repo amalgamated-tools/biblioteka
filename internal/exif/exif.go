@@ -171,8 +171,9 @@ func (e *Exiftool) Close(ctx context.Context) error {
 	}
 
 	if len(errs) > 0 {
-		slog.ErrorContext(ctx, "errors while closing exiftool", slog.Any(otelkeys.Error, errs))
-		return fmt.Errorf("error while closing exiftool: %w", errors.Join(errs...))
+		joinedErr := errors.Join(errs...)
+		slog.ErrorContext(ctx, "errors while closing exiftool", slog.Any(otelkeys.Error, joinedErr))
+		return fmt.Errorf("error while closing exiftool: %w", joinedErr)
 	}
 
 	return nil

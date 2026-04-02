@@ -118,12 +118,14 @@ type GuideReference struct {
 // Manifest Item, Meta, Guide Reference) are collected into their
 // respective slices using a flush-on-new-record strategy.
 func ParseTSV(ctx context.Context, data, fileFormat string) (*ExifToolOutput, error) {
+	normalizedFormat := strings.ToLower(strings.TrimPrefix(fileFormat, "."))
+
 	out := &ExifToolOutput{
 		Identifiers:   []Identifier{},
 		MetaTags:      []MetaTag{},
 		ManifestItems: []ManifestItem{},
 		Extras:        map[string]string{},
-		Format:        fileFormat,
+		Format:        normalizedFormat,
 	}
 
 	var curIdent *Identifier
@@ -684,6 +686,9 @@ func GetMobiCover(ctx context.Context, path string) (string, error) {
 
 	coverstart, coverlength := e.CoverOffsetLength()
 	if coverstart <= 0 {
+		return "", errors.New("no cover found in MOBI file")
+	}
+	if coverlength <= 0 {
 		return "", errors.New("no cover found in MOBI file")
 	}
 
