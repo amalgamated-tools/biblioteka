@@ -61,6 +61,38 @@ type credentialOps struct {
 	deriveKey func(string) string
 }
 
+// toCredentialEntity converts a db.ProtocolCredential to a credentialEntity.
+func toCredentialEntity(c *db.ProtocolCredential) credentialEntity {
+	return credentialEntity{
+		ID:        c.ID,
+		Username:  c.Username,
+		CreatedAt: c.CreatedAt,
+		UpdatedAt: c.UpdatedAt,
+	}
+}
+
+// credentialGetAdapter wraps a DB get-by-user-ID function to return a credentialEntity.
+func credentialGetAdapter(fn func(context.Context, string) (*db.ProtocolCredential, error)) func(context.Context, string) (credentialEntity, error) {
+	return func(ctx context.Context, userID string) (credentialEntity, error) {
+		c, err := fn(ctx, userID)
+		if err != nil {
+			return credentialEntity{}, err
+		}
+		return toCredentialEntity(c), nil
+	}
+}
+
+// credentialUpsertAdapter wraps a DB upsert function to return a credentialEntity.
+func credentialUpsertAdapter(fn func(context.Context, string, string, string) (*db.ProtocolCredential, error)) func(context.Context, string, string, string) (credentialEntity, error) {
+	return func(ctx context.Context, userID, username, hash string) (credentialEntity, error) {
+		c, err := fn(ctx, userID, username, hash)
+		if err != nil {
+			return credentialEntity{}, err
+		}
+		return toCredentialEntity(c), nil
+	}
+}
+
 // handleCredentials dispatches GET/PUT/DELETE for a credential endpoint.
 func handleCredentials(ops credentialOps, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {

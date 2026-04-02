@@ -14,38 +14,34 @@ var ErrKOSyncUsernameExists = errors.New("kosync username already exists")
 // KOSyncCredential represents a row in the kosync_credentials table.
 type KOSyncCredential = ProtocolCredential
 
-var kosyncCredentialTable = protocolCredentialTable{
-	name:              "kosync_credentials",
-	usernameUniqueCol: "kosync_credentials.username",
-	usernameUniqueIdx: "idx_kosync_credentials_username",
+var kosyncCredConfig = protocolCredentialConfig{
+	table:        "kosync_credentials",
+	tableCol:     "kosync_credentials.username",
+	indexName:    "idx_kosync_credentials_username",
+	errExists:    ErrKOSyncUsernameExists,
+	logPrefix:    "KOSync",
+	usernameAttr: func(v string) slog.Attr { return slog.String(otelkeys.KOSyncUsername, v) },
 }
 
 // GetKOSyncCredentialByUserID returns the KOSync credential for a user, or sql.ErrNoRows if not found.
 func (d *DB) GetKOSyncCredentialByUserID(ctx context.Context, userID string) (*KOSyncCredential, error) {
-	slog.DebugContext(ctx, "db: fetching KOSync credential by user ID", slog.String(otelkeys.UserID, userID))
-	return d.getProtocolCredentialByUserID(ctx, kosyncCredentialTable, userID)
+	return getCredentialByUserID(d, ctx, kosyncCredConfig, userID)
 }
 
 // GetKOSyncCredentialByUsername returns the KOSync credential for a username, or sql.ErrNoRows if not found.
 func (d *DB) GetKOSyncCredentialByUsername(ctx context.Context, username string) (*KOSyncCredential, error) {
-	slog.DebugContext(ctx, "db: fetching KOSync credential by username", slog.String(otelkeys.KOSyncUsername, username))
-	return d.getProtocolCredentialByUsername(ctx, kosyncCredentialTable, username)
+	return getCredentialByUsername(d, ctx, kosyncCredConfig, username)
 }
 
 // UpsertKOSyncCredential creates or updates the KOSync credential for a user.
 // Returns ErrKOSyncUsernameExists if the username is taken by a different user.
 func (d *DB) UpsertKOSyncCredential(ctx context.Context, userID, username, passwordHash string) (*KOSyncCredential, error) {
-	slog.DebugContext(ctx, "db: upserting KOSync credential",
-		slog.String(otelkeys.UserID, userID),
-		slog.String(otelkeys.KOSyncUsername, username),
-	)
-	return d.upsertProtocolCredential(ctx, kosyncCredentialTable, userID, username, passwordHash, ErrKOSyncUsernameExists)
+	return upsertCredential(d, ctx, kosyncCredConfig, userID, username, passwordHash)
 }
 
 // DeleteKOSyncCredential removes the KOSync credential for a user.
 func (d *DB) DeleteKOSyncCredential(ctx context.Context, userID string) error {
-	slog.DebugContext(ctx, "db: deleting KOSync credential", slog.String(otelkeys.UserID, userID))
-	return d.deleteProtocolCredential(ctx, kosyncCredentialTable, userID)
+	return deleteCredential(d, ctx, kosyncCredConfig, userID)
 }
 
 // ReadingProgress represents a row in the reading_progress table.
