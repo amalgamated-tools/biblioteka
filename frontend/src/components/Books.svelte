@@ -2,6 +2,7 @@
   import { BookOpen } from "lucide-svelte";
   import BookList from "./ui/BookList.svelte";
   import { routerStore } from "../stores/router.svelte";
+  import { libraryStore } from "../stores/libraries.svelte";
   import * as api from "../lib/api";
 
   let initialOffset = $derived(
@@ -13,6 +14,10 @@
 
   function handlePageChange(offset: number) {
     routerStore.setQueryParam("offset", offset === 0 ? null : String(offset));
+  }
+
+  function handleBooksFound() {
+    libraryStore.clearAllScanning();
   }
 </script>
 
@@ -34,5 +39,7 @@
     fetchBooks={api.listBooks}
     {initialOffset}
     onPageChange={handlePageChange}
+    pollingInterval={libraryStore.isScanning ? 3000 : undefined}
+    onBooksFound={libraryStore.isScanning ? handleBooksFound : undefined}
   />
 </div>
