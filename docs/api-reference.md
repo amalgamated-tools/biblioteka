@@ -1556,7 +1556,6 @@ List all Kobo sync tokens for the authenticated user.
     "id": "<id>",
     "user_id": "<user_id>",
     "name": "Kobo Libra 2",
-    "token_hash": "sha256hex...",
     "created_at": "2026-03-17T12:00:00Z"
   }
 ]
@@ -1571,7 +1570,6 @@ Returns `[]` when no tokens exist.
 | `id`         | string | Opaque token ID (used for deletion) |
 | `user_id`    | string | ID of the owning user |
 | `name`       | string | Human-readable label given at creation time |
-| `token_hash` | string | SHA-256 hex digest of the raw token — the raw token is never returned after creation |
 | `created_at` | string | Timestamp when the token was created (ISO 8601) |
 
 ---
@@ -1593,7 +1591,6 @@ Create a new Kobo sync token. The raw token is returned **only in this response*
   "id": "<id>",
   "user_id": "<user_id>",
   "name": "Kobo Libra 2",
-  "token_hash": "sha256hex...",
   "created_at": "2026-03-17T12:00:00Z",
   "token": "a3f8e1b2c4d5..."
 }
