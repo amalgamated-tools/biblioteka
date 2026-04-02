@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
-	"github.com/amalgamated-tools/biblioteka/internal/metadata"
+	"github.com/amalgamated-tools/biblioteka/internal/exif"
 )
 
 func TestWriteSidecarFiles_BothFiles(t *testing.T) {
@@ -17,13 +17,13 @@ func TestWriteSidecarFiles_BothFiles(t *testing.T) {
 	imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
 
-	meta := &metadata.BookMetadata{
+	meta := &exif.ExifToolOutput{
 		CoverImageURL:   "data:image/jpeg;base64," + encoded,
 		Description:     "A test book",
 		Language:        "en",
 		PublicationDate: "2024-01-01",
 		Publisher:       "Test Publisher",
-		ISBN:            "1234567890",
+		ISBN10:          "1234567890",
 	}
 
 	WriteSidecarFiles(context.Background(), bookPath, meta, "Test Book", "Test Author", db.LibraryOrganizationBookPerFolder)
@@ -39,7 +39,7 @@ func TestWriteSidecarFiles_BothFiles(t *testing.T) {
 func TestWriteSidecarFiles_NoCover(t *testing.T) {
 	dir := t.TempDir()
 	bookPath := filepath.Join(dir, "No Cover Book.epub")
-	meta := &metadata.BookMetadata{
+	meta := &exif.ExifToolOutput{
 		Description: "No cover book",
 		Language:    "en",
 	}
@@ -80,7 +80,7 @@ func TestWriteSidecarFiles_BookPerFileUsesBookFilename(t *testing.T) {
 	imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
 
-	meta := &metadata.BookMetadata{
+	meta := &exif.ExifToolOutput{
 		CoverImageURL: "data:image/jpeg;base64," + encoded,
 		Language:      "en",
 	}
