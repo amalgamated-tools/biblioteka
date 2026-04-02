@@ -111,3 +111,26 @@ func TestFinishEPUB_RealASINIsPreserved(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "B08FHBV4ZX", out.ASIN, "ASIN should be set from unschemed ASIN-like identifier")
 }
+
+func TestParseTSV_SubjectsDeduplication(t *testing.T) {
+	// Multiple Subject lines with overlapping comma-separated values.
+	input := "Subject\tFiction, Science Fiction\nSubject\tScience Fiction, Fantasy, Horror\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, []string{"Fiction", "Science Fiction", "Fantasy", "Horror"}, out.Subjects)
+}
+
+func TestParseTSV_SubjectsSingleLine(t *testing.T) {
+	input := "Subject\tHistory, Biography\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, []string{"History", "Biography"}, out.Subjects)
+}
+
+func TestParseTSV_SubjectsWhitespaceHandling(t *testing.T) {
+	// Extra whitespace around values should be trimmed, empty segments skipped.
+	input := "Subject\t  Romance , , Thriller \n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, []string{"Romance", "Thriller"}, out.Subjects)
+}
