@@ -451,13 +451,15 @@ func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
 	case "Subject":
 		out.Subjects = strings.Split(value, ", ")
 	case "ISBN":
+		rawValue := value
 		value = NormalizeISBN(value)
 		if len(value) == 10 {
 			out.ISBN10 = value
 		} else if len(value) == 13 {
 			out.ISBN13 = value
 		} else {
-			out.Extras[key] = value
+			// Preserve the original, unnormalized ISBN value in Extras
+			out.Extras[key] = rawValue
 		}
 	case "ASIN":
 		if out.ASIN == "" {
@@ -502,13 +504,8 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 		// we don't have either, but maybe we have an identifier that looks like an ISBN
 		for _, ident := range out.Identifiers {
 			// sometimes this gets put into an id of "bookid"
-			var assumedISBN string
-			if strings.EqualFold(ident.ID, "bookid") {
-				assumedISBN = ident.Value
-			} else {
-				// let's see if value is 10 or 13 chars and looks like an ISBN
-				assumedISBN = NormalizeISBN(ident.Value)
-			}
+			// let's see if value is 10 or 13 chars and looks like an ISBN
+			assumedISBN := NormalizeISBN(ident.Value)
 			if assumedISBN != "" {
 				if len(assumedISBN) == 10 {
 					out.ISBN10 = assumedISBN
