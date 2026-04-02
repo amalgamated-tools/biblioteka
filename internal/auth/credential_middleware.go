@@ -30,6 +30,9 @@ func lookupByUsername[T any](
 		if err != nil {
 			return "", "", err
 		}
+		if cred == nil {
+			return "", "", sql.ErrNoRows
+		}
 		userID, hash := extract(cred)
 		return userID, hash, nil
 	}
