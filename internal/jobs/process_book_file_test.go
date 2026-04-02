@@ -19,7 +19,7 @@ func TestProcessBookFile_NilDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	err = ProcessBookFile(context.Background(), nil, ext, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
@@ -50,7 +50,7 @@ func TestProcessBookFile_EmptyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:     "",
@@ -68,7 +68,7 @@ func TestProcessBookFile_WhitespacePath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:     "   ",
@@ -86,7 +86,7 @@ func TestProcessBookFile_EmptyFileName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
@@ -104,7 +104,7 @@ func TestProcessBookFile_EmptyFileType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
@@ -122,7 +122,7 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	// Use a non-epub file so metadata extraction fails and title comes from filename
 	dir := t.TempDir()
@@ -161,7 +161,7 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "noext")
@@ -198,7 +198,7 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	// Pre-create the author
 	_, err = database.CreateAuthor(context.Background(), "F. Scott Fitzgerald", nil, nil, nil, nil)
@@ -252,19 +252,19 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
-	epubPath := filepath.Join(dir, "covered.epub")
-	testutils.MakeTestEPUBWithOptions(t, epubPath, "Covered Book", "Author", "urn:isbn:9780743273565", testutils.EPUBOptions{
-		CoverImageData: testutils.TinyPNG(),
-		CoverImageHref: "images/cover.png",
-		CoverMediaType: "image/png",
-	})
+	epubPath := filepath.Join(dir, "cover.epub")
 
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "Book with Cover", "Author", "some-id-123", testutils.EPUBOptions{
+		CoverImageData: testutils.TinyJPEG(),
+		CoverImageHref: "images/cover.jpg",
+		CoverMediaType: "image/jpeg",
+	})
 	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
 		Path:     epubPath,
-		FileName: "covered.epub",
+		FileName: "cover.epub",
 		FileType: "epub",
 		FileSize: 1024,
 	})
@@ -279,7 +279,7 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 	if len(books) != 1 {
 		t.Fatalf("expected 1 book, got %d", len(books))
 	}
-	if books[0].CoverImageURL == nil || !strings.HasPrefix(*books[0].CoverImageURL, "data:image/png;base64,") {
+	if books[0].CoverImageURL == nil || !strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,") {
 		t.Fatalf("expected embedded cover data URL, got %#v", books[0].CoverImageURL)
 	}
 }
@@ -290,7 +290,7 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "noauthor.epub")
@@ -335,7 +335,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	// Create a file that isn't a valid EPUB — extraction will fail
 	dir := t.TempDir()
@@ -373,7 +373,7 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "isbn10.epub")
@@ -410,7 +410,7 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	// Create a library root with a book file at the top level.
 	root := t.TempDir()
@@ -472,7 +472,7 @@ func TestProcessBookFile_OrganizeFiles_BookPerFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	root := t.TempDir()
 	epubPath := filepath.Join(root, "The Great Gatsby.epub")
@@ -528,7 +528,7 @@ func TestProcessBookFile_OrganizeFiles_None(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	root := t.TempDir()
 	epubPath := filepath.Join(root, "The Great Gatsby.epub")
@@ -582,7 +582,7 @@ func TestProcessBookFile_NonExistentLibrarySkipsOrganization(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	root := t.TempDir()
 	epubPath := filepath.Join(root, "The Great Gatsby.epub")
@@ -632,7 +632,7 @@ func TestProcessBookFile_NoLibraryIDSkipsOrganization(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	root := t.TempDir()
 	epubPath := filepath.Join(root, "The Great Gatsby.epub")
@@ -662,7 +662,7 @@ func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	root := t.TempDir()
 	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
@@ -716,7 +716,7 @@ func TestProcessBookFile_ContinuesFromFlatReorganizedPathWhenSourceMoved(t *test
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	root := t.TempDir()
 	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
@@ -770,7 +770,7 @@ func TestProcessBookFile_FlatRecoveryDoesNotUseFolderCandidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	root := t.TempDir()
 	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
@@ -829,7 +829,7 @@ func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	defer ext.Close()
+	defer ext.Close(t.Context())
 
 	root := t.TempDir()
 	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
