@@ -146,12 +146,13 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 			return
 		}
 		if !scanOk {
+			ferr := fmt.Errorf("error while reading stdMergedOut: EOF")
 			slog.WarnContext(
 				ctx,
 				"unexpected EOF while reading exiftool output",
-				slog.Any(otelkeys.Error, "EOF"),
+				slog.Any(otelkeys.Error, ferr),
 			)
-			fileMetadata[i].Err = fmt.Errorf("error while reading stdMergedOut: EOF")
+			fileMetadata[i].Err = ferr
 			e.markDead()
 			return
 		}
