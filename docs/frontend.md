@@ -307,9 +307,9 @@ Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs
 
 ## TypeScript types
 
-All TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes both domain model types (e.g. `Library`, `Author`, `Book`) and API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping all types in one file gives every component, store, and the API module a single import path.
+Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping shared/exported types in one file gives every component, store, and the API module a single import path, while `frontend/src/lib/api.ts` may still define small module-local helper types for its own internal use.
 
-Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new type to `types.ts`.
+Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to `types.ts`.
 
 ## Utility modules
 
