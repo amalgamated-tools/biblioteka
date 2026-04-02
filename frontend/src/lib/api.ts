@@ -22,10 +22,10 @@ import type {
   APIKeyCreateResponse,
   KoboToken,
   KoboTokenCreateResponse,
-  OPDSCredential,
-  OPDSCredentialInput,
-  KOSyncCredential,
-  KOSyncCredentialInput,
+  OpdsCredential,
+  OpdsCredentialInput,
+  KosyncCredential,
+  KosyncCredentialInput,
   PaginatedAuditLogs,
 } from "../types";
 
@@ -244,14 +244,14 @@ export async function getAuditLogs(
 
 // OPDS Credentials
 
-export async function getOpdsCredential(): Promise<OPDSCredential> {
-  return request<OPDSCredential>("GET", "/api/opds/credentials");
+export async function getOpdsCredential(): Promise<OpdsCredential> {
+  return request<OpdsCredential>("GET", "/api/opds/credentials");
 }
 
 export async function setOpdsCredential(
-  input: OPDSCredentialInput,
-): Promise<OPDSCredential> {
-  return request<OPDSCredential>("PUT", "/api/opds/credentials", input);
+  input: OpdsCredentialInput,
+): Promise<OpdsCredential> {
+  return request<OpdsCredential>("PUT", "/api/opds/credentials", input);
 }
 
 export async function deleteOpdsCredential(): Promise<void> {
@@ -260,14 +260,14 @@ export async function deleteOpdsCredential(): Promise<void> {
 
 // KOSync Credentials
 
-export async function getKosyncCredential(): Promise<KOSyncCredential> {
-  return request<KOSyncCredential>("GET", "/api/kosync/credentials");
+export async function getKosyncCredential(): Promise<KosyncCredential> {
+  return request<KosyncCredential>("GET", "/api/kosync/credentials");
 }
 
 export async function setKosyncCredential(
-  input: KOSyncCredentialInput,
-): Promise<KOSyncCredential> {
-  return request<KOSyncCredential>("PUT", "/api/kosync/credentials", input);
+  input: KosyncCredentialInput,
+): Promise<KosyncCredential> {
+  return request<KosyncCredential>("PUT", "/api/kosync/credentials", input);
 }
 
 export async function deleteKosyncCredential(): Promise<void> {

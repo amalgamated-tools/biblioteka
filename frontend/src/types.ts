@@ -237,30 +237,30 @@ export interface KoboTokenCreateResponse extends KoboToken {
 }
 
 // OPDS Credentials
-// Kept separate from KOSyncCredential: these are distinct protocols with
+// Kept separate from KosyncCredential: these are distinct protocols with
 // independent backend resources. If either protocol adds protocol-specific
 // fields (e.g. a KOSync device ID), the types can diverge without refactoring.
 
-export interface OPDSCredential {
+export interface OpdsCredential {
   username: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface OPDSCredentialInput {
+export interface OpdsCredentialInput {
   username: string;
   password: string;
 }
 
 // KOSync Credentials
 
-export interface KOSyncCredential {
+export interface KosyncCredential {
   username: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface KOSyncCredentialInput {
+export interface KosyncCredentialInput {
   username: string;
   password: string;
 }

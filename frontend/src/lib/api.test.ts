@@ -457,7 +457,7 @@ describe("OPDS Credentials API", () => {
       ok: true,
       status: 204,
       statusText: "No Content",
-      headers: new Headers({ "content-type": "application/json" }),
+      headers: new Headers(),
       json: vi.fn(),
       text: vi.fn(),
     } as unknown as Response;
@@ -521,7 +521,7 @@ describe("KOSync Credentials API", () => {
       ok: true,
       status: 204,
       statusText: "No Content",
-      headers: new Headers({ "content-type": "application/json" }),
+      headers: new Headers(),
       json: vi.fn(),
       text: vi.fn(),
     } as unknown as Response;
