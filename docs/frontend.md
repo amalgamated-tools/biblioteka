@@ -1369,6 +1369,7 @@ Use a piece of reactive state (`pendingDeleteKey`, `pendingDeleteToken`, etc.) t
 
 ```svelte
 <script lang="ts">
+  import { tick } from "svelte";
   import { autofocusFirstButton } from "../../lib/actions";
 
   let pendingDeleteKey: { id: string; name: string } | null = $state(null);
