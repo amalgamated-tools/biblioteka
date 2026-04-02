@@ -157,11 +157,22 @@ func (e *Exiftool) Close(ctx context.Context) error {
 		}
 	case <-time.After(WaitTimeout):
 		errs = append(errs, errors.New("timed out waiting for exiftool to exit"))
+
+		// Ensure the exiftool process does not leak by killing it and waiting for exit.
+		if e.cmd != nil && e.cmd.Process != nil {
+			if killErr := e.cmd.Process.Kill(); killErr != nil {
+				errs = append(errs, fmt.Errorf("error while killing exiftool process after timeout: %w", killErr))
+			} else {
+				if waitErr := <-ch; waitErr != nil {
+					errs = append(errs, fmt.Errorf("error while waiting for exiftool to exit after kill: %w", waitErr))
+				}
+			}
+		}
 	}
 
 	if len(errs) > 0 {
 		slog.ErrorContext(ctx, "errors while closing exiftool", slog.Any(otelkeys.Error, errs))
-		return fmt.Errorf("error while closing exiftool: %v", errs)
+		return fmt.Errorf("error while closing exiftool: %w", errors.Join(errs...))
 	}
 
 	return nil

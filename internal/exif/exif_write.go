@@ -201,7 +201,6 @@ var ErrKeyNotFound = errors.New("key not found")
 type FileMetadata struct {
 	File   string
 	Fields map[string]interface{}
-	Output ExifToolOutput
 	Err    error
 }
 

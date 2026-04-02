@@ -36,7 +36,9 @@ func NewExtractor(ctx context.Context) (*Extractor, error) {
 
 func (e *Extractor) Close(ctx context.Context) {
 	if e.et != nil {
-		e.et.Close(ctx)
+		if err := e.et.Close(ctx); err != nil {
+			slog.ErrorContext(ctx, "failed to close exiftool", slog.Any(otelkeys.Error, err))
+		}
 		e.et = nil
 	}
 }

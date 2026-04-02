@@ -41,7 +41,7 @@ func extractEPUBCoverDataURL(ctx context.Context, book *ManifestItem, filePath s
 			"failed to read cover asset from EPUB archive",
 			slog.String(otelkeys.Path, filePath),
 			slog.String(otelkeys.CoverHref, ref.Href),
-			slog.String(otelkeys.Error, err.Error()),
+			slog.Any(otelkeys.Error, err),
 		)
 		return "", err
 	}
@@ -55,7 +55,6 @@ func findEPUBCoverRef(ctx context.Context, book *ManifestItem) (epubCoverRef, bo
 		return epubCoverRef{}, false
 	}
 
-	// var firstImage *epubCoverRef
 	ref := epubCoverRef{
 		Href:     strings.TrimSpace(book.Href),
 		MIMEType: strings.TrimSpace(book.MediaType),

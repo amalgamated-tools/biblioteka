@@ -125,7 +125,9 @@ func buildMOBI(t *testing.T, title, author string, opts MOBIOptions) []byte {
 	binary.BigEndian.PutUint32(mobi[8:12], 2)                     // MobiType: MOBI book
 	binary.BigEndian.PutUint32(mobi[12:16], 65001)                // TextEncoding: UTF-8
 	binary.BigEndian.PutUint32(mobi[20:24], 6)                    // FileVersion
-	binary.BigEndian.PutUint32(mobi[112:116], 0x40)               // ExthFlags: bit 6 set
+	if exthBlock != nil {
+		binary.BigEndian.PutUint32(mobi[112:116], 0x40) // ExthFlags: bit 6 set
+	}
 	binary.BigEndian.PutUint32(mobi[64:68], uint32(numRecords))   // FirstNonBookIndex
 	fullNameOffset := uint32(16 + mobiHeaderLen + len(exthBlock)) // Offset in record 0
 	binary.BigEndian.PutUint32(mobi[68:72], fullNameOffset)       // FullNameOffset

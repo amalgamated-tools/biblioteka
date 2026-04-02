@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
+	_ "image/gif"
+	_ "image/png"
 	"io"
 	"log/slog"
 	"os"
@@ -19,7 +21,7 @@ import (
 )
 
 // ExifToolOutput holds the parsed result of exiftool's tab-separated output
-// (produced by `exiftool -a -u -f -t`).
+// produced by the wrapper's exiftool invocation (e.g. `exiftool -a -u -f -ee3 -U -api ... -t`).
 type ExifToolOutput struct {
 	// File info
 	FileName  string
@@ -202,7 +204,7 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 	if cur != nil {
 		switch {
 		case strings.EqualFold(cur.Scheme, "ISBN"), strings.HasPrefix(cur.Value, "urn:isbn"):
-			// Normalize ISBNs to 13-digit format with "urn:isbn:" prefix.
+			// Normalize ISBNs to a digit-only string (10 or 13 characters), without a "urn:isbn:" prefix.
 			isbn := NormalizeISBN(cur.Value)
 			if len(isbn) == 10 {
 				if out.ISBN10 == "" {
