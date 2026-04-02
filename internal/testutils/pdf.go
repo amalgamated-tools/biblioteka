@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/barasher/go-exiftool"
+	"github.com/amalgamated-tools/biblioteka/internal/exif"
 )
 
 // MakeTestPDF creates a minimal valid PDF file with metadata written by exiftool.
-func MakeTestPDF(t *testing.T, path, title, author string, et *exiftool.Exiftool) {
+func MakeTestPDF(t *testing.T, path, title, author string, et *exif.Exiftool) {
 	t.Helper()
 
 	// Build a structurally valid PDF with correct xref offsets.
@@ -38,19 +38,21 @@ func MakeTestPDF(t *testing.T, path, title, author string, et *exiftool.Exiftool
 	// available in the environment, skip the test rather than failing.
 	if et == nil {
 		var exerr error
-		et, exerr = exiftool.NewExiftool()
+		et, exerr = exif.NewExiftool(t.Context())
 		if exerr != nil {
 			t.Skipf("skipping PDF metadata test: exiftool not available: %v", exerr)
 		}
-		defer et.Close()
+		defer func() {
+			_ = et.Close(t.Context())
+		}()
 	}
 
-	fm := exiftool.EmptyFileMetadata()
+	fm := exif.EmptyFileMetadata()
 	fm.File = path
 	fm.SetString("Title", title)
 	fm.SetString("Author", author)
-	metas := []exiftool.FileMetadata{fm}
-	et.WriteMetadata(metas)
+	metas := []exif.FileMetadata{fm}
+	et.WriteMetadata(t.Context(), metas)
 	if metas[0].Err != nil {
 		t.Fatalf("write pdf metadata: %v", metas[0].Err)
 	}
