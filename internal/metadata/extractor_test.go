@@ -1,10 +1,8 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"errors"
-	"image"
 	_ "image/png"
 	"os"
 	"path/filepath"
@@ -13,6 +11,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/exif"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
+	"github.com/stretchr/testify/require"
 )
 
 // exiftool returns the underlying *exiftool.Exiftool instance.
@@ -82,10 +81,11 @@ func TestExtractMetadata_EPUB(t *testing.T) {
 }
 
 func TestExtractMetadata_EPUBCoverImage(t *testing.T) {
+	testPNG := testutils.TinyPNG()
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "cover.epub")
 	testutils.MakeTestEPUBWithOptions(t, epubPath, "Cover Test", "Author", "urn:isbn:9780000000000", testutils.EPUBOptions{
-		CoverImageData: testutils.TinyPNG(),
+		CoverImageData: testPNG,
 		CoverImageHref: "images/cover.png",
 		CoverMediaType: "image/png",
 	})
@@ -104,12 +104,8 @@ func TestExtractMetadata_EPUBCoverImage(t *testing.T) {
 
 	b64 := strings.TrimPrefix(meta.CoverImageURL, "data:image/png;base64,")
 	imgBytes, err := base64.StdEncoding.DecodeString(b64)
-	if err != nil {
-		t.Fatalf("invalid base64 in cover data URL: %v", err)
-	}
-	if _, _, err := image.Decode(bytes.NewReader(imgBytes)); err != nil {
-		t.Fatalf("cover base64 does not decode as a valid image: %v", err)
-	}
+	require.NoError(t, err)
+	require.Equal(t, testPNG, imgBytes, "cover image bytes should match original")
 }
 
 func TestExtractMetadata_EPUBOversizedCover(t *testing.T) {
