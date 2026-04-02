@@ -1,10 +1,6 @@
 <script lang="ts">
-  import {
-    listAPIKeys,
-    createAPIKey,
-    deleteAPIKey,
-    type APIKey,
-  } from "../../lib/api";
+  import { listAPIKeys, createAPIKey, deleteAPIKey } from "../../lib/api";
+  import type { APIKey } from "../../types";
   import { copyToClipboard } from "../../lib/clipboard";
   import { KeyRound, Copy, Trash2 } from "lucide-svelte";
   import { onDestroy, onMount, tick } from "svelte";

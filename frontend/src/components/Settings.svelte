@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { routerStore } from "../stores/router.svelte";
-  import { getConfigStatus, getOidcConfig, type AdminUser } from "../lib/api";
+  import { getConfigStatus, getOidcConfig } from "../lib/api";
+  import type { AdminUser } from "../types";
   import {
     Mail,
     Palette,
