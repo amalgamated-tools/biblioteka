@@ -30,7 +30,7 @@ The extractor is implemented in [`internal/metadata/extractor.go`](../internal/m
 
 ## ExifTool tag mapping
 
-All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-open subprocess via the [`go-exiftool`](https://github.com/barasher/go-exiftool) library.
+All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-open subprocess managed by the custom [`internal/exif`](../internal/exif/) package. The package owns the ExifTool process lifecycle, TSV output parsing, and EPUB cover extraction; it replaces the previously used `go-exiftool` third-party library.
 
 | ExifTool tag | `BookMetadata` field | Fallback |
 |--------------|---------------------|----------|
@@ -260,9 +260,25 @@ Use `cmd/cli` to import a single file and verify what Biblioteka extracts before
 
 ## Contributing
 
-To add support for a new field or format:
+To add support for a new extracted field:
 
-1. Edit [`internal/metadata/extractor.go`](../internal/metadata/extractor.go).
-2. Add the appropriate `getStringOr` call in `extractExif` for the new ExifTool tag.
-3. Add or extend tests in `internal/metadata/extractor_test.go`.
+1. Add the field to `ExifToolOutput` in [`internal/exif/tsv.go`](../internal/exif/tsv.go).
+2. Add the corresponding tag-name mapping in the `ParseTSV` function in the same file.
+3. Add or extend tests in [`internal/exif/tsv_test.go`](../internal/exif/tsv_test.go) and [`internal/metadata/extractor_test.go`](../internal/metadata/extractor_test.go).
 4. Update the [Extracted fields](#extracted-fields) table in this document.
+
+To add support for a new file format:
+
+1. Verify ExifTool supports the format and returns tags Biblioteka can map (title, author, ISBN, etc.).
+2. Extend `ParseTSV` in [`internal/exif/tsv.go`](../internal/exif/tsv.go) if format-specific tag names differ.
+3. If the format embeds cover art differently from EPUB, add extraction logic in [`internal/exif/cover.go`](../internal/exif/cover.go).
+4. Add test fixtures and test cases in [`internal/metadata/extractor_test.go`](../internal/metadata/extractor_test.go).
+
+### `internal/exif` package overview
+
+| File | Responsibility |
+|------|----------------|
+| [`exif.go`](../internal/exif/exif.go) | Manages the ExifTool stay-open subprocess: start, communicate via stdin/stdout, graceful close with timeout, and dead-instance detection |
+| [`tsv.go`](../internal/exif/tsv.go) | Parses ExifTool's tab-separated output into `ExifToolOutput`; defines `NormalizeISBN` |
+| [`cover.go`](../internal/exif/cover.go) | Extracts EPUB cover images directly from the ZIP archive using the manifest reference returned by ExifTool |
+| [`exif_write.go`](../internal/exif/exif_write.go) | Writes metadata back to files via the stay-open ExifTool process; used by sidecar/OPF workflows |
