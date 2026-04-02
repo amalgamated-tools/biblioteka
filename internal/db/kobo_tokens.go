@@ -19,12 +19,9 @@ type KoboToken struct {
 const koboTokenColumns = `id, user_id, name, token_hash, created_at`
 
 func scanKoboToken(row interface{ Scan(...any) error }) (*KoboToken, error) {
-	var t KoboToken
-	err := row.Scan(&t.ID, &t.UserID, &t.Name, &t.TokenHash, &t.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &t, nil
+	return scanRow(row, func(t *KoboToken) []any {
+		return []any{&t.ID, &t.UserID, &t.Name, &t.TokenHash, &t.CreatedAt}
+	})
 }
 
 // CreateKoboToken inserts a new Kobo sync token hash and returns it.
@@ -68,17 +65,7 @@ func (d *DB) ListKoboTokens(ctx context.Context, userID string) ([]KoboToken, er
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var tokens []KoboToken
-	for rows.Next() {
-		t, err := scanKoboToken(rows)
-		if err != nil {
-			return nil, err
-		}
-		tokens = append(tokens, *t)
-	}
-	return tokens, rows.Err()
+	return collectRows(rows, scanKoboToken)
 }
 
 // DeleteKoboToken removes a Kobo token by ID, scoped to the given user.
