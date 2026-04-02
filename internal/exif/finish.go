@@ -52,6 +52,14 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 		}
 	}
 
+	// Cover image discovery, in priority order:
+	// 1. Already found during manifest flush (id == "cover" with image type)
+	// 2. <meta name="cover" content="ITEM_ID"> pointing to a manifest item
+	// 3. Manifest item with properties="cover-image"
+	// 4. Manifest item whose ID or href contains "cover" and has image type
+	// 5. Single-image fallback (only one image in the manifest)
+
+	// Strategy 2: <meta name="cover" content="ITEM_ID">
 	if out.CoverImage == nil {
 		coverID := ""
 		for _, mt := range out.MetaTags {
@@ -70,6 +78,7 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 		}
 	}
 
+	// Strategy 3 & 4: properties="cover-image", or ID/href contains "cover"
 	if out.CoverImage == nil {
 		for i, item := range out.ManifestItems {
 			if !isLikelyImage(item.Href, item.MediaType) {
@@ -86,6 +95,7 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 		}
 	}
 
+	// Strategy 5: single-image fallback
 	if out.CoverImage == nil {
 		var onlyImage *ManifestItem
 		imageCount := 0

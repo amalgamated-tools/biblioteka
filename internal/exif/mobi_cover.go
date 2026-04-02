@@ -28,7 +28,7 @@ func GetMobiCover(ctx context.Context, path string) (string, error) {
 	if coverstart <= 0 || coverlength <= 0 {
 		return "", ErrNoCover
 	}
-	
+
 	// mobi.NewReader opens the file internally but its file handle is unexported,
 	// so we must open the file again to seek to the raw cover bytes.
 	f, err := os.Open(path)
