@@ -69,7 +69,7 @@ type Exiftool struct {
 	clearFieldsBeforeWriting bool
 }
 
-// NewExiftool instanciates a new Exiftool with configuration functions. If anything went
+// NewExiftool instantiates a new Exiftool with configuration functions. If anything went
 // wrong, a non empty error will be returned.
 func NewExiftool(ctx context.Context, opts ...func(*Exiftool) error) (*Exiftool, error) {
 	e := Exiftool{}
@@ -267,13 +267,14 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 		return nil, fmt.Errorf("error while reading stdMergedOut: %w", scanErr)
 	}
 	if !scanOk {
+		eofErr := fmt.Errorf("unexpected EOF while reading stdMergedOut: %w", io.EOF)
 		slog.WarnContext(
 			ctx,
 			"unexpected EOF while reading exiftool output",
-			slog.Any(otelkeys.Error, "EOF"),
+			slog.Any(otelkeys.Error, eofErr),
 		)
 		e.markDead()
-		return nil, fmt.Errorf("error while reading stdMergedOut: EOF")
+		return nil, eofErr
 	}
 
 	return ParseTSV(ctx, e.scanMergedOut.Text(), fileFormat)
