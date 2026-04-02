@@ -152,3 +152,118 @@ export interface PaginatedBooks {
   limit: number;
   offset: number;
 }
+
+// Config
+
+export interface ConfigStatus {
+  oidc_configured: boolean;
+  smtp_configured: boolean;
+  is_admin: boolean;
+}
+
+// OIDC Config
+
+export interface OIDCConfig {
+  issuer_url: string;
+  client_id: string;
+  client_secret_set: boolean;
+  redirect_uri: string;
+}
+
+export interface SetOIDCConfigInput {
+  issuer_url: string;
+  client_id: string;
+  client_secret: string;
+  redirect_uri: string;
+}
+
+// SMTP Config
+
+export interface SMTPConfig {
+  host: string;
+  port: string;
+  username: string;
+  password_set: boolean;
+  from: string;
+  tls: string;
+  env_override: boolean;
+}
+
+export interface SetSMTPConfigInput {
+  host: string;
+  port: string;
+  username: string;
+  password: string;
+  from: string;
+  tls: string;
+}
+
+// Admin - User Management
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  is_admin: boolean;
+  oidc_linked: boolean;
+  created_at: string;
+}
+
+// API Keys
+
+export interface APIKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  last_used_at: string | null;
+  created_at: string;
+}
+
+export interface APIKeyCreateResponse extends APIKey {
+  key: string;
+}
+
+// Kobo Sync Tokens
+
+export interface KoboToken {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+}
+
+export interface KoboTokenCreateResponse extends KoboToken {
+  token: string;
+}
+
+// Protocol Credentials (OPDS / KOSync)
+
+export interface Credential {
+  username: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CredentialInput {
+  username: string;
+  password: string;
+}
+
+// Audit Logs
+
+export interface AuditLog {
+  id: string;
+  user_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface PaginatedAuditLogs {
+  entries: AuditLog[];
+  total: number;
+  limit: number;
+  offset: number;
+}

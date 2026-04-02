@@ -17,7 +17,7 @@ type koboTokenDTO struct {
 	ID        string       `json:"id"`
 	UserID    string       `json:"user_id"`
 	Name      string       `json:"name"`
-	TokenHash string       `json:"token_hash"`
+	TokenHash string       `json:"-"`
 	CreatedAt db.Timestamp `json:"created_at"`
 }
 

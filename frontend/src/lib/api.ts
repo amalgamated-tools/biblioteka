@@ -12,6 +12,36 @@ import type {
   BookFile,
   BookFileInput,
   PaginatedBooks,
+  ConfigStatus,
+  OIDCConfig,
+  SetOIDCConfigInput,
+  SMTPConfig,
+  SetSMTPConfigInput,
+  AdminUser,
+  APIKey,
+  APIKeyCreateResponse,
+  KoboToken,
+  KoboTokenCreateResponse,
+  Credential,
+  CredentialInput,
+  PaginatedAuditLogs,
+} from "../types";
+
+// Re-export shared types so existing imports from "api" continue to work.
+export type {
+  ConfigStatus,
+  OIDCConfig,
+  SetOIDCConfigInput,
+  SMTPConfig,
+  SetSMTPConfigInput,
+  AdminUser,
+  APIKey,
+  APIKeyCreateResponse,
+  KoboToken,
+  KoboTokenCreateResponse,
+  Credential,
+  CredentialInput,
+  PaginatedAuditLogs,
 } from "../types";
 
 const TOKEN_KEY = "biblioteka_token";
@@ -160,31 +190,11 @@ export async function changePassword(
 
 // Config
 
-export interface ConfigStatus {
-  oidc_configured: boolean;
-  smtp_configured: boolean;
-  is_admin: boolean;
-}
-
 export async function getConfigStatus(): Promise<ConfigStatus> {
   return request<ConfigStatus>("GET", "/api/config/status");
 }
 
 // OIDC Config
-
-export interface OIDCConfig {
-  issuer_url: string;
-  client_id: string;
-  client_secret_set: boolean;
-  redirect_uri: string;
-}
-
-export interface SetOIDCConfigInput {
-  issuer_url: string;
-  client_id: string;
-  client_secret: string;
-  redirect_uri: string;
-}
 
 export async function getOidcConfig(): Promise<OIDCConfig> {
   return request<OIDCConfig>("GET", "/api/config/oidc");
@@ -204,28 +214,7 @@ export async function createOidcLinkNonce(): Promise<string> {
   return data.nonce;
 }
 
-// Admin - User Management
-
 // SMTP Config
-
-export interface SMTPConfig {
-  host: string;
-  port: string;
-  username: string;
-  password_set: boolean;
-  from: string;
-  tls: string;
-  env_override: boolean;
-}
-
-export interface SetSMTPConfigInput {
-  host: string;
-  port: string;
-  username: string;
-  password: string;
-  from: string;
-  tls: string;
-}
 
 export async function getSmtpConfig(): Promise<SMTPConfig> {
   return request<SMTPConfig>("GET", "/api/config/smtp");
@@ -243,15 +232,6 @@ export async function testSmtpConfig(): Promise<{ message: string }> {
 
 // Admin - User Management
 
-export interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  is_admin: boolean;
-  oidc_linked: boolean;
-  created_at: string;
-}
-
 export async function listUsers(): Promise<AdminUser[]> {
   return request<AdminUser[]>("GET", "/api/admin/users");
 }
@@ -263,6 +243,50 @@ export async function setUserAdmin(
   return request<{ message: string }>("PUT", `/api/admin/users/${userId}`, {
     is_admin: isAdmin,
   });
+}
+
+// Audit Logs
+
+export async function getAuditLogs(
+  limit = 50,
+  offset = 0,
+): Promise<PaginatedAuditLogs> {
+  return request<PaginatedAuditLogs>(
+    "GET",
+    `/api/audit-logs?limit=${limit}&offset=${offset}`,
+  );
+}
+
+// OPDS Credentials
+
+export async function getOPDSCredential(): Promise<Credential> {
+  return request<Credential>("GET", "/api/opds/credentials");
+}
+
+export async function setOPDSCredential(
+  input: CredentialInput,
+): Promise<Credential> {
+  return request<Credential>("PUT", "/api/opds/credentials", input);
+}
+
+export async function deleteOPDSCredential(): Promise<void> {
+  await request<void>("DELETE", "/api/opds/credentials");
+}
+
+// KOSync Credentials
+
+export async function getKOSyncCredential(): Promise<Credential> {
+  return request<Credential>("GET", "/api/kosync/credentials");
+}
+
+export async function setKOSyncCredential(
+  input: CredentialInput,
+): Promise<Credential> {
+  return request<Credential>("PUT", "/api/kosync/credentials", input);
+}
+
+export async function deleteKOSyncCredential(): Promise<void> {
+  await request<void>("DELETE", "/api/kosync/credentials");
 }
 
 // Libraries
@@ -430,18 +454,6 @@ export async function deleteBookFile(id: string): Promise<void> {
 
 // API Keys
 
-export interface APIKey {
-  id: string;
-  name: string;
-  key_prefix: string;
-  last_used_at: string | null;
-  created_at: string;
-}
-
-export interface APIKeyCreateResponse extends APIKey {
-  key: string;
-}
-
 export async function listAPIKeys(): Promise<APIKey[]> {
   return request<APIKey[]>("GET", "/api/api-keys");
 }
@@ -458,20 +470,8 @@ export async function deleteAPIKey(id: string): Promise<void> {
 
 // Kobo Sync Tokens
 
-export interface KoboToken {
-  id: string;
-  user_id: string;
-  name: string;
-  token_hash: string;
-  created_at: string;
-}
-
 export async function listKoboTokens(): Promise<KoboToken[]> {
   return request<KoboToken[]>("GET", "/api/kobo/tokens");
-}
-
-export interface KoboTokenCreateResponse extends KoboToken {
-  token: string;
 }
 
 export async function createKoboToken(
