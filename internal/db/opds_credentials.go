@@ -23,13 +23,13 @@ var opdsCredentialTable = protocolCredentialTable{
 // GetOPDSCredentialByUserID returns the OPDS credential for a user, or sql.ErrNoRows if not found.
 func (d *DB) GetOPDSCredentialByUserID(ctx context.Context, userID string) (*OPDSCredential, error) {
 	slog.DebugContext(ctx, "db: fetching OPDS credential by user ID", slog.String(otelkeys.UserID, userID))
-	return d.getProtocolCredentialByUserID(ctx, opdsCredentialTable.name, userID)
+	return d.getProtocolCredentialByUserID(ctx, opdsCredentialTable, userID)
 }
 
 // GetOPDSCredentialByUsername returns the OPDS credential for a username, or sql.ErrNoRows if not found.
 func (d *DB) GetOPDSCredentialByUsername(ctx context.Context, username string) (*OPDSCredential, error) {
 	slog.DebugContext(ctx, "db: fetching OPDS credential by username", slog.String(otelkeys.OPDSUsername, username))
-	return d.getProtocolCredentialByUsername(ctx, opdsCredentialTable.name, username)
+	return d.getProtocolCredentialByUsername(ctx, opdsCredentialTable, username)
 }
 
 // UpsertOPDSCredential creates or updates the OPDS credential for a user.
@@ -45,5 +45,5 @@ func (d *DB) UpsertOPDSCredential(ctx context.Context, userID, username, passwor
 // DeleteOPDSCredential removes the OPDS credential for a user.
 func (d *DB) DeleteOPDSCredential(ctx context.Context, userID string) error {
 	slog.DebugContext(ctx, "db: deleting OPDS credential", slog.String(otelkeys.UserID, userID))
-	return d.deleteProtocolCredential(ctx, opdsCredentialTable.name, userID)
+	return d.deleteProtocolCredential(ctx, opdsCredentialTable, userID)
 }

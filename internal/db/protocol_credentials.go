@@ -26,16 +26,16 @@ func scanProtocolCredential(row interface{ Scan(...any) error }) (*ProtocolCrede
 	})
 }
 
-func (d *DB) getProtocolCredentialByUserID(ctx context.Context, tableName, userID string) (*ProtocolCredential, error) {
+func (d *DB) getProtocolCredentialByUserID(ctx context.Context, table protocolCredentialTable, userID string) (*ProtocolCredential, error) {
 	return scanProtocolCredential(d.QueryRowContext(ctx,
-		`SELECT `+protocolCredentialColumns+` FROM `+tableName+` WHERE user_id = $1`,
+		`SELECT `+protocolCredentialColumns+` FROM `+table.name+` WHERE user_id = $1`,
 		userID,
 	))
 }
 
-func (d *DB) getProtocolCredentialByUsername(ctx context.Context, tableName, username string) (*ProtocolCredential, error) {
+func (d *DB) getProtocolCredentialByUsername(ctx context.Context, table protocolCredentialTable, username string) (*ProtocolCredential, error) {
 	return scanProtocolCredential(d.QueryRowContext(ctx,
-		`SELECT `+protocolCredentialColumns+` FROM `+tableName+` WHERE LOWER(username) = $1`,
+		`SELECT `+protocolCredentialColumns+` FROM `+table.name+` WHERE LOWER(username) = $1`,
 		username,
 	))
 }
@@ -58,6 +58,6 @@ func (d *DB) upsertProtocolCredential(
 	return cred, err
 }
 
-func (d *DB) deleteProtocolCredential(ctx context.Context, tableName, userID string) error {
-	return d.execAffected(ctx, `DELETE FROM `+tableName+` WHERE user_id = $1`, userID)
+func (d *DB) deleteProtocolCredential(ctx context.Context, table protocolCredentialTable, userID string) error {
+	return d.execAffected(ctx, `DELETE FROM `+table.name+` WHERE user_id = $1`, userID)
 }
