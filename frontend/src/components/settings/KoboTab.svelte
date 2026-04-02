@@ -3,8 +3,8 @@
     listKoboTokens,
     createKoboToken,
     deleteKoboToken,
-    type KoboToken,
   } from "../../lib/api";
+  import type { KoboToken } from "../../types";
   import { copyToClipboard } from "../../lib/clipboard";
   import { BookOpen, Copy, Trash2 } from "lucide-svelte";
   import { onDestroy, onMount, tick } from "svelte";

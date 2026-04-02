@@ -64,6 +64,10 @@ func scanGoodreadsMetadata(row interface{ Scan(...any) error }) (*GoodreadsMetad
 	return &gm, nil
 }
 
+// TODO(#1099): wire up Goodreads metadata API — CreateGoodreadsMetadata, GetGoodreadsMetadata,
+// ListGoodreadsMetadataByUser, ListGoodreadsMetadataByStatus, UpdateGoodreadsMetadataStatus,
+// and DeleteGoodreadsMetadata have no HTTP handlers or routes yet.
+
 // CreateGoodreadsMetadata inserts a new goodreads_metadata row and returns it.
 func (d *DB) CreateGoodreadsMetadata(ctx context.Context, userID string, bookID, title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL, authorName, authorGoodreadsID, authorImageURL, goodreadsWorkID *string, goodreadsBookLegacyID, goodreadsWorkLegacyID, goodreadsAuthorLegacyID *int64) (*GoodreadsMetadata, error) {
 	slog.DebugContext(ctx, "db: creating goodreads metadata", slog.String(otelkeys.UserID, userID))

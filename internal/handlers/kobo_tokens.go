@@ -17,7 +17,6 @@ type koboTokenDTO struct {
 	ID        string       `json:"id"`
 	UserID    string       `json:"user_id"`
 	Name      string       `json:"name"`
-	TokenHash string       `json:"token_hash"`
 	CreatedAt db.Timestamp `json:"created_at"`
 }
 
@@ -31,7 +30,6 @@ func toKoboTokenDTO(token *db.KoboToken) koboTokenDTO {
 		ID:        token.ID,
 		UserID:    token.UserID,
 		Name:      token.Name,
-		TokenHash: token.TokenHash,
 		CreatedAt: token.CreatedAt,
 	}
 }
