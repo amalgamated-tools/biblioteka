@@ -45,6 +45,10 @@ var ErrNotFile = errors.New("can't extract metadata from folder")
 // ErrBufferTooSmall is a sentinel error that is returned when the buffer used to store Exiftool's output is too small.
 var ErrBufferTooSmall = errors.New("exiftool's buffer too small (see Buffer init option)")
 
+// ErrNoCover is returned when a book file has no embedded cover image.
+// This is a normal condition for many files and should not be treated as a failure.
+var ErrNoCover = errors.New("no cover found")
+
 // ErrDead is returned when a write failure has corrupted the exiftool stdin protocol.
 // Once this error is returned, the instance cannot be reused.
 var ErrDead = errors.New("exiftool instance is dead due to a previous write failure")
@@ -255,6 +259,8 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 			"error while reading exiftool output",
 			slog.String(otelkeys.Error, scanErr.Error()),
 		)
+		// Any scanner error leaves the instance in a broken state.
+		e.markDead()
 		if scanErr == bufio.ErrTooLong {
 			return nil, ErrBufferTooSmall
 		}
@@ -266,6 +272,7 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 			"unexpected EOF while reading exiftool output",
 			slog.String(otelkeys.Error, "EOF"),
 		)
+		e.markDead()
 		return nil, fmt.Errorf("error while reading stdMergedOut: EOF")
 	}
 

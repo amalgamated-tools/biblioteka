@@ -79,8 +79,10 @@ func (e *ExifToolOutput) SetISBN(isbn string) {
 		e.ISBN13 = ""
 	case 10:
 		e.ISBN10 = isbn
+		e.ISBN13 = ""
 	case 13:
 		e.ISBN13 = isbn
+		e.ISBN10 = ""
 	}
 }
 
@@ -607,10 +609,14 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 func finishMOBI(ctx context.Context, out *ExifToolOutput) {
 	coverImageURL, err := GetMobiCover(ctx, filepath.Join(out.Directory, out.FileName))
 	if err != nil {
-		slog.WarnContext(ctx, "failed to extract MOBI cover image", slog.Any(otelkeys.Error, err))
-	} else {
-		out.CoverImageURL = coverImageURL
+		if errors.Is(err, ErrNoCover) {
+			slog.DebugContext(ctx, "no embedded MOBI cover image found", slog.String(otelkeys.Path, out.FileName))
+		} else {
+			slog.WarnContext(ctx, "failed to extract MOBI cover image", slog.Any(otelkeys.Error, err))
+		}
+		return
 	}
+	out.CoverImageURL = coverImageURL
 }
 
 func isASIN(s string) bool {
@@ -686,10 +692,10 @@ func GetMobiCover(ctx context.Context, path string) (string, error) {
 
 	coverstart, coverlength := e.CoverOffsetLength()
 	if coverstart <= 0 {
-		return "", errors.New("no cover found in MOBI file")
+		return "", ErrNoCover
 	}
 	if coverlength <= 0 {
-		return "", errors.New("no cover found in MOBI file")
+		return "", ErrNoCover
 	}
 
 	// mobi.NewReader opens the file internally but its file handle is unexported,

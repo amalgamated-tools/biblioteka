@@ -137,12 +137,13 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 				"error while reading exiftool output",
 				slog.String(otelkeys.Error, scanErr.Error()),
 			)
+			fileMetadata[i].Err = scanErr
 			if scanErr == bufio.ErrTooLong {
 				fileMetadata[i].Err = ErrBufferTooSmall
-				continue
 			}
-			fileMetadata[i].Err = fmt.Errorf("error while reading stdMergedOut: %w", e.scanMergedOut.Err())
-			continue
+			// bufio.Scanner is permanently errored; the instance cannot be safely reused.
+			e.markDead()
+			return
 		}
 		if !scanOk {
 			slog.WarnContext(
@@ -151,7 +152,8 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 				slog.String(otelkeys.Error, "EOF"),
 			)
 			fileMetadata[i].Err = fmt.Errorf("error while reading stdMergedOut: EOF")
-			continue
+			e.markDead()
+			return
 		}
 
 		if err := handleWriteMetadataResponse(e.scanMergedOut.Text()); err != nil {
@@ -234,12 +236,12 @@ func (fm FileMetadata) GetStrings(k string) ([]string, error) {
 	}
 }
 
-func (fm FileMetadata) set(k string, v interface{}) {
+func (fm *FileMetadata) set(k string, v interface{}) {
 	fm.Fields[k] = v
 }
 
 // SetString sets a string value for a specific field
-func (fm FileMetadata) SetString(k string, v string) {
+func (fm *FileMetadata) SetString(k string, v string) {
 	fm.set(k, v)
 }
 
