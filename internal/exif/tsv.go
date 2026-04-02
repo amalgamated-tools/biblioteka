@@ -682,4 +682,3 @@ func GetMobiCover(ctx context.Context, path string) (string, error) {
 	}
 	return buf.String(), nil
 }
-}
