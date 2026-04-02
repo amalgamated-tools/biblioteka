@@ -451,7 +451,7 @@ func finishBook(ctx context.Context, out *ExifToolOutput) {
 	switch out.FileType {
 	case "EPUB":
 		finishEPUB(ctx, out)
-	case "MOBI":
+	case "MOBI", "AZW3":
 		finishMOBI(ctx, out)
 	}
 }
