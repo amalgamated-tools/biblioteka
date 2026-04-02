@@ -22,25 +22,10 @@ import type {
   APIKeyCreateResponse,
   KoboToken,
   KoboTokenCreateResponse,
-  Credential,
-  CredentialInput,
-  PaginatedAuditLogs,
-} from "../types";
-
-// Re-export shared types so existing imports from "api" continue to work.
-export type {
-  ConfigStatus,
-  OIDCConfig,
-  SetOIDCConfigInput,
-  SMTPConfig,
-  SetSMTPConfigInput,
-  AdminUser,
-  APIKey,
-  APIKeyCreateResponse,
-  KoboToken,
-  KoboTokenCreateResponse,
-  Credential,
-  CredentialInput,
+  OPDSCredential,
+  OPDSCredentialInput,
+  KOSyncCredential,
+  KOSyncCredentialInput,
   PaginatedAuditLogs,
 } from "../types";
 
@@ -259,14 +244,14 @@ export async function getAuditLogs(
 
 // OPDS Credentials
 
-export async function getOPDSCredential(): Promise<Credential> {
-  return request<Credential>("GET", "/api/opds/credentials");
+export async function getOPDSCredential(): Promise<OPDSCredential> {
+  return request<OPDSCredential>("GET", "/api/opds/credentials");
 }
 
 export async function setOPDSCredential(
-  input: CredentialInput,
-): Promise<Credential> {
-  return request<Credential>("PUT", "/api/opds/credentials", input);
+  input: OPDSCredentialInput,
+): Promise<OPDSCredential> {
+  return request<OPDSCredential>("PUT", "/api/opds/credentials", input);
 }
 
 export async function deleteOPDSCredential(): Promise<void> {
@@ -275,14 +260,14 @@ export async function deleteOPDSCredential(): Promise<void> {
 
 // KOSync Credentials
 
-export async function getKOSyncCredential(): Promise<Credential> {
-  return request<Credential>("GET", "/api/kosync/credentials");
+export async function getKOSyncCredential(): Promise<KOSyncCredential> {
+  return request<KOSyncCredential>("GET", "/api/kosync/credentials");
 }
 
 export async function setKOSyncCredential(
-  input: CredentialInput,
-): Promise<Credential> {
-  return request<Credential>("PUT", "/api/kosync/credentials", input);
+  input: KOSyncCredentialInput,
+): Promise<KOSyncCredential> {
+  return request<KOSyncCredential>("PUT", "/api/kosync/credentials", input);
 }
 
 export async function deleteKOSyncCredential(): Promise<void> {

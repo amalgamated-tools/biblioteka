@@ -236,15 +236,28 @@ export interface KoboTokenCreateResponse extends KoboToken {
   token: string;
 }
 
-// Protocol Credentials (OPDS / KOSync)
+// OPDS Credentials
 
-export interface Credential {
+export interface OPDSCredential {
   username: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface CredentialInput {
+export interface OPDSCredentialInput {
+  username: string;
+  password: string;
+}
+
+// KOSync Credentials
+
+export interface KOSyncCredential {
+  username: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KOSyncCredentialInput {
   username: string;
   password: string;
 }
@@ -253,11 +266,13 @@ export interface CredentialInput {
 
 export interface AuditLog {
   id: string;
+  /** Null for system-initiated actions (e.g. background jobs, data migrations). */
   user_id: string | null;
   action: string;
   entity_type: string;
   entity_id: string;
-  metadata: Record<string, unknown> | null;
+  /** Omitted by the backend when no metadata is present (uses omitempty). */
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 

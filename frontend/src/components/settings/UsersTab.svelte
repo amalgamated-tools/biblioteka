@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { authStore } from "../../stores/auth.svelte";
-  import { listUsers, setUserAdmin, type AdminUser } from "../../lib/api";
+  import { listUsers, setUserAdmin } from "../../lib/api";
+  import type { AdminUser } from "../../types";
   import { Users } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
 
