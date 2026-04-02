@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"log/slog"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -42,7 +43,7 @@ type protocolCredentialConfig struct {
 	usernameAttr func(string) slog.Attr // builds the protocol-specific username log attribute
 }
 
-func getCredentialByUserID(d *DB, ctx context.Context, cfg protocolCredentialConfig, userID string) (*ProtocolCredential, error) {
+func getCredentialByUserID(ctx context.Context, d *DB, cfg protocolCredentialConfig, userID string) (*ProtocolCredential, error) {
 	slog.DebugContext(ctx, "db: fetching "+cfg.logPrefix+" credential by user ID",
 		slog.String(otelkeys.UserID, userID),
 	)
@@ -52,17 +53,19 @@ func getCredentialByUserID(d *DB, ctx context.Context, cfg protocolCredentialCon
 	))
 }
 
-func getCredentialByUsername(d *DB, ctx context.Context, cfg protocolCredentialConfig, username string) (*ProtocolCredential, error) {
+func getCredentialByUsername(ctx context.Context, d *DB, cfg protocolCredentialConfig, username string) (*ProtocolCredential, error) {
 	slog.DebugContext(ctx, "db: fetching "+cfg.logPrefix+" credential by username",
 		cfg.usernameAttr(username),
 	)
+	// Normalize to lowercase before querying; the SQL uses LOWER(username)
+	// so callers don't need to pre-lowercase.
 	return scanProtocolCredential(d.QueryRowContext(ctx,
 		`SELECT `+protocolCredentialColumns+` FROM `+cfg.table+` WHERE LOWER(username) = $1`,
-		username,
+		strings.ToLower(username),
 	))
 }
 
-func upsertCredential(d *DB, ctx context.Context, cfg protocolCredentialConfig, userID, username, passwordHash string) (*ProtocolCredential, error) {
+func upsertCredential(ctx context.Context, d *DB, cfg protocolCredentialConfig, userID, username, passwordHash string) (*ProtocolCredential, error) {
 	slog.DebugContext(ctx, "db: upserting "+cfg.logPrefix+" credential",
 		slog.String(otelkeys.UserID, userID),
 		cfg.usernameAttr(username),
@@ -80,7 +83,7 @@ func upsertCredential(d *DB, ctx context.Context, cfg protocolCredentialConfig, 
 	return cred, err
 }
 
-func deleteCredential(d *DB, ctx context.Context, cfg protocolCredentialConfig, userID string) error {
+func deleteCredential(ctx context.Context, d *DB, cfg protocolCredentialConfig, userID string) error {
 	slog.DebugContext(ctx, "db: deleting "+cfg.logPrefix+" credential",
 		slog.String(otelkeys.UserID, userID),
 	)

@@ -25,23 +25,23 @@ var kosyncCredConfig = protocolCredentialConfig{
 
 // GetKOSyncCredentialByUserID returns the KOSync credential for a user, or sql.ErrNoRows if not found.
 func (d *DB) GetKOSyncCredentialByUserID(ctx context.Context, userID string) (*KOSyncCredential, error) {
-	return getCredentialByUserID(d, ctx, kosyncCredConfig, userID)
+	return getCredentialByUserID(ctx, d, kosyncCredConfig, userID)
 }
 
 // GetKOSyncCredentialByUsername returns the KOSync credential for a username, or sql.ErrNoRows if not found.
 func (d *DB) GetKOSyncCredentialByUsername(ctx context.Context, username string) (*KOSyncCredential, error) {
-	return getCredentialByUsername(d, ctx, kosyncCredConfig, username)
+	return getCredentialByUsername(ctx, d, kosyncCredConfig, username)
 }
 
 // UpsertKOSyncCredential creates or updates the KOSync credential for a user.
 // Returns ErrKOSyncUsernameExists if the username is taken by a different user.
 func (d *DB) UpsertKOSyncCredential(ctx context.Context, userID, username, passwordHash string) (*KOSyncCredential, error) {
-	return upsertCredential(d, ctx, kosyncCredConfig, userID, username, passwordHash)
+	return upsertCredential(ctx, d, kosyncCredConfig, userID, username, passwordHash)
 }
 
 // DeleteKOSyncCredential removes the KOSync credential for a user.
 func (d *DB) DeleteKOSyncCredential(ctx context.Context, userID string) error {
-	return deleteCredential(d, ctx, kosyncCredConfig, userID)
+	return deleteCredential(ctx, d, kosyncCredConfig, userID)
 }
 
 // ReadingProgress represents a row in the reading_progress table.

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"testing"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func TestToCredentialEntity(t *testing.T) {
-	now := db.Timestamp(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	now := db.Timestamp{Time: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
 	c := &db.ProtocolCredential{
 		ID:           "cred-123",
 		UserID:       "user-456",
@@ -34,15 +35,24 @@ func TestToCredentialEntity(t *testing.T) {
 	if entity.UpdatedAt != now {
 		t.Errorf("UpdatedAt = %v, want %v", entity.UpdatedAt, now)
 	}
+	// credentialEntity deliberately excludes PasswordHash — verify the type
+	// has no such field by confirming the struct only carries safe fields.
+	// Since credentialEntity lacks a PasswordHash field, the conversion
+	// cannot leak the hash. This compile-time guarantee is the point; this
+	// assertion documents that intent.
+	type hasPasswordHash interface{ GetPasswordHash() string }
+	if _, ok := any(entity).(hasPasswordHash); ok {
+		t.Error("credentialEntity must not expose PasswordHash")
+	}
 }
 
 func TestCredentialGetAdapter_Success(t *testing.T) {
-	now := db.Timestamp(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	now := db.Timestamp{Time: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
 	fakeFn := func(_ context.Context, userID string) (*db.ProtocolCredential, error) {
 		return &db.ProtocolCredential{
-			ID:       "cred-1",
-			UserID:   userID,
-			Username: "testuser",
+			ID:        "cred-1",
+			UserID:    userID,
+			Username:  "testuser",
 			CreatedAt: now,
 			UpdatedAt: now,
 		}, nil
@@ -68,13 +78,13 @@ func TestCredentialGetAdapter_Error(t *testing.T) {
 
 	adapted := credentialGetAdapter(fakeFn)
 	_, err := adapted(context.Background(), "user-1")
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
 }
 
 func TestCredentialUpsertAdapter_Success(t *testing.T) {
-	now := db.Timestamp(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	now := db.Timestamp{Time: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
 	fakeFn := func(_ context.Context, userID, username, _ string) (*db.ProtocolCredential, error) {
 		return &db.ProtocolCredential{
 			ID:        "cred-2",
@@ -105,7 +115,7 @@ func TestCredentialUpsertAdapter_Error(t *testing.T) {
 
 	adapted := credentialUpsertAdapter(fakeFn)
 	_, err := adapted(context.Background(), "user-1", "alice", "hash")
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
 }

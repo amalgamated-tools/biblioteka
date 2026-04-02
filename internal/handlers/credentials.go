@@ -40,6 +40,10 @@ type credentialEntity struct {
 	UpdatedAt db.Timestamp
 }
 
+// upsertCredentialFn is the signature for upserting a protocol credential.
+// Parameters are: ctx, userID, username, passwordHash.
+type upsertCredentialFn func(ctx context.Context, userID, username, passwordHash string) (credentialEntity, error)
+
 // credentialOps captures the protocol-specific details for credential
 // management. Both KOSync and OPDS implement the same get/upsert/delete
 // lifecycle; only the DB methods, audit constants, and (optionally) a
@@ -53,7 +57,7 @@ type credentialOps struct {
 	errConflict     error
 
 	getByUserID func(context.Context, string) (credentialEntity, error)
-	upsert      func(context.Context, string, string, string) (credentialEntity, error)
+	upsert      upsertCredentialFn
 	del         func(context.Context, string) error
 
 	// deriveKey transforms the plaintext password before bcrypt hashing.
