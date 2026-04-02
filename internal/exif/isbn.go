@@ -2,7 +2,8 @@ package exif
 
 import "strings"
 
-// isASIN reports whether s is a 10-character alphanumeric ASIN candidate.
+// isASIN reports whether every byte of s is an alphanumeric character (digit or ASCII letter).
+// The caller is responsible for enforcing that len(s) == 10 before treating the value as an ASIN.
 func isASIN(s string) bool {
 	for i := range s {
 		c := s[i]
@@ -13,11 +14,11 @@ func isASIN(s string) bool {
 	return true
 }
 
-// NormalizeISBN strips common prefixes (urn:isbn:, isbn:), whitespace, hyphens,
-// and spaces from a raw ISBN string. It returns the cleaned value only if it looks
-// like an ISBN-10 or ISBN-13: 10 or 13 characters consisting of digits, with
-// ISBN-10 allowing an 'X' (or 'x') as the final checksum character; otherwise it
-// returns "".
+// NormalizeISBN strips common prefixes (urn:isbn:, isbn:), leading/trailing
+// whitespace, hyphens, and internal spaces from a raw ISBN string. It returns
+// the cleaned value only if it looks like an ISBN-10 or ISBN-13: 10 or 13
+// characters consisting of digits, with ISBN-10 allowing an 'X' (or 'x') as
+// the final checksum character; otherwise it returns "".
 func NormalizeISBN(raw string) string {
 	s := strings.TrimSpace(raw)
 	if s == "" {
