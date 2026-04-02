@@ -135,7 +135,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 			slog.WarnContext(
 				ctx,
 				"error while reading exiftool output",
-				slog.String(otelkeys.Error, scanErr.Error()),
+				slog.Any(otelkeys.Error, scanErr),
 			)
 			fileMetadata[i].Err = scanErr
 			if scanErr == bufio.ErrTooLong {
@@ -149,7 +149,7 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 			slog.WarnContext(
 				ctx,
 				"unexpected EOF while reading exiftool output",
-				slog.String(otelkeys.Error, "EOF"),
+				slog.Any(otelkeys.Error, "EOF"),
 			)
 			fileMetadata[i].Err = fmt.Errorf("error while reading stdMergedOut: EOF")
 			e.markDead()

@@ -94,7 +94,7 @@ func readEPUBArchiveFile(ctx context.Context, filePath string, ref epubCoverRef)
 				"cover asset not found in EPUB archive",
 				slog.String(otelkeys.Path, filePath),
 				slog.String(otelkeys.CoverHref, ref.Href),
-				slog.String(otelkeys.Error, rootErr.Error()),
+				slog.Any(otelkeys.Error, rootErr),
 			)
 			return nil, "", fmt.Errorf("cover asset %q not found in archive (failed to determine EPUB root file path): %w", ref.Href, rootErr)
 		}

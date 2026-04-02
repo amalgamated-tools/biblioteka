@@ -257,7 +257,7 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 		slog.WarnContext(
 			ctx,
 			"error while reading exiftool output",
-			slog.String(otelkeys.Error, scanErr.Error()),
+			slog.Any(otelkeys.Error, scanErr),
 		)
 		// Any scanner error leaves the instance in a broken state.
 		e.markDead()
@@ -270,7 +270,7 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 		slog.WarnContext(
 			ctx,
 			"unexpected EOF while reading exiftool output",
-			slog.String(otelkeys.Error, "EOF"),
+			slog.Any(otelkeys.Error, "EOF"),
 		)
 		e.markDead()
 		return nil, fmt.Errorf("error while reading stdMergedOut: EOF")
