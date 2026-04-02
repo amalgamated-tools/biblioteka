@@ -715,7 +715,7 @@ func GetMobiCover(ctx context.Context, path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable to decode MOBI cover image: %w", err)
 	}
-	slog.InfoContext(ctx, "extracted MOBI cover image", slog.String(otelkeys.Path, path))
+	slog.DebugContext(ctx, "extracted MOBI cover image", slog.String(otelkeys.Path, path))
 
 	// name is the name of the format that was decoded (e.g. "jpeg", "png"). We want to convert it to a data URL, but image.Decode doesn't give us the original bytes or MIME type, so we'll have to re-encode it as JPEG (since that's the most common format for MOBI covers) and base64-encode that.
 
