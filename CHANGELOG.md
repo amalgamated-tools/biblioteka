@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.4.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.3.0...v0.4.0) (2026-04-02)
+
+
+### Features
+
+* Exif refactor ([#934](https://github.com/amalgamated-tools/biblioteka/issues/934)) ([9ebba1f](https://github.com/amalgamated-tools/biblioteka/commit/9ebba1f1cbf70a994f94633fa69d79f90d6eb38f))
+
+
+### Bug Fixes
+
+* **accessibility:** expose role="switch" state via aria-checked in LibraryForm toggle ([#1042](https://github.com/amalgamated-tools/biblioteka/issues/1042)) ([68f2d48](https://github.com/amalgamated-tools/biblioteka/commit/68f2d489e801de92e95ce4d9e9867d7f04e16fe1))
+* **accessibility:** move keyboard focus to main content after SPA navigation ([#1082](https://github.com/amalgamated-tools/biblioteka/issues/1082)) ([56a80a3](https://github.com/amalgamated-tools/biblioteka/commit/56a80a3115841e4d14197bbb693e2b84349cc355))
+* **accessibility:** replace window.confirm() with inline accessible confirmation dialogs ([#1041](https://github.com/amalgamated-tools/biblioteka/issues/1041)) ([ce33f26](https://github.com/amalgamated-tools/biblioteka/commit/ce33f26339344db8694b5af65a244fc2e066769b))
+* **code-simplifier:** refactor(auth,handlers): simplify extractCreds closures and extract ctx in named_entity helpers ([#1033](https://github.com/amalgamated-tools/biblioteka/issues/1033)) ([625366f](https://github.com/amalgamated-tools/biblioteka/commit/625366fa841743314ef98351b1f2860bf23003b6))
+* **code-simplifier:** refactor(settings): extract clearCopyTimeout helper in APIKeysTab and KoboTab ([#1059](https://github.com/amalgamated-tools/biblioteka/issues/1059)) ([5ce1ad0](https://github.com/amalgamated-tools/biblioteka/commit/5ce1ad07e5eadf4b07cefc03166f4cb3e4cc7a4b))
+* **db:** replace manual dialect branch in UpsertOPDSCredential with d.now() ([#1038](https://github.com/amalgamated-tools/biblioteka/issues/1038)) ([214219b](https://github.com/amalgamated-tools/biblioteka/commit/214219bf7231465b84128095d551763616cb60e1))
+* schema consistency — hide token_hash, add audit-log/credential API, move types to types.ts ([#1090](https://github.com/amalgamated-tools/biblioteka/issues/1090)) ([3e6ad7c](https://github.com/amalgamated-tools/biblioteka/commit/3e6ad7c4493a13eda84b9bc19a215c608c07d243))
+
 ## [0.3.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.2.0...v0.3.0) (2026-03-30)
 
 
