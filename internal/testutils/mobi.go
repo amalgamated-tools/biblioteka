@@ -120,11 +120,11 @@ func buildMOBI(t *testing.T, title, author string, opts MOBIOptions) []byte {
 	// 224: ExtraRecordDataFlags 228: IndxRecodOffset
 	const mobiHeaderLen = 232
 	var mobi [mobiHeaderLen]byte
-	copy(mobi[0:4], "MOBI")                                       // Identifier
-	binary.BigEndian.PutUint32(mobi[4:8], mobiHeaderLen)          // HeaderLength
-	binary.BigEndian.PutUint32(mobi[8:12], 2)                     // MobiType: MOBI book
-	binary.BigEndian.PutUint32(mobi[12:16], 65001)                // TextEncoding: UTF-8
-	binary.BigEndian.PutUint32(mobi[20:24], 6)                    // FileVersion
+	copy(mobi[0:4], "MOBI")                              // Identifier
+	binary.BigEndian.PutUint32(mobi[4:8], mobiHeaderLen) // HeaderLength
+	binary.BigEndian.PutUint32(mobi[8:12], 2)            // MobiType: MOBI book
+	binary.BigEndian.PutUint32(mobi[12:16], 65001)       // TextEncoding: UTF-8
+	binary.BigEndian.PutUint32(mobi[20:24], 6)           // FileVersion
 	if exthBlock != nil {
 		binary.BigEndian.PutUint32(mobi[112:116], 0x40) // ExthFlags: bit 6 set
 	}
