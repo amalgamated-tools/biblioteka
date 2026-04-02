@@ -672,14 +672,14 @@ func GetMobiCover(ctx context.Context, path string) (string, error) {
 	var buf strings.Builder
 	buf.WriteString("data:image/jpeg;base64,")
 	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	defer encoder.Close()
 	if err := jpeg.Encode(encoder, i, nil); err != nil {
 		slog.WarnContext(ctx, "failed to encode MOBI cover image as JPEG",
-			// slog.String(otelkeys.Path, path),
+			slog.String(otelkeys.Path, path),
 			slog.Any(otelkeys.Error, err),
 		)
 		return "", fmt.Errorf("failed to encode MOBI cover image as JPEG: %w", err)
-	} else {
-		encoder.Close()
-		return buf.String(), nil
 	}
+	return buf.String(), nil
+}
 }
