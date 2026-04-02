@@ -1345,14 +1345,13 @@ Use a piece of reactive state (`pendingDeleteKey`, `pendingDeleteToken`, etc.) t
 {/if}
 ```
 
-`APIKeysTab.svelte` and `KoboTab.svelte` are the canonical reference implementations. `LibraryForm.svelte` also uses this pattern via a `showDeleteConfirm` boolean toggle.
+`APIKeysTab.svelte` and `KoboTab.svelte` are the canonical reference implementations.
 
 #### `autofocusFirstButton` Svelte action (`lib/actions.ts`)
 
 `autofocusFirstButton` is a Svelte action that moves keyboard focus to the first `<button>` inside a container after the next microtask, ensuring child elements have rendered before focus is requested:
 
-```ts
-import { autofocusFirstButton } from "../lib/actions";
+import { autofocusFirstButton } from "../../lib/actions"; // adjust path to match your component's depth
 
 // In a template:
 // <div use:autofocusFirstButton>…</div>
