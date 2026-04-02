@@ -244,33 +244,33 @@ export async function getAuditLogs(
 
 // OPDS Credentials
 
-export async function getOPDSCredential(): Promise<OPDSCredential> {
+export async function getOpdsCredential(): Promise<OPDSCredential> {
   return request<OPDSCredential>("GET", "/api/opds/credentials");
 }
 
-export async function setOPDSCredential(
+export async function setOpdsCredential(
   input: OPDSCredentialInput,
 ): Promise<OPDSCredential> {
   return request<OPDSCredential>("PUT", "/api/opds/credentials", input);
 }
 
-export async function deleteOPDSCredential(): Promise<void> {
+export async function deleteOpdsCredential(): Promise<void> {
   await request<void>("DELETE", "/api/opds/credentials");
 }
 
 // KOSync Credentials
 
-export async function getKOSyncCredential(): Promise<KOSyncCredential> {
+export async function getKosyncCredential(): Promise<KOSyncCredential> {
   return request<KOSyncCredential>("GET", "/api/kosync/credentials");
 }
 
-export async function setKOSyncCredential(
+export async function setKosyncCredential(
   input: KOSyncCredentialInput,
 ): Promise<KOSyncCredential> {
   return request<KOSyncCredential>("PUT", "/api/kosync/credentials", input);
 }
 
-export async function deleteKOSyncCredential(): Promise<void> {
+export async function deleteKosyncCredential(): Promise<void> {
   await request<void>("DELETE", "/api/kosync/credentials");
 }
 

@@ -23,6 +23,13 @@ import {
   createOidcLinkNonce,
   listUsers,
   setUserAdmin,
+  getAuditLogs,
+  getOpdsCredential,
+  setOpdsCredential,
+  deleteOpdsCredential,
+  getKosyncCredential,
+  setKosyncCredential,
+  deleteKosyncCredential,
 } from "./api";
 
 const TOKEN_KEY = "biblioteka_token";
@@ -371,5 +378,160 @@ describe("Admin API", () => {
     expect(url).toBe("/api/admin/users/user-1");
     expect(options.method).toBe("PUT");
     expect(JSON.parse(options.body)).toEqual({ is_admin: true });
+  });
+});
+
+describe("Audit Logs API", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  it("getAuditLogs calls GET with default limit and offset", async () => {
+    mockFetchResponse({ entries: [], total: 0, limit: 50, offset: 0 });
+    const result = await getAuditLogs();
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/audit-logs?limit=50&offset=0");
+    expect(options.method).toBe("GET");
+    expect(result.entries).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+
+  it("getAuditLogs passes custom limit and offset", async () => {
+    mockFetchResponse({ entries: [], total: 100, limit: 10, offset: 20 });
+    await getAuditLogs(10, 20);
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/audit-logs?limit=10&offset=20");
+  });
+});
+
+describe("OPDS Credentials API", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  it("getOpdsCredential calls GET /api/opds/credentials", async () => {
+    const cred = {
+      username: "reader",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    };
+    mockFetchResponse(cred);
+    const result = await getOpdsCredential();
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/opds/credentials");
+    expect(options.method).toBe("GET");
+    expect(result.username).toBe("reader");
+  });
+
+  it("setOpdsCredential sends PUT with input body", async () => {
+    const cred = {
+      username: "reader",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    };
+    mockFetchResponse(cred);
+    const result = await setOpdsCredential({
+      username: "reader",
+      password: "secret",
+    });
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/opds/credentials");
+    expect(options.method).toBe("PUT");
+    expect(JSON.parse(options.body)).toEqual({
+      username: "reader",
+      password: "secret",
+    });
+    expect(result.username).toBe("reader");
+  });
+
+  it("deleteOpdsCredential sends DELETE and resolves void", async () => {
+    const resp = {
+      ok: true,
+      status: 204,
+      statusText: "No Content",
+      headers: new Headers({ "content-type": "application/json" }),
+      json: vi.fn(),
+      text: vi.fn(),
+    } as unknown as Response;
+    fetchMock.mockResolvedValue(resp);
+
+    const result = await deleteOpdsCredential();
+    expect(result).toBeUndefined();
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/opds/credentials");
+    expect(options.method).toBe("DELETE");
+  });
+});
+
+describe("KOSync Credentials API", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  it("getKosyncCredential calls GET /api/kosync/credentials", async () => {
+    const cred = {
+      username: "koreader",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    };
+    mockFetchResponse(cred);
+    const result = await getKosyncCredential();
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/kosync/credentials");
+    expect(options.method).toBe("GET");
+    expect(result.username).toBe("koreader");
+  });
+
+  it("setKosyncCredential sends PUT with input body", async () => {
+    const cred = {
+      username: "koreader",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    };
+    mockFetchResponse(cred);
+    const result = await setKosyncCredential({
+      username: "koreader",
+      password: "secret",
+    });
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/kosync/credentials");
+    expect(options.method).toBe("PUT");
+    expect(JSON.parse(options.body)).toEqual({
+      username: "koreader",
+      password: "secret",
+    });
+    expect(result.username).toBe("koreader");
+  });
+
+  it("deleteKosyncCredential sends DELETE and resolves void", async () => {
+    const resp = {
+      ok: true,
+      status: 204,
+      statusText: "No Content",
+      headers: new Headers({ "content-type": "application/json" }),
+      json: vi.fn(),
+      text: vi.fn(),
+    } as unknown as Response;
+    fetchMock.mockResolvedValue(resp);
+
+    const result = await deleteKosyncCredential();
+    expect(result).toBeUndefined();
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/kosync/credentials");
+    expect(options.method).toBe("DELETE");
   });
 });
