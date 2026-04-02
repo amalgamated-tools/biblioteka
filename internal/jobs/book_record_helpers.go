@@ -10,7 +10,6 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/exif"
-	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/organize"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/pathparser"
@@ -120,7 +119,7 @@ func createBookRecord(ctx context.Context, database *db.DB, title string, meta *
 			coverImageURL = &v
 		}
 		if isbn := meta.ISBN(); isbn != "" {
-			if normalizedISBN := exif.NormalizeISBN(ctx, isbn); normalizedISBN != "" {
+			if normalizedISBN := exif.NormalizeISBN(isbn); normalizedISBN != "" {
 				switch len(normalizedISBN) {
 				case 10:
 					v := normalizedISBN

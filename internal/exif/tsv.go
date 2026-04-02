@@ -414,6 +414,7 @@ func parseScalar(ctx context.Context, key, value string, out *ExifToolOutput) {
 	case "Subject":
 		out.Subjects = strings.Split(value, ", ")
 	case "ISBN":
+		value = NormalizeISBN(value)
 		if len(value) == 10 {
 			out.ISBN10 = value
 		} else if len(value) == 13 {
