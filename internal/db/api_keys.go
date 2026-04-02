@@ -21,12 +21,9 @@ type APIKey struct {
 const apiKeyColumns = `id, user_id, name, key_hash, key_prefix, last_used_at, created_at`
 
 func scanAPIKey(row interface{ Scan(...any) error }) (*APIKey, error) {
-	var k APIKey
-	err := row.Scan(&k.ID, &k.UserID, &k.Name, &k.KeyHash, &k.KeyPrefix, &k.LastUsedAt, &k.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &k, nil
+	return scanRow(row, func(k *APIKey) []any {
+		return []any{&k.ID, &k.UserID, &k.Name, &k.KeyHash, &k.KeyPrefix, &k.LastUsedAt, &k.CreatedAt}
+	})
 }
 
 // CreateAPIKey inserts a new API key and returns it.
@@ -51,17 +48,7 @@ func (d *DB) ListAPIKeys(ctx context.Context, userID string) ([]APIKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var keys []APIKey
-	for rows.Next() {
-		k, err := scanAPIKey(rows)
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, *k)
-	}
-	return keys, rows.Err()
+	return collectRows(rows, scanAPIKey)
 }
 
 // GetAPIKey returns a single API key by ID and user ID.

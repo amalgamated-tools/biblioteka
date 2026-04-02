@@ -24,12 +24,9 @@ type KOSyncCredential struct {
 const kosyncCredentialColumns = `id, user_id, username, password_hash, created_at, updated_at`
 
 func scanKOSyncCredential(row interface{ Scan(...any) error }) (*KOSyncCredential, error) {
-	var c KOSyncCredential
-	err := row.Scan(&c.ID, &c.UserID, &c.Username, &c.PasswordHash, &c.CreatedAt, &c.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &c, nil
+	return scanRow(row, func(c *KOSyncCredential) []any {
+		return []any{&c.ID, &c.UserID, &c.Username, &c.PasswordHash, &c.CreatedAt, &c.UpdatedAt}
+	})
 }
 
 // GetKOSyncCredentialByUserID returns the KOSync credential for a user, or sql.ErrNoRows if not found.
@@ -92,12 +89,9 @@ type ReadingProgress struct {
 const readingProgressColumns = `id, user_id, document, progress, percentage, device, device_id, created_at, updated_at`
 
 func scanReadingProgress(row interface{ Scan(...any) error }) (*ReadingProgress, error) {
-	var p ReadingProgress
-	err := row.Scan(&p.ID, &p.UserID, &p.Document, &p.Progress, &p.Percentage, &p.Device, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &p, nil
+	return scanRow(row, func(p *ReadingProgress) []any {
+		return []any{&p.ID, &p.UserID, &p.Document, &p.Progress, &p.Percentage, &p.Device, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt}
+	})
 }
 
 // GetReadingProgress returns the reading progress for a user and document, or sql.ErrNoRows if not found.
