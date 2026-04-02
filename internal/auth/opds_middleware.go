@@ -59,13 +59,9 @@ func OPDSBasicAuthMiddleware(checker OPDSCredentialChecker) func(http.Handler) h
 			username, secret, ok = r.BasicAuth()
 			return username, secret, ok && username != ""
 		},
-		lookupCredential: func(ctx context.Context, username string) (string, string, error) {
-			cred, err := checker.GetOPDSCredential(ctx, username)
-			if err != nil {
-				return "", "", err
-			}
-			return cred.UserID, cred.PasswordHash, nil
-		},
+		lookupCredential: lookupByUsername(checker.GetOPDSCredential, func(c *OPDSCredentialResult) (string, string) {
+			return c.UserID, c.PasswordHash
+		}),
 		writeMissing: func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Biblioteka OPDS"`)
 			writeOPDSError(r.Context(), w, http.StatusUnauthorized, "authentication required")
