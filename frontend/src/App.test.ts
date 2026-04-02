@@ -54,6 +54,17 @@ describe("App", () => {
     expect(document.title).toBe("Dashboard – biblioteka");
   });
 
+  it("does not steal focus on initial mount", async () => {
+    render(App);
+    await tick();
+
+    const main = screen.getByRole("main");
+    // The focus effect skips the first run, so main should NOT be focused
+    // on initial render — this avoids stealing focus from the browser UI
+    // (e.g. address bar) on a hard refresh.
+    expect(document.activeElement).not.toBe(main);
+  });
+
   it("provides a functional skip link that moves focus to the main content", async () => {
     const { container } = render(App);
 

@@ -50,21 +50,11 @@ func KOSyncHeaderAuthMiddleware(checker KOSyncCredentialChecker) func(http.Handl
 			secret = r.Header.Get(kosyncAuthKeyHeader)
 			return username, secret, username != "" && secret != ""
 		},
-		lookupCredential: func(ctx context.Context, username string) (string, string, error) {
-			cred, err := checker.GetKOSyncCredential(ctx, username)
-			if err != nil {
-				return "", "", err
-			}
-			return cred.UserID, cred.PasswordHash, nil
-		},
-		writeMissing: func(w http.ResponseWriter, r *http.Request) {
-			jsonError(w, http.StatusUnauthorized, "Unauthorized")
-		},
-		writeUnauthorized: func(w http.ResponseWriter, r *http.Request) {
-			jsonError(w, http.StatusUnauthorized, "Unauthorized")
-		},
-		writeServiceUnavailable: func(w http.ResponseWriter, r *http.Request) {
-			jsonError(w, http.StatusServiceUnavailable, "Service temporarily unavailable")
-		},
+		lookupCredential: lookupByUsername(checker.GetKOSyncCredential, func(c *KOSyncCredentialResult) (string, string) {
+			return c.UserID, c.PasswordHash
+		}),
+		writeMissing:            jsonErrorWriter(http.StatusUnauthorized, "Unauthorized"),
+		writeUnauthorized:       jsonErrorWriter(http.StatusUnauthorized, "Unauthorized"),
+		writeServiceUnavailable: jsonErrorWriter(http.StatusServiceUnavailable, "Service temporarily unavailable"),
 	})
 }
