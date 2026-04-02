@@ -307,14 +307,9 @@ Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs
 
 ## TypeScript types
 
-TypeScript types are split between two files based on their purpose:
+All TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes both domain model types (e.g. `Library`, `Author`, `Book`) and API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping all types in one file gives every component, store, and the API module a single import path.
 
-| File | What goes here |
-|------|----------------|
-| `frontend/src/types.ts` | **Domain entity types** — interfaces for API resource models that are used across multiple components and stores (e.g. `Library`, `Author`, `Book`, `BookFile`). |
-| `frontend/src/lib/api.ts` | **API-specific types** — request/response shapes tightly coupled to a single API module group (e.g. `ConfigStatus`, `OIDCConfig`, `SetOIDCConfigInput`, `AdminUser`). These may be imported into components that use the relevant API functions. |
-
-Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. If a type is shared across more than one component or store, move it to `types.ts`.
+Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new type to `types.ts`.
 
 ## Utility modules
 
@@ -1778,25 +1773,32 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `api.test.ts`
 
-`frontend/src/lib/api.test.ts` exercises the centralised API client (`frontend/src/lib/api.ts`). `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into five `describe` blocks:
+`frontend/src/lib/api.test.ts` exercises the centralised API client (`frontend/src/lib/api.ts`). `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into nine `describe` blocks:
 
 **`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying `localStorage` read/write semantics, including the edge case of an empty string being treated as "no token".
 
 **`ApiError` (one test):** asserts the custom error class has the correct `name`, `message`, `status`, and prototype chain.
 
-**`request` (six tests):** exercises the shared `request()` helper (called indirectly through exported API functions):
+**`request` (seven tests):** exercises the shared `request()` helper (called indirectly through exported API functions):
 - Asserts the `Authorization: Bearer <token>` header is included when a token is stored.
 - Asserts the header is omitted when no token is present.
 - Asserts POST requests serialize the body as JSON.
 - Asserts a non-OK JSON response throws `ApiError` with the `error` field from the body.
 - Asserts a non-OK plain-text response throws `ApiError` with the response body as the message.
 - Asserts fallback to `statusText` when the JSON body contains no `error` field.
+- Asserts graceful handling of a JSON parse failure (falls back to the raw response text as the error message).
 
-**`Auth API` (five tests):** covers `signup`, `login`, `getMe`, `getOidcEnabled`, and `changePassword` — verifying the correct HTTP method, URL, and request body for each call.
+**`Auth API functions` (six tests):** covers `signup`, `login`, `getOidcEnabled` (three edge cases: enabled, disabled, unexpected response), and `changePassword` — verifying the correct HTTP method, URL, and request body for each call.
 
 **`Config API` (four tests):** covers `getConfigStatus`, `getOidcConfig`, `setOidcConfig`, and `createOidcLinkNonce`.
 
 **`Admin API` (two tests):** covers `listUsers` and `setUserAdmin`.
+
+**`Audit Logs API` (two tests):** covers `getAuditLogs` — verifying the default `limit=50&offset=0` query string and that custom limit/offset values are forwarded correctly.
+
+**`OPDS Credentials API` (three tests):** covers `getOpdsCredential` (GET), `setOpdsCredential` (PUT with request body), and `deleteOpdsCredential` (DELETE resolves `void` on `204 No Content`).
+
+**`KOSync Credentials API` (three tests):** covers `getKosyncCredential` (GET), `setKosyncCredential` (PUT with request body), and `deleteKosyncCredential` (DELETE resolves `void` on `204 No Content`).
 
 ### `clipboard.test.ts`
 
