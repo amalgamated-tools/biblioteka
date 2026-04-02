@@ -25,21 +25,21 @@ var opdsCredConfig = protocolCredentialConfig{
 
 // GetOPDSCredentialByUserID returns the OPDS credential for a user, or sql.ErrNoRows if not found.
 func (d *DB) GetOPDSCredentialByUserID(ctx context.Context, userID string) (*OPDSCredential, error) {
-	return getCredentialByUserID(d, ctx, opdsCredConfig, userID)
+	return getCredentialByUserID(ctx, d, opdsCredConfig, userID)
 }
 
 // GetOPDSCredentialByUsername returns the OPDS credential for a username, or sql.ErrNoRows if not found.
 func (d *DB) GetOPDSCredentialByUsername(ctx context.Context, username string) (*OPDSCredential, error) {
-	return getCredentialByUsername(d, ctx, opdsCredConfig, username)
+	return getCredentialByUsername(ctx, d, opdsCredConfig, username)
 }
 
 // UpsertOPDSCredential creates or updates the OPDS credential for a user.
 // Returns ErrOPDSUsernameExists if the username is taken by a different user.
 func (d *DB) UpsertOPDSCredential(ctx context.Context, userID, username, passwordHash string) (*OPDSCredential, error) {
-	return upsertCredential(d, ctx, opdsCredConfig, userID, username, passwordHash)
+	return upsertCredential(ctx, d, opdsCredConfig, userID, username, passwordHash)
 }
 
 // DeleteOPDSCredential removes the OPDS credential for a user.
 func (d *DB) DeleteOPDSCredential(ctx context.Context, userID string) error {
-	return deleteCredential(d, ctx, opdsCredConfig, userID)
+	return deleteCredential(ctx, d, opdsCredConfig, userID)
 }
