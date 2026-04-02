@@ -15,10 +15,6 @@
   function handlePageChange(offset: number) {
     routerStore.setQueryParam("offset", offset === 0 ? null : String(offset));
   }
-
-  function handleBooksFound() {
-    libraryStore.clearAllScanning();
-  }
 </script>
 
 <div>
@@ -40,6 +36,5 @@
     {initialOffset}
     onPageChange={handlePageChange}
     pollingInterval={libraryStore.isScanning ? 3000 : undefined}
-    onBooksFound={libraryStore.isScanning ? handleBooksFound : undefined}
   />
 </div>

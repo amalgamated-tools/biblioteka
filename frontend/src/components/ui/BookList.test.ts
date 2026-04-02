@@ -19,6 +19,31 @@ const emptyBooks: PaginatedBooks = {
   offset: 0,
 };
 
+const fakeBooks: PaginatedBooks = {
+  books: [
+    {
+      id: "b1",
+      title: "Test Book",
+      description: null,
+      asin: null,
+      isbn10: null,
+      isbn13: null,
+      goodreads_id: null,
+      hardcover_id: null,
+      google_books_id: null,
+      publication_date: null,
+      publisher: null,
+      language: null,
+      cover_image_url: null,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+  ],
+  total: 1,
+  limit: 24,
+  offset: 0,
+};
+
 describe("BookList empty state", () => {
   afterEach(() => cleanup());
 
@@ -71,31 +96,6 @@ describe("BookList polling", () => {
   });
 
   it("stops polling once books are found", async () => {
-    const fakeBooks: PaginatedBooks = {
-      books: [
-        {
-          id: "b1",
-          title: "Test Book",
-          description: null,
-          asin: null,
-          isbn10: null,
-          isbn13: null,
-          goodreads_id: null,
-          hardcover_id: null,
-          google_books_id: null,
-          publication_date: null,
-          publisher: null,
-          language: null,
-          cover_image_url: null,
-          created_at: "2026-01-01T00:00:00Z",
-          updated_at: "2026-01-01T00:00:00Z",
-        },
-      ],
-      total: 1,
-      limit: 24,
-      offset: 0,
-    };
-
     // First call returns empty, second returns books
     const fetchBooks = vi
       .fn()
@@ -120,31 +120,6 @@ describe("BookList polling", () => {
   });
 
   it("calls onBooksFound when books appear for the first time", async () => {
-    const fakeBooks: PaginatedBooks = {
-      books: [
-        {
-          id: "b1",
-          title: "Test Book",
-          description: null,
-          asin: null,
-          isbn10: null,
-          isbn13: null,
-          goodreads_id: null,
-          hardcover_id: null,
-          google_books_id: null,
-          publication_date: null,
-          publisher: null,
-          language: null,
-          cover_image_url: null,
-          created_at: "2026-01-01T00:00:00Z",
-          updated_at: "2026-01-01T00:00:00Z",
-        },
-      ],
-      total: 1,
-      limit: 24,
-      offset: 0,
-    };
-
     const fetchBooks = vi
       .fn()
       .mockResolvedValueOnce(emptyBooks)
