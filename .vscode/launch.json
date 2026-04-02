@@ -21,7 +21,7 @@
             "mode": "auto",
             "args": [
                 "process-file",
-                "${workspaceFolder}/books/the-prince.azw3"
+                "${workspaceFolder}/books/theprince.azw3"
             ],
             "program": "cmd/cli/main.go",
             "envFile": "${workspaceFolder}/.env",
@@ -34,7 +34,7 @@
             "mode": "auto",
             "args": [
                 "process-file",
-                "${workspaceFolder}/books/the-prince.mobi"
+                "${workspaceFolder}/books/theprince.mobi"
             ],
             "program": "cmd/cli/main.go",
             "envFile": "${workspaceFolder}/.env",
