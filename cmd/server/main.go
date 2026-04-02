@@ -96,7 +96,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 			slog.ErrorContext(cancelCtx, "failed to setup metadata extractor", slog.Any(otelkeys.Error, err))
 			return fmt.Errorf("failed to setup metadata extractor: %w", err)
 		}
-		defer extractor.Close()
+		defer extractor.Close(cancelCtx)
 
 		w.Register(cancelCtx, jobs.JobScanPath, jobs.NewScanPathHandler(w))
 		w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database, extractor))
