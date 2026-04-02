@@ -244,9 +244,9 @@ func TestExtractMetadata_NonexistentFile(t *testing.T) {
 }
 
 func TestExtractMetadata_Unavailable(t *testing.T) {
-	// An extractor with nil et should return ErrExifToolUnavailable.
+	// An extractor with nil et should return ErrExifToolUnavailable for non-EPUB files.
 	ext := &Extractor{}
-	_, err := ext.ExtractMetadata(t.Context(), "/any/file.epub")
+	_, err := ext.ExtractMetadata(t.Context(), "/any/file.pdf")
 	if !errors.Is(err, ErrExifToolUnavailable) {
 		t.Fatalf("expected ErrExifToolUnavailable, got %v", err)
 	}
