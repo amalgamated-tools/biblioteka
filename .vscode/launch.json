@@ -21,7 +21,7 @@
             "mode": "auto",
             "args": [
                 "process-file",
-                "/Users/veverkap/Code/personal/books/hail.epub"
+                "${workspaceFolder}/books/theprince.azw3"
             ],
             "program": "cmd/cli/main.go",
             "envFile": "${workspaceFolder}/.env",
