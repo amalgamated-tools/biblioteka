@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { authStore } from "./stores/auth.svelte";
   import { routerStore } from "./stores/router.svelte";
   import { libraryStore } from "./stores/libraries.svelte";
@@ -41,6 +41,18 @@
   $effect(() => {
     void routerStore.hash;
     sidebarOpen = false;
+  });
+
+  // Move keyboard focus to the main content region after each navigation
+  // so that keyboard-only and screen-reader users land on the new content
+  // instead of remaining on the sidebar link (WCAG 2.4.3 Focus Order).
+  $effect(() => {
+    void routerStore.hash;
+    if (authStore.user) {
+      tick().then(() => {
+        document.getElementById("main-content")?.focus();
+      });
+    }
   });
 </script>
 

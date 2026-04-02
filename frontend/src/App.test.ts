@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { tick } from "svelte";
-import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
+import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/svelte";
 
 vi.mock("./stores/auth.svelte", () => ({
   authStore: {
@@ -52,6 +52,15 @@ describe("App", () => {
     render(App);
     await tick();
     expect(document.title).toBe("Dashboard – biblioteka");
+  });
+
+  it("moves focus to main content after navigation", async () => {
+    render(App);
+
+    const main = screen.getByRole("main");
+    await waitFor(() => {
+      expect(document.activeElement).toBe(main);
+    });
   });
 
   it("provides a functional skip link that moves focus to the main content", async () => {
