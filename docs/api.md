@@ -1,6 +1,6 @@
 # API Overview
 
-Biblioteka exposes a JSON REST API under the `/api` base path. This page summarises the key conventions and links to detailed endpoint documentation.
+Biblioteka exposes a JSON REST API under the `/api` base path. This page summarizes the key conventions and links to detailed endpoint documentation.
 
 > For the full endpoint-by-endpoint reference, see **[API Reference](api-reference.md)**.
 
