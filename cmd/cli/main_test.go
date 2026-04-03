@@ -42,8 +42,9 @@ func newTestDB(t *testing.T) *db.DB {
 	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
 }
 
-// requireExtractor creates a metadata extractor and skips the test if
-// ExifTool is not installed.
+// requireExtractor creates a metadata extractor. If ExifTool is not installed,
+// the extractor silently falls back to filename-derived metadata — the tests are
+// written so that assertions hold either way.
 func requireExtractor(t *testing.T) *metadata.Extractor {
 	t.Helper()
 	ext, err := metadata.NewExtractor(t.Context())
