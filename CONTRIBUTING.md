@@ -308,7 +308,7 @@ The repository includes a `.vscode/launch.json` with ready-to-use **Run and Debu
 
 | Configuration | Binary | What it does |
 |---|---|---|
-| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans the sample `books/` directory and imports all supported files |
+| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans your local `books/` directory and imports all supported files |
 | **Run CLI (AZW3)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.azw3` (place your own AZW3 file there) |
 | **Run CLI (MOBI)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.mobi` (place your own MOBI file there) |
 | **Run CLI (EPUB)** | `cmd/cli/main.go` | Runs `process-file` against `books/alice.epub` (place your own EPUB 2 file there) |
