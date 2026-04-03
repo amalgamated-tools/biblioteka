@@ -152,7 +152,8 @@ db-dump: clean
 	dbmate -u "sqlite:db/biblioteka.db" -d "db/migrations/sqlite" dump
 
 aw-update:
-	brew upgrade gh
+	# Note: 'brew upgrade gh' is macOS-only. On Linux, upgrade gh via your system package manager first.
+	-brew upgrade gh
 	gh extension upgrade github/gh-aw
 	gh aw upgrade
 	gh aw compile

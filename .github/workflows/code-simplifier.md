@@ -12,15 +12,15 @@ network:
   - rust
   - java
 imports:
-- shared/formatting.md
-- shared/reporting.md
+  - shared/formatting.md
+  - shared/reporting.md
 safe-outputs:
   create-pull-request:
     expires: 1d
     labels:
-    - refactoring
-    - code-quality
-    - automation
+      - refactoring
+      - code-quality
+      - automation
     protected-files: fallback-to-issue
     title-prefix: "fix(code-simplifier): "
 description: Analyzes recently modified code and creates pull requests with simplifications that improve clarity, consistency, and maintainability while preserving functionality
@@ -30,7 +30,7 @@ timeout-minutes: 30
 tools:
   github:
     toolsets:
-    - default
+      - default
 tracker-id: code-simplifier
 ---
 <!-- This prompt will be imported in the agentic workflow .github/workflows/code-simplifier.md at runtime. -->
