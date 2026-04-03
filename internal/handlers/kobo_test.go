@@ -515,7 +515,9 @@ func TestHandleDownload_Success(t *testing.T) {
 	if _, err := f.Write(content); err != nil {
 		t.Fatalf("write temp file: %v", err)
 	}
-	_ = f.Close()
+	if err := f.Close(); err != nil {
+		t.Fatalf("close temp file: %v", err)
+	}
 
 	book, err := h.DB.CreateBook(context.Background(), "Download Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
@@ -566,9 +568,7 @@ func TestHandleKobo_BookMetadata_Success(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	pngBytes := testutils.TinyPNG()
-	cover := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, err := h.DB.CreateBook(context.Background(), "Metadata Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &cover)
+	book, err := h.DB.CreateBook(context.Background(), "Metadata Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -615,7 +615,15 @@ func TestHandleKobo_BookMetadata_NonGET(t *testing.T) {
 
 	// Non-GET returns 200 with empty array per protocol spec.
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var metadata []any
+	if err := json.Unmarshal(w.Body.Bytes(), &metadata); err != nil {
+		t.Fatalf("unmarshal: %v; body: %s", err, w.Body.String())
+	}
+	if len(metadata) != 0 {
+		t.Fatalf("expected empty JSON array, got %d items; body: %s", len(metadata), w.Body.String())
 	}
 }
 
@@ -647,7 +655,10 @@ func TestHandleKobo_BookState_GetDefault(t *testing.T) {
 	if len(states) != 1 {
 		t.Fatalf("expected 1 state, got %d", len(states))
 	}
-	statusInfo, _ := states[0]["StatusInfo"].(map[string]any)
+	statusInfo, ok := states[0]["StatusInfo"].(map[string]any)
+	if !ok {
+		t.Fatalf("StatusInfo is not a map: %v", states[0]["StatusInfo"])
+	}
 	if statusInfo["Status"] != "ReadyToRead" {
 		t.Errorf("Status = %v, want 'ReadyToRead'", statusInfo["Status"])
 	}
@@ -710,6 +721,24 @@ func TestHandleKobo_BookState_Update_Success(t *testing.T) {
 	}
 	if resp["RequestResult"] != "Success" {
 		t.Errorf("RequestResult = %v, want Success", resp["RequestResult"])
+	}
+
+	// Verify the state was persisted by fetching it back.
+	getR := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/state", nil)
+	getR.Host = "localhost:8080"
+	getW := httptest.NewRecorder()
+	handler.ServeHTTP(getW, getR)
+
+	var states []map[string]any
+	if err := json.Unmarshal(getW.Body.Bytes(), &states); err != nil || len(states) == 0 {
+		t.Fatalf("re-fetch state failed: err=%v, count=%d", err, len(states))
+	}
+	bm, ok := states[0]["CurrentBookmark"].(map[string]any)
+	if !ok {
+		t.Fatalf("CurrentBookmark is not a map: %v", states[0]["CurrentBookmark"])
+	}
+	if bm["ProgressPercent"] != 42.5 {
+		t.Errorf("persisted ProgressPercent = %v, want 42.5", bm["ProgressPercent"])
 	}
 }
 
@@ -785,11 +814,17 @@ func TestHandleKobo_BookState_GetExisting(t *testing.T) {
 	if len(states) != 1 {
 		t.Fatalf("expected 1 state, got %d", len(states))
 	}
-	statusInfo, _ := states[0]["StatusInfo"].(map[string]any)
+	statusInfo, ok := states[0]["StatusInfo"].(map[string]any)
+	if !ok {
+		t.Fatalf("StatusInfo is not a map: %v", states[0]["StatusInfo"])
+	}
 	if statusInfo["Status"] != "Finished" {
 		t.Errorf("Status = %v, want 'Finished'", statusInfo["Status"])
 	}
-	bookmark, _ := states[0]["CurrentBookmark"].(map[string]any)
+	bookmark, ok := states[0]["CurrentBookmark"].(map[string]any)
+	if !ok {
+		t.Fatalf("CurrentBookmark is not a map: %v", states[0]["CurrentBookmark"])
+	}
 	if bookmark["ProgressPercent"] != 75.0 {
 		t.Errorf("ProgressPercent = %v, want 75.0", bookmark["ProgressPercent"])
 	}
@@ -831,6 +866,24 @@ func TestHandleKobo_Sync_WithBooks(t *testing.T) {
 	}
 	if results[0]["NewEntitlement"] == nil && results[0]["ChangedEntitlement"] == nil {
 		t.Error("expected NewEntitlement or ChangedEntitlement in sync result")
+	}
+
+	// Extract the entitlement and verify it references the correct book.
+	var entitlement map[string]any
+	if ne, ok := results[0]["NewEntitlement"].(map[string]any); ok {
+		entitlement = ne
+	} else if ce, ok := results[0]["ChangedEntitlement"].(map[string]any); ok {
+		entitlement = ce
+	}
+	if entitlement == nil {
+		t.Fatal("no entitlement in sync result")
+	}
+	bm, ok := entitlement["BookMetadata"].(map[string]any)
+	if !ok {
+		t.Fatal("expected BookMetadata in entitlement")
+	}
+	if bm["RevisionId"] != book.ID {
+		t.Errorf("BookMetadata.RevisionId = %v, want %v", bm["RevisionId"], book.ID)
 	}
 }
 
@@ -913,7 +966,25 @@ func TestHandleKobo_Sync_WithReadingState(t *testing.T) {
 		t.Fatal("no entitlement in sync result")
 	}
 	if entitlement["ReadingState"] == nil {
-		t.Error("expected ReadingState in sync result for book with reading state")
+		t.Fatal("expected ReadingState in sync result for book with reading state")
+	}
+	rs, ok := entitlement["ReadingState"].(map[string]any)
+	if !ok {
+		t.Fatal("ReadingState is not a map")
+	}
+	rsStatusInfo, ok := rs["StatusInfo"].(map[string]any)
+	if !ok {
+		t.Fatal("ReadingState StatusInfo is not a map")
+	}
+	if rsStatusInfo["Status"] != "Reading" {
+		t.Errorf("ReadingState status = %v, want Reading", rsStatusInfo["Status"])
+	}
+	rsBm, ok := rs["CurrentBookmark"].(map[string]any)
+	if !ok {
+		t.Fatal("ReadingState CurrentBookmark is not a map")
+	}
+	if rsBm["ProgressPercent"] != 50.0 {
+		t.Errorf("ProgressPercent = %v, want 50.0", rsBm["ProgressPercent"])
 	}
 }
 
@@ -1096,15 +1167,24 @@ func TestKoboDownloadURLs_FiltersUnsupportedFormats(t *testing.T) {
 	}
 	urls := koboDownloadURLs("http://localhost", "mytoken", "book-id", files)
 	if len(urls) != 2 {
-		t.Errorf("expected 2 URLs (epub + pdf), got %d", len(urls))
+		t.Fatalf("expected 2 URLs (epub + pdf), got %d", len(urls))
 	}
+	formats := make(map[string]bool)
 	for _, u := range urls {
-		if u["Format"] == "" {
+		f, _ := u["Format"].(string)
+		if f == "" {
 			t.Error("expected non-empty Format in download URL")
 		}
+		formats[f] = true
 		if u["Url"] == "" {
 			t.Error("expected non-empty Url in download URL")
 		}
+	}
+	if !formats["EPUB3"] {
+		t.Error("expected EPUB3 format in download URLs")
+	}
+	if !formats["PDF"] {
+		t.Error("expected PDF format in download URLs")
 	}
 }
 
@@ -1135,7 +1215,7 @@ func TestKoboBookMetadata_WithSeries(t *testing.T) {
 	if seriesMeta["Name"] != seriesName {
 		t.Errorf("Series.Name = %v, want %q", seriesMeta["Name"], seriesName)
 	}
-	if seriesMeta["Number"] != 1 {
+	if seriesMeta["Number"] != int(1) {
 		t.Errorf("Series.Number = %v, want 1", seriesMeta["Number"])
 	}
 }
