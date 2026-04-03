@@ -43,6 +43,9 @@ func findLink(links []opdsLink, rel string) *opdsLink {
 	return nil
 }
 
+// ptr returns a pointer to the given value; used by table-driven tests.
+func ptr[T any](v T) *T { return &v }
+
 // --- Routing / method dispatch ---
 
 func TestHandleOPDS_MethodNotAllowed(t *testing.T) {
@@ -1302,6 +1305,9 @@ func TestRecentBooks_DBError(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	}
 	parseOPDSFeed(t, w.Body.Bytes())
 }
 
@@ -1315,6 +1321,9 @@ func TestAuthorsFeed_DBError(t *testing.T) {
 
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsNavContentType)
 	}
 	parseOPDSFeed(t, w.Body.Bytes())
 }
@@ -1330,6 +1339,9 @@ func TestSeriesFeed_DBError(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsNavContentType)
+	}
 	parseOPDSFeed(t, w.Body.Bytes())
 }
 
@@ -1343,6 +1355,9 @@ func TestSearch_DBError(t *testing.T) {
 
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
 	}
 	parseOPDSFeed(t, w.Body.Bytes())
 }
@@ -1374,45 +1389,38 @@ func TestBookEntries_AuthorLoadError(t *testing.T) {
 	if len(entries[0].Authors) != 0 {
 		t.Errorf("authors = %v, want empty (batch load failed)", entries[0].Authors)
 	}
+	if len(entries[0].Links) != 0 {
+		t.Errorf("links = %v, want empty (batch load failed)", entries[0].Links)
+	}
 }
 
 // --- serveCover missing paths ---
 
-func TestServeCover_NilCover(t *testing.T) {
-	h := setupOPDSHandler(t)
-	ctx := context.Background()
+func TestServeCover_MissingCover(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		cover *string
+	}{
+		{"nil cover", nil},
+		{"empty cover", ptr("")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := setupOPDSHandler(t)
+			ctx := context.Background()
 
-	// Book with no cover (nil CoverImageURL).
-	book, err := h.DB.CreateBook(ctx, "No Cover", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+			book, err := h.DB.CreateBook(ctx, "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, tc.cover)
+			if err != nil {
+				t.Fatalf("create book: %v", err)
+			}
 
-	r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
-	w := httptest.NewRecorder()
-	h.HandleOPDS(w, r)
+			r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
+			w := httptest.NewRecorder()
+			h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
-}
-
-func TestServeCover_EmptyCover(t *testing.T) {
-	h := setupOPDSHandler(t)
-	ctx := context.Background()
-
-	empty := ""
-	book, err := h.DB.CreateBook(ctx, "Empty Cover", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &empty)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
-
-	r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
-	w := httptest.NewRecorder()
-	h.HandleOPDS(w, r)
-
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+			if w.Code != http.StatusNotFound {
+				t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+			}
+		})
 	}
 }
 
@@ -1447,6 +1455,9 @@ func TestServeCover_DBError(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
+	// serveCover intentionally returns 404 for all DB errors (not 500) to avoid
+	// leaking internal state to OPDS clients — a missing cover is indistinguishable
+	// from a DB failure from the client's perspective.
 	if w.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
 	}
@@ -1526,5 +1537,27 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 	}
 	if findLink(feed.Links, relNext) == nil {
 		t.Error("page 1: missing next link")
+	}
+	if findLink(feed.Links, relPrevious) != nil {
+		t.Error("page 1: should not have previous link")
+	}
+
+	// Page 2: should have previous link but no next.
+	r2 := httptest.NewRequest(http.MethodGet, "/opds/series?page=2", nil)
+	w2 := httptest.NewRecorder()
+	h.HandleOPDS(w2, r2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("page 2: status = %d, want %d", w2.Code, http.StatusOK)
+	}
+	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
+	if len(feed2.Entries) != 5 {
+		t.Errorf("page 2: entries = %d, want 5", len(feed2.Entries))
+	}
+	if findLink(feed2.Links, relPrevious) == nil {
+		t.Error("page 2: missing previous link")
+	}
+	if findLink(feed2.Links, relNext) != nil {
+		t.Error("page 2: should not have next link")
 	}
 }
