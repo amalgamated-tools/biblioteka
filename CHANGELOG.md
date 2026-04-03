@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.4.0...v0.5.0) (2026-04-03)
+
+
+### Features
+
+* auto-refresh book list after adding a library ([#1111](https://github.com/amalgamated-tools/biblioteka/issues/1111)) ([a115d15](https://github.com/amalgamated-tools/biblioteka/commit/a115d15c4603d2c8cefb17700d1e514ac8538a47))
+
 ## [0.4.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.3.0...v0.4.0) (2026-04-02)
 
 
