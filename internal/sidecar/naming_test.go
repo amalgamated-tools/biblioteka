@@ -50,6 +50,7 @@ func TestSidecarTarget(t *testing.T) {
 		wantDir          string
 		wantBaseName     string
 		wantErr          bool
+		wantErrContains  string
 	}{
 		// Empty path is always an error.
 		{
@@ -57,6 +58,7 @@ func TestSidecarTarget(t *testing.T) {
 			bookFilePath:     "",
 			organizationType: organizationBookPerFile,
 			wantErr:          true,
+			wantErrContains:  "book file path is required",
 		},
 		// book_per_folder: baseName is always empty.
 		{
@@ -110,12 +112,14 @@ func TestSidecarTarget(t *testing.T) {
 			bookFilePath:     ".",
 			organizationType: organizationBookPerFile,
 			wantErr:          true,
+			wantErrContains:  "invalid sidecar base name",
 		},
 		{
 			name:             "double-dot path with book per file produces error",
 			bookFilePath:     "..",
 			organizationType: organizationBookPerFile,
 			wantErr:          true,
+			wantErrContains:  "invalid sidecar base name",
 		},
 	}
 
@@ -124,6 +128,7 @@ func TestSidecarTarget(t *testing.T) {
 			dir, baseName, err := sidecarTarget(tt.bookFilePath, tt.organizationType)
 			if tt.wantErr {
 				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.wantErrContains)
 				return
 			}
 			require.NoError(t, err)

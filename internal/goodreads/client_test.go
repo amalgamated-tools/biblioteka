@@ -15,14 +15,11 @@ func TestNewClient(t *testing.T) {
 	require.NotEmpty(t, c.host)
 	require.NotNil(t, c.client)
 	require.NotNil(t, c.httpClient)
-}
 
-// TestNewClient_HostContainsExpectedDomain verifies that the default host URL is
-// non-empty and looks like an HTTPS URL (basic sanity check without hardcoding the
-// obfuscated value).
-func TestNewClient_HostContainsExpectedDomain(t *testing.T) {
-	c := NewClient()
-	require.Contains(t, c.host, "https://")
-	// Token should be a non-trivial length string.
-	require.Greater(t, len(c.token), 10)
+	t.Run("host is an HTTPS URL", func(t *testing.T) {
+		require.Contains(t, c.host, "https://")
+	})
+	t.Run("token has non-trivial length", func(t *testing.T) {
+		require.Greater(t, len(c.token), 10)
+	})
 }

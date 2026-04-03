@@ -2,7 +2,6 @@ package goodreads
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -112,6 +111,8 @@ func TestSearchByISBN_NonOKStatus(t *testing.T) {
 // TestSearchByISBN_ResponseTooLarge verifies that a response body exceeding 1 MB is
 // rejected without panicking or returning partial data.
 func TestSearchByISBN_ResponseTooLarge(t *testing.T) {
+	// Intentionally duplicates the unexported maxResponseSize in search_by_isbn.go.
+	// If the production limit changes, this test must be updated to match.
 	const maxResponseSize = 1 << 20 // 1 MB
 	largeBody := bytes.Repeat([]byte("x"), maxResponseSize+2)
 	client := &Client{
@@ -298,7 +299,7 @@ func TestSearchByISBN_BuildsCorrectURL(t *testing.T) {
 			},
 		},
 	}
-	_, err := client.SearchByISBN(context.Background(), "9780306406157")
+	_, err := client.SearchByISBN(t.Context(), "9780306406157")
 	require.NoError(t, err)
 	require.Contains(t, capturedURL, "goodreads.com/book/auto_complete")
 	require.Contains(t, capturedURL, "9780306406157")
