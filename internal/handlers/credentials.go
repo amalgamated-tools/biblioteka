@@ -40,6 +40,10 @@ type credentialEntity struct {
 	UpdatedAt db.Timestamp
 }
 
+// upsertCredentialFn is the signature for upserting a protocol credential.
+// Parameters are: ctx, userID, username, passwordHash.
+type upsertCredentialFn func(ctx context.Context, userID, username, passwordHash string) (credentialEntity, error)
+
 // credentialOps captures the protocol-specific details for credential
 // management. Both KOSync and OPDS implement the same get/upsert/delete
 // lifecycle; only the DB methods, audit constants, and (optionally) a
@@ -53,12 +57,44 @@ type credentialOps struct {
 	errConflict     error
 
 	getByUserID func(context.Context, string) (credentialEntity, error)
-	upsert      func(context.Context, string, string, string) (credentialEntity, error)
+	upsert      upsertCredentialFn
 	del         func(context.Context, string) error
 
 	// deriveKey transforms the plaintext password before bcrypt hashing.
 	// If nil, the password is hashed directly.
 	deriveKey func(string) string
+}
+
+// toCredentialEntity converts a db.ProtocolCredential to a credentialEntity.
+func toCredentialEntity(c *db.ProtocolCredential) credentialEntity {
+	return credentialEntity{
+		ID:        c.ID,
+		Username:  c.Username,
+		CreatedAt: c.CreatedAt,
+		UpdatedAt: c.UpdatedAt,
+	}
+}
+
+// credentialGetAdapter wraps a DB get-by-user-ID function to return a credentialEntity.
+func credentialGetAdapter(fn func(context.Context, string) (*db.ProtocolCredential, error)) func(context.Context, string) (credentialEntity, error) {
+	return func(ctx context.Context, userID string) (credentialEntity, error) {
+		c, err := fn(ctx, userID)
+		if err != nil {
+			return credentialEntity{}, err
+		}
+		return toCredentialEntity(c), nil
+	}
+}
+
+// credentialUpsertAdapter wraps a DB upsert function to return a credentialEntity.
+func credentialUpsertAdapter(fn func(context.Context, string, string, string) (*db.ProtocolCredential, error)) func(context.Context, string, string, string) (credentialEntity, error) {
+	return func(ctx context.Context, userID, username, hash string) (credentialEntity, error) {
+		c, err := fn(ctx, userID, username, hash)
+		if err != nil {
+			return credentialEntity{}, err
+		}
+		return toCredentialEntity(c), nil
+	}
 }
 
 // handleCredentials dispatches GET/PUT/DELETE for a credential endpoint.
