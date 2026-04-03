@@ -308,11 +308,11 @@ The repository includes a `.vscode/launch.json` with ready-to-use **Run and Debu
 
 | Configuration | Binary | What it does |
 |---|---|---|
-| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans a local `books/` directory and imports all supported files |
-| **Run CLI (AZW3)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.azw3` |
-| **Run CLI (MOBI)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.mobi` |
-| **Run CLI (EPUB)** | `cmd/cli/main.go` | Runs `process-file` against `books/alice.epub` (EPUB 2) |
-| **Run CLI (EPUB3)** | `cmd/cli/main.go` | Runs `process-file` against `books/epub30-spec.epub` (EPUB 3) |
+| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans the sample `books/` directory and imports all supported files |
+| **Run CLI (AZW3)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.azw3` (place your own AZW3 file there) |
+| **Run CLI (MOBI)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.mobi` (place your own MOBI file there) |
+| **Run CLI (EPUB)** | `cmd/cli/main.go` | Runs `process-file` against `books/alice.epub` (place your own EPUB 2 file there) |
+| **Run CLI (EPUB3)** | `cmd/cli/main.go` | Runs `process-file` against `books/epub30-spec.epub` (place your own EPUB 3 file there) |
 | **Run CLI (Goodreads Search)** | `cmd/cli/main.go` | Runs `goodreads-search "Project Hail Mary"` |
 | **Run CLI (Goodreads Search by ISBN)** | `cmd/cli/main.go` | Runs `goodreads-search-isbn 9780593135204` |
 | **Run CLI (Goodreads Fetch by ASIN)** | `cmd/cli/main.go` | Runs `goodreads-get-by-asin 0593135202` |
@@ -327,7 +327,15 @@ cp .env.sample .env
 # Edit .env with your local values (DATABASE_URL, REDIS_URL, JWT_SECRET, …)
 ```
 
-> **Sample books for CLI launch configs**: The "Run CLI" launch configs for individual file formats expect book files in a local `books/` directory (e.g. `books/theprince.azw3`). These files are **not** committed to the repository. Create the `books/` directory and add your own copies of the relevant files before using those launch configs. The **Run CLI (Folder)** config works with any files placed in `books/`.
+> **Sample books**: The `books/` directory is not version-controlled. To use the file-specific "Run CLI" launch configs (AZW3, MOBI, EPUB, EPUB3), create the directory and add your own book files with the expected names:
+>
+> ```bash
+> mkdir -p books
+> # Add your own books/theprince.azw3, books/theprince.mobi,
+> # books/alice.epub, and books/epub30-spec.epub
+> ```
+>
+> The **Run CLI (Folder)** config works with any EPUB, MOBI, or AZW3 files you place in `books/`.
 
 The repository also includes a `.vscode/settings.json` with workspace-wide editor settings for the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.Go):
 
