@@ -231,16 +231,17 @@ func TestParseTSV_EPUB3CoverViaProperties(t *testing.T) {
 }
 
 func TestParseTSV_EPUB3CoverPropertiesOverrideFallback(t *testing.T) {
-	// When multiple images exist but only one has properties="cover-image",
-	// that one should be selected even if others have "cover" in their name.
+	// Strategy 3 (properties="cover-image") should beat Strategy 4
+	// (ID containing "cover") even when the Strategy 4 candidate appears
+	// earlier in the manifest.
 	input := "File Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n" +
-		"Manifest Item Href\timages/banner.jpg\n" +
-		"Manifest Item Id\tbanner\n" +
+		"Manifest Item Href\timages/cover-fallback.jpg\n" +
+		"Manifest Item Id\tcover-fallback\n" + // Strategy 4: ID contains "cover"
 		"Manifest Item Media-type\timage/jpeg\n" +
-		"Manifest Item Href\timages/front.png\n" +
-		"Manifest Item Id\tfront-cover\n" +
+		"Manifest Item Href\timages/real-cover.png\n" +
+		"Manifest Item Id\tfront\n" + // no "cover" in ID or href
 		"Manifest Item Media-type\timage/png\n" +
-		"Manifest Item Properties\tcover-image\n" +
+		"Manifest Item Properties\tcover-image\n" + // Strategy 3
 		"Manifest Item Href\tchapter1.xhtml\n" +
 		"Manifest Item Id\tchapter1\n" +
 		"Manifest Item Media-type\tapplication/xhtml+xml\n"
@@ -248,8 +249,8 @@ func TestParseTSV_EPUB3CoverPropertiesOverrideFallback(t *testing.T) {
 	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err)
 	require.NotNil(t, out.CoverImage)
-	require.Equal(t, "images/front.png", out.CoverImage.Href,
-		"properties='cover-image' should take priority over ID containing 'cover'")
+	require.Equal(t, "images/real-cover.png", out.CoverImage.Href,
+		"properties='cover-image' (Strategy 3) should beat ID-heuristic (Strategy 4) regardless of manifest order")
 }
 
 func TestParseTSV_EPUB2MetaCoverBeatsEPUB3Properties(t *testing.T) {
