@@ -78,6 +78,49 @@ Strategy database structure:
 }
 ```
 
+## Scope Detection
+
+Before running any analysis, determine which schema layers were touched in the last 24 hours. This prevents unnecessary full-codebase scans when only a subset of layers changed.
+
+### Step 0: Identify Changed Schema Files
+
+```bash
+# Get files changed in the last 24 hours (non-merge commits)
+git log --since="24 hours ago" --pretty=format:"%H" --no-merges \
+  | xargs -r git diff-tree --no-commit-id -r --name-only \
+  | sort -u
+```
+
+Map changed files to schema layers using these rules:
+
+| Changed file pattern | Affected layer |
+|---|---|
+| `db/migrations/sqlite/*.sql` or `db/migrations/postgres/*.sql` | **LAYER_MIGRATIONS** |
+| `internal/db/*.go` (not `*_test.go`) | **LAYER_DB** |
+| `internal/handlers/*.go` (not `*_test.go`) | **LAYER_HANDLERS** |
+| `frontend/src/types.ts` or `frontend/src/lib/api.ts` | **LAYER_FRONTEND** |
+| `internal/server/routes.go` | **LAYER_ROUTES** |
+
+Set a boolean flag for each layer (`true` = changed, `false` = unchanged).
+
+**Early exit**: If **none** of the five layers have any changed files, output a brief status and stop:
+
+```
+✅ No schema-related files changed in the last 24 hours.
+Schema Consistency Checker has nothing to analyze today.
+```
+
+Then call the `noop` safe-output with a brief explanation and exit. Do not proceed to analysis.
+
+**Partial run**: If only some layers changed, skip the analysis sections for unchanged layers and note which layers were skipped in the report. For example, if only `LAYER_HANDLERS` and `LAYER_FRONTEND` changed, skip Analysis Area 1 (DB Migrations vs Go DB Layer) and focus only on Area 2 (Go Handler DTOs vs TypeScript) and Area 4 (Go DB Types vs Handler DTO Mappings).
+
+Layer dependency rules — if a layer is marked changed, also enable its dependent checks:
+- `LAYER_MIGRATIONS` changed → enable Area 1 (migrations vs DB layer)
+- `LAYER_DB` changed → enable Area 1 and Area 4
+- `LAYER_HANDLERS` changed → enable Area 2 and Area 4
+- `LAYER_FRONTEND` changed → enable Area 2
+- `LAYER_ROUTES` changed → enable Area 3
+
 ## Analysis Areas
 
 ### 1. DB Migrations vs Go DB Layer
@@ -230,6 +273,14 @@ Here are proven strategies you can use or build upon:
 
 ## Implementation Steps
 
+### Step 0: Detect Changed Schema Files (Scope Detection)
+
+Run the scope detection from the [Scope Detection](#scope-detection) section above:
+1. Get the list of files changed in the last 24 hours
+2. Map them to the five schema layer flags
+3. Early-exit with a `noop` safe-output if no schema layers changed
+4. Record which layers are active for this run — only active layers are analyzed in Steps 3–4
+
 ### Step 1: Load Previous Strategies
 ```bash
 # Check if strategies file exists
@@ -243,7 +294,10 @@ fi
 - Otherwise or 30% of time, try new/different approach
 
 ### Step 3: Execute Analysis
-Use chosen strategy to find inconsistencies. Example for DTO field enumeration:
+
+**Only analyze the layers flagged as active in Step 0.** Skip any analysis area whose layer flag is `false`.
+
+Use the chosen strategy to find inconsistencies within the active layers. Example for DTO field enumeration (run only when `LAYER_HANDLERS` or `LAYER_FRONTEND` is active):
 
 ```bash
 # Step 1: List all Go DTO types and their json fields in handlers
@@ -262,6 +316,8 @@ grep -A 30 'type Book struct' internal/db/books.go
 echo "=== toBookDTO mapping ==="
 grep -A 30 'func toBookDTO' internal/handlers/books.go
 ```
+
+When `LAYER_MIGRATIONS` or `LAYER_DB` is active, also run migration drift checks. When `LAYER_ROUTES` is active, also run route coverage analysis. Skip commands for inactive layers to keep the run fast.
 
 ### Step 4: Record Findings
 Create a structured list of inconsistencies found:
@@ -313,7 +369,8 @@ Create a well-structured discussion report:
 ## Summary
 
 - **Inconsistencies Found**: [NUMBER]
-- **Categories Analyzed**: DB Migrations, Go DB Layer, Handler DTOs, TypeScript Types, API Routes
+- **Layers Analyzed**: [List only the layers that were active, e.g., "Handler DTOs, TypeScript Types"]
+- **Layers Skipped**: [List layers with no recent changes, e.g., "DB Migrations (no changes in 24h)"]
 - **Strategy Used**: [STRATEGY NAME]
 - **New Strategy**: [YES/NO]
 
@@ -375,6 +432,8 @@ Create a well-structured discussion report:
 - Suggest concrete fixes referencing actual field names
 
 ### Efficiency  
+- **Run scope detection first** (Step 0) — exit early when no schema files changed
+- Analyze only active layers; skip inactive layers entirely
 - Use bash tools efficiently (grep, find, etc.)
 - Cache results when re-analyzing same data
 - Don't re-check things found in previous runs (check cache first)
@@ -396,7 +455,9 @@ You have access to:
 ## Success Criteria
 
 A successful run:
-- ✅ Analyzes all 4 areas (DB migrations, Go DB/DTO layer, TypeScript types, API routes)
+- ✅ Runs scope detection (Step 0) before any analysis
+- ✅ Exits gracefully with `noop` when no schema-related files changed in the last 24 hours
+- ✅ Analyzes only the layers affected by recent changes (skips unchanged layers)
 - ✅ Uses or creates an effective detection strategy
 - ✅ Updates cache with strategy results
 - ✅ Finds at least one category of inconsistencies OR confirms consistency
