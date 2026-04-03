@@ -12,7 +12,9 @@
   import { CopyTimeoutState } from "../../lib/copyTimeout.svelte";
 
   function focusTrigger(id: string) {
-    document.querySelector<HTMLElement>(`[data-delete-trigger="${id}"]`)?.focus();
+    document
+      .querySelector<HTMLElement>(`[data-delete-trigger="${id}"]`)
+      ?.focus();
   }
 
   function cancelWithFocus() {
