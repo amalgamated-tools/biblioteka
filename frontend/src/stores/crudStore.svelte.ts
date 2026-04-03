@@ -1,4 +1,4 @@
-interface CrudOps<T, TInput> {
+export interface CrudOps<T, TInput> {
   list: () => Promise<T[]>;
   create: (input: TInput) => Promise<T>;
   update: (id: string, input: TInput) => Promise<T>;

@@ -120,5 +120,33 @@ describe("CrudStore", () => {
       expect(deleteFn).toHaveBeenCalledWith("e1");
       expect(store.items).toEqual([fakeEntity2]);
     });
+
+    it("propagates errors and leaves items unchanged", async () => {
+      store.items = [fakeEntity, fakeEntity2];
+      deleteFn.mockRejectedValue(new Error("fail"));
+
+      await expect(store.remove("e1")).rejects.toThrow("fail");
+      expect(store.items).toEqual([fakeEntity, fakeEntity2]);
+    });
+  });
+
+  describe("add error propagation", () => {
+    it("propagates errors and leaves items unchanged", async () => {
+      store.items = [fakeEntity];
+      createFn.mockRejectedValue(new Error("fail"));
+
+      await expect(store.add({ name: "Bad" })).rejects.toThrow("fail");
+      expect(store.items).toEqual([fakeEntity]);
+    });
+  });
+
+  describe("edit error propagation", () => {
+    it("propagates errors and leaves items unchanged", async () => {
+      store.items = [fakeEntity, fakeEntity2];
+      updateFn.mockRejectedValue(new Error("fail"));
+
+      await expect(store.edit("e1", { name: "Bad" })).rejects.toThrow("fail");
+      expect(store.items).toEqual([fakeEntity, fakeEntity2]);
+    });
   });
 });
