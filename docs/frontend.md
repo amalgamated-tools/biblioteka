@@ -586,7 +586,7 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 - If items are deleted and the current page becomes empty (but earlier pages still have items), `BookList` automatically clamps back to the last valid page.
 - Stale responses from superseded fetches are silently discarded via an internal request-ID counter.
 
-**Scan-aware polling:**
+#### Scan-aware polling
 
 When `pollingInterval` is set and `total === 0`, `BookList` enters a polling mode: instead of showing the generic "No books yet." empty state, it renders a spinner with the message "Scanning library…". A `setTimeout`-based loop (not `setInterval`) re-fetches silently at the given interval, suppressing the loading overlay so the spinner stays visible. Polling stops as soon as `total > 0` or the component unmounts. On the first fetch that reports `total > 0`, `onBooksFound` fires exactly once, giving the parent an opportunity to clear scanning state (see `libraryStore.clearScanning` below).
 
