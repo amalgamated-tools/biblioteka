@@ -65,42 +65,62 @@ All global state is managed through **Svelte 5 reactive class stores** in `front
 
 ### Pattern
 
-```ts
-// frontend/src/stores/example.svelte.ts
-import type { Foo } from "../types";
-import * as api from "../lib/api";
+Most stores that manage a list of entities (authors, series, etc.) extend the generic `CrudStore<T, TInput>` base class defined in `frontend/src/stores/crudStore.svelte.ts`. This base class provides the common `load`, `add`, `edit`, and `remove` operations so individual stores only need to supply the API wiring and any domain-specific accessors.
 
-class ExampleStore {
-  // $state.raw for arrays: tracks only the reference, not contents.
-  // Avoids deep-proxy overhead and suppresses Svelte's mutation warnings
-  // when the array is replaced wholesale.
-  items: Foo[] = $state.raw([]);
+```ts
+// frontend/src/stores/crudStore.svelte.ts — the shared base class
+export interface CrudOps<T, TInput> {
+  list:   () => Promise<T[]>;
+  create: (input: TInput) => Promise<T>;
+  update: (id: string, input: TInput) => Promise<T>;
+  delete: (id: string) => Promise<void>;
+}
+
+export class CrudStore<T extends { id: string }, TInput> {
+  items: T[] = $state.raw([]);
   loading = $state(false);
   loaded  = $state(false);
 
-  async load(): Promise<void> {
-    // Idempotency guard: skip if a fetch is already in flight or the data
-    // has been loaded at least once. This makes it safe to call load() from
-    // multiple components or from onMount in a component that may re-mount.
-    if (this.loading || this.loaded) return;
-    this.loading = true;
-    try {
-      this.items = await api.listFoos();
-      this.loaded = true;
-    } catch {
-      // Silently fail — individual pages can handle errors
-    } finally {
-      this.loading = false;
-    }
+  private readonly ops: CrudOps<T, TInput>;
+
+  constructor(ops: CrudOps<T, TInput>) { this.ops = ops; }
+
+  async load():                             Promise<void> { … }
+  async add(input: TInput):                 Promise<T>    { … }
+  async edit(id: string, input: TInput):    Promise<T>    { … }
+  async remove(id: string):                 Promise<void> { … }
+}
+```
+
+A concrete store extends `CrudStore` and passes the relevant API functions to the constructor:
+
+```ts
+// frontend/src/stores/authors.svelte.ts
+import type { Author, AuthorInput } from "../types";
+import * as api from "../lib/api";
+import { CrudStore } from "./crudStore.svelte";
+
+class AuthorStore extends CrudStore<Author, AuthorInput> {
+  constructor() {
+    super({
+      list:   api.listAuthors,
+      create: api.createAuthor,
+      update: api.updateAuthor,
+      delete: api.deleteAuthor,
+    });
   }
 
-  async add(input: FooInput): Promise<Foo> { … }
-  async edit(id: string, input: FooInput): Promise<Foo> { … }
-  async remove(id: string): Promise<void> { … }
+  // Named accessor keeps call sites readable: authorStore.authors
+  get authors(): Author[] { return this.items; }
+  set authors(v: Author[]) { this.items = v; }
 }
 
-export const exampleStore = new ExampleStore();
+export const authorStore = new AuthorStore();
 ```
+
+For stores with additional state beyond basic CRUD (e.g. scan tracking in `libraryStore`), the store may need a fully hand-rolled class instead. `libraryStore` is an example of a store that is currently implemented that way because its `add` flow also maintains scan-tracking state and behavior beyond the base CRUD pattern. If your domain-specific state fits naturally alongside the base CRUD operations, extend `CrudStore` (as `seriesStore` does); otherwise, implement the class directly with `$state` fields.
+
+> **When NOT to extend `CrudStore`**: Use a plain class with `$state` directly for stores that are not entity-list stores (e.g. `authStore`, `routerStore`, `themeStore`).
 
 > **Why classes instead of writable stores?**  
 > Svelte 5 introduces fine-grained reactivity via `$state` runes. Using a class groups related state and methods together and makes the reactive surface explicit. It is the idiomatic Svelte 5 approach and replaces the `writable`/`readable` store API from Svelte 4.
