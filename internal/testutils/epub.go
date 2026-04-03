@@ -87,6 +87,13 @@ type EPUBOptions struct {
 	CoverImageData  []byte
 	CoverImageHref  string
 	CoverMediaType  string
+	// Version sets the OPF package version attribute ("2.0" or "3.0"). Defaults to "3.0".
+	Version string
+	// EPUB3Cover uses the EPUB3 properties="cover-image" attribute on the manifest
+	// item instead of the EPUB2 <meta name="cover" content="..."/> element.
+	EPUB3Cover bool
+	// Subjects adds separate <dc:subject> elements for each entry.
+	Subjects []string
 }
 
 var tinyPNG []byte
@@ -110,6 +117,20 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
 	lang := opts.Language
 	if lang == "" {
 		lang = "en"
+	}
+
+	version := opts.Version
+	if version == "" {
+		version = "3.0"
+	}
+	switch version {
+	case "2.0", "3.0":
+	default:
+		t.Fatalf(`unsupported EPUB version %q; supported versions are "2.0" and "3.0"`, version)
+	}
+
+	if opts.EPUB3Cover && version == "2.0" {
+		t.Fatalf("EPUB3Cover requires Version %q but got %q; properties='cover-image' is an EPUB3-only mechanism", "3.0", version)
 	}
 
 	f, err := os.Create(path)
@@ -155,8 +176,17 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
 		extraMeta += "\n    <dc:publisher>" + xmlEscape(opts.Publisher) + "</dc:publisher>"
 	}
 	if opts.PublicationDate != "" {
-		extraMeta += `
+		if version == "2.0" {
+			extraMeta += `
     <dc:date opf:event="publication">` + xmlEscape(opts.PublicationDate) + `</dc:date>`
+		} else {
+			extraMeta += `
+    <dc:date>` + xmlEscape(opts.PublicationDate) + `</dc:date>`
+		}
+	}
+
+	for _, subject := range opts.Subjects {
+		extraMeta += "\n    <dc:subject>" + xmlEscape(subject) + "</dc:subject>"
 	}
 
 	escapedTitle := xmlEscape(title)
@@ -177,16 +207,24 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
 		if coverMediaType == "" {
 			coverMediaType = "image/png"
 		}
-		extraMeta += `
+		if opts.EPUB3Cover {
+			// EPUB3 cover: properties="cover-image" on manifest item, no <meta> tag.
+			manifestItems = append([]string{
+				`    <item id="cover-image" href="` + xmlEscape(coverHref) + `" media-type="` + xmlEscape(coverMediaType) + `" properties="cover-image"/>`,
+			}, manifestItems...)
+		} else {
+			// EPUB2 cover: <meta name="cover" content="cover-image"/> referencing manifest item id.
+			extraMeta += `
     <meta name="cover" content="cover-image"/>`
-		manifestItems = append([]string{
-			`    <item id="cover-image" href="` + xmlEscape(coverHref) + `" media-type="` + xmlEscape(coverMediaType) + `"/>`,
-		}, manifestItems...)
+			manifestItems = append([]string{
+				`    <item id="cover-image" href="` + xmlEscape(coverHref) + `" media-type="` + xmlEscape(coverMediaType) + `"/>`,
+			}, manifestItems...)
+		}
 		writeZipFileBytes(t, w, pathpkg.Join("OEBPS", coverHref), opts.CoverImageData)
 	}
 
 	writeZipFile(t, w, "OEBPS/content.opf", `<?xml version="1.0" encoding="UTF-8"?>
-<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+<package xmlns="http://www.idpf.org/2007/opf" version="`+xmlEscape(version)+`" unique-identifier="uid">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
     <dc:title>`+escapedTitle+`</dc:title>
     <dc:creator>`+escapedCreator+`</dc:creator>
