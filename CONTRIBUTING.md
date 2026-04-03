@@ -69,7 +69,7 @@ internal/
   otel/              # Logging and tracing setup
   otelkeys/          # Shared log/telemetry field-name constants
   telemetry/         # Anonymous usage telemetry (opt-in)
-  testutils/         # Test helpers: MakeTestEPUB, MakeTestPDF (used in _test.go files only)
+  testutils/         # Test helpers: MakeTestEPUB, MakeTestMOBI, MakeTestAZW3, MakeTestPDF (used in _test.go files only)
 frontend/            # Svelte 5 SPA (TypeScript + Tailwind CSS)
 e2e/                 # Playwright end-to-end tests
 db/
@@ -210,24 +210,38 @@ test.beforeEach(async ({ page }) => {
 
 > **Clean database requirement (CI):** In CI (`CI=true`), Playwright always spins up a fresh server with an empty database. Running against a non-empty database will fail global setup because the first-account-is-admin guarantee no longer applies. Locally, if you reuse a running dev server (port `3847`) the 409 short-circuit in global setup handles this gracefully.
 
-#### Test helpers (`internal/testutils`)
-
-The `internal/testutils` package provides helpers for generating fixture book files in tests:
+| `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB 3.0 at the given path |
+| `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB 3.0 at the given path |
+The `internal/testutils` package provides helpers for generating fixture book files in tests. Never commit binary book files to the repository — use these helpers to generate them at test time instead.
 
 | Helper | Description |
 |--------|-------------|
-| `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB at the given path |
-| `testutils.MakeTestEPUBWithOptions(t, path, title, creator, identifier, opts)` | Creates a minimal valid EPUB with additional OPF fields (description, publisher, publication date, language) |
+| `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB 3 at the given path |
+| `testutils.MakeTestEPUBWithOptions(t, path, title, creator, identifier, opts)` | Creates a minimal valid EPUB with metadata and format control via `EPUBOptions`, including description, publisher, publication date, language, cover image settings, EPUB version, and subjects |
+| `testutils.MakeTestMOBI(t, path, title, author, opts)` | Creates a minimal valid MOBI file with optional metadata via `MOBIOptions` (ISBN, ASIN, publisher, language, cover image) |
+| `testutils.MakeTestAZW3(t, path, title, author, opts)` | Creates a minimal valid AZW3 file (same PalmDB/MOBI binary format as MOBI; only the extension differs) |
 | `testutils.MakeTestPDF(t, path, title, author, et)` | Creates a minimal valid PDF and writes metadata via ExifTool (skips the test if ExifTool is unavailable) |
+| `testutils.TinyPNG()` | Returns the bytes of a minimal 1×1 pixel PNG image — useful as `CoverImageData` in `EPUBOptions` |
+| `testutils.TinyJPEG()` | Returns the bytes of a minimal 1×1 pixel JPEG image — useful as `CoverImageData` in `MOBIOptions` |
 
 Import path: `github.com/amalgamated-tools/biblioteka/internal/testutils`
 
 ```go
 func TestMyExtractor(t *testing.T) {
-    path := filepath.Join(t.TempDir(), "test.epub")
-    testutils.MakeTestEPUB(t, path, "Hamlet", "William Shakespeare", "urn:isbn:9780141396507")
+    dir := t.TempDir()
+
+    // EPUB
+    epubPath := filepath.Join(dir, "hamlet.epub")
+    testutils.MakeTestEPUB(t, epubPath, "Hamlet", "William Shakespeare", "urn:isbn:9780141396507")
+
+    // MOBI with optional metadata
+    mobiPath := filepath.Join(dir, "The Prince.mobi")
+    testutils.MakeTestMOBI(t, mobiPath, "The Prince", "Niccolò Machiavelli", testutils.MOBIOptions{
+        Publisher: "Public Domain",
+        Language:  "en",
+    })
     // ...
-}
+> **Sample books for CLI launch configs**: The "Run CLI" launch configs for individual file formats expect book files in a local `books/` directory (e.g. `books/theprince.azw3`). These files are **not** committed to the repository. Create the `books/` directory and add your own copies of the relevant files before using those launch configs. The Goodreads and **Run Server** launch configs require no local book files.
 ```
 
 ### Building
@@ -294,7 +308,7 @@ The repository includes a `.vscode/launch.json` with ready-to-use **Run and Debu
 
 | Configuration | Binary | What it does |
 |---|---|---|
-| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans the sample `books/` directory and imports all supported files |
+| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans a local `books/` directory and imports all supported files |
 | **Run CLI (AZW3)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.azw3` |
 | **Run CLI (MOBI)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.mobi` |
 | **Run CLI (EPUB)** | `cmd/cli/main.go` | Runs `process-file` against `books/alice.epub` (EPUB 2) |
@@ -313,7 +327,7 @@ cp .env.sample .env
 # Edit .env with your local values (DATABASE_URL, REDIS_URL, JWT_SECRET, …)
 ```
 
-> **Sample books**: Four sample book files in `books/` serve as realistic test data for the CLI configurations. They are version-controlled so the "Run CLI" launch configs work out of the box without any setup.
+> **Sample books for CLI launch configs**: The "Run CLI" launch configs for individual file formats expect book files in a local `books/` directory (e.g. `books/theprince.azw3`). These files are **not** committed to the repository. Create the `books/` directory and add your own copies of the relevant files before using those launch configs. The **Run CLI (Goodreads)** and **Run Server** configs require no local book files.
 
 The repository also includes a `.vscode/settings.json` with workspace-wide editor settings for the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.Go):
 
