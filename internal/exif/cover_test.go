@@ -34,7 +34,10 @@ func makeEPUBWithCover(t *testing.T, path string, coverData []byte, epub3Style b
 
 	f, err := os.Create(path)
 	require.NoError(t, err)
+	t.Cleanup(func() { _ = f.Close() })
+
 	w := zip.NewWriter(f)
+	t.Cleanup(func() { _ = w.Close() })
 
 	// mimetype must be the first entry and stored without compression.
 	mh := &zip.FileHeader{Name: "mimetype", Method: zip.Store}
@@ -86,13 +89,10 @@ func makeEPUBWithCover(t *testing.T, path string, coverData []byte, epub3Style b
 	addZipEntry(t, w, "OEBPS/chapter1.xhtml", `<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title>Test</title></head><body/></html>`)
 
-	if err := w.Close(); err != nil {
-		_ = f.Close()
-		t.Fatalf("close zip writer: %v", err)
-	}
-	if err := f.Close(); err != nil {
-		t.Fatalf("close epub file: %v", err)
-	}
+	// Explicitly close so the ZIP is flushed before tests read it.
+	// t.Cleanup handles the case where an earlier require fails.
+	require.NoError(t, w.Close(), "close zip writer")
+	require.NoError(t, f.Close(), "close epub file")
 }
 
 func addZipEntry(t *testing.T, w *zip.Writer, name, content string) {
@@ -152,7 +152,7 @@ func TestParseTSV_EPUB3CoverExtractionE2E(t *testing.T) {
 func TestParseTSV_EPUB2CoverExtractionE2E(t *testing.T) {
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "epub2.epub")
-	makeEPUBWithCover(t, epubPath, testCoverPNG, false /* epub2Style */)
+	makeEPUBWithCover(t, epubPath, testCoverPNG, false /* epub3Style */)
 
 	input := "File Type\tEPUB\n" +
 		"Directory\t" + dir + "\n" +
