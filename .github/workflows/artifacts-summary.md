@@ -1,38 +1,40 @@
 ---
-description: Generates a comprehensive summary of GitHub Actions artifacts usage across all workflows in the repository
 on:
-  workflow_dispatch:
   schedule: weekly on sunday around 06:00
+  workflow_dispatch: null
 permissions:
-  contents: read
   actions: read
-  discussions: read
-engine: copilot
+  contents: read
 network:
   allowed:
-    - defaults
-    - node
-sandbox:
-  agent: awf  # Firewall enabled (migrated from network.firewall)
-tools:
-  edit:
-  bash: true
-  github:
-    toolsets: [actions, repos]
+  - defaults
+  - node
+imports:
+- shared/reporting.md
+- shared/safe-output-app.md
 safe-outputs:
   create-discussion:
-    category: "announcements"
-    max: 1
+    category: artifacts
     close-older-discussions: true
-timeout-minutes: 15
+    expires: 1d
+    max: 1
+description: Generates a comprehensive summary of GitHub Actions artifacts usage across all workflows in the repository
+engine: copilot
+features:
+  copilot-requests: true
+sandbox:
+  agent: awf
+source: github/gh-aw/.github/workflows/artifacts-summary.md@e2ae16398626875962d19c1d5aeca50298fa68da
 strict: true
-imports:
-  - shared/mood.md
-  - shared/reporting.md
-  - shared/safe-output-app.md
-source: github/gh-aw/.github/workflows/artifacts-summary.md@852cb06ad52958b402ed982b69957ffc57ca0619
+timeout-minutes: 15
+tools:
+  bash: true
+  edit: null
+  github:
+    toolsets:
+    - actions
+    - repos
 ---
-
 # Artifacts Summary
 
 Generate a comprehensive summary table of GitHub Actions artifacts usage in the repository ${{ github.repository }}.
@@ -89,3 +91,9 @@ Create an issue with a markdown table like this:
 - Convert sizes to human-readable formats (MB, GB)
 - Consider artifact retention policies in your analysis
 - Include both successful and failed runs in the analysis, ignore cancelled runs
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```
