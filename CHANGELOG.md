@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/amalgamated-tools/biblioteka/compare/v0.6.0...v0.6.1) (2026-04-03)
+
+
+### Bug Fixes
+
+* **workflows:** issue-triage agent fails with no safe outputs when applying labels ([#1199](https://github.com/amalgamated-tools/biblioteka/issues/1199)) ([dd55de8](https://github.com/amalgamated-tools/biblioteka/commit/dd55de8e95ad796eb917d82c3bcaf3a0dfa957d6))
+
 ## [0.6.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.5.0...v0.6.0) (2026-04-03)
 
 
