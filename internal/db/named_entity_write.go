@@ -9,8 +9,8 @@ import (
 
 // namedEntityCreate normalizes name, validates it, executes insertFn, and
 // translates unique-constraint violations to errExists. A warn-level log is
-// emitted when the normalized name is blank; a debug-level log is emitted on
-// a successful insert path.
+// emitted when the normalized name is blank; a debug-level log is emitted
+// before the insert is attempted.
 func namedEntityCreate[T any](
 	ctx context.Context,
 	entityLabel string,
@@ -37,8 +37,8 @@ func namedEntityCreate[T any](
 
 // namedEntityUpdate normalizes name, validates it, executes updateFn, and
 // translates unique-constraint violations to errExists. A warn-level log is
-// emitted when the normalized name is blank; a debug-level log is emitted on
-// a successful update path.
+// emitted when the normalized name is blank; a debug-level log is emitted
+// before the update is attempted.
 func namedEntityUpdate[T any](
 	ctx context.Context,
 	entityLabel string,

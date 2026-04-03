@@ -108,10 +108,10 @@ func (d *DB) ListAuthorsPaginated(ctx context.Context, limit, offset int) ([]Aut
 
 func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {
 	return namedEntityUpdate(ctx, "author", id, name, NormalizeAuthorName, ErrInvalidAuthorName, ErrAuthorNameExists,
-		func(ctx context.Context, id, n string) (*Author, error) {
+		func(ctx context.Context, entityID, n string) (*Author, error) {
 			return scanAuthor(d.QueryRowContext(ctx,
 				`UPDATE authors SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, image_url = $5, updated_at = `+d.now()+` WHERE id = $6 RETURNING `+authorColumns,
-				n, goodreadsID, hardcoverID, googleBooksID, imageURL, id,
+				n, goodreadsID, hardcoverID, googleBooksID, imageURL, entityID,
 			))
 		},
 	)

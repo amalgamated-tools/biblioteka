@@ -95,10 +95,10 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
 	return namedEntityUpdate(ctx, "series", id, name, NormalizeSeriesName, ErrInvalidSeriesName, ErrSeriesNameExists,
-		func(ctx context.Context, id, n string) (*Series, error) {
+		func(ctx context.Context, entityID, n string) (*Series, error) {
 			return scanSeries(d.QueryRowContext(ctx,
 				`UPDATE series SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+seriesColumns,
-				n, goodreadsID, hardcoverID, googleBooksID, id,
+				n, goodreadsID, hardcoverID, googleBooksID, entityID,
 			))
 		},
 	)
