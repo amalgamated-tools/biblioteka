@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 )
 
@@ -24,9 +25,9 @@ func setupOPDSHandler(t *testing.T) *OPDSHandler {
 }
 
 // parseOPDSFeed parses the response body as an OPDS Atom feed.
-func parseOPDSFeed(t *testing.T, body []byte) opdsFeed {
+func parseOPDSFeed(t *testing.T, body []byte) opdspkg.Feed {
 	t.Helper()
-	var feed opdsFeed
+	var feed opdspkg.Feed
 	if err := xml.Unmarshal(body, &feed); err != nil {
 		t.Fatalf("unmarshal feed: %v\nbody: %s", err, body)
 	}
@@ -34,7 +35,7 @@ func parseOPDSFeed(t *testing.T, body []byte) opdsFeed {
 }
 
 // findLink returns the first link with the given rel, or nil if not found.
-func findLink(links []opdsLink, rel string) *opdsLink {
+func findLink(links []opdspkg.Link, rel string) *opdspkg.Link {
 	for _, l := range links {
 		if l.Rel == rel {
 			return &l
@@ -86,8 +87,8 @@ func TestRootFeed(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
-		t.Errorf("content-type = %q, want %q", ct, opdsNavContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
+		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
@@ -107,13 +108,13 @@ func TestRootFeed(t *testing.T) {
 	}
 
 	// Must have self, start, and search links.
-	if l := findLink(feed.Links, relSelf); l == nil {
+	if l := findLink(feed.Links, opdspkg.RelSelf); l == nil {
 		t.Error("missing self link")
 	}
-	if l := findLink(feed.Links, relStart); l == nil {
+	if l := findLink(feed.Links, opdspkg.RelStart); l == nil {
 		t.Error("missing start link")
 	}
-	if l := findLink(feed.Links, relSearch); l == nil {
+	if l := findLink(feed.Links, opdspkg.RelSearch); l == nil {
 		t.Error("missing search link")
 	}
 }
@@ -154,8 +155,8 @@ func TestAllBooks_Empty(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
-		t.Errorf("content-type = %q, want %q", ct, opdsAcqContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
+		t.Errorf("content-type = %q, want %q", ct, opdspkg.AcqContentType)
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
@@ -257,7 +258,7 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 		t.Errorf("authors = %v, want [Stephen King]", entry.Authors)
 	}
 
-	acqLink := findLink(entry.Links, relAcquisition)
+	acqLink := findLink(entry.Links, opdspkg.RelAcquisition)
 	if acqLink == nil {
 		t.Fatal("missing acquisition link")
 	}
@@ -304,15 +305,15 @@ func TestAuthorsFeed_Empty(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
-		t.Errorf("content-type = %q, want %q", ct, opdsNavContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
+		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 0 {
 		t.Errorf("entries = %d, want 0", len(feed.Entries))
 	}
-	if l := findLink(feed.Links, relStart); l == nil {
+	if l := findLink(feed.Links, opdspkg.RelStart); l == nil {
 		t.Error("missing start link")
 	}
 }
@@ -339,7 +340,7 @@ func TestAuthorsFeed_WithAuthors(t *testing.T) {
 
 	// Each entry should have a subsection link.
 	for i, e := range feed.Entries {
-		if l := findLink(e.Links, relSubsection); l == nil {
+		if l := findLink(e.Links, opdspkg.RelSubsection); l == nil {
 			t.Errorf("entry[%d]: missing subsection link", i)
 		}
 	}
@@ -379,7 +380,7 @@ func TestAuthorBooks(t *testing.T) {
 	if feed.Entries[0].Title != "The Shining" {
 		t.Errorf("entry title = %q, want %q", feed.Entries[0].Title, "The Shining")
 	}
-	if l := findLink(feed.Links, relStart); l == nil {
+	if l := findLink(feed.Links, opdspkg.RelStart); l == nil {
 		t.Error("missing start link")
 	}
 }
@@ -408,8 +409,8 @@ func TestSeriesFeed_Empty(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
-		t.Errorf("content-type = %q, want %q", ct, opdsNavContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
+		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
@@ -476,7 +477,7 @@ func TestSeriesBooks(t *testing.T) {
 	if feed.Entries[0].Title != "The Gunslinger" {
 		t.Errorf("entry title = %q, want %q", feed.Entries[0].Title, "The Gunslinger")
 	}
-	if l := findLink(feed.Links, relStart); l == nil {
+	if l := findLink(feed.Links, opdspkg.RelStart); l == nil {
 		t.Error("missing start link")
 	}
 }
@@ -571,7 +572,7 @@ func TestSearch_URLEncodesQueryInLinks(t *testing.T) {
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	selfLink := findLink(feed.Links, relSelf)
+	selfLink := findLink(feed.Links, opdspkg.RelSelf)
 	if selfLink == nil {
 		t.Fatal("missing self link")
 	}
@@ -593,8 +594,8 @@ func TestOpenSearchDescription(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsSearchType {
-		t.Errorf("content-type = %q, want %q", ct, opdsSearchType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.SearchType {
+		t.Errorf("content-type = %q, want %q", ct, opdspkg.SearchType)
 	}
 	body := w.Body.String()
 	if !strings.Contains(body, "OpenSearchDescription") {
@@ -718,7 +719,7 @@ func TestAllBooks_Pagination(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	// Create enough books to have a second page (opdsPageSize is 50).
+	// Create enough books to have a second page (opdspkg.PageSize is 50).
 	for i := range 55 {
 		h.DB.CreateBook(ctx, "Book "+padInt(i), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	}
@@ -736,10 +737,10 @@ func TestAllBooks_Pagination(t *testing.T) {
 	if len(feed.Entries) != 50 {
 		t.Errorf("page 1: entries = %d, want 50", len(feed.Entries))
 	}
-	if findLink(feed.Links, relNext) == nil {
+	if findLink(feed.Links, opdspkg.RelNext) == nil {
 		t.Error("page 1: missing next link")
 	}
-	if findLink(feed.Links, relPrevious) != nil {
+	if findLink(feed.Links, opdspkg.RelPrevious) != nil {
 		t.Error("page 1: should not have previous link")
 	}
 
@@ -756,10 +757,10 @@ func TestAllBooks_Pagination(t *testing.T) {
 	if len(feed2.Entries) != 5 {
 		t.Errorf("page 2: entries = %d, want 5", len(feed2.Entries))
 	}
-	if findLink(feed2.Links, relPrevious) == nil {
+	if findLink(feed2.Links, opdspkg.RelPrevious) == nil {
 		t.Error("page 2: missing previous link")
 	}
-	if findLink(feed2.Links, relNext) != nil {
+	if findLink(feed2.Links, opdspkg.RelNext) != nil {
 		t.Error("page 2: should not have next link")
 	}
 }
@@ -779,7 +780,7 @@ func TestBaseURL_XForwardedProto(t *testing.T) {
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	selfLink := findLink(feed.Links, relSelf)
+	selfLink := findLink(feed.Links, opdspkg.RelSelf)
 	if selfLink == nil {
 		t.Fatal("missing self link")
 	}
@@ -801,7 +802,7 @@ func TestBaseURL_InvalidXForwardedProto(t *testing.T) {
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	selfLink := findLink(feed.Links, relSelf)
+	selfLink := findLink(feed.Links, opdspkg.RelSelf)
 	if selfLink == nil {
 		t.Fatal("missing self link")
 	}
@@ -857,7 +858,7 @@ func TestCoverImageInFeed(t *testing.T) {
 	if len(feed.Entries) != 1 {
 		t.Fatalf("entries = %d, want 1", len(feed.Entries))
 	}
-	imgLink := findLink(feed.Entries[0].Links, relImage)
+	imgLink := findLink(feed.Entries[0].Links, opdspkg.RelImage)
 	if imgLink == nil {
 		t.Fatal("missing image link")
 	}
@@ -889,7 +890,7 @@ func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
 	if len(feed.Entries) != 1 {
 		t.Fatalf("entries = %d, want 1", len(feed.Entries))
 	}
-	imgLink := findLink(feed.Entries[0].Links, relImage)
+	imgLink := findLink(feed.Entries[0].Links, opdspkg.RelImage)
 	if imgLink == nil {
 		t.Fatal("missing image link")
 	}
@@ -954,46 +955,46 @@ func TestParsePage(t *testing.T) {
 
 func TestPaginationLinks(t *testing.T) {
 	// Single page: no next or previous.
-	links := paginationLinks("/opds/all", 1, 10, 50, opdsAcqContentType)
-	if findLink(links, relNext) != nil {
+	links := opdspkg.PaginationLinks("/opds/all", 1, 10, 50, opdspkg.AcqContentType)
+	if findLink(links, opdspkg.RelNext) != nil {
 		t.Error("single page: should not have next link")
 	}
-	if findLink(links, relPrevious) != nil {
+	if findLink(links, opdspkg.RelPrevious) != nil {
 		t.Error("single page: should not have previous link")
 	}
 
 	// First of multiple pages: next but no previous.
-	links = paginationLinks("/opds/all", 1, 100, 50, opdsAcqContentType)
-	if findLink(links, relNext) == nil {
+	links = opdspkg.PaginationLinks("/opds/all", 1, 100, 50, opdspkg.AcqContentType)
+	if findLink(links, opdspkg.RelNext) == nil {
 		t.Error("first page: should have next link")
 	}
-	if findLink(links, relPrevious) != nil {
+	if findLink(links, opdspkg.RelPrevious) != nil {
 		t.Error("first page: should not have previous link")
 	}
 
 	// Middle page: both next and previous.
-	links = paginationLinks("/opds/all", 2, 150, 50, opdsAcqContentType)
-	if findLink(links, relNext) == nil {
+	links = opdspkg.PaginationLinks("/opds/all", 2, 150, 50, opdspkg.AcqContentType)
+	if findLink(links, opdspkg.RelNext) == nil {
 		t.Error("middle page: should have next link")
 	}
-	if findLink(links, relPrevious) == nil {
+	if findLink(links, opdspkg.RelPrevious) == nil {
 		t.Error("middle page: should have previous link")
 	}
 
 	// Last page: previous but no next.
-	links = paginationLinks("/opds/all", 2, 100, 50, opdsAcqContentType)
-	if findLink(links, relNext) != nil {
+	links = opdspkg.PaginationLinks("/opds/all", 2, 100, 50, opdspkg.AcqContentType)
+	if findLink(links, opdspkg.RelNext) != nil {
 		t.Error("last page: should not have next link")
 	}
-	if findLink(links, relPrevious) == nil {
+	if findLink(links, opdspkg.RelPrevious) == nil {
 		t.Error("last page: should have previous link")
 	}
 }
 
 func TestPaginationLinks_SearchURL(t *testing.T) {
 	// URLs with existing query params should use "&" not "?" for page param.
-	links := paginationLinks("/opds/search?q=test", 1, 100, 50, opdsAcqContentType)
-	selfLink := findLink(links, relSelf)
+	links := opdspkg.PaginationLinks("/opds/search?q=test", 1, 100, 50, opdspkg.AcqContentType)
+	selfLink := findLink(links, opdspkg.RelSelf)
 	if selfLink == nil {
 		t.Fatal("missing self link")
 	}
@@ -1013,9 +1014,9 @@ func padInt(n int) string {
 // --- XML marshaling (opds_types.go) ---
 
 func TestOPDSFeed_XMLMarshal(t *testing.T) {
-	feed := &opdsFeed{
-		XMLNS:     xmlnsAtom,
-		XMLNSOPDS: xmlnsOPDS,
+	feed := &opdspkg.Feed{
+		XMLNS:     opdspkg.XMLNSAtom,
+		XMLNSOPDS: opdspkg.XMLNSOPDs,
 		ID:        "urn:test",
 		Title:     "Test Feed",
 		Updated:   "2024-01-01T00:00:00Z",
@@ -1032,11 +1033,11 @@ func TestOPDSFeed_XMLMarshal(t *testing.T) {
 		t.Errorf("XML does not contain <feed> element: %s", s)
 	}
 	// Atom xmlns must be present as attribute
-	if !strings.Contains(s, xmlnsAtom) {
+	if !strings.Contains(s, opdspkg.XMLNSAtom) {
 		t.Errorf("XML missing Atom xmlns attribute: %s", s)
 	}
 	// OPDS xmlns must be present
-	if !strings.Contains(s, xmlnsOPDS) {
+	if !strings.Contains(s, opdspkg.XMLNSOPDs) {
 		t.Errorf("XML missing OPDS xmlns attribute: %s", s)
 	}
 	// ID and Title must be child elements
@@ -1049,8 +1050,8 @@ func TestOPDSFeed_XMLMarshal(t *testing.T) {
 }
 
 func TestOPDSFeed_XMLMarshal_OmitEmptyOPDSNS(t *testing.T) {
-	feed := &opdsFeed{
-		XMLNS:   xmlnsAtom,
+	feed := &opdspkg.Feed{
+		XMLNS:   opdspkg.XMLNSAtom,
 		ID:      "urn:test",
 		Title:   "Nav Feed",
 		Updated: "2024-01-01T00:00:00Z",
@@ -1069,10 +1070,10 @@ func TestOPDSFeed_XMLMarshal_OmitEmptyOPDSNS(t *testing.T) {
 }
 
 func TestOPDSLink_XMLMarshal(t *testing.T) {
-	link := opdsLink{
-		Rel:  relSelf,
+	link := opdspkg.Link{
+		Rel:  opdspkg.RelSelf,
 		Href: "http://example.com/opds",
-		Type: opdsNavContentType,
+		Type: opdspkg.NavContentType,
 	}
 
 	data, err := xml.Marshal(link)
@@ -1093,7 +1094,7 @@ func TestOPDSLink_XMLMarshal(t *testing.T) {
 }
 
 func TestOPDSContent_XMLMarshal(t *testing.T) {
-	content := opdsContent{
+	content := opdspkg.Content{
 		Type:  "text",
 		Value: "Some description text",
 	}
@@ -1117,14 +1118,14 @@ func TestOPDSContent_XMLMarshal(t *testing.T) {
 }
 
 func TestOPDSEntry_XMLMarshal_Full(t *testing.T) {
-	entry := opdsEntry{
+	entry := opdspkg.Entry{
 		Title:   "My Book",
 		ID:      "urn:book:1",
 		Updated: "2024-01-01T00:00:00Z",
-		Content: &opdsContent{Type: "text", Value: "A description"},
-		Authors: []opdsAuthor{{Name: "Jane Doe"}},
-		Links: []opdsLink{
-			{Rel: relAcquisition, Href: "http://example.com/dl/1", Type: "application/epub+zip"},
+		Content: &opdspkg.Content{Type: "text", Value: "A description"},
+		Authors: []opdspkg.Author{{Name: "Jane Doe"}},
+		Links: []opdspkg.Link{
+			{Rel: opdspkg.RelAcquisition, Href: "http://example.com/dl/1", Type: "application/epub+zip"},
 		},
 	}
 
@@ -1149,11 +1150,11 @@ func TestOPDSEntry_XMLMarshal_Full(t *testing.T) {
 }
 
 func TestOPDSEntry_XMLMarshal_NoContent(t *testing.T) {
-	entry := opdsEntry{
+	entry := opdspkg.Entry{
 		Title:   "No Desc",
 		ID:      "urn:book:2",
 		Updated: "2024-01-01T00:00:00Z",
-		Links:   []opdsLink{{Rel: relSelf, Href: "/x", Type: opdsAcqContentType}},
+		Links:   []opdspkg.Link{{Rel: opdspkg.RelSelf, Href: "/x", Type: opdspkg.AcqContentType}},
 	}
 
 	data, err := xml.Marshal(entry)
@@ -1169,16 +1170,16 @@ func TestOPDSEntry_XMLMarshal_NoContent(t *testing.T) {
 }
 
 func TestOPDSFeed_XMLMarshal_LinksAndEntries(t *testing.T) {
-	feed := &opdsFeed{
-		XMLNS:   xmlnsAtom,
+	feed := &opdspkg.Feed{
+		XMLNS:   opdspkg.XMLNSAtom,
 		ID:      "urn:test:2",
 		Title:   "Books",
 		Updated: "2024-01-01T00:00:00Z",
-		Links: []opdsLink{
-			{Rel: relSelf, Href: "/opds/all?page=1", Type: opdsAcqContentType},
-			{Rel: relNext, Href: "/opds/all?page=2", Type: opdsAcqContentType},
+		Links: []opdspkg.Link{
+			{Rel: opdspkg.RelSelf, Href: "/opds/all?page=1", Type: opdspkg.AcqContentType},
+			{Rel: opdspkg.RelNext, Href: "/opds/all?page=2", Type: opdspkg.AcqContentType},
 		},
-		Entries: []opdsEntry{
+		Entries: []opdspkg.Entry{
 			{Title: "Book One", ID: "urn:b:1", Updated: "2024-01-01T00:00:00Z"},
 		},
 	}
@@ -1206,13 +1207,13 @@ func TestWriteOPDSError(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
 
-	writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, "urn:biblioteka:opds:error", "Something went wrong")
+	writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "urn:biblioteka:opds:error", "Something went wrong")
 
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.AcqContentType)
 	}
 
 	body := w.Body.String()
@@ -1234,10 +1235,10 @@ func TestWriteOPDSError_NavContentType(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors", nil)
 	w := httptest.NewRecorder()
 
-	writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, "urn:test", "Nav error")
+	writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.NavContentType, "urn:test", "Nav error")
 
-	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdsNavContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.NavContentType)
 	}
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
@@ -1250,19 +1251,19 @@ func TestWriteOPDSFeed_Direct(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
 
-	feed := &opdsFeed{
-		XMLNS:   xmlnsAtom,
+	feed := &opdspkg.Feed{
+		XMLNS:   opdspkg.XMLNSAtom,
 		ID:      "urn:test",
 		Title:   "Direct Feed",
 		Updated: "2024-01-01T00:00:00Z",
 	}
-	writeOPDSFeed(r, w, opdsAcqContentType, feed)
+	writeOPDSFeed(r, w, opdspkg.AcqContentType, feed)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.AcqContentType)
 	}
 	body := w.Body.String()
 	if !strings.HasPrefix(body, "<?xml") {
@@ -1289,8 +1290,8 @@ func TestAllBooks_DBError(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.AcqContentType)
 	}
 	// Response must still be valid XML (OPDS error feed)
 	parseOPDSFeed(t, w.Body.Bytes())
@@ -1309,8 +1310,8 @@ func TestRecentBooks_DBError(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.AcqContentType)
 	}
 	parseOPDSFeed(t, w.Body.Bytes())
 }
@@ -1328,8 +1329,8 @@ func TestAuthorsFeed_DBError(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdsNavContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.NavContentType)
 	}
 	parseOPDSFeed(t, w.Body.Bytes())
 }
@@ -1347,8 +1348,8 @@ func TestSeriesFeed_DBError(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdsNavContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.NavContentType)
 	}
 	parseOPDSFeed(t, w.Body.Bytes())
 }
@@ -1366,8 +1367,8 @@ func TestSearch_DBError(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.AcqContentType)
 	}
 	parseOPDSFeed(t, w.Body.Bytes())
 }
@@ -1483,7 +1484,7 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	const totalAuthors = opdsPageSize + 5
+	const totalAuthors = opdspkg.PageSize + 5
 	for i := range totalAuthors {
 		if _, err := h.DB.CreateAuthor(ctx, fmt.Sprintf("Author %03d", i), nil, nil, nil, nil); err != nil {
 			t.Fatalf("create author %d: %v", i, err)
@@ -1499,13 +1500,13 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 		t.Fatalf("page 1: status = %d, want %d", w.Code, http.StatusOK)
 	}
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != opdsPageSize {
-		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdsPageSize)
+	if len(feed.Entries) != opdspkg.PageSize {
+		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdspkg.PageSize)
 	}
-	if findLink(feed.Links, relNext) == nil {
+	if findLink(feed.Links, opdspkg.RelNext) == nil {
 		t.Error("page 1: missing next link")
 	}
-	if findLink(feed.Links, relPrevious) != nil {
+	if findLink(feed.Links, opdspkg.RelPrevious) != nil {
 		t.Error("page 1: should not have previous link")
 	}
 
@@ -1518,13 +1519,13 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 		t.Fatalf("page 2: status = %d, want %d", w2.Code, http.StatusOK)
 	}
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
-	if len(feed2.Entries) != totalAuthors-opdsPageSize {
-		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalAuthors-opdsPageSize)
+	if len(feed2.Entries) != totalAuthors-opdspkg.PageSize {
+		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalAuthors-opdspkg.PageSize)
 	}
-	if findLink(feed2.Links, relPrevious) == nil {
+	if findLink(feed2.Links, opdspkg.RelPrevious) == nil {
 		t.Error("page 2: missing previous link")
 	}
-	if findLink(feed2.Links, relNext) != nil {
+	if findLink(feed2.Links, opdspkg.RelNext) != nil {
 		t.Error("page 2: should not have next link")
 	}
 }
@@ -1533,7 +1534,7 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	const totalSeries = opdsPageSize + 5
+	const totalSeries = opdspkg.PageSize + 5
 	for i := range totalSeries {
 		if _, err := h.DB.CreateSeries(ctx, fmt.Sprintf("Series %03d", i), nil, nil, nil); err != nil {
 			t.Fatalf("create series %d: %v", i, err)
@@ -1548,13 +1549,13 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 		t.Fatalf("page 1: status = %d, want %d", w.Code, http.StatusOK)
 	}
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != opdsPageSize {
-		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdsPageSize)
+	if len(feed.Entries) != opdspkg.PageSize {
+		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdspkg.PageSize)
 	}
-	if findLink(feed.Links, relNext) == nil {
+	if findLink(feed.Links, opdspkg.RelNext) == nil {
 		t.Error("page 1: missing next link")
 	}
-	if findLink(feed.Links, relPrevious) != nil {
+	if findLink(feed.Links, opdspkg.RelPrevious) != nil {
 		t.Error("page 1: should not have previous link")
 	}
 
@@ -1567,13 +1568,13 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 		t.Fatalf("page 2: status = %d, want %d", w2.Code, http.StatusOK)
 	}
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
-	if len(feed2.Entries) != totalSeries-opdsPageSize {
-		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalSeries-opdsPageSize)
+	if len(feed2.Entries) != totalSeries-opdspkg.PageSize {
+		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalSeries-opdspkg.PageSize)
 	}
-	if findLink(feed2.Links, relPrevious) == nil {
+	if findLink(feed2.Links, opdspkg.RelPrevious) == nil {
 		t.Error("page 2: missing previous link")
 	}
-	if findLink(feed2.Links, relNext) != nil {
+	if findLink(feed2.Links, opdspkg.RelNext) != nil {
 		t.Error("page 2: should not have next link")
 	}
 }

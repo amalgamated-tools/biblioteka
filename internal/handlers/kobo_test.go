@@ -17,15 +17,16 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/kobo"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 )
 
 // ---- Sync token round-trip tests ----
 
 func TestKoboSyncTokenRoundTrip_Zero(t *testing.T) {
-	tok := koboSyncToken{}
-	encoded := encodeKoboSyncToken(tok)
-	decoded := parseKoboSyncToken(encoded)
+	tok := kobo.SyncToken{}
+	encoded := kobo.EncodeSyncToken(tok)
+	decoded := kobo.ParseSyncToken(encoded)
 	if !decoded.BooksLastModified.IsZero() {
 		t.Errorf("BooksLastModified: got %v, want zero", decoded.BooksLastModified)
 	}
@@ -36,12 +37,12 @@ func TestKoboSyncTokenRoundTrip_Zero(t *testing.T) {
 
 func TestKoboSyncTokenRoundTrip_NonZero(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
-	tok := koboSyncToken{
+	tok := kobo.SyncToken{
 		BooksLastModified:        now,
 		ReadingStateLastModified: now.Add(-time.Hour),
 	}
-	encoded := encodeKoboSyncToken(tok)
-	decoded := parseKoboSyncToken(encoded)
+	encoded := kobo.EncodeSyncToken(tok)
+	decoded := kobo.ParseSyncToken(encoded)
 	if !decoded.BooksLastModified.Equal(tok.BooksLastModified) {
 		t.Errorf("BooksLastModified: got %v, want %v", decoded.BooksLastModified, tok.BooksLastModified)
 	}
@@ -51,14 +52,14 @@ func TestKoboSyncTokenRoundTrip_NonZero(t *testing.T) {
 }
 
 func TestParseKoboSyncToken_Empty(t *testing.T) {
-	tok := parseKoboSyncToken("")
+	tok := kobo.ParseSyncToken("")
 	if !tok.BooksLastModified.IsZero() || !tok.ReadingStateLastModified.IsZero() {
 		t.Error("expected zero values for empty token")
 	}
 }
 
 func TestParseKoboSyncToken_Garbage(t *testing.T) {
-	tok := parseKoboSyncToken("not-base64!!!")
+	tok := kobo.ParseSyncToken("not-base64!!!")
 	if !tok.BooksLastModified.IsZero() {
 		t.Error("expected zero BooksLastModified for garbage token")
 	}
@@ -342,19 +343,19 @@ func TestKoboFormatForFileType(t *testing.T) {
 		{"", "", false},
 	}
 	for _, tc := range cases {
-		got, ok := koboFormatForFileType(tc.input)
+		got, ok := kobo.FormatForFileType(tc.input)
 		if ok != tc.ok || got != tc.want {
-			t.Errorf("koboFormatForFileType(%q) = (%q, %v), want (%q, %v)",
+			t.Errorf("kobo.FormatForFileType(%q) = (%q, %v), want (%q, %v)",
 				tc.input, got, ok, tc.want, tc.ok)
 		}
 	}
 }
 
-// ---- encodeKoboSyncToken produces valid base64 JSON ----
+// ---- kobo.EncodeSyncToken produces valid base64 JSON ----
 
 func TestEncodeKoboSyncToken_IsValidBase64JSON(t *testing.T) {
-	tok := koboSyncToken{BooksLastModified: time.Now()}
-	encoded := encodeKoboSyncToken(tok)
+	tok := kobo.SyncToken{BooksLastModified: time.Now()}
+	encoded := kobo.EncodeSyncToken(tok)
 	raw, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		t.Fatalf("not valid base64: %v", err)
@@ -1157,7 +1158,7 @@ func TestHandleKobo_LibraryRoute_Unknown(t *testing.T) {
 	}
 }
 
-// ---- koboDownloadURLs helper ----
+// ---- kobo.DownloadURLs helper ----
 
 func TestKoboDownloadURLs_FiltersUnsupportedFormats(t *testing.T) {
 	files := []db.BookFile{
@@ -1165,7 +1166,7 @@ func TestKoboDownloadURLs_FiltersUnsupportedFormats(t *testing.T) {
 		{ID: "2", FileType: "txt", FileName: "book.txt", FileSize: 50},
 		{ID: "3", FileType: "pdf", FileName: "book.pdf", FileSize: 200},
 	}
-	urls := koboDownloadURLs("http://localhost", "mytoken", "book-id", files)
+	urls := kobo.DownloadURLs("http://localhost", "mytoken", "book-id", files)
 	if len(urls) != 2 {
 		t.Fatalf("expected 2 URLs (epub + pdf), got %d", len(urls))
 	}
@@ -1188,7 +1189,7 @@ func TestKoboDownloadURLs_FiltersUnsupportedFormats(t *testing.T) {
 	}
 }
 
-// ---- koboBookMetadata with series ----
+// ---- kobo.BookMetadata with series ----
 
 func TestKoboBookMetadata_WithSeries(t *testing.T) {
 	h, _ := setupKoboHandler(t)
@@ -1206,7 +1207,7 @@ func TestKoboBookMetadata_WithSeries(t *testing.T) {
 
 	pos := 1.0
 	series := []db.BookSeriesEntry{{Series: *s, Position: &pos}}
-	meta := koboBookMetadata(book, nil, series, nil)
+	meta := kobo.BookMetadata(book, nil, series, nil)
 
 	seriesMeta, ok := meta["Series"].(map[string]any)
 	if !ok {
@@ -1220,16 +1221,16 @@ func TestKoboBookMetadata_WithSeries(t *testing.T) {
 	}
 }
 
-// ---- koboSyncToken with BooksLastID ----
+// ---- kobo.SyncToken with BooksLastID ----
 
 func TestKoboSyncTokenRoundTrip_WithBooksLastID(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
-	tok := koboSyncToken{
+	tok := kobo.SyncToken{
 		BooksLastModified: now,
 		BooksLastID:       "some-book-id",
 	}
-	encoded := encodeKoboSyncToken(tok)
-	decoded := parseKoboSyncToken(encoded)
+	encoded := kobo.EncodeSyncToken(tok)
+	decoded := kobo.ParseSyncToken(encoded)
 	if decoded.BooksLastID != tok.BooksLastID {
 		t.Errorf("BooksLastID: got %q, want %q", decoded.BooksLastID, tok.BooksLastID)
 	}
