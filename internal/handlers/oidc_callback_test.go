@@ -53,6 +53,9 @@ func newTestOIDCHandlerWithTokenResponse(t *testing.T, rawResponse map[string]an
 	})
 
 	srv := httptest.NewServer(mux)
+	// serverURL must be assigned before oidc.NewProvider (below) is called,
+	// because NewProvider fetches /.well-known/openid-configuration whose
+	// handler closure captures serverURL by reference.
 	serverURL = srv.URL
 	t.Cleanup(srv.Close)
 
@@ -85,6 +88,7 @@ func newTestOIDCHandlerWithTokenResponse(t *testing.T, rawResponse map[string]an
 // ---------------------------------------------------------------------------
 
 func TestOIDCCallback_MethodNotAllowed(t *testing.T) {
+	t.Parallel()
 	h := newTestOIDCHandler(t)
 
 	r := httptest.NewRequest(http.MethodPost, "/auth/oidc/callback", nil)
@@ -97,6 +101,7 @@ func TestOIDCCallback_MethodNotAllowed(t *testing.T) {
 }
 
 func TestOIDCCallback_MissingStateCookie(t *testing.T) {
+	t.Parallel()
 	h := newTestOIDCHandler(t)
 
 	// No cookies attached — state cookie is absent.
@@ -110,6 +115,7 @@ func TestOIDCCallback_MissingStateCookie(t *testing.T) {
 }
 
 func TestOIDCCallback_StateMismatch(t *testing.T) {
+	t.Parallel()
 	h := newTestOIDCHandler(t)
 
 	// Cookie contains "original-state" but query param has "different-state".
@@ -124,6 +130,7 @@ func TestOIDCCallback_StateMismatch(t *testing.T) {
 }
 
 func TestOIDCCallback_MissingVerifierCookie(t *testing.T) {
+	t.Parallel()
 	h := newTestOIDCHandler(t)
 
 	// State cookie is present and matches but the PKCE verifier cookie is absent.
@@ -138,6 +145,7 @@ func TestOIDCCallback_MissingVerifierCookie(t *testing.T) {
 }
 
 func TestOIDCCallback_ProviderError(t *testing.T) {
+	t.Parallel()
 	h := newTestOIDCHandler(t)
 
 	// The OIDC provider appended an error parameter to the redirect URI.
@@ -154,6 +162,7 @@ func TestOIDCCallback_ProviderError(t *testing.T) {
 }
 
 func TestOIDCCallback_MissingCode(t *testing.T) {
+	t.Parallel()
 	h := newTestOIDCHandler(t)
 
 	// State and verifier cookies are present, but the authorization code is absent.
@@ -298,7 +307,7 @@ func TestOIDCCallback_LinkFlow_UserNotFound(t *testing.T) {
 	if !strings.Contains(loc, "oidc_link_error=") {
 		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
 	}
-	if !strings.Contains(loc, "User+not+found") && !strings.Contains(loc, "User%20not%20found") {
+	if !strings.Contains(loc, "User+not+found") {
 		t.Errorf("expected 'User not found' in redirect location, got %q", loc)
 	}
 }
@@ -332,7 +341,7 @@ func TestOIDCCallback_LinkFlow_AlreadyLinked(t *testing.T) {
 	if !strings.Contains(loc, "oidc_link_error=") {
 		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
 	}
-	if !strings.Contains(loc, "already+linked") && !strings.Contains(loc, "already%20linked") {
+	if !strings.Contains(loc, "already+linked") {
 		t.Errorf("expected 'already linked' in redirect location, got %q", loc)
 	}
 }
@@ -372,6 +381,9 @@ func TestOIDCCallback_LinkFlow_SubjectAlreadyLinkedToOther(t *testing.T) {
 	loc := resp.Header.Get("Location")
 	if !strings.Contains(loc, "oidc_link_error=") {
 		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
+	}
+	if !strings.Contains(loc, "already+linked+to+another") {
+		t.Errorf("expected 'already linked to another' in redirect location, got %q", loc)
 	}
 }
 
