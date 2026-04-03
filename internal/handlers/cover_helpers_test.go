@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func Test_DataURLMIMEType(t *testing.T) {
+func TestDataURLMIMEType(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
@@ -76,7 +76,7 @@ func Test_DataURLMIMEType(t *testing.T) {
 	}
 }
 
-func Test_CoverMIMEType(t *testing.T) {
+func TestCoverMIMETypeExtended(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
@@ -174,7 +174,7 @@ func Test_CoverMIMEType(t *testing.T) {
 	}
 }
 
-func Test_DecodeDataURL(t *testing.T) {
+func TestDecodeDataURL(t *testing.T) {
 	t.Run("valid base64 PNG data URL", func(t *testing.T) {
 		payload := []byte("hello world image bytes")
 		encoded := "data:image/png;base64," + base64.StdEncoding.EncodeToString(payload)

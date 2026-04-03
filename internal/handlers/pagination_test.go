@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func Test_ParseLimitOffset(t *testing.T) {
+func TestParseLimitOffset(t *testing.T) {
 	tests := []struct {
 		name         string
 		url          string
@@ -146,6 +146,22 @@ func Test_ParseLimitOffset(t *testing.T) {
 		{
 			name:         "empty offset param uses 0",
 			url:          "/?offset=",
+			defaultLimit: 50,
+			maxLimit:     200,
+			wantLimit:    50,
+			wantOffset:   0,
+		},
+		{
+			name:         "limit overflow uses default",
+			url:          "/?limit=99999999999999999999",
+			defaultLimit: 50,
+			maxLimit:     200,
+			wantLimit:    50,
+			wantOffset:   0,
+		},
+		{
+			name:         "offset overflow uses 0",
+			url:          "/?offset=99999999999999999999",
 			defaultLimit: 50,
 			maxLimit:     200,
 			wantLimit:    50,
