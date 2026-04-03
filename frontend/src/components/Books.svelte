@@ -2,6 +2,7 @@
   import { BookOpen } from "lucide-svelte";
   import BookList from "./ui/BookList.svelte";
   import { routerStore } from "../stores/router.svelte";
+  import { libraryStore } from "../stores/libraries.svelte";
   import * as api from "../lib/api";
 
   let initialOffset = $derived(
@@ -30,9 +31,14 @@
     </h1>
   </div>
 
+  <!-- onBooksFound is intentionally omitted here. Books.svelte shows the aggregate
+       view across all libraries, so it cannot know which library finished scanning.
+       Each LibraryView calls clearScanning(libraryId) for its own library; the
+       aggregate polling stops naturally once scanningIds empties. -->
   <BookList
     fetchBooks={api.listBooks}
     {initialOffset}
     onPageChange={handlePageChange}
+    pollingInterval={libraryStore.isScanning ? 3000 : undefined}
   />
 </div>
