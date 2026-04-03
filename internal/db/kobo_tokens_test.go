@@ -2,7 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"testing"
+	"time"
 )
 
 // ---- CreateKoboToken ----
@@ -63,7 +65,7 @@ func TestGetKoboToken_NotFound(t *testing.T) {
 	user := createTestUser(t, d)
 
 	_, err := d.GetKoboToken(t.Context(), "nonexistent-id", user.ID)
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("err = %v, want sql.ErrNoRows", err)
 	}
 }
@@ -82,7 +84,7 @@ func TestGetKoboToken_WrongUser(t *testing.T) {
 	}
 
 	_, err = d.GetKoboToken(t.Context(), created.ID, user2.ID)
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("err = %v, want sql.ErrNoRows when fetching another user's token", err)
 	}
 }
@@ -114,7 +116,7 @@ func TestGetKoboTokenByHash_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetKoboTokenByHash(t.Context(), "no-such-hash")
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("err = %v, want sql.ErrNoRows", err)
 	}
 }
@@ -177,6 +179,8 @@ func TestListKoboTokens_OrderedNewestFirst(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateKoboToken(first): %v", err)
 	}
+	// Sleep to guarantee distinct created_at timestamps in SQLite (second precision).
+	time.Sleep(10 * time.Millisecond)
 	t2, err := d.CreateKoboToken(t.Context(), user.ID, "Second Token", "hash-second")
 	if err != nil {
 		t.Fatalf("CreateKoboToken(second): %v", err)
@@ -190,15 +194,12 @@ func TestListKoboTokens_OrderedNewestFirst(t *testing.T) {
 		t.Fatalf("len(tokens) = %d, want 2", len(tokens))
 	}
 
-	// Ordered by created_at DESC then id DESC: second token was created later.
-	// When timestamps are equal (same second in SQLite), id DESC determines order.
-	if tokens[0].ID != t2.ID && tokens[0].ID != t1.ID {
-		t.Errorf("unexpected token order: first = %q", tokens[0].Name)
+	// Ordered by created_at DESC then id DESC: second token should come first.
+	if tokens[0].ID != t2.ID {
+		t.Errorf("tokens[0].ID = %q, want %q (newest first)", tokens[0].ID, t2.ID)
 	}
-	// Verify the two expected token IDs are both present.
-	ids := map[string]bool{tokens[0].ID: true, tokens[1].ID: true}
-	if !ids[t1.ID] || !ids[t2.ID] {
-		t.Errorf("expected both tokens in result, got %v", ids)
+	if tokens[1].ID != t1.ID {
+		t.Errorf("tokens[1].ID = %q, want %q (oldest second)", tokens[1].ID, t1.ID)
 	}
 }
 
@@ -218,7 +219,7 @@ func TestDeleteKoboToken(t *testing.T) {
 	}
 
 	_, err = d.GetKoboToken(t.Context(), created.ID, user.ID)
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("after delete: err = %v, want sql.ErrNoRows", err)
 	}
 }
@@ -228,7 +229,7 @@ func TestDeleteKoboToken_NotFound(t *testing.T) {
 	user := createTestUser(t, d)
 
 	err := d.DeleteKoboToken(t.Context(), "nonexistent-token-id", user.ID)
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("err = %v, want sql.ErrNoRows", err)
 	}
 }
@@ -248,7 +249,7 @@ func TestDeleteKoboToken_WrongUser(t *testing.T) {
 
 	// user2 cannot delete user1's token.
 	err = d.DeleteKoboToken(t.Context(), created.ID, user2.ID)
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("err = %v, want sql.ErrNoRows when deleting another user's token", err)
 	}
 

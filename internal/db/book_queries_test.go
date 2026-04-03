@@ -651,6 +651,25 @@ func TestSearchBooks_UnderscoreEscaping(t *testing.T) {
 	}
 }
 
+func TestSearchBooks_BackslashEscaping(t *testing.T) {
+	d := newTestDB(t)
+
+	if _, err := d.CreateBook(t.Context(), `Back\slash`, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("CreateBook(): %v", err)
+	}
+	if _, err := d.CreateBook(t.Context(), "BackXslash", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("CreateBook(BackXslash): %v", err)
+	}
+
+	books, _, err := d.SearchBooks(t.Context(), `\`, 10, 0)
+	if err != nil {
+		t.Fatalf("SearchBooks(backslash) error: %v", err)
+	}
+	if len(books) != 1 {
+		t.Errorf("len(books) = %d, want 1 (literal backslash)", len(books))
+	}
+}
+
 func TestSearchBooks_Paginated(t *testing.T) {
 	d := newTestDB(t)
 
