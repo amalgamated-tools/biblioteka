@@ -2,7 +2,7 @@ name: E2E Tests
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'cmd/**'
       - 'internal/**'
@@ -16,7 +16,7 @@ on:
       - 'docs/docs.go'
       - '.github/workflows/e2etest.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'cmd/**'
       - 'internal/**'
@@ -37,7 +37,7 @@ permissions:
 # Main and develop branch runs are never cancelled so merge results are always recorded.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   e2e:
