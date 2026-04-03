@@ -426,6 +426,32 @@ func (d *DB) FindOrCreateTag(ctx context.Context, name string) (*Tag, error) {
 
 `findOrCreate` normalizes the name, validates it against `errInvalid`, handles concurrent-insert races (unique-constraint violation → retry fetch), and emits a debug log. Pass the raw (un-normalized) name — normalization is performed inside the helper.
 
+### Named-entity create and update (db layer)
+
+When implementing `Create*` and `Update*` functions for a named entity, use the unexported `namedEntityCreate` and `namedEntityUpdate` generic helpers from `internal/db/named_entity_write.go` instead of re-implementing the normalize → validate → write → translate-constraint pattern by hand:
+
+```go
+func (d *DB) CreateTag(ctx context.Context, name string) (*Tag, error) {
+    return namedEntityCreate(ctx, "tag", name,
+        NormalizeTagName, ErrInvalidTagName, ErrTagNameExists,
+        func(ctx context.Context, n string) (*Tag, error) {
+            // execute the INSERT and scan the result
+        },
+    )
+}
+
+func (d *DB) UpdateTag(ctx context.Context, id, name string) (*Tag, error) {
+    return namedEntityUpdate(ctx, "tag", id, name,
+        NormalizeTagName, ErrInvalidTagName, ErrTagNameExists,
+        func(ctx context.Context, id, n string) (*Tag, error) {
+            // execute the UPDATE and scan the result
+        },
+    )
+}
+```
+
+Both helpers normalize the name via `normalize`, reject a blank result with `errInvalid`, execute the provided insert/update function, and translate a unique-constraint violation into `errExists`. A warn-level log is emitted on a blank name; a debug-level log is emitted before the write. Pass the raw (un-normalized) name — normalization is performed inside the helper.
+
 ### Protocol credential database layer
 
 When implementing the database layer for a new sync protocol that stores a username + bcrypt-hashed password, use the shared helpers in `internal/db/protocol_credentials.go` instead of hand-rolling the SQL. Define a `protocolCredentialConfig` value, declare a type alias for `ProtocolCredential`, and delegate all CRUD to the unexported package-level helpers:
