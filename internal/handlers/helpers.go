@@ -308,7 +308,10 @@ func deleteResourceCore[T any](
 	d *db.DB,
 	w http.ResponseWriter,
 	r *http.Request,
-	id, resource, auditEntityType, idKey string,
+	id string,
+	resource string,
+	auditEntityType string,
+	idKey string,
 	get func(context.Context) (T, error),
 	del func(context.Context) error,
 	auditAction string,
@@ -347,7 +350,8 @@ func deleteResourceCore[T any](
 		slog.WarnContext(
 			ctx,
 			"failed to write audit log",
-			slog.String(otelkeys.Resource, auditEntityType),
+			slog.String(otelkeys.Resource, resource),
+			slog.String(otelkeys.EntityType, auditEntityType),
 			slog.String(idKey, id), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 			slog.Any(otelkeys.Error, err),
 		)
