@@ -34,11 +34,6 @@ func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
 		CoverMediaType: "image/png",
 	})
 
-	// Skip the test if exiftool is not available — cover extraction requires it.
-	if _, metaErr := ext.ExtractMetadata(t.Context(), epubPath); errors.Is(metaErr, metadata.ErrExifToolUnavailable) {
-		t.Skip("exiftool not available, skipping test that requires cover extraction")
-	}
-
 	epubInfo, err := os.Stat(epubPath)
 	if err != nil {
 		t.Fatalf("stat epub: %v", err)
