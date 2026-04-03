@@ -308,6 +308,7 @@ func deleteResourceCore[T any](
 	d *db.DB,
 	w http.ResponseWriter,
 	r *http.Request,
+	userID string,
 	id string,
 	resource string,
 	auditEntityType string,
@@ -341,7 +342,6 @@ func deleteResourceCore[T any](
 		return
 	}
 
-	userID := auth.UserIDFromContext(ctx)
 	var meta map[string]any
 	if auditMeta != nil && !isNilValue(entity) {
 		meta = auditMeta(entity)
@@ -376,7 +376,8 @@ func deleteResource[T any](
 	auditAction string,
 	auditMeta func(T) map[string]any,
 ) {
-	deleteResourceCore(d, w, r, id, resource, resource, idKey,
+	userID := auth.UserIDFromContext(r.Context())
+	deleteResourceCore(d, w, r, userID, id, resource, resource, idKey,
 		func(ctx context.Context) (T, error) { return get(ctx, id) },
 		func(ctx context.Context) error { return del(ctx, id) },
 		auditAction, auditMeta,
@@ -404,7 +405,7 @@ func deleteUserOwnedResource[T any](
 	auditMeta func(T) map[string]any,
 ) {
 	userID := auth.UserIDFromContext(r.Context())
-	deleteResourceCore(d, w, r, id, resource, auditEntityType, idKey,
+	deleteResourceCore(d, w, r, userID, id, resource, auditEntityType, idKey,
 		func(ctx context.Context) (T, error) { return get(ctx, id, userID) },
 		func(ctx context.Context) error { return del(ctx, id, userID) },
 		auditAction, auditMeta,
