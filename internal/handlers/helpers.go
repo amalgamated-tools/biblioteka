@@ -298,6 +298,64 @@ func listEntities[T any, DTO any](
 	writeJSON(ctx, w, http.StatusOK, mapSlice(entities, toDTO))
 }
 
+// deleteResourceCore is the shared implementation of the
+// fetch-then-delete-then-audit pattern. get and del are pre-bound closures
+// that already capture the resource ID (and, for user-owned resources, the
+// user ID). resource is the human-readable display name used in error
+// messages; auditEntityType is the stable snake_case identifier written to
+// the audit log (for non-user-owned resources these two values are the same).
+func deleteResourceCore[T any](
+	d *db.DB,
+	w http.ResponseWriter,
+	r *http.Request,
+	id, resource, auditEntityType, idKey string,
+	get func(context.Context) (T, error),
+	del func(context.Context) error,
+	auditAction string,
+	auditMeta func(T) map[string]any,
+) {
+	ctx := r.Context()
+	slog.DebugContext(ctx, "deleting "+resource, slog.String(idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+
+	entity, err := get(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(ctx, w, http.StatusNotFound, resource+" not found")
+			return
+		}
+		slog.ErrorContext(ctx, "failed to get "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
+		return
+	}
+
+	if err := del(ctx); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(ctx, w, http.StatusNotFound, resource+" not found")
+			return
+		}
+		slog.ErrorContext(ctx, "failed to delete "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
+		return
+	}
+
+	userID := auth.UserIDFromContext(ctx)
+	var meta map[string]any
+	if auditMeta != nil && !isNilValue(entity) {
+		meta = auditMeta(entity)
+	}
+	if err := d.CreateAuditLog(ctx, userID, auditAction, auditEntityType, id, meta); err != nil {
+		slog.WarnContext(
+			ctx,
+			"failed to write audit log",
+			slog.String(otelkeys.Resource, auditEntityType),
+			slog.String(idKey, id), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+			slog.Any(otelkeys.Error, err),
+		)
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // deleteResource is a generic helper that implements the fetch-then-delete-then-audit
 // pattern common to all resource deletion handlers. It fetches the resource (to
 // capture audit metadata), deletes it, writes an audit log entry, and responds
@@ -314,46 +372,11 @@ func deleteResource[T any](
 	auditAction string,
 	auditMeta func(T) map[string]any,
 ) {
-	ctx := r.Context()
-	slog.DebugContext(ctx, "deleting "+resource, slog.String(idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-
-	entity, err := get(ctx, id)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, resource+" not found")
-			return
-		}
-		slog.ErrorContext(ctx, "failed to get "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
-		return
-	}
-
-	if err := del(ctx, id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, resource+" not found")
-			return
-		}
-		slog.ErrorContext(ctx, "failed to delete "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
-		return
-	}
-
-	userID := auth.UserIDFromContext(ctx)
-	var meta map[string]any
-	if auditMeta != nil && !isNilValue(entity) {
-		meta = auditMeta(entity)
-	}
-	if err := d.CreateAuditLog(ctx, userID, auditAction, resource, id, meta); err != nil {
-		slog.WarnContext(
-			ctx,
-			"failed to write audit log",
-			slog.String(otelkeys.Resource, resource),
-			slog.String(idKey, id), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-			slog.Any(otelkeys.Error, err),
-		)
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	deleteResourceCore(d, w, r, id, resource, resource, idKey,
+		func(ctx context.Context) (T, error) { return get(ctx, id) },
+		func(ctx context.Context) error { return del(ctx, id) },
+		auditAction, auditMeta,
+	)
 }
 
 // deleteUserOwnedResource is a generic helper that implements the
@@ -376,46 +399,12 @@ func deleteUserOwnedResource[T any](
 	auditAction string,
 	auditMeta func(T) map[string]any,
 ) {
-	ctx := r.Context()
-	userID := auth.UserIDFromContext(ctx)
-	slog.DebugContext(ctx, "deleting "+resource, slog.String(idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-
-	entity, err := get(ctx, id, userID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, resource+" not found")
-			return
-		}
-		slog.ErrorContext(ctx, "failed to get "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
-		return
-	}
-
-	if err := del(ctx, id, userID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, resource+" not found")
-			return
-		}
-		slog.ErrorContext(ctx, "failed to delete "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
-		return
-	}
-
-	var meta map[string]any
-	if auditMeta != nil && !isNilValue(entity) {
-		meta = auditMeta(entity)
-	}
-	if err := d.CreateAuditLog(ctx, userID, auditAction, auditEntityType, id, meta); err != nil {
-		slog.WarnContext(
-			ctx,
-			"failed to write audit log",
-			slog.String(otelkeys.Resource, auditEntityType),
-			slog.String(idKey, id), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
-			slog.Any(otelkeys.Error, err),
-		)
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	userID := auth.UserIDFromContext(r.Context())
+	deleteResourceCore(d, w, r, id, resource, auditEntityType, idKey,
+		func(ctx context.Context) (T, error) { return get(ctx, id, userID) },
+		func(ctx context.Context) error { return del(ctx, id, userID) },
+		auditAction, auditMeta,
+	)
 }
 
 // isNilValue reports whether v, when passed as any, wraps a nil pointer.
