@@ -1278,7 +1278,9 @@ func TestWriteOPDSFeed_Direct(t *testing.T) {
 
 func TestAllBooks_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	h.DB.Close() // intentionally unchecked — test-only SQLite DB close cannot fail meaningfully
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -1296,7 +1298,9 @@ func TestAllBooks_DBError(t *testing.T) {
 
 func TestRecentBooks_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	h.DB.Close() // intentionally unchecked — test-only SQLite DB close cannot fail meaningfully
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/recent", nil)
 	w := httptest.NewRecorder()
@@ -1313,7 +1317,9 @@ func TestRecentBooks_DBError(t *testing.T) {
 
 func TestAuthorsFeed_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	h.DB.Close() // intentionally unchecked — test-only SQLite DB close cannot fail meaningfully
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors", nil)
 	w := httptest.NewRecorder()
@@ -1330,7 +1336,9 @@ func TestAuthorsFeed_DBError(t *testing.T) {
 
 func TestSeriesFeed_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	h.DB.Close() // intentionally unchecked — test-only SQLite DB close cannot fail meaningfully
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series", nil)
 	w := httptest.NewRecorder()
@@ -1347,7 +1355,9 @@ func TestSeriesFeed_DBError(t *testing.T) {
 
 func TestSearch_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	h.DB.Close() // intentionally unchecked — test-only SQLite DB close cannot fail meaningfully
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=test", nil)
 	w := httptest.NewRecorder()
@@ -1374,7 +1384,9 @@ func TestBookEntries_AuthorLoadError(t *testing.T) {
 	}
 
 	// Close DB so batch author/file loads fail.
-	h.DB.Close() // intentionally unchecked — test-only SQLite DB close cannot fail meaningfully
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
 
 	books := []db.Book{*book}
 	entries := h.bookEntries(ctx, books, "http://example.com/opds")
@@ -1449,7 +1461,9 @@ func TestServeCover_ExternalURL(t *testing.T) {
 
 func TestServeCover_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	h.DB.Close() // intentionally unchecked — test-only SQLite DB close cannot fail meaningfully
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/covers/someid", nil)
 	w := httptest.NewRecorder()
