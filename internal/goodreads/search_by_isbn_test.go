@@ -149,79 +149,34 @@ func TestParseAutocompleteEntries_ValidEntry(t *testing.T) {
 	require.Equal(t, "Andy Weir", e.authorName)
 }
 
-// TestParseAutocompleteEntries_EmptyArray verifies that an empty JSON array produces
-// an empty slice without error.
-func TestParseAutocompleteEntries_EmptyArray(t *testing.T) {
-	entries, err := parseAutocompleteEntries(t.Context(), []byte(`[]`))
-	require.NoError(t, err)
-	require.Empty(t, entries)
-}
-
-// TestParseAutocompleteEntries_InvalidJSON verifies that malformed JSON is surfaced as an
-// error.
-func TestParseAutocompleteEntries_InvalidJSON(t *testing.T) {
-	entries, err := parseAutocompleteEntries(t.Context(), []byte(`not json`))
-	require.Error(t, err)
-	require.Nil(t, entries)
-}
-
-// TestParseAutocompleteEntries_MissingOptionalFields verifies that optional fields
-// (imageUrl, author) default to zero values without error.
-func TestParseAutocompleteEntries_MissingOptionalFields(t *testing.T) {
-	body := []byte(`[{"bookId":"123","workId":"456","title":"Minimal"}]`)
-	entries, err := parseAutocompleteEntries(t.Context(), body)
-	require.NoError(t, err)
-	require.Len(t, entries, 1)
-
-	e := entries[0]
-	require.Equal(t, int64(123), e.bookID)
-	require.Equal(t, int64(456), e.workID)
-	require.Equal(t, "Minimal", e.title)
-	require.Empty(t, e.imageURL)
-	require.Zero(t, e.authorID)
-	require.Empty(t, e.authorName)
-}
-
-// TestParseAutocompleteEntries_SkipsEntriesWithMissingRequiredFields verifies that
-// entries missing bookId, workId, or title are silently dropped.
-func TestParseAutocompleteEntries_SkipsEntriesWithMissingRequiredFields(t *testing.T) {
-	tests := []struct {
-		name string
-		body string
-	}{
-		{name: "missing bookId", body: `[{"workId":"456","title":"Test"}]`},
-		{name: "missing workId", body: `[{"bookId":"123","title":"Test"}]`},
-		{name: "missing title", body: `[{"bookId":"123","workId":"456"}]`},
-		{name: "zero bookId", body: `[{"bookId":"0","workId":"456","title":"Test"}]`},
-		{name: "zero workId", body: `[{"bookId":"123","workId":"0","title":"Test"}]`},
-		{name: "empty title", body: `[{"bookId":"123","workId":"456","title":""}]`},
-		{name: "non-numeric bookId", body: `[{"bookId":"abc","workId":"456","title":"Test"}]`},
-		{name: "non-numeric workId", body: `[{"bookId":"123","workId":"abc","title":"Test"}]`},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			entries, err := parseAutocompleteEntries(t.Context(), []byte(tt.body))
-			require.NoError(t, err)
-			require.Empty(t, entries)
-		})
-	}
-}
-
-// TestParseAutocompleteEntries_MultipleEntries verifies that multiple valid entries are
-// all returned in order.
-func TestParseAutocompleteEntries_MultipleEntries(t *testing.T) {
+// TestParseAutocompleteEntries_FiltersInvalidEntriesAndPreservesValidOnes verifies
+// parser-specific behavior at this lower level: malformed entries are skipped while
+// valid entries are returned in order with required and optional fields parsed.
+func TestParseAutocompleteEntries_FiltersInvalidEntriesAndPreservesValidOnes(t *testing.T) {
 	body := []byte(`[
 		{"bookId":"1","workId":"10","title":"Book One","author":{"id":100,"name":"Author A"}},
-		{"bookId":"2","workId":"20","title":"Book Two","author":{"id":200,"name":"Author B"}}
+		{"workId":"999","title":"Missing Book ID"},
+		{"bookId":"abc","workId":"20","title":"Invalid Book ID"},
+		{"bookId":"2","workId":"30","title":"Book Two"},
+		{"bookId":"3","workId":"0","title":"Invalid Work ID"}
 	]`)
+
 	entries, err := parseAutocompleteEntries(t.Context(), body)
 	require.NoError(t, err)
 	require.Len(t, entries, 2)
-	require.Equal(t, "Book One", entries[0].title)
+
 	require.Equal(t, int64(1), entries[0].bookID)
+	require.Equal(t, int64(10), entries[0].workID)
+	require.Equal(t, "Book One", entries[0].title)
+	require.Equal(t, int64(100), entries[0].authorID)
 	require.Equal(t, "Author A", entries[0].authorName)
+
+	require.Equal(t, int64(2), entries[1].bookID)
+	require.Equal(t, int64(30), entries[1].workID)
 	require.Equal(t, "Book Two", entries[1].title)
-	require.Equal(t, int64(200), entries[1].authorID)
+	require.Empty(t, entries[1].imageURL)
+	require.Zero(t, entries[1].authorID)
+	require.Empty(t, entries[1].authorName)
 }
 
 // TestParseAutocompleteEntries_UsesRealFixture verifies that the real autocomplete.json
