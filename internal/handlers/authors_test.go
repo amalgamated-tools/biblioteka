@@ -214,3 +214,93 @@ func TestDeleteAuthor_NotFound(t *testing.T) {
 		t.Errorf("error = %q, want %q", resp.Error, "author not found")
 	}
 }
+
+func TestListAuthorBooks_Handler(t *testing.T) {
+	h, userID := setupAuthorHandler(t)
+
+	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+
+	b1, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	b2, err := h.DB.CreateBook(context.Background(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	if err := h.DB.SetBookAuthors(context.Background(), b1.ID, []string{a.ID}); err != nil {
+		t.Fatalf("set book authors: %v", err)
+	}
+	if err := h.DB.SetBookAuthors(context.Background(), b2.ID, []string{a.ID}); err != nil {
+		t.Fatalf("set book authors: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID+"/books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleAuthor(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var result bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if result.Total != 2 {
+		t.Errorf("total = %d, want 2", result.Total)
+	}
+	if len(result.Books) != 2 {
+		t.Errorf("len(books) = %d, want 2", len(result.Books))
+	}
+}
+
+func TestListAuthorBooks_AuthorNotFound(t *testing.T) {
+	h, userID := setupAuthorHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/authors/nonexistent/books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleAuthor(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestListAuthorBooks_Empty(t *testing.T) {
+	h, userID := setupAuthorHandler(t)
+
+	a, err := h.DB.CreateAuthor(context.Background(), "Unknown Author", nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID+"/books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleAuthor(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var result bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if result.Total != 0 {
+		t.Errorf("total = %d, want 0", result.Total)
+	}
+	if result.Books == nil {
+		t.Error("books should be empty slice, not nil")
+	}
+}

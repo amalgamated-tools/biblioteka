@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -82,23 +83,35 @@ func (h *AuthorHandler) HandleAuthors(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// HandleAuthor handles GET/PUT/DELETE /api/authors/{id}.
+// HandleAuthor handles requests under /api/authors/{id} and /api/authors/{id}/books.
 func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
-	id, ok := extractPathID(r.URL.Path, "/api/authors/")
+	id, sub, ok := extractPathSegments(r.URL.Path, "/api/authors/")
 	if !ok {
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid author ID")
 		return
 	}
 
-	switch r.Method {
-	case http.MethodGet:
-		h.getAuthor(w, r, id)
-	case http.MethodPut:
-		h.updateAuthor(w, r, id)
-	case http.MethodDelete:
-		h.deleteAuthor(w, r, id)
+	switch sub {
+	case "":
+		switch r.Method {
+		case http.MethodGet:
+			h.getAuthor(w, r, id)
+		case http.MethodPut:
+			h.updateAuthor(w, r, id)
+		case http.MethodDelete:
+			h.deleteAuthor(w, r, id)
+		default:
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
+	case "books":
+		switch r.Method {
+		case http.MethodGet:
+			h.listAuthorBooks(w, r, id)
+		default:
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
 	default:
-		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}
 }
 
@@ -194,4 +207,47 @@ func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id 
 		db.AuditActionAuthorDeleted,
 		func(a *db.Author) map[string]any { return map[string]any{"name": a.Name} },
 	)
+}
+
+// listAuthorBooks godoc
+//
+//	@Summary		List books by author
+//	@Description	Returns paginated books for a specific author
+//	@Tags			Authors
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string	true	"Author ID"
+//	@Param			limit	query		int		false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int		false	"Number of items to skip (default 0)"
+//	@Success		200		{object}	bookListDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/authors/{id}/books [get]
+func (h *AuthorHandler) listAuthorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
+	if _, err := h.DB.GetAuthor(r.Context(), authorID); handleDBErr(r.Context(), w, err, "author") {
+		return
+	}
+
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+
+	books, total, err := h.DB.ListBooksByAuthorPaginated(r.Context(), authorID, limit, offset)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to list author books",
+			slog.String(otelkeys.AuthorID, authorID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list author books")
+		return
+	}
+
+	dtos := mapSlice(books, toBookSummaryDTO)
+
+	writeJSON(r.Context(), w, http.StatusOK, bookListDTO{
+		Books:  dtos,
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
+	})
 }
