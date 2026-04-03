@@ -118,7 +118,7 @@ class AuthorStore extends CrudStore<Author, AuthorInput> {
 export const authorStore = new AuthorStore();
 ```
 
-For stores with additional state beyond basic CRUD (e.g. scan tracking in `libraryStore`), the store may need a fully hand-rolled class instead. `libraryStore` is an example of a store that could not be cleanly migrated to `CrudStore` because its `add` method has extra scan-tracking side effects. If your domain-specific state fits naturally alongside the base CRUD operations, extend `CrudStore` (as `seriesStore` does); otherwise, implement the class directly with `$state` fields.
+For stores with additional state beyond basic CRUD (e.g. scan tracking in `libraryStore`), the store may need a fully hand-rolled class instead. `libraryStore` is an example of a store that is currently implemented that way because its `add` flow also maintains scan-tracking state and behavior beyond the base CRUD pattern. If your domain-specific state fits naturally alongside the base CRUD operations, extend `CrudStore` (as `seriesStore` does); otherwise, implement the class directly with `$state` fields.
 
 > **When NOT to extend `CrudStore`**: Use a plain class with `$state` directly for stores that are not entity-list stores (e.g. `authStore`, `routerStore`, `themeStore`).
 
