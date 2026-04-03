@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.5.0...v0.6.0) (2026-04-03)
+
+
+### Features
+
+* **epub:** add EPUB3 test coverage and VS Code debug config ([#1147](https://github.com/amalgamated-tools/biblioteka/issues/1147)) ([389f3a2](https://github.com/amalgamated-tools/biblioteka/commit/389f3a27e4ef4552b3210ff2f419eccf9c5bc695))
+
+
+### Bug Fixes
+
+* **accessibility:** sidebar library-settings link visible at focus time (WCAG 2.4.7) ([#1144](https://github.com/amalgamated-tools/biblioteka/issues/1144)) ([245f6bc](https://github.com/amalgamated-tools/biblioteka/commit/245f6bc97f8414425e41c31a3fa711337802d5fe))
+* **code-simplifier:** refactor(server): consolidate OPDS and KOSync credential adapters ([#1167](https://github.com/amalgamated-tools/biblioteka/issues/1167)) ([2c6d695](https://github.com/amalgamated-tools/biblioteka/commit/2c6d69597c079775564ddd1911c6c059b8e6591a))
+
 ## [0.5.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.4.0...v0.5.0) (2026-04-03)
 
 
