@@ -123,6 +123,15 @@ func MakeTestEPUBWithOptions(t *testing.T, path, title, creator, identifier stri
 	if version == "" {
 		version = "3.0"
 	}
+	switch version {
+	case "2.0", "3.0":
+	default:
+		t.Fatalf(`unsupported EPUB version %q; supported versions are "2.0" and "3.0"`, version)
+	}
+
+	if opts.EPUB3Cover && version == "2.0" {
+		t.Fatalf("EPUB3Cover requires Version %q but got %q; properties='cover-image' is an EPUB3-only mechanism", "3.0", version)
+	}
 
 	f, err := os.Create(path)
 	if err != nil {

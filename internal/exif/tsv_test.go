@@ -308,7 +308,8 @@ func TestParseTSV_EPUB3NoCoverMultipleImagesNilCover(t *testing.T) {
 
 func TestParseTSV_EPUB3ManifestItemProperties(t *testing.T) {
 	// Verify that the Properties field is correctly parsed from manifest items.
-	input := "Manifest Item Href\tnav.xhtml\n" +
+	input := "File Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n" +
+		"Manifest Item Href\tnav.xhtml\n" +
 		"Manifest Item Id\tnav\n" +
 		"Manifest Item Media-type\tapplication/xhtml+xml\n" +
 		"Manifest Item Properties\tnav\n" +
