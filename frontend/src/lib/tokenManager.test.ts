@@ -5,7 +5,9 @@ import { createTokenManager } from "./tokenManager.svelte";
 const item1 = { id: "a", name: "Alpha" };
 const item2 = { id: "b", name: "Beta" };
 
-function makeOps(overrides: Partial<Parameters<typeof createTokenManager>[0]> = {}) {
+function makeOps(
+  overrides: Partial<Parameters<typeof createTokenManager>[0]> = {},
+) {
   return {
     loadFn: vi.fn().mockResolvedValue([item1, item2]),
     deleteFn: vi.fn().mockResolvedValue(undefined),

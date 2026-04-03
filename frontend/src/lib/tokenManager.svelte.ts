@@ -37,8 +37,7 @@ export function createTokenManager<T extends { id: string }>(
     try {
       items = await ops.loadFn();
     } catch (err) {
-      error =
-        err instanceof Error ? err.message : ops.loadErrorMessage;
+      error = err instanceof Error ? err.message : ops.loadErrorMessage;
     } finally {
       loading = false;
     }
@@ -69,8 +68,7 @@ export function createTokenManager<T extends { id: string }>(
       await ops.deleteFn(id);
       items = items.filter((item) => item.id !== id);
     } catch (err) {
-      error =
-        err instanceof Error ? err.message : ops.deleteErrorMessage;
+      error = err instanceof Error ? err.message : ops.deleteErrorMessage;
     }
   }
 

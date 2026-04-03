@@ -32,8 +32,7 @@
 >
   <span
     id={`delete-confirm-label-${itemId}`}
-    class="text-xs text-danger-600 dark:text-red-400"
-    >Delete "{itemName}"?</span
+    class="text-xs text-danger-600 dark:text-red-400">Delete "{itemName}"?</span
   >
   <Button
     type="button"
