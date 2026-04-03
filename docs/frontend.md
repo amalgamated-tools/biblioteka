@@ -28,7 +28,7 @@ frontend/
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
-      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label` and `aria-hidden="true"` on their icons (WCAG 4.1.2); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
+      Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label` and `aria-hidden="true"` on their icons (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link always carries at least `opacity-30` so it is visible when focused via keyboard (WCAG 2.4.7); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       libraries/          Reusable sub-components for the Libraries view
         LibraryForm.svelte   Create / edit library form; the "Monitor for new content" toggle uses `role="switch"` and explicit `aria-checked` to communicate on/off state to assistive technologies (WCAG 4.1.2)
         LibraryView.svelte   Library detail with book listing
@@ -580,15 +580,15 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 
 > **Tip:** When binding a library-scoped `fetchBooks`, wrap `api.listLibraryBooks` in an arrow function so that `libraryId` is captured by the closure. `BookList` resets to page 1 whenever the `fetchBooks` prop reference changes, so switching libraries automatically resets pagination.
 
-**Pagination behaviour:**
+#### Pagination behaviour
 
 - On mount and whenever `fetchBooks` or `pageSize` changes, `offset` resets to `0` and a fresh fetch is triggered.
 - If items are deleted and the current page becomes empty (but earlier pages still have items), `BookList` automatically clamps back to the last valid page.
 - Stale responses from superseded fetches are silently discarded via an internal request-ID counter.
 
-**Scan-aware polling:**
+#### Scan-aware polling
 
-When `pollingInterval` is set and `total === 0`, `BookList` enters a polling mode: instead of showing the generic "No books yet." empty state, it renders a spinner with the message "Scanning library…". A `setTimeout`-based loop (not `setInterval`) re-fetches silently at the given interval, suppressing the loading overlay so the spinner stays visible. Polling stops as soon as `total > 0` or the component unmounts. On the first fetch that reports `total > 0`, `onBooksFound` fires exactly once, giving the parent an opportunity to clear scanning state (see `libraryStore.clearScanning` below).
+When `pollingInterval` is set and `total === 0`, `BookList` enters a polling mode: instead of showing the generic "No books yet." empty state, it renders a spinner with the message "Scanning library...". A `setTimeout`-based loop (not `setInterval`) re-fetches silently at the given interval, suppressing the loading overlay so the spinner stays visible. Polling stops as soon as `total > 0` or the component unmounts. On the first fetch that reports `total > 0`, `onBooksFound` fires exactly once, giving the parent an opportunity to clear scanning state (see `libraryStore.clearScanning` below).
 
 ```svelte
 <script lang="ts">
@@ -872,6 +872,38 @@ Key details:
 | `tabindex="-1"` on `<main>` | Makes `<main>` programmatically focusable even though it is not a natively interactive element |
 
 **When adding a new view,** no additional changes are required — the focus effect fires automatically whenever `routerStore.hash` changes, regardless of which view component is rendered.
+
+### Focus visible — Library settings link (`Sidebar.svelte`)
+
+**WCAG criterion:** [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA)
+
+Interactive elements must have a visible focus indicator so keyboard users can tell which element currently has focus. The library-settings gear icon link in the sidebar is a subtle secondary action that should not visually dominate the sidebar. Before this fix it used `opacity-0` on its resting state, which made it invisible when focused via the keyboard — a WCAG 2.4.7 violation.
+
+The link now uses `opacity-30` as its resting opacity and `opacity-100` on hover or when the parent library row is focused, so it is always perceptible when focused:
+
+```svelte
+<a
+  href={`#libraries/edit/${lib.id}`}
+  class="opacity-30 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 rounded text-ink-500 hover:text-accent-400 transition-all p-0.5 flex-shrink-0"
+  aria-label={`Library settings for ${lib.name}`}
+  onclick={onClose}
+>
+  <Settings2 class="w-3.5 h-3.5" />
+</a>
+```
+
+Key details:
+
+| Class / attribute | Purpose |
+|-------------------|---------|
+| `opacity-30` | Resting state — slightly dimmed but never invisible; satisfies WCAG 2.4.7 |
+| `group-hover:opacity-100` / `group-focus-within:opacity-100` | Fully reveals the link when the user hovers or tabs into the library row |
+| `focus:opacity-100` | Ensures the link is fully visible when it holds focus directly |
+| `focus-visible:ring-2 focus-visible:ring-accent-400` | Provides an explicit focus ring for keyboard navigation |
+| `rounded` | Ensures the focus ring follows the element's shape |
+| `aria-label={...lib.name...}` | Unique, descriptive label per library (WCAG 2.4.6) |
+
+**Rule:** Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so focus is always visible. If you add a new icon-only action link to the sidebar, follow the same resting-opacity pattern.
 
 ### ARIA landmarks
 
@@ -1179,7 +1211,8 @@ When editing the app shell or adding new persistent navigation elements:
 10. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. State-toggle buttons in table rows must use action-oriented `aria-label` values. See [Table accessibility](#table-accessibility) below.
 11. Sidebar navigation groups must use `role="group"` with `aria-labelledby` pointing to a native `<h2>` heading so screen readers announce the section name. See [Labelled navigation groups](#labelled-navigation-groups-sidebarsvelte) above.
 12. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
-13. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+13. Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so the element is visible when focused. When the action is context-sensitive (e.g. per-library settings links), include the context in the `aria-label` so each link has a unique, descriptive name. See [Focus visible — Library settings link](#focus-visible--library-settings-link-sidebarsvelte) above.
+14. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 
 ### Form accessibility
 
@@ -1664,13 +1697,16 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 #### `Sidebar.test.ts`
 
-`frontend/src/components/Sidebar.test.ts` verifies that the navigation sidebar uses semantic `<a>` anchor links (not `<button>` elements) for in-app navigation, and that `aria-current` state is applied correctly (WCAG 4.1.2). Five tests are included:
+`frontend/src/components/Sidebar.test.ts` verifies that the navigation sidebar uses semantic `<a>` anchor links (not `<button>` elements) for in-app navigation, that `aria-current` state is applied correctly (WCAG 4.1.2), and that library-settings links meet accessibility requirements (WCAG 2.4.6, 2.4.7). Eight tests are included:
 
 1. **`renders Dashboard, All Books, and Settings as links with correct hrefs`** — asserts that the three primary nav items are rendered as `role="link"` elements with the correct hash `href` values (`#dashboard`, `#books`, `#settings`).
 2. **`renders Logout as a button, not a link`** — asserts that Logout is a `role="button"` element, which is semantically correct because it triggers an action (sign-out) rather than navigating to a URL.
 3. **`sets aria-current='page' on the active navigation link`** — renders with `currentView="settings"` and asserts that the Settings link carries `aria-current="page"` while Dashboard does not.
 4. **`sets aria-current='page' on the active library link`** — renders with `currentView="libraries"` and `subPath="1"` and asserts that only the matching library entry link receives `aria-current="page"`.
-5. **`renders navigation group labels as headings`** — renders with `currentView="dashboard"` and asserts that the "Home" and "Libraries" group labels are exposed as `role="heading"` elements at level 2 (WCAG 1.3.1).
+5. **`library settings links include the library name in aria-label (WCAG 2.4.6)`** — renders with two mock libraries and asserts each Library-settings link has a unique `aria-label` that includes the library name (e.g., "Library settings for Fiction") so screen readers can distinguish between them (WCAG 2.4.6 Headings and Labels).
+6. **`library settings links are not fully transparent by default (WCAG 2.4.7)`** — asserts that the Library-settings link does not carry `opacity-0` and instead carries `opacity-30`, ensuring the element is perceivable when focused by keyboard (WCAG 2.4.7 Focus Visible).
+7. **`renders navigation group labels as headings`** — renders with `currentView="dashboard"` and asserts that the "Home" and "Libraries" group labels are exposed as `role="heading"` elements at level 2 (WCAG 1.3.1).
+8. **`does not render the app name as a heading`** — asserts that the brand name ("Biblioteka") is rendered as a `<p>` element, not an `<h1>`, so it does not create a duplicate top-level heading (WCAG 1.3.1).
 
 > **Mocking note:** The test file mocks `authStore`, `libraryStore`, `api.getVersion`, and all `lucide-svelte` icon components. The icon mocks are necessary because Lucide icons are ESM-only packages that cannot render in JSDOM; replacing them with no-ops keeps the test focused on DOM structure. `afterEach(cleanup)` prevents DOM leakage between tests.
 

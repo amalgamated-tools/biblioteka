@@ -252,6 +252,8 @@ curl -X POST http://localhost:8080/api/libraries \
 
 > **`organization_type`:** Supported values are `"book_per_folder"` (`Author/Title/file`), `"book_per_file"` (`Author/file`), and `"none"` (leave files in place).
 
+> **Web UI scan feedback:** When you add a library through the web interface, the book list automatically switches to a "Scanning library..." state with a live spinner instead of showing the empty-state placeholder. Once the background scan finishes and books appear, the list refreshes automatically — no page reload required. A 5-minute safety timeout clears the scanning indicator if the UI misses the completion signal. See [BookList scan-aware polling](frontend.md#scan-aware-polling) for implementation details.
+
 ### Edit and delete libraries
 
 Use `PUT /api/libraries/{id}` to update a library and `DELETE /api/libraries/{id}` to remove it. Both operations require admin privileges. Deleting a library removes only the library record and its book associations — the underlying book, author, series, and book file records are not deleted.
