@@ -542,7 +542,7 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 | `initialOffset` | `number` | | `0` | Starting page offset read **once** on mount. Use this to restore a bookmarked page (e.g., from the URL query string). Changes after mount are ignored. |
 | `onPageChange` | `(offset: number) => void` | | — | Called after each page turn (not on the initial mount). Use this to write the new offset back to the URL via `routerStore.setQueryParam`. |
 | `pollingInterval` | `number` | | — | When set, `BookList` re-fetches silently at this interval (in ms) while `total === 0`. Polling stops automatically once books appear. Use this to show a "Scanning library…" spinner while the backend scans a newly added library. |
-| `onBooksFound` | `() => void` | | — | Called exactly once the first time a poll or fetch returns at least one book. Use this to clear scanning state in the parent (e.g., `() => libraryStore.clearScanning(libraryId)`). |
+| `onBooksFound` | `() => void` | | — | Called exactly once the first time a poll or fetch reports `total > 0`. Use this to clear scanning state in the parent (e.g., `() => libraryStore.clearScanning(libraryId)`). |
 
 **Internal state exposed to the template (not props):**
 
@@ -588,7 +588,7 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 
 **Scan-aware polling:**
 
-When `pollingInterval` is set and `total === 0`, `BookList` enters a polling mode: instead of showing the generic "No books yet." empty state, it renders a spinner with the message "Scanning library…". A `setTimeout`-based loop (not `setInterval`) re-fetches silently at the given interval, suppressing the loading overlay so the spinner stays visible. Polling stops as soon as `total > 0` or the component unmounts. On the first successful fetch with books, `onBooksFound` fires exactly once, giving the parent an opportunity to clear scanning state (see `libraryStore.clearScanning` below).
+When `pollingInterval` is set and `total === 0`, `BookList` enters a polling mode: instead of showing the generic "No books yet." empty state, it renders a spinner with the message "Scanning library…". A `setTimeout`-based loop (not `setInterval`) re-fetches silently at the given interval, suppressing the loading overlay so the spinner stays visible. Polling stops as soon as `total > 0` or the component unmounts. On the first fetch that reports `total > 0`, `onBooksFound` fires exactly once, giving the parent an opportunity to clear scanning state (see `libraryStore.clearScanning` below).
 
 ```svelte
 <script lang="ts">
@@ -604,7 +604,7 @@ When `pollingInterval` is set and `total === 0`, `BookList` enters a polling mod
 <BookList
   fetchBooks={(limit, offset) => api.listLibraryBooks(libraryId, limit, offset)}
   pollingInterval={scanning ? 3000 : undefined}
-  onBooksFound={() => libraryStore.clearScanning(libraryId)}
+  onBooksFound={scanning ? () => libraryStore.clearScanning(libraryId) : undefined}
 />
 ```
 
@@ -1903,7 +1903,7 @@ The following test suites cover reactive stores and the API client. Unlike the a
 2. **`shows 'Scanning library...' when pollingInterval is set and no books found`** — renders with `pollingInterval={3000}` and empty `fetchBooks`; asserts the scanning spinner text appears and the standard empty text does not.
 
 **`BookList polling` (four tests):**
-1. **`polls at the specified interval when total is 0`** — uses fake timers; advances time by 3 s and asserts `fetchBooks` is called again (silent poll).
+1. **`polls at the specified interval when total is 0`** — uses fake timers; advances time by 1 s (twice) and asserts `fetchBooks` is called again after each step (silent poll).
 2. **`stops polling once books are found`** — `fetchBooks` returns books after the first poll; asserts polling stops and `fetchBooks` is not called again after further timer advancement.
 3. **`calls onBooksFound when books appear for the first time`** — passes an `onBooksFound` spy; asserts it is called exactly once when books first appear.
 4. **`does not poll when no pollingInterval is set`** — renders without `pollingInterval`; advances time and asserts `fetchBooks` is called only once (initial load).
