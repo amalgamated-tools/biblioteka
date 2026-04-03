@@ -165,8 +165,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.koboHandler = &handlers.KoboHandler{DB: s.DB}
 	s.koboHandler.RegisterRoutes()
 	s.requireKoboAuth = auth.KoboTokenAuthMiddleware(&koboDBAdapter{db: s.DB})
-	s.requireOPDSAuth = auth.OPDSBasicAuthMiddleware(&opdsDBAdapter{db: s.DB})
-	s.requireKOSyncAuth = auth.KOSyncHeaderAuthMiddleware(&kosyncDBAdapter{db: s.DB})
+	protocolCredAdapter := &protocolCredDBAdapter{db: s.DB}
+	s.requireOPDSAuth = auth.OPDSBasicAuthMiddleware(protocolCredAdapter)
+	s.requireKOSyncAuth = auth.KOSyncHeaderAuthMiddleware(protocolCredAdapter)
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
@@ -277,12 +278,13 @@ func (s *Server) shutdown(ctx context.Context) error {
 	return shutdownGroup.Wait()
 }
 
-// opdsDBAdapter bridges *db.DB to the auth.OPDSCredentialChecker interface.
-type opdsDBAdapter struct {
+// protocolCredDBAdapter bridges *db.DB to the auth.OPDSCredentialChecker
+// and auth.KOSyncCredentialChecker interfaces.
+type protocolCredDBAdapter struct {
 	db *db.DB
 }
 
-func (a *opdsDBAdapter) GetOPDSCredential(ctx context.Context, username string) (*auth.ProtocolCredentialResult, error) {
+func (a *protocolCredDBAdapter) GetOPDSCredential(ctx context.Context, username string) (*auth.ProtocolCredentialResult, error) {
 	cred, err := a.db.GetOPDSCredentialByUsername(ctx, username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -300,6 +302,31 @@ func (a *opdsDBAdapter) GetOPDSCredential(ctx context.Context, username string) 
 			)
 		}
 		return nil, fmt.Errorf("failed to get OPDS credential for username %s: %w", username, err)
+	}
+	return &auth.ProtocolCredentialResult{
+		UserID:       cred.UserID,
+		PasswordHash: cred.PasswordHash,
+	}, nil
+}
+
+func (a *protocolCredDBAdapter) GetKOSyncCredential(ctx context.Context, username string) (*auth.ProtocolCredentialResult, error) {
+	cred, err := a.db.GetKOSyncCredentialByUsername(ctx, username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.DebugContext(
+				ctx,
+				"KOSync credential not found",
+				slog.String(otelkeys.KOSyncUsername, username),
+			)
+		} else {
+			slog.ErrorContext(
+				ctx,
+				"failed to get KOSync credential",
+				slog.String(otelkeys.KOSyncUsername, username),
+				slog.Any(otelkeys.Error, err),
+			)
+		}
+		return nil, fmt.Errorf("failed to get KOSync credential for username %s: %w", username, err)
 	}
 	return &auth.ProtocolCredentialResult{
 		UserID:       cred.UserID,
@@ -334,35 +361,5 @@ func (a *koboDBAdapter) GetKoboTokenByToken(ctx context.Context, token string) (
 	}
 	return &auth.KoboTokenResult{
 		UserID: t.UserID,
-	}, nil
-}
-
-// kosyncDBAdapter bridges *db.DB to the auth.KOSyncCredentialChecker interface.
-type kosyncDBAdapter struct {
-	db *db.DB
-}
-
-func (a *kosyncDBAdapter) GetKOSyncCredential(ctx context.Context, username string) (*auth.ProtocolCredentialResult, error) {
-	cred, err := a.db.GetKOSyncCredentialByUsername(ctx, username)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			slog.DebugContext(
-				ctx,
-				"KOSync credential not found",
-				slog.String(otelkeys.KOSyncUsername, username),
-			)
-		} else {
-			slog.ErrorContext(
-				ctx,
-				"failed to get KOSync credential",
-				slog.String(otelkeys.KOSyncUsername, username),
-				slog.Any(otelkeys.Error, err),
-			)
-		}
-		return nil, fmt.Errorf("failed to get KOSync credential for username %s: %w", username, err)
-	}
-	return &auth.ProtocolCredentialResult{
-		UserID:       cred.UserID,
-		PasswordHash: cred.PasswordHash,
 	}, nil
 }
