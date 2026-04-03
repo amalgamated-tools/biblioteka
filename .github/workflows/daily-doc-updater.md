@@ -33,7 +33,7 @@ tools:
     toolsets: [default]
   edit:
   bash:
-    - "find docs -name '*.md' -o -name '*.mdx'"
+    - "find docs -name '*.md'"
     - "find docs -maxdepth 1 -ls"
     - "find docs -name '*.md' -exec cat {} +"
     - "grep -r '*' docs"
@@ -81,14 +81,14 @@ Create a summary of changes that should be documented.
 
 ### 3. Review Documentation Instructions
 
-**IMPORTANT**: Before making any documentation changes, you MUST read and follow the documentation guidelines:
+**IMPORTANT**: Before making any documentation changes, review the existing documentation structure:
 
 ```bash
-# Load the documentation instructions
-cat .github/instructions/documentation.instructions.md
+# List all documentation files
+ls docs/*.md
 ```
 
-The documentation follows the **Diátaxis framework** with four distinct types:
+The documentation uses **mkdocs-material** and lives in the `docs/` directory as a flat collection of Markdown files. The project uses the **Diátaxis framework** with four distinct types:
 - **Tutorials** (Learning-Oriented): Guide beginners through achieving specific outcomes
 - **How-to Guides** (Goal-Oriented): Solve specific real-world problems
 - **Reference** (Information-Oriented): Provide accurate technical descriptions
@@ -97,13 +97,12 @@ The documentation follows the **Diátaxis framework** with four distinct types:
 Pay special attention to:
 - The tone and voice guidelines (neutral, technical, not promotional)
 - Proper use of headings (markdown syntax, not bold text)
-- Code samples with appropriate language tags (use `aw` for agentic workflows)
-- Astro Starlight syntax for callouts, tabs, and cards
-- Minimal use of components (prefer standard markdown)
+- Code samples with appropriate language tags
+- Plain Markdown formatting (no MDX or component syntax)
 
 ### 4. Identify Documentation Gaps
 
-Review the documentation in the `docs/src/content/docs/` directory:
+Review the documentation in the `docs/` directory:
 
 - Check if new features are already documented
 - Identify which documentation files need updates
@@ -113,7 +112,7 @@ Review the documentation in the `docs/src/content/docs/` directory:
 Use bash commands to explore documentation structure:
 
 ```bash
-find docs/src/content/docs -name '*.md' -o -name '*.mdx'
+find docs -name '*.md'
 ```
 
 ### 5. Update Documentation
@@ -121,19 +120,27 @@ find docs/src/content/docs -name '*.md' -o -name '*.mdx'
 For each missing or incomplete feature documentation:
 
 1. **Determine the correct file** based on the feature type:
-   - CLI commands → `docs/src/content/docs/setup/cli.md`
-   - Workflow reference → `docs/src/content/docs/reference/`
-   - How-to guides → `docs/src/content/docs/guides/`
-   - Samples → `docs/src/content/docs/samples/`
+   - API reference → `docs/api-reference.md` or `docs/api.md`
+   - Authentication → `docs/authentication.md`
+   - Deployment → `docs/deployment.md`
+   - Administration → `docs/administration.md`
+   - Database → `docs/database-schema.md`
+   - Metadata extraction → `docs/metadata.md`
+   - Background jobs → `docs/background-jobs.md`
+   - Frontend → `docs/frontend.md`
+   - OPDS → `docs/opds.md`
+   - Kobo sync → `docs/kobo.md`
+   - KOReader sync → `docs/koreader.md`
+   - Observability → `docs/observability.md`
 
-2. **Follow documentation guidelines** from `.github/instructions/documentation.instructions.md`
+2. **Follow documentation guidelines**: neutral, technical tone; plain Markdown
 
 3. **Update the appropriate file(s)** using the edit tool:
    - Add new sections for new features
    - Update existing sections for modified features
    - Add deprecation notices for removed features
    - Include code examples with proper syntax highlighting
-   - Use appropriate Astro Starlight components (callouts, tabs, cards) sparingly
+   - Use standard Markdown formatting (no MDX or component syntax)
 
 4. **Maintain consistency** with existing documentation style:
    - Use the same tone and voice
@@ -199,7 +206,7 @@ This PR updates the documentation based on features merged in the last 24 hours.
 - **Follow Guidelines**: Strictly adhere to the documentation instructions
 - **Be Selective**: Only document features that affect users (skip internal refactoring unless it's significant)
 - **Be Clear**: Write clear, concise documentation that helps users
-- **Use Proper Format**: Use the correct Diátaxis category and Astro Starlight syntax
+- **Use Proper Format**: Use the correct Diátaxis category and standard Markdown syntax
 - **Link References**: Include links to relevant PRs and issues where appropriate
 - **Test Understanding**: If unsure about a feature, review the code changes in detail
 
