@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"crypto/md5" // #nosec G501 -- MD5 is required by the KOReader kosync protocol
 	"database/sql"
 	"encoding/hex"
@@ -77,22 +76,10 @@ func (h *KOSyncHandler) credOps() credentialOps {
 		auditUpsert:     db.AuditActionKOSyncCredentialUpdated,
 		auditDelete:     db.AuditActionKOSyncCredentialDeleted,
 		errConflict:     db.ErrKOSyncUsernameExists,
-		getByUserID: func(ctx context.Context, userID string) (credentialEntity, error) {
-			c, err := h.DB.GetKOSyncCredentialByUserID(ctx, userID)
-			if err != nil {
-				return credentialEntity{}, err
-			}
-			return credentialEntity{ID: c.ID, Username: c.Username, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt}, nil
-		},
-		upsert: func(ctx context.Context, userID, username, hash string) (credentialEntity, error) {
-			c, err := h.DB.UpsertKOSyncCredential(ctx, userID, username, hash)
-			if err != nil {
-				return credentialEntity{}, err
-			}
-			return credentialEntity{ID: c.ID, Username: c.Username, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt}, nil
-		},
-		del:       h.DB.DeleteKOSyncCredential,
-		deriveKey: kosyncProtocolKey,
+		getByUserID:     credGetAdapter(h.DB.GetKOSyncCredentialByUserID),
+		upsert:          credUpsertAdapter(h.DB.UpsertKOSyncCredential),
+		del:             h.DB.DeleteKOSyncCredential,
+		deriveKey:       kosyncProtocolKey,
 	}
 }
 
