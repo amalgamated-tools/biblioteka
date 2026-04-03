@@ -124,9 +124,11 @@ the issue rather than replacing the full label list.
 
 **Important:** The `update-issue` tool requires at least one of `status`,
 `title`, or `body` to be provided. When you are only updating labels (without
-changing the title, body, or status), always include `"status": "open"` in
-the call to satisfy this requirement — this is a no-op since the issue is
-already open.
+changing the title, body, or status), always include the issue's **current
+status** (retrieved in Step 1) in the call so that this field acts as a no-op.
+For example: `"status": "<current status of the issue>"`. Do **not** hardcode
+`"status": "open"`, because this workflow also triggers on `edited` events and
+an edited closed issue could be reopened unintentionally.
 
 If the issue already carries a type label and a priority label that match your
 classification, skip this step entirely and proceed to Step 7.
