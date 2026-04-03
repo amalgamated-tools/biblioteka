@@ -11,6 +11,15 @@
   import { TokenListState } from "../../lib/tokenList.svelte";
   import { CopyTimeoutState } from "../../lib/copyTimeout.svelte";
 
+  function focusTrigger(id: string) {
+    document.querySelector<HTMLElement>(`[data-delete-trigger="${id}"]`)?.focus();
+  }
+
+  function cancelWithFocus() {
+    const id = tokenList.pendingDelete?.id;
+    void tokenList.cancelDelete(id ? () => focusTrigger(id) : undefined);
+  }
+
   const tokenList = new TokenListState<APIKey>({
     load: listAPIKeys,
     delete: deleteAPIKey,
@@ -201,7 +210,7 @@
                       tabindex="-1"
                       use:autofocusFirstButton
                       onkeydown={(e: KeyboardEvent) => {
-                        if (e.key === "Escape") tokenList.cancelDelete();
+                        if (e.key === "Escape") cancelWithFocus();
                       }}
                     >
                       <span
@@ -220,7 +229,7 @@
                       <Button
                         type="button"
                         variant="secondary"
-                        onclick={() => tokenList.cancelDelete()}
+                        onclick={() => cancelWithFocus()}
                         class="px-3 py-1 text-xs"
                       >
                         Cancel

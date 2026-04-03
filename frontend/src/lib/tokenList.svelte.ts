@@ -41,16 +41,10 @@ export class TokenListState<T extends { id: string }> {
     this.pendingDelete = { id, name };
   }
 
-  async cancelDelete(): Promise<void> {
-    const id = this.pendingDelete?.id;
+  async cancelDelete(onAfterClear?: () => void): Promise<void> {
     this.pendingDelete = null;
     await tick();
-    if (id) {
-      const trigger = document.querySelector<HTMLElement>(
-        `[data-delete-trigger="${id}"]`,
-      );
-      trigger?.focus();
-    }
+    onAfterClear?.();
   }
 
   async confirmDelete(): Promise<void> {

@@ -85,6 +85,20 @@ describe("TokenListState", () => {
       await state.cancelDelete();
       expect(state.pendingDelete).toBeNull();
     });
+
+    it("calls onAfterClear callback after clearing", async () => {
+      const callback = vi.fn();
+      state.handleDelete("tok-1", "Token 1");
+      await state.cancelDelete(callback);
+      expect(state.pendingDelete).toBeNull();
+      expect(callback).toHaveBeenCalledOnce();
+    });
+
+    it("does not call onAfterClear when not provided", async () => {
+      state.handleDelete("tok-1", "Token 1");
+      await state.cancelDelete();
+      expect(state.pendingDelete).toBeNull();
+    });
   });
 
   describe("confirmDelete", () => {
