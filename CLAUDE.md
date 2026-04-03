@@ -428,28 +428,46 @@ func (d *DB) FindOrCreateTag(ctx context.Context, name string) (*Tag, error) {
 
 ### Protocol credential database layer
 
-When implementing the `UpsertXxxCredential` database function for a new sync protocol, the upsert uses `ON CONFLICT (user_id) DO UPDATE` so each user has at most one credential set. If the requested username is already taken by a *different* user, the database raises a unique-constraint violation on the `username` column. Use `isColumnUniqueViolation` (defined in `internal/db/libraries.go` alongside `isUniqueViolation`) to detect this case and return the sentinel error that `credentialOps.errConflict` maps to a `409 Conflict` in the handler:
+When implementing the database layer for a new sync protocol that stores a username + bcrypt-hashed password, use the shared helpers in `internal/db/protocol_credentials.go` instead of hand-rolling the SQL. Define a `protocolCredentialConfig` value, declare a type alias for `ProtocolCredential`, and delegate all CRUD to the unexported package-level helpers:
 
 ```go
-func (d *DB) UpsertMyProtocolCredential(ctx context.Context, userID, username, passwordHash string) (*MyProtocolCredential, error) {
-    slog.DebugContext(ctx, "db: upserting MyProtocol credential",
-        slog.String(otelkeys.UserID, userID),
-        slog.String(otelkeys.MyProtocolUsername, username),
-    )
-    query := `INSERT INTO myprotocol_credentials (user_id, username, password_hash, updated_at)
-        VALUES ($1, $2, $3, ` + d.now() + `)
-        ON CONFLICT (user_id) DO UPDATE SET username = $2, password_hash = $3, updated_at = ` + d.now() + `
-        RETURNING ` + myProtocolCredentialColumns
+// ErrMyProtocolUsernameExists is returned when a MyProtocol username is already taken by another user.
+var ErrMyProtocolUsernameExists = errors.New("myprotocol username already exists")
 
-    cred, err := scanMyProtocolCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
-    if err != nil && isColumnUniqueViolation(err, "myprotocol_credentials.username", "idx_myprotocol_credentials_username") {
-        return nil, ErrMyProtocolUsernameExists
-    }
-    return cred, err
+// MyProtocolCredential represents a row in the myprotocol_credentials table.
+type MyProtocolCredential = ProtocolCredential
+
+var myprotocolCredConfig = protocolCredentialConfig{
+    table:        "myprotocol_credentials",
+    tableCol:     "myprotocol_credentials.username",
+    indexName:    "idx_myprotocol_credentials_username",
+    errExists:    ErrMyProtocolUsernameExists,
+    logPrefix:    "MyProtocol",
+    usernameAttr: func(v string) slog.Attr { return slog.String("myprotocol.username", v) },
+}
+
+func (d *DB) GetMyProtocolCredentialByUserID(ctx context.Context, userID string) (*MyProtocolCredential, error) {
+    return getCredentialByUserID(ctx, d, myprotocolCredConfig, userID)
+}
+
+func (d *DB) GetMyProtocolCredentialByUsername(ctx context.Context, username string) (*MyProtocolCredential, error) {
+    return getCredentialByUsername(ctx, d, myprotocolCredConfig, username)
+}
+
+// UpsertMyProtocolCredential creates or updates the MyProtocol credential for a user.
+// Returns ErrMyProtocolUsernameExists if the username is taken by a different user.
+func (d *DB) UpsertMyProtocolCredential(ctx context.Context, userID, username, passwordHash string) (*MyProtocolCredential, error) {
+    return upsertCredential(ctx, d, myprotocolCredConfig, userID, username, passwordHash)
+}
+
+func (d *DB) DeleteMyProtocolCredential(ctx context.Context, userID string) error {
+    return deleteCredential(ctx, d, myprotocolCredConfig, userID)
 }
 ```
 
-`isColumnUniqueViolation(err, tableCol, idxName string) bool` first confirms `isUniqueViolation(err)` (SQLite or PostgreSQL dialect), then checks the error message for the specific column name (`tableCol`) or index name (`idxName`). Pass the fully qualified column reference as `tableCol` (e.g. `"myprotocol_credentials.username"`) and the named unique index as `idxName` (e.g. `"idx_myprotocol_credentials_username"`). SQLite may reference either the column or the index name in its message, while PostgreSQL references the constraint/index name — hence passing both `tableCol` and `idxName`.
+`protocolCredentialConfig` holds the table name and the unique-constraint identifiers used to detect username conflicts. `upsertCredential` performs the `ON CONFLICT (user_id) DO UPDATE` upsert and translates a unique-constraint violation on the `username` column into `errExists` — which `credentialOps.errConflict` then maps to a `409 Conflict` response in the handler. SQLite may reference either the fully qualified column (`tableCol`) or the index name (`indexName`) in its error message; PostgreSQL references the index/constraint name — hence the `protocolCredentialConfig` accepts both.
+
+`ProtocolCredential` (defined in `protocol_credentials.go`) is the shared base struct. Declare your protocol-specific type as a type alias (`type MyProtocolCredential = ProtocolCredential`) so callers get a named type without duplicating fields.
 
 ## Frontend Conventions
 
