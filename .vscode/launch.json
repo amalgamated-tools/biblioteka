@@ -138,7 +138,7 @@
             "mode": "auto",
             "program": "cmd/server/main.go",
             "envFile": "${workspaceFolder}/.env",
-           "showLog": true
-       }
-   ]
+            "showLog": true
+        }
+    ]
 }
