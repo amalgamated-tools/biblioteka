@@ -43,7 +43,7 @@ frontend/
       ui/                 Generic reusable UI components
         AlertBanner.svelte   Dismissible alert / error banner
         BookCard.svelte      Card widget displaying a single book summary
-        BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback
+        BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states
         Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
         TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes
     stores/             Reactive state modules (lowercase, *.svelte.ts)
@@ -115,9 +115,35 @@ export const exampleStore = new ExampleStore();
 | `auth.svelte.ts` | `authStore` | Current user, sign-in/up/out, OIDC token initialisation |
 | `router.svelte.ts` | `routerStore` | Hash-based navigation; current view and sub-path |
 | `theme.svelte.ts` | `themeStore` | Light / dark / auto theme preference; persisted to `localStorage` |
-| `libraries.svelte.ts` | `libraryStore` | Library CRUD; cached after first load |
+| `libraries.svelte.ts` | `libraryStore` | Library CRUD; cached after first load; tracks background scan state via `scanningIds` and `isScanning` |
 | `authors.svelte.ts` | `authorStore` | Author CRUD; cached after first load |
 | `series.svelte.ts` | `seriesStore` | Series CRUD; cached after first load |
+
+### `libraryStore` — scanning state API
+
+When a library is added, the backend scans it asynchronously. `libraryStore` tracks in-progress scans so components can show real-time feedback without polling on their own.
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `scanningIds` | `SvelteSet<string>` | Reactive set of library IDs whose background scan is in progress. Add a `$derived` check against this set to drive per-library UI. |
+| `isScanning` | `boolean` (derived) | `true` when at least one library is currently scanning (`scanningIds.size > 0`). Useful for driving aggregate UI like the all-books view. |
+| `clearScanning(id)` | `void` | Removes the given library ID from `scanningIds` and cancels its auto-clear timer. Call this from `BookList`'s `onBooksFound` callback once the scan has completed. |
+| `clearAllScanning()` | `void` | Removes all library IDs from `scanningIds` and cancels all timers. Useful in tests or when the user navigates away. |
+
+`add()` automatically marks the newly created library as scanning and schedules an auto-clear after 5 minutes as a safety net (in case the frontend misses the signal). `remove()` calls `clearScanning` for the deleted library so stale scanning state is not left behind.
+
+**Deriving per-library scanning state:**
+
+```svelte
+<script lang="ts">
+  import { libraryStore } from "../../stores/libraries.svelte";
+
+  let { libraryId }: { libraryId: string } = $props();
+
+  // Reactive: true while this library's scan is in progress
+  let scanning = $derived(libraryStore.scanningIds.has(libraryId));
+</script>
+```
 
 ### Using a store in a component
 
@@ -515,6 +541,8 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 | `pageSize` | `number` | | `24` | Number of books per page. Clamped to `[1, 200]` at runtime. |
 | `initialOffset` | `number` | | `0` | Starting page offset read **once** on mount. Use this to restore a bookmarked page (e.g., from the URL query string). Changes after mount are ignored. |
 | `onPageChange` | `(offset: number) => void` | | — | Called after each page turn (not on the initial mount). Use this to write the new offset back to the URL via `routerStore.setQueryParam`. |
+| `pollingInterval` | `number` | | — | When set, `BookList` re-fetches silently at this interval (in ms) while `total === 0`. Polling stops automatically once books appear. Use this to show a "Scanning library…" spinner while the backend scans a newly added library. |
+| `onBooksFound` | `() => void` | | — | Called exactly once the first time a poll or fetch returns at least one book. Use this to clear scanning state in the parent (e.g., `() => libraryStore.clearScanning(libraryId)`). |
 
 **Internal state exposed to the template (not props):**
 
@@ -557,6 +585,30 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 - On mount and whenever `fetchBooks` or `pageSize` changes, `offset` resets to `0` and a fresh fetch is triggered.
 - If items are deleted and the current page becomes empty (but earlier pages still have items), `BookList` automatically clamps back to the last valid page.
 - Stale responses from superseded fetches are silently discarded via an internal request-ID counter.
+
+**Scan-aware polling:**
+
+When `pollingInterval` is set and `total === 0`, `BookList` enters a polling mode: instead of showing the generic "No books yet." empty state, it renders a spinner with the message "Scanning library…". A `setTimeout`-based loop (not `setInterval`) re-fetches silently at the given interval, suppressing the loading overlay so the spinner stays visible. Polling stops as soon as `total > 0` or the component unmounts. On the first successful fetch with books, `onBooksFound` fires exactly once, giving the parent an opportunity to clear scanning state (see `libraryStore.clearScanning` below).
+
+```svelte
+<script lang="ts">
+  import BookList from "../ui/BookList.svelte";
+  import * as api from "../../lib/api";
+  import { libraryStore } from "../../stores/libraries.svelte";
+
+  let { libraryId }: { libraryId: string } = $props();
+
+  let scanning = $derived(libraryStore.scanningIds.has(libraryId));
+</script>
+
+<BookList
+  fetchBooks={(limit, offset) => api.listLibraryBooks(libraryId, limit, offset)}
+  pollingInterval={scanning ? 3000 : undefined}
+  onBooksFound={() => libraryStore.clearScanning(libraryId)}
+/>
+```
+
+> **Note:** `BookList` cannot identify *which* library finished scanning, so when embedding the all-books view (`Books.svelte`) alongside a scan in progress, pass `pollingInterval` derived from `libraryStore.isScanning` but **omit** `onBooksFound` — the aggregate view cannot safely call `clearScanning` without knowing the specific library ID. Polling stops naturally once `total > 0`.
 
 ---
 
@@ -1814,17 +1866,49 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ---
 
-### `clipboard.test.ts`
+### `libraries.test.ts`
 
-`frontend/src/lib/clipboard.test.ts` exercises the `copyToClipboard` utility. Tests stub `navigator` and `document.execCommand` to isolate the function from real browser APIs. Tests are grouped in one `describe` block:
+`frontend/src/stores/libraries.test.ts` exercises `libraryStore`, the library state and scanning store. All `api.*` calls are replaced with Vitest mocks. Ten tests across five `describe` blocks:
 
-**`copyToClipboard` (four tests):**
-- Asserts the async Clipboard API (`navigator.clipboard.writeText`) is used when available, and called with the correct text.
-- Asserts the `execCommand` fallback path is taken when `navigator.clipboard` is absent, and that `document.execCommand('copy')` is invoked.
-- Asserts an `Error` is thrown when `execCommand` returns `false`.
-- Asserts errors thrown by the async Clipboard API are propagated to the caller.
+**`load` (three tests):**
+1. **`fetches libraries and sets loaded`** — mocks `listLibraries` to resolve with a fixture; asserts `libraries` is populated, `loaded` is `true`, and `loading` is `false`.
+2. **`does not call API again after already loaded`** — calls `load()` twice; asserts `listLibraries` is called exactly once.
+3. **`resets loading on API error`** — mocks `listLibraries` to reject; asserts `loading` and `loaded` are both `false` and `libraries` is empty.
 
-> **Mocking note:** `beforeEach` captures the original `execCommand` property descriptor, and `afterEach` restores it alongside `vi.unstubAllGlobals()` and `vi.restoreAllMocks()`. This prevents global state leaking between tests.
+**`add` (three tests):**
+1. **`adds the created library to the store`** — mocks `createLibrary`; asserts the returned library is appended to `libraries`.
+2. **`marks the newly added library as scanning`** — asserts `scanningIds` contains the new library's ID immediately after `add()`, and `isScanning` is `true`.
+3. **`auto-clears scanning state after timeout`** — uses fake timers; asserts `scanningIds` is emptied after the 5-minute auto-clear timeout fires.
+
+**`clearScanning` (two tests):**
+1. **`removes the specified library ID from scanningIds`** — marks a library as scanning then calls `clearScanning(id)`; asserts `scanningIds` no longer contains it.
+2. **`is a no-op when ID is not in scanningIds`** — calls `clearScanning` with an unknown ID; asserts no error and state is unchanged.
+
+**`clearAllScanning` (one test):**
+1. **`clears all scanning IDs`** — marks two libraries as scanning then calls `clearAllScanning()`; asserts `scanningIds` is empty and `isScanning` is `false`.
+
+**`remove` (one test):**
+1. **`removes the library from the store and clears its scanning state`** — adds and marks a library as scanning, then calls `remove(id)`; asserts the library is gone from `libraries` and `scanningIds`.
+
+> **Setup:** `beforeEach` resets the store by setting `libraries = []`, `loading = false`, `loaded = false`, and calling `clearAllScanning()`. Fake timers are used to control the 5-minute scanning timeout without real waits.
+
+---
+
+### `BookList.test.ts`
+
+`frontend/src/components/ui/BookList.test.ts` exercises `BookList.svelte`'s polling and empty-state behaviour. All `lucide-svelte` icons are mocked as no-ops (required for JSDOM). Six tests across two `describe` blocks:
+
+**`BookList empty state` (two tests):**
+1. **`shows 'No books yet.' when no pollingInterval is set`** — renders with an empty `fetchBooks`; asserts the standard empty-state text appears.
+2. **`shows 'Scanning library...' when pollingInterval is set and no books found`** — renders with `pollingInterval={3000}` and empty `fetchBooks`; asserts the scanning spinner text appears and the standard empty text does not.
+
+**`BookList polling` (four tests):**
+1. **`polls at the specified interval when total is 0`** — uses fake timers; advances time by 3 s and asserts `fetchBooks` is called again (silent poll).
+2. **`stops polling once books are found`** — `fetchBooks` returns books after the first poll; asserts polling stops and `fetchBooks` is not called again after further timer advancement.
+3. **`calls onBooksFound when books appear for the first time`** — passes an `onBooksFound` spy; asserts it is called exactly once when books first appear.
+4. **`does not poll when no pollingInterval is set`** — renders without `pollingInterval`; advances time and asserts `fetchBooks` is called only once (initial load).
+
+> **Mocking note:** `afterEach(cleanup)` prevents DOM leakage between tests. Fake timers (`vi.useFakeTimers()`) are activated per-suite and restored in `afterEach` to avoid contaminating other test files.
 
 ---
 
