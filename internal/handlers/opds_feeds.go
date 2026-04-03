@@ -111,44 +111,78 @@ func (h *OPDSHandler) recentBooks(w http.ResponseWriter, r *http.Request) {
 	h.writeBooksFeed(w, r, "/recent", "Recent Books", nil, h.DB.ListRecentBooks)
 }
 
-func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
+// opdsNavEntity holds the minimal data needed to build a named-entity navigation
+// feed entry (e.g. an author or a series).
+type opdsNavEntity struct {
+	ID      string
+	Name    string
+	Updated string // pre-formatted RFC3339
+}
+
+// writeNamedEntityNavFeed is a shared helper for paginated OPDS navigation feeds
+// that list named entities (authors, series, etc.).
+// pathSegment is the path component after /opds (e.g. "authors" or "series").
+// listFn must return (entities, totalCount, error) for the given limit and offset.
+func (h *OPDSHandler) writeNamedEntityNavFeed(
+	w http.ResponseWriter, r *http.Request,
+	pathSegment, title string,
+	listFn func(ctx context.Context, limit, offset int) ([]opdsNavEntity, int, error),
+) {
 	ctx := r.Context()
 	baseURL := opdsBaseURL(r)
 	page := parsePage(r)
 	offset := (page - 1) * opdsPageSize
 
-	authors, total, err := h.DB.ListAuthorsPaginated(ctx, opdsPageSize, offset)
+	entities, total, err := listFn(ctx, opdsPageSize, offset)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list authors", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, baseURL+"/authors", "failed to list authors")
+		slog.ErrorContext(ctx, "OPDS: failed to list entities",
+			slog.String("entity_type", pathSegment),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, baseURL+"/"+pathSegment, fmt.Sprintf("Failed to list %s", pathSegment))
 		return
 	}
 
-	entries := make([]opdsEntry, 0, len(authors))
-	for _, a := range authors {
+	selfURL := baseURL + "/" + pathSegment
+	entries := make([]opdsEntry, 0, len(entities))
+	for _, e := range entities {
+		entryURL := selfURL + "/" + e.ID
 		entries = append(entries, opdsEntry{
-			Title:   a.Name,
-			ID:      baseURL + "/authors/" + a.ID,
-			Updated: a.UpdatedAt.Format(time.RFC3339),
-			Links: []opdsLink{
-				{Rel: relSubsection, Href: baseURL + "/authors/" + a.ID, Type: opdsAcqContentType},
-			},
+			Title:   e.Name,
+			ID:      entryURL,
+			Updated: e.Updated,
+			Links:   []opdsLink{{Rel: relSubsection, Href: entryURL, Type: opdsAcqContentType}},
 		})
 	}
 
-	selfURL := baseURL + "/authors"
 	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsNavContentType)
 	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
 
 	feed := &opdsFeed{
 		XMLNS:   xmlnsAtom,
 		ID:      selfURL,
-		Title:   "Authors",
+		Title:   title,
 		Updated: time.Now().UTC().Format(time.RFC3339),
 		Links:   links,
 		Entries: entries,
 	}
 	writeOPDSFeed(r, w, opdsNavContentType, feed)
+}
+
+func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
+	h.writeNamedEntityNavFeed(w, r, "authors", "Authors",
+		func(ctx context.Context, limit, offset int) ([]opdsNavEntity, int, error) {
+			authors, total, err := h.DB.ListAuthorsPaginated(ctx, limit, offset)
+			if err != nil {
+				return nil, 0, err
+			}
+			entities := make([]opdsNavEntity, len(authors))
+			for i, a := range authors {
+				entities[i] = opdsNavEntity{ID: a.ID, Name: a.Name, Updated: a.UpdatedAt.Format(time.RFC3339)}
+			}
+			return entities, total, nil
+		},
+	)
 }
 
 func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
@@ -173,43 +207,19 @@ func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, author
 }
 
 func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	baseURL := opdsBaseURL(r)
-	page := parsePage(r)
-	offset := (page - 1) * opdsPageSize
-
-	seriesList, total, err := h.DB.ListSeriesPaginated(ctx, opdsPageSize, offset)
-	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list series", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, baseURL+"/series", "Failed to list series")
-		return
-	}
-
-	entries := make([]opdsEntry, 0, len(seriesList))
-	for _, s := range seriesList {
-		entries = append(entries, opdsEntry{
-			Title:   s.Name,
-			ID:      baseURL + "/series/" + s.ID,
-			Updated: s.UpdatedAt.Format(time.RFC3339),
-			Links: []opdsLink{
-				{Rel: relSubsection, Href: baseURL + "/series/" + s.ID, Type: opdsAcqContentType},
-			},
-		})
-	}
-
-	selfURL := baseURL + "/series"
-	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsNavContentType)
-	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
-
-	feed := &opdsFeed{
-		XMLNS:   xmlnsAtom,
-		ID:      selfURL,
-		Title:   "Series",
-		Updated: time.Now().UTC().Format(time.RFC3339),
-		Links:   links,
-		Entries: entries,
-	}
-	writeOPDSFeed(r, w, opdsNavContentType, feed)
+	h.writeNamedEntityNavFeed(w, r, "series", "Series",
+		func(ctx context.Context, limit, offset int) ([]opdsNavEntity, int, error) {
+			seriesList, total, err := h.DB.ListSeriesPaginated(ctx, limit, offset)
+			if err != nil {
+				return nil, 0, err
+			}
+			entities := make([]opdsNavEntity, len(seriesList))
+			for i, s := range seriesList {
+				entities[i] = opdsNavEntity{ID: s.ID, Name: s.Name, Updated: s.UpdatedAt.Format(time.RFC3339)}
+			}
+			return entities, total, nil
+		},
+	)
 }
 
 func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, seriesID string) {
