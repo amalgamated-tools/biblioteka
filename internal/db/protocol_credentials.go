@@ -20,6 +20,12 @@ type ProtocolCredential struct {
 	UpdatedAt    Timestamp `json:"updated_at"`
 }
 
+// CredentialInfo returns the common credential fields (ID, Username,
+// CreatedAt, UpdatedAt) used by the handler-layer credentialInfoer interface.
+func (c *ProtocolCredential) CredentialInfo() (id, username string, createdAt, updatedAt Timestamp) {
+	return c.ID, c.Username, c.CreatedAt, c.UpdatedAt
+}
+
 const protocolCredentialColumns = `id, user_id, username, password_hash, created_at, updated_at`
 
 func scanProtocolCredential(row interface{ Scan(...any) error }) (*ProtocolCredential, error) {
