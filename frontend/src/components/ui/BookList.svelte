@@ -16,6 +16,10 @@
     pageSize?: number;
     initialOffset?: number;
     onPageChange?: (offset: number) => void;
+    /** When set, re-fetches at this interval (ms) while no books are found. */
+    pollingInterval?: number;
+    /** Called the first time books are found (useful for clearing scanning state). */
+    onBooksFound?: () => void;
   }
 
   const MAX_PAGE_SIZE = 200;
@@ -25,6 +29,8 @@
     pageSize = 24,
     initialOffset = 0,
     onPageChange,
+    pollingInterval,
+    onBooksFound,
   }: Props = $props();
 
   let effectivePageSize = $derived(
@@ -44,15 +50,22 @@
   let error: string | null = $state(null);
   let viewMode: "grid" | "table" = $state("grid");
   let currentRequestId = 0;
+  // Set to true the first time books are found so onBooksFound fires only once.
+  let didNotifyBooksFound = false;
 
   let totalPages = $derived(Math.max(1, Math.ceil(total / effectivePageSize)));
   let currentPage = $derived(Math.floor(offset / effectivePageSize) + 1);
   let rangeStart = $derived(total === 0 ? 0 : offset + 1);
   let rangeEnd = $derived(Math.min(offset + effectivePageSize, total));
 
-  async function load(fetchFn: typeof fetchBooks, size: number, off: number) {
+  async function load(
+    fetchFn: typeof fetchBooks,
+    size: number,
+    off: number,
+    silent = false,
+  ) {
     const requestId = ++currentRequestId;
-    loading = true;
+    if (!silent) loading = true;
     error = null;
     try {
       const data = await fetchFn(size, off);
@@ -61,6 +74,10 @@
       }
       books = data.books;
       total = data.total;
+      if (data.total > 0 && !didNotifyBooksFound) {
+        didNotifyBooksFound = true;
+        onBooksFound?.();
+      }
       // If offset is past the end (e.g., items deleted), clamp to the last valid page.
       if (data.books.length === 0 && data.total > 0 && off > 0) {
         offset = Math.floor(Math.max(0, data.total - 1) / size) * size;
@@ -112,6 +129,37 @@
     onPageChange?.(offset);
   });
 
+  // Poll for books while no books are found and pollingInterval is set.
+  // Stops automatically once books appear (total > 0).
+  $effect(() => {
+    if (!pollingInterval || total > 0) return;
+
+    // Reset so onBooksFound can fire again for this scan cycle.
+    didNotifyBooksFound = false;
+
+    let cancelled = false;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+
+    const poll = async () => {
+      await load(fetchBooks, effectivePageSize, offset, true);
+      if (cancelled) return;
+      timerId = setTimeout(() => {
+        void poll();
+      }, pollingInterval);
+    };
+
+    timerId = setTimeout(() => {
+      void poll();
+    }, pollingInterval);
+
+    return () => {
+      cancelled = true;
+      if (timerId !== undefined) {
+        clearTimeout(timerId);
+      }
+    };
+  });
+
   function prevPage() {
     if (currentPage > 1) {
       offset = (currentPage - 2) * effectivePageSize;
@@ -140,11 +188,30 @@
     class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800"
   >
     <div class="text-center py-8">
-      <BookOpen class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4" />
-      <p class="text-ink-400 dark:text-ink-400 text-lg">No books yet.</p>
-      <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
-        Books will appear here once they are added to your libraries.
-      </p>
+      {#if pollingInterval}
+        <div
+          class="w-12 h-12 mx-auto mb-4 rounded-full border-4 border-ink-200 dark:border-ink-700 border-t-accent-500 animate-spin"
+          aria-hidden="true"
+        ></div>
+        <p
+          aria-live="polite"
+          aria-atomic="true"
+          class="text-ink-400 dark:text-ink-400 text-lg"
+        >
+          Scanning library...
+        </p>
+        <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
+          Books will appear here once the scan completes.
+        </p>
+      {:else}
+        <BookOpen
+          class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4"
+        />
+        <p class="text-ink-400 dark:text-ink-400 text-lg">No books yet.</p>
+        <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
+          Books will appear here once they are added to your libraries.
+        </p>
+      {/if}
     </div>
   </div>
 {:else}
