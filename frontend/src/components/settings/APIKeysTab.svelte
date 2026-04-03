@@ -3,64 +3,48 @@
   import type { APIKey } from "../../types";
   import { copyToClipboard } from "../../lib/clipboard";
   import { KeyRound, Copy, Trash2 } from "lucide-svelte";
-  import { onDestroy, onMount, tick } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import { autofocusFirstButton } from "../../lib/actions";
+  import { TokenListState } from "../../lib/tokenList.svelte";
+  import { CopyTimeoutState } from "../../lib/copyTimeout.svelte";
 
-  let apiKeyList: APIKey[] = $state.raw([]);
-  let apiKeysLoading = $state(false);
-  let apiKeysError: string | null = $state(null);
+  const tokenList = new TokenListState<APIKey>({
+    load: listAPIKeys,
+    delete: deleteAPIKey,
+    loadError: "Failed to load API keys",
+    deleteError: "Failed to delete API key",
+  });
+
+  const copyState = new CopyTimeoutState();
+  const keyCopied = $derived(copyState.copiedId !== null);
   let newKeyName = $state("");
   let newlyCreatedKey: string | null = $state(null);
   let createKeyLoading = $state(false);
-  let keyCopied = $state(false);
-  let keyCopiedTimeout: number | null = null;
-  let pendingDeleteKey: { id: string; name: string } | null = $state(null);
 
-  function clearCopyTimeout() {
-    if (keyCopiedTimeout !== null) {
-      clearTimeout(keyCopiedTimeout);
-      keyCopiedTimeout = null;
-    }
-  }
-
-  onDestroy(clearCopyTimeout);
+  onDestroy(() => copyState.clear());
 
   onMount(() => {
-    void loadAPIKeys();
+    void tokenList.load();
   });
-
-  async function loadAPIKeys() {
-    apiKeysLoading = true;
-    apiKeysError = null;
-    try {
-      apiKeyList = await listAPIKeys();
-    } catch (err) {
-      apiKeysError =
-        err instanceof Error ? err.message : "Failed to load API keys";
-    } finally {
-      apiKeysLoading = false;
-    }
-  }
 
   async function handleCreateAPIKey(e: SubmitEvent) {
     e.preventDefault();
     if (!newKeyName.trim()) return;
 
     createKeyLoading = true;
-    apiKeysError = null;
+    tokenList.error = null;
     newlyCreatedKey = null;
     // Reset any previous "copied" state when starting to create a new key
-    clearCopyTimeout();
-    keyCopied = false;
+    copyState.clear();
 
     try {
       const result = await createAPIKey(newKeyName.trim());
       newlyCreatedKey = result.key;
       newKeyName = "";
-      apiKeyList = [
+      tokenList.items = [
         {
           id: result.id,
           name: result.name,
@@ -68,57 +52,22 @@
           last_used_at: result.last_used_at,
           created_at: result.created_at,
         },
-        ...apiKeyList,
+        ...tokenList.items,
       ];
     } catch (err) {
-      apiKeysError =
+      tokenList.error =
         err instanceof Error ? err.message : "Failed to create API key";
     } finally {
       createKeyLoading = false;
     }
   }
 
-  function handleDeleteAPIKey(id: string, name: string) {
-    pendingDeleteKey = { id, name };
-  }
-
-  async function cancelDeleteAPIKey() {
-    const id = pendingDeleteKey?.id;
-    pendingDeleteKey = null;
-    await tick();
-    if (id) {
-      const trigger = document.querySelector<HTMLElement>(
-        `[data-delete-trigger="${id}"]`,
-      );
-      trigger?.focus();
-    }
-  }
-
-  async function confirmDeleteAPIKey() {
-    if (!pendingDeleteKey) return;
-    const { id } = pendingDeleteKey;
-    pendingDeleteKey = null;
-    apiKeysError = null;
-    try {
-      await deleteAPIKey(id);
-      apiKeyList = apiKeyList.filter((k) => k.id !== id);
-    } catch (err) {
-      apiKeysError =
-        err instanceof Error ? err.message : "Failed to delete API key";
-    }
-  }
-
   async function handleCopyKey(text: string) {
     try {
       await copyToClipboard(text);
-      keyCopied = true;
-      clearCopyTimeout();
-      keyCopiedTimeout = window.setTimeout(() => {
-        keyCopied = false;
-        keyCopiedTimeout = null;
-      }, 2000);
+      copyState.set("key");
     } catch {
-      apiKeysError =
+      tokenList.error =
         "Failed to copy to clipboard. Please select and copy the key manually.";
     }
   }
@@ -193,13 +142,13 @@
       </div>
     {/if}
 
-    {#if apiKeysError}
-      <AlertBanner variant="error" class="mb-4">{apiKeysError}</AlertBanner>
+    {#if tokenList.error}
+      <AlertBanner variant="error" class="mb-4">{tokenList.error}</AlertBanner>
     {/if}
 
-    {#if apiKeysLoading}
+    {#if tokenList.loading}
       <p class="text-ink-400 dark:text-ink-400">Loading API keys...</p>
-    {:else if apiKeyList.length === 0}
+    {:else if tokenList.items.length === 0}
       <p class="text-sm text-ink-400 dark:text-ink-500">
         No API keys yet. Create one above to get started.
       </p>
@@ -220,7 +169,7 @@
             </tr>
           </thead>
           <tbody>
-            {#each apiKeyList as key (key.id)}
+            {#each tokenList.items as key (key.id)}
               <tr
                 class="border-b border-ink-50 dark:border-ink-800 hover:bg-ink-50/50 dark:hover:bg-ink-800/50 transition-colors"
               >
@@ -243,7 +192,7 @@
                     : "Never"}
                 </td>
                 <td class="py-3 text-right">
-                  {#if pendingDeleteKey?.id === key.id}
+                  {#if tokenList.pendingDelete?.id === key.id}
                     <div
                       class="flex items-center justify-end gap-2 animate-scale-in"
                       role="alertdialog"
@@ -252,7 +201,7 @@
                       tabindex="-1"
                       use:autofocusFirstButton
                       onkeydown={(e: KeyboardEvent) => {
-                        if (e.key === "Escape") cancelDeleteAPIKey();
+                        if (e.key === "Escape") tokenList.cancelDelete();
                       }}
                     >
                       <span
@@ -263,7 +212,7 @@
                       <Button
                         type="button"
                         variant="danger"
-                        onclick={confirmDeleteAPIKey}
+                        onclick={() => tokenList.confirmDelete()}
                         class="px-3 py-1 text-xs"
                       >
                         Delete
@@ -271,7 +220,7 @@
                       <Button
                         type="button"
                         variant="secondary"
-                        onclick={cancelDeleteAPIKey}
+                        onclick={() => tokenList.cancelDelete()}
                         class="px-3 py-1 text-xs"
                       >
                         Cancel
@@ -280,7 +229,7 @@
                   {:else}
                     <button
                       data-delete-trigger={key.id}
-                      onclick={() => handleDeleteAPIKey(key.id, key.name)}
+                      onclick={() => tokenList.handleDelete(key.id, key.name)}
                       aria-label={`Delete API key ${key.name} (${key.key_prefix}...)`}
                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                     >
