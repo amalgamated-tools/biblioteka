@@ -132,18 +132,19 @@ func (h *OPDSHandler) writeNamedEntityNavFeed(
 	baseURL := opdsBaseURL(r)
 	page := parsePage(r)
 	offset := (page - 1) * opdsPageSize
+	selfURL := baseURL + "/" + pathSegment
 
 	entities, total, err := listFn(ctx, opdsPageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to list entities",
 			slog.String(otelkeys.EntityType, pathSegment),
+			slog.String(otelkeys.URL, selfURL),
+			slog.String(otelkeys.Title, title),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, baseURL+"/"+pathSegment, fmt.Sprintf("Failed to list %s", pathSegment))
+		writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, selfURL, fmt.Sprintf("Failed to list %s", pathSegment))
 		return
 	}
-
-	selfURL := baseURL + "/" + pathSegment
 	entries := make([]opdsEntry, 0, len(entities))
 	for _, e := range entities {
 		entryURL := selfURL + "/" + e.ID
