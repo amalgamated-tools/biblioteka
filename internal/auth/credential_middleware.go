@@ -12,6 +12,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// ProtocolCredentialResult holds the common credential fields returned by
+// protocol-specific credential-checker interfaces (e.g. OPDSCredentialChecker,
+// KOSyncCredentialChecker). All protocol middlewares share this single type to
+// avoid redundant per-protocol structs with identical fields.
+type ProtocolCredentialResult struct {
+	UserID       string
+	PasswordHash string
+}
+
 // NormalizeUsername normalizes a username for storage and lookup by trimming
 // surrounding whitespace and converting to lowercase.
 func NormalizeUsername(username string) string {
