@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Library } from "../../types";
   import { routerStore } from "../../stores/router.svelte";
+  import { libraryStore } from "../../stores/libraries.svelte";
   import { Library as LibraryIcon, Settings2 } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import BookList from "../ui/BookList.svelte";
@@ -14,8 +15,14 @@
 
   let { library, libraryId, error }: Props = $props();
 
+  let scanning = $derived(libraryStore.scanningIds.has(libraryId));
+
   function fetchBooks(limit: number, offset: number) {
     return api.listLibraryBooks(libraryId, limit, offset);
+  }
+
+  function handleBooksFound() {
+    libraryStore.clearScanning(libraryId);
   }
 </script>
 
@@ -48,6 +55,10 @@
   <!-- {#key} forces a full remount when libraryId changes, ensuring fetchBooks
        (which closes over libraryId) is never stale across library navigations. -->
   {#key libraryId}
-    <BookList {fetchBooks} />
+    <BookList
+      {fetchBooks}
+      pollingInterval={scanning ? 3000 : undefined}
+      onBooksFound={scanning ? handleBooksFound : undefined}
+    />
   {/key}
 </div>
