@@ -188,6 +188,201 @@ func TestExtractMetadata_EPUBCaseInsensitive(t *testing.T) {
 	}
 }
 
+// --- EPUB3-specific integration tests ---
+
+func TestExtractMetadata_EPUB3CoverViaProperties(t *testing.T) {
+	// EPUB3 uses properties="cover-image" on the manifest item instead of
+	// the EPUB2 <meta name="cover" content="..."/> element.
+	testPNG := testutils.TinyPNG()
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "epub3-cover.epub")
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "EPUB3 Cover", "Author", "urn:isbn:9780000000001", testutils.EPUBOptions{
+		Version:        "3.0",
+		EPUB3Cover:     true,
+		CoverImageData: testPNG,
+		CoverImageHref: "images/cover.png",
+		CoverMediaType: "image/png",
+	})
+
+	ext := requireExifTool(t)
+	defer ext.Close(t.Context())
+
+	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(meta.CoverImageURL, "data:image/png;base64,"),
+		"EPUB3 cover via properties should be extracted as data URL, got %q", meta.CoverImageURL)
+
+	b64 := strings.TrimPrefix(meta.CoverImageURL, "data:image/png;base64,")
+	imgBytes, err := base64.StdEncoding.DecodeString(b64)
+	require.NoError(t, err)
+	require.Equal(t, testPNG, imgBytes, "cover image bytes should match original")
+}
+
+func TestExtractMetadata_EPUB2CoverViaMeta(t *testing.T) {
+	// EPUB2 uses <meta name="cover" content="cover-image"/> referencing a manifest item id.
+	testPNG := testutils.TinyPNG()
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "epub2-cover.epub")
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "EPUB2 Cover", "Author", "urn:isbn:9780000000002", testutils.EPUBOptions{
+		Version:        "2.0",
+		EPUB3Cover:     false,
+		CoverImageData: testPNG,
+		CoverImageHref: "images/cover.png",
+		CoverMediaType: "image/png",
+	})
+
+	ext := requireExifTool(t)
+	defer ext.Close(t.Context())
+
+	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(meta.CoverImageURL, "data:image/png;base64,"),
+		"EPUB2 cover via meta tag should be extracted as data URL, got %q", meta.CoverImageURL)
+
+	b64 := strings.TrimPrefix(meta.CoverImageURL, "data:image/png;base64,")
+	imgBytes, err := base64.StdEncoding.DecodeString(b64)
+	require.NoError(t, err)
+	require.Equal(t, testPNG, imgBytes, "cover image bytes should match original")
+}
+
+func TestExtractMetadata_EPUB3Metadata(t *testing.T) {
+	// EPUB3 uses plain <dc:date> instead of <dc:date opf:event="publication">.
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "epub3-meta.epub")
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "EPUB3 Book", "Jane Author", "urn:isbn:9780000000003", testutils.EPUBOptions{
+		Version:         "3.0",
+		Description:     "An EPUB3 book with modern metadata",
+		Publisher:       "Modern Press",
+		PublicationDate: "2023-06-15",
+		Language:        "en",
+		Subjects:        []string{"Fiction", "Science Fiction"},
+	})
+
+	ext := requireExifTool(t)
+	defer ext.Close(t.Context())
+
+	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
+	require.NoError(t, err)
+	require.Equal(t, "epub", meta.Format)
+	require.Equal(t, "EPUB3 Book", meta.Title)
+	require.Equal(t, "Jane Author", meta.Author)
+	require.Equal(t, "9780000000003", meta.ISBN13)
+	require.Equal(t, "An EPUB3 book with modern metadata", meta.Description)
+	require.Equal(t, "Modern Press", meta.Publisher)
+	require.Equal(t, "2023-06-15", meta.PublicationDate)
+	require.Equal(t, "en", meta.Language)
+	require.Contains(t, meta.Subjects, "Fiction")
+	require.Contains(t, meta.Subjects, "Science Fiction")
+}
+
+func TestExtractMetadata_EPUB2Metadata(t *testing.T) {
+	// EPUB2 uses <dc:date opf:event="publication"> and <meta name="cover">.
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "epub2-meta.epub")
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "EPUB2 Book", "Classic Author", "urn:isbn:9780000000004", testutils.EPUBOptions{
+		Version:         "2.0",
+		Description:     "An EPUB2 book with traditional metadata",
+		Publisher:       "Classic Press",
+		PublicationDate: "1999-01-01",
+		Language:        "en",
+		Subjects:        []string{"History", "Biography"},
+	})
+
+	ext := requireExifTool(t)
+	defer ext.Close(t.Context())
+
+	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
+	require.NoError(t, err)
+	require.Equal(t, "epub", meta.Format)
+	require.Equal(t, "EPUB2 Book", meta.Title)
+	require.Equal(t, "Classic Author", meta.Author)
+	require.Equal(t, "9780000000004", meta.ISBN13)
+	require.Equal(t, "An EPUB2 book with traditional metadata", meta.Description)
+	require.Equal(t, "Classic Press", meta.Publisher)
+	require.Equal(t, "1999-01-01", meta.PublicationDate)
+	require.Equal(t, "en", meta.Language)
+	require.Contains(t, meta.Subjects, "History")
+	require.Contains(t, meta.Subjects, "Biography")
+}
+
+func TestExtractMetadata_EPUB3WithMultipleSubjects(t *testing.T) {
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "subjects.epub")
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "Many Subjects", "Author", "some-id", testutils.EPUBOptions{
+		Version:  "3.0",
+		Subjects: []string{"Fantasy", "Adventure", "Young Adult", "Magic"},
+	})
+
+	ext := requireExifTool(t)
+	defer ext.Close(t.Context())
+
+	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
+	require.NoError(t, err)
+	require.Contains(t, meta.Subjects, "Fantasy")
+	require.Contains(t, meta.Subjects, "Adventure")
+	require.Contains(t, meta.Subjects, "Young Adult")
+	require.Contains(t, meta.Subjects, "Magic")
+}
+
+func TestExtractMetadata_EPUB3NoCover(t *testing.T) {
+	// EPUB3 with no cover image at all should not error.
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "no-cover.epub")
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "No Cover EPUB3", "Author", "urn:isbn:9780000000005", testutils.EPUBOptions{
+		Version: "3.0",
+	})
+
+	ext := requireExifTool(t)
+	defer ext.Close(t.Context())
+
+	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
+	require.NoError(t, err)
+	require.Equal(t, "No Cover EPUB3", meta.Title)
+	require.Empty(t, meta.CoverImageURL, "EPUB3 with no cover should have empty cover URL")
+}
+
+func TestExtractMetadata_EPUB2And3ProduceSameMetadata(t *testing.T) {
+	// Both EPUB versions should extract the same core metadata when given
+	// equivalent content. This verifies version-agnostic extraction.
+	ext := requireExifTool(t)
+	defer ext.Close(t.Context())
+
+	dir := t.TempDir()
+
+	epub2Path := filepath.Join(dir, "v2.epub")
+	testutils.MakeTestEPUBWithOptions(t, epub2Path, "Same Book", "Same Author", "urn:isbn:9780000000006", testutils.EPUBOptions{
+		Version:         "2.0",
+		Description:     "Same description",
+		Publisher:       "Same Publisher",
+		PublicationDate: "2020-01-01",
+		Language:        "fr",
+	})
+
+	epub3Path := filepath.Join(dir, "v3.epub")
+	testutils.MakeTestEPUBWithOptions(t, epub3Path, "Same Book", "Same Author", "urn:isbn:9780000000006", testutils.EPUBOptions{
+		Version:         "3.0",
+		Description:     "Same description",
+		Publisher:       "Same Publisher",
+		PublicationDate: "2020-01-01",
+		Language:        "fr",
+	})
+
+	meta2, err := ext.ExtractMetadata(t.Context(), epub2Path)
+	require.NoError(t, err)
+
+	meta3, err := ext.ExtractMetadata(t.Context(), epub3Path)
+	require.NoError(t, err)
+
+	require.Equal(t, meta2.Title, meta3.Title, "title")
+	require.Equal(t, meta2.Author, meta3.Author, "author")
+	require.Equal(t, meta2.ISBN13, meta3.ISBN13, "ISBN13")
+	require.Equal(t, meta2.Description, meta3.Description, "description")
+	require.Equal(t, meta2.Publisher, meta3.Publisher, "publisher")
+	require.Equal(t, meta2.Language, meta3.Language, "language")
+	require.Equal(t, meta2.PublicationDate, meta3.PublicationDate, "publication date")
+	require.Equal(t, meta2.Format, meta3.Format, "format should be 'epub' for both versions")
+}
+
 func TestExtractMetadata_PDF(t *testing.T) {
 	dir := t.TempDir()
 	pdfPath := filepath.Join(dir, "test.pdf")
