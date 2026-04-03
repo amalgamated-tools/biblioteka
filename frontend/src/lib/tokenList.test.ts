@@ -101,6 +101,20 @@ describe("TokenListState", () => {
     });
   });
 
+  describe("cancelDeleteWithFocus", () => {
+    it("clears pendingDelete", async () => {
+      state.handleDelete("tok-1", "Token 1");
+      state.cancelDeleteWithFocus();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(state.pendingDelete).toBeNull();
+    });
+
+    it("does nothing when pendingDelete is null", () => {
+      state.cancelDeleteWithFocus();
+      expect(state.pendingDelete).toBeNull();
+    });
+  });
+
   describe("confirmDelete", () => {
     it("does nothing when pendingDelete is null", async () => {
       await state.confirmDelete();

@@ -47,6 +47,18 @@ export class TokenListState<T extends { id: string }> {
     onAfterClear?.();
   }
 
+  cancelDeleteWithFocus(): void {
+    const id = this.pendingDelete?.id;
+    void this.cancelDelete(
+      id
+        ? () =>
+            document
+              .querySelector<HTMLElement>(`[data-delete-trigger="${id}"]`)
+              ?.focus()
+        : undefined,
+    );
+  }
+
   async confirmDelete(): Promise<void> {
     if (!this.pendingDelete) return;
     const { id } = this.pendingDelete;
