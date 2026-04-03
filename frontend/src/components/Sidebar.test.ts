@@ -122,6 +122,7 @@ describe("Sidebar navigation accessibility", () => {
     });
     // The element must not carry opacity-0; it should have a base opacity
     expect(fictionSettings.className).not.toContain("opacity-0");
+    expect(fictionSettings.className).toContain("opacity-30");
   });
 
   it("renders navigation group labels as headings", () => {
