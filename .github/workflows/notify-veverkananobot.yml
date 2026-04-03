@@ -17,7 +17,7 @@ jobs:
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.VEVERKAGHBOT_TGRAM_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.NANOBOT_CHAT_ID }}" \
             -d parse_mode="Markdown" \
-            -d text="👀 *Review requested* for veverkananobot%0A%0A*PR:* [${{ github.event.pull_request.title }}](${{ github.event.pull_request.html_url }})%0A*Repo:* \`${{ github.repository }}\`%0A*By:* @${{ github.event.sender.login }}%0A%0APlease review: ${{ github.event.pull_request.html_url }}"
+            -d text="👀 *Review requested* for @vgamma_bot%0A%0A*PR:* [${{ github.event.pull_request.title }}](${{ github.event.pull_request.html_url }})%0A*Repo:* \`${{ github.repository }}\`%0A*By:* @${{ github.event.sender.login }}%0A%0APlease review: ${{ github.event.pull_request.html_url }}"
 
   notifyveverkabot:
     # Only run when veverkabot is a requested reviewer
@@ -31,4 +31,4 @@ jobs:
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.VEVERKAGHBOT_TGRAM_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.VBOT_CHAT_ID }}" \
             -d parse_mode="Markdown" \
-            -d text="👀 *Review requested* for veverkabot%0A%0A*PR:* [${{ github.event.pull_request.title }}](${{ github.event.pull_request.html_url }})%0A*Repo:* \`${{ github.repository }}\`%0A*By:* @${{ github.event.sender.login }}%0A%0APlease review: ${{ github.event.pull_request.html_url }}"
+            -d text="👀 *Review requested* for @veverka_hermesbot%0A%0A*PR:* [${{ github.event.pull_request.title }}](${{ github.event.pull_request.html_url }})%0A*Repo:* \`${{ github.repository }}\`%0A*By:* @${{ github.event.sender.login }}%0A%0APlease review: ${{ github.event.pull_request.html_url }}"
