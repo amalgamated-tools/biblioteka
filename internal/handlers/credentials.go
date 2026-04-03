@@ -67,8 +67,8 @@ type credentialOps struct {
 
 // credentialInfoer is satisfied by credential DB types that expose the four
 // fields common to every protocol credential (ID, Username, CreatedAt,
-// UpdatedAt). Both db.KOSyncCredential and db.OPDSCredential implement this
-// via their CredentialInfo methods.
+// UpdatedAt). db.KOSyncCredential and db.OPDSCredential are type aliases for
+// db.ProtocolCredential, which provides this method.
 type credentialInfoer interface {
 	CredentialInfo() (id, username string, createdAt, updatedAt db.Timestamp)
 }
