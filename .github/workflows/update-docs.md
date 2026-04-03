@@ -76,7 +76,7 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 
 2. **Documentation Assessment**
 
-   - Review existing documentation structure (look for docs/, documentation/, or similar directories)
+   - Review existing documentation structure in the `docs/` directory (flat Markdown files built with mkdocs-material)
    - Assess documentation quality against style guidelines:
      - Diátaxis framework (tutorials, how-to guides, technical reference, explanation)
      - Google Developer Style Guide principles
@@ -86,8 +86,8 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 
 3. **Create or Update Documentation**
 
-   - Use Markdown (.md) format wherever possible
-   - Fall back to MDX only when interactive components are indispensable
+   - Use Markdown (.md) format
+   - Do not use MDX — the project uses standard Markdown with mkdocs-material
    - Follow progressive disclosure: high-level concepts first, detailed examples second
    - Ensure content is accessible and internationalization-ready
    - Create clear, actionable documentation that serves both newcomers and power users
@@ -128,7 +128,7 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 
 ### Technical Implementation
 
-- **Hosting**: Prepare documentation for GitHub Pages deployment with branch-based workflows
+- **Hosting**: Documentation is built with mkdocs-material and deployed to GitHub Pages
 - **Automation**: Implement linting and style checking for documentation consistency
 
 ### Error Handling
