@@ -461,17 +461,11 @@ Name files with a timestamp prefix: `YYYYMMDDHHMMSS_description.sql`. Migrations
 The `internal/db` package provides two unexported helpers for detecting unique-constraint violations when a raw SQL error is returned:
 
 - **`isUniqueViolation(err error) bool`** — returns `true` when `err` is any unique-constraint violation (covers both SQLite and PostgreSQL error messages). Used by named-entity create/update paths (e.g. `CreateLibrary`).
-- **`isColumnUniqueViolation(err error, tableCol, idxName string) bool`** — gates on `isUniqueViolation`, then additionally checks the error message for the specific column reference (`tableCol`) or index name (`idxName`). Use this when implementing `UpsertXxxCredential` functions for new sync protocols, so that a username already taken by a *different* user returns the protocol-specific sentinel error rather than a generic database error:
+- **`isColumnUniqueViolation(err error, tableCol, idxName string) bool`** — gates on `isUniqueViolation`, then additionally checks the error message for the specific column reference (`tableCol`) or index name (`idxName`). Used internally by the shared `upsertCredential` helper to distinguish a username-conflict (different user, same username) from other database errors. You do not need to call this directly when adding a new sync protocol — use the shared helpers in `protocol_credentials.go` instead (see below).
 
-  ```go
-  cred, err := scanMyProtocolCredential(d.QueryRowContext(ctx, query, userID, username, passwordHash))
-  if err != nil && isColumnUniqueViolation(err, "myprotocol_credentials.username", "idx_myprotocol_credentials_username") {
-      return nil, ErrMyProtocolUsernameExists
-  }
-  return cred, err
-  ```
+### Adding a new sync protocol credential type
 
-  Pass the fully qualified column reference as `tableCol` (e.g. `"myprotocol_credentials.username"`) and the named unique index as `idxName` (e.g. `"idx_myprotocol_credentials_username"`). Both arguments are needed because, in SQLite, unique violations may mention either the fully qualified column reference or the unique index name (depending on how the uniqueness is enforced), while PostgreSQL reports the index/constraint name.
+When implementing the database layer for a new sync protocol, use the shared helpers in `internal/db/protocol_credentials.go` instead of hand-rolling SQL. Define a `protocolCredentialConfig` value, declare a type alias for `ProtocolCredential`, and delegate all CRUD to the unexported helpers. See `opds_credentials.go` and `kosync.go` for real examples of this pattern.
 
 ## Continuous Integration
 
