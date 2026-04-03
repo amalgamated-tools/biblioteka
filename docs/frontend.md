@@ -541,7 +541,7 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 | `pageSize` | `number` | | `24` | Number of books per page. Clamped to `[1, 200]` at runtime. |
 | `initialOffset` | `number` | | `0` | Starting page offset read **once** on mount. Use this to restore a bookmarked page (e.g., from the URL query string). Changes after mount are ignored. |
 | `onPageChange` | `(offset: number) => void` | | — | Called after each page turn (not on the initial mount). Use this to write the new offset back to the URL via `routerStore.setQueryParam`. |
-| `pollingInterval` | `number` | | — | When set, `BookList` re-fetches silently at this interval (in ms) while `total === 0`. Polling stops automatically once books appear. Use this to show a "Scanning library…" spinner while the backend scans a newly added library. |
+| `pollingInterval` | `number` | | — | When set, `BookList` re-fetches silently at this interval (in ms) while `total === 0`. Polling stops automatically once books appear. Use this to show a "Scanning library..." spinner while the backend scans a newly added library. |
 | `onBooksFound` | `() => void` | | — | Called exactly once the first time a poll or fetch reports `total > 0`. Use this to clear scanning state in the parent (e.g., `() => libraryStore.clearScanning(libraryId)`). |
 
 **Internal state exposed to the template (not props):**
