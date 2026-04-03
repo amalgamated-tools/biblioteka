@@ -122,6 +122,12 @@ to the issue. When doing so, **preserve all existing labels** that are not
 type/priority labels — merge the new triage labels with the labels already on
 the issue rather than replacing the full label list.
 
+**Important:** The `update-issue` tool requires at least one of `status`,
+`title`, or `body` to be provided. When you are only updating labels (without
+changing the title, body, or status), always include `"status": "open"` in
+the call to satisfy this requirement — this is a no-op since the issue is
+already open.
+
 If the issue already carries a type label and a priority label that match your
 classification, skip this step entirely and proceed to Step 7.
 ---
