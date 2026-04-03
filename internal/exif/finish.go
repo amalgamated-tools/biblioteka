@@ -78,15 +78,26 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 		}
 	}
 
-	// Strategy 3 & 4: properties="cover-image", or ID/href contains "cover"
+	// Strategy 3: properties="cover-image" (EPUB3)
+	// The properties attribute is a space-separated token list (e.g. "cover-image scripted"),
+	// so we must check individual tokens rather than the whole string.
 	if out.CoverImage == nil {
 		for i, item := range out.ManifestItems {
 			if !isLikelyImage(item.Href, item.MediaType) {
 				continue
 			}
-			if strings.EqualFold(item.Properties, "cover-image") {
+			if hasProperty(item.Properties, "cover-image") {
 				out.CoverImage = &out.ManifestItems[i]
 				break
+			}
+		}
+	}
+
+	// Strategy 4: ID/href contains "cover"
+	if out.CoverImage == nil {
+		for i, item := range out.ManifestItems {
+			if !isLikelyImage(item.Href, item.MediaType) {
+				continue
 			}
 			if strings.Contains(strings.ToLower(item.ID), "cover") || strings.Contains(strings.ToLower(item.Href), "cover") {
 				out.CoverImage = &out.ManifestItems[i]
@@ -136,4 +147,16 @@ func finishMOBI(ctx context.Context, out *ExifToolOutput) {
 		return
 	}
 	out.CoverImageURL = coverImageURL
+}
+
+// hasProperty reports whether the space-separated properties string contains
+// the given token (case-insensitive). EPUB3 manifest items may have multiple
+// properties like "cover-image scripted".
+func hasProperty(properties, token string) bool {
+	for prop := range strings.SplitSeq(properties, " ") {
+		if strings.EqualFold(prop, token) {
+			return true
+		}
+	}
+	return false
 }

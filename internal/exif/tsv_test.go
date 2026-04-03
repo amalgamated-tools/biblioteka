@@ -206,3 +206,141 @@ func TestParseTSV_SameIDTwiceIsIdempotent(t *testing.T) {
 	require.Equal(t, "abc123", out.CalibreID, "Calibre ID should be set")
 	require.NotContains(t, out.Extras, "Duplicate Calibre ID", "identical repeat should not go to Extras")
 }
+
+// --- EPUB3-specific tests ---
+
+func TestParseTSV_EPUB3CoverViaProperties(t *testing.T) {
+	// EPUB3 identifies cover images via properties="cover-image" on the manifest item,
+	// without a <meta name="cover"> tag. This tests Strategy 3 in finishEPUB.
+	input := "File Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n" +
+		"Manifest Item Href\timages/cover.jpg\n" +
+		"Manifest Item Id\tcover-img\n" +
+		"Manifest Item Media-type\timage/jpeg\n" +
+		"Manifest Item Properties\tcover-image\n" +
+		"Manifest Item Href\tchapter1.xhtml\n" +
+		"Manifest Item Id\tchapter1\n" +
+		"Manifest Item Media-type\tapplication/xhtml+xml\n"
+
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.NotNil(t, out.CoverImage, "cover image should be discovered via properties")
+	require.Equal(t, "images/cover.jpg", out.CoverImage.Href, "cover href")
+	require.Equal(t, "cover-img", out.CoverImage.ID, "cover ID")
+	require.Equal(t, "image/jpeg", out.CoverImage.MediaType, "cover media type")
+	require.Equal(t, "cover-image", out.CoverImage.Properties, "cover properties")
+}
+
+func TestParseTSV_EPUB3CoverViaMultiTokenProperties(t *testing.T) {
+	// EPUB3 properties is a space-separated token list. A manifest item with
+	// properties="cover-image scripted" should still be identified as the cover.
+	input := "File Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n" +
+		"Manifest Item Href\timages/cover.jpg\n" +
+		"Manifest Item Id\tcover-img\n" +
+		"Manifest Item Media-type\timage/jpeg\n" +
+		"Manifest Item Properties\tcover-image scripted\n" +
+		"Manifest Item Href\tchapter1.xhtml\n" +
+		"Manifest Item Id\tchapter1\n" +
+		"Manifest Item Media-type\tapplication/xhtml+xml\n"
+
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.NotNil(t, out.CoverImage, "cover image should be discovered from multi-token properties")
+	require.Equal(t, "images/cover.jpg", out.CoverImage.Href)
+	require.Equal(t, "cover-image scripted", out.CoverImage.Properties)
+}
+
+func TestParseTSV_EPUB3CoverPropertiesOverrideFallback(t *testing.T) {
+	// Strategy 3 (properties="cover-image") should beat Strategy 4
+	// (ID containing "cover") even when the Strategy 4 candidate appears
+	// earlier in the manifest.
+	input := "File Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n" +
+		"Manifest Item Href\timages/cover-fallback.jpg\n" +
+		"Manifest Item Id\tcover-fallback\n" + // Strategy 4: ID contains "cover"
+		"Manifest Item Media-type\timage/jpeg\n" +
+		"Manifest Item Href\timages/real-cover.png\n" +
+		"Manifest Item Id\tfront\n" + // no "cover" in ID or href
+		"Manifest Item Media-type\timage/png\n" +
+		"Manifest Item Properties\tcover-image\n" + // Strategy 3
+		"Manifest Item Href\tchapter1.xhtml\n" +
+		"Manifest Item Id\tchapter1\n" +
+		"Manifest Item Media-type\tapplication/xhtml+xml\n"
+
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.NotNil(t, out.CoverImage)
+	require.Equal(t, "images/real-cover.png", out.CoverImage.Href,
+		"properties='cover-image' (Strategy 3) should beat ID-heuristic (Strategy 4) regardless of manifest order")
+}
+
+func TestParseTSV_EPUB2MetaCoverBeatsEPUB3Properties(t *testing.T) {
+	// Strategy 2 (<meta name="cover">) has higher priority than Strategy 3
+	// (properties="cover-image"). Verify the EPUB2-style meta tag wins.
+	input := "File Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n" +
+		"Meta Content\tlegacy-cover\nMeta Name\tcover\n" +
+		"Manifest Item Href\timages/old-cover.jpg\n" +
+		"Manifest Item Id\tlegacy-cover\n" +
+		"Manifest Item Media-type\timage/jpeg\n" +
+		"Manifest Item Href\timages/new-cover.png\n" +
+		"Manifest Item Id\tnew-cover\n" +
+		"Manifest Item Media-type\timage/png\n" +
+		"Manifest Item Properties\tcover-image\n"
+
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.NotNil(t, out.CoverImage)
+	require.Equal(t, "images/old-cover.jpg", out.CoverImage.Href,
+		"EPUB2 meta cover (Strategy 2) should take priority over EPUB3 properties (Strategy 3)")
+}
+
+func TestParseTSV_EPUB3NoCoverFallsBackToSingleImage(t *testing.T) {
+	// EPUB3 with no cover metadata at all — single image fallback (Strategy 5).
+	input := "File Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n" +
+		"Manifest Item Href\timages/illustration.png\n" +
+		"Manifest Item Id\tillustration\n" +
+		"Manifest Item Media-type\timage/png\n" +
+		"Manifest Item Href\tchapter1.xhtml\n" +
+		"Manifest Item Id\tchapter1\n" +
+		"Manifest Item Media-type\tapplication/xhtml+xml\n"
+
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.NotNil(t, out.CoverImage, "single image should be used as fallback cover")
+	require.Equal(t, "images/illustration.png", out.CoverImage.Href)
+}
+
+func TestParseTSV_EPUB3NoCoverMultipleImagesNilCover(t *testing.T) {
+	// EPUB3 with no cover metadata and multiple images — no cover should be selected.
+	input := "File Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n" +
+		"Manifest Item Href\timages/fig1.png\n" +
+		"Manifest Item Id\tfig1\n" +
+		"Manifest Item Media-type\timage/png\n" +
+		"Manifest Item Href\timages/fig2.jpg\n" +
+		"Manifest Item Id\tfig2\n" +
+		"Manifest Item Media-type\timage/jpeg\n" +
+		"Manifest Item Href\tchapter1.xhtml\n" +
+		"Manifest Item Id\tchapter1\n" +
+		"Manifest Item Media-type\tapplication/xhtml+xml\n"
+
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Nil(t, out.CoverImage, "multiple images without cover metadata should not select a cover")
+}
+
+func TestParseTSV_EPUB3ManifestItemProperties(t *testing.T) {
+	// Verify that the Properties field is correctly parsed from manifest items.
+	input := "File Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n" +
+		"Manifest Item Href\tnav.xhtml\n" +
+		"Manifest Item Id\tnav\n" +
+		"Manifest Item Media-type\tapplication/xhtml+xml\n" +
+		"Manifest Item Properties\tnav\n" +
+		"Manifest Item Href\tchapter1.xhtml\n" +
+		"Manifest Item Id\tchapter1\n" +
+		"Manifest Item Media-type\tapplication/xhtml+xml\n" +
+		"Manifest Item Properties\tscripted\n"
+
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Len(t, out.ManifestItems, 2)
+	require.Equal(t, "nav", out.ManifestItems[0].Properties, "first item properties")
+	require.Equal(t, "scripted", out.ManifestItems[1].Properties, "second item properties")
+}
