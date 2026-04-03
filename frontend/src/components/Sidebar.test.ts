@@ -103,19 +103,13 @@ describe("Sidebar navigation accessibility", () => {
       name: "Library settings for Fiction",
     });
     expect(fictionSettings).toBeInTheDocument();
-    expect(fictionSettings).toHaveAttribute(
-      "href",
-      "#libraries/edit/1",
-    );
+    expect(fictionSettings).toHaveAttribute("href", "#libraries/edit/1");
 
     const nonFictionSettings = screen.getByRole("link", {
       name: "Library settings for Non-Fiction",
     });
     expect(nonFictionSettings).toBeInTheDocument();
-    expect(nonFictionSettings).toHaveAttribute(
-      "href",
-      "#libraries/edit/2",
-    );
+    expect(nonFictionSettings).toHaveAttribute("href", "#libraries/edit/2");
   });
 
   it("library settings links are not fully transparent by default (WCAG 2.4.7)", () => {
