@@ -94,6 +94,42 @@ describe("Sidebar navigation accessibility", () => {
     expect(nonFiction).not.toHaveAttribute("aria-current");
   });
 
+  it("library settings links include the library name in aria-label (WCAG 2.4.6)", () => {
+    render(Sidebar, {
+      props: { currentView: "dashboard", open: true, onClose: () => {} },
+    });
+
+    const fictionSettings = screen.getByRole("link", {
+      name: "Library settings for Fiction",
+    });
+    expect(fictionSettings).toBeInTheDocument();
+    expect(fictionSettings).toHaveAttribute(
+      "href",
+      "#libraries/edit/1",
+    );
+
+    const nonFictionSettings = screen.getByRole("link", {
+      name: "Library settings for Non-Fiction",
+    });
+    expect(nonFictionSettings).toBeInTheDocument();
+    expect(nonFictionSettings).toHaveAttribute(
+      "href",
+      "#libraries/edit/2",
+    );
+  });
+
+  it("library settings links are not fully transparent by default (WCAG 2.4.7)", () => {
+    render(Sidebar, {
+      props: { currentView: "dashboard", open: true, onClose: () => {} },
+    });
+
+    const fictionSettings = screen.getByRole("link", {
+      name: "Library settings for Fiction",
+    });
+    // The element must not carry opacity-0; it should have a base opacity
+    expect(fictionSettings.className).not.toContain("opacity-0");
+  });
+
   it("renders navigation group labels as headings", () => {
     render(Sidebar, {
       props: { currentView: "dashboard", open: true, onClose: () => {} },
