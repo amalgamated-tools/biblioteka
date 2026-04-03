@@ -17,17 +17,6 @@
 
   type KoboTokenDisplay = KoboToken & { token?: string };
 
-  function focusTrigger(id: string) {
-    document
-      .querySelector<HTMLElement>(`[data-delete-trigger="${id}"]`)
-      ?.focus();
-  }
-
-  function cancelWithFocus() {
-    const id = tokenList.pendingDelete?.id;
-    void tokenList.cancelDelete(id ? () => focusTrigger(id) : undefined);
-  }
-
   const tokenList = new TokenListState<KoboTokenDisplay>({
     load: listKoboTokens,
     delete: deleteKoboToken,
@@ -167,7 +156,7 @@
                     tabindex="-1"
                     use:autofocusFirstButton
                     onkeydown={(e: KeyboardEvent) => {
-                      if (e.key === "Escape") cancelWithFocus();
+                      if (e.key === "Escape") tokenList.cancelDeleteWithFocus();
                     }}
                   >
                     <span
@@ -186,7 +175,7 @@
                     <Button
                       type="button"
                       variant="secondary"
-                      onclick={() => cancelWithFocus()}
+                      onclick={() => tokenList.cancelDeleteWithFocus()}
                       class="px-3 py-1 text-xs"
                     >
                       Cancel
