@@ -1,0 +1,20 @@
+name: Notify veverkananobot for Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, review_requested]
+
+jobs:
+  notify:
+    # Only run when veverkananobot is a requested reviewer
+    if: |
+      github.event.action == 'review_requested' &&
+      github.event.requested_reviewer.login == 'veverkananobot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram notification
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="Markdown" \
+            -d text="👀 *Review requested* for veverkananobot%0A%0A*PR:* [${{ github.event.pull_request.title }}](${{ github.event.pull_request.html_url }})%0A*Repo:* \`${{ github.repository }}\`%0A*By:* @${{ github.event.sender.login }}%0A%0APlease review: ${{ github.event.pull_request.html_url }}"
