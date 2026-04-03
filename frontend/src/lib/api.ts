@@ -331,6 +331,17 @@ export async function deleteAuthor(id: string): Promise<void> {
   await request<void>("DELETE", `/api/authors/${id}`);
 }
 
+export async function listAuthorBooks(
+  authorId: string,
+  limit = 50,
+  offset = 0,
+): Promise<PaginatedBooks> {
+  return request<PaginatedBooks>(
+    "GET",
+    `/api/authors/${authorId}/books?limit=${limit}&offset=${offset}`,
+  );
+}
+
 // Series
 
 export async function listSeries(): Promise<Series[]> {
@@ -354,6 +365,17 @@ export async function updateSeries(
 
 export async function deleteSeries(id: string): Promise<void> {
   await request<void>("DELETE", `/api/series/${id}`);
+}
+
+export async function listSeriesBooks(
+  seriesId: string,
+  limit = 50,
+  offset = 0,
+): Promise<PaginatedBooks> {
+  return request<PaginatedBooks>(
+    "GET",
+    `/api/series/${seriesId}/books?limit=${limit}&offset=${offset}`,
+  );
 }
 
 // Books
