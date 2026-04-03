@@ -1,4 +1,4 @@
-.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt docs-serve
+.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt docs-serve aw-update
 
 # Tooling commands
 SWAG_CMD = go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5
