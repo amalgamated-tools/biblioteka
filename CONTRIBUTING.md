@@ -244,6 +244,8 @@ func TestMyExtractor(t *testing.T) {
 }
 ```
 
+> **Sample books for CLI launch configs**: The "Run CLI" launch configs for individual file formats expect book files in a local `books/` directory (e.g. `books/theprince.azw3`). These files are **not** committed to the repository. Create the `books/` directory and add your own copies of the relevant files before using those launch configs. The Goodreads and **Run Server** launch configs require no local book files.
+
 ### Building
 
 ```bash
