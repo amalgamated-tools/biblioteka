@@ -76,8 +76,8 @@ func (h *KOSyncHandler) credOps() credentialOps {
 		auditUpsert:     db.AuditActionKOSyncCredentialUpdated,
 		auditDelete:     db.AuditActionKOSyncCredentialDeleted,
 		errConflict:     db.ErrKOSyncUsernameExists,
-		getByUserID:     credentialGetAdapter(h.DB.GetKOSyncCredentialByUserID),
-		upsert:          credentialUpsertAdapter(h.DB.UpsertKOSyncCredential),
+		getByUserID:     credGetAdapter(h.DB.GetKOSyncCredentialByUserID),
+		upsert:          credUpsertAdapter(h.DB.UpsertKOSyncCredential),
 		del:             h.DB.DeleteKOSyncCredential,
 		deriveKey:       kosyncProtocolKey,
 	}
