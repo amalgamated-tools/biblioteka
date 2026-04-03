@@ -74,7 +74,7 @@ export function createTokenManager<T extends { id: string }>(
     }
   }
 
-  async function setCopied(id: string, duration = 2000) {
+  function setCopied(id: string, duration = 2000) {
     copiedId = id;
     clearCopyTimeout();
     copiedTimeout = window.setTimeout(() => {
