@@ -88,7 +88,6 @@ Common HTTP status codes:
 | **OIDC / SSO** | `/api/auth/oidc/*` | OIDC login and account-link flow |
 | **API Keys** | `/api/api-keys`, `/api/api-keys/{id}` | Long-lived `bib_`-prefixed access tokens |
 | **Config** | `/api/config/status`, `/api/config/oidc`, `/api/config/smtp` | `/api/config/status` — JWT only (any authenticated user); OIDC and SMTP config — admin only |
-| **Config** | `/api/config/status`, `/api/config/oidc`, `/api/config/smtp` | `/api/config/status` — JWT only (any authenticated user); OIDC and SMTP config — admin only |
 | **Libraries** | `/api/libraries`, `/api/libraries/{id}` | Named book collections with file-system paths |
 | **Authors** | `/api/authors`, `/api/authors/{id}` | Author management |
 | **Series** | `/api/series`, `/api/series/{id}` | Series management |
