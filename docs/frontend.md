@@ -65,7 +65,7 @@ All global state is managed through **Svelte 5 reactive class stores** in `front
 
 ### Pattern
 
-Most stores that manage a list of entities (authors, series, etc.) extend the generic `CrudStore<T, TInput>` base class defined in `stores/crudStore.svelte.ts`. This base class provides the common `load`, `add`, `edit`, and `remove` operations so individual stores only need to supply the API wiring and any domain-specific accessors.
+Most stores that manage a list of entities (authors, series, etc.) extend the generic `CrudStore<T, TInput>` base class defined in `frontend/src/stores/crudStore.svelte.ts`. This base class provides the common `load`, `add`, `edit`, and `remove` operations so individual stores only need to supply the API wiring and any domain-specific accessors.
 
 ```ts
 // frontend/src/stores/crudStore.svelte.ts — the shared base class
@@ -118,7 +118,7 @@ class AuthorStore extends CrudStore<Author, AuthorInput> {
 export const authorStore = new AuthorStore();
 ```
 
-For stores with additional state beyond basic CRUD (e.g. `libraryStore` with scan tracking), continue to extend `CrudStore` and add the extra `$state` fields on top.
+For stores with additional state beyond basic CRUD (e.g. scan tracking in `libraryStore`), the store may need a fully hand-rolled class instead. `libraryStore` is an example of a store that could not be cleanly migrated to `CrudStore` because its `add` method has extra scan-tracking side effects. If your domain-specific state fits naturally alongside the base CRUD operations, extend `CrudStore` (as `seriesStore` does); otherwise, implement the class directly with `$state` fields.
 
 > **When NOT to extend `CrudStore`**: Use a plain class with `$state` directly for stores that are not entity-list stores (e.g. `authStore`, `routerStore`, `themeStore`).
 
