@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -45,20 +44,8 @@ func (h *OPDSCredentialHandler) credOps() credentialOps {
 		auditUpsert:     db.AuditActionOPDSCredentialUpdated,
 		auditDelete:     db.AuditActionOPDSCredentialDeleted,
 		errConflict:     db.ErrOPDSUsernameExists,
-		getByUserID: func(ctx context.Context, userID string) (credentialEntity, error) {
-			c, err := h.DB.GetOPDSCredentialByUserID(ctx, userID)
-			if err != nil {
-				return credentialEntity{}, err
-			}
-			return credentialEntity{ID: c.ID, Username: c.Username, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt}, nil
-		},
-		upsert: func(ctx context.Context, userID, username, hash string) (credentialEntity, error) {
-			c, err := h.DB.UpsertOPDSCredential(ctx, userID, username, hash)
-			if err != nil {
-				return credentialEntity{}, err
-			}
-			return credentialEntity{ID: c.ID, Username: c.Username, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt}, nil
-		},
-		del: h.DB.DeleteOPDSCredential,
+		getByUserID:     credGetAdapter(h.DB.GetOPDSCredentialByUserID),
+		upsert:          credUpsertAdapter(h.DB.UpsertOPDSCredential),
+		del:             h.DB.DeleteOPDSCredential,
 	}
 }
