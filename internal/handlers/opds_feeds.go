@@ -62,7 +62,7 @@ func (h *OPDSHandler) rootFeed(w http.ResponseWriter, r *http.Request) {
 
 // writeBooksFeed is a shared helper for book-listing OPDS acquisition feeds.
 // selfPath is the path after /opds (e.g. "/all" or "/authors/<id>").
-// extraLinks are appended after the pagination links (e.g. a opdspkg.RelStart link back to root).
+// extraLinks are appended after the pagination links (e.g. an opdspkg.RelStart link back to root).
 // listFn must return (books, totalCount, error) for the given limit and offset.
 func (h *OPDSHandler) writeBooksFeed(
 	w http.ResponseWriter, r *http.Request,
@@ -234,7 +234,7 @@ func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, series
 }
 
 // writeBooksForEntity is a shared helper for entity-scoped OPDS book feeds
-// (e.g. books by a given author, or books in a given series). It appends a
+// (e.g. books by a given author, or books in a given series). It appends an
 // opdspkg.RelStart link back to the OPDS root and delegates to writeBooksFeed.
 func (h *OPDSHandler) writeBooksForEntity(
 	w http.ResponseWriter, r *http.Request,
