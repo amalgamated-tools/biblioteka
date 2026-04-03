@@ -180,7 +180,7 @@ func TestListKoboTokens_OrderedNewestFirst(t *testing.T) {
 		t.Fatalf("CreateKoboToken(first): %v", err)
 	}
 	// Sleep to guarantee distinct created_at timestamps in SQLite (second precision).
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(1100 * time.Millisecond)
 	t2, err := d.CreateKoboToken(t.Context(), user.ID, "Second Token", "hash-second")
 	if err != nil {
 		t.Fatalf("CreateKoboToken(second): %v", err)
