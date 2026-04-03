@@ -46,7 +46,7 @@ steps:
       node-version: "20"
 
   - name: Install pnpm
-    uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
+    uses: pnpm/action-setup@b307475762933b98ed359c036b0e51f26b63b74b  # v5.0.0
     with:
       version: 10.32.1
 
@@ -59,7 +59,7 @@ steps:
     run: pnpm run build
 
   - name: Set up Go
-    uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+    uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
     with:
       go-version: 1.26.1
       cache: true
