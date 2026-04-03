@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createTokenManager } from "./tokenManager.svelte";
 
 // Minimal stub items
@@ -115,24 +115,28 @@ describe("createTokenManager", () => {
       vi.useFakeTimers();
     });
 
-    it("sets copiedId immediately", async () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("sets copiedId immediately", () => {
       const mgr = createTokenManager(makeOps());
-      await mgr.setCopied("a");
+      mgr.setCopied("a");
       expect(mgr.copiedId).toBe("a");
     });
 
-    it("clears copiedId after the specified duration", async () => {
+    it("clears copiedId after the specified duration", () => {
       const mgr = createTokenManager(makeOps());
-      await mgr.setCopied("a", 1000);
+      mgr.setCopied("a", 1000);
       expect(mgr.copiedId).toBe("a");
       vi.advanceTimersByTime(1000);
       expect(mgr.copiedId).toBeNull();
     });
 
-    it("replaces a previous copiedId when called again before timeout", async () => {
+    it("replaces a previous copiedId when called again before timeout", () => {
       const mgr = createTokenManager(makeOps());
-      await mgr.setCopied("a", 2000);
-      await mgr.setCopied("b", 2000);
+      mgr.setCopied("a", 2000);
+      mgr.setCopied("b", 2000);
       expect(mgr.copiedId).toBe("b");
     });
   });
