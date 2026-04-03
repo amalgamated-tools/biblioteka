@@ -423,7 +423,7 @@ func (d *DB) FindOrCreateTag(ctx context.Context, name string) (*Tag, error) {
 
 ### Protocol credential database layer
 
-When implementing the database layer for a new sync protocol that stores a username + bcrypt-hashed password, use the shared helpers in `internal/db/protocol_credentials.go` instead of hand-rolling the SQL. Define a `protocolCredentialTable` config and delegate all CRUD to the unexported helpers:
+When implementing the database layer for a new sync protocol that stores a username + bcrypt-hashed password, use the shared helpers in `internal/db/protocol_credentials.go` instead of hand-rolling the SQL. Define a `protocolCredentialConfig` value, declare a type alias for `ProtocolCredential`, and delegate all CRUD to the unexported package-level helpers:
 
 ```go
 // ErrMyProtocolUsernameExists is returned when a MyProtocol username is already taken by another user.
@@ -432,39 +432,35 @@ var ErrMyProtocolUsernameExists = errors.New("myprotocol username already exists
 // MyProtocolCredential represents a row in the myprotocol_credentials table.
 type MyProtocolCredential = ProtocolCredential
 
-var myprotocolCredentialTable = protocolCredentialTable{
-    name:              "myprotocol_credentials",
-    usernameUniqueCol: "myprotocol_credentials.username",
-    usernameUniqueIdx: "idx_myprotocol_credentials_username",
+var myprotocolCredConfig = protocolCredentialConfig{
+    table:        "myprotocol_credentials",
+    tableCol:     "myprotocol_credentials.username",
+    indexName:    "idx_myprotocol_credentials_username",
+    errExists:    ErrMyProtocolUsernameExists,
+    logPrefix:    "MyProtocol",
+    usernameAttr: func(v string) slog.Attr { return slog.String("myprotocol.username", v) },
 }
 
 func (d *DB) GetMyProtocolCredentialByUserID(ctx context.Context, userID string) (*MyProtocolCredential, error) {
-    slog.DebugContext(ctx, "db: fetching MyProtocol credential by user ID", slog.String(otelkeys.UserID, userID))
-    return d.getProtocolCredentialByUserID(ctx, myprotocolCredentialTable, userID)
+    return getCredentialByUserID(ctx, d, myprotocolCredConfig, userID)
 }
 
 func (d *DB) GetMyProtocolCredentialByUsername(ctx context.Context, username string) (*MyProtocolCredential, error) {
-    slog.DebugContext(ctx, "db: fetching MyProtocol credential by username", slog.String(otelkeys.MyProtocolUsername, username))
-    return d.getProtocolCredentialByUsername(ctx, myprotocolCredentialTable, username)
+    return getCredentialByUsername(ctx, d, myprotocolCredConfig, username)
 }
 
 // UpsertMyProtocolCredential creates or updates the MyProtocol credential for a user.
 // Returns ErrMyProtocolUsernameExists if the username is taken by a different user.
 func (d *DB) UpsertMyProtocolCredential(ctx context.Context, userID, username, passwordHash string) (*MyProtocolCredential, error) {
-    slog.DebugContext(ctx, "db: upserting MyProtocol credential",
-        slog.String(otelkeys.UserID, userID),
-        slog.String(otelkeys.MyProtocolUsername, username),
-    )
-    return d.upsertProtocolCredential(ctx, myprotocolCredentialTable, userID, username, passwordHash, ErrMyProtocolUsernameExists)
+    return upsertCredential(ctx, d, myprotocolCredConfig, userID, username, passwordHash)
 }
 
 func (d *DB) DeleteMyProtocolCredential(ctx context.Context, userID string) error {
-    slog.DebugContext(ctx, "db: deleting MyProtocol credential", slog.String(otelkeys.UserID, userID))
-    return d.deleteProtocolCredential(ctx, myprotocolCredentialTable, userID)
+    return deleteCredential(ctx, d, myprotocolCredConfig, userID)
 }
 ```
 
-`protocolCredentialTable` holds the table name and the unique-constraint identifiers used to detect username conflicts. `upsertProtocolCredential` performs the `ON CONFLICT (user_id) DO UPDATE` upsert and translates a unique-constraint violation on the `username` column into `errUsernameExists` — which `credentialOps.errConflict` then maps to a `409 Conflict` response in the handler. SQLite may reference either the fully qualified column (`tableCol`) or the index name (`usernameUniqueIdx`) in its error message; PostgreSQL references the index/constraint name — hence the `protocolCredentialTable` config accepts both.
+`protocolCredentialConfig` holds the table name and the unique-constraint identifiers used to detect username conflicts. `upsertCredential` performs the `ON CONFLICT (user_id) DO UPDATE` upsert and translates a unique-constraint violation on the `username` column into `errExists` — which `credentialOps.errConflict` then maps to a `409 Conflict` response in the handler. SQLite may reference either the fully qualified column (`tableCol`) or the index name (`indexName`) in its error message; PostgreSQL references the index/constraint name — hence the `protocolCredentialConfig` accepts both.
 
 `ProtocolCredential` (defined in `protocol_credentials.go`) is the shared base struct. Declare your protocol-specific type as a type alias (`type MyProtocolCredential = ProtocolCredential`) so callers get a named type without duplicating fields.
 

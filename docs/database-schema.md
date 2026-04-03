@@ -540,7 +540,7 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `settings.go` | `Setting` struct; `GetSetting`, `SetSetting`, `SetSettings` (transactional multi-key save) |
 | `users.go` | `User` struct; `CreateUser`, `CreateOIDCUser`, `GetUser*`, `LinkOIDCSubject`, `UpdatePassword`, `IsAdmin`, `SetAdmin`, `ListUsers` |
 | `api_keys.go` | `APIKey` struct; `CreateAPIKey`, `ListAPIKeys`, `GetAPIKey`, `DeleteAPIKey`, `GetAPIKeyByHash`, `TouchAPIKeyLastUsed`, `ValidateAPIKey` |
-| `protocol_credentials.go` | Shared base for per-protocol credential tables: `ProtocolCredential` struct, `protocolCredentialTable` config type, and unexported helpers `getProtocolCredentialByUserID`, `getProtocolCredentialByUsername`, `upsertProtocolCredential`, `deleteProtocolCredential` — used by `opds_credentials.go` and `kosync.go` |
+| `protocol_credentials.go` | Shared base for per-protocol credential tables: `ProtocolCredential` struct, `protocolCredentialConfig` config type, and unexported helpers `getCredentialByUserID`, `getCredentialByUsername`, `upsertCredential`, `deleteCredential` — used by `opds_credentials.go` and `kosync.go` |
 | `opds_credentials.go` | `OPDSCredential` (type alias for `ProtocolCredential`); `GetOPDSCredentialByUserID`, `GetOPDSCredentialByUsername`, `UpsertOPDSCredential`, `DeleteOPDSCredential` — thin wrappers around the shared helpers in `protocol_credentials.go` |
 | `kobo_tokens.go` | `KoboToken` struct; `CreateKoboToken`, `GetKoboToken`, `GetKoboTokenByHash`, `ListKoboTokens`, `DeleteKoboToken` |
 | `kobo_reading_states.go` | `KoboReadingState` struct; `GetKoboReadingState`, `UpsertKoboReadingState`, `ListKoboReadingStatesSince`, `GetReadingStatesForBooks` |
