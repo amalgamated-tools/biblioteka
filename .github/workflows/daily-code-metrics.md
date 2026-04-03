@@ -1,40 +1,34 @@
 ---
-description: Tracks and visualizes daily code metrics and trends to monitor repository health and development patterns
 on:
   schedule: daily
-  workflow_dispatch:
+  workflow_dispatch: null
 permissions:
   contents: read
-  actions: read
-  discussions: read
   issues: read
   pull-requests: read
-tracker-id: daily-code-metrics
-engine: copilot
+imports:
+- shared/reporting.md
+- shared/python-dataviz.md
+- shared/trends.md
+description: Tracks and visualizes daily code metrics and trends to monitor repository health and development patterns
+engine: claude
+source: github/gh-aw/.github/workflows/daily-code-metrics.md@e2ae16398626875962d19c1d5aeca50298fa68da
+strict: true
+timeout-minutes: 30
 tools:
+  bash: true
   repo-memory:
     branch-prefix: daily
-    description: "Historical code quality and health metrics"
-    file-glob: ["*.json", "*.jsonl", "*.csv", "*.md"]
-    max-file-size: 102400  # 100KB
-  bash: true
-safe-outputs:
-  upload-asset:
-  create-discussion:
-    expires: 3d
-    category: "announcements"
-    max: 1
-    close-older-discussions: true
-timeout-minutes: 30
-strict: true
-imports:
-  - shared/mood.md
-  - shared/reporting.md
-  - shared/python-dataviz.md
-  - shared/trends.md
-source: github/gh-aw/.github/workflows/daily-code-metrics.md@852cb06ad52958b402ed982b69957ffc57ca0619
+    description: Historical code quality and health metrics
+    file-glob:
+    - "*.json"
+    - "*.jsonl"
+    - "*.csv"
+    - "*.md"
+    max-file-size: 102400
+    max-patch-size: 51200
+tracker-id: daily-code-metrics
 ---
-
 {{#runtime-import? .github/shared-instructions.md}}
 
 # Daily Code Metrics and Trend Tracking Agent
@@ -269,17 +263,6 @@ After generating charts:
 
 For each metric: current value, 7-day % change, 30-day % change, trend indicator (⬆️/➡️/⬇️)
 
-## Report Formatting Guidelines
-
-**IMPORTANT**: Use h3 (###) or lower for all headers in the discussion report to maintain proper document hierarchy. The discussion title serves as h1.
-
-**Structure**:
-- Main sections: h3 (###) - e.g., "### 📊 Visualizations"
-- Subsections: h4 (####) - e.g., "#### LOC Distribution by Language"
-- Detail sections inside `<details>`: h3/h4 as appropriate
-
-**Progressive Disclosure**: Keep executive summary and key visualizations visible. Use `<details>` tags for detailed metrics tables (as already shown in template).
-
 ## Report Format
 
 Use detailed template with embedded visualization charts:
@@ -460,3 +443,9 @@ This ensures the quality score reflects actionable source code volatility, not n
 - Upload charts as assets for permanent URLs
 - Embed charts in discussion report with analysis
 - Store metrics to repo memory, create discussion report with visualizations
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

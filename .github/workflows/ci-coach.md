@@ -27,18 +27,11 @@ tools:
 safe-outputs:
   create-pull-request:
     expires: 2d
-    draft: true
-    fallback-as-issue: true
-    title-prefix: "ci(ci-coach): "
-    protected-files: allowed
-    allowed-files:
-      - .github/workflows/*
-      - docs/*
-      - e2e/*
-    github-token-for-extra-empty-commit: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
-    github-token: ${{ secrets.GH_AW_PUSH_TOKEN }}
+    protected-files: fallback-to-issue
+    title-prefix: "[ci-coach] "
+
 timeout-minutes: 30
-source: githubnext/agentics/workflows/ci-coach.md@b897c2f3e43bde9ff7923c8fa9211055b26e27cc
+source: githubnext/agentics/workflows/ci-coach.md@7ee2b60744abf71b985bead4599640f165edcd93
 ---
 
 # CI Optimization Coach
@@ -125,7 +118,9 @@ If you identify valuable improvements:
 
 2. **Document the changes** thoroughly in the PR description
 
-3. **Create a pull request** with clear rationale
+3. **Deduplication check**: Before creating a new PR, search for existing open PRs with the `[ci-coach]` title prefix. If one already exists, update that PR with your new findings rather than creating a new one. This prevents duplicate PR spam when multiple workflow runs overlap or trigger in quick succession.
+
+4. **Create a pull request** with clear rationale (only if no existing open `[ci-coach]` PR was found)
 
 ### Phase 5: No Changes Path (2 minutes)
 
@@ -184,7 +179,7 @@ If no significant improvements are found:
 
 ## Pull Request Template
 
-When creating a PR, the title must follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `ci: <short description>`. Use this structure for the body:
+When creating a PR, use this structure:
 
 ````markdown
 ### Summary
@@ -238,7 +233,8 @@ When creating a PR, the title must follow [Conventional Commits v1.0.0](https://
 ✅ Analyzed all GitHub Actions workflows
 ✅ Collected metrics from recent runs
 ✅ Identified optimization opportunities OR confirmed workflows are well-optimized
-✅ If changes proposed: Created PR with clear rationale and expected impact
+✅ If changes proposed: Checked for existing open `[ci-coach]` PRs before creating a new one
+✅ If changes proposed: Created or updated PR with clear rationale and expected impact
 ✅ If no changes: Used noop tool to report analysis complete
 ✅ Completed analysis in under 30 minutes
 

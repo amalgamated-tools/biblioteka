@@ -4,7 +4,7 @@ description: Analyzes source files daily to identify oversized files that exceed
 on:
   workflow_dispatch:
   schedule: daily on weekdays
-  skip-if-match: 'is:issue is:open in:title "file-diet"'
+  skip-if-match: 'is:issue is:open in:title "[file-diet]"'
 
 permissions:
   contents: read
@@ -16,18 +16,28 @@ tracker-id: daily-file-diet
 safe-outputs:
   create-issue:
     expires: 2d
-    title-prefix: "chore(file-diet): "
+    title-prefix: "[file-diet] "
     labels: [refactoring, code-health, automated-analysis]
+    assignees: copilot
     max: 1
 
 tools:
   github:
     toolsets: [default]
-  bash: true
+  bash:
+    - "git ls-tree -r --name-only HEAD"
+    - "git ls-tree -r -l --full-name HEAD"
+    - "git ls-tree -r --name-only HEAD | grep -E * | grep -vE * | xargs wc -l 2>/dev/null"
+    - "git ls-tree -r --name-only HEAD | grep -E * | xargs wc -l 2>/dev/null"
+    - "wc -l *"
+    - "head -n * *"
+    - "grep -n * *"
+    - "sort *"
+    - "cat *"
 
 timeout-minutes: 20
-strict: true
-source: githubnext/agentics/workflows/daily-file-diet.md@b897c2f3e43bde9ff7923c8fa9211055b26e27cc
+
+source: githubnext/agentics/workflows/daily-file-diet.md@7ee2b60744abf71b985bead4599640f165edcd93
 ---
 
 # Daily File Diet Agent 🏋️
@@ -52,10 +62,13 @@ First, determine the primary programming language(s) used in this repository. Th
 
 **For polyglot or unknown repos:**
 ```bash
-find . -type f \( -name '*.go' -o -name '*.py' -o -name '*.ts' -o -name '*.js' -o -name '*.rb' -o -name '*.java' -o -name '*.rs' -o -name '*.cs' -o -name '*.cpp' -o -name '*.c' \) -not -path '*/node_modules/*' -not -path '*/vendor/*' -not -path '*/dist/*' -not -path '*/build/*' -not -path '*/target/*' -not -path '*/__pycache__/*' -exec wc -l {} \; 2>/dev/null
+git ls-tree -r --name-only HEAD \
+  | grep -E '\.(go|py|ts|tsx|js|jsx|rb|java|rs|cs|cpp|c|h|hpp)$' \
+  | grep -vE '(_test\.go|\.test\.(ts|js)|\.spec\.(ts|js)|test_[^/]*\.py|[^/]*_test\.py)$' \
+  | xargs wc -l 2>/dev/null \
+  | sort -rn \
+  | head -20
 ```
-
-The output will be unsorted. Look through the results and identify the file with the highest line count.
 
 Also skip test files (files ending in `_test.go`, `.test.ts`, `.spec.ts`, `.test.js`, `.spec.js`, `_test.py`, `test_*.py`, etc.) — focus on non-test production code.
 
@@ -85,10 +98,8 @@ head -n 100 <LARGE_FILE>
 ```
 
 ```bash
-grep -n "^func\|^class\|^def\|^module\|^impl\|^struct\|^type\|^interface\|^export " <LARGE_FILE>
+grep -n "^func\|^class\|^def\|^module\|^impl\|^struct\|^type\|^interface\|^export " <LARGE_FILE> | head -50
 ```
-
-**Important**: Do NOT pipe commands together (e.g., do not use `|`). Run each command separately and review the output yourself.
 
 Identify:
 - What logical concerns or responsibilities the file contains
@@ -169,11 +180,3 @@ Based on the file's structure, split it into the following modules:
 - **Estimate effort realistically**: Large files with many dependencies may require significant refactoring effort
 
 Begin your analysis now. Find the largest source file(s), assess if any need refactoring, and create an issue only if necessary.
-
-**Reminder**: You MUST call exactly one safe-output tool before finishing. If no file exceeds 500 lines, call `noop` with a status message. If a file exceeds 500 lines, call `create_issue`. Do NOT end without calling a safe-output tool.
-
-Example noop output:
-
-```json
-{"noop": {"message": "No action needed: all non-test source files are below the 500-line threshold after checking the largest files."}}
-```

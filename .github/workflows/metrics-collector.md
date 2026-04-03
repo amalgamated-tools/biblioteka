@@ -1,8 +1,6 @@
 ---
 description: Collects daily performance metrics for the agent ecosystem and stores them in repo-memory
-on:
-  schedule: daily
-  workflow_dispatch:
+on: daily
 permissions:
   contents: read
   issues: read
@@ -18,9 +16,7 @@ tools:
     branch-name: memory/meta-orchestrators
     file-glob: "metrics/**"
 timeout-minutes: 15
-imports:
-  - shared/mood.md
-source: github/gh-aw/.github/workflows/metrics-collector.md@852cb06ad52958b402ed982b69957ffc57ca0619
+source: github/gh-aw/.github/workflows/metrics-collector.md@e2ae16398626875962d19c1d5aeca50298fa68da
 ---
 
 {{#runtime-import? .github/shared-instructions.md}}
@@ -134,6 +130,11 @@ Create a JSON object following this schema:
 
 ### 3. Store Metrics in Repo Memory
 
+> ⚠️ **CRITICAL**: You MUST write ONLY JSON files inside the `metrics/` subdirectory. The repo-memory
+> glob filter is set to `metrics/**`, which means **any file written outside this subdirectory will be
+> silently dropped and no data will be persisted**. Do NOT write files to the root of
+> `/tmp/gh-aw/repo-memory/default/` — they will be ignored.
+
 **Daily Storage**:
 - Write metrics to: `/tmp/gh-aw/repo-memory/default/metrics/daily/YYYY-MM-DD.json`
 - Use today's date for the filename (e.g., `2024-12-24.json`)
@@ -144,6 +145,12 @@ Create a JSON object following this schema:
 
 **Create Directory Structure**:
 - Ensure the directory exists: `mkdir -p /tmp/gh-aw/repo-memory/default/metrics/daily/`
+
+**File Constraint Summary** (glob filter: `metrics/**`):
+- ✅ `/tmp/gh-aw/repo-memory/default/metrics/latest.json` — allowed
+- ✅ `/tmp/gh-aw/repo-memory/default/metrics/daily/YYYY-MM-DD.json` — allowed
+- ❌ `/tmp/gh-aw/repo-memory/default/agent-performance-latest.md` — NOT allowed (root level, wrong format)
+- ❌ `/tmp/gh-aw/repo-memory/default/anything-else.md` — NOT allowed
 
 ### 4. Cleanup Old Data
 
@@ -247,6 +254,9 @@ At the end of collection:
 - **SECONDARY TOOL**: Use GitHub MCP server only for engagement metrics (reactions, comments)
 - **DO NOT** create issues, PRs, or comments - this is a data collection agent only
 - **DO NOT** analyze or interpret the metrics - that's the job of meta-orchestrators
+- **DO NOT** write any files to the root of `/tmp/gh-aw/repo-memory/default/` — the glob filter `metrics/**` will silently discard them
+- **DO NOT** write markdown files (`.md`) — all output must be JSON files under `metrics/`
+- **DO NOT** copy or re-write files you read from shared memory (e.g., `agent-performance-latest.md`) — only write new metrics JSON files
 - **ALWAYS** write valid JSON (test with `jq` before storing)
 - **ALWAYS** include a timestamp in ISO 8601 format
 - **ENSURE** directory structure exists before writing files

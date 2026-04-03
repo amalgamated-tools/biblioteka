@@ -1,10 +1,8 @@
 ---
-name: Code Simplifier
-description: Analyzes recently modified code and creates pull requests with simplifications that improve clarity, consistency, and maintainability while preserving functionality
 on:
   schedule: daily
-  skip-if-match: 'is:pr is:open in:title "[code-simplifier]"'
-
+  skip-if-match: is:pr is:open in:title "[code-simplifier]"
+permissions: read-all
 network:
   allowed:
   - defaults
@@ -13,31 +11,28 @@ network:
   - python
   - rust
   - java
-
-permissions: read-all
-
-tracker-id: code-simplifier
-
 imports:
-  - shared/formatting.md
-  - shared/reporting.md
-
+- shared/formatting.md
+- shared/reporting.md
 safe-outputs:
   create-pull-request:
-    title-prefix: "fix(code-simplifier): "
-    labels: [refactoring, code-quality, automation]
     expires: 1d
-
+    labels:
+    - refactoring
+    - code-quality
+    - automation
+    protected-files: fallback-to-issue
+    title-prefix: "[code-simplifier] "
+description: Analyzes recently modified code and creates pull requests with simplifications that improve clarity, consistency, and maintainability while preserving functionality
+name: Code Simplifier
+source: githubnext/agentics/workflows/code-simplifier.md@7ee2b60744abf71b985bead4599640f165edcd93
+timeout-minutes: 30
 tools:
   github:
-    toolsets: [default]
-
-timeout-minutes: 30
-strict: true
-source: githubnext/agentics/workflows/code-simplifier.md@0718141d65ec967e48141f6f1850ad7b1f682bb0
-engine: copilot
+    toolsets:
+    - default
+tracker-id: code-simplifier
 ---
-
 <!-- This prompt will be imported in the agentic workflow .github/workflows/code-simplifier.md at runtime. -->
 <!-- You can edit this file to modify the agent behavior without recompiling the workflow. -->
 
@@ -226,7 +221,7 @@ No simplifications needed - code already meets quality standards.
 
 ### 4.2 Generate PR Description
 
-If creating a PR, the title must follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `refactor: <short description>` (e.g., `refactor(handlers): simplify error handling logic`). Use this structure for the body:
+If creating a PR, use this structure:
 
 ```markdown
 ## Code Simplification - [Date]

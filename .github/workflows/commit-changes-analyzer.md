@@ -1,37 +1,37 @@
 ---
-name: Commit Changes Analyzer
-description: Analyzes and provides a comprehensive developer-focused report of all changes in the repository since a specified commit
 on:
   workflow_dispatch:
     inputs:
       commit_url:
-        description: 'GitHub commit URL to analyze changes since (e.g., https://github.com/owner/repo/commit/abc123)'
+        description: GitHub commit URL to analyze changes since (e.g., https://github.com/owner/repo/commit/abc123)
         required: true
         type: string
 permissions:
   contents: read
-  discussions: read
   issues: read
   pull-requests: read
-engine:
-  id: copilot
-tools:
-  github:
-    toolsets: [default]
-  bash:
-    - "*"
-  edit:
+imports:
+- shared/reporting.md
 safe-outputs:
   create-discussion:
+    category: dev
     expires: 1d
-    category: "announcements"
     max: 1
+description: Analyzes and provides a comprehensive developer-focused report of all changes in the repository since a specified commit
+engine:
+  id: claude
+  max-turns: 100
+name: Commit Changes Analyzer
+source: github/gh-aw/.github/workflows/commit-changes-analyzer.md@e2ae16398626875962d19c1d5aeca50298fa68da
 timeout-minutes: 30
-imports:
-  - shared/reporting.md
-source: github/gh-aw/.github/workflows/commit-changes-analyzer.md@d9435691262e2a266106d9c02cd570fea4116434
+tools:
+  bash:
+  - "*"
+  edit: null
+  github:
+    toolsets:
+    - default
 ---
-
 # Commit Changes Analyzer
 
 Analyze and provide a comprehensive description of all changes in the repository since a given commit.

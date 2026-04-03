@@ -2,12 +2,12 @@
 description: |
   This workflow is an automated accessibility compliance checker for web applications.
   Reviews websites against WCAG 2.2 guidelines using Playwright browser automation.
-  Identifies accessibility issues and creates GitHub issues with detailed
+  Identifies accessibility issues and creates GitHub discussions or issues with detailed
   findings and remediation recommendations. Helps maintain accessibility standards
   continuously throughout the development cycle.
 
 on:
-  schedule: every 24h
+  schedule: daily
   workflow_dispatch:
 
 permissions: read-all
@@ -17,13 +17,12 @@ network: defaults
 safe-outputs:
   mentions: false
   allowed-github-references: []
-  create-issue:
-    title-prefix: "fix(accessibility): "
-    labels: [a11y, automated-analysis]
-    max: 15
-    expires: 7d
-    group: true
-    close-older-issues: true
+  create-discussion:
+    title-prefix: "${{ github.workflow }}"
+    category: "q-a"
+    max: 5
+  add-comment:
+    max: 5
 
 tools:
   playwright:
@@ -35,62 +34,17 @@ timeout-minutes: 15
 
 steps:
   - name: Checkout repository
-    uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    uses: actions/checkout@v6.0.2
     with:
       fetch-depth: 0
-      persist-credentials: false    
-
-  - name: Set up Node.js
-    uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
-    with:
-      node-version: "20"
-
-  - name: Install pnpm
-    uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
-    with:
-      version: 10.32.1
-
-  - name: Install frontend dependencies
-    working-directory: ./frontend
-    run: pnpm install --frozen-lockfile
-
-  - name: Build frontend
-    working-directory: ./frontend
-    run: pnpm run build
-
-  - name: Set up Go
-    uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
-    with:
-      go-version: 1.26.1
-      cache: true
-      cache-dependency-path: go.sum
-
-  - name: Build Go binary
-    run: go build -o biblioteka ./cmd/server    
-
+      persist-credentials: false
   - name: Build and run app in background
     run: |
       # This step should set up the runtime environment for your app, 
       # including installing any necessary dependencies, and it should
-      # start your app in server-only mode in the background (e.g., using `&` at the end of the command).
+      # start your app in the background (e.g., using `&` at the end of the command).
       echo "Building and running the app in background..."
-      PORT=3000 JWT_SECRET=github-actions ./biblioteka -mode server &
-      echo "Waiting for server to be ready..."
-      server_ready=false
-      for i in $(seq 1 30); do
-        echo "Checking if server is up (attempt $i)..."
-        if curl -sf http://localhost:3000/api/health; then
-          server_ready=true
-          break
-        fi
-        sleep 1
-      done
-      if [ "$server_ready" = false ]; then
-        echo "Error: server did not become ready at http://localhost:3000/api/health within 30 seconds."
-        exit 1
-      fi
-source: githubnext/agentics/workflows/daily-accessibility-review.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
-engine: copilot
+source: githubnext/agentics/workflows/daily-accessibility-review.md@7ee2b60744abf71b985bead4599640f165edcd93
 ---
 
 # Daily Accessibility Review
@@ -122,10 +76,7 @@ still contains a placeholder, then:
 
 2. Review the source code of the application to look for accessibility issues in the code.  Use the Grep, LS, Read, etc. tools.
 
-3. Use the GitHub MCP tool to create issues for any accessibility problems you find.  Each issue should include:
+3. Use the GitHub MCP tool to create discussions for any accessibility problems you find.  Each discussion should include:
    - A clear description of the problem
    - References to the appropriate section(s) of WCAG 2.2 that are violated
    - Any relevant code snippets that illustrate the issue
-   - Recommendations for how to fix the issue, if possible
-   - Screenshots or snapshots that illustrate the issue, if possible
-   - A notice that the PR should include a reference to the issue number, e.g., "Fixes #123"

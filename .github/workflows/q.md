@@ -21,7 +21,7 @@ safe-outputs:
   add-comment:
     max: 1
   create-pull-request:
-    title-prefix: "chore(q): "
+    title-prefix: "[q] "
     labels: [automation, workflow-optimization]
     draft: false
     if-no-changes: "ignore"
@@ -29,11 +29,11 @@ safe-outputs:
 tools:
   agentic-workflows:
   bash: true
-  edit:
+  github:
+    min-integrity: none # This workflow is allowed to examine any PR because it's invoked by a repo maintainer
 
 timeout-minutes: 15
-source: githubnext/agentics/workflows/q.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
-engine: copilot
+source: githubnext/agentics/workflows/q.md@7ee2b60744abf71b985bead4599640f165edcd93
 ---
 
 # Q - Agentic Workflow Optimizer
@@ -239,7 +239,6 @@ Create a pull request with your improvements:
 2. **Create Pull Request**:
    - Use the `create-pull-request` tool which is configured in the workflow frontmatter
    - The PR will be created with the prefix "[q]" and labeled with "automation, workflow-optimization"
-   - The PR title must follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `ci: <short description>` (e.g., `ci: optimize workflow caching and parallelization`)
    - The system will automatically skip PR creation if there are no file changes
 
 3. **Create Focused Changes**: Make minimal, surgical modifications

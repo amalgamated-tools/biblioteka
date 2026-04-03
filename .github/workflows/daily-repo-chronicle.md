@@ -1,59 +1,49 @@
 ---
-description: Creates a narrative chronicle of daily repository activity including commits, PRs, issues, and discussions
 on:
   schedule:
-    - cron: "0 16 * * 1-5"  # 4 PM UTC, weekdays only
-  workflow_dispatch:
+  - cron: 0 16 * * 1-5
+  workflow_dispatch: null
 permissions:
   contents: read
-  actions: read
+  discussions: read
   issues: read
   pull-requests: read
-  discussions: read
-tracker-id: daily-repo-chronicle
-strict: true
-engine: copilot
-features:
-  dangerous-permissions-write: true
-timeout-minutes: 45
-
 network:
   allowed:
-    - defaults
-    - python
-    - node
-
-tools:
-  edit:
-  bash:
-    - "*"
-  github:
-    lockdown: false
-    toolsets: [default, discussions]
-safe-outputs:
-  upload-asset:
-  create-discussion:
-    expires: 3d
-    category: "announcements"
-    title-prefix: "📰 "
-    max: 1
-    close-older-discussions: true
-  close-discussion:
-    max: 10
+  - defaults
+  - python
+  - node
 imports:
-  - shared/reporting.md
-
+- shared/reporting.md
+safe-outputs:
+  create-discussion:
+    category: announcements
+    close-older-discussions: true
+    expires: 3d
+    title-prefix: "📰 "
+  upload-asset: null
 steps:
-  - name: Setup Python environment
-    run: |
-      mkdir -p /tmp/gh-aw/python
-      mkdir -p /tmp/gh-aw/python/data
-      mkdir -p /tmp/gh-aw/python/charts
-      pip install --user --quiet numpy pandas matplotlib seaborn
-      echo "Python environment ready"
-source: githubnext/agentics/workflows/daily-repo-chronicle.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
+- name: Setup Python environment
+  run: |
+    mkdir -p /tmp/gh-aw/python
+    mkdir -p /tmp/gh-aw/python/data
+    mkdir -p /tmp/gh-aw/python/charts
+    pip install --user --quiet numpy pandas matplotlib seaborn
+    echo "Python environment ready"
+description: Creates a narrative chronicle of daily repository activity including commits, PRs, issues, and discussions
+source: githubnext/agentics/workflows/daily-repo-chronicle.md@7ee2b60744abf71b985bead4599640f165edcd93
+timeout-minutes: 45
+tools:
+  bash:
+  - "*"
+  edit: null
+  github:
+    min-integrity: none
+    toolsets:
+    - default
+    - discussions
+tracker-id: daily-repo-chronicle
 ---
-
 # The Daily Repository Chronicle
 
 You are a dramatic newspaper editor crafting today's edition of **The Repository Chronicle** for ${{ github.repository }}.

@@ -1,28 +1,31 @@
 ---
 description: Generates a weekly ASCII tree map visualization of repository file structure and size distribution
+
 on:
   schedule: weekly on monday around 15:00
   workflow_dispatch:
+
 permissions:
   contents: read
-  discussions: read
   issues: read
   pull-requests: read
-engine: copilot
+
 tools:
   edit:
   bash:
     - "*"
+
 safe-outputs:
-  create-discussion:
+  create-issue:
     expires: 7d
-    category: "announcements"
-    title-prefix: "📰 "
-    close-older-discussions: true
+    title-prefix: "[repo-map] "
+    labels: [documentation]
+    max: 1
+    close-older-issues: true
   noop:
-timeout-minutes: 20
-strict: true
-source: githubnext/agentics/workflows/weekly-repo-map.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
+
+timeout-minutes: 10
+source: githubnext/agentics/workflows/weekly-repo-map.md@7ee2b60744abf71b985bead4599640f165edcd93
 ---
 
 # Repository Tree Map Generator

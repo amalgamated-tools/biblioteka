@@ -1,44 +1,33 @@
 ---
-description: Daily report analyzing repository issues with clustering, metrics, and trend charts
-on:
-  schedule: daily
-  workflow_dispatch:
+on: daily
 permissions:
-  contents: read
   actions: read
+  contents: read
+  discussions: read
   issues: read
   pull-requests: read
-  discussions: read
-engine: copilot
+imports:
+- github/gh-aw/.github/workflows/shared/github-guard-policy.md@e2ae16398626875962d19c1d5aeca50298fa68da
+- shared/jqschema.md
+- shared/issues-data-fetch.md
+- shared/python-dataviz.md
+- github/gh-aw/.github/workflows/shared/python-nlp.md@e2ae16398626875962d19c1d5aeca50298fa68da
+- shared/trends.md
+- shared/reporting.md
+description: Daily report analyzing repository issues with clustering, metrics, and trend charts
+engine: codex
+runs-on: aw-gpu-runner-T4
+source: github/gh-aw/.github/workflows/daily-issues-report.md@e2ae16398626875962d19c1d5aeca50298fa68da
 strict: true
-tracker-id: daily-issues-report
-features:
-  dangerous-permissions-write: true
+timeout-minutes: 30
 tools:
   github:
-    lockdown: false
-    toolsets: [default, discussions]
-safe-outputs:
-  upload-asset:
-  create-discussion:
-    expires: 3d
-    category: "announcements"
-    title-prefix: "[daily issues] "
-    max: 1
-    close-older-discussions: true
-  close-discussion:
-    max: 10
-timeout-minutes: 30
-imports:
-  - shared/mood.md
-  - shared/jqschema.md
-  - shared/issues-data-fetch.md
-  - shared/python-dataviz.md
-  - shared/trends.md
-  - shared/reporting.md
-source: github/gh-aw/.github/workflows/daily-issues-report.md@852cb06ad52958b402ed982b69957ffc57ca0619
+    min-integrity: approved
+    toolsets:
+    - default
+    - discussions
+tracker-id: daily-issues-report
 ---
-
 {{#runtime-import? .github/shared-instructions.md}}
 
 # Daily Issues Report Generator
@@ -196,10 +185,7 @@ with open('/tmp/gh-aw/python/data/metrics.json', 'w') as f:
 
 ### Install Additional Libraries
 
-If needed for better clustering:
-```bash
-pip install --user scikit-learn
-```
+scikit-learn, NLTK, TextBlob, and WordCloud are pre-installed via the shared NLP environment.
 
 ## Phase 3: Generate Trend Charts
 
@@ -372,3 +358,9 @@ A successful run will:
 - ✅ Include all required metrics and visualizations
 
 Begin your analysis now. Load the data, run the Python analysis, generate charts, and create the discussion report.
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

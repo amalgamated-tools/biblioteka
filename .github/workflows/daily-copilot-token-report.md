@@ -1,57 +1,54 @@
 ---
-description: Daily report tracking Copilot token consumption and costs across all agentic workflows with trend analysis
 on:
   schedule:
-    - cron: "0 11 * * 1-5"  # Daily at 11 AM UTC, weekdays only
-  workflow_dispatch:
+  - cron: daily around 11:00 on weekdays
+  workflow_dispatch: null
 permissions:
-  contents: read
   actions: read
-  discussions: read
+  contents: read
   issues: read
   pull-requests: read
-tracker-id: daily-copilot-token-report
-engine: copilot
-tools:
-  repo-memory:
-    branch-name: memory/token-metrics
-    description: "Historical token consumption and cost data"
-    file-glob: ["memory/token-metrics/*.json", "memory/token-metrics/*.jsonl", "memory/token-metrics/*.csv", "memory/token-metrics/*.md"]
-    max-file-size: 102400  # 100KB
-  bash:
-    - "*"
-steps:
-  - name: Pre-download workflow logs
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    run: |
-      # Download logs for copilot workflows from last 30 days with JSON output
-      gh aw logs --engine copilot --start-date -30d --json -c 500 > /tmp/gh-aw/copilot-logs.json
-      
-      # Verify the download
-      if [ -f /tmp/gh-aw/copilot-logs.json ]; then
-        echo "✅ Logs downloaded successfully"
-        echo "Total runs: $(jq '. | length' /tmp/gh-aw/copilot-logs.json || echo '0')"
-      else
-        echo "❌ Failed to download logs"
-        exit 1
-      fi
-safe-outputs:
-  upload-asset:
-  create-discussion:
-    expires: 3d
-    category: "announcements"
-    max: 1
-    close-older-discussions: true
-timeout-minutes: 20
 imports:
-  - shared/mood.md
-  - copilot-setup-steps.yml    # Import setup steps from copilot-setup-steps.yml
-  - shared/reporting.md
-  - shared/python-dataviz.md
-source: github/gh-aw/.github/workflows/daily-copilot-token-report.md@852cb06ad52958b402ed982b69957ffc57ca0619
+- copilot-setup-steps.yml
+- shared/reporting.md
+- shared/python-dataviz.md
+steps:
+- env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  name: Install gh-aw CLI
+  run: |
+    if gh extension list | grep -q "github/gh-aw"; then
+      gh extension upgrade gh-aw || true
+    else
+      gh extension install github/gh-aw
+    fi
+    gh aw --version
+- env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  name: Pre-download workflow logs
+  run: |
+    # Download logs for copilot workflows from last 30 days with JSON output
+    gh aw logs --engine copilot --start-date -30d --json -c 500 > /tmp/gh-aw/copilot-logs.json
+    
+    # Verify the download
+    if [ -f /tmp/gh-aw/copilot-logs.json ]; then
+      echo "✅ Logs downloaded successfully"
+      echo "Total runs: $(jq '. | length' /tmp/gh-aw/copilot-logs.json || echo '0')"
+    else
+      echo "❌ Failed to download logs"
+      exit 1
+    fi
+description: Daily report tracking Copilot token consumption and costs across all agentic workflows with trend analysis
+engine: copilot
+features:
+  copilot-requests: true
+source: github/gh-aw/.github/workflows/daily-copilot-token-report.md@e2ae16398626875962d19c1d5aeca50298fa68da
+timeout-minutes: 20
+tools:
+  bash:
+  - "*"
+tracker-id: daily-copilot-token-report
 ---
-
 {{#runtime-import? .github/shared-instructions.md}}
 
 # Daily Copilot Token Consumption Report
@@ -715,7 +712,7 @@ A successful token consumption report:
 
 Your output MUST:
 
-1. Create a discussion in the "announcements" category with the complete report
+1. Create a discussion in the "audits" category with the complete report
 2. Include executive summary with key metrics and highlights
 3. Embed all three generated charts with URLs from `upload asset` tool
 4. Provide detailed per-workflow statistics in a table
@@ -725,3 +722,9 @@ Your output MUST:
 8. Use the collapsible details format from the reporting.md import
 
 Begin your analysis now. The logs have been pre-downloaded to `/tmp/gh-aw/copilot-logs.json` - process the data systematically, generate insightful visualizations, and create a comprehensive report that helps optimize Copilot token consumption across all workflows.
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

@@ -1,49 +1,51 @@
 ---
-description: Weekly portfolio analyst that identifies cost reduction opportunities (20%+) while improving workflow reliability
 on:
   schedule: weekly on monday around 09:00
-  workflow_dispatch:
+  workflow_dispatch: null
 permissions:
-  contents: read
   actions: read
-  discussions: read
+  contents: read
   issues: read
   pull-requests: read
-tracker-id: portfolio-analyst-weekly
-engine: copilot
 network:
-  allowed: [python]
-tools:
-  agentic-workflows:
-  github:
-    toolsets: [default]
-  bash: ["*"]
-steps:
-  - name: Download logs from last 30 days
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    run: |
-      mkdir -p /tmp/portfolio-logs
-      # Install gh-aw extension if not already available
-      if ! gh extension list 2>/dev/null | grep -q "github/gh-aw"; then
-        gh extension install github/gh-aw
-      fi
-      gh aw logs --start-date -30d -c 5000 -o /tmp/portfolio-logs --json > /tmp/portfolio-logs/summary.json
-safe-outputs:
-  create-discussion:
-    title-prefix: "[portfolio] "
-    category: "announcements"
-    close-older-discussions: true
-  upload-asset:
-timeout-minutes: 20
+  allowed:
+  - python
 imports:
-  - shared/mood.md
-  - shared/reporting.md
-  - shared/jqschema.md
-  - shared/trending-charts-simple.md
-source: github/gh-aw/.github/workflows/portfolio-analyst.md@852cb06ad52958b402ed982b69957ffc57ca0619
+- shared/reporting.md
+- shared/jqschema.md
+- shared/trending-charts-simple.md
+safe-outputs:
+  upload-asset: null
+steps:
+- env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  name: Install gh-aw CLI
+  run: |
+    if gh extension list | grep -q "github/gh-aw"; then
+      gh extension upgrade gh-aw || true
+    else
+      gh extension install github/gh-aw
+    fi
+    gh aw --version
+- env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  name: Download logs from last 30 days
+  run: |
+    mkdir -p /tmp/portfolio-logs
+    gh aw logs --start-date -30d -c 5000 -o /tmp/portfolio-logs --json > /tmp/portfolio-logs/summary.json
+description: Weekly portfolio analyst that identifies cost reduction opportunities (20%+) while improving workflow reliability
+engine: copilot
+source: github/gh-aw/.github/workflows/portfolio-analyst.md@e2ae16398626875962d19c1d5aeca50298fa68da
+timeout-minutes: 20
+tools:
+  agentic-workflows: null
+  bash:
+  - "*"
+  github:
+    toolsets:
+    - default
+tracker-id: portfolio-analyst-weekly
 ---
-
 # Automated Portfolio Analyst
 
 You are an expert workflow portfolio analyst focused on identifying cost reduction opportunities while improving reliability.
@@ -581,3 +583,9 @@ print("✅ All charts generated")
 ✅ All dollar amounts are from actual workflow execution data
 
 Begin your analysis now. **FIRST**: Generate all 4 required charts from `/tmp/portfolio-logs/summary.json` and upload them as assets. **THEN**: Create the dashboard-style discussion with embedded chart URLs. Read from the pre-downloaded JSON file at `/tmp/portfolio-logs/summary.json` to get real execution data for all workflows. This file contains everything you need: summary metrics and individual run data. DO NOT attempt to call `gh aw logs` or any `gh` commands - they will not work. Move fast, focus on high-impact issues, deliver actionable recommendations based on actual costs, and make the report visual and scannable.
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

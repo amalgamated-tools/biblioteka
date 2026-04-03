@@ -1,30 +1,32 @@
 ---
-description: Daily security scan that reviews code changes from the last 3 days for suspicious patterns indicating malicious agentic threats
 on:
   schedule: daily
-  workflow_dispatch:
+  workflow_dispatch: null
 permissions:
-  contents: read
   actions: read
+  contents: read
   security-events: read
-tracker-id: malicious-code-scan
-engine: copilot
-tools:
-  github:
-    toolsets: [repos, code_security]
-  bash: true
+imports:
+- shared/reporting.md
 safe-outputs:
   create-code-scanning-alert:
-    driver: "Malicious Code Scanner"
+    driver: Malicious Code Scanner
   threat-detection: false
-timeout-minutes: 15
+description: Daily security scan that reviews code changes from the last 3 days for suspicious patterns indicating malicious agentic threats
+engine: copilot
+features:
+  copilot-requests: true
+source: github/gh-aw/.github/workflows/daily-malicious-code-scan.md@e2ae16398626875962d19c1d5aeca50298fa68da
 strict: true
-imports:
-  - shared/mood.md
-  - shared/reporting.md
-source: github/gh-aw/.github/workflows/daily-malicious-code-scan.md@852cb06ad52958b402ed982b69957ffc57ca0619
+timeout-minutes: 15
+tools:
+  bash: true
+  github:
+    toolsets:
+    - repos
+    - code_security
+tracker-id: malicious-code-scan
 ---
-
 {{#runtime-import? .github/shared-instructions.md}}
 
 # Daily Malicious Code Scan Agent

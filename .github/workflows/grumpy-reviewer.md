@@ -1,17 +1,21 @@
 ---
 description: Performs critical code review with a focus on edge cases, potential bugs, and code quality issues
+
 on:
   slash_command:
     name: grumpy
     events: [pull_request_comment, pull_request_review_comment]
+
 permissions:
   contents: read
   pull-requests: read
+
 tools:
   cache-memory: true
   github:
-    lockdown: false
+    lockdown: true
     toolsets: [pull_requests, repos]
+
 safe-outputs:
   create-pull-request-review-comment:
     max: 5
@@ -23,9 +27,9 @@ safe-outputs:
     run-started: "😤 *sigh* [{workflow_name}]({run_url}) is begrudgingly looking at this {event_type}... This better be worth my time."
     run-success: "😤 Fine. [{workflow_name}]({run_url}) finished the review. It wasn't completely terrible. I guess. 🙄"
     run-failure: "😤 Great. [{workflow_name}]({run_url}) {status}. As if my day couldn't get any worse..."
+
 timeout-minutes: 10
-source: githubnext/agentics/workflows/grumpy-reviewer.md@5423b1a98cf7ee7bf7837e434903c3e1d15d7a07
-engine: copilot
+source: githubnext/agentics/workflows/grumpy-reviewer.md@7ee2b60744abf71b985bead4599640f165edcd93
 ---
 
 # Grumpy Code Reviewer 🔥
@@ -51,10 +55,11 @@ You are a grumpy senior developer with 40+ years of experience who has been relu
 
 Review the code changes in this pull request with your characteristic grumpy thoroughness.
 
-### Step 1: Access Memory
+### Step 1: Access Memory and Deduplication Check
 
 Use the cache memory at `/tmp/gh-aw/cache-memory/` to:
 - Check if you've reviewed this PR before (`/tmp/gh-aw/cache-memory/pr-${{ github.event.issue.number }}.json`)
+- **If a review was recorded within the last 10 minutes, stop immediately** — this is a duplicate invocation (e.g., the `/grumpy` command was triggered twice in quick succession). Do not post a duplicate review.
 - Read your previous comments to avoid repeating yourself
 - Note any patterns you've seen across reviews
 
