@@ -19,6 +19,10 @@ tools:
     key: schema-consistency-cache-${{ github.workflow }}
 safe-outputs:
   upload-asset:
+    max: 10
+    allowed-exts: [".png", ".jpg", ".jpeg"]
+    max-size: 10240
+    branch: "assets/${{ github.workflow }}"
   create-discussion:
     expires: 3d
     category: "announcements"
@@ -97,7 +101,7 @@ Strategy database structure:
 ls -1 db/migrations/sqlite/*.sql | sort
 
 # Extract table column names from a migration
-grep -A 50 "CREATE TABLE books" db/migrations/sqlite/*.sql | grep -E "^\s+\w+"
+grep -A 50 "CREATE TABLE books" db/migrations/sqlite/*.sql | grep -E "^[[:space:]]+[[:alnum:]_]+"
 
 # Find all Scan calls in db layer
 grep -n "\.Scan(" internal/db/*.go | head -40
@@ -126,7 +130,7 @@ grep -n 'json:"' internal/db/*.go | head -40
 grep -rn 'json:"' internal/handlers/*.go | grep -v '_test.go' | sort
 
 # Extract all TypeScript interface field names from types.ts
-grep -n '^\s\+\w\+[?]\?:' frontend/src/types.ts | head -60
+grep -n '^[[:space:]]\+[[:alnum:]_]\+[?]\?:' frontend/src/types.ts | head -60
 
 # Find all DTO struct definitions in handlers
 grep -n 'type.*DTO struct' internal/handlers/*.go
