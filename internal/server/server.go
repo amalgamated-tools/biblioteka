@@ -282,7 +282,7 @@ type opdsDBAdapter struct {
 	db *db.DB
 }
 
-func (a *opdsDBAdapter) GetOPDSCredential(ctx context.Context, username string) (*auth.OPDSCredentialResult, error) {
+func (a *opdsDBAdapter) GetOPDSCredential(ctx context.Context, username string) (*auth.ProtocolCredentialResult, error) {
 	cred, err := a.db.GetOPDSCredentialByUsername(ctx, username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -301,7 +301,7 @@ func (a *opdsDBAdapter) GetOPDSCredential(ctx context.Context, username string) 
 		}
 		return nil, fmt.Errorf("failed to get OPDS credential for username %s: %w", username, err)
 	}
-	return &auth.OPDSCredentialResult{
+	return &auth.ProtocolCredentialResult{
 		UserID:       cred.UserID,
 		PasswordHash: cred.PasswordHash,
 	}, nil
@@ -342,7 +342,7 @@ type kosyncDBAdapter struct {
 	db *db.DB
 }
 
-func (a *kosyncDBAdapter) GetKOSyncCredential(ctx context.Context, username string) (*auth.KOSyncCredentialResult, error) {
+func (a *kosyncDBAdapter) GetKOSyncCredential(ctx context.Context, username string) (*auth.ProtocolCredentialResult, error) {
 	cred, err := a.db.GetKOSyncCredentialByUsername(ctx, username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -361,7 +361,7 @@ func (a *kosyncDBAdapter) GetKOSyncCredential(ctx context.Context, username stri
 		}
 		return nil, fmt.Errorf("failed to get KOSync credential for username %s: %w", username, err)
 	}
-	return &auth.KOSyncCredentialResult{
+	return &auth.ProtocolCredentialResult{
 		UserID:       cred.UserID,
 		PasswordHash: cred.PasswordHash,
 	}, nil
