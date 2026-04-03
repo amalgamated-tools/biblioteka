@@ -210,14 +210,14 @@ test.beforeEach(async ({ page }) => {
 
 > **Clean database requirement (CI):** In CI (`CI=true`), Playwright always spins up a fresh server with an empty database. Running against a non-empty database will fail global setup because the first-account-is-admin guarantee no longer applies. Locally, if you reuse a running dev server (port `3847`) the 409 short-circuit in global setup handles this gracefully.
 
-| `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB 3.0 at the given path |
-| `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB 3.0 at the given path |
+#### Test helpers (`internal/testutils`)
+
 The `internal/testutils` package provides helpers for generating fixture book files in tests. Never commit binary book files to the repository — use these helpers to generate them at test time instead.
 
 | Helper | Description |
 |--------|-------------|
 | `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB 3 at the given path |
-| `testutils.MakeTestEPUBWithOptions(t, path, title, creator, identifier, opts)` | Creates a minimal valid EPUB with metadata and format control via `EPUBOptions`, including description, publisher, publication date, language, cover image settings, EPUB version, and subjects |
+| `testutils.MakeTestEPUBWithOptions(t, path, title, creator, identifier, opts)` | Creates a minimal valid EPUB with full metadata control via `EPUBOptions` (description, publisher, publication date, language, cover image, EPUB version, subjects) |
 | `testutils.MakeTestMOBI(t, path, title, author, opts)` | Creates a minimal valid MOBI file with optional metadata via `MOBIOptions` (ISBN, ASIN, publisher, language, cover image) |
 | `testutils.MakeTestAZW3(t, path, title, author, opts)` | Creates a minimal valid AZW3 file (same PalmDB/MOBI binary format as MOBI; only the extension differs) |
 | `testutils.MakeTestPDF(t, path, title, author, et)` | Creates a minimal valid PDF and writes metadata via ExifTool (skips the test if ExifTool is unavailable) |
@@ -241,7 +241,7 @@ func TestMyExtractor(t *testing.T) {
         Language:  "en",
     })
     // ...
-> **Sample books for CLI launch configs**: The "Run CLI" launch configs for individual file formats expect book files in a local `books/` directory (e.g. `books/theprince.azw3`). These files are **not** committed to the repository. Create the `books/` directory and add your own copies of the relevant files before using those launch configs. The Goodreads and **Run Server** launch configs require no local book files.
+}
 ```
 
 ### Building
