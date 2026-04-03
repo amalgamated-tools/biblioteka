@@ -163,9 +163,7 @@ func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, author
 		return
 	}
 
-	baseURL := opdsBaseURL(r)
-	extraLinks := []opdsLink{{Rel: relStart, Href: baseURL, Type: opdsNavContentType}}
-	h.writeBooksFeed(w, r, "/authors/"+authorID, "Books by "+author.Name, extraLinks,
+	h.writeBooksForEntity(w, r, "/authors/"+authorID, "Books by "+author.Name,
 		func(c context.Context, limit, offset int) ([]db.Book, int, error) {
 			return h.DB.ListBooksByAuthorPaginated(c, authorID, limit, offset)
 		},
@@ -224,13 +222,24 @@ func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, series
 		return
 	}
 
-	baseURL := opdsBaseURL(r)
-	extraLinks := []opdsLink{{Rel: relStart, Href: baseURL, Type: opdsNavContentType}}
-	h.writeBooksFeed(w, r, "/series/"+seriesID, series.Name, extraLinks,
+	h.writeBooksForEntity(w, r, "/series/"+seriesID, series.Name,
 		func(c context.Context, limit, offset int) ([]db.Book, int, error) {
 			return h.DB.ListBooksBySeriesPaginated(c, seriesID, limit, offset)
 		},
 	)
+}
+
+// writeBooksForEntity is a shared helper for entity-scoped OPDS book feeds
+// (e.g. books by a given author, or books in a given series). It appends a
+// relStart link back to the OPDS root and delegates to writeBooksFeed.
+func (h *OPDSHandler) writeBooksForEntity(
+	w http.ResponseWriter, r *http.Request,
+	pathSegment, title string,
+	listFn func(ctx context.Context, limit, offset int) ([]db.Book, int, error),
+) {
+	baseURL := opdsBaseURL(r)
+	extraLinks := []opdsLink{{Rel: relStart, Href: baseURL, Type: opdsNavContentType}}
+	h.writeBooksFeed(w, r, pathSegment, title, extraLinks, listFn)
 }
 
 func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
