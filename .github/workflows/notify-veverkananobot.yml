@@ -1,34 +1,6 @@
-name: Notify veverkananobot for Review
-
-on:
-  pull_request:
-    types: [opened, ready_for_review, review_requested]
-
-jobs:
-  notifyveverkananobot:
-    # Only run when veverkananobot is a requested reviewer
-    if: |
-      github.event.action == 'review_requested' &&
-      github.event.requested_reviewer.login == 'veverkananobot'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send Telegram notification for veverkananobot
-        run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.VEVERKAGHBOT_TGRAM_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.NANOBOT_CHAT_ID }}" \
-            -d parse_mode="Markdown" \
-            -d text="👀 *Review requested* for veverkananobot%0A%0A*PR:* [${{ github.event.pull_request.title }}](${{ github.event.pull_request.html_url }})%0A*Repo:* \`${{ github.repository }}\`%0A*By:* @${{ github.event.sender.login }}%0A%0APlease review: ${{ github.event.pull_request.html_url }}"
-
-  notifyveverkabot:
-    # Only run when veverkabot is a requested reviewer
-    if: |
-      github.event.action == 'review_requested' &&
-      github.event.requested_reviewer.login == 'veverkabot'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send Telegram notification for veverkabot
-        run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.VEVERKAGHBOT_TGRAM_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.VBOT_CHAT_ID }}" \
-            -d parse_mode="Markdown" \
-            -d text="👀 *Review requested* for veverkabot%0A%0A*PR:* [${{ github.event.pull_request.title }}](${{ github.event.pull_request.html_url }})%0A*Repo:* \`${{ github.repository }}\`%0A*By:* @${{ github.event.sender.login }}%0A%0APlease review: ${{ github.event.pull_request.html_url }}"
+# This workflow is no longer needed.
+# GitHub now sends pull_request webhook events directly to nanobot
+# at https://nanobot.veverka.net/github/webhook, which triggers
+# automatic reviews when veverkananobot is requested as a reviewer.
+#
+# This file is kept as a placeholder to document the previous approach.
