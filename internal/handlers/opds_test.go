@@ -43,6 +43,9 @@ func findLink(links []opdsLink, rel string) *opdsLink {
 	return nil
 }
 
+// ptr returns a pointer to the given value; used by table-driven tests.
+func ptr[T any](v T) *T { return &v }
+
 // --- Routing / method dispatch ---
 
 func TestHandleOPDS_MethodNotAllowed(t *testing.T) {
@@ -1005,4 +1008,572 @@ func TestPaginationLinks_SearchURL(t *testing.T) {
 // padInt zero-pads an integer to 3 digits for consistent sorting.
 func padInt(n int) string {
 	return fmt.Sprintf("%03d", n)
+}
+
+// --- XML marshaling (opds_types.go) ---
+
+func TestOPDSFeed_XMLMarshal(t *testing.T) {
+	feed := &opdsFeed{
+		XMLNS:     xmlnsAtom,
+		XMLNSOPDS: xmlnsOPDS,
+		ID:        "urn:test",
+		Title:     "Test Feed",
+		Updated:   "2024-01-01T00:00:00Z",
+	}
+
+	data, err := xml.Marshal(feed)
+	if err != nil {
+		t.Fatalf("xml.Marshal: %v", err)
+	}
+	s := string(data)
+
+	// Element name must be "feed"
+	if !strings.Contains(s, "<feed ") && !strings.Contains(s, "<feed>") {
+		t.Errorf("XML does not contain <feed> element: %s", s)
+	}
+	// Atom xmlns must be present as attribute
+	if !strings.Contains(s, xmlnsAtom) {
+		t.Errorf("XML missing Atom xmlns attribute: %s", s)
+	}
+	// OPDS xmlns must be present
+	if !strings.Contains(s, xmlnsOPDS) {
+		t.Errorf("XML missing OPDS xmlns attribute: %s", s)
+	}
+	// ID and Title must be child elements
+	if !strings.Contains(s, "<id>urn:test</id>") {
+		t.Errorf("XML missing <id> element: %s", s)
+	}
+	if !strings.Contains(s, "<title>Test Feed</title>") {
+		t.Errorf("XML missing <title> element: %s", s)
+	}
+}
+
+func TestOPDSFeed_XMLMarshal_OmitEmptyOPDSNS(t *testing.T) {
+	feed := &opdsFeed{
+		XMLNS:   xmlnsAtom,
+		ID:      "urn:test",
+		Title:   "Nav Feed",
+		Updated: "2024-01-01T00:00:00Z",
+	}
+
+	data, err := xml.Marshal(feed)
+	if err != nil {
+		t.Fatalf("xml.Marshal: %v", err)
+	}
+	s := string(data)
+
+	// When XMLNSOPDS is empty it should be omitted (omitempty)
+	if strings.Contains(s, "xmlns:opds") {
+		t.Errorf("xmlns:opds attribute should be absent when empty, got: %s", s)
+	}
+}
+
+func TestOPDSLink_XMLMarshal(t *testing.T) {
+	link := opdsLink{
+		Rel:  relSelf,
+		Href: "http://example.com/opds",
+		Type: opdsNavContentType,
+	}
+
+	data, err := xml.Marshal(link)
+	if err != nil {
+		t.Fatalf("xml.Marshal: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, `rel="self"`) {
+		t.Errorf("XML missing rel attribute: %s", s)
+	}
+	if !strings.Contains(s, `href="http://example.com/opds"`) {
+		t.Errorf("XML missing href attribute: %s", s)
+	}
+	if !strings.Contains(s, `type=`) {
+		t.Errorf("XML missing type attribute: %s", s)
+	}
+}
+
+func TestOPDSContent_XMLMarshal(t *testing.T) {
+	content := opdsContent{
+		Type:  "text",
+		Value: "Some description text",
+	}
+
+	data, err := xml.Marshal(content)
+	if err != nil {
+		t.Fatalf("xml.Marshal: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, `type="text"`) {
+		t.Errorf("XML missing type attribute: %s", s)
+	}
+	// Value must be encoded as character data (not a child element)
+	if !strings.Contains(s, "Some description text") {
+		t.Errorf("XML missing chardata value: %s", s)
+	}
+	if strings.Contains(s, "<Value>") {
+		t.Errorf("Value should be chardata, not a child element: %s", s)
+	}
+}
+
+func TestOPDSEntry_XMLMarshal_Full(t *testing.T) {
+	entry := opdsEntry{
+		Title:   "My Book",
+		ID:      "urn:book:1",
+		Updated: "2024-01-01T00:00:00Z",
+		Content: &opdsContent{Type: "text", Value: "A description"},
+		Authors: []opdsAuthor{{Name: "Jane Doe"}},
+		Links: []opdsLink{
+			{Rel: relAcquisition, Href: "http://example.com/dl/1", Type: "application/epub+zip"},
+		},
+	}
+
+	data, err := xml.Marshal(entry)
+	if err != nil {
+		t.Fatalf("xml.Marshal: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, "<title>My Book</title>") {
+		t.Errorf("XML missing title: %s", s)
+	}
+	if !strings.Contains(s, "<id>urn:book:1</id>") {
+		t.Errorf("XML missing id: %s", s)
+	}
+	if !strings.Contains(s, "A description") {
+		t.Errorf("XML missing content: %s", s)
+	}
+	if !strings.Contains(s, "<name>Jane Doe</name>") {
+		t.Errorf("XML missing author name: %s", s)
+	}
+}
+
+func TestOPDSEntry_XMLMarshal_NoContent(t *testing.T) {
+	entry := opdsEntry{
+		Title:   "No Desc",
+		ID:      "urn:book:2",
+		Updated: "2024-01-01T00:00:00Z",
+		Links:   []opdsLink{{Rel: relSelf, Href: "/x", Type: opdsAcqContentType}},
+	}
+
+	data, err := xml.Marshal(entry)
+	if err != nil {
+		t.Fatalf("xml.Marshal: %v", err)
+	}
+	s := string(data)
+
+	// Content should be absent when nil (omitempty)
+	if strings.Contains(s, "<content") {
+		t.Errorf("XML should have no <content> when nil, got: %s", s)
+	}
+}
+
+func TestOPDSFeed_XMLMarshal_LinksAndEntries(t *testing.T) {
+	feed := &opdsFeed{
+		XMLNS:   xmlnsAtom,
+		ID:      "urn:test:2",
+		Title:   "Books",
+		Updated: "2024-01-01T00:00:00Z",
+		Links: []opdsLink{
+			{Rel: relSelf, Href: "/opds/all?page=1", Type: opdsAcqContentType},
+			{Rel: relNext, Href: "/opds/all?page=2", Type: opdsAcqContentType},
+		},
+		Entries: []opdsEntry{
+			{Title: "Book One", ID: "urn:b:1", Updated: "2024-01-01T00:00:00Z"},
+		},
+	}
+
+	data, err := xml.Marshal(feed)
+	if err != nil {
+		t.Fatalf("xml.Marshal: %v", err)
+	}
+	s := string(data)
+
+	if !strings.Contains(s, `rel="self"`) {
+		t.Errorf("XML missing self link: %s", s)
+	}
+	if !strings.Contains(s, `rel="next"`) {
+		t.Errorf("XML missing next link: %s", s)
+	}
+	if !strings.Contains(s, "<title>Book One</title>") {
+		t.Errorf("XML missing entry: %s", s)
+	}
+}
+
+// --- writeOPDSError (opds_helpers.go) ---
+
+func TestWriteOPDSError(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
+	w := httptest.NewRecorder()
+
+	writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, "urn:biblioteka:opds:error", "Something went wrong")
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	}
+
+	body := w.Body.String()
+	if !strings.HasPrefix(body, "<?xml") {
+		t.Errorf("body should start with XML declaration, got: %s", body[:min(len(body), 50)])
+	}
+
+	// Must be a valid feed with the provided title
+	feed := parseOPDSFeed(t, w.Body.Bytes())
+	if feed.Title != "Something went wrong" {
+		t.Errorf("title = %q, want %q", feed.Title, "Something went wrong")
+	}
+	if feed.ID != "urn:biblioteka:opds:error" {
+		t.Errorf("id = %q, want %q", feed.ID, "urn:biblioteka:opds:error")
+	}
+}
+
+func TestWriteOPDSError_NavContentType(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/opds/authors", nil)
+	w := httptest.NewRecorder()
+
+	writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, "urn:test", "Nav error")
+
+	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsNavContentType)
+	}
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+}
+
+// --- writeOPDSFeed (opds_helpers.go) ---
+
+func TestWriteOPDSFeed_Direct(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
+	w := httptest.NewRecorder()
+
+	feed := &opdsFeed{
+		XMLNS:   xmlnsAtom,
+		ID:      "urn:test",
+		Title:   "Direct Feed",
+		Updated: "2024-01-01T00:00:00Z",
+	}
+	writeOPDSFeed(r, w, opdsAcqContentType, feed)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	}
+	body := w.Body.String()
+	if !strings.HasPrefix(body, "<?xml") {
+		t.Errorf("body should start with XML declaration, got: %s", body[:min(len(body), 50)])
+	}
+	parsed := parseOPDSFeed(t, w.Body.Bytes())
+	if parsed.Title != "Direct Feed" {
+		t.Errorf("title = %q, want %q", parsed.Title, "Direct Feed")
+	}
+}
+
+// --- DB error paths (opds_feeds.go) ---
+
+func TestAllBooks_DBError(t *testing.T) {
+	h := setupOPDSHandler(t)
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	}
+	// Response must still be valid XML (OPDS error feed)
+	parseOPDSFeed(t, w.Body.Bytes())
+}
+
+func TestRecentBooks_DBError(t *testing.T) {
+	h := setupOPDSHandler(t)
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/recent", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	}
+	parseOPDSFeed(t, w.Body.Bytes())
+}
+
+func TestAuthorsFeed_DBError(t *testing.T) {
+	h := setupOPDSHandler(t)
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/authors", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsNavContentType)
+	}
+	parseOPDSFeed(t, w.Body.Bytes())
+}
+
+func TestSeriesFeed_DBError(t *testing.T) {
+	h := setupOPDSHandler(t)
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/series", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsNavContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsNavContentType)
+	}
+	parseOPDSFeed(t, w.Body.Bytes())
+}
+
+func TestSearch_DBError(t *testing.T) {
+	h := setupOPDSHandler(t)
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=test", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != opdsAcqContentType {
+		t.Errorf("Content-Type = %q, want %q", ct, opdsAcqContentType)
+	}
+	parseOPDSFeed(t, w.Body.Bytes())
+}
+
+// --- bookEntries error paths ---
+
+func TestBookEntries_AuthorLoadError(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := context.Background()
+
+	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	// Close DB so batch author/file loads fail.
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
+
+	books := []db.Book{*book}
+	entries := h.bookEntries(ctx, books, "http://example.com/opds")
+
+	// Should still return entries, just without authors or download links.
+	if len(entries) != 1 {
+		t.Fatalf("entries = %d, want 1", len(entries))
+	}
+	if entries[0].Title != "Test Book" {
+		t.Errorf("title = %q, want %q", entries[0].Title, "Test Book")
+	}
+	if len(entries[0].Authors) != 0 {
+		t.Errorf("authors = %v, want empty (batch load failed)", entries[0].Authors)
+	}
+	if len(entries[0].Links) != 0 {
+		t.Errorf("links = %v, want empty (batch load failed)", entries[0].Links)
+	}
+}
+
+// --- serveCover missing paths ---
+
+func TestServeCover_MissingCover(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		cover *string
+	}{
+		{"nil cover", nil},
+		{"empty cover", ptr("")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := setupOPDSHandler(t)
+			ctx := context.Background()
+
+			book, err := h.DB.CreateBook(ctx, "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, tc.cover)
+			if err != nil {
+				t.Fatalf("create book: %v", err)
+			}
+
+			r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
+			w := httptest.NewRecorder()
+			h.HandleOPDS(w, r)
+
+			if w.Code != http.StatusNotFound {
+				t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+			}
+		})
+	}
+}
+
+func TestServeCover_ExternalURL(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := context.Background()
+
+	coverURL := "https://example.com/cover.jpg"
+	book, err := h.DB.CreateBook(ctx, "External Cover", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	if w.Code != http.StatusTemporaryRedirect {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusTemporaryRedirect)
+	}
+	location := w.Header().Get("Location")
+	if location != coverURL {
+		t.Errorf("Location = %q, want %q", location, coverURL)
+	}
+}
+
+func TestServeCover_DBError(t *testing.T) {
+	h := setupOPDSHandler(t)
+	if err := h.DB.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/covers/someid", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	// serveCover intentionally returns 404 for all DB errors (not 500) to avoid
+	// leaking internal state to OPDS clients — a missing cover is indistinguishable
+	// from a DB failure from the client's perspective.
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+// --- Authors/Series pagination ---
+
+func TestAuthorsFeed_Pagination(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := context.Background()
+
+	const totalAuthors = opdsPageSize + 5
+	for i := range totalAuthors {
+		if _, err := h.DB.CreateAuthor(ctx, fmt.Sprintf("Author %03d", i), nil, nil, nil, nil); err != nil {
+			t.Fatalf("create author %d: %v", i, err)
+		}
+	}
+
+	// Page 1: should have next link but no previous.
+	r := httptest.NewRequest(http.MethodGet, "/opds/authors?page=1", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("page 1: status = %d, want %d", w.Code, http.StatusOK)
+	}
+	feed := parseOPDSFeed(t, w.Body.Bytes())
+	if len(feed.Entries) != opdsPageSize {
+		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdsPageSize)
+	}
+	if findLink(feed.Links, relNext) == nil {
+		t.Error("page 1: missing next link")
+	}
+	if findLink(feed.Links, relPrevious) != nil {
+		t.Error("page 1: should not have previous link")
+	}
+
+	// Page 2: should have previous link but no next.
+	r2 := httptest.NewRequest(http.MethodGet, "/opds/authors?page=2", nil)
+	w2 := httptest.NewRecorder()
+	h.HandleOPDS(w2, r2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("page 2: status = %d, want %d", w2.Code, http.StatusOK)
+	}
+	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
+	if len(feed2.Entries) != totalAuthors-opdsPageSize {
+		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalAuthors-opdsPageSize)
+	}
+	if findLink(feed2.Links, relPrevious) == nil {
+		t.Error("page 2: missing previous link")
+	}
+	if findLink(feed2.Links, relNext) != nil {
+		t.Error("page 2: should not have next link")
+	}
+}
+
+func TestSeriesFeed_Pagination(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := context.Background()
+
+	const totalSeries = opdsPageSize + 5
+	for i := range totalSeries {
+		if _, err := h.DB.CreateSeries(ctx, fmt.Sprintf("Series %03d", i), nil, nil, nil); err != nil {
+			t.Fatalf("create series %d: %v", i, err)
+		}
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/series?page=1", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("page 1: status = %d, want %d", w.Code, http.StatusOK)
+	}
+	feed := parseOPDSFeed(t, w.Body.Bytes())
+	if len(feed.Entries) != opdsPageSize {
+		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdsPageSize)
+	}
+	if findLink(feed.Links, relNext) == nil {
+		t.Error("page 1: missing next link")
+	}
+	if findLink(feed.Links, relPrevious) != nil {
+		t.Error("page 1: should not have previous link")
+	}
+
+	// Page 2: should have previous link but no next.
+	r2 := httptest.NewRequest(http.MethodGet, "/opds/series?page=2", nil)
+	w2 := httptest.NewRecorder()
+	h.HandleOPDS(w2, r2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("page 2: status = %d, want %d", w2.Code, http.StatusOK)
+	}
+	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
+	if len(feed2.Entries) != totalSeries-opdsPageSize {
+		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalSeries-opdsPageSize)
+	}
+	if findLink(feed2.Links, relPrevious) == nil {
+		t.Error("page 2: missing previous link")
+	}
+	if findLink(feed2.Links, relNext) != nil {
+		t.Error("page 2: should not have next link")
+	}
 }

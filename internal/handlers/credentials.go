@@ -40,6 +40,10 @@ type credentialEntity struct {
 	UpdatedAt db.Timestamp
 }
 
+// upsertCredentialFn is the signature for upserting a protocol credential.
+// Parameters are: ctx, userID, username, passwordHash.
+type upsertCredentialFn func(ctx context.Context, userID, username, passwordHash string) (credentialEntity, error)
+
 // credentialOps captures the protocol-specific details for credential
 // management. Both KOSync and OPDS implement the same get/upsert/delete
 // lifecycle; only the DB methods, audit constants, and (optionally) a
@@ -53,12 +57,67 @@ type credentialOps struct {
 	errConflict     error
 
 	getByUserID func(context.Context, string) (credentialEntity, error)
-	upsert      func(context.Context, string, string, string) (credentialEntity, error)
+	upsert      upsertCredentialFn
 	del         func(context.Context, string) error
 
 	// deriveKey transforms the plaintext password before bcrypt hashing.
 	// If nil, the password is hashed directly.
 	deriveKey func(string) string
+}
+
+// credentialInfoer is satisfied by credential DB types that expose the four
+// fields common to every protocol credential (ID, Username, CreatedAt,
+// UpdatedAt). db.KOSyncCredential and db.OPDSCredential are type aliases for
+// db.ProtocolCredential, which provides this method.
+type credentialInfoer interface {
+	CredentialInfo() (id, username string, createdAt, updatedAt db.Timestamp)
+}
+
+// toCredentialEntity projects any credentialInfoer into a credentialEntity.
+func toCredentialEntity(c credentialInfoer) credentialEntity {
+	id, username, createdAt, updatedAt := c.CredentialInfo()
+	return credentialEntity{ID: id, Username: username, CreatedAt: createdAt, UpdatedAt: updatedAt}
+}
+
+// convertCredResult converts a (T, error) pair into (credentialEntity, error).
+// T is a pointer type satisfying credentialInfoer (e.g. *db.ProtocolCredential).
+// When err is non-nil, it returns the zero credentialEntity and the error
+// unchanged. When err is nil, T must be non-nil or CredentialInfo() will panic.
+// This is the shared conversion core used by both credGetAdapter and
+// credUpsertAdapter.
+func convertCredResult[T credentialInfoer](c T, err error) (credentialEntity, error) {
+	if err != nil {
+		return credentialEntity{}, err
+	}
+	return toCredentialEntity(c), nil
+}
+
+// credGetAdapter returns a getByUserID closure that calls fn and converts its
+// result to a credentialEntity, removing per-handler boilerplate.
+// T is a pointer type satisfying credentialInfoer (e.g. *db.ProtocolCredential).
+//
+// fn must not return a nil T when error is nil; doing so will cause
+// a nil-pointer dereference inside CredentialInfo().
+func credGetAdapter[T credentialInfoer](
+	fn func(context.Context, string) (T, error),
+) func(context.Context, string) (credentialEntity, error) {
+	return func(ctx context.Context, userID string) (credentialEntity, error) {
+		return convertCredResult(fn(ctx, userID))
+	}
+}
+
+// credUpsertAdapter returns an upsert closure that calls fn and converts its
+// result to a credentialEntity, removing per-handler boilerplate.
+// T is a pointer type satisfying credentialInfoer (e.g. *db.ProtocolCredential).
+//
+// fn must not return a nil T when error is nil; doing so will cause
+// a nil-pointer dereference inside CredentialInfo().
+func credUpsertAdapter[T credentialInfoer](
+	fn func(context.Context, string, string, string) (T, error),
+) func(context.Context, string, string, string) (credentialEntity, error) {
+	return func(ctx context.Context, userID, username, hash string) (credentialEntity, error) {
+		return convertCredResult(fn(ctx, userID, username, hash))
+	}
 }
 
 // handleCredentials dispatches GET/PUT/DELETE for a credential endpoint.

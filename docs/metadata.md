@@ -24,13 +24,13 @@ The extractor is implemented in [`internal/metadata/extractor.go`](../internal/m
 | `Publisher` | From ExifTool `Publisher` tag |
 | `Language` | From ExifTool `Language` tag |
 | `PublicationDate` | From ExifTool `PublicationDate` tag; normalized from ExifTool's `YYYY:MM:DD` format to `YYYY-MM-DD` |
-| `CoverImageURL` | For EPUB files with embedded cover art, resolved from ExifTool's cover manifest tags and stored as a `data:` URL. Cover images larger than 20 MB are skipped; a warning is logged and the field is left empty. |
+| `CoverImageURL` | Extracted cover art stored as a `data:` URL. For EPUB files, resolved from ExifTool's cover manifest tags and extracted directly from the ZIP archive. For MOBI and AZW3 files, extracted from the embedded binary cover record via the `sblinch/mobi` library. Cover images larger than 20 MB are skipped; a warning is logged and the field is left empty. PDF files do not produce a `CoverImageURL`. |
 
 ---
 
 ## ExifTool tag mapping
 
-All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-open subprocess managed by the custom [`internal/exif`](../internal/exif/) package. The package owns the ExifTool process lifecycle, TSV output parsing, and EPUB cover extraction; it replaces the previously used `go-exiftool` third-party library.
+All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-open subprocess managed by the custom [`internal/exif`](../internal/exif/) package. The package owns the ExifTool process lifecycle, TSV output parsing, and cover extraction for EPUB, MOBI, and AZW3 files; it replaces the previously used `go-exiftool` third-party library.
 
 | ExifTool tag | `BookMetadata` field | Fallback |
 |--------------|---------------------|----------|
@@ -41,7 +41,8 @@ All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-o
 | `Publisher` | `Publisher` | `""` |
 | `Language` | `Language` | `""` |
 | `PublicationDate` | `PublicationDate` | `""` |
-| `MetaName`, `MetaContent`, `ManifestItemId`, `ManifestItemHref`, `ManifestItemMedia-type` | `CoverImageURL` | `""` when no embedded cover is found |
+| `MetaName`, `MetaContent`, `ManifestItemId`, `ManifestItemHref`, `ManifestItemMedia-type` | `CoverImageURL` (EPUB) | `""` when no embedded cover is found |
+| _(binary record in MOBI/AZW3 file)_ | `CoverImageURL` (MOBI, AZW3) | `""` when no embedded cover is found |
 
 When ExifTool is **not installed**, `NewExtractor()` still returns a valid `*Extractor` (with a warning logged), but calling `ExtractMetadata` on any file returns an error:
 
@@ -250,9 +251,7 @@ Goodreads ID: kca://book/amzn1.gr.book.v1.xyz
 
 ## What's next
 
-The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) extracts and stores `Title`, `ISBN`, `Description`, `Publisher`, `Language`, `PublicationDate`, embedded EPUB cover art, and links extracted `Author` names to book records. Planned future improvements include:
-
-1. **More cover formats** — extend embedded cover extraction beyond EPUB (currently only EPUB files get an extracted `CoverImageURL`; the sidecar cover write already supports JPEG, PNG, WebP, and AVIF once a URL is present).
+The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) extracts and stores `Title`, `ISBN`, `Description`, `Publisher`, `Language`, `PublicationDate`, embedded cover art (EPUB, MOBI, and AZW3), and links extracted `Author` names to book records.
 
 Use `cmd/cli` to import a single file and verify what Biblioteka extracts before a full library scan.
 
@@ -262,8 +261,8 @@ Use `cmd/cli` to import a single file and verify what Biblioteka extracts before
 
 To add support for a new extracted field:
 
-1. Add the field to `ExifToolOutput` in [`internal/exif/tsv.go`](../internal/exif/tsv.go).
-2. Add the corresponding tag-name mapping in the `ParseTSV` function in the same file.
+1. Add the field to `ExifToolOutput` in [`internal/exif/types.go`](../internal/exif/types.go).
+2. Add the corresponding tag-name mapping as a `case` in the `parseScalar` function in [`internal/exif/tsv.go`](../internal/exif/tsv.go).
 3. Add or extend tests in [`internal/exif/tsv_test.go`](../internal/exif/tsv_test.go) and [`internal/metadata/extractor_test.go`](../internal/metadata/extractor_test.go).
 4. Update the [Extracted fields](#extracted-fields) table in this document.
 
@@ -271,14 +270,18 @@ To add support for a new file format:
 
 1. Verify ExifTool supports the format and returns tags Biblioteka can map (title, author, ISBN, etc.).
 2. Extend `ParseTSV` in [`internal/exif/tsv.go`](../internal/exif/tsv.go) if format-specific tag names differ.
-3. If the format embeds cover art differently from EPUB, add extraction logic in [`internal/exif/cover.go`](../internal/exif/cover.go).
-4. Add test fixtures and test cases in [`internal/metadata/extractor_test.go`](../internal/metadata/extractor_test.go).
+3. Add a format case in `finishBook` in [`internal/exif/finish.go`](../internal/exif/finish.go). If the format embeds cover art in the binary file (like MOBI/AZW3), implement extraction in a new helper or in [`internal/exif/mobi_cover.go`](../internal/exif/mobi_cover.go). If cover art is in a ZIP archive (like EPUB), add logic to [`internal/exif/cover.go`](../internal/exif/cover.go).
+4. Add test fixtures and test cases in [`internal/exif/tsv_test.go`](../internal/exif/tsv_test.go) and [`internal/metadata/extractor_test.go`](../internal/metadata/extractor_test.go).
 
 ### `internal/exif` package overview
 
 | File | Responsibility |
 |------|----------------|
 | [`exif.go`](../internal/exif/exif.go) | Manages the ExifTool stay-open subprocess: start, communicate via stdin/stdout, graceful close with timeout, and dead-instance detection |
-| [`tsv.go`](../internal/exif/tsv.go) | Parses ExifTool's tab-separated output into `ExifToolOutput`; defines `NormalizeISBN` |
+| [`types.go`](../internal/exif/types.go) | Defines `ExifToolOutput`, `Identifier`, `MetaTag`, `ManifestItem`, and related types |
+| [`tsv.go`](../internal/exif/tsv.go) | Parses ExifTool's tab-separated output into `ExifToolOutput`; handles scalar, identifier, meta, and manifest record assembly |
+| [`finish.go`](../internal/exif/finish.go) | Format-specific post-processing: `finishBook` dispatches to `finishEPUB` (cover manifest resolution) and `finishMOBI` (MOBI/AZW3 cover extraction) |
 | [`cover.go`](../internal/exif/cover.go) | Extracts EPUB cover images directly from the ZIP archive using the manifest reference returned by ExifTool |
+| [`mobi_cover.go`](../internal/exif/mobi_cover.go) | Extracts cover images from MOBI and AZW3 files using the `sblinch/mobi` library; returns a `data:` URL |
+| [`isbn.go`](../internal/exif/isbn.go) | `NormalizeISBN` (strip prefixes, validate length and check digit) and `isASIN` helpers |
 | [`exif_write.go`](../internal/exif/exif_write.go) | Writes metadata back to files via the stay-open ExifTool process; used by sidecar/OPF workflows |
