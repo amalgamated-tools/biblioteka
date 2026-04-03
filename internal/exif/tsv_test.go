@@ -230,6 +230,25 @@ func TestParseTSV_EPUB3CoverViaProperties(t *testing.T) {
 	require.Equal(t, "cover-image", out.CoverImage.Properties, "cover properties")
 }
 
+func TestParseTSV_EPUB3CoverViaMultiTokenProperties(t *testing.T) {
+	// EPUB3 properties is a space-separated token list. A manifest item with
+	// properties="cover-image scripted" should still be identified as the cover.
+	input := "File Type\tEPUB\nDirectory\t.\nFile Name\ttest.epub\n" +
+		"Manifest Item Href\timages/cover.jpg\n" +
+		"Manifest Item Id\tcover-img\n" +
+		"Manifest Item Media-type\timage/jpeg\n" +
+		"Manifest Item Properties\tcover-image scripted\n" +
+		"Manifest Item Href\tchapter1.xhtml\n" +
+		"Manifest Item Id\tchapter1\n" +
+		"Manifest Item Media-type\tapplication/xhtml+xml\n"
+
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.NotNil(t, out.CoverImage, "cover image should be discovered from multi-token properties")
+	require.Equal(t, "images/cover.jpg", out.CoverImage.Href)
+	require.Equal(t, "cover-image scripted", out.CoverImage.Properties)
+}
+
 func TestParseTSV_EPUB3CoverPropertiesOverrideFallback(t *testing.T) {
 	// Strategy 3 (properties="cover-image") should beat Strategy 4
 	// (ID containing "cover") even when the Strategy 4 candidate appears
