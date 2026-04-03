@@ -21,7 +21,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 
-	_ "github.com/amalgamated-tools/biblioteka/docs"
+	_ "github.com/amalgamated-tools/biblioteka/docs/swagger"
 
 	"github.com/justinas/alice"
 	"golang.org/x/sync/errgroup"
