@@ -317,9 +317,9 @@ func (h *MyProtocolHandler) HandleMyProtocolCredentials(w http.ResponseWriter, r
         auditUpsert:     db.AuditActionMyProtocolCredentialUpdated,
         auditDelete:     db.AuditActionMyProtocolCredentialDeleted,
         errConflict:     db.ErrMyProtocolUsernameExists,
-        getByUserID: func(ctx context.Context, userID string) (credentialEntity, error) { ... },
-        upsert:      func(ctx context.Context, userID, username, hash string) (credentialEntity, error) { ... },
-        del:         h.DB.DeleteMyProtocolCredential,
+        getByUserID:     credGetAdapter(h.DB.GetMyProtocolCredentialByUserID),
+        upsert:          credUpsertAdapter(h.DB.UpsertMyProtocolCredential),
+        del:             h.DB.DeleteMyProtocolCredential,
     }, w, r)
     // NOTE: handleCredentials writes the HTTP response; always return immediately after calling it.
     return
@@ -335,6 +335,11 @@ func (h *MyProtocolHandler) HandleMyProtocolCredentials(w http.ResponseWriter, r
 - Structured error responses for all failure cases
 
 Set `deriveKey` when the protocol requires a password transformation before hashing (KOSync uses MD5 to match the KOReader protocol specification). Leave `deriveKey` as `nil` to hash the plaintext password directly (OPDS).
+
+Use `credGetAdapter` and `credUpsertAdapter` (generic functions in `internal/handlers/credentials.go`) to adapt your DB methods for the `credentialOps` struct. They accept any DB method whose return type satisfies `credentialInfoer` (the interface implemented by `db.ProtocolCredential` and all type aliases derived from it, such as `db.OPDSCredential` and `db.KOSyncCredential`) and wrap it in the closure signature that `credentialOps.getByUserID` and `credentialOps.upsert` require:
+
+- `credGetAdapter(fn)` — wraps a `func(context.Context, userID string) (*T, error)` DB getter
+- `credUpsertAdapter(fn)` — wraps a `func(context.Context, userID, username, hash string) (*T, error)` DB upsert
 
 ### Protocol authentication middleware
 
