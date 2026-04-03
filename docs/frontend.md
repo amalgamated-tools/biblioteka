@@ -1706,7 +1706,7 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 5. **`library settings links include the library name in aria-label (WCAG 2.4.6)`** — renders with two mock libraries and asserts each Library-settings link has a unique `aria-label` that includes the library name (e.g., "Library settings for Fiction") so screen readers can distinguish between them (WCAG 2.4.6 Headings and Labels).
 6. **`library settings links are not fully transparent by default (WCAG 2.4.7)`** — asserts that the Library-settings link does not carry `opacity-0` and instead carries `opacity-30`, ensuring the element is perceivable when focused by keyboard (WCAG 2.4.7 Focus Visible).
 7. **`renders navigation group labels as headings`** — renders with `currentView="dashboard"` and asserts that the "Home" and "Libraries" group labels are exposed as `role="heading"` elements at level 2 (WCAG 1.3.1).
-8. **`does not render the app name as a heading`** — asserts that the brand name ("Biblioteka") is rendered as a `<p>` element, not an `<h1>`, so it does not create a duplicate top-level heading (WCAG 1.3.1).
+8. **`does not render the app name as a heading`** — asserts that the brand name ("biblioteka") is rendered as a `<p>` element, not an `<h1>`, so it does not create a duplicate top-level heading (WCAG 1.3.1).
 
 > **Mocking note:** The test file mocks `authStore`, `libraryStore`, `api.getVersion`, and all `lucide-svelte` icon components. The icon mocks are necessary because Lucide icons are ESM-only packages that cannot render in JSDOM; replacing them with no-ops keeps the test focused on DOM structure. `afterEach(cleanup)` prevents DOM leakage between tests.
 
