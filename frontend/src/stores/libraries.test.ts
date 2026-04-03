@@ -29,7 +29,7 @@ describe("library store", () => {
     libraryStore.libraries = [];
     libraryStore.loading = false;
     libraryStore.loaded = false;
-    libraryStore.scanningIds.clear();
+    libraryStore.clearAllScanning();
   });
 
   afterEach(() => {
