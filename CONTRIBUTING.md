@@ -290,22 +290,30 @@ This is distinct from `Procfile.dev`, which uses [air](https://github.com/cosmtr
 
 #### VS Code
 
-The repository includes a `.vscode/launch.json` with three ready-to-use **Run and Debug** configurations (`Ctrl+Shift+D` / `⇧⌘D`):
+The repository includes a `.vscode/launch.json` with ready-to-use **Run and Debug** configurations (`Ctrl+Shift+D` / `⇧⌘D`):
 
 | Configuration | Binary | What it does |
 |---|---|---|
 | **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans the sample `books/` directory and imports all supported files |
-| **Run CLI (File)** | `cmd/cli/main.go` | Runs `process-file` against `books/Alice's Adventures in Wonderland by Lewis Carroll.epub` |
+| **Run CLI (AZW3)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.azw3` |
+| **Run CLI (MOBI)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.mobi` |
+| **Run CLI (EPUB)** | `cmd/cli/main.go` | Runs `process-file` against `books/alice.epub` (EPUB 2) |
+| **Run CLI (EPUB3)** | `cmd/cli/main.go` | Runs `process-file` against `books/epub30-spec.epub` (EPUB 3) |
+| **Run CLI (Goodreads Search)** | `cmd/cli/main.go` | Runs `goodreads-search "Project Hail Mary"` |
+| **Run CLI (Goodreads Search by ISBN)** | `cmd/cli/main.go` | Runs `goodreads-search-isbn 9780593135204` |
+| **Run CLI (Goodreads Fetch by ASIN)** | `cmd/cli/main.go` | Runs `goodreads-get-by-asin 0593135202` |
+| **Run CLI (Goodreads Fetch by ID)** | `cmd/cli/main.go` | Runs `goodreads-get-by-id` with a Goodreads KCA ID |
+| **Run CLI (Goodreads Fetch by Legacy ID)** | `cmd/cli/main.go` | Runs `goodreads-get-by-legacy-id 54493401` |
 | **Run Server** | `cmd/server/main.go` | Starts the Biblioteka HTTP server |
 
-All three configurations load environment variables from `.env` in the workspace root. Copy `.env.sample` to `.env` and fill in the required values before launching:
+All CLI configurations load environment variables from `.env` in the workspace root. Copy `.env.sample` to `.env` and fill in the required values before launching:
 
 ```bash
 cp .env.sample .env
 # Edit .env with your local values (DATABASE_URL, REDIS_URL, JWT_SECRET, …)
 ```
 
-> **Sample books**: Two EPUB files in `books/` serve as realistic test data for the CLI configurations. They are version-controlled so the "Run CLI" launch configs work out of the box without any setup.
+> **Sample books**: Four sample book files in `books/` serve as realistic test data for the CLI configurations. They are version-controlled so the "Run CLI" launch configs work out of the box without any setup.
 
 The repository also includes a `.vscode/settings.json` with workspace-wide editor settings for the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.Go):
 
