@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 )
@@ -80,29 +79,14 @@ func hasColumn(ctx context.Context, d *DB, table, column string) (bool, error) {
 		).Scan(&exists)
 		return exists, err
 	case DialectSQLite:
-		rows, err := d.QueryContext(ctx, fmt.Sprintf("PRAGMA table_info(%s)", table))
-		if err != nil {
+		var count int
+		if err := d.QueryRowContext(ctx,
+			`SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?`,
+			table, column,
+		).Scan(&count); err != nil {
 			return false, err
 		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var (
-				cid     int
-				name    string
-				colType string
-				notNull int
-				dflt    sql.NullString
-				pk      int
-			)
-			if err := rows.Scan(&cid, &name, &colType, &notNull, &dflt, &pk); err != nil {
-				return false, err
-			}
-			if name == column {
-				return true, nil
-			}
-		}
-		return false, rows.Err()
+		return count > 0, nil
 	default:
 		return false, fmt.Errorf("unsupported dialect %q", d.Dialect)
 	}
