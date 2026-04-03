@@ -541,7 +541,7 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 | `pageSize` | `number` | | `24` | Number of books per page. Clamped to `[1, 200]` at runtime. |
 | `initialOffset` | `number` | | `0` | Starting page offset read **once** on mount. Use this to restore a bookmarked page (e.g., from the URL query string). Changes after mount are ignored. |
 | `onPageChange` | `(offset: number) => void` | | — | Called after each page turn (not on the initial mount). Use this to write the new offset back to the URL via `routerStore.setQueryParam`. |
-| `pollingInterval` | `number` | | — | When set, `BookList` re-fetches silently at this interval (in ms) while `total === 0`. Polling stops automatically once books appear. Use this to show a "Scanning library…" spinner while the backend scans a newly added library. |
+| `pollingInterval` | `number` | | — | When set, `BookList` re-fetches silently at this interval (in ms) while `total === 0`. Polling stops automatically once books appear. Use this to show a "Scanning library..." spinner while the backend scans a newly added library. |
 | `onBooksFound` | `() => void` | | — | Called exactly once the first time a poll or fetch reports `total > 0`. Use this to clear scanning state in the parent (e.g., `() => libraryStore.clearScanning(libraryId)`). |
 
 **Internal state exposed to the template (not props):**
@@ -580,7 +580,7 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 
 > **Tip:** When binding a library-scoped `fetchBooks`, wrap `api.listLibraryBooks` in an arrow function so that `libraryId` is captured by the closure. `BookList` resets to page 1 whenever the `fetchBooks` prop reference changes, so switching libraries automatically resets pagination.
 
-**Pagination behaviour:**
+#### Pagination behaviour
 
 - On mount and whenever `fetchBooks` or `pageSize` changes, `offset` resets to `0` and a fresh fetch is triggered.
 - If items are deleted and the current page becomes empty (but earlier pages still have items), `BookList` automatically clamps back to the last valid page.
@@ -588,7 +588,7 @@ A self-contained paginated book browser. It fetches a page of books via a caller
 
 #### Scan-aware polling
 
-When `pollingInterval` is set and `total === 0`, `BookList` enters a polling mode: instead of showing the generic "No books yet." empty state, it renders a spinner with the message "Scanning library…". A `setTimeout`-based loop (not `setInterval`) re-fetches silently at the given interval, suppressing the loading overlay so the spinner stays visible. Polling stops as soon as `total > 0` or the component unmounts. On the first fetch that reports `total > 0`, `onBooksFound` fires exactly once, giving the parent an opportunity to clear scanning state (see `libraryStore.clearScanning` below).
+When `pollingInterval` is set and `total === 0`, `BookList` enters a polling mode: instead of showing the generic "No books yet." empty state, it renders a spinner with the message "Scanning library...". A `setTimeout`-based loop (not `setInterval`) re-fetches silently at the given interval, suppressing the loading overlay so the spinner stays visible. Polling stops as soon as `total > 0` or the component unmounts. On the first fetch that reports `total > 0`, `onBooksFound` fires exactly once, giving the parent an opportunity to clear scanning state (see `libraryStore.clearScanning` below).
 
 ```svelte
 <script lang="ts">
