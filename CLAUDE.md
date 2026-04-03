@@ -338,8 +338,8 @@ Set `deriveKey` when the protocol requires a password transformation before hash
 
 Use `credGetAdapter` and `credUpsertAdapter` (generic functions in `internal/handlers/credentials.go`) to adapt your DB methods for the `credentialOps` struct. They accept any DB method whose return type satisfies `credentialInfoer` (the interface implemented by `db.ProtocolCredential` and all type aliases derived from it, such as `db.OPDSCredential` and `db.KOSyncCredential`) and wrap it in the closure signature that `credentialOps.getByUserID` and `credentialOps.upsert` require:
 
-- `credGetAdapter(fn)` — wraps a `func(context.Context, userID string) (*T, error)` DB getter
-- `credUpsertAdapter(fn)` — wraps a `func(context.Context, userID, username, hash string) (*T, error)` DB upsert
+- `credGetAdapter(fn)` — wraps a `func(context.Context, userID string) (T, error)` DB getter
+- `credUpsertAdapter(fn)` — wraps a `func(context.Context, userID, username, hash string) (T, error)` DB upsert
 
 ### Protocol authentication middleware
 
