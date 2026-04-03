@@ -1,17 +1,16 @@
 ---
 description: |
   This workflow keeps docs synchronized with code changes.
-  Triggered on every push to main, it analyzes diffs to identify changed entities and
+  Triggered after the Test CI workflow completes successfully on main, it analyzes diffs to identify changed entities and
   updates corresponding documentation. Maintains consistent style (precise, active voice,
   plain English), ensures single source of truth, and creates draft PRs with documentation
   updates. Supports documentation-as-code philosophy.
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Test"]
+    types: [completed]
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
   workflow_dispatch:
 
 concurrency:
