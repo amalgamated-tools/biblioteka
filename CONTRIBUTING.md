@@ -461,11 +461,11 @@ Name files with a timestamp prefix: `YYYYMMDDHHMMSS_description.sql`. Migrations
 The `internal/db` package provides two unexported helpers for detecting unique-constraint violations when a raw SQL error is returned:
 
 - **`isUniqueViolation(err error) bool`** — returns `true` when `err` is any unique-constraint violation (covers both SQLite and PostgreSQL error messages). Used by named-entity create/update paths (e.g. `CreateLibrary`).
-- **`isColumnUniqueViolation(err error, tableCol, idxName string) bool`** — gates on `isUniqueViolation`, then additionally checks the error message for the specific column reference (`tableCol`) or index name (`idxName`). Used internally by the shared `upsertProtocolCredential` helper to distinguish a username-conflict (different user, same username) from other database errors. You do not need to call this directly when adding a new sync protocol — use the shared helpers in `protocol_credentials.go` instead (see below).
+- **`isColumnUniqueViolation(err error, tableCol, idxName string) bool`** — gates on `isUniqueViolation`, then additionally checks the error message for the specific column reference (`tableCol`) or index name (`idxName`). Used internally by the shared `upsertCredential` helper to distinguish a username-conflict (different user, same username) from other database errors. You do not need to call this directly when adding a new sync protocol — use the shared helpers in `protocol_credentials.go` instead (see below).
 
 ### Adding a new sync protocol credential type
 
-When implementing the database layer for a new sync protocol, use the shared helpers in `internal/db/protocol_credentials.go` instead of hand-rolling SQL. Define a `protocolCredentialTable` config, declare a type alias for `ProtocolCredential`, and delegate all CRUD to the unexported helpers. See `opds_credentials.go` and `kosync.go` for real examples of this pattern.
+When implementing the database layer for a new sync protocol, use the shared helpers in `internal/db/protocol_credentials.go` instead of hand-rolling SQL. Define a `protocolCredentialConfig` value, declare a type alias for `ProtocolCredential`, and delegate all CRUD to the unexported helpers. See `opds_credentials.go` and `kosync.go` for real examples of this pattern.
 
 ## Continuous Integration
 
