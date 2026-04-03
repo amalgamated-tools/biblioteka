@@ -78,7 +78,7 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 		}
 	}
 
-	// Strategy 3 & 4: properties="cover-image", or ID/href contains "cover"
+	// Strategy 3: properties="cover-image" (EPUB3)
 	if out.CoverImage == nil {
 		for i, item := range out.ManifestItems {
 			if !isLikelyImage(item.Href, item.MediaType) {
@@ -87,6 +87,15 @@ func finishEPUB(ctx context.Context, out *ExifToolOutput) {
 			if strings.EqualFold(item.Properties, "cover-image") {
 				out.CoverImage = &out.ManifestItems[i]
 				break
+			}
+		}
+	}
+
+	// Strategy 4: ID/href contains "cover"
+	if out.CoverImage == nil {
+		for i, item := range out.ManifestItems {
+			if !isLikelyImage(item.Href, item.MediaType) {
+				continue
 			}
 			if strings.Contains(strings.ToLower(item.ID), "cover") || strings.Contains(strings.ToLower(item.Href), "cover") {
 				out.CoverImage = &out.ManifestItems[i]
