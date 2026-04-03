@@ -285,3 +285,17 @@ To add support for a new file format:
 | [`mobi_cover.go`](../internal/exif/mobi_cover.go) | Extracts cover images from MOBI and AZW3 files using the `sblinch/mobi` library; returns a `data:` URL |
 | [`isbn.go`](../internal/exif/isbn.go) | `NormalizeISBN` (strip prefixes, validate length and check digit) and `isASIN` helpers |
 | [`exif_write.go`](../internal/exif/exif_write.go) | Writes metadata back to files via the stay-open ExifTool process; used by sidecar/OPF workflows |
+
+### EPUB cover discovery
+
+EPUB cover art is located via `finishEPUB` in [`internal/exif/finish.go`](../internal/exif/finish.go), which tries five strategies in priority order and stops at the first successful match:
+
+| Priority | Strategy | Description | EPUB version |
+|----------|----------|-------------|--------------|
+| 1 | Manifest ID `"cover"` | During TSV parsing, a manifest item whose `id` attribute equals `"cover"` (case-insensitive) and whose media type is an image is recorded directly | EPUB 2 and 3 |
+| 2 | `<meta name="cover">` | A `<meta>` tag with `name="cover"` points to a manifest item ID; that item is looked up by ID | EPUB 2 |
+| 3 | `properties="cover-image"` | A manifest item carrying the `properties="cover-image"` attribute is used | EPUB 3 |
+| 4 | ID/href heuristic | A manifest item whose `id` or `href` contains the substring `"cover"` (case-insensitive) and is an image | EPUB 2 and 3 |
+| 5 | Single-image fallback | When the manifest contains exactly one image item and no other strategy matched, that image is used as the cover | EPUB 2 and 3 |
+
+> **Note on EPUB 2 vs. EPUB 3:** EPUB 2 files use the `<meta name="cover">` element (Strategy 2) to identify the cover; EPUB 3 files use the `properties="cover-image"` manifest attribute (Strategy 3). Strategy 2 takes precedence over Strategy 3, so if both are present (which is valid in a hybrid or poorly-authored file), the EPUB 2 pointer wins. Test utilities in `internal/testutils/epub.go` support generating both EPUB 2 (`Version: "2.0"`) and EPUB 3 (`Version: "3.0"`) fixtures for testing these paths.
