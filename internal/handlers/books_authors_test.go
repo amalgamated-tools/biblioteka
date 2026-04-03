@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +12,7 @@ import (
 func TestGetBookAuthors_Empty(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -40,19 +39,19 @@ func TestGetBookAuthors_Empty(t *testing.T) {
 func TestGetBookAuthors_WithAuthors(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	a1, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a1, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author: %v", err)
 	}
-	a2, err := h.DB.CreateAuthor(context.Background(), "Another Author", nil, nil, nil, nil)
+	a2, err := h.DB.CreateAuthor(t.Context(), "Another Author", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author 2: %v", err)
 	}
-	if err := h.DB.SetBookAuthors(context.Background(), b.ID, []string{a1.ID, a2.ID}); err != nil {
+	if err := h.DB.SetBookAuthors(t.Context(), b.ID, []string{a1.ID, a2.ID}); err != nil {
 		t.Fatalf("set book authors: %v", err)
 	}
 
@@ -78,11 +77,11 @@ func TestGetBookAuthors_WithAuthors(t *testing.T) {
 func TestPutBookAuthors_Success(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author: %v", err)
 	}
@@ -113,15 +112,15 @@ func TestPutBookAuthors_Success(t *testing.T) {
 func TestPutBookAuthors_ClearsExisting(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	a1, err := h.DB.CreateAuthor(context.Background(), "Author One", nil, nil, nil, nil)
+	a1, err := h.DB.CreateAuthor(t.Context(), "Author One", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author1: %v", err)
 	}
-	a2, err := h.DB.CreateAuthor(context.Background(), "Author Two", nil, nil, nil, nil)
+	a2, err := h.DB.CreateAuthor(t.Context(), "Author Two", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author2: %v", err)
 	}
@@ -159,7 +158,7 @@ func TestPutBookAuthors_ClearsExisting(t *testing.T) {
 func TestPutBookAuthors_InvalidJSON(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -178,7 +177,7 @@ func TestPutBookAuthors_InvalidJSON(t *testing.T) {
 func TestBookAuthors_MethodNotAllowed(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -197,7 +196,7 @@ func TestBookAuthors_MethodNotAllowed(t *testing.T) {
 func TestPutBookAuthors_EmptyList(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}

@@ -6,13 +6,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/amalgamated-tools/biblioteka/internal/db"
-	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // testEntity is a minimal entity type used in named_entity unit tests.
@@ -32,6 +30,18 @@ type testEntityRequest struct {
 	Name string `json:"name"`
 }
 
+// Test-local sentinels so named_entity tests are decoupled from any real entity.
+var (
+	errInvalidWidgetName = errors.New("invalid widget name")
+	errWidgetNameExists  = errors.New("widget name already exists")
+)
+
+const (
+	testWidgetIDKey       = "widget_id"
+	testAuditWidgetCreate = "widget.created"
+	testAuditWidgetUpdate = "widget.updated"
+)
+
 func toTestEntityDTO(e *testEntity) testEntityDTO {
 	return testEntityDTO{ID: e.ID, Name: e.Name}
 }
@@ -46,11 +56,11 @@ func makeTestNamedEntityOps(t *testing.T) namedEntityOps[testEntity, testEntityD
 		db:             d,
 		entityLabel:    "widget",
 		entityArticle:  "a widget",
-		idKey:          otelkeys.AuthorID, // any constant will do
-		errInvalidName: db.ErrInvalidAuthorName,
-		errNameExists:  db.ErrAuthorNameExists,
-		auditCreate:    db.AuditActionAuthorCreated,
-		auditUpdate:    db.AuditActionAuthorUpdated,
+		idKey:          testWidgetIDKey,
+		errInvalidName: errInvalidWidgetName,
+		errNameExists:  errWidgetNameExists,
+		auditCreate:    testAuditWidgetCreate,
+		auditUpdate:    testAuditWidgetUpdate,
 		get: func(_ context.Context, id string) (*testEntity, error) {
 			return nil, sql.ErrNoRows // default to not-found; override in tests
 		},
@@ -139,7 +149,7 @@ func TestCreateNamedEntity_WhitespaceOnlyName(t *testing.T) {
 func TestCreateNamedEntity_ErrInvalidName(t *testing.T) {
 	ops := makeTestNamedEntityOps(t)
 	ops.create = func(_ context.Context, _ testEntityRequest) (*testEntity, error) {
-		return nil, db.ErrInvalidAuthorName
+		return nil, errInvalidWidgetName
 	}
 
 	body := mustMarshal(t, testEntityRequest{Name: "Valid Name"})
@@ -157,7 +167,7 @@ func TestCreateNamedEntity_ErrInvalidName(t *testing.T) {
 func TestCreateNamedEntity_ErrNameExists(t *testing.T) {
 	ops := makeTestNamedEntityOps(t)
 	ops.create = func(_ context.Context, _ testEntityRequest) (*testEntity, error) {
-		return nil, db.ErrAuthorNameExists
+		return nil, errWidgetNameExists
 	}
 
 	body := mustMarshal(t, testEntityRequest{Name: "Duplicate"})
@@ -241,6 +251,23 @@ func TestGetNamedEntity_Success(t *testing.T) {
 func TestGetNamedEntity_NotFound(t *testing.T) {
 	ops := makeTestNamedEntityOps(t)
 	// ops.get already returns sql.ErrNoRows by default
+
+	r := httptest.NewRequest(http.MethodGet, "/api/widgets/missing", nil)
+	r = withUserID(r, "user-1")
+	w := httptest.NewRecorder()
+
+	getNamedEntity(ops, w, r, "missing")
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestGetNamedEntity_WrappedNotFound(t *testing.T) {
+	ops := makeTestNamedEntityOps(t)
+	ops.get = func(_ context.Context, _ string) (*testEntity, error) {
+		return nil, fmt.Errorf("query failed: %w", sql.ErrNoRows)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/widgets/missing", nil)
 	r = withUserID(r, "user-1")
@@ -359,10 +386,28 @@ func TestUpdateNamedEntity_NotFound(t *testing.T) {
 	}
 }
 
+func TestUpdateNamedEntity_WrappedNotFound(t *testing.T) {
+	ops := makeTestNamedEntityOps(t)
+	ops.update = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
+		return nil, fmt.Errorf("update failed: %w", sql.ErrNoRows)
+	}
+
+	body := mustMarshal(t, testEntityRequest{Name: "New Name"})
+	r := httptest.NewRequest(http.MethodPut, "/api/widgets/missing", bytes.NewReader(body))
+	r = withUserID(r, "user-1")
+	w := httptest.NewRecorder()
+
+	updateNamedEntity(ops, w, r, "missing")
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
 func TestUpdateNamedEntity_ErrInvalidName(t *testing.T) {
 	ops := makeTestNamedEntityOps(t)
 	ops.update = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
-		return nil, db.ErrInvalidAuthorName
+		return nil, errInvalidWidgetName
 	}
 
 	body := mustMarshal(t, testEntityRequest{Name: "Anything"})
@@ -380,7 +425,7 @@ func TestUpdateNamedEntity_ErrInvalidName(t *testing.T) {
 func TestUpdateNamedEntity_ErrNameExists(t *testing.T) {
 	ops := makeTestNamedEntityOps(t)
 	ops.update = func(_ context.Context, _ string, _ testEntityRequest) (*testEntity, error) {
-		return nil, db.ErrAuthorNameExists
+		return nil, errWidgetNameExists
 	}
 
 	body := mustMarshal(t, testEntityRequest{Name: "Duplicate"})

@@ -8,15 +8,61 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 )
 
-// makeTestCredOps builds a minimal credentialOps backed by a real DB and
-// simple in-memory state via closures. It is sufficient to exercise the
-// handleCredentials/getCredential/upsertCredential/deleteCredential paths
-// without committing to any particular protocol schema.
+// inMemoryCredStore is a simple in-memory credential store used to test the
+// generic credential helpers without coupling to any specific protocol schema.
+type inMemoryCredStore struct {
+	mu    sync.Mutex
+	creds map[string]credentialEntity // keyed by userID
+}
+
+func newInMemoryCredStore() *inMemoryCredStore {
+	return &inMemoryCredStore{creds: make(map[string]credentialEntity)}
+}
+
+func (s *inMemoryCredStore) getByUserID(_ context.Context, userID string) (credentialEntity, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c, ok := s.creds[userID]
+	if !ok {
+		return credentialEntity{}, sql.ErrNoRows
+	}
+	return c, nil
+}
+
+func (s *inMemoryCredStore) upsert(_ context.Context, userID, username, hash string) (credentialEntity, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := db.Timestamp{}
+	c := credentialEntity{
+		ID:        "cred-" + userID,
+		Username:  username,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	s.creds[userID] = c
+	return c, nil
+}
+
+func (s *inMemoryCredStore) del(_ context.Context, userID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.creds[userID]; !ok {
+		return sql.ErrNoRows
+	}
+	delete(s.creds, userID)
+	return nil
+}
+
+var errTestConflict = errors.New("test username conflict")
+
+// makeTestCredOps builds a minimal credentialOps backed by in-memory closures,
+// decoupled from any protocol schema.
 func makeTestCredOps(t *testing.T) (credentialOps, string) {
 	t.Helper()
 	d := newTestDB(t)
@@ -25,38 +71,18 @@ func makeTestCredOps(t *testing.T) (credentialOps, string) {
 		t.Fatalf("create user: %v", err)
 	}
 
+	store := newInMemoryCredStore()
+
 	ops := credentialOps{
 		db:              d,
 		protocol:        "TestProto",
 		auditEntityType: "testproto_credential",
-		auditUpsert:     db.AuditActionKOSyncCredentialUpdated,
-		auditDelete:     db.AuditActionKOSyncCredentialDeleted,
-		errConflict:     db.ErrKOSyncUsernameExists,
-		getByUserID: func(ctx context.Context, userID string) (credentialEntity, error) {
-			c, err := d.GetKOSyncCredentialByUserID(ctx, userID)
-			if err != nil {
-				return credentialEntity{}, err
-			}
-			return credentialEntity{
-				ID:        c.ID,
-				Username:  c.Username,
-				CreatedAt: c.CreatedAt,
-				UpdatedAt: c.UpdatedAt,
-			}, nil
-		},
-		upsert: func(ctx context.Context, userID, username, hash string) (credentialEntity, error) {
-			c, err := d.UpsertKOSyncCredential(ctx, userID, username, hash)
-			if err != nil {
-				return credentialEntity{}, err
-			}
-			return credentialEntity{
-				ID:        c.ID,
-				Username:  c.Username,
-				CreatedAt: c.CreatedAt,
-				UpdatedAt: c.UpdatedAt,
-			}, nil
-		},
-		del: d.DeleteKOSyncCredential,
+		auditUpsert:     "testproto_credential.updated",
+		auditDelete:     "testproto_credential.deleted",
+		errConflict:     errTestConflict,
+		getByUserID:     store.getByUserID,
+		upsert:          store.upsert,
+		del:             store.del,
 	}
 	return ops, user.ID
 }
@@ -211,13 +237,12 @@ func TestUpsertCredential_InvalidJSON(t *testing.T) {
 
 func TestUpsertCredential_Conflict(t *testing.T) {
 	d := newTestDB(t)
-	errConflict := errors.New("username conflict")
 	ops := credentialOps{
 		db:          d,
 		protocol:    "TestProto",
-		errConflict: errConflict,
+		errConflict: errTestConflict,
 		upsert: func(_ context.Context, _, _, _ string) (credentialEntity, error) {
-			return credentialEntity{}, errConflict
+			return credentialEntity{}, errTestConflict
 		},
 	}
 

@@ -27,7 +27,7 @@ func toFakeItemDTO(f *fakeItem) fakeItemDTO {
 	return fakeItemDTO{ID: f.ID, Name: f.Name}
 }
 
-func Test_RespondBookSubResource(t *testing.T) {
+func TestRespondBookSubResource(t *testing.T) {
 	t.Run("success returns 200 with JSON array", func(t *testing.T) {
 		getFn := func(_ context.Context, _ string) ([]fakeItem, error) {
 			return []fakeItem{{ID: "1", Name: "Alpha"}, {ID: "2", Name: "Beta"}}, nil
@@ -115,7 +115,7 @@ type fakeSetRequest struct {
 	IDs []string `json:"ids"`
 }
 
-func Test_PutBookSubResource(t *testing.T) {
+func TestPutBookSubResource(t *testing.T) {
 	t.Run("success decodes and sets then re-fetches", func(t *testing.T) {
 		var capturedPayload []string
 		setFn := func(_ context.Context, _ string, ids []string) error {

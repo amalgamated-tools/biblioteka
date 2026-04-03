@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +14,7 @@ import (
 func TestGetBookSeries_Empty(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -42,17 +41,17 @@ func TestGetBookSeries_Empty(t *testing.T) {
 func TestGetBookSeries_WithEntries(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series: %v", err)
 	}
 
 	pos := 1.0
-	if err := h.DB.SetBookSeries(context.Background(), b.ID, []db.BookSeriesInput{{SeriesID: s.ID, Position: &pos}}); err != nil {
+	if err := h.DB.SetBookSeries(t.Context(), b.ID, []db.BookSeriesInput{{SeriesID: s.ID, Position: &pos}}); err != nil {
 		t.Fatalf("set book series: %v", err)
 	}
 
@@ -84,11 +83,11 @@ func TestGetBookSeries_WithEntries(t *testing.T) {
 func TestPutBookSeries_Success(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series: %v", err)
 	}
@@ -122,15 +121,15 @@ func TestPutBookSeries_Success(t *testing.T) {
 func TestPutBookSeries_ClearsExisting(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	s1, err := h.DB.CreateSeries(context.Background(), "Series One", nil, nil, nil)
+	s1, err := h.DB.CreateSeries(t.Context(), "Series One", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series1: %v", err)
 	}
-	s2, err := h.DB.CreateSeries(context.Background(), "Series Two", nil, nil, nil)
+	s2, err := h.DB.CreateSeries(t.Context(), "Series Two", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series2: %v", err)
 	}
@@ -178,7 +177,7 @@ func TestPutBookSeries_ClearsExisting(t *testing.T) {
 func TestPutBookSeries_InvalidJSON(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -197,7 +196,7 @@ func TestPutBookSeries_InvalidJSON(t *testing.T) {
 func TestBookSeries_MethodNotAllowed(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -216,7 +215,7 @@ func TestBookSeries_MethodNotAllowed(t *testing.T) {
 func TestPutBookSeries_EmptyEntries(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
