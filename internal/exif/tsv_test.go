@@ -134,3 +134,75 @@ func TestParseTSV_SubjectsWhitespaceHandling(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"Romance", "Thriller"}, out.Subjects)
 }
+
+func TestParseTSV_DuplicateCalibreID(t *testing.T) {
+	// Second Calibre ID should be kept in Extras, first is preserved.
+	input := "Identifier Scheme\tCALIBRE\nIdentifier\tabc123\nIdentifier Scheme\tCALIBRE\nIdentifier\tdef456\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "abc123", out.CalibreID, "first Calibre ID should be kept")
+	require.Equal(t, "def456", out.Extras["Duplicate Calibre ID"], "second Calibre ID should be in Extras")
+}
+
+func TestParseTSV_DuplicateGoodreadsID(t *testing.T) {
+	// Second Goodreads ID should be kept in Extras, first is preserved.
+	input := "Identifier Scheme\tGOODREADS\nIdentifier\t12345\nIdentifier Scheme\tGOODREADS\nIdentifier\t67890\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "12345", out.GoodreadsID, "first Goodreads ID should be kept")
+	require.Equal(t, "67890", out.Extras["Duplicate Goodreads ID"], "second Goodreads ID should be in Extras")
+}
+
+func TestParseTSV_DuplicateASIN(t *testing.T) {
+	// Second ASIN should be kept in Extras, first is preserved.
+	input := "Identifier Scheme\tAMAZON\nIdentifier\tB001\nIdentifier Scheme\tAMAZON\nIdentifier\tB002\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "B001", out.ASIN, "first ASIN should be kept")
+	require.Equal(t, "B002", out.Extras["Duplicate ASIN"], "second ASIN should be in Extras")
+}
+
+func TestParseTSV_DuplicateISBN10(t *testing.T) {
+	// Second ISBN-10 should be kept in Extras, first is preserved.
+	input := "Identifier Scheme\tISBN\nIdentifier\turn:isbn:0743273567\nIdentifier Scheme\tISBN\nIdentifier\turn:isbn:0306406152\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "0743273567", out.ISBN10, "first ISBN-10 should be kept")
+	require.Equal(t, "0306406152", out.Extras["Duplicate ISBN-10"], "second ISBN-10 should be in Extras")
+}
+
+func TestParseTSV_DuplicateISBN13(t *testing.T) {
+	// Second ISBN-13 should be kept in Extras, first is preserved.
+	input := "Identifier Scheme\tISBN\nIdentifier\turn:isbn:9780743273565\nIdentifier Scheme\tISBN\nIdentifier\turn:isbn:9780306406157\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "9780743273565", out.ISBN13, "first ISBN-13 should be kept")
+	require.Equal(t, "9780306406157", out.Extras["Duplicate ISBN-13"], "second ISBN-13 should be in Extras")
+}
+
+func TestParseTSV_DuplicateGoogleID(t *testing.T) {
+	// Second Google ID should be kept in Extras, first is preserved.
+	input := "Identifier Scheme\tGOOGLE\nIdentifier\tXYZ1\nIdentifier Scheme\tGOOGLE\nIdentifier\tXYZ2\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "XYZ1", out.GoogleID, "first Google ID should be kept")
+	require.Equal(t, "XYZ2", out.Extras["Duplicate Google ID"], "second Google ID should be in Extras")
+}
+
+func TestParseTSV_DuplicateHardcoverID(t *testing.T) {
+	// Second Hardcover ID should be kept in Extras, first is preserved.
+	input := "Identifier\turn:hardcoverbook:111\nIdentifier\turn:hardcoverbook:222\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "111", out.HardcoverID, "first Hardcover ID should be kept")
+	require.Equal(t, "222", out.Extras["Duplicate Hardcover ID"], "second Hardcover ID should be in Extras")
+}
+
+func TestParseTSV_SameIDTwiceIsIdempotent(t *testing.T) {
+	// Seeing the same Calibre ID twice should not put it in Extras.
+	input := "Identifier Scheme\tCALIBRE\nIdentifier\tabc123\nIdentifier Scheme\tCALIBRE\nIdentifier\tabc123\n"
+	out, err := ParseTSV(t.Context(), input, "epub")
+	require.NoError(t, err)
+	require.Equal(t, "abc123", out.CalibreID, "Calibre ID should be set")
+	require.NotContains(t, out.Extras, "Duplicate Calibre ID", "identical repeat should not go to Extras")
+}
