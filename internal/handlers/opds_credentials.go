@@ -44,8 +44,8 @@ func (h *OPDSCredentialHandler) credOps() credentialOps {
 		auditUpsert:     db.AuditActionOPDSCredentialUpdated,
 		auditDelete:     db.AuditActionOPDSCredentialDeleted,
 		errConflict:     db.ErrOPDSUsernameExists,
-		getByUserID:     credentialGetAdapter(h.DB.GetOPDSCredentialByUserID),
-		upsert:          credentialUpsertAdapter(h.DB.UpsertOPDSCredential),
+		getByUserID:     credGetAdapter(h.DB.GetOPDSCredentialByUserID),
+		upsert:          credUpsertAdapter(h.DB.UpsertOPDSCredential),
 		del:             h.DB.DeleteOPDSCredential,
 	}
 }
