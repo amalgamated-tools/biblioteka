@@ -217,7 +217,7 @@ The `internal/testutils` package provides helpers for generating fixture book fi
 | Helper | Description |
 |--------|-------------|
 | `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB 3 at the given path |
-| `testutils.MakeTestEPUBWithOptions(t, path, title, creator, identifier, opts)` | Creates a minimal valid EPUB with metadata and format control via `EPUBOptions`, including description, publisher, publication date, language, cover image settings, EPUB version, and subjects |
+| `testutils.MakeTestEPUBWithOptions(t, path, title, creator, identifier, opts)` | Creates a minimal valid EPUB with full metadata control via `EPUBOptions` (description, publisher, publication date, language, cover image, EPUB version, subjects) |
 | `testutils.MakeTestMOBI(t, path, title, author, opts)` | Creates a minimal valid MOBI file with optional metadata via `MOBIOptions` (ISBN, ASIN, publisher, language, cover image) |
 | `testutils.MakeTestAZW3(t, path, title, author, opts)` | Creates a minimal valid AZW3 file (same PalmDB/MOBI binary format as MOBI; only the extension differs) |
 | `testutils.MakeTestPDF(t, path, title, author, et)` | Creates a minimal valid PDF and writes metadata via ExifTool (skips the test if ExifTool is unavailable) |

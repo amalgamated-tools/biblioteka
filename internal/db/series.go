@@ -47,22 +47,14 @@ func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
 }
 
 func (d *DB) CreateSeries(ctx context.Context, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
-	name = NormalizeSeriesName(name)
-	if name == "" {
-		return nil, ErrInvalidSeriesName
-	}
-	slog.DebugContext(ctx, "db: creating series", slog.String(otelkeys.Name, name))
-	s, err := scanSeries(d.QueryRowContext(ctx,
-		`INSERT INTO series (name, goodreads_id, hardcover_id, google_books_id) VALUES ($1, $2, $3, $4) RETURNING `+seriesColumns,
-		name, goodreadsID, hardcoverID, googleBooksID,
-	))
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrSeriesNameExists
-		}
-		return nil, err
-	}
-	return s, nil
+	return namedEntityCreate(ctx, "series", name, NormalizeSeriesName, ErrInvalidSeriesName, ErrSeriesNameExists,
+		func(ctx context.Context, n string) (*Series, error) {
+			return scanSeries(d.QueryRowContext(ctx,
+				`INSERT INTO series (name, goodreads_id, hardcover_id, google_books_id) VALUES ($1, $2, $3, $4) RETURNING `+seriesColumns,
+				n, goodreadsID, hardcoverID, googleBooksID,
+			))
+		},
+	)
 }
 
 func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
@@ -102,25 +94,14 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 }
 
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
-	name = NormalizeSeriesName(name)
-	if name == "" {
-		return nil, ErrInvalidSeriesName
-	}
-	slog.DebugContext(ctx, "db: updating series",
-		slog.String(otelkeys.ID, id),
-		slog.String(otelkeys.Name, name),
+	return namedEntityUpdate(ctx, "series", id, name, NormalizeSeriesName, ErrInvalidSeriesName, ErrSeriesNameExists,
+		func(ctx context.Context, entityID, n string) (*Series, error) {
+			return scanSeries(d.QueryRowContext(ctx,
+				`UPDATE series SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+seriesColumns,
+				n, goodreadsID, hardcoverID, googleBooksID, entityID,
+			))
+		},
 	)
-	s, err := scanSeries(d.QueryRowContext(ctx,
-		`UPDATE series SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+seriesColumns,
-		name, goodreadsID, hardcoverID, googleBooksID, id,
-	))
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrSeriesNameExists
-		}
-		return nil, err
-	}
-	return s, nil
 }
 
 // FindOrCreateSeries looks up a series by name (case-insensitive) and returns
