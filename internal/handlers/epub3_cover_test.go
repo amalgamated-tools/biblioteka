@@ -21,10 +21,8 @@ import (
 // needs end-to-end cover import must call this helper.
 func requireExifToolExtractor(t *testing.T) *metadata.Extractor {
 	t.Helper()
-	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	// NewExtractor always returns nil error; skip check and use probe instead.
+	ext, _ := metadata.NewExtractor(t.Context())
 	// Probe availability: ExtractMetadata returns ErrExifToolUnavailable immediately
 	// (no file I/O) when the underlying exiftool process could not be started.
 	_, probeErr := ext.ExtractMetadata(t.Context(), "/dev/null")
@@ -102,7 +100,7 @@ func TestEPUB3CoverImport_EndToEnd(t *testing.T) {
 	}
 
 	// Verify the cover is served and accessible via HandleCoverImage.
-	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil).WithContext(t.Context())
 	w := httptest.NewRecorder()
 	koboH.HandleCoverImage(w, r)
 
