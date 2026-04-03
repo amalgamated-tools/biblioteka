@@ -1,10 +1,8 @@
 ---
-name: Code Simplifier
-description: Analyzes recently modified code and creates pull requests with simplifications that improve clarity, consistency, and maintainability while preserving functionality
 on:
   schedule: daily
-  skip-if-match: 'is:pr is:open in:title "[code-simplifier]"'
-
+  skip-if-match: is:pr is:open in:title "[code-simplifier]"
+permissions: read-all
 network:
   allowed:
   - defaults
@@ -13,31 +11,28 @@ network:
   - python
   - rust
   - java
-
-permissions: read-all
-
-tracker-id: code-simplifier
-
 imports:
-  - shared/formatting.md
-  - shared/reporting.md
-
+- shared/formatting.md
+- shared/reporting.md
 safe-outputs:
   create-pull-request:
-    title-prefix: "fix(code-simplifier): "
-    labels: [refactoring, code-quality, automation]
     expires: 1d
-
+    labels:
+    - refactoring
+    - code-quality
+    - automation
+    protected-files: fallback-to-issue
+    title-prefix: "fix(code-simplifier): "
+description: Analyzes recently modified code and creates pull requests with simplifications that improve clarity, consistency, and maintainability while preserving functionality
+name: Code Simplifier
+source: githubnext/agentics/workflows/code-simplifier.md@4ea8c81959909f40373e2a5c2b7fdb54ea19e0a5
+timeout-minutes: 30
 tools:
   github:
-    toolsets: [default]
-
-timeout-minutes: 30
-strict: true
-source: githubnext/agentics/workflows/code-simplifier.md@0718141d65ec967e48141f6f1850ad7b1f682bb0
-engine: copilot
+    toolsets:
+    - default
+tracker-id: code-simplifier
 ---
-
 <!-- This prompt will be imported in the agentic workflow .github/workflows/code-simplifier.md at runtime. -->
 <!-- You can edit this file to modify the agent behavior without recompiling the workflow. -->
 

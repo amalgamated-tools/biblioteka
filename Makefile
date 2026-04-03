@@ -150,3 +150,9 @@ docs-serve:
 db-dump: clean
 	go run cmd/cli/main.go db-migrate
 	dbmate -u "sqlite:db/biblioteka.db" -d "db/migrations/sqlite" dump
+
+aw-update:
+	brew upgrade gh
+	gh extension upgrade github/gh-aw
+	gh aw upgrade
+	gh aw compile

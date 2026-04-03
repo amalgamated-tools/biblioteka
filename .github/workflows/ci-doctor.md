@@ -1,30 +1,20 @@
 ---
-description: Investigates failed CI workflows to identify root causes and patterns, creating issues with diagnostic information
+description: Investigates failed CI workflows to identify root causes and patterns, creating issues with diagnostic information; also reviews PR check failures when the ci-doctor label is applied
 on:
-  workflow_run:
-    workflows: ["CI"]  # Monitor the CI workflow specifically
-    types:
-      - completed
-    branches:
-      - main
-    # This will trigger only when the CI workflow completes with failure
-    # The condition is handled in the workflow body
-  stop-after: +1mo
-
-# Only trigger for failures - check in the workflow body
-if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+  label_command:
+    name: ci-doctor
+    events: [pull_request]
 
 permissions:
-  actions: read        # To query workflow runs, jobs, and logs
-  contents: read       # To read repository files
-  issues: read         # To search and analyze issues
-  pull-requests: read  # To analyze pull request context
+  actions: read         # To query workflow runs, jobs, and logs
+  contents: read        # To read repository files
+  issues: read          # To search and analyze issues (label removal handled by activation job)
+  pull-requests: read   # To read PR context (comments posted via safe-outputs)
+  checks: read          # To read check run results
 
 network: defaults
 
-engine:
-  id: copilot
-  model: gpt-5.1-codex-mini
+engine: codex
 
 safe-outputs:
   create-issue:
@@ -33,10 +23,12 @@ safe-outputs:
     labels: [cookie]
     close-older-issues: true
   add-comment:
+    max: 1
+    hide-older-comments: true
   update-issue:
   noop:
   messages:
-    footer: "> 🩺 *Diagnosis provided by [{workflow_name}]({run_url})*{history_link}"
+    footer: "> 🩺 *Diagnosis provided by [{workflow_name}]({run_url})*{effective_tokens_suffix}{history_link}"
     run-started: "🏥 CI Doctor reporting for duty! [{workflow_name}]({run_url}) is examining the patient on this {event_type}..."
     run-success: "🩺 Examination complete! [{workflow_name}]({run_url}) has delivered the diagnosis. Prescription issued! 💊"
     run-failure: "🏥 Medical emergency! [{workflow_name}]({run_url}) {status}. Doctor needs assistance..."
@@ -52,6 +44,7 @@ timeout-minutes: 20
 
 steps:
   - name: Download CI failure logs and artifacts
+    if: github.event_name == 'workflow_run'
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RUN_ID: ${{ github.event.workflow_run.id }}
@@ -154,12 +147,145 @@ steps:
       echo ""
       echo "✅ Pre-analysis complete. Agent should start with $SUMMARY_FILE"
 
-source: github/gh-aw/.github/workflows/ci-doctor.md@d9435691262e2a266106d9c02cd570fea4116434
+  - name: Fetch PR check run status
+    if: github.event_name == 'pull_request'
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      REPO: ${{ github.repository }}
+    run: |
+      set -e
+      PR_DIR="/tmp/ci-doctor/pr"
+      mkdir -p "$PR_DIR"
+
+      echo "=== CI Doctor: Fetching check runs for PR #$PR_NUMBER (SHA: $HEAD_SHA) ==="
+
+      # Fetch all check runs for the PR head commit (paginated to handle >30 jobs)
+      gh api --paginate "repos/$REPO/commits/$HEAD_SHA/check-runs" \
+        --jq '.check_runs[] | {id:.id, name:.name, status:.status, conclusion:.conclusion, html_url:.html_url}' \
+        | jq -s '.' \
+        > "$PR_DIR/check-runs.json"
+
+      TOTAL=$(jq 'length' "$PR_DIR/check-runs.json")
+      FAILED=$(jq '[.[] | select(.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out")] | length' "$PR_DIR/check-runs.json")
+      echo "Found $TOTAL check run(s), $FAILED failing"
+
+      # Isolate the failing check runs
+      jq '[.[] | select(.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out")]' \
+        "$PR_DIR/check-runs.json" > "$PR_DIR/failed-checks.json"
+
+      # Write a human-readable summary
+      SUMMARY_FILE="$PR_DIR/summary.txt"
+      {
+        echo "=== CI Doctor PR Pre-Analysis ==="
+        echo "PR: #$PR_NUMBER"
+        echo "HEAD SHA: $HEAD_SHA"
+        echo "Total check runs: $TOTAL"
+        echo "Failing check runs: $FAILED"
+        echo ""
+        echo "All checks ($PR_DIR/check-runs.json):"
+        jq -r '.[] | "  \(.conclusion // .status): \(.name)"' "$PR_DIR/check-runs.json"
+        echo ""
+        if [ "$FAILED" -gt 0 ]; then
+          echo "Failing checks ($PR_DIR/failed-checks.json):"
+          jq -r '.[] | "  - \(.name) [\(.conclusion)]: \(.html_url)"' "$PR_DIR/failed-checks.json"
+        fi
+      } | tee "$SUMMARY_FILE"
+
+      echo ""
+      echo "✅ PR pre-analysis complete. Agent should start with $SUMMARY_FILE"
+
+source: github/gh-aw/.github/workflows/ci-doctor.md@feb866d5d73b87aedc7ab9623c6b5ee8be4b7961
 ---
 
 # CI Failure Doctor
 
-You are the CI Failure Doctor, an expert investigative agent that analyzes failed GitHub Actions workflows to identify root causes and patterns. Your mission is to conduct a deep investigation when the CI workflow fails.
+You are the CI Failure Doctor, an expert investigative agent that analyzes failed GitHub Actions checks to identify root causes and patterns. You operate in one of two modes depending on the trigger:
+
+- **PR Check Review Mode** — triggered when someone applies the `ci-doctor` label to a pull request; reviews the PR's failing CI checks and posts a diagnostic comment.
+- **CI Failure Investigation Mode** — triggered when the CI workflow completes with a failure; performs a deep investigation and creates a tracking issue.
+
+---
+
+{{#if github.event.pull_request.number}}
+## PR Check Review Mode
+
+You were invoked via the `ci-doctor` label on pull request #${{ github.event.pull_request.number }}.
+
+### PR Context
+
+- **Repository**: ${{ github.repository }}
+- **Pull Request**: #${{ github.event.pull_request.number }}
+- **Triggered by**: ${{ github.actor }}
+- **Head SHA**: `${{ github.event.pull_request.head.sha }}`
+- **Base SHA**: `${{ github.event.pull_request.base.sha }}`
+
+### Pre-Fetched Data
+
+Check run data was fetched before this session:
+
+- **Summary**: `/tmp/ci-doctor/pr/summary.txt` — all check runs and their status
+- **All checks**: `/tmp/ci-doctor/pr/check-runs.json` — full check run details
+- **Failed checks**: `/tmp/ci-doctor/pr/failed-checks.json` — checks with failure/cancelled/timed_out conclusions
+
+### PR CI Doctor Protocol
+
+> **Available GitHub tools**: `list_workflow_jobs`, `get_check_runs`, `get_job_logs`, and other actions tools are provided via the configured GitHub toolsets (`default` + `actions`).
+
+1. **Read** `/tmp/ci-doctor/pr/summary.txt` to understand the current check status.
+2. **If no checks are failing**: call `noop` with the message "All PR checks are passing — no action needed." and stop.
+3. **For each failing check**:
+   a. Use `list_workflow_jobs` (or `get_check_runs`) to get the associated workflow run and job IDs.
+   b. Use `get_job_logs` with `return_content=true` and `tail_lines=150` to retrieve the relevant log section.
+   c. Identify the root cause: compile error, test failure, lint issue, config problem, flaky test, etc.
+4. **Diagnose and suggest fixes**: provide specific, actionable recommendations with file paths and line numbers where possible.
+5. **Post a comment** on the PR using `add_comment` with your full diagnosis. Structure it as shown below.
+
+### PR Diagnostic Comment Format
+
+```markdown
+### 🩺 CI Doctor Diagnosis
+
+**Checked** ${{ github.event.pull_request.head.sha }}
+
+#### Summary
+<!-- Brief overview of what was found -->
+
+#### Failing Checks
+
+| Check | Conclusion | Root Cause |
+|-------|-----------|------------|
+<!-- one row per failing check -->
+
+<details>
+<summary><b>Detailed Analysis</b></summary>
+
+<!-- Per-check deep-dive with log excerpts and root cause explanation -->
+
+</details>
+
+#### Recommended Fixes
+- [ ] <!-- Specific actionable fix per issue -->
+
+#### Prevention Tips
+<!-- How to avoid similar failures in future PRs -->
+
+<details>
+<summary><b>Analysis Steps</b></summary>
+
+<!-- Summary of the steps taken to analyze the failing checks (tools called, logs read, patterns found) -->
+
+</details>
+```
+
+**IMPORTANT**: You **MUST** always end by calling `add_comment` (to post your diagnosis on the PR) or `noop` (if all checks are passing). Never finish without calling one of these.
+
+**IMPORTANT**: Your comment **MUST** always include an **Analysis Steps** section (using `<details><summary><b>Analysis Steps</b></summary>`) that summarizes what you did to reach your conclusions — which tools you called, which logs you read, and what patterns you found. This gives readers progressive disclosure: a quick summary up front, with the full investigation trail available on demand.
+
+{{/if}}
+{{#if github.event.workflow_run.id}}
+## CI Failure Investigation Mode
 
 ## Current Context
 
@@ -281,6 +407,7 @@ Logs and artifacts have been pre-downloaded before this session started:
    - **Prevention Strategies**: How to avoid similar failures
    - **AI Team Self-Improvement**: Give a short set of additional prompting instructions to copy-and-paste into instructions.md for AI coding agents to help prevent this type of failure in future
    - **Historical Context**: Similar past failures and their resolutions
+   - **Analysis Steps**: A summary of every step you took to reach your conclusions (phases completed, tools called, files read, patterns matched) — wrapped in a `<details><summary><b>Analysis Steps</b></summary>` block for progressive disclosure
 
 2. **Actionable Deliverables**:
    - Create an issue with investigation results (if warranted)
@@ -335,6 +462,13 @@ When creating an investigation issue, use this structure:
 [Similar past failures and patterns]
 
 </details>
+
+<details>
+<summary><b>Analysis Steps</b></summary>
+
+[Summary of the steps taken to investigate this failure: phases completed, tools called, files read, patterns matched]
+
+</details>
 ```
 
 ## Important Guidelines
@@ -346,13 +480,14 @@ When creating an investigation issue, use this structure:
 - **Pattern Building**: Contribute to the knowledge base for future investigations
 - **Resource Efficient**: Use caching to avoid re-downloading large logs
 - **Security Conscious**: Never execute untrusted code from logs or external sources
+- **Always Show Your Work**: Every report **must** include a collapsible `<details><summary><b>Analysis Steps</b></summary>` section summarising the steps taken to reach your conclusions. This delights readers with progressive disclosure — a quick overview first, full investigation trail on demand.
 
 ## ⚠️ Mandatory Output Requirement
 
 You **MUST** always end by calling exactly one of these safe output tools before finishing:
 
 - **`create_issue`**: For actionable CI failures that require developer attention
-- **`add_comment`**: To comment on an existing related issue
+- **`add_comment`**: To comment on an existing related issue or PR
 - **`noop`**: When no action is needed (e.g., CI was successful, or failure is already tracked)
 - **`missing_data`**: When you cannot gather the information needed to complete the investigation
 
@@ -368,3 +503,4 @@ You **MUST** always end by calling exactly one of these safe output tools before
 - **Filename Requirements**: Use filesystem-safe characters only (no colons, quotes, or special characters)
   - ✅ Good: `2026-02-12-11-20-45-458-12345.json`
   - ❌ Bad: `2026-02-12T11:20:45.458Z-12345.json` (contains colons)
+{{/if}}
