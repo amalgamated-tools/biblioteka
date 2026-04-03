@@ -14,6 +14,56 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 )
 
+func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	if err != nil {
+		t.Fatalf("new extractor: %v", err)
+	}
+	defer ext.Close(t.Context())
+
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "epub3-with-cover.epub")
+	testPNG := testutils.TinyPNG()
+
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "EPUB3 Cover Book", "Some Author", "urn:isbn:9780000000099", testutils.EPUBOptions{
+		Version:        "3.0",
+		EPUB3Cover:     true,
+		CoverImageData: testPNG,
+		CoverImageHref: "images/cover.png",
+		CoverMediaType: "image/png",
+	})
+
+	epubInfo, err := os.Stat(epubPath)
+	if err != nil {
+		t.Fatalf("stat epub: %v", err)
+	}
+
+	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+		Path:     epubPath,
+		FileName: "epub3-with-cover.epub",
+		FileType: "epub",
+		FileSize: epubInfo.Size(),
+	})
+	if err != nil {
+		t.Fatalf("ProcessBookFile() error: %v", err)
+	}
+
+	books, err := database.ListBooks(t.Context())
+	if err != nil {
+		t.Fatalf("list books: %v", err)
+	}
+	if len(books) != 1 {
+		t.Fatalf("expected 1 book, got %d", len(books))
+	}
+	if books[0].CoverImageURL == nil {
+		t.Fatal("expected EPUB3 book to have a cover image URL after import, got nil")
+	}
+	if !strings.HasPrefix(*books[0].CoverImageURL, "data:image/png;base64,") {
+		t.Errorf("expected cover image to be a PNG data URL, got %q", *books[0].CoverImageURL)
+	}
+}
+
 func TestProcessBookFile_NilDatabase(t *testing.T) {
 	ext, err := metadata.NewExtractor(t.Context())
 	if err != nil {
