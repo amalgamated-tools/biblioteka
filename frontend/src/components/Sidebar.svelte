@@ -158,9 +158,8 @@
             </a>
             <a
               href={`#libraries/edit/${lib.id}`}
-              class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 text-ink-500 hover:text-accent-400 transition-all p-0.5 flex-shrink-0"
-              title="Library settings"
-              aria-label="Library settings"
+              class="opacity-30 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 focus-visible:ring-2 focus-visible:ring-accent-400 rounded text-ink-500 hover:text-accent-400 transition-all p-0.5 flex-shrink-0"
+              aria-label={`Library settings for ${lib.name}`}
               onclick={onClose}
             >
               <Settings2 class="w-3.5 h-3.5" />
