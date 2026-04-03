@@ -102,95 +102,76 @@ func parseIdentifierLine(ctx context.Context, key, value string, cur *Identifier
 	}
 }
 
+// setIDOnce assigns value to *field if it is empty or already equal to value.
+// If *field already holds a different value, it logs a debug message and stores
+// the duplicate in out.Extras under extrasKey.
+func setIDOnce(
+	ctx context.Context,
+	field *string,
+	value string,
+	logMsg string,
+	logAttr slog.Attr,
+	extrasKey string,
+	out *ExifToolOutput,
+) {
+	if *field == "" || *field == value {
+		*field = value
+	} else {
+		slog.DebugContext(ctx, logMsg,
+			slog.String(otelkeys.Existing, *field),
+			logAttr,
+		)
+		out.Extras[extrasKey] = value
+	}
+}
+
 func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 	if cur != nil {
 		switch {
 		case strings.EqualFold(cur.Scheme, "CALIBRE"), strings.HasPrefix(cur.Value, "urn:calibre:"):
 			cur.Value = strings.TrimPrefix(cur.Value, "urn:calibre:")
-			if out.CalibreID == "" || out.CalibreID == cur.Value {
-				out.CalibreID = cur.Value
-			} else {
-				// If we already have a Calibre ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Calibre ID values.
-				slog.DebugContext(ctx,
-					"multiple Calibre ID values found; keeping first",
-					slog.String(otelkeys.Existing, out.CalibreID),
-					slog.String(otelkeys.CalibreID, cur.Value))
-				out.Extras["Duplicate Calibre ID"] = cur.Value
-			}
+			setIDOnce(ctx, &out.CalibreID, cur.Value,
+				"multiple Calibre ID values found; keeping first",
+				slog.String(otelkeys.CalibreID, cur.Value),
+				"Duplicate Calibre ID", out)
 		case strings.EqualFold(cur.Scheme, "ISBN"), strings.HasPrefix(cur.Value, "urn:isbn"):
 			// Normalize ISBNs to a digit-only string (10 or 13 characters), without a "urn:isbn:" prefix.
 			isbn := NormalizeISBN(cur.Value)
 			if len(isbn) == 10 {
-				if out.ISBN10 == "" || out.ISBN10 == isbn {
-					out.ISBN10 = isbn
-				} else {
-					// If we already have an ISBN-10, we could log a warning or decide which one to keep. For now, we'll just ignore additional ISBN-10 values.
-					slog.WarnContext(ctx,
-						"multiple isbn-10 values found; keeping first",
-						slog.String(otelkeys.Existing, out.ISBN10),
-						slog.String(otelkeys.ISBN, isbn))
-					out.Extras["Duplicate ISBN-10"] = isbn
-				}
+				setIDOnce(ctx, &out.ISBN10, isbn,
+					"multiple isbn-10 values found; keeping first",
+					slog.String(otelkeys.ISBN, isbn),
+					"Duplicate ISBN-10", out)
 			} else if len(isbn) == 13 {
-				if out.ISBN13 == "" || out.ISBN13 == isbn {
-					out.ISBN13 = isbn
-				} else {
-					// If we already have an ISBN-13, we could log a warning or decide which one to keep. For now, we'll just ignore additional ISBN-13 values.
-					slog.WarnContext(ctx,
-						"multiple isbn-13 values found; keeping first",
-						slog.String(otelkeys.Existing, out.ISBN13),
-						slog.String(otelkeys.ISBN, isbn))
-					out.Extras["Duplicate ISBN-13"] = isbn
-				}
+				setIDOnce(ctx, &out.ISBN13, isbn,
+					"multiple isbn-13 values found; keeping first",
+					slog.String(otelkeys.ISBN, isbn),
+					"Duplicate ISBN-13", out)
 			}
 		case strings.EqualFold(cur.Scheme, "GOODREADS"), strings.HasPrefix(cur.Value, "urn:goodreads"):
 			cur.Value = strings.TrimPrefix(cur.Value, "urn:goodreads:")
-			if out.GoodreadsID == "" || out.GoodreadsID == cur.Value {
-				out.GoodreadsID = cur.Value
-			} else {
-				// If we already have a Goodreads ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Goodreads ID values.
-				slog.DebugContext(ctx,
-					"multiple Goodreads ID values found; keeping first",
-					slog.String(otelkeys.Existing, out.GoodreadsID),
-					slog.String(otelkeys.GoodreadsID, cur.Value))
-				out.Extras["Duplicate Goodreads ID"] = cur.Value
-			}
+			setIDOnce(ctx, &out.GoodreadsID, cur.Value,
+				"multiple Goodreads ID values found; keeping first",
+				slog.String(otelkeys.GoodreadsID, cur.Value),
+				"Duplicate Goodreads ID", out)
 		case strings.EqualFold(cur.Scheme, "AMAZON"), strings.EqualFold(cur.Scheme, "MOBI-ASIN"), strings.HasPrefix(cur.Value, "urn:amazon"):
 			cur.Value = strings.TrimPrefix(cur.Value, "urn:amazon:")
-			if out.ASIN == "" || out.ASIN == cur.Value {
-				out.ASIN = cur.Value
-			} else {
-				// If we already have an ASIN, we could log a warning or decide which one to keep. For now, we'll just ignore additional ASIN values.
-				slog.DebugContext(ctx,
-					"multiple ASIN values found; keeping first",
-					slog.String(otelkeys.Existing, out.ASIN),
-					slog.String(otelkeys.ASIN, cur.Value))
-				out.Extras["Duplicate ASIN"] = cur.Value
-			}
+			setIDOnce(ctx, &out.ASIN, cur.Value,
+				"multiple ASIN values found; keeping first",
+				slog.String(otelkeys.ASIN, cur.Value),
+				"Duplicate ASIN", out)
 		case strings.EqualFold(cur.Scheme, "GOOGLE"), strings.HasPrefix(cur.Value, "urn:google"):
 			cur.Value = strings.TrimPrefix(cur.Value, "urn:google:")
-			if out.GoogleID == "" || out.GoogleID == cur.Value {
-				out.GoogleID = cur.Value
-			} else {
-				// If we already have a Google ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Google ID values.
-				slog.DebugContext(ctx,
-					"multiple Google ID values found; keeping first",
-					slog.String(otelkeys.Existing, out.GoogleID),
-					slog.String(otelkeys.GoogleID, cur.Value))
-				out.Extras["Duplicate Google ID"] = cur.Value
-			}
+			setIDOnce(ctx, &out.GoogleID, cur.Value,
+				"multiple Google ID values found; keeping first",
+				slog.String(otelkeys.GoogleID, cur.Value),
+				"Duplicate Google ID", out)
 		case strings.HasPrefix(cur.Value, "urn:hardcoverbook:"):
 			cur.Value = strings.TrimPrefix(cur.Value, "urn:hardcoverbook:")
-			if out.HardcoverID == "" || out.HardcoverID == cur.Value {
-				out.HardcoverID = cur.Value
-			} else {
-				// If we already have a Hardcover ID, we could log a warning or decide which one to keep. For now, we'll just ignore additional Hardcover ID values.
-				slog.DebugContext(ctx,
-					"multiple Hardcover ID values found; keeping first",
-					slog.String(otelkeys.Existing, out.HardcoverID),
-					slog.String(otelkeys.HardcoverID, cur.Value))
-				out.Extras["Duplicate Hardcover ID"] = cur.Value
-			}
+			setIDOnce(ctx, &out.HardcoverID, cur.Value,
+				"multiple Hardcover ID values found; keeping first",
+				slog.String(otelkeys.HardcoverID, cur.Value),
+				"Duplicate Hardcover ID", out)
 		default:
 			key := cur.Scheme
 			if key == "" {
