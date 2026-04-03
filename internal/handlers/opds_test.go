@@ -1483,15 +1483,12 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	for i := range 55 {
+	const totalAuthors = opdsPageSize + 5
+	for i := range totalAuthors {
 		if _, err := h.DB.CreateAuthor(ctx, fmt.Sprintf("Author %03d", i), nil, nil, nil, nil); err != nil {
 			t.Fatalf("create author %d: %v", i, err)
 		}
 	}
-
-	// Hard-coded entry counts are intentional: they document expected behavior at
-	// the current page size (50) and will fail loudly if opdsPageSize changes,
-	// prompting deliberate review of the test expectations.
 
 	// Page 1: should have next link but no previous.
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors?page=1", nil)
@@ -1502,8 +1499,8 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 		t.Fatalf("page 1: status = %d, want %d", w.Code, http.StatusOK)
 	}
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 50 {
-		t.Errorf("page 1: entries = %d, want 50", len(feed.Entries))
+	if len(feed.Entries) != opdsPageSize {
+		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdsPageSize)
 	}
 	if findLink(feed.Links, relNext) == nil {
 		t.Error("page 1: missing next link")
@@ -1521,8 +1518,8 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 		t.Fatalf("page 2: status = %d, want %d", w2.Code, http.StatusOK)
 	}
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
-	if len(feed2.Entries) != 5 {
-		t.Errorf("page 2: entries = %d, want 5", len(feed2.Entries))
+	if len(feed2.Entries) != totalAuthors-opdsPageSize {
+		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalAuthors-opdsPageSize)
 	}
 	if findLink(feed2.Links, relPrevious) == nil {
 		t.Error("page 2: missing previous link")
@@ -1536,15 +1533,12 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := context.Background()
 
-	for i := range 55 {
+	const totalSeries = opdsPageSize + 5
+	for i := range totalSeries {
 		if _, err := h.DB.CreateSeries(ctx, fmt.Sprintf("Series %03d", i), nil, nil, nil); err != nil {
 			t.Fatalf("create series %d: %v", i, err)
 		}
 	}
-
-	// Hard-coded entry counts are intentional: they document expected behavior at
-	// the current page size (50) and will fail loudly if opdsPageSize changes,
-	// prompting deliberate review of the test expectations.
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series?page=1", nil)
 	w := httptest.NewRecorder()
@@ -1554,8 +1548,8 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 		t.Fatalf("page 1: status = %d, want %d", w.Code, http.StatusOK)
 	}
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 50 {
-		t.Errorf("page 1: entries = %d, want 50", len(feed.Entries))
+	if len(feed.Entries) != opdsPageSize {
+		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdsPageSize)
 	}
 	if findLink(feed.Links, relNext) == nil {
 		t.Error("page 1: missing next link")
@@ -1573,8 +1567,8 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 		t.Fatalf("page 2: status = %d, want %d", w2.Code, http.StatusOK)
 	}
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
-	if len(feed2.Entries) != 5 {
-		t.Errorf("page 2: entries = %d, want 5", len(feed2.Entries))
+	if len(feed2.Entries) != totalSeries-opdsPageSize {
+		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalSeries-opdsPageSize)
 	}
 	if findLink(feed2.Links, relPrevious) == nil {
 		t.Error("page 2: missing previous link")
