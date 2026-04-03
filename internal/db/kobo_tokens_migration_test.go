@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"testing"
@@ -89,7 +88,7 @@ func TestBackfillKoboTokenHashes_BackfillsNullHash(t *testing.T) {
 	// simulate the pre-migration state that backfill is designed to handle.
 	rawToken := "raw-unhashed-token-value"
 	var tokenID string
-	err := d.QueryRowContext(context.Background(),
+	err := d.QueryRowContext(t.Context(),
 		`INSERT INTO kobo_tokens (user_id, name, token, token_hash) VALUES ($1, $2, $3, '') RETURNING id`,
 		user.ID, "Legacy Token", rawToken,
 	).Scan(&tokenID)
@@ -118,7 +117,7 @@ func TestBackfillKoboTokenHashes_SkipsEmptyToken(t *testing.T) {
 
 	// Insert a row with both token and token_hash empty; backfill should skip it.
 	var tokenID string
-	err := d.QueryRowContext(context.Background(),
+	err := d.QueryRowContext(t.Context(),
 		`INSERT INTO kobo_tokens (user_id, name, token, token_hash) VALUES ($1, $2, '', '') RETURNING id`,
 		user.ID, "Empty Token",
 	).Scan(&tokenID)
@@ -132,7 +131,7 @@ func TestBackfillKoboTokenHashes_SkipsEmptyToken(t *testing.T) {
 
 	// The row should still have an empty token_hash since the token was empty.
 	var gotHash string
-	if err := d.QueryRowContext(context.Background(),
+	if err := d.QueryRowContext(t.Context(),
 		`SELECT token_hash FROM kobo_tokens WHERE id = $1`, tokenID,
 	).Scan(&gotHash); err != nil {
 		t.Fatalf("fetch token_hash: %v", err)

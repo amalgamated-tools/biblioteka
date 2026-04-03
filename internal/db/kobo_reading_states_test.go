@@ -1,6 +1,8 @@
 package db
 
 import (
+	"database/sql"
+	"errors"
 	"testing"
 	"time"
 )
@@ -113,8 +115,8 @@ func TestGetKoboReadingState_NotFound(t *testing.T) {
 	book := createTestBookForKobo(t, d, "Unread Book")
 
 	_, err := d.GetKoboReadingState(t.Context(), user.ID, book.ID)
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	if !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("err = %v, want sql.ErrNoRows", err)
 	}
 }
 
@@ -133,8 +135,8 @@ func TestGetKoboReadingState_UserIsolation(t *testing.T) {
 
 	// user2 should not see user1's state.
 	_, err = d.GetKoboReadingState(t.Context(), user2.ID, book.ID)
-	if err == nil {
-		t.Error("GetKoboReadingState should return error for user2 who has no state")
+	if !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("err = %v, want sql.ErrNoRows for user2 who has no state", err)
 	}
 }
 
