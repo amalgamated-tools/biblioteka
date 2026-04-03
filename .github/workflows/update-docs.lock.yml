@@ -766,6 +766,7 @@ jobs:
             /tmp/gh-aw/aw-*.patch
             /tmp/gh-aw/aw-*.bundle
           if-no-files-found: ignore
+          retention-days: 7
       - name: Upload firewall audit logs
         if: always()
         continue-on-error: true
@@ -776,6 +777,7 @@ jobs:
             /tmp/gh-aw/sandbox/firewall/logs/
             /tmp/gh-aw/sandbox/firewall/audit/
           if-no-files-found: ignore
+          retention-days: 7
 
   conclusion:
     needs:
@@ -1032,6 +1034,7 @@ jobs:
           name: detection
           path: /tmp/gh-aw/threat-detection/detection.log
           if-no-files-found: ignore
+          retention-days: 7
       - name: Parse and conclude threat detection
         id: detection_conclusion
         if: always()
@@ -1177,4 +1180,5 @@ jobs:
           name: safe-output-items
           path: /tmp/gh-aw/safe-output-items.jsonl
           if-no-files-found: ignore
+          retention-days: 7
 
