@@ -1,6 +1,6 @@
 # Metadata Extraction
 
-Biblioteka extracts metadata — title, author, ISBN, description, publisher, language, publication date, and embedded cover art when available — from book files using [ExifTool](https://exiftool.org/).
+Biblioteka extracts metadata — title, author, ISBN, ASIN, description, publisher, language, publication date, subjects, and embedded cover art when available — from book files using [ExifTool](https://exiftool.org/).
 
 | Supported formats | External dependency |
 |-------------------|---------------------|
@@ -25,6 +25,8 @@ The extractor is implemented in [`internal/metadata/extractor.go`](../internal/m
 | `Language` | From ExifTool `Language` tag |
 | `PublicationDate` | From ExifTool `PublicationDate` tag; normalized from ExifTool's `YYYY:MM:DD` format to `YYYY-MM-DD` |
 | `CoverImageURL` | Extracted cover art stored as a `data:` URL. For EPUB files, resolved from ExifTool's cover manifest tags and extracted directly from the ZIP archive. For MOBI and AZW3 files, extracted from the embedded binary cover record via the `sblinch/mobi` library. Cover images larger than 20 MB are skipped; a warning is logged and the field is left empty. PDF files do not produce a `CoverImageURL`. |
+| `ASIN` | Amazon ASIN extracted from the ExifTool `ASIN` tag (present in MOBI and AZW3 files purchased from Amazon). Extracted into `ExifToolOutput.ASIN` but **not automatically written to the database** during import — set the `asin` field via the [API](api-reference.md#put-apibooksid) after import if needed. |
+| `Subjects` | EPUB subject tags (`dc:subject`) extracted from the ExifTool `Subject` field. Stored as `ExifToolOutput.Subjects []string` (deduplicated, whitespace-trimmed). **Not persisted** — there is no corresponding database column. Use the Goodreads CLI to enrich book records instead. |
 
 ---
 
@@ -43,6 +45,8 @@ All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-o
 | `PublicationDate` | `PublicationDate` | `""` |
 | `MetaName`, `MetaContent`, `ManifestItemId`, `ManifestItemHref`, `ManifestItemMedia-type` | `CoverImageURL` (EPUB) | `""` when no embedded cover is found |
 | _(binary record in MOBI/AZW3 file)_ | `CoverImageURL` (MOBI, AZW3) | `""` when no embedded cover is found |
+| `ASIN` | `ASIN` (MOBI, AZW3) | `""` — extracted but not persisted during import |
+| `Subject` | `Subjects []string` (EPUB) | `[]` — comma-separated values are split, trimmed, and deduplicated; not persisted |
 
 When ExifTool is **not installed**, `NewExtractor()` still returns a valid `*Extractor` (with a warning logged), but calling `ExtractMetadata` on any file returns an error:
 
@@ -298,4 +302,4 @@ EPUB cover art is located via `finishEPUB` in [`internal/exif/finish.go`](../int
 | 4 | ID/href heuristic | A manifest item whose `id` or `href` contains the substring `"cover"` (case-insensitive) and is an image | EPUB 2 and 3 |
 | 5 | Single-image fallback | When the manifest contains exactly one image item and no other strategy matched, that image is used as the cover | EPUB 2 and 3 |
 
-> **Note on EPUB 2 vs. EPUB 3:** EPUB 2 files use the `<meta name="cover">` element (Strategy 2) to identify the cover; EPUB 3 files use the `properties="cover-image"` manifest attribute (Strategy 3). Strategy 2 takes precedence over Strategy 3, so if both are present (which is valid in a hybrid or poorly-authored file), the EPUB 2 pointer wins. In `internal/testutils/epub.go`, fixture generation is controlled by both `EPUBOptions.Version` and `EPUBOptions.EPUB3Cover`: use `Version: "2.0"` for EPUB 2 cover fixtures, and use `Version: "3.0"` together with `EPUB3Cover: true` to emit the EPUB 3 `properties="cover-image"` marker for Strategy 3 tests.
+> **Note on EPUB 2 vs. EPUB 3:** EPUB 2 files use the `<meta name="cover">` element (Strategy 2) to identify the cover; EPUB 3 files use the `properties="cover-image"` manifest attribute (Strategy 3). Strategy 2 takes precedence over Strategy 3, so if both are present (which is valid in a hybrid or poorly-authored file), the EPUB 2 pointer wins. In `internal/testutils/epub.go`, fixture generation is controlled by `EPUBOptions.Version` (defaults to `"3.0"`), `EPUBOptions.EPUB3Cover`, and `EPUBOptions.Subjects`: use `Version: "2.0"` for EPUB 2 cover fixtures; use `Version: "3.0"` together with `EPUB3Cover: true` to emit the EPUB 3 `properties="cover-image"` marker for Strategy 3 tests; pass `Subjects: []string{"Fiction", "Mystery"}` to embed `<dc:subject>` elements for subject-extraction tests.
