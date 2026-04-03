@@ -327,7 +327,7 @@ cp .env.sample .env
 # Edit .env with your local values (DATABASE_URL, REDIS_URL, JWT_SECRET, …)
 ```
 
-> **Sample books for CLI launch configs**: The "Run CLI" launch configs for individual file formats expect book files in a local `books/` directory (e.g. `books/theprince.azw3`). These files are **not** committed to the repository. Create the `books/` directory and add your own copies of the relevant files before using those launch configs. The **Run CLI (Goodreads)** and **Run Server** configs require no local book files.
+> **Sample books for CLI launch configs**: The "Run CLI" launch configs for individual file formats expect book files in a local `books/` directory (e.g. `books/theprince.azw3`). These files are **not** committed to the repository. Create the `books/` directory and add your own copies of the relevant files before using those launch configs. The **Run CLI (Folder)** config works with any files placed in `books/`.
 
 The repository also includes a `.vscode/settings.json` with workspace-wide editor settings for the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.Go):
 
