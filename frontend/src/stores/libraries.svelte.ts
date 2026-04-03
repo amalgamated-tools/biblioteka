@@ -3,6 +3,9 @@ import { SvelteSet } from "svelte/reactivity";
 import * as api from "../lib/api";
 
 // Auto-clear scanning state after this duration as a safety net.
+// 5 minutes is generous enough for large libraries while ensuring the UI
+// doesn't stay in a scanning state indefinitely if the backend scan
+// completes without the frontend noticing (e.g., tab backgrounded).
 const SCANNING_TIMEOUT_MS = 5 * 60 * 1000;
 
 class LibraryStore {

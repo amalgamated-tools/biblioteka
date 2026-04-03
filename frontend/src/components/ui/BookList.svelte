@@ -58,9 +58,14 @@
   let rangeStart = $derived(total === 0 ? 0 : offset + 1);
   let rangeEnd = $derived(Math.min(offset + effectivePageSize, total));
 
-  async function load(fetchFn: typeof fetchBooks, size: number, off: number) {
+  async function load(
+    fetchFn: typeof fetchBooks,
+    size: number,
+    off: number,
+    silent = false,
+  ) {
     const requestId = ++currentRequestId;
-    loading = true;
+    if (!silent) loading = true;
     error = null;
     try {
       const data = await fetchFn(size, off);
@@ -136,7 +141,7 @@
     let timerId: ReturnType<typeof setTimeout> | undefined;
 
     const poll = async () => {
-      await load(fetchBooks, effectivePageSize, offset);
+      await load(fetchBooks, effectivePageSize, offset, true);
       if (cancelled) return;
       timerId = setTimeout(() => {
         void poll();

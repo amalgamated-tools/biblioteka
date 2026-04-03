@@ -31,6 +31,10 @@
     </h1>
   </div>
 
+  <!-- onBooksFound is intentionally omitted here. Books.svelte shows the aggregate
+       view across all libraries, so it cannot know which library finished scanning.
+       Each LibraryView calls clearScanning(libraryId) for its own library; the
+       aggregate polling stops naturally once scanningIds empties. -->
   <BookList
     fetchBooks={api.listBooks}
     {initialOffset}
