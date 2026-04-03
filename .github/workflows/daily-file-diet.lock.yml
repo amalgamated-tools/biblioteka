@@ -252,7 +252,7 @@ jobs:
           path: |
             /tmp/gh-aw/aw_info.json
             /tmp/gh-aw/aw-prompts/prompt.txt
-          retention-days: 1
+          retention-days: 7
 
   agent:
     needs: activation

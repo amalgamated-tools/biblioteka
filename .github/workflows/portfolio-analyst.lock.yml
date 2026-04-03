@@ -267,7 +267,7 @@ jobs:
           path: |
             /tmp/gh-aw/aw_info.json
             /tmp/gh-aw/aw-prompts/prompt.txt
-          retention-days: 1
+          retention-days: 7
 
   agent:
     needs: activation
@@ -851,7 +851,7 @@ jobs:
         with:
           name: safe-outputs-assets
           path: /tmp/gh-aw/safeoutputs/assets/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Upload agent artifacts
         if: always()
