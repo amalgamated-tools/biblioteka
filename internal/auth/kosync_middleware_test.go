@@ -14,11 +14,11 @@ import (
 
 // mockKOSyncChecker implements KOSyncCredentialChecker for testing.
 type mockKOSyncChecker struct {
-	creds map[string]*KOSyncCredentialResult
+	creds map[string]*ProtocolCredentialResult
 	err   error
 }
 
-func (m *mockKOSyncChecker) GetKOSyncCredential(_ context.Context, username string) (*KOSyncCredentialResult, error) {
+func (m *mockKOSyncChecker) GetKOSyncCredential(_ context.Context, username string) (*ProtocolCredentialResult, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -39,14 +39,14 @@ func newKOSyncCheckerWithUser(t *testing.T, username, authKey, userID string) *m
 		t.Fatalf("bcrypt hash: %v", err)
 	}
 	return &mockKOSyncChecker{
-		creds: map[string]*KOSyncCredentialResult{
+		creds: map[string]*ProtocolCredentialResult{
 			username: {UserID: userID, PasswordHash: string(hash)},
 		},
 	}
 }
 
 func TestKOSyncHeaderAuth_MissingHeaders(t *testing.T) {
-	checker := &mockKOSyncChecker{creds: map[string]*KOSyncCredentialResult{}}
+	checker := &mockKOSyncChecker{creds: map[string]*ProtocolCredentialResult{}}
 	mw := KOSyncHeaderAuthMiddleware(checker)
 
 	called := false
@@ -70,7 +70,7 @@ func TestKOSyncHeaderAuth_MissingHeaders(t *testing.T) {
 }
 
 func TestKOSyncHeaderAuth_MissingAuthKey(t *testing.T) {
-	checker := &mockKOSyncChecker{creds: map[string]*KOSyncCredentialResult{}}
+	checker := &mockKOSyncChecker{creds: map[string]*ProtocolCredentialResult{}}
 	mw := KOSyncHeaderAuthMiddleware(checker)
 
 	called := false
@@ -93,7 +93,7 @@ func TestKOSyncHeaderAuth_MissingAuthKey(t *testing.T) {
 }
 
 func TestKOSyncHeaderAuth_UnknownUsername(t *testing.T) {
-	checker := &mockKOSyncChecker{creds: map[string]*KOSyncCredentialResult{}}
+	checker := &mockKOSyncChecker{creds: map[string]*ProtocolCredentialResult{}}
 	mw := KOSyncHeaderAuthMiddleware(checker)
 
 	called := false
