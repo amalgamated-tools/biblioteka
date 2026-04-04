@@ -9,6 +9,7 @@
   import AlertBanner from "../ui/AlertBanner.svelte";
   import DeleteConfirmation from "../ui/DeleteConfirmation.svelte";
   import { createTokenManager } from "../../lib/tokenManager.svelte";
+  import { CopyTimeoutState } from "../../lib/copyTimeout.svelte";
 
   const mgr = createTokenManager<APIKey>({
     loadFn: listAPIKeys,
@@ -20,17 +21,9 @@
   let newKeyName = $state("");
   let newlyCreatedKey: string | null = $state(null);
   let createKeyLoading = $state(false);
-  let keyCopied = $state(false);
-  let keyCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
+  const newKeyCopyState = new CopyTimeoutState();
 
-  function clearCopyTimeout() {
-    if (keyCopiedTimeout !== null) {
-      clearTimeout(keyCopiedTimeout);
-      keyCopiedTimeout = null;
-    }
-  }
-
-  onDestroy(clearCopyTimeout);
+  onDestroy(() => newKeyCopyState.clear());
   onDestroy(mgr.clearCopyTimeout);
 
   onMount(() => {
@@ -45,8 +38,7 @@
     mgr.error = null;
     newlyCreatedKey = null;
     // Reset any previous "copied" state when starting to create a new key
-    clearCopyTimeout();
-    keyCopied = false;
+    newKeyCopyState.clear();
 
     try {
       const result = await createAPIKey(newKeyName.trim());
@@ -73,12 +65,7 @@
   async function handleCopyKey(text: string) {
     try {
       await copyToClipboard(text);
-      keyCopied = true;
-      clearCopyTimeout();
-      keyCopiedTimeout = window.setTimeout(() => {
-        keyCopied = false;
-        keyCopiedTimeout = null;
-      }, 2000);
+      newKeyCopyState.set("new-key");
     } catch {
       mgr.error =
         "Failed to copy to clipboard. Please select and copy the key manually.";
@@ -140,16 +127,16 @@
           <button
             onclick={async () => {
               await handleCopyKey(newlyCreatedKey!);
-              if (keyCopied) {
+              if (newKeyCopyState.copiedId !== null) {
                 newlyCreatedKey = null;
               }
             }}
-            class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {keyCopied
+            class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {newKeyCopyState.copiedId !== null
               ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
               : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
           >
             <Copy class="w-4 h-4" />
-            {keyCopied ? "Copied" : "Copy"}
+            {newKeyCopyState.copiedId !== null ? "Copied" : "Copy"}
           </button>
         </div>
       </div>
