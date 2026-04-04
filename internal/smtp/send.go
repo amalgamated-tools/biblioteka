@@ -12,12 +12,12 @@ import (
 // SessionTimeout is the maximum duration for a single SMTP session.
 const SessionTimeout = 30 * time.Second
 
-// NewClientWithContext creates an SMTP client over conn, setting a deadline
+// newClientWithContext creates an SMTP client over conn, setting a deadline
 // derived from ctx or SessionTimeout (whichever comes first). It returns the
 // client, a cleanup function that must be called to release the underlying
 // connection, and any error. On success the caller is responsible for calling
 // both cleanup() and client.Close().
-func NewClientWithContext(ctx context.Context, conn net.Conn, host string) (*netsmtp.Client, func(), error) {
+func newClientWithContext(ctx context.Context, conn net.Conn, host string) (*netsmtp.Client, func(), error) {
 	sessionDeadline := time.Now().Add(SessionTimeout)
 	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(sessionDeadline) {
 		sessionDeadline = ctxDeadline
@@ -71,7 +71,7 @@ func Send(ctx context.Context, addr string, a netsmtp.Auth, from, to string, msg
 		if err != nil {
 			return fmt.Errorf("TLS connection failed: %w", err)
 		}
-		client, cleanup, err := NewClientWithContext(ctx, conn, host)
+		client, cleanup, err := newClientWithContext(ctx, conn, host)
 		if err != nil {
 			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
@@ -83,7 +83,7 @@ func Send(ctx context.Context, addr string, a netsmtp.Auth, from, to string, msg
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
-		client, cleanup, err := NewClientWithContext(ctx, conn, host)
+		client, cleanup, err := newClientWithContext(ctx, conn, host)
 		if err != nil {
 			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
@@ -98,7 +98,7 @@ func Send(ctx context.Context, addr string, a netsmtp.Auth, from, to string, msg
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
-		client, cleanup, err := NewClientWithContext(ctx, conn, host)
+		client, cleanup, err := newClientWithContext(ctx, conn, host)
 		if err != nil {
 			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
