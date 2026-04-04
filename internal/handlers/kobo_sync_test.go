@@ -7,11 +7,12 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
-	"time"
+
+	"github.com/amalgamated-tools/biblioteka/internal/kobo"
 )
 
 // TestHandleSync_PageSizeLimit verifies that HandleSync returns at most
-// koboSyncPageSize books per request.
+// kobo.SyncPageSize books per request.
 func TestHandleSync_PageSizeLimit(t *testing.T) {
 	t.Parallel()
 
@@ -21,7 +22,7 @@ func TestHandleSync_PageSizeLimit(t *testing.T) {
 
 	// Create more books than the page size + some files.
 	dir := t.TempDir()
-	for i := range koboSyncPageSize + 5 {
+	for i := range kobo.SyncPageSize + 5 {
 		book, err := h.DB.CreateBook(
 			context.Background(),
 			"Sync Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
@@ -51,8 +52,8 @@ func TestHandleSync_PageSizeLimit(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(results) > koboSyncPageSize {
-		t.Errorf("expected at most %d sync results, got %d", koboSyncPageSize, len(results))
+	if len(results) > kobo.SyncPageSize {
+		t.Errorf("expected at most %d sync results, got %d", kobo.SyncPageSize, len(results))
 	}
 }
 
@@ -99,27 +100,5 @@ func TestHandleSync_NonGETMethodReturnsEmpty(t *testing.T) {
 	var results []any
 	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
 		t.Fatalf("decode response: %v", err)
-	}
-}
-
-// TestEncodeDecodeKoboSyncToken_RoundTrip verifies that encoding and decoding
-// a sync token preserves the BooksLastModified time.
-func TestEncodeDecodeKoboSyncToken_RoundTrip(t *testing.T) {
-	t.Parallel()
-
-	now := time.Now().UTC().Truncate(time.Second)
-	original := koboSyncToken{
-		BooksLastModified: now,
-		BooksLastID:       "some-book-id",
-	}
-
-	encoded := encodeKoboSyncToken(original)
-	decoded := parseKoboSyncToken(encoded)
-
-	if !decoded.BooksLastModified.Equal(original.BooksLastModified) {
-		t.Errorf("BooksLastModified: got %v, want %v", decoded.BooksLastModified, original.BooksLastModified)
-	}
-	if decoded.BooksLastID != original.BooksLastID {
-		t.Errorf("BooksLastID: got %q, want %q", decoded.BooksLastID, original.BooksLastID)
 	}
 }
