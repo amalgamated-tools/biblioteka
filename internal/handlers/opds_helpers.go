@@ -17,7 +17,7 @@ import (
 func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentType, id, title string) {
 	feed := &opds.Feed{
 		XMLNS:     opds.XMLNSAtom,
-		XMLNSOPDS: opds.XMLNSOPDs,
+		XMLNSOPDS: opds.XMLNSOPDS,
 		ID:        id,
 		Title:     title,
 		Updated:   time.Now().UTC().Format(time.RFC3339),

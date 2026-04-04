@@ -9,7 +9,7 @@ import "encoding/xml"
 // Atom/OPDS XML namespace constants.
 const (
 	XMLNSAtom       = "http://www.w3.org/2005/Atom"
-	XMLNSOPDs       = "http://opds-spec.org/2010/catalog"
+	XMLNSOPDS       = "http://opds-spec.org/2010/catalog"
 	XMLNSOpenSearch = "http://a9.com/-/spec/opensearch/1.1/"
 )
 

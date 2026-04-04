@@ -110,7 +110,7 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 		return
 	}
 
-	mimeType := opdspkg.FileTypeMIME[strings.ToLower(bf.FileType)]
+	mimeType := opdspkg.MIMETypeForFileType(bf.FileType)
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
 	}
@@ -261,7 +261,7 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 		// Add download links from batch result.
 		if filesByBook != nil {
 			for _, f := range filesByBook[book.ID] {
-				mimeType := opdspkg.FileTypeMIME[strings.ToLower(f.FileType)]
+				mimeType := opdspkg.MIMETypeForFileType(f.FileType)
 				if mimeType == "" {
 					mimeType = "application/octet-stream"
 				}
