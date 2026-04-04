@@ -21,14 +21,6 @@ export async function setOidcConfig(
   return request<{ message: string }>("PUT", "/api/config/oidc", config);
 }
 
-export async function createOidcLinkNonce(): Promise<string> {
-  const data = await request<{ nonce: string }>(
-    "POST",
-    "/api/auth/oidc/link-nonce",
-  );
-  return data.nonce;
-}
-
 export async function getSmtpConfig(): Promise<SMTPConfig> {
   return request<SMTPConfig>("GET", "/api/config/smtp");
 }

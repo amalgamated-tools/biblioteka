@@ -25,8 +25,13 @@ export async function listLibraryBooks(
   limit = 50,
   offset = 0,
 ): Promise<PaginatedBooks> {
+  const query = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+
   return request<PaginatedBooks>(
     "GET",
-    `/api/libraries/${libraryId}/books?limit=${limit}&offset=${offset}`,
+    `/api/libraries/${libraryId}/books?${query.toString()}`,
   );
 }

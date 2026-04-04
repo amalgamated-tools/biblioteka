@@ -33,8 +33,3 @@ export async function createKoboToken(
 export async function deleteKoboToken(id: string): Promise<void> {
   await request<void>("DELETE", `/api/kobo/tokens/${id}`);
 }
-
-export async function getVersion(): Promise<string> {
-  const data = await request<{ version: string }>("GET", "/api/version");
-  return data.version;
-}

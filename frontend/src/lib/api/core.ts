@@ -25,6 +25,11 @@ export class ApiError extends Error {
   }
 }
 
+export async function getVersion(): Promise<string> {
+  const data = await request<{ version: string }>("GET", "/api/version");
+  return data.version;
+}
+
 export async function request<T>(
   method: string,
   path: string,
@@ -42,7 +47,7 @@ export async function request<T>(
   const res = await fetch(path, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
   if (res.status === 204) {
