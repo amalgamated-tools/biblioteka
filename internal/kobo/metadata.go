@@ -68,7 +68,7 @@ type SeriesInfo struct {
 type Metadata struct {
 	Categories              []string          `json:"Categories"`
 	CoverImageID            string            `json:"CoverImageId"`
-	CrossRevisionId         string            `json:"CrossRevisionId"`
+	CrossRevisionID         string            `json:"CrossRevisionId"`
 	CurrentDisplayPrice     DisplayPrice      `json:"CurrentDisplayPrice"`
 	CurrentLoveDisplayPrice DisplayPrice      `json:"CurrentLoveDisplayPrice"`
 	Description             *string           `json:"Description"`
