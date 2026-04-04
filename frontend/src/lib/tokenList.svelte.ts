@@ -73,5 +73,5 @@ export class TokenListState<T extends { id: string }> {
     } catch (err) {
       this.error = err instanceof Error ? err.message : this.ops.deleteError;
     }
-  }
+  };
 }
