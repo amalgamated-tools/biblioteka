@@ -266,7 +266,9 @@ describe("LibraryForm delete confirmation accessibility", () => {
     });
     await tick();
 
-    const trigger = container.querySelector('[data-delete-trigger="lib-delete"]');
+    const trigger = container.querySelector(
+      '[data-delete-trigger="lib-delete"]',
+    );
     expect(trigger).toBeInTheDocument();
     expect(trigger).toHaveTextContent("Delete Library");
   });
