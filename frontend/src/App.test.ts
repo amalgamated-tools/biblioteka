@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { tick } from "svelte";
-import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
+import { cleanup, render, screen } from "@testing-library/svelte";
+import userEvent from "@testing-library/user-event";
 
 vi.mock("./stores/auth.svelte", () => ({
   authStore: {
@@ -66,6 +67,7 @@ describe("App", () => {
   });
 
   it("provides a functional skip link that moves focus to the main content", async () => {
+    const user = userEvent.setup();
     const { container } = render(App);
 
     const skipLink = screen.getByRole("link", {
@@ -90,22 +92,32 @@ describe("App", () => {
     skipLink.focus();
     expect(document.activeElement).toBe(skipLink);
 
-    await fireEvent.click(skipLink);
+    await user.click(skipLink);
 
     expect(document.activeElement).toBe(main);
   });
 
-  it("sets inert on main when the mobile sidebar is open", async () => {
+  it("sets inert on main and header when the mobile sidebar is open", async () => {
+    const user = userEvent.setup();
     render(App);
     await tick();
 
-    const main = screen.getByRole("main") as HTMLElement & { inert: boolean };
+    const main = screen.getByRole("main") as HTMLElement;
+    const header = screen.getByRole("banner", {
+      name: "Mobile header",
+    }) as HTMLElement;
+
+    // Svelte 5 sets the DOM property (not the HTML attribute), so we assert
+    // on the property directly — jsdom does not reflect .inert back to an
+    // attribute, making toHaveAttribute("inert") unreliable here.
     expect(main.inert).toBe(false);
+    expect(header.inert).toBe(false);
 
     const openMenuButton = screen.getByRole("button", { name: "Open menu" });
-    await fireEvent.click(openMenuButton);
+    await user.click(openMenuButton);
     await tick();
 
     expect(main.inert).toBe(true);
+    expect(header.inert).toBe(true);
   });
 });
