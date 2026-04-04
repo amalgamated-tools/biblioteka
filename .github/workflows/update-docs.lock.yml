@@ -21,8 +21,8 @@
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
 # This workflow keeps docs synchronized with code changes.
-# Triggered on every push to main, it analyzes diffs to identify changed entities and
-# updates corresponding documentation. Maintains consistent style (precise, active voice,
+# Triggered when the Test CI workflow completes on main, it analyzes diffs to identify changed entities and,
+# for successful runs, updates corresponding documentation. Maintains consistent style (precise, active voice,
 # plain English), ensures single source of truth, and creates draft PRs with documentation
 # updates. Supports documentation-as-code philosophy.
 #
@@ -30,12 +30,14 @@
 
 name: "Update Docs"
 "on":
-  push:
+  workflow_run:
+    # zizmor: ignore[dangerous-triggers] - workflow_run trigger is secured with role and fork validation
     branches:
     - main
-    paths-ignore:
-    - docs/**
-    - "**/*.md"
+    types:
+    - completed
+    workflows:
+    - Test
   workflow_dispatch:
     inputs:
       aw_context:
@@ -55,7 +57,12 @@ run-name: "Update Docs"
 jobs:
   activation:
     needs: pre_activation
-    if: needs.pre_activation.outputs.activated == 'true'
+    # zizmor: ignore[dangerous-triggers] - workflow_run trigger is secured with role and fork validation
+    if: >
+      (needs.pre_activation.outputs.activated == 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')) &&
+      (github.event_name != 'workflow_run' || (github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.repository.id == github.repository_id &&
+      (!(github.event.workflow_run.repository.fork))))
     runs-on: ubuntu-slim
     permissions:
       contents: read
