@@ -25,8 +25,8 @@ The extractor is implemented in [`internal/metadata/extractor.go`](../internal/m
 | `Language` | From ExifTool `Language` tag |
 | `PublicationDate` | From ExifTool `PublicationDate` tag; normalized from ExifTool's `YYYY:MM:DD` format to `YYYY-MM-DD` |
 | `CoverImageURL` | Extracted cover art stored as a `data:` URL. For EPUB files, resolved from ExifTool's cover manifest tags and extracted directly from the ZIP archive. For MOBI and AZW3 files, extracted from the embedded binary cover record via the `sblinch/mobi` library. Cover images larger than 20 MB are skipped; a warning is logged and the field is left empty. PDF files do not produce a `CoverImageURL`. |
-| `ASIN` | Amazon ASIN extracted from the ExifTool `ASIN` tag (present in MOBI and AZW3 files purchased from Amazon). Extracted into `ExifToolOutput.ASIN` but **not automatically written to the database** during import — set the `asin` field via the [API](api-reference.md#put-apibooksid) after import if needed. |
-| `Subjects` | EPUB subject tags (`dc:subject`) extracted from the ExifTool `Subject` field. Stored as `ExifToolOutput.Subjects []string` (deduplicated, whitespace-trimmed). **Not persisted** — there is no corresponding database column. Use the Goodreads CLI to enrich book records instead. |
+| `ASIN` | Amazon ASIN extracted from the ExifTool `ASIN` tag (present in MOBI and AZW3 files) or from a `dc:identifier` element with scheme `AMAZON` or `MOBI-ASIN` (present in Kindle-converted EPUB files). Extracted into `ExifToolOutput.ASIN` but **not automatically written to the database** during import — set the `asin` field via the [API](api-reference.md#put-apibooksid) after import if needed. |
+| `Subjects` | EPUB subject tags (`dc:subject`) extracted from the ExifTool `Subject` field. Stored as `ExifToolOutput.Subjects []string`; when ExifTool returns multiple subjects in a single value, they are split on `", "` (comma + space), then whitespace-trimmed and deduplicated. **Not persisted** — there is no corresponding database column. Use the Goodreads CLI to enrich book records instead. |
 
 ---
 
@@ -46,7 +46,7 @@ All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-o
 | `MetaName`, `MetaContent`, `ManifestItemId`, `ManifestItemHref`, `ManifestItemMedia-type` | `CoverImageURL` (EPUB) | `""` when no embedded cover is found |
 | _(binary record in MOBI/AZW3 file)_ | `CoverImageURL` (MOBI, AZW3) | `""` when no embedded cover is found |
 | `ASIN` | `ASIN` (MOBI, AZW3) | `""` — extracted but not persisted during import |
-| `Subject` | `Subjects []string` (EPUB) | `[]` — comma-separated values are split, trimmed, and deduplicated; not persisted |
+| `Subject` | `Subjects` (EPUB) | `[]` — stored as `[]string`; values separated by `", "` (comma + space) are split, trimmed, and deduplicated; not persisted |
 
 When ExifTool is **not installed**, `NewExtractor()` still returns a valid `*Extractor` (with a warning logged), but calling `ExtractMetadata` on any file returns an error:
 
