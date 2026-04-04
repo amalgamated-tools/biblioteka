@@ -25,7 +25,7 @@ The extractor is implemented in [`internal/metadata/extractor.go`](../internal/m
 | `Language` | From ExifTool `Language` tag |
 | `PublicationDate` | From ExifTool `PublicationDate` tag; normalized from ExifTool's `YYYY:MM:DD` format to `YYYY-MM-DD` |
 | `CoverImageURL` | Extracted cover art stored as a `data:` URL. For EPUB files, resolved from ExifTool's cover manifest tags and extracted directly from the ZIP archive. For MOBI and AZW3 files, extracted from the embedded binary cover record via the `sblinch/mobi` library. Cover images larger than 20 MB are skipped; a warning is logged and the field is left empty. PDF files do not produce a `CoverImageURL`. |
-| `ASIN` | Amazon ASIN extracted from the ExifTool `ASIN` tag (present in MOBI and AZW3 files) or from a `dc:identifier` element with scheme `AMAZON` or `MOBI-ASIN`, or whose value begins with the `urn:amazon:` prefix (present in Kindle-converted EPUB files). Extracted into `ExifToolOutput.ASIN` but **not automatically written to the database** during import — set the `asin` field via the [API](api-reference.md) after import if needed. |
+| `ASIN` | Amazon ASIN extracted from the ExifTool `ASIN` tag (present in MOBI and AZW3 files) or from a `dc:identifier` element with scheme `AMAZON` or `MOBI-ASIN`, or whose value begins with the `urn:amazon` prefix (present in Kindle-converted EPUB files). Extracted into `ExifToolOutput.ASIN` but **not automatically written to the database** during import — set the `asin` field via the [API](api-reference.md) after import if needed. |
 | `Subjects` | EPUB subject tags (`dc:subject`) extracted from the ExifTool `Subject` field. Values are split on `", "` (comma + space), trimmed, and deduplicated into `ExifToolOutput.Subjects []string`. **Not persisted** — there is no corresponding database column. Use the Goodreads CLI to enrich book records instead. |
 
 ---
@@ -45,7 +45,7 @@ All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-o
 | `PublicationDate` | `PublicationDate` | `""` |
 | `MetaName`, `MetaContent`, `ManifestItemId`, `ManifestItemHref`, `ManifestItemMedia-type` | `CoverImageURL` (EPUB) | `""` when no embedded cover is found |
 | _(binary record in MOBI/AZW3 file)_ | `CoverImageURL` (MOBI, AZW3) | `""` when no embedded cover is found |
-| `ASIN` | `ASIN` (MOBI, AZW3, EPUB `dc:identifier` with scheme `AMAZON` or `MOBI-ASIN`, or value prefixed `urn:amazon:`) | `""` — extracted but not persisted during import |
+| `ASIN` | `ASIN` (MOBI, AZW3, EPUB `dc:identifier` with scheme `AMAZON` or `MOBI-ASIN`, or value prefixed `urn:amazon`) | `""` — extracted but not persisted during import |
 | `Subject` | `Subjects []string` (EPUB) | `[]` — values separated by `", "` (comma + space) are split, trimmed, and deduplicated; not persisted |
 
 When ExifTool is **not installed**, `NewExtractor()` still returns a valid `*Extractor` (with a warning logged), but calling `ExtractMetadata` on any file returns an error:
