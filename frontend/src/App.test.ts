@@ -2,18 +2,21 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { tick } from "svelte";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
+import type { User } from "./types";
+
+const authStoreMock = vi.hoisted(() => ({
+  loading: false,
+  user: {
+    id: "1",
+    email: "test@example.com",
+    oidc_linked: false,
+    is_admin: false,
+  } as User | null,
+  init: vi.fn(),
+}));
 
 vi.mock("./stores/auth.svelte", () => ({
-  authStore: {
-    loading: false,
-    user: {
-      id: "1",
-      email: "test@example.com",
-      oidc_linked: false,
-      is_admin: false,
-    },
-    init: vi.fn(),
-  },
+  authStore: authStoreMock,
 }));
 
 vi.mock("./stores/router.svelte", () => ({
@@ -119,5 +122,32 @@ describe("App", () => {
 
     expect(main.inert).toBe(true);
     expect(header.inert).toBe(true);
+  });
+
+  it("hides the decorative spinner from screen readers and exposes the loading message as a status", async () => {
+    authStoreMock.loading = true;
+    authStoreMock.user = null;
+
+    try {
+      const { container } = render(App);
+      await tick();
+
+      // The decorative spinner container must be hidden from screen readers.
+      const spinnerContainer = container.querySelector('[aria-hidden="true"]');
+      expect(spinnerContainer).not.toBeNull();
+
+      // The loading message must carry role="status" so assistive technology
+      // announces it as a live status notification.
+      const statusEl = screen.getByRole("status");
+      expect(statusEl.textContent?.trim()).toBe("Loading your library…");
+    } finally {
+      authStoreMock.loading = false;
+      authStoreMock.user = {
+        id: "1",
+        email: "test@example.com",
+        oidc_linked: false,
+        is_admin: false,
+      };
+    }
   });
 });
