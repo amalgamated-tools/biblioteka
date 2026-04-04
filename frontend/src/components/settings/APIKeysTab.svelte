@@ -133,7 +133,8 @@
                 newlyCreatedKey = null;
               }
             }}
-            class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {newKeyCopyState.copiedId !== null
+            class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {newKeyCopyState.copiedId !==
+            null
               ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
               : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
           >
