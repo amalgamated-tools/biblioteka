@@ -1,3 +1,6 @@
+// Package server wires together the HTTP server, all handler structs,
+// middleware chains (auth, rate limiting, request IDs, logging, tracing),
+// and serves the embedded Svelte frontend as a single self-contained binary.
 package server
 
 import (
@@ -100,7 +103,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	if s.port == 0 {
 		s.port = 8080
 	}
-	s.Address = net.JoinHostPort("0.0.0.0", strconv.Itoa(s.port))
+	if s.Address == "" {
+		s.Address = net.JoinHostPort("0.0.0.0", strconv.Itoa(s.port))
+	}
 
 	if s.DB == nil {
 		database, err := db.SetupDatabase(ctx)
@@ -215,6 +220,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	return s, nil
 }
 
+// Run starts the HTTP server, applies request-ID, tracing, and logging
+// middleware, and blocks until ctx is cancelled or a fatal server error
+// occurs. A graceful shutdown is attempted with a ShutdownGracePeriod timeout.
 func (s *Server) Run(ctx context.Context) error {
 	newctx, span := otel.StartTracer(ctx, "server.Run")
 	defer span.End()
