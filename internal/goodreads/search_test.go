@@ -91,7 +91,7 @@ func TestSearch_Success(t *testing.T) {
 		},
 	}
 
-	results, err := client.Search(context.Background(), "project hail mary")
+	results, err := client.Search(t.Context(), "project hail mary")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -154,7 +154,7 @@ func TestSearch_GraphQLError(t *testing.T) {
 		},
 	}
 
-	results, err := client.Search(context.Background(), "test")
+	results, err := client.Search(t.Context(), "test")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -177,7 +177,7 @@ func TestSearch_EmptyEdges(t *testing.T) {
 		},
 	}
 
-	results, err := client.Search(context.Background(), "nonexistent book xyz")
+	results, err := client.Search(t.Context(), "nonexistent book xyz")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -234,7 +234,7 @@ func TestSearch_DeduplicatesBooks(t *testing.T) {
 		},
 	}
 
-	results, err := client.Search(context.Background(), "project hail mary")
+	results, err := client.Search(t.Context(), "project hail mary")
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, "kca://book/amzn1.gr.book.v1.def456", results[0].BookID)
@@ -355,7 +355,7 @@ func TestParseISBNSearchResponse_Success(t *testing.T) {
 		},
 	}
 
-	results, err := client.parseISBNSearchResponse(context.Background(), AutoComplete)
+	results, err := client.parseISBNSearchResponse(t.Context(), AutoComplete)
 	require.NoError(t, err)
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -427,7 +427,7 @@ func TestParseISBNSearchResponse_MissingRequiredFields(t *testing.T) {
 					},
 				},
 			}
-			results, err := client.parseISBNSearchResponse(context.Background(), []byte(tt.body))
+			results, err := client.parseISBNSearchResponse(t.Context(), []byte(tt.body))
 			require.NoError(t, err)
 			if len(results) != 0 {
 				t.Errorf("expected 0 results, got %d", len(results))
@@ -438,7 +438,7 @@ func TestParseISBNSearchResponse_MissingRequiredFields(t *testing.T) {
 
 func TestParseISBNSearchResponse_InvalidBookID(t *testing.T) {
 	body := `[{"bookId": "not-a-number", "workId": "456", "title": "Test"}]`
-	results, err := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
+	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
 	if len(results) != 0 {
 		t.Errorf("expected 0 results for invalid bookId, got %d", len(results))
@@ -447,7 +447,7 @@ func TestParseISBNSearchResponse_InvalidBookID(t *testing.T) {
 
 func TestParseISBNSearchResponse_InvalidWorkID(t *testing.T) {
 	body := `[{"bookId": "123", "workId": "not-a-number", "title": "Test"}]`
-	results, err := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
+	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
 	if len(results) != 0 {
 		t.Errorf("expected 0 results for invalid workId, got %d", len(results))
@@ -456,7 +456,7 @@ func TestParseISBNSearchResponse_InvalidWorkID(t *testing.T) {
 
 func TestParseISBNSearchResponse_OptionalFieldsMissing(t *testing.T) {
 	body := `[{"bookId": "123", "workId": "456", "title": "Minimal Book"}]`
-	results, err := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
+	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -475,7 +475,7 @@ func TestParseISBNSearchResponse_OptionalFieldsMissing(t *testing.T) {
 }
 
 func TestParseISBNSearchResponse_EmptyArray(t *testing.T) {
-	results, err := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(`[]`))
+	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(`[]`))
 	require.NoError(t, err)
 	if len(results) != 0 {
 		t.Errorf("expected 0 results, got %d", len(results))
@@ -483,7 +483,7 @@ func TestParseISBNSearchResponse_EmptyArray(t *testing.T) {
 }
 
 func TestParseISBNSearchResponse_InvalidJSON(t *testing.T) {
-	results, err := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(`not json`))
+	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(`not json`))
 	require.Error(t, err)
 	require.Nil(t, results)
 }
@@ -493,7 +493,7 @@ func TestParseISBNSearchResponse_MultipleResults(t *testing.T) {
 		{"bookId": "111", "workId": "222", "title": "Book One", "author": {"id": 1, "name": "Author A"}},
 		{"bookId": "333", "workId": "444", "title": "Book Two", "author": {"id": 2, "name": "Author B"}}
 	]`
-	results, err := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
+	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
 	if len(results) != 2 {
 		t.Fatalf("expected 2 results, got %d", len(results))
@@ -517,7 +517,7 @@ func TestParseISBNSearchResponse_SkipsInvalidEntriesKeepsValid(t *testing.T) {
 		{"bookId": "bad", "workId": "222", "title": "Invalid Entry"},
 		{"bookId": "333", "workId": "444", "title": "Valid Entry", "author": {"id": 1, "name": "Author"}}
 	]`
-	results, err := noResponseClient().parseISBNSearchResponse(context.Background(), []byte(body))
+	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result (skipping invalid), got %d", len(results))
@@ -568,7 +568,7 @@ func TestSearchByISBN_RejectsInvalidCharacters(t *testing.T) {
 }
 
 func TestParseISBNSearchResponse_CancelledContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // cancel immediately
 
 	client := noResponseClient()
@@ -598,7 +598,7 @@ func TestParseISBNSearchResponse_ConcurrentGraphQLCalls(t *testing.T) {
 		{"bookId": "333", "workId": "444", "title": "Book Two"},
 		{"bookId": "555", "workId": "666", "title": "Book Three"}
 	]`
-	results, err := client.parseISBNSearchResponse(context.Background(), []byte(body))
+	results, err := client.parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
 	require.Len(t, results, 3)
 
@@ -635,7 +635,7 @@ func TestParseISBNSearchResponse_CapsResultsAtFive(t *testing.T) {
 		{"bookId": "7", "workId": "70", "title": "Book Seven"},
 		{"bookId": "8", "workId": "80", "title": "Book Eight"}
 	]`
-	results, err := client.parseISBNSearchResponse(context.Background(), []byte(body))
+	results, err := client.parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
 	require.Len(t, results, 5)
 
@@ -648,7 +648,7 @@ func TestParseISBNSearchResponse_CapsResultsAtFive(t *testing.T) {
 }
 
 func TestSearchByISBN_PropagatesContextCancellation(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	client := &Client{
 		httpClient: &mockHTTPClient{

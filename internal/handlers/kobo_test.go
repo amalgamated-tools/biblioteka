@@ -72,7 +72,7 @@ func setupKoboHandler(t *testing.T) (*KoboHandler, string) {
 	d := newTestDB(t)
 	h := &KoboHandler{DB: d}
 	h.RegisterRoutes()
-	user, err := d.CreateUser(context.Background(), "Kobo User", "kobo@example.com", "password1")
+	user, err := d.CreateUser(t.Context(), "Kobo User", "kobo@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestHandleCoverImage_DataURL(t *testing.T) {
 	h, _ := setupKoboHandler(t)
 	pngBytes := testutils.TinyPNG()
 	cover := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, err := h.DB.CreateBook(context.Background(), "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &cover)
+	book, err := h.DB.CreateBook(t.Context(), "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &cover)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -400,7 +400,7 @@ func TestHandleCoverImage_BookNotFound(t *testing.T) {
 
 func TestHandleCoverImage_NoCover(t *testing.T) {
 	h, _ := setupKoboHandler(t)
-	book, err := h.DB.CreateBook(context.Background(), "No Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "No Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -418,7 +418,7 @@ func TestHandleCoverImage_NoCover(t *testing.T) {
 func TestHandleCoverImage_ExternalURL(t *testing.T) {
 	h, _ := setupKoboHandler(t)
 	externalURL := "https://example.com/cover.jpg"
-	book, err := h.DB.CreateBook(context.Background(), "External Cover", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &externalURL)
+	book, err := h.DB.CreateBook(t.Context(), "External Cover", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &externalURL)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -467,7 +467,7 @@ func TestHandleDownload_MissingSegments(t *testing.T) {
 
 func TestHandleDownload_FormatNotFound(t *testing.T) {
 	h, _ := setupKoboHandler(t)
-	book, err := h.DB.CreateBook(context.Background(), "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -484,12 +484,12 @@ func TestHandleDownload_FormatNotFound(t *testing.T) {
 
 func TestHandleDownload_FileNotFoundOnDisk(t *testing.T) {
 	h, _ := setupKoboHandler(t)
-	book, err := h.DB.CreateBook(context.Background(), "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 	// Register a file in the DB that doesn't exist on disk.
-	_, err = h.DB.CreateBookFile(context.Background(), book.ID, "epub", "test.epub", 1024, nil, filepath.Join(t.TempDir(), "nonexistent-kobo-test-file.epub"))
+	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "test.epub", 1024, nil, filepath.Join(t.TempDir(), "nonexistent-kobo-test-file.epub"))
 	if err != nil {
 		t.Fatalf("create book file: %v", err)
 	}
@@ -520,11 +520,11 @@ func TestHandleDownload_Success(t *testing.T) {
 		t.Fatalf("close temp file: %v", err)
 	}
 
-	book, err := h.DB.CreateBook(context.Background(), "Download Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "Download Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	_, err = h.DB.CreateBookFile(context.Background(), book.ID, "epub", "test.epub", int64(len(content)), nil, f.Name())
+	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "test.epub", int64(len(content)), nil, f.Name())
 	if err != nil {
 		t.Fatalf("create book file: %v", err)
 	}
@@ -569,11 +569,11 @@ func TestHandleKobo_BookMetadata_Success(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(context.Background(), "Metadata Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "Metadata Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	_, err = h.DB.CreateBookFile(context.Background(), book.ID, "epub", "book.epub", 2048, nil, filepath.Join(t.TempDir(), "metadata-test.epub"))
+	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "book.epub", 2048, nil, filepath.Join(t.TempDir(), "metadata-test.epub"))
 	if err != nil {
 		t.Fatalf("create book file: %v", err)
 	}
@@ -635,7 +635,7 @@ func TestHandleKobo_BookState_GetDefault(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(context.Background(), "State Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "State Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -686,7 +686,7 @@ func TestHandleKobo_BookState_Update_Success(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(context.Background(), "Reading Progress", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "Reading Progress", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -748,7 +748,7 @@ func TestHandleKobo_BookState_Update_BadRequest(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(context.Background(), "Bad State Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "Bad State Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
@@ -790,12 +790,12 @@ func TestHandleKobo_BookState_GetExisting(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(context.Background(), "Existing State", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "Existing State", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 	pct := 75.0
-	if _, err := h.DB.UpsertKoboReadingState(context.Background(), userID, book.ID, "Finished", &pct, nil, nil, nil); err != nil {
+	if _, err := h.DB.UpsertKoboReadingState(t.Context(), userID, book.ID, "Finished", &pct, nil, nil, nil); err != nil {
 		t.Fatalf("upsert reading state: %v", err)
 	}
 
@@ -839,11 +839,11 @@ func TestHandleKobo_Sync_WithBooks(t *testing.T) {
 	tokenValue := createTestKoboToken(t, h, userID)
 
 	// Create a book with a downloadable file so it appears in sync results.
-	book, err := h.DB.CreateBook(context.Background(), "Sync Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "Sync Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	_, err = h.DB.CreateBookFile(context.Background(), book.ID, "epub", "sync.epub", 512, nil, filepath.Join(t.TempDir(), "sync-test.epub"))
+	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "sync.epub", 512, nil, filepath.Join(t.TempDir(), "sync-test.epub"))
 	if err != nil {
 		t.Fatalf("create book file: %v", err)
 	}
@@ -894,7 +894,7 @@ func TestHandleKobo_Sync_SkipsBookWithoutFiles(t *testing.T) {
 	tokenValue := createTestKoboToken(t, h, userID)
 
 	// Book with no downloadable files should be skipped.
-	if _, err := h.DB.CreateBook(context.Background(), "No Files Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(t.Context(), "No Files Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
@@ -925,16 +925,16 @@ func TestHandleKobo_Sync_WithReadingState(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(context.Background(), "Read Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "Read Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	_, err = h.DB.CreateBookFile(context.Background(), book.ID, "epub", "read.epub", 512, nil, filepath.Join(t.TempDir(), "read-test.epub"))
+	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "read.epub", 512, nil, filepath.Join(t.TempDir(), "read-test.epub"))
 	if err != nil {
 		t.Fatalf("create book file: %v", err)
 	}
 	pct := 50.0
-	if _, err := h.DB.UpsertKoboReadingState(context.Background(), userID, book.ID, "Reading", &pct, nil, nil, nil); err != nil {
+	if _, err := h.DB.UpsertKoboReadingState(t.Context(), userID, book.ID, "Reading", &pct, nil, nil, nil); err != nil {
 		t.Fatalf("upsert reading state: %v", err)
 	}
 
@@ -1195,12 +1195,12 @@ func TestKoboBookMetadata_WithSeries(t *testing.T) {
 	h, _ := setupKoboHandler(t)
 
 	seriesName := "The Dark Tower"
-	s, err := h.DB.CreateSeries(context.Background(), seriesName, nil, nil, nil)
+	s, err := h.DB.CreateSeries(t.Context(), seriesName, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series: %v", err)
 	}
 
-	book, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}

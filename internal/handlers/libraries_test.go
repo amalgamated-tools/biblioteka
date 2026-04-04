@@ -47,14 +47,14 @@ func setupLibraryHandler(t *testing.T) (*LibraryHandler, string, string) {
 	d := newTestDB(t)
 	h := &LibraryHandler{DB: d}
 
-	admin, err := d.CreateUser(context.Background(), "Admin", "admin@example.com", "password1")
+	admin, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create admin: %v", err)
 	}
-	if err := d.SetAdmin(context.Background(), admin.ID, true); err != nil {
+	if err := d.SetAdmin(t.Context(), admin.ID, true); err != nil {
 		t.Fatalf("set admin role: %v", err)
 	}
-	regular, err := d.CreateUser(context.Background(), "Regular", "regular@example.com", "password1")
+	regular, err := d.CreateUser(t.Context(), "Regular", "regular@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create regular user: %v", err)
 	}
@@ -312,11 +312,11 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	}
 
 	// Create a book and link it to the library.
-	book, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
+	if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
 		t.Fatalf("add book to library: %v", err)
 	}
 
@@ -367,11 +367,11 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 	const totalBooks = 3
 	for i := range totalBooks {
 		title := fmt.Sprintf("Book %d", i+1)
-		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			t.Fatalf("create book %d: %v", i+1, err)
 		}
-		if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
+		if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
 			t.Fatalf("add book %d to library: %v", i+1, err)
 		}
 	}
@@ -421,11 +421,11 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 	const totalBooks = 3
 	for i := range totalBooks {
 		title := fmt.Sprintf("Invalid Book %d", i+1)
-		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			t.Fatalf("create book %d: %v", i+1, err)
 		}
-		if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
+		if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
 			t.Fatalf("add book %d to library: %v", i+1, err)
 		}
 	}
@@ -475,11 +475,11 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 	const totalBooks = 10
 	for i := range totalBooks {
 		title := fmt.Sprintf("Clamped Book %d", i+1)
-		book, err := h.DB.CreateBook(context.Background(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			t.Fatalf("create book %d: %v", i+1, err)
 		}
-		if err := h.DB.AddBookToLibrary(context.Background(), lib.ID, book.ID); err != nil {
+		if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
 			t.Fatalf("add book %d to library: %v", i+1, err)
 		}
 	}

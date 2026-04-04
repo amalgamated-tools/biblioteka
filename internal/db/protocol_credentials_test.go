@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"testing"
@@ -32,7 +31,7 @@ func TestScanProtocolCredential_HappyPath(t *testing.T) {
 		t.Fatalf("insert row: %v", err)
 	}
 
-	row := d.QueryRowContext(context.Background(),
+	row := d.QueryRowContext(t.Context(),
 		`SELECT `+protocolCredentialColumns+` FROM protocol_credentials_test WHERE id = $1`,
 		"cred-1",
 	)
@@ -70,7 +69,7 @@ func TestScanProtocolCredential_PropagatesNoRowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create table: %v", err)
 	}
-	row := d.QueryRowContext(context.Background(), `SELECT id FROM protocol_credentials_test_norows WHERE id = $1`, "missing")
+	row := d.QueryRowContext(t.Context(), `SELECT id FROM protocol_credentials_test_norows WHERE id = $1`, "missing")
 
 	cred, err := scanProtocolCredential(row)
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -93,7 +92,7 @@ func TestScanProtocolCredential_PropagatesScanError(t *testing.T) {
 		t.Fatalf("insert row: %v", err)
 	}
 
-	row := d.QueryRowContext(context.Background(),
+	row := d.QueryRowContext(t.Context(),
 		`SELECT id FROM protocol_credentials_test_scan WHERE id = $1`, "row-1")
 
 	cred, err := scanProtocolCredential(row)

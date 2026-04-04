@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -17,11 +16,11 @@ func setupAuditLogHandler(t *testing.T) (*AuditLogHandler, string, string) {
 	d := newTestDB(t)
 	h := &AuditLogHandler{DB: d}
 
-	admin, err := d.CreateUser(context.Background(), "Admin", "admin@example.com", "password1")
+	admin, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create admin: %v", err)
 	}
-	regular, err := d.CreateUser(context.Background(), "Regular", "regular@example.com", "password1")
+	regular, err := d.CreateUser(t.Context(), "Regular", "regular@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create regular user: %v", err)
 	}
@@ -32,7 +31,7 @@ func TestHandleAuditLogs_AdminSuccess(t *testing.T) {
 	h, adminID, _ := setupAuditLogHandler(t)
 
 	// Seed a couple of audit log entries.
-	ctx := context.Background()
+	ctx := t.Context()
 	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-1", nil); err != nil {
 		t.Fatalf("create audit log: %v", err)
 	}
@@ -233,7 +232,7 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 	h, adminID, _ := setupAuditLogHandler(t)
 
 	meta := map[string]any{"title": "Go Programming", "isbn": "978-0-123"}
-	ctx := context.Background()
+	ctx := t.Context()
 	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-meta-1", meta); err != nil {
 		t.Fatalf("create audit log with metadata: %v", err)
 	}

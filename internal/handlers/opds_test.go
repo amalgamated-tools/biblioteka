@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
@@ -170,7 +169,7 @@ func TestAllBooks_Empty(t *testing.T) {
 
 func TestAllBooks_WithBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	h.DB.CreateBook(ctx, "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
@@ -195,7 +194,7 @@ func TestAllBooks_WithBooks(t *testing.T) {
 
 func TestAllBooks_WithDescription(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	desc := "A great book"
 	h.DB.CreateBook(ctx, "Alpha", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
@@ -222,7 +221,7 @@ func TestAllBooks_WithDescription(t *testing.T) {
 
 func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	book, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
@@ -271,7 +270,7 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 
 func TestRecentBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	h.DB.CreateBook(ctx, "First", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	h.DB.CreateBook(ctx, "Second", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
@@ -320,7 +319,7 @@ func TestAuthorsFeed_Empty(t *testing.T) {
 
 func TestAuthorsFeed_WithAuthors(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	h.DB.CreateAuthor(ctx, "Brandon Sanderson", nil, nil, nil, nil)
 	h.DB.CreateAuthor(ctx, "Anne McCaffrey", nil, nil, nil, nil)
@@ -350,7 +349,7 @@ func TestAuthorsFeed_WithAuthors(t *testing.T) {
 
 func TestAuthorBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	author, err := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
 	if err != nil {
@@ -421,7 +420,7 @@ func TestSeriesFeed_Empty(t *testing.T) {
 
 func TestSeriesFeed_WithSeries(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil)
 	h.DB.CreateSeries(ctx, "Discworld", nil, nil, nil)
@@ -444,7 +443,7 @@ func TestSeriesFeed_WithSeries(t *testing.T) {
 
 func TestSeriesBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	series, err := h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil)
 	if err != nil {
@@ -498,7 +497,7 @@ func TestSeriesBooks_NotFound(t *testing.T) {
 
 func TestSearch_WithResults(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
@@ -540,7 +539,7 @@ func TestSearch_NoResults(t *testing.T) {
 
 func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	h.DB.CreateBook(ctx, "100% Pure", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	h.DB.CreateBook(ctx, "Other Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
@@ -610,7 +609,7 @@ func TestOpenSearchDescription(t *testing.T) {
 
 func TestDownload_Success(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
@@ -661,7 +660,7 @@ func TestDownload_NotFound(t *testing.T) {
 
 func TestDownload_FileMissing(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
@@ -683,7 +682,7 @@ func TestDownload_FileMissing(t *testing.T) {
 
 func TestDownload_UnknownFileType(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
@@ -717,7 +716,7 @@ func TestDownload_UnknownFileType(t *testing.T) {
 
 func TestAllBooks_Pagination(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create enough books to have a second page (opdspkg.PageSize is 50).
 	for i := range 55 {
@@ -841,7 +840,7 @@ func TestCoverMIMEType(t *testing.T) {
 
 func TestCoverImageInFeed(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	coverURL := "https://example.com/cover.png"
 	h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL)
@@ -869,7 +868,7 @@ func TestCoverImageInFeed(t *testing.T) {
 
 func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	pngBytes := testutils.TinyPNG()
 	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
@@ -905,7 +904,7 @@ func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
 
 func TestServeCover_DataURL(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	pngBytes := testutils.TinyPNG()
 	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
@@ -1377,7 +1376,7 @@ func TestSearch_DBError(t *testing.T) {
 
 func TestBookEntries_AuthorLoadError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
@@ -1419,7 +1418,7 @@ func TestServeCover_MissingCover(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := setupOPDSHandler(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			book, err := h.DB.CreateBook(ctx, "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, tc.cover)
 			if err != nil {
@@ -1439,7 +1438,7 @@ func TestServeCover_MissingCover(t *testing.T) {
 
 func TestServeCover_ExternalURL(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	coverURL := "https://example.com/cover.jpg"
 	book, err := h.DB.CreateBook(ctx, "External Cover", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL)
@@ -1482,7 +1481,7 @@ func TestServeCover_DBError(t *testing.T) {
 
 func TestAuthorsFeed_Pagination(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	const totalAuthors = opdspkg.PageSize + 5
 	for i := range totalAuthors {
@@ -1532,7 +1531,7 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 
 func TestSeriesFeed_Pagination(t *testing.T) {
 	h := setupOPDSHandler(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	const totalSeries = opdspkg.PageSize + 5
 	for i := range totalSeries {

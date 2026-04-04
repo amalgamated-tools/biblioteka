@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -17,7 +16,7 @@ func setupAPIKeyHandler(t *testing.T) (*APIKeyHandler, string) {
 	t.Helper()
 	d := newTestDB(t)
 	h := &APIKeyHandler{DB: d}
-	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
+	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -158,11 +157,11 @@ func TestListAPIKeys_UserScoped(t *testing.T) {
 	d := newTestDB(t)
 	h := &APIKeyHandler{DB: d}
 
-	user1, err := d.CreateUser(context.Background(), "User 1", "u1@example.com", "password1")
+	user1, err := d.CreateUser(t.Context(), "User 1", "u1@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user1: %v", err)
 	}
-	user2, err := d.CreateUser(context.Background(), "User 2", "u2@example.com", "password2")
+	user2, err := d.CreateUser(t.Context(), "User 2", "u2@example.com", "password2")
 	if err != nil {
 		t.Fatalf("create user2: %v", err)
 	}
@@ -249,11 +248,11 @@ func TestDeleteAPIKey_OtherUserCannotDelete(t *testing.T) {
 	d := newTestDB(t)
 	h := &APIKeyHandler{DB: d}
 
-	user1, err := d.CreateUser(context.Background(), "User 1", "u1@example.com", "password1")
+	user1, err := d.CreateUser(t.Context(), "User 1", "u1@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user1: %v", err)
 	}
-	user2, err := d.CreateUser(context.Background(), "User 2", "u2@example.com", "password2")
+	user2, err := d.CreateUser(t.Context(), "User 2", "u2@example.com", "password2")
 	if err != nil {
 		t.Fatalf("create user2: %v", err)
 	}
@@ -294,7 +293,7 @@ func TestCreateAPIKey_AuditLog(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusCreated)
 	}
 
-	logs, _, err := h.DB.ListAuditLogs(context.Background(), 10, 0)
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
 	if err != nil {
 		t.Fatalf("list audit logs: %v", err)
 	}
@@ -331,7 +330,7 @@ func TestDeleteAPIKey_AuditLog(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.HandleAPIKey(w, r)
 
-	logs, _, err := h.DB.ListAuditLogs(context.Background(), 10, 0)
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
 	if err != nil {
 		t.Fatalf("list audit logs: %v", err)
 	}

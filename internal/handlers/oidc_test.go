@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -112,7 +111,7 @@ func TestOIDCLogin_MethodNotAllowed(t *testing.T) {
 func TestOIDCCreateLinkNonce_Success(t *testing.T) {
 	h := newTestOIDCHandler(t)
 
-	user, err := h.DB.CreateUser(context.Background(), "Alice", "alice@example.com", "password123")
+	user, err := h.DB.CreateUser(t.Context(), "Alice", "alice@example.com", "password123")
 	if err != nil {
 		t.Fatalf("CreateUser: %v", err)
 	}
@@ -150,7 +149,7 @@ func TestOIDCCreateLinkNonce_MethodNotAllowed(t *testing.T) {
 func TestOIDCCreateLinkNonce_StoresNonce(t *testing.T) {
 	h := newTestOIDCHandler(t)
 
-	user, err := h.DB.CreateUser(context.Background(), "Bob", "bob@example.com", "password123")
+	user, err := h.DB.CreateUser(t.Context(), "Bob", "bob@example.com", "password123")
 	if err != nil {
 		t.Fatalf("CreateUser: %v", err)
 	}
@@ -299,7 +298,7 @@ func TestOIDCLink_AlreadyLinked(t *testing.T) {
 	h := newTestOIDCHandler(t)
 
 	// Create a user that already has an OIDC subject linked
-	user, err := h.DB.CreateOIDCUser(context.Background(), "Linked User", "linked@example.com", "existing-subject")
+	user, err := h.DB.CreateOIDCUser(t.Context(), "Linked User", "linked@example.com", "existing-subject")
 	if err != nil {
 		t.Fatalf("CreateOIDCUser: %v", err)
 	}
@@ -325,7 +324,7 @@ func TestOIDCLink_Success(t *testing.T) {
 	h := newTestOIDCHandler(t)
 
 	// Create a regular user (no OIDC subject)
-	user, err := h.DB.CreateUser(context.Background(), "Normal User", "normal@example.com", "password123")
+	user, err := h.DB.CreateUser(t.Context(), "Normal User", "normal@example.com", "password123")
 	if err != nil {
 		t.Fatalf("CreateUser: %v", err)
 	}

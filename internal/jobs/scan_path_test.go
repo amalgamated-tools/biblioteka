@@ -74,7 +74,7 @@ func TestScanPathHandler(t *testing.T) {
 		t.Fatalf("marshal payload: %v", err)
 	}
 
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
@@ -109,7 +109,7 @@ func TestScanPathHandler_EmptyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	err = handler(context.Background(), payload)
+	err = handler(t.Context(), payload)
 	if err == nil {
 		t.Fatal("expected error for empty path")
 	}
@@ -123,7 +123,7 @@ func TestScanPathHandler_NonexistentPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	err = handler(context.Background(), payload)
+	err = handler(t.Context(), payload)
 	if err == nil {
 		t.Fatal("expected error for nonexistent path")
 	}
@@ -139,7 +139,7 @@ func TestScanPathHandler_EmptyDirectory(t *testing.T) {
 		t.Fatalf("marshal: %v", err)
 	}
 
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
