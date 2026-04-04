@@ -48,14 +48,17 @@ frontend/
         TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
-      actions.ts          Svelte action utilities (`autofocusFirstButton`)
-      api.ts            Centralised API client
-      api.test.ts       API client unit tests
-      actions.ts        Svelte actions for DOM interactions (`autofocusFirstButton`)
-      clipboard.ts      Async clipboard helper with `execCommand` fallback
-      clipboard.test.ts Clipboard helper unit tests
-      validation.ts     Composable form-validation rule functions
-      validation.test.ts Form-validation unit tests
+      actions.ts              Svelte action utilities (`autofocusFirstButton`)
+      api.ts                  Centralised API client
+      api.test.ts             API client unit tests
+      clipboard.ts            Async clipboard helper with `execCommand` fallback
+      clipboard.test.ts       Clipboard helper unit tests
+      copyTimeout.svelte.ts   `CopyTimeoutState` class — auto-resetting copied-ID feedback state
+      copyTimeout.test.ts     Unit tests for `CopyTimeoutState`
+      tokenList.svelte.ts     `TokenListState<T>` class — load/delete lifecycle for token-like lists
+      tokenList.test.ts       Unit tests for `TokenListState`
+      validation.ts           Composable form-validation rule functions
+      validation.test.ts      Form-validation unit tests
   vite.config.ts      Vite configuration: build output, dev proxy, Vitest setup, and the restoreGitkeep plugin
 ```
 
@@ -297,7 +300,7 @@ Never call `fetch` directly from components or stores — always go through `api
 
 ## Utility modules
 
-Two small utility modules live in `frontend/src/lib/` alongside `api.ts`.
+Several utility modules live in `frontend/src/lib/` alongside `api.ts`.
 
 ### `validation.ts`
 
@@ -351,57 +354,136 @@ It throws an `Error` if the active path fails:
 
 Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs, share links, etc.) to the clipboard. Do **not** inline `navigator.clipboard.writeText` calls in components, as the fallback path would not be covered.
 
-## TypeScript types
+### `tokenList.svelte.ts`
+
+`frontend/src/lib/tokenList.svelte.ts` exports the generic `TokenListState<T>` class, which manages the load/delete lifecycle for lists of token-like resources (API keys, Kobo tokens, etc.). It encapsulates loading state, inline delete-confirmation flow, and error state using Svelte 5 `$state` runes.
+
+**`TokenListOps<T>` interface** — passed to the constructor:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `load` | `() => Promise<T[]>` | Fetches the full list of items |
+| `delete` | `(id: string) => Promise<void>` | Deletes the item with the given ID |
+| `loadError` | `string` | Fallback error message shown when `load` rejects without an `Error` object |
+| `deleteError` | `string` | Fallback error message shown when `delete` rejects without an `Error` object |
+
+**Reactive public fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `items` | `T[]` | The loaded list; replaced wholesale on each `load` call and filtered after a successful delete |
+| `loading` | `boolean` | `true` while `load()` is in progress |
+| `error` | `string \| null` | Load or delete error message; `null` when no error is present |
+| `pendingDelete` | `{ id: string; name: string } \| null` | The item currently awaiting confirmation; `null` when no delete is in progress |
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `load()` | Fetches items; sets `loading = true` and clears `error` before the call |
+| `handleDelete(id, name)` | Begins the confirmation flow by setting `pendingDelete` |
+| `cancelDeleteWithFocus()` | Clears `pendingDelete` and returns keyboard focus to the trigger button (`[data-delete-trigger="${id}"]`) |
+| `confirmDelete()` | Calls `ops.delete`, removes the deleted item from `items`, and clears `pendingDelete` |
+
+Components that render a delete confirmation dialog should add `data-delete-trigger="${item.id}"` to the Delete button so that `cancelDeleteWithFocus` can restore focus when the user dismisses the dialog.
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { TokenListState } from "../lib/tokenList.svelte";
+  import { listAPIKeys, deleteAPIKey } from "../lib/api";
+  import type { APIKey } from "../types";
+
+  const tokenList = new TokenListState<APIKey>({
+    load: listAPIKeys,
+    delete: deleteAPIKey,
+    loadError: "Failed to load API keys",
+    deleteError: "Failed to delete API key",
+  });
+
+  onMount(() => void tokenList.load());
+</script>
+
+{#if tokenList.error}
+  <AlertBanner message={tokenList.error} />
+{/if}
+
+{#each tokenList.items as key}
+  <button
+    data-delete-trigger={key.id}
+    onclick={() => tokenList.handleDelete(key.id, key.name)}
+  >
+    Delete
+  </button>
+{/each}
+
+{#if tokenList.pendingDelete}
+  <div role="alertdialog">
+    <p>Delete "{tokenList.pendingDelete.name}"?</p>
+    <button onclick={() => tokenList.cancelDeleteWithFocus()}>Cancel</button>
+    <button onclick={() => tokenList.confirmDelete()}>Confirm</button>
+  </div>
+{/if}
+```
+
+Use `TokenListState` whenever a settings tab manages a list of user-owned tokens. Do **not** re-implement the load/delete/confirmation flow inline in components.
+
+### `copyTimeout.svelte.ts`
+
+`frontend/src/lib/copyTimeout.svelte.ts` exports `CopyTimeoutState`, a small class that manages the "copied" UI feedback state — tracking which item was most recently copied to the clipboard and automatically clearing that state after a configurable duration.
+
+**Constructor:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `duration` | `number` | `2000` | Time in milliseconds before `copiedId` auto-resets to `null` |
+
+**Reactive public fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `copiedId` | `string \| null` | ID of the most recently copied item; `null` when no copy feedback is active |
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `set(id)` | Marks `id` as copied, cancels any running timer, and starts a new auto-reset timer |
+| `clear()` | Cancels the pending timer and resets `copiedId` to `null` immediately |
+
+Always call `clear()` from `onDestroy` to prevent timer leaks when the component is unmounted before the timeout fires.
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import { onDestroy } from "svelte";
+  import { CopyTimeoutState } from "../lib/copyTimeout.svelte";
+  import { copyToClipboard } from "../lib/clipboard";
+
+  const copyState = new CopyTimeoutState(); // auto-resets after 2 s
+  onDestroy(() => copyState.clear());
+
+  async function handleCopy(id: string, value: string) {
+    await copyToClipboard(value);
+    copyState.set(id);
+  }
+</script>
+
+{#each items as item}
+  <button onclick={() => handleCopy(item.id, item.token)}>
+    {copyState.copiedId === item.id ? "Copied!" : "Copy"}
+  </button>
+{/each}
+```
+
+Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback after a clipboard write. Do **not** manage copy timers inline with `setTimeout` in components.
 
 Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping shared/exported types in one file gives every component, store, and the API module a single import path, while `frontend/src/lib/api.ts` may still define small module-local helper types for its own internal use.
 
 Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to `types.ts`.
-
-## Utility modules
-
-Two small utility modules live in `frontend/src/lib/` alongside `api.ts`.
-
-### `validation.ts`
-
-Composable form-validation helpers. A `ValidationRule` is a function `(value: string) => string | null` that returns an error message or `null` when the value passes; helpers like `required`, `minLength`, and `matches` create these rules, and `validate` runs one or more rules and returns the first error (or `null`).
-
-| Export | Signature | Description |
-|--------|-----------|-------------|
-| `ValidationRule` | `type` | A validation rule function |
-| `required` | `(message?: string) => ValidationRule` | Fails when the trimmed value is empty |
-| `minLength` | `(min: number, message?: string) => ValidationRule` | Fails when the value is shorter than `min` characters |
-| `matches` | `(other: string, message?: string) => ValidationRule` | Fails when the value does not equal `other` |
-| `validate` | `(value: string, rules: ValidationRule[]) => string \| null` | Runs rules in order; returns the first error or `null` |
-
-**Usage:**
-
-```ts
-import { validate, required, minLength, matches } from "../lib/validation";
-
-const passwordError = validate(password, [
-  required("Password is required"),
-  minLength(8, "Password must be at least 8 characters"),
-]);
-
-const confirmError = validate(confirm, [
-  required("Please confirm your password"),
-  matches(password, "Passwords do not match"),
-]);
-```
-
-Store the result in a `$state` variable and bind it to a `TextInput` with `aria-invalid` and `aria-describedby` to surface inline errors accessibly (see [Form accessibility](#form-accessibility)).
-
-### `clipboard.ts`
-
-A single exported async function that copies text to the system clipboard.
-
-```ts
-import { copyToClipboard } from "../lib/clipboard";
-
-await copyToClipboard(apiKey);
-```
-
-`copyToClipboard` uses the modern async Clipboard API (`navigator.clipboard.writeText`) when available. In environments where the Clipboard API is absent, it falls back to `document.execCommand('copy')`. It throws an `Error` if the active path fails — if the Clipboard API is present but the browser denies permission, the rejection propagates directly without attempting the `execCommand` fallback.
 
 ## Adding a new store
 
