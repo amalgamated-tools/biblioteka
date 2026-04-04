@@ -217,24 +217,24 @@ func TestDeleteAuthor_NotFound(t *testing.T) {
 func TestListAuthorBooks_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author: %v", err)
 	}
 
-	b1, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b1, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	b2, err := h.DB.CreateBook(context.Background(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b2, err := h.DB.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
-	if err := h.DB.SetBookAuthors(context.Background(), b1.ID, []string{a.ID}); err != nil {
+	if err := h.DB.SetBookAuthors(t.Context(), b1.ID, []string{a.ID}); err != nil {
 		t.Fatalf("set book authors: %v", err)
 	}
-	if err := h.DB.SetBookAuthors(context.Background(), b2.ID, []string{a.ID}); err != nil {
+	if err := h.DB.SetBookAuthors(t.Context(), b2.ID, []string{a.ID}); err != nil {
 		t.Fatalf("set book authors: %v", err)
 	}
 
@@ -277,7 +277,7 @@ func TestListAuthorBooks_AuthorNotFound(t *testing.T) {
 func TestListAuthorBooks_Empty(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, err := h.DB.CreateAuthor(context.Background(), "Unknown Author", nil, nil, nil, nil)
+	a, err := h.DB.CreateAuthor(t.Context(), "Unknown Author", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author: %v", err)
 	}
