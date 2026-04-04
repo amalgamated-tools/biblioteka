@@ -62,13 +62,15 @@
     }
   }
 
-  async function handleCopyKey(text: string) {
+  async function handleCopyKey(text: string): Promise<boolean> {
     try {
       await copyToClipboard(text);
       newKeyCopyState.set("new-key");
+      return true;
     } catch {
       mgr.error =
         "Failed to copy to clipboard. Please select and copy the key manually.";
+      return false;
     }
   }
 </script>
@@ -126,8 +128,8 @@
           </code>
           <button
             onclick={async () => {
-              await handleCopyKey(newlyCreatedKey!);
-              if (newKeyCopyState.copiedId !== null) {
+              const ok = await handleCopyKey(newlyCreatedKey!);
+              if (ok) {
                 newlyCreatedKey = null;
               }
             }}
