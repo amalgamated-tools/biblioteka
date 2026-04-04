@@ -39,7 +39,9 @@ func TestKoboTokenList_WithTokens(t *testing.T) {
 	}
 
 	var tokens []map[string]any
-	json.NewDecoder(w.Body).Decode(&tokens)
+	if err := json.NewDecoder(w.Body).Decode(&tokens); err != nil {
+		t.Fatalf("decode list response: %v", err)
+	}
 	if len(tokens) != 2 {
 		t.Errorf("expected 2 tokens, got %d", len(tokens))
 	}
@@ -62,7 +64,9 @@ func TestKoboTokenCreate_ResponseContainsToken(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusCreated)
 	}
 	var resp map[string]any
-	json.NewDecoder(w.Body).Decode(&resp)
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
 	token, _ := resp["token"].(string)
 	if len(token) == 0 {
 		t.Error("expected non-empty token in creation response")
@@ -108,7 +112,9 @@ func TestKoboTokenCreate_NameTrimmed(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusCreated)
 	}
 	var resp map[string]any
-	json.NewDecoder(w.Body).Decode(&resp)
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
 	name, _ := resp["name"].(string)
 	if name != "My Device" {
 		t.Errorf("name = %q, want %q (should be trimmed)", name, "My Device")
@@ -136,7 +142,9 @@ func TestKoboTokenDelete_UserIsolation(t *testing.T) {
 		t.Fatalf("create token: status = %d, want %d", w.Code, http.StatusCreated)
 	}
 	var created map[string]any
-	json.NewDecoder(w.Body).Decode(&created)
+	if err := json.NewDecoder(w.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
 	tokenID, _ := created["id"].(string)
 
 	// Attempt to delete user1's token as user2.

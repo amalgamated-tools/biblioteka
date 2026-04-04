@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -50,8 +51,8 @@ func TestValidateField_ErrorContainsFieldName(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 	errStr := err.Error()
-	if errStr == "" {
-		t.Error("expected non-empty error message")
+	if !strings.Contains(errStr, "my_special_field") {
+		t.Errorf("error message %q should contain field name %q", errStr, "my_special_field")
 	}
 }
 

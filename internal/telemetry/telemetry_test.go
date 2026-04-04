@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -21,10 +22,8 @@ func TestSendBoot_DisabledByDefault(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	// We can't easily unset an env var that was set; use a different env var
-	// approach. telemetry.SendBoot checks os.LookupEnv; an empty value is treated
-	// as disabled, so setting it to an empty string is safe.
-	t.Setenv(EnvTelemetryEnabled, "")
+	t.Setenv(EnvTelemetryEndpoint, srv.URL)
+
 	SendBoot(context.Background(), "test-version")
 
 	if called {
@@ -82,10 +81,26 @@ func TestPayload_Fields(t *testing.T) {
 		Arch:        "amd64",
 		Timestamp:   "2026-01-01T00:00:00Z",
 	}
-	if p.Application != "biblioteka" {
-		t.Errorf("Application = %q, want biblioteka", p.Application)
+
+	data, err := json.Marshal(p)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
 	}
-	if p.Version != "v1.0.0" {
-		t.Errorf("Version = %q, want v1.0.0", p.Version)
+	var m map[string]any
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+
+	expectedKeys := []string{"application", "install_id", "version", "os", "arch", "timestamp"}
+	for _, key := range expectedKeys {
+		if _, ok := m[key]; !ok {
+			t.Errorf("expected JSON key %q not found in marshaled payload", key)
+		}
+	}
+	if m["application"] != "biblioteka" {
+		t.Errorf("application = %v, want biblioteka", m["application"])
+	}
+	if m["version"] != "v1.0.0" {
+		t.Errorf("version = %v, want v1.0.0", m["version"])
 	}
 }

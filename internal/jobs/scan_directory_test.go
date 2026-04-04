@@ -260,9 +260,12 @@ func TestScanDirectory_ContextCancellation(t *testing.T) {
 	cancel() // cancel immediately
 
 	err := ScanDirectory(ctx, &mockEnqueuer{}, ScanPathPayload{Path: dir})
-	// Either no error (if walk completes before checking) or a context error.
-	// Either is acceptable; what matters is that it doesn't panic.
-	_ = err
+	if err == nil {
+		t.Fatal("expected context cancellation error")
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected error to wrap context.Canceled, got %v", err)
+	}
 }
 
 // errEnqueuer is an Enqueuer that always returns the configured error.

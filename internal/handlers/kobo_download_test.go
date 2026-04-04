@@ -118,8 +118,8 @@ func TestHandleDownload_ReturnsFileContents(t *testing.T) {
 	}
 }
 
-// TestHandleDownload_EmptyBookID verifies that a URL with missing path segments
-// returns an error.
+// TestHandleDownload_EmptyFormat verifies that a URL with an empty format
+// segment returns an error.
 func TestHandleDownload_EmptyFormat(t *testing.T) {
 	t.Parallel()
 

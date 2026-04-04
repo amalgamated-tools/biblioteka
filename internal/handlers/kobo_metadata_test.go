@@ -54,6 +54,10 @@ func TestHandleBookMetadata_CoverURLIncluded(t *testing.T) {
 	if results[0]["Title"] != "Cover URL Book" {
 		t.Errorf("Title = %v, want Cover URL Book", results[0]["Title"])
 	}
+	coverImageID, ok := results[0]["CoverImageId"].(string)
+	if !ok || coverImageID == "" {
+		t.Errorf("CoverImageId = %v, want non-empty string", results[0]["CoverImageId"])
+	}
 }
 
 // TestHandleBookMetadata_MultipleEntitlementsEachHaveMetadata verifies that
@@ -134,6 +138,9 @@ func TestHandleBookMetadata_ContainsEntitlementID(t *testing.T) {
 	}
 	if results[0]["Title"] != "Entitlement Book" {
 		t.Errorf("Title = %v, want Entitlement Book", results[0]["Title"])
+	}
+	if results[0]["EntitlementId"] != book.ID {
+		t.Errorf("EntitlementId = %v, want %v", results[0]["EntitlementId"], book.ID)
 	}
 }
 
