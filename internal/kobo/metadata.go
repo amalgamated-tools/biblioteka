@@ -84,7 +84,7 @@ type Metadata struct {
 	PhoneticPronunciations  map[string]any    `json:"PhoneticPronunciations"`
 	PublicationDate         string            `json:"PublicationDate"`
 	Publisher               PublisherInfo     `json:"Publisher"`
-	RevisionId              string            `json:"RevisionId"`
+	RevisionID              string            `json:"RevisionId"`
 	Title                   string            `json:"Title"`
 	WorkId                  string            `json:"WorkId"`
 	ContributorRoles        []ContributorRole `json:"ContributorRoles"`
