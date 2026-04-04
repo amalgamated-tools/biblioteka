@@ -1,4 +1,5 @@
 import { tick } from "svelte";
+import { CopyTimeoutState } from "./copyTimeout.svelte";
 
 export interface TokenListOps<T extends { id: string }> {
   load: () => Promise<T[]>;
@@ -9,7 +10,8 @@ export interface TokenListOps<T extends { id: string }> {
 
 /**
  * Manages the load/delete lifecycle for a list of token-like resources
- * (API keys, Kobo tokens, etc.).
+ * (API keys, Kobo tokens, etc.) and exposes copy-to-clipboard feedback
+ * via the `copy` field.
  *
  * State is reactive via Svelte 5 `$state` runes.
  */
@@ -18,6 +20,7 @@ export class TokenListState<T extends { id: string }> {
   loading = $state(false);
   error: string | null = $state(null);
   pendingDelete: { id: string; name: string } | null = $state(null);
+  readonly copy = new CopyTimeoutState();
 
   private readonly ops: TokenListOps<T>;
 
