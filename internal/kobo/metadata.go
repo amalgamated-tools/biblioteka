@@ -67,7 +67,7 @@ type SeriesInfo struct {
 // Metadata represents the BookMetadata object expected by Kobo devices.
 type Metadata struct {
 	Categories              []string          `json:"Categories"`
-	CoverImageId            string            `json:"CoverImageId"`
+	CoverImageID            string            `json:"CoverImageId"`
 	CrossRevisionId         string            `json:"CrossRevisionId"`
 	CurrentDisplayPrice     DisplayPrice      `json:"CurrentDisplayPrice"`
 	CurrentLoveDisplayPrice DisplayPrice      `json:"CurrentLoveDisplayPrice"`
