@@ -683,7 +683,7 @@ jobs:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
             setupGlobals(core, github, context, exec, io);
-            const { main } = require('${{ runner.temp }}/gh-aw/actions/parse_claude_log.cjs');
+            const { main } = require('${{ runner.temp }}/gh-aw/actions/parse_copilot_log.cjs');
             await main();
       - name: Parse MCP Gateway logs for step summary
         if: always()
