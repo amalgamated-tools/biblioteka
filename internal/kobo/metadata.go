@@ -61,7 +61,7 @@ type SeriesInfo struct {
 	// to match the Kobo protocol wire format, which expects e.g. 3 not 3.0.
 	Number      any      `json:"Number"`
 	NumberFloat *float64 `json:"NumberFloat"`
-	Id          string   `json:"Id"`
+	ID          string   `json:"Id"`
 }
 
 // Metadata represents the BookMetadata object expected by Kobo devices.
