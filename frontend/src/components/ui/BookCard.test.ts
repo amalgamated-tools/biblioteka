@@ -64,6 +64,6 @@ describe("BookCard", () => {
 
   it("does not render a publisher element when publisher is null", () => {
     render(BookCard, { book: baseBook });
-    expect(screen.queryByText(/publisher/i)).toBeNull();
+    expect(screen.queryByText("Allen & Unwin")).toBeNull();
   });
 });

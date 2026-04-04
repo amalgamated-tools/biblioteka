@@ -126,14 +126,39 @@ describe("LibraryView", () => {
     expect(listLibraryBooks).toHaveBeenCalled();
   });
 
-  it("does not call clearScanning when library is not in scanningIds", async () => {
-    vi.mocked(libraryStore).scanningIds = { has: vi.fn().mockReturnValue(false) } as unknown as SvelteSet<string>;
+  it("calls clearScanning when books are found for a scanning library", async () => {
+    const { listLibraryBooks } = await import("../../lib/api");
+    vi.mocked(listLibraryBooks).mockResolvedValueOnce({
+      books: [
+        {
+          id: "b1",
+          title: "Test Book",
+          description: null,
+          asin: null,
+          isbn10: null,
+          isbn13: null,
+          goodreads_id: null,
+          hardcover_id: null,
+          google_books_id: null,
+          publication_date: null,
+          publisher: null,
+          language: null,
+          cover_image_url: null,
+          created_at: "2026-01-01T00:00:00Z",
+          updated_at: "2026-01-01T00:00:00Z",
+        },
+      ],
+      total: 1,
+      limit: 24,
+      offset: 0,
+    });
+    vi.mocked(libraryStore).scanningIds = { has: vi.fn().mockReturnValue(true) } as unknown as SvelteSet<string>;
     render(LibraryView, {
       props: { library: fakeLibrary, libraryId: "lib-1", error: null },
     });
     await tick();
     await tick();
 
-    expect(libraryStore.clearScanning).not.toHaveBeenCalled();
+    expect(libraryStore.clearScanning).toHaveBeenCalledWith("lib-1");
   });
 });

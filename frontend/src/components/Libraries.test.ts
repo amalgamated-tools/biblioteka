@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
 import { tick } from "svelte";
 
@@ -31,6 +31,12 @@ import { libraryStore } from "../stores/libraries.svelte";
 import { routerStore } from "../stores/router.svelte";
 
 describe("Libraries", () => {
+  beforeEach(() => {
+    vi.mocked(libraryStore).loaded = false;
+    vi.mocked(libraryStore).libraries = [];
+    vi.mocked(routerStore).subPath = "";
+  });
+
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();

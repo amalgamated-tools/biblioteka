@@ -63,8 +63,8 @@ describe("Button", () => {
     expect(screen.getByRole("button")).toBeDisabled();
   });
 
-  it("applies disabled cursor class when disabled", () => {
-    render(Button, { children: makeChildren("Disabled"), disabled: true });
+  it("includes the disabled cursor Tailwind variant class", () => {
+    render(Button, { children: makeChildren("Disabled") });
     expect(screen.getByRole("button").className).toContain("disabled:cursor-not-allowed");
   });
 
