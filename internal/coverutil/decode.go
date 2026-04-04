@@ -1,3 +1,6 @@
+// Package coverutil decodes base64-encoded data: URLs into raw image bytes,
+// enforcing a 20 MB size limit to prevent memory exhaustion from oversized
+// cover images.
 package coverutil
 
 import (

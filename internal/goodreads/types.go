@@ -1,5 +1,8 @@
 package goodreads
 
+// BookResult holds the normalized book metadata returned by Goodreads lookups
+// and searches. Fields are populated on a best-effort basis — some may be
+// empty depending on what Goodreads returns for a given title.
 type BookResult struct {
 	WorkID                string `json:"work_id"`
 	WorkLegacyID          int64  `json:"work_legacy_id"`

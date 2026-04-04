@@ -1,3 +1,7 @@
+// Package metadata wraps the exif package to provide high-level book metadata
+// extraction from EPUB, MOBI, AZW3, and PDF files. When ExifTool is not
+// available on the host system, extraction falls back gracefully to
+// filename-derived metadata only.
 package metadata
 
 import (
@@ -19,6 +23,10 @@ type Extractor struct {
 	et *exif.Exiftool
 }
 
+// NewExtractor starts an ExifTool subprocess and returns an Extractor backed
+// by it. If ExifTool is not installed or fails to start, NewExtractor logs a
+// warning and returns an Extractor whose ExtractMetadata method always returns
+// ErrExifToolUnavailable.
 func NewExtractor(ctx context.Context) (*Extractor, error) {
 	et, err := exif.NewExiftool(ctx)
 	if err != nil {
@@ -28,6 +36,10 @@ func NewExtractor(ctx context.Context) (*Extractor, error) {
 	return &Extractor{et: et}, nil
 }
 
+// Close terminates the underlying ExifTool subprocess. It is safe to call on
+// an Extractor created without a running ExifTool (e.g. when ExifTool was
+// unavailable at startup). Close must not be called concurrently with
+// ExtractMetadata.
 func (e *Extractor) Close(ctx context.Context) {
 	if e.et != nil {
 		if err := e.et.Close(ctx); err != nil {
@@ -37,6 +49,9 @@ func (e *Extractor) Close(ctx context.Context) {
 	}
 }
 
+// ExtractMetadata uses ExifTool to extract metadata from the book file at
+// path. Returns ErrExifToolUnavailable if ExifTool was not found at startup.
+// Concurrent calls are safe.
 func (e *Extractor) ExtractMetadata(ctx context.Context, path string) (*exif.ExifToolOutput, error) {
 	if e.et == nil {
 		return nil, ErrExifToolUnavailable
