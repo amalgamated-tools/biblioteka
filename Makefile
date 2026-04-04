@@ -116,7 +116,7 @@ clean:
 
 # Generate Swagger/OpenAPI documentation
 swagger:
-	$(SWAG_CMD) init -g cmd/server/main.go -o docs --parseDependency --parseInternal
+	$(SWAG_CMD) init -g cmd/server/main.go -o docs/swagger --parseDependency --parseInternal
 
 # Format swagger annotations
 swagger-fmt:
