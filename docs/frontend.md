@@ -30,7 +30,7 @@ frontend/
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
       Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link always carries at least `opacity-30` so it is visible when focused via keyboard (WCAG 2.4.7); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       libraries/          Reusable sub-components for the Libraries view
-        LibraryForm.svelte   Create / edit library form; the "Monitor for new content" toggle uses `role="switch"` and explicit `aria-checked` to communicate on/off state to assistive technologies (WCAG 4.1.2)
+        LibraryForm.svelte   Create / edit library form; the "Monitor for new content" toggle uses `role="switch"` and explicit `aria-checked` to communicate on/off state to assistive technologies (WCAG 4.1.2); delete library action uses the `DeleteConfirmation` component for an accessible inline confirmation with keyboard-focus management and Escape-to-dismiss (WCAG 4.1.2)
         LibraryView.svelte   Library detail with book listing
       settings/           Tab sub-components for the Settings page (see Settings component architecture below)
         AccountTab.svelte       Account & password management; OIDC linking
@@ -45,6 +45,7 @@ frontend/
         BookCard.svelte      Card widget displaying a single book summary
         BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states
         Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
+        DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
         TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
@@ -777,6 +778,67 @@ A styled button with three visual variants. Use this instead of a raw `<button>`
 ```
 
 Padding is intentionally left to the caller via the `class` prop to avoid Tailwind cascade conflicts.
+
+---
+
+### `DeleteConfirmation.svelte`
+
+An accessible inline delete-confirmation dialog that replaces the cursor's Delete button with a two-button (`Delete` / `Cancel`) confirmation row. Use this whenever a destructive action requires a user confirmation step. It implements the full accessible pattern — `role="alertdialog"`, autofocus on open, and Escape-to-dismiss — so consumers do not need to repeat any of that boilerplate.
+
+**Props:**
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `itemId` | `string` | ✓ | Unique ID of the item being deleted. Used to generate a stable `aria-labelledby` value. |
+| `itemName` | `string` | ✓ | Human-readable name shown in the `"Delete "{itemName}"?"` label. |
+| `onConfirm` | `() => void` | ✓ | Called when the user clicks **Delete**. |
+| `onCancel` | `() => void` | ✓ | Called when the user clicks **Cancel** or presses Escape. Should restore focus to the original trigger button. |
+| `class` | `string` | | Additional Tailwind classes appended to the wrapper. |
+
+**Behavior:**
+
+- Renders a `role="alertdialog"` container (not `role="dialog"`) so screen readers announce its content immediately.
+- Uses `use:autofocusFirstButton` to move keyboard focus into the dialog when it mounts.
+- An `onkeydown` Escape handler calls `onCancel` to dismiss the dialog.
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import DeleteConfirmation from "./ui/DeleteConfirmation.svelte";
+
+  let showDeleteConfirm = $state(false);
+  let deleteButtonEl: HTMLButtonElement | null = $state(null);
+
+  async function handleDelete() {
+    await api.deleteItem(itemId);
+    showDeleteConfirm = false;
+  }
+
+  function cancelDelete() {
+    showDeleteConfirm = false;
+    deleteButtonEl?.focus(); // restore focus to the trigger
+  }
+</script>
+
+{#if showDeleteConfirm}
+  <DeleteConfirmation
+    {itemId}
+    itemName={item.name}
+    onConfirm={handleDelete}
+    onCancel={cancelDelete}
+  />
+{:else}
+  <button
+    bind:this={deleteButtonEl}
+    data-delete-trigger={itemId}
+    onclick={() => (showDeleteConfirm = true)}
+  >Delete</button>
+{/if}
+```
+
+`LibraryForm.svelte`, `APIKeysTab.svelte`, and `KoboTab.svelte` are canonical reference implementations.
+
 ---
 
 ### `TextInput.svelte`
@@ -1590,12 +1652,15 @@ Use a piece of reactive state (`pendingDeleteKey`, `pendingDeleteToken`, etc.) t
 {/if}
 ```
 
-`APIKeysTab.svelte` and `KoboTab.svelte` are the canonical reference implementations.
+**Preferred approach:** Use the [`DeleteConfirmation.svelte`](#deleteconfirmationsvelte) UI component — it encapsulates the `role="alertdialog"`, autofocus, and Escape-to-dismiss boilerplate so you only need to supply `itemId`, `itemName`, `onConfirm`, and `onCancel`. `LibraryForm.svelte`, `APIKeysTab.svelte`, and `KoboTab.svelte` are the canonical reference implementations.
+
+If you cannot use `DeleteConfirmation` (e.g., the confirmation UI needs a non-standard layout), implement the inline pattern manually using the code skeleton above as a starting point.
 
 #### `autofocusFirstButton` Svelte action (`lib/actions.ts`)
 
 `autofocusFirstButton` is a Svelte action that moves keyboard focus to the first `<button>` inside a container after the next microtask, ensuring child elements have rendered before focus is requested:
 
+```ts
 import { autofocusFirstButton } from "../../lib/actions"; // adjust path to match your component's depth
 
 // In a template:
@@ -1604,7 +1669,7 @@ import { autofocusFirstButton } from "../../lib/actions"; // adjust path to matc
 
 Apply `use:autofocusFirstButton` to the confirmation dialog container so focus is moved into it automatically when it mounts. This satisfies the keyboard-focus management requirement for modal and inline dialog patterns.
 
-**Note:** `autofocusFirstButton` focuses the first `<button>` in DOM order. If you want focus to land on the safer Cancel option, place Cancel before Delete in the DOM. The current `APIKeysTab` and `KoboTab` implementations focus the Delete button first; this is a known P2 issue.
+**Note:** `autofocusFirstButton` focuses the first `<button>` in DOM order. If you want focus to land on the safer Cancel option, place Cancel before Delete in the DOM. The current implementations focus the Delete button first; this is a known P2 issue.
 
 #### Guidelines
 
@@ -1614,89 +1679,6 @@ Apply `use:autofocusFirstButton` to the confirmation dialog container so focus i
 - Add `use:autofocusFirstButton` to the dialog container so keyboard focus enters the dialog when it opens.
 - Add an `onkeydown` Escape handler to dismiss the dialog; call the cancel function.
 - Add `data-delete-trigger` on the original trigger button so focus can be restored on cancel (WCAG 2.4.3 Focus Order).
-- Keep only one confirmation dialog open at a time — the pending state should be a single nullable value, not an array.
-
-### Inline confirmation dialogs for destructive actions
-
-**WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) / [2.1.1 Keyboard](https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html) (Level A)
-
-Destructive actions such as deleting an API key or Kobo sync token must not use `window.confirm()`. The browser's native confirm dialog has no ARIA role, no focus management, is not styleable, and produces inconsistent screen reader behaviour across browsers. Instead, render an inline `role="alertdialog"` directly in the component.
-
-#### Pattern
-
-Use a piece of reactive state (`pendingDeleteKey`, `pendingDeleteToken`, etc.) to track which item is pending deletion. When the user clicks the initial delete trigger, set that state; the row or card swaps its delete button for an inline confirmation:
-
-```svelte
-<script lang="ts">
-  import { tick } from "svelte";
-  import { autofocusFirstButton } from "../../lib/actions";
-
-  let pendingDeleteKey: { id: string; name: string } | null = $state(null);
-
-  function handleDeleteAPIKey(id: string, name: string) {
-    pendingDeleteKey = { id, name };
-  }
-
-  async function confirmDeleteAPIKey() {
-    if (!pendingDeleteKey) return;
-    const { id } = pendingDeleteKey;
-    pendingDeleteKey = null;
-    await deleteAPIKey(id);
-    // filter item from list…
-  }
-
-  async function cancelDeleteAPIKey() {
-    pendingDeleteKey = null;
-    await tick();
-    document.querySelector<HTMLElement>(`[data-delete-trigger="${pendingDeleteKey?.id}"]`)?.focus();
-  }
-</script>
-
-{#if pendingDeleteKey?.id === key.id}
-  <div
-    role="alertdialog"
-    aria-modal="false"
-    aria-label={`Delete "${key.name}"?`}
-    use:autofocusFirstButton
-    onkeydown={(e) => { if (e.key === "Escape") cancelDeleteAPIKey(); }}
-  >
-    <span>Delete "{key.name}"?</span>
-    <button onclick={confirmDeleteAPIKey}>Delete</button>
-    <button onclick={cancelDeleteAPIKey}>Cancel</button>
-  </div>
-{:else}
-  <button
-    data-delete-trigger={key.id}
-    onclick={() => handleDeleteAPIKey(key.id, key.name)}
-    aria-label={`Delete API key ${key.name}`}
-  >…</button>
-{/if}
-```
-
-`APIKeysTab.svelte` and `KoboTab.svelte` are the canonical reference implementations. `LibraryForm.svelte` also uses this pattern via a `showDeleteConfirm` boolean toggle.
-
-#### `autofocusFirstButton` Svelte action (`lib/actions.ts`)
-
-`autofocusFirstButton` is a Svelte action that moves keyboard focus to the first `<button>` inside a container after the next microtask, ensuring child elements have rendered before focus is requested:
-
-```ts
-import { autofocusFirstButton } from "../lib/actions";
-
-// In a template:
-// <div use:autofocusFirstButton>…</div>
-```
-
-Apply `use:autofocusFirstButton` to the confirmation dialog container so focus is moved into it automatically when it mounts. This satisfies the keyboard-focus management requirement for modal and inline dialog patterns.
-
-**Note:** `autofocusFirstButton` focuses the first `<button>` in DOM order. Place the least-destructive action (Cancel) before the destructive action (Delete) in the DOM if you want focus to land on the safer option. The current implementations focus the Delete button first; this is a known P2 issue.
-
-#### Guidelines
-
-- Never use `window.confirm()` for destructive confirmations.
-- Use `role="alertdialog"` (not `role="dialog"`) for inline confirmations — `alertdialog` causes screen readers to announce its content immediately.
-- Add `use:autofocusFirstButton` to the dialog container so keyboard focus enters the dialog when it opens.
-- Add an `onkeydown` Escape handler to dismiss the dialog; call the cancel function.
-- Add `data-delete-trigger` on the original trigger button so focus can be restored on cancel.
 - Keep only one confirmation dialog open at a time — the pending state should be a single nullable value, not an array.
 
 ### Table accessibility
