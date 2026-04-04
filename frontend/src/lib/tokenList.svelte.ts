@@ -50,7 +50,7 @@ export class TokenListState<T extends { id: string }> {
     onAfterClear?.();
   }
 
-  cancelDeleteWithFocus(): void {
+  cancelDeleteWithFocus = (): void => {
     const id = this.pendingDelete?.id;
     void this.cancelDelete(
       id
@@ -60,9 +60,9 @@ export class TokenListState<T extends { id: string }> {
               ?.focus()
         : undefined,
     );
-  }
+  };
 
-  async confirmDelete(): Promise<void> {
+  confirmDelete = async (): Promise<void> => {
     if (!this.pendingDelete) return;
     const { id } = this.pendingDelete;
     this.pendingDelete = null;
