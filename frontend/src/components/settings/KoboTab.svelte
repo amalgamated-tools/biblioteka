@@ -12,25 +12,25 @@
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import DeleteConfirmation from "../ui/DeleteConfirmation.svelte";
-  import { createTokenManager } from "../../lib/tokenManager.svelte";
+  import { TokenListState } from "../../lib/tokenList.svelte";
 
   type KoboTokenDisplay = KoboToken & { token?: string };
 
-  const mgr = createTokenManager<KoboTokenDisplay>({
-    loadFn: listKoboTokens,
-    deleteFn: deleteKoboToken,
-    loadErrorMessage: "Failed to load Kobo tokens",
-    deleteErrorMessage: "Failed to delete Kobo token",
+  const tokenList = new TokenListState<KoboTokenDisplay>({
+    load: listKoboTokens,
+    delete: deleteKoboToken,
+    loadError: "Failed to load Kobo tokens",
+    deleteError: "Failed to delete Kobo token",
   });
 
   let newTokenName = $state("");
   let createTokenLoading = $state(false);
   let liveMessage = $state("");
 
-  onDestroy(mgr.clearCopyTimeout);
+  onDestroy(() => tokenList.copy.clear());
 
   onMount(() => {
-    void mgr.load();
+    void tokenList.load();
   });
 
   async function handleCreateToken(e: SubmitEvent) {
@@ -38,14 +38,14 @@
     if (!newTokenName.trim()) return;
 
     createTokenLoading = true;
-    mgr.error = null;
+    tokenList.error = null;
 
     try {
       const token = await createKoboToken(newTokenName.trim());
       newTokenName = "";
-      mgr.items = [token, ...mgr.items];
+      tokenList.items = [token, ...tokenList.items];
     } catch (err) {
-      mgr.error =
+      tokenList.error =
         err instanceof Error ? err.message : "Failed to create Kobo token";
     } finally {
       createTokenLoading = false;
@@ -62,15 +62,15 @@
     tokenId: string,
     tokenName: string,
   ) {
-    mgr.error = null;
+    tokenList.error = null;
 
     try {
       await copyToClipboard(text);
 
       liveMessage = `Copied sync URL for ${tokenName}`;
-      mgr.setCopied(tokenId);
+      tokenList.copy.set(tokenId);
     } catch (err) {
-      mgr.error =
+      tokenList.error =
         err instanceof Error
           ? `Failed to copy to clipboard: ${err.message}`
           : "Failed to copy to clipboard. Your browser may not support clipboard access.";
@@ -117,19 +117,19 @@
       </Button>
     </form>
 
-    {#if mgr.error}
-      <AlertBanner variant="error" class="mb-4">{mgr.error}</AlertBanner>
+    {#if tokenList.error}
+      <AlertBanner variant="error" class="mb-4">{tokenList.error}</AlertBanner>
     {/if}
 
-    {#if mgr.loading}
+    {#if tokenList.loading}
       <p class="text-ink-400 dark:text-ink-400">Loading Kobo tokens...</p>
-    {:else if mgr.items.length === 0}
+    {:else if tokenList.items.length === 0}
       <p class="text-sm text-ink-400 dark:text-ink-500">
         No Kobo tokens yet. Create one above to get started.
       </p>
     {:else}
       <div class="space-y-3">
-        {#each mgr.items as token (token.id)}
+        {#each tokenList.items as token (token.id)}
           {@const url = syncURL(token)}
           <div
             class="border border-ink-100 dark:border-ink-800 rounded-xl p-4 flex flex-col gap-2 hover:bg-ink-50/50 dark:hover:bg-ink-800/30 transition-colors"
@@ -145,17 +145,17 @@
                     token.created_at,
                   ).toLocaleDateString()}</span
                 >
-                {#if mgr.pendingDelete?.id === token.id}
+                {#if tokenList.pendingDelete?.id === token.id}
                   <DeleteConfirmation
                     itemId={token.id}
                     itemName={token.name}
-                    onConfirm={mgr.confirmDelete}
-                    onCancel={mgr.cancelDelete}
+                    onConfirm={tokenList.confirmDelete}
+                    onCancel={tokenList.cancelDeleteWithFocus}
                   />
                 {:else}
                   <button
                     data-delete-trigger={token.id}
-                    onclick={() => mgr.handleDelete(token.id, token.name)}
+                    onclick={() => tokenList.handleDelete(token.id, token.name)}
                     aria-label={`Delete token ${token.name} (created ${new Date(token.created_at).toLocaleDateString()})`}
                     class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                   >
@@ -175,16 +175,16 @@
                 </code>
                 <button
                   onclick={() => handleCopyURL(url, token.id, token.name)}
-                  aria-label={mgr.copiedId === token.id
+                  aria-label={tokenList.copy.copiedId === token.id
                     ? `Copied sync URL for ${token.name}`
                     : `Copy sync URL for ${token.name}`}
-                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {mgr.copiedId ===
-                  token.id
+                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {tokenList
+                    .copy.copiedId === token.id
                     ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
                     : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
                 >
                   <Copy class="w-4 h-4" />
-                  {mgr.copiedId === token.id ? "Copied" : "Copy"}
+                  {tokenList.copy.copiedId === token.id ? "Copied" : "Copy"}
                 </button>
               {:else}
                 <div
