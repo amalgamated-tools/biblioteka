@@ -1,3 +1,7 @@
+// Package worker manages Redis-backed background job processing via asynq.
+// It exposes a Worker type that wraps an asynq server, client, and scheduler,
+// and provides helpers for registering one-off job handlers and recurring
+// cron-scheduled tasks.
 package worker
 
 import (

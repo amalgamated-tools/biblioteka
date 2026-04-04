@@ -15,6 +15,12 @@ import (
 
 var _, b, _, _ = runtime.Caller(0)
 
+// SetupDatabase opens and migrates the application database. It selects the
+// backend based on the DATABASE_URL environment variable: a postgres:// or
+// postgresql:// URL uses PostgreSQL; anything else uses a local SQLite file.
+// SQLite files are stored at /data/biblioteka.db when a /data directory is
+// present (Docker/production), or at ./db/biblioteka.db otherwise.
+// Migrations are applied automatically before returning.
 func SetupDatabase(ctx context.Context) (*DB, error) {
 	slog.DebugContext(ctx, "Setting up database")
 

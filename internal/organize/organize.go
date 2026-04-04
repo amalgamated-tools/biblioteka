@@ -1,3 +1,5 @@
+// Package organize moves book files into a canonical Author/Title/ directory
+// layout under a library root and removes any empty directories left behind.
 package organize
 
 import (
