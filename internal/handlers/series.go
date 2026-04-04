@@ -223,10 +223,6 @@ func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id 
 //	@Failure		500		{object}	errorResponse
 //	@Router			/series/{id}/books [get]
 func (h *SeriesHandler) listSeriesBooks(w http.ResponseWriter, r *http.Request, seriesID string) {
-	if _, err := h.DB.GetSeries(r.Context(), seriesID); handleDBErr(r.Context(), w, err, "series") {
-		return
-	}
-
 	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
 
 	books, total, err := h.DB.ListBooksBySeriesPaginated(r.Context(), seriesID, limit, offset)
@@ -237,6 +233,13 @@ func (h *SeriesHandler) listSeriesBooks(w http.ResponseWriter, r *http.Request, 
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list series books")
 		return
+	}
+
+	// If no books found, check whether the series actually exists.
+	if total == 0 {
+		if _, err := h.DB.GetSeries(r.Context(), seriesID); handleDBErr(r.Context(), w, err, "series") {
+			return
+		}
 	}
 
 	dtos := mapSlice(books, toBookSummaryDTO)
