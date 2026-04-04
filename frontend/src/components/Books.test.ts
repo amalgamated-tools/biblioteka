@@ -33,6 +33,8 @@ describe("Books", () => {
     render(Books);
     await tick();
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("All Books");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "All Books",
+    );
   });
 });

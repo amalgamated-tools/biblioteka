@@ -17,7 +17,9 @@ vi.mock("../../lib/api", () => ({
     oidc_configured: false,
     is_admin: true,
   }),
-  setSmtpConfig: vi.fn().mockResolvedValue({ message: "SMTP configuration saved" }),
+  setSmtpConfig: vi
+    .fn()
+    .mockResolvedValue({ message: "SMTP configuration saved" }),
   testSmtpConfig: vi.fn().mockResolvedValue({ message: "Test email sent" }),
 }));
 
@@ -27,11 +29,7 @@ vi.mock("lucide-svelte", () => ({
 }));
 
 import SmtpTab from "./SmtpTab.svelte";
-import {
-  getSmtpConfig,
-  setSmtpConfig,
-  testSmtpConfig,
-} from "../../lib/api";
+import { getSmtpConfig, setSmtpConfig, testSmtpConfig } from "../../lib/api";
 
 describe("SmtpTab rendering", () => {
   afterEach(() => {
@@ -95,7 +93,9 @@ describe("SmtpTab rendering", () => {
     await tick();
     await tick();
 
-    expect(screen.queryByRole("button", { name: "Send Test Email" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Send Test Email" }),
+    ).toBeNull();
   });
 
   it("shows env override notice when smtp.env_override is true", async () => {
@@ -142,7 +142,9 @@ describe("SmtpTab form validation", () => {
     await fireEvent.submit(form);
     await tick();
 
-    expect(screen.getByRole("alert")).toHaveTextContent("SMTP Host is required");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "SMTP Host is required",
+    );
   });
 
   it("shows error when From Address is empty on submit", async () => {
@@ -163,7 +165,9 @@ describe("SmtpTab form validation", () => {
     await fireEvent.submit(form);
     await tick();
 
-    expect(screen.getByRole("alert")).toHaveTextContent("From Address is required");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "From Address is required",
+    );
   });
 
   it("calls setSmtpConfig with correct values on valid submission", async () => {
@@ -198,7 +202,9 @@ describe("SmtpTab form validation", () => {
   });
 
   it("shows error banner when setSmtpConfig rejects", async () => {
-    vi.mocked(setSmtpConfig).mockRejectedValueOnce(new Error("Connection refused"));
+    vi.mocked(setSmtpConfig).mockRejectedValueOnce(
+      new Error("Connection refused"),
+    );
     render(SmtpTab, { props: { initialSmtpConfigured: false } });
     await tick();
     await tick();
@@ -225,7 +231,9 @@ describe("SmtpTab test email", () => {
     await tick();
     await tick();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Send Test Email" }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Send Test Email" }),
+    );
     await tick();
     await tick();
 
@@ -237,7 +245,9 @@ describe("SmtpTab test email", () => {
     await tick();
     await tick();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Send Test Email" }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Send Test Email" }),
+    );
     await tick();
     await tick();
 
@@ -245,12 +255,16 @@ describe("SmtpTab test email", () => {
   });
 
   it("shows test error message when testSmtpConfig rejects", async () => {
-    vi.mocked(testSmtpConfig).mockRejectedValueOnce(new Error("SMTP unreachable"));
+    vi.mocked(testSmtpConfig).mockRejectedValueOnce(
+      new Error("SMTP unreachable"),
+    );
     render(SmtpTab, { props: { initialSmtpConfigured: true } });
     await tick();
     await tick();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Send Test Email" }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Send Test Email" }),
+    );
     await tick();
     await tick();
 
@@ -262,7 +276,9 @@ describe("SmtpTab test email", () => {
     await tick();
     await tick();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Send Test Email" }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Send Test Email" }),
+    );
     await tick();
     await tick();
 

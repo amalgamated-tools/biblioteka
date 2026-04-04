@@ -29,16 +29,24 @@ describe("BookCard", () => {
 
   it("renders the book title in a heading", () => {
     render(BookCard, { book: baseBook });
-    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("The Hobbit");
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(
+      "The Hobbit",
+    );
   });
 
   it("sets title attribute on the heading for truncation tooltip", () => {
     render(BookCard, { book: baseBook });
-    expect(screen.getByRole("heading", { level: 3 })).toHaveAttribute("title", "The Hobbit");
+    expect(screen.getByRole("heading", { level: 3 })).toHaveAttribute(
+      "title",
+      "The Hobbit",
+    );
   });
 
   it("renders the cover image when cover_image_url is set", () => {
-    const book = { ...baseBook, cover_image_url: "https://example.com/cover.jpg" };
+    const book = {
+      ...baseBook,
+      cover_image_url: "https://example.com/cover.jpg",
+    };
     render(BookCard, { book });
     const img = screen.getByRole("img");
     expect(img).toHaveAttribute("src", "https://example.com/cover.jpg");
@@ -46,7 +54,10 @@ describe("BookCard", () => {
   });
 
   it("sets loading='lazy' on the cover image", () => {
-    const book = { ...baseBook, cover_image_url: "https://example.com/cover.jpg" };
+    const book = {
+      ...baseBook,
+      cover_image_url: "https://example.com/cover.jpg",
+    };
     render(BookCard, { book });
     expect(screen.getByRole("img")).toHaveAttribute("loading", "lazy");
   });

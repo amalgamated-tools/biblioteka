@@ -67,7 +67,9 @@ describe("OidcTab", () => {
     await fireEvent.submit(form);
     await tick();
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Issuer URL is required");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Issuer URL is required",
+    );
   });
 
   it("shows validation error when Client ID is empty on submit", async () => {
@@ -81,7 +83,9 @@ describe("OidcTab", () => {
     await fireEvent.submit(form);
     await tick();
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Client ID is required");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Client ID is required",
+    );
   });
 
   it("shows validation error when Client Secret is empty on initial save", async () => {
@@ -97,7 +101,9 @@ describe("OidcTab", () => {
     await fireEvent.submit(form);
     await tick();
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Client Secret is required");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Client Secret is required",
+    );
   });
 
   it("shows validation error when Redirect URI is empty on submit", async () => {
@@ -116,7 +122,9 @@ describe("OidcTab", () => {
     await fireEvent.submit(form);
     await tick();
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Redirect URI is required");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Redirect URI is required",
+    );
   });
 
   it("does not require Client Secret when already configured", async () => {

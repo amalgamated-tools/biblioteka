@@ -10,7 +10,9 @@ describe("MyLibrary", () => {
 
   it("renders the 'My Library' heading", () => {
     render(MyLibrary);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("My Library");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "My Library",
+    );
   });
 
   it("renders the empty-state message", () => {

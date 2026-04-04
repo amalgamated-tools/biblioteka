@@ -4,7 +4,12 @@ import { tick } from "svelte";
 
 vi.mock("../../stores/auth.svelte", () => ({
   authStore: {
-    user: { id: "u1", email: "test@example.com", oidc_linked: false, is_admin: false },
+    user: {
+      id: "u1",
+      email: "test@example.com",
+      oidc_linked: false,
+      is_admin: false,
+    },
     oidcLinkError: null,
   },
 }));
@@ -76,7 +81,9 @@ describe("AccountTab password change", () => {
     await fireEvent.submit(form);
     await tick();
 
-    expect(screen.getByRole("alert")).toHaveTextContent("New password is required");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "New password is required",
+    );
   });
 
   it("shows validation error when new password is shorter than 6 characters", async () => {
@@ -115,7 +122,9 @@ describe("AccountTab password change", () => {
     await fireEvent.submit(form);
     await tick();
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Passwords do not match");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Passwords do not match",
+    );
   });
 
   it("calls changePassword with correct values on valid submission", async () => {
@@ -157,7 +166,9 @@ describe("AccountTab password change", () => {
     await tick();
     await tick();
 
-    expect(screen.getByText("Password updated successfully")).toBeInTheDocument();
+    expect(
+      screen.getByText("Password updated successfully"),
+    ).toBeInTheDocument();
   });
 
   it("shows error banner when changePassword rejects", async () => {
@@ -208,7 +219,9 @@ describe("AccountTab password change", () => {
       await tick();
       await tick();
 
-      expect(screen.getByText("Password updated successfully")).toBeInTheDocument();
+      expect(
+        screen.getByText("Password updated successfully"),
+      ).toBeInTheDocument();
 
       await vi.advanceTimersByTimeAsync(3000);
       await tick();
@@ -220,7 +233,12 @@ describe("AccountTab password change", () => {
 
 describe("AccountTab SSO section", () => {
   beforeEach(() => {
-    vi.mocked(authStore).user = { id: "u1", email: "test@example.com", oidc_linked: false, is_admin: false };
+    vi.mocked(authStore).user = {
+      id: "u1",
+      email: "test@example.com",
+      oidc_linked: false,
+      is_admin: false,
+    };
     vi.mocked(authStore).oidcLinkError = null;
   });
 
@@ -283,7 +301,9 @@ describe("AccountTab SSO section", () => {
     };
     render(AccountTab, { props: { oidcConfigured: true } });
 
-    await fireEvent.click(screen.getByRole("button", { name: /Link SSO Account/i }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: /Link SSO Account/i }),
+    );
     await tick();
 
     expect(createOidcLinkNonce).toHaveBeenCalled();

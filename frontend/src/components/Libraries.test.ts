@@ -61,7 +61,9 @@ describe("Libraries", () => {
     render(Libraries);
     await tick();
 
-    await fireEvent.click(screen.getByRole("button", { name: /Add A Library/i }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: /Add A Library/i }),
+    );
     expect(routerStore.navigate).toHaveBeenCalledWith("libraries/new");
   });
 

@@ -41,7 +41,10 @@ describe("Button", () => {
   });
 
   it("applies secondary variant classes", () => {
-    render(Button, { children: makeChildren("Secondary"), variant: "secondary" });
+    render(Button, {
+      children: makeChildren("Secondary"),
+      variant: "secondary",
+    });
     const btn = screen.getByRole("button");
     expect(btn.className).toContain("border");
     expect(btn.className).not.toContain("bg-gradient-to-r");
@@ -65,7 +68,9 @@ describe("Button", () => {
 
   it("includes the disabled cursor Tailwind variant class", () => {
     render(Button, { children: makeChildren("Disabled") });
-    expect(screen.getByRole("button").className).toContain("disabled:cursor-not-allowed");
+    expect(screen.getByRole("button").className).toContain(
+      "disabled:cursor-not-allowed",
+    );
   });
 
   it("calls onclick handler when clicked", async () => {
@@ -77,13 +82,20 @@ describe("Button", () => {
 
   it("does not fire onclick when button is disabled (userEvent respects disabled)", async () => {
     const onclick = vi.fn();
-    render(Button, { children: makeChildren("Disabled"), disabled: true, onclick });
+    render(Button, {
+      children: makeChildren("Disabled"),
+      disabled: true,
+      onclick,
+    });
     await userEvent.setup().click(screen.getByRole("button"));
     expect(onclick).not.toHaveBeenCalled();
   });
 
   it("appends the extra class string to the button", () => {
-    render(Button, { children: makeChildren("Styled"), class: "my-extra-class" });
+    render(Button, {
+      children: makeChildren("Styled"),
+      class: "my-extra-class",
+    });
     expect(screen.getByRole("button").className).toContain("my-extra-class");
   });
 });
