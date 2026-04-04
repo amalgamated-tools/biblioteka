@@ -5,29 +5,30 @@
   interface Props {
     itemId: string;
     itemName: string;
-    onconfirm: () => void;
-    oncancel: () => void;
+    onConfirm: () => void;
+    onCancel: () => void;
     class?: string;
   }
 
   let {
     itemId,
     itemName,
-    onconfirm,
-    oncancel,
+    onConfirm,
+    onCancel,
     class: extraClass,
   }: Props = $props();
 </script>
 
 <div
-  class="flex items-center gap-2 animate-scale-in {extraClass ?? ''}"
+  class="flex items-center justify-end gap-2 animate-scale-in {extraClass ??
+    ''}"
   role="alertdialog"
   aria-modal="false"
   aria-labelledby={`delete-confirm-label-${itemId}`}
   tabindex="-1"
   use:autofocusFirstButton
   onkeydown={(e: KeyboardEvent) => {
-    if (e.key === "Escape") oncancel();
+    if (e.key === "Escape") onCancel();
   }}
 >
   <span
@@ -37,7 +38,7 @@
   <Button
     type="button"
     variant="danger"
-    onclick={onconfirm}
+    onclick={onConfirm}
     class="px-3 py-1 text-xs"
   >
     Delete
@@ -45,7 +46,7 @@
   <Button
     type="button"
     variant="secondary"
-    onclick={oncancel}
+    onclick={onCancel}
     class="px-3 py-1 text-xs"
   >
     Cancel
