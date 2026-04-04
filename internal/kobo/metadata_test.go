@@ -59,8 +59,8 @@ func TestDownloadURLs_URLContainsToken(t *testing.T) {
 	if len(urls) != 1 {
 		t.Fatalf("len = %d, want 1", len(urls))
 	}
-	if !strings.Contains(urls[0].Url, "mytoken") {
-		t.Errorf("URL %q does not contain token", urls[0].Url)
+	if !strings.Contains(urls[0].URL, "mytoken") {
+		t.Errorf("URL %q does not contain token", urls[0].URL)
 	}
 }
 
@@ -79,8 +79,8 @@ func TestBookEntitlement_Fields(t *testing.T) {
 		UpdatedAt: now,
 	}
 	ent := BookEntitlement(book)
-	if ent.Id != "bk1" {
-		t.Errorf("Id = %v", ent.Id)
+	if ent.ID != "bk1" {
+		t.Errorf("Id = %v", ent.ID)
 	}
 	if ent.Accessibility != "Full" {
 		t.Errorf("Accessibility = %v", ent.Accessibility)
@@ -141,8 +141,8 @@ func TestReadingStateResponse_Defaults(t *testing.T) {
 		Status: "ReadyToRead",
 	}
 	resp := ReadingStateResponse(state)
-	if resp.EntitlementId != "bk1" {
-		t.Errorf("EntitlementId = %v", resp.EntitlementId)
+	if resp.EntitlementID != "bk1" {
+		t.Errorf("EntitlementId = %v", resp.EntitlementID)
 	}
 	if resp.StatusInfo.Status != "ReadyToRead" {
 		t.Errorf("StatusInfo.Status = %v", resp.StatusInfo.Status)

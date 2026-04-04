@@ -143,7 +143,7 @@ func DownloadURLs(base, tokenValue, bookID string, files []db.BookFile) []Downlo
 		urls = append(urls, DownloadURL{
 			Format:   koboFmt,
 			Size:     f.FileSize,
-			Url:      fmt.Sprintf("%s/kobo/%s/download/%s/%s", base, tokenValue, bookID, strings.ToLower(f.FileType)),
+			URL:      fmt.Sprintf("%s/kobo/%s/download/%s/%s", base, tokenValue, bookID, strings.ToLower(f.FileType)),
 			Platform: "Generic",
 		})
 	}
@@ -177,14 +177,14 @@ func BookEntitlement(book *db.Book) *Entitlement {
 		Accessibility:       "Full",
 		ActivePeriod:        ActivePeriod{From: now},
 		Created:             book.CreatedAt.UTC().Format(time.RFC3339),
-		CrossRevisionId:     book.ID,
-		Id:                  book.ID,
+		CrossRevisionID:     book.ID,
+		ID:                  book.ID,
 		IsRemoved:           false,
 		IsHiddenFromArchive: false,
 		IsLocked:            false,
 		LastModified:        book.UpdatedAt.UTC().Format(time.RFC3339),
 		OriginCategory:      "Imported",
-		RevisionId:          book.ID,
+		RevisionID:          book.ID,
 		Status:              "Active",
 	}
 }
@@ -200,13 +200,13 @@ func BookMetadata(book *db.Book, authors []db.Author, series []db.BookSeriesEntr
 
 	m := &Metadata{
 		Categories:              []string{"00000000-0000-0000-0000-000000000001"},
-		CoverImageId:            book.ID,
-		CrossRevisionId:         book.ID,
+		CoverImageID:            book.ID,
+		CrossRevisionID:         book.ID,
 		CurrentDisplayPrice:     DisplayPrice{CurrencyCode: "USD", TotalAmount: 0},
 		CurrentLoveDisplayPrice: DisplayPrice{TotalAmount: 0},
 		Description:             book.Description,
 		DownloadUrls:            downloadURLs,
-		EntitlementId:           book.ID,
+		EntitlementID:           book.ID,
 		ExternalIds:             []any{},
 		Genre:                   "00000000-0000-0000-0000-000000000001",
 		IsEligibleForKoboLove:   false,
@@ -217,9 +217,9 @@ func BookMetadata(book *db.Book, authors []db.Author, series []db.BookSeriesEntr
 		PhoneticPronunciations:  map[string]any{},
 		PublicationDate:         pubDate(book),
 		Publisher:               PublisherInfo{Imprint: "", Name: book.Publisher},
-		RevisionId:              book.ID,
+		RevisionID:              book.ID,
 		Title:                   book.Title,
-		WorkId:                  book.ID,
+		WorkID:                  book.ID,
 		ContributorRoles:        contributorRoles,
 		Contributors:            contributors,
 	}
@@ -230,7 +230,7 @@ func BookMetadata(book *db.Book, authors []db.Author, series []db.BookSeriesEntr
 			Name:        s.Series.Name,
 			Number:      seriesNumber(s.Position),
 			NumberFloat: s.Position,
-			Id:          s.Series.ID,
+			ID:          s.Series.ID,
 		}
 	}
 
@@ -266,7 +266,7 @@ func ReadingStateResponse(state *db.KoboReadingState) *ReadingState {
 	}
 
 	return &ReadingState{
-		EntitlementId:     state.BookID,
+		EntitlementID:     state.BookID,
 		Created:           createdAt,
 		LastModified:      updatedAt,
 		PriorityTimestamp: updatedAt,
