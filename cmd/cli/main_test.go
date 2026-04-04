@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"io/fs"
 	"os"
@@ -50,7 +51,7 @@ func requireExtractor(t *testing.T) *metadata.Extractor {
 	if err != nil {
 		t.Fatalf("new extractor: %v", err)
 	}
-	t.Cleanup(func() { ext.Close(t.Context()) })
+	t.Cleanup(func() { ext.Close(context.Background()) })
 	return ext
 }
 
