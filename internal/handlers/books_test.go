@@ -335,6 +335,39 @@ func TestListBooks_EmptyQuery_ReturnsAll(t *testing.T) {
 	}
 }
 
+func TestListBooks_WhitespaceOnlyQuery_ReturnsAll(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	// Whitespace-only query should behave like no query (list all).
+	r := httptest.NewRequest(http.MethodGet, "/api/books?query=%20%20%20", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(resp.Books) != 2 {
+		t.Errorf("len = %d, want 2", len(resp.Books))
+	}
+	if resp.Total != 2 {
+		t.Errorf("total = %d, want 2", resp.Total)
+	}
+}
+
 func TestGetBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 

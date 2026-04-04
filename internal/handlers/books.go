@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -266,7 +267,7 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 //	@Router			/books [get]
 func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
-	query := r.URL.Query().Get("query")
+	query := strings.TrimSpace(r.URL.Query().Get("query"))
 
 	slog.DebugContext(r.Context(), "listing books",
 		slog.Int(otelkeys.Limit, limit),
