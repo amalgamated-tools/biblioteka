@@ -54,7 +54,7 @@ frontend/
       api.test.ts             API client unit tests; imports from the barrel and exercises each sub-module through it
       api/                    Domain-specific API sub-modules
         core.ts               Token storage, `ApiError`, `request`, `getVersion`
-        auth.ts               `signup`, `login`, `logout`, `getMe`, OIDC helpers, `changePassword`
+        auth.ts               signup, login, logout, getMe, OIDC, password
         config.ts             OIDC + SMTP server configuration
         admin.ts              User management and audit logs
         credentials.ts        OPDS + KOSync credentials
@@ -321,7 +321,6 @@ Each sub-module imports `request` (and `setToken` where needed) from `./core`; t
 - **Token storage** — Stores the JWT in `localStorage` under the key `biblioteka_token`. Use `setToken`, `clearToken`, `hasToken`, and `getToken` to manage it.
 - **`ApiError`** — A typed subclass of `Error` that carries a numeric `status` field (the HTTP status code). Catch `ApiError` when you need to branch on a specific status code.
 - **`request<T>`** — The shared fetch wrapper. It attaches the `Authorization: Bearer` header when a token is stored and throws `ApiError` on any non-2xx response.
-- **`getVersion`** — Fetches the server version from `GET /api/version`.
 
 ### Usage
 
@@ -339,10 +338,10 @@ Never call `fetch` directly from components or stores — always go through the 
 ### `ApiError` handling
 
 ```ts
-import { ApiError, login } from "../lib/api";
+import { ApiError } from "../lib/api";
 
 try {
-  await login(email, password);
+  await api.login({ username, password });
 } catch (err) {
   if (err instanceof ApiError && err.status === 401) {
     // handle wrong credentials
@@ -571,8 +570,8 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
    // frontend/src/lib/api/books.ts
    import { request } from "./core";
 
-   export function archiveBook(id: string): Promise<void> {
-     return request<void>("POST", `/api/books/${id}/archive`);
+   export async function archiveBook(id: string): Promise<void> {
+     return request("POST", `/api/books/${id}/archive`);
    }
    ```
 
