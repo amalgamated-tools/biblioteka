@@ -18,7 +18,9 @@ func TestAllBooks_Pagination(t *testing.T) {
 
 	// Create enough books to have a second page (opdspkg.PageSize is 50).
 	for i := range 55 {
-		h.DB.CreateBook(ctx, "Book "+padInt(i), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		if _, err := h.DB.CreateBook(ctx, "Book "+padInt(i), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+			t.Fatalf("create book %d: %v", i, err)
+		}
 	}
 
 	// Page 1: should have "next" link but no "previous" link.

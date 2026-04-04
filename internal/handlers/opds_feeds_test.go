@@ -109,8 +109,12 @@ func TestAllBooks_WithBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook(ctx, "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if _, err := h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book Alpha: %v", err)
+	}
+	if _, err := h.DB.CreateBook(ctx, "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book Beta: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -135,7 +139,9 @@ func TestAllBooks_WithDescription(t *testing.T) {
 	ctx := t.Context()
 
 	desc := "A great book"
-	h.DB.CreateBook(ctx, "Alpha", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if _, err := h.DB.CreateBook(ctx, "Alpha", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -210,8 +216,12 @@ func TestRecentBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	h.DB.CreateBook(ctx, "First", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook(ctx, "Second", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if _, err := h.DB.CreateBook(ctx, "First", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book First: %v", err)
+	}
+	if _, err := h.DB.CreateBook(ctx, "Second", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book Second: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/recent", nil)
 	w := httptest.NewRecorder()
@@ -259,8 +269,12 @@ func TestAuthorsFeed_WithAuthors(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	h.DB.CreateAuthor(ctx, "Brandon Sanderson", nil, nil, nil, nil)
-	h.DB.CreateAuthor(ctx, "Anne McCaffrey", nil, nil, nil, nil)
+	if _, err := h.DB.CreateAuthor(ctx, "Brandon Sanderson", nil, nil, nil, nil); err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+	if _, err := h.DB.CreateAuthor(ctx, "Anne McCaffrey", nil, nil, nil, nil); err != nil {
+		t.Fatalf("create author: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors", nil)
 	w := httptest.NewRecorder()
@@ -297,7 +311,9 @@ func TestAuthorBooks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID})
+	if err := h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}); err != nil {
+		t.Fatalf("set book authors: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors/"+author.ID, nil)
 	w := httptest.NewRecorder()
@@ -360,8 +376,12 @@ func TestSeriesFeed_WithSeries(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil)
-	h.DB.CreateSeries(ctx, "Discworld", nil, nil, nil)
+	if _, err := h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil); err != nil {
+		t.Fatalf("create series: %v", err)
+	}
+	if _, err := h.DB.CreateSeries(ctx, "Discworld", nil, nil, nil); err != nil {
+		t.Fatalf("create series: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series", nil)
 	w := httptest.NewRecorder()
@@ -437,9 +457,15 @@ func TestSearch_WithResults(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook(ctx, "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if _, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	if _, err := h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	if _, err := h.DB.CreateBook(ctx, "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=The", nil)
 	w := httptest.NewRecorder()
@@ -479,8 +505,12 @@ func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	h.DB.CreateBook(ctx, "100% Pure", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	h.DB.CreateBook(ctx, "Other Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if _, err := h.DB.CreateBook(ctx, "100% Pure", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	if _, err := h.DB.CreateBook(ctx, "Other Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	// Search for "%" should not match everything due to LIKE wildcard escaping.
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=%25", nil) // %25 = URL-encoded "%"

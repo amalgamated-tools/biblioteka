@@ -50,7 +50,9 @@ func createTestKoboToken(t *testing.T, h *KoboHandler, userID string) string {
 		t.Fatalf("create token failed: %s", wCreate.Body.String())
 	}
 	var tok map[string]any
-	_ = json.Unmarshal(wCreate.Body.Bytes(), &tok)
+	if err := json.Unmarshal(wCreate.Body.Bytes(), &tok); err != nil {
+		t.Fatalf("unmarshal token response: %v", err)
+	}
 	return tok["token"].(string)
 }
 
@@ -148,7 +150,9 @@ func TestHandleKobo_Auth_Stub(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var resp map[string]any
-	_ = json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal auth response: %v", err)
+	}
 	if resp["AccessToken"] == nil || resp["AccessToken"] == "" {
 		t.Error("expected non-empty AccessToken in auth response")
 	}

@@ -44,7 +44,9 @@ func TestCoverImageInFeed(t *testing.T) {
 	ctx := t.Context()
 
 	coverURL := "https://example.com/cover.png"
-	h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL)
+	if _, err := h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
