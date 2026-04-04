@@ -240,10 +240,10 @@ func TestListBooks_MaxLimitClamping(t *testing.T) {
 func TestListBooks_Search_MatchesTitle(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
@@ -275,7 +275,7 @@ func TestListBooks_Search_MatchesTitle(t *testing.T) {
 func TestListBooks_Search_NoResults(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
@@ -304,10 +304,10 @@ func TestListBooks_Search_NoResults(t *testing.T) {
 func TestListBooks_EmptyQuery_ReturnsAll(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
@@ -337,10 +337,10 @@ func TestListBooks_EmptyQuery_ReturnsAll(t *testing.T) {
 func TestListBooks_WhitespaceOnlyQuery_ReturnsAll(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
