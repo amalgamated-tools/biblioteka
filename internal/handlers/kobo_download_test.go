@@ -345,13 +345,12 @@ func TestKoboDownloadURLs_FiltersUnsupportedFormats(t *testing.T) {
 	}
 	formats := make(map[string]bool)
 	for _, u := range urls {
-		f, _ := u["Format"].(string)
-		if f == "" {
+		if u.Format == "" {
 			t.Error("expected non-empty Format in download URL")
 		}
-		formats[f] = true
-		if u["Url"] == "" {
-			t.Error("expected non-empty Url in download URL")
+		formats[u.Format] = true
+		if u.URL == "" {
+			t.Error("expected non-empty URL in download URL")
 		}
 	}
 	if !formats["EPUB3"] {
