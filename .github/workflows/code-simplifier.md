@@ -91,17 +91,17 @@ If **no files were changed in the last 24 hours**, exit gracefully without creat
 Code simplifier has nothing to process today.
 ```
 
-If **files were changed**, group them by **module/package** (two-level directory path) and record which **file types** (languages) are present (e.g., Go, TypeScript, Python). This grouping drives the focused analysis in Phase 2 and avoids loading unnecessary context.
+If **files were changed**, group them by **module/package** (two-level directory path). This grouping drives the focused analysis in Phase 2 and avoids loading unnecessary context.
 
 ```bash
-# Summarize changed files by two-level module path and language
+# Summarize changed files by two-level module path
 git log --since="24 hours ago" --pretty=format:"%H" --no-merges \
   | xargs -r git diff-tree --no-commit-id -r --name-only \
   | grep -v -E '(\.lock(\.ya?ml)?$|_test\.|\.gen\.go|vendor/)' \
   | awk -F/ 'NF>=2{print $1"/"$2} NF==1{print $1}' | sort | uniq -c | sort -rn
 ```
 
-Record the affected modules list (e.g., `internal/handlers`, `frontend/src`) and the language set (e.g., `["go", "typescript"]`). These are used in Phase 2 to limit context loading.
+Record the affected modules list (e.g., `internal/handlers`, `frontend/src`). Also note which **file types** (languages) are present by inspecting the file extensions (e.g., `.go` → Go, `.ts`/`.tsx` → TypeScript). Both the module list and language set are used in Phase 2 to limit context loading.
 
 If **files were changed**, proceed to Phase 2.
 
