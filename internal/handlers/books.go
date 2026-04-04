@@ -283,14 +283,18 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 
 	if query != "" {
 		books, total, err = h.DB.SearchBooks(r.Context(), query, limit, offset)
+		if err != nil {
+			slog.ErrorContext(r.Context(), "failed to search books", slog.Any(otelkeys.Error, err))
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to search books")
+			return
+		}
 	} else {
 		books, total, err = h.DB.ListBooksPaginated(r.Context(), limit, offset)
-	}
-
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list books", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list books")
-		return
+		if err != nil {
+			slog.ErrorContext(r.Context(), "failed to list books", slog.Any(otelkeys.Error, err))
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to list books")
+			return
+		}
 	}
 
 	slog.DebugContext(r.Context(), "books listed", slog.Int(otelkeys.Count, len(books)))
