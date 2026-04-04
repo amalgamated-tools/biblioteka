@@ -226,10 +226,6 @@ func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id 
 //	@Failure		500		{object}	errorResponse
 //	@Router			/authors/{id}/books [get]
 func (h *AuthorHandler) listAuthorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
-	if _, err := h.DB.GetAuthor(r.Context(), authorID); handleDBErr(r.Context(), w, err, "author") {
-		return
-	}
-
 	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
 
 	books, total, err := h.DB.ListBooksByAuthorPaginated(r.Context(), authorID, limit, offset)
@@ -240,6 +236,13 @@ func (h *AuthorHandler) listAuthorBooks(w http.ResponseWriter, r *http.Request, 
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list author books")
 		return
+	}
+
+	// If no books found, check whether the author actually exists.
+	if total == 0 {
+		if _, err := h.DB.GetAuthor(r.Context(), authorID); handleDBErr(r.Context(), w, err, "author") {
+			return
+		}
 	}
 
 	dtos := mapSlice(books, toBookSummaryDTO)
