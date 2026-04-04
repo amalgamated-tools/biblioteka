@@ -1017,10 +1017,13 @@ Delete a series. Returns `204 No Content`.
 
 List books (summary objects — no nested authors, series, or files), with pagination. Results are sorted by `title` ascending.
 
+When the `query` parameter is provided, the endpoint performs a case-insensitive substring search on the `title` and `description` fields and returns only matching books, still paginated. Without `query`, all books are returned.
+
 **Query parameters:**
 
 | Parameter | Type    | Default | Description |
 |-----------|---------|---------|-------------|
+| `query`   | string  | _(none)_ | Substring to search across `title` and `description` (case-insensitive). When omitted, all books are returned. |
 | `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
 | `offset`  | integer | `0`     | Number of books to skip |
 
