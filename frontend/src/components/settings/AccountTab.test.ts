@@ -219,6 +219,11 @@ describe("AccountTab password change", () => {
 });
 
 describe("AccountTab SSO section", () => {
+  beforeEach(() => {
+    vi.mocked(authStore).user = { id: "u1", email: "test@example.com", oidc_linked: false, is_admin: false };
+    vi.mocked(authStore).oidcLinkError = null;
+  });
+
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
