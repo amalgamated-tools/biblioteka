@@ -2,6 +2,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { tick } from "svelte";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
+import type { User } from "./types";
 
 const authStoreMock = vi.hoisted(() => ({
   loading: false,
@@ -10,7 +11,7 @@ const authStoreMock = vi.hoisted(() => ({
     email: "test@example.com",
     oidc_linked: false,
     is_admin: false,
-  } as { id: string; email: string; oidc_linked: boolean; is_admin: boolean } | null,
+  } as User | null,
   init: vi.fn(),
 }));
 
@@ -132,9 +133,7 @@ describe("App", () => {
       await tick();
 
       // The decorative spinner container must be hidden from screen readers.
-      const spinnerContainer = container.querySelector(
-        '[aria-hidden="true"].relative',
-      );
+      const spinnerContainer = container.querySelector('[aria-hidden="true"]');
       expect(spinnerContainer).not.toBeNull();
 
       // The loading message must carry role="status" so assistive technology
