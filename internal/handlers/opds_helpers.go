@@ -6,31 +6,18 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
-
-// MIME types for common ebook formats.
-var fileTypeMIME = map[string]string{
-	"epub": "application/epub+zip",
-	"pdf":  "application/pdf",
-	"mobi": "application/x-mobipocket-ebook",
-	"azw3": "application/vnd.amazon.ebook",
-	"cbz":  "application/vnd.comicbook+zip",
-	"cbr":  "application/vnd.comicbook-rar",
-	"fb2":  "application/x-fictionbook+xml",
-	"txt":  "text/plain",
-	"djvu": "image/vnd.djvu",
-}
 
 // writeOPDSError writes an error response for OPDS endpoints as a minimal Atom feed,
 // so that OPDS clients always receive XML instead of JSON when an error occurs.
 func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentType, id, title string) {
-	feed := &opdsFeed{
-		XMLNS:     xmlnsAtom,
-		XMLNSOPDS: xmlnsOPDS,
+	feed := &opds.Feed{
+		XMLNS:     opds.XMLNSAtom,
+		XMLNSOPDS: opds.XMLNSOPDS,
 		ID:        id,
 		Title:     title,
 		Updated:   time.Now().UTC().Format(time.RFC3339),
@@ -74,38 +61,7 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func paginationLinks(selfURL string, page, total, pageSize int, contentType string) []opdsLink {
-	// For URLs that already have query params (like search), use & instead of ?
-	sep := "?"
-	if strings.Contains(selfURL, "?") {
-		sep = "&"
-	}
-
-	links := []opdsLink{
-		{Rel: relSelf, Href: selfURL + sep + "page=" + strconv.Itoa(page), Type: contentType},
-	}
-
-	if page > 1 {
-		links = append(links, opdsLink{
-			Rel:  relPrevious,
-			Href: selfURL + sep + "page=" + strconv.Itoa(page-1),
-			Type: contentType,
-		})
-	}
-
-	totalPages := (total + pageSize - 1) / pageSize
-	if page < totalPages {
-		links = append(links, opdsLink{
-			Rel:  relNext,
-			Href: selfURL + sep + "page=" + strconv.Itoa(page+1),
-			Type: contentType,
-		})
-	}
-
-	return links
-}
-
-func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, feed *opdsFeed) {
+func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, feed *opds.Feed) {
 	var buf bytes.Buffer
 	buf.WriteString(xml.Header)
 	enc := xml.NewEncoder(&buf)

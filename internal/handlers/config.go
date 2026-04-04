@@ -5,15 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/mail"
-	"net/smtp"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/smtp"
 )
 
 const (
@@ -21,52 +20,10 @@ const (
 	settingOIDCClientID     = "oidc_client_id"
 	settingOIDCClientSecret = "oidc_client_secret"
 	settingOIDCRedirectURI  = "oidc_redirect_uri"
-
-	settingSMTPHost     = "smtp_host"
-	settingSMTPPort     = "smtp_port"
-	settingSMTPUsername = "smtp_username"
-	settingSMTPPassword = "smtp_password"
-	settingSMTPFrom     = "smtp_from"
-	settingSMTPTLS      = "smtp_tls"
 )
 
-func isLoopbackHost(host string) bool {
-	if host == "" {
-		return false
-	}
-
-	if strings.EqualFold(host, "localhost") {
-		return true
-	}
-
-	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
-		return true
-	}
-
-	return false
-}
-
 func isValidSMTPHostForStatus(host string) bool {
-	if host == "" {
-		return false
-	}
-
-	for _, r := range host {
-		if r <= 0x20 || r == 0x7f {
-			return false
-		}
-	}
-	if strings.ContainsAny(host, "[]") {
-		return false
-	}
-
-	if strings.Contains(host, ":") {
-		if ip := net.ParseIP(host); ip == nil {
-			return false
-		}
-	}
-
-	return true
+	return smtp.ValidateHost(host) == nil
 }
 
 // ConfigHandler holds dependencies for configuration endpoints.
@@ -74,8 +31,8 @@ type ConfigHandler struct {
 	DB               *db.DB
 	IsOIDCConfigured func() bool
 	OnOIDCConfigSet  func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error
-	// SendMailFunc overrides the default sendMail implementation (used in tests).
-	SendMailFunc func(ctx context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error
+	// SendMailFunc overrides the default smtp.Send implementation (used in tests).
+	SendMailFunc smtp.SendFunc
 }
 
 type configStatusResponse struct {
@@ -137,4 +94,10 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 		SMTPConfigured: smtpConfigured,
 		IsAdmin:        isAdmin,
 	})
+}
+
+// resolveSMTPConfig reads the current SMTP configuration, preferring
+// environment variables over database settings.
+func (h *ConfigHandler) resolveSMTPConfig(ctx context.Context) smtp.Config {
+	return smtp.ResolveConfig(ctx, h.DB.GetSetting)
 }

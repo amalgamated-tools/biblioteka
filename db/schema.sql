@@ -204,9 +204,9 @@ CREATE TABLE goodreads_metadata (
 , hardcover_id TEXT, google_books_id TEXT);
 CREATE INDEX idx_goodreads_metadata_user_id
 	ON goodreads_metadata (user_id);
-CREATE INDEX idx_goodreads_metadata_user_status_created_at_id
+CREATE INDEX idx_goodreads_metadata_user_status_created_at_id_desc
 	ON goodreads_metadata (user_id, status, created_at DESC, id DESC);
-CREATE INDEX idx_goodreads_metadata_user_created_at_id
+CREATE INDEX idx_goodreads_metadata_user_created_at_id_desc
 	ON goodreads_metadata (user_id, created_at DESC, id DESC);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
@@ -237,4 +237,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260317010000_add_kobo_token_hash'),
   ('20260323120000_drop_num_pages_from_books'),
   ('20260323120001_create_goodreads_metadata_table'),
-  ('20260323120002_add_hardcover_google_to_goodreads_metadata');
+  ('20260323120002_add_hardcover_google_to_goodreads_metadata'),
+  ('20260403225916_rename_goodreads_metadata_indexes');

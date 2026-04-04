@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/smtp"
+	netsmtp "net/smtp"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/smtp"
 )
 
 // setupConfigHandler creates a ConfigHandler with a test DB, an admin user, and
@@ -439,7 +440,7 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
 	// Only host set, no from → should not be configured
-	_ = h.DB.SetSetting(context.Background(), settingSMTPHost, "smtp.example.com")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyHost, "smtp.example.com")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/config/status", nil)
 	r = withUserID(r, adminID)
@@ -455,7 +456,7 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 	}
 
 	// Set from → now configured
-	_ = h.DB.SetSetting(context.Background(), settingSMTPFrom, "noreply@example.com")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyFrom, "noreply@example.com")
 
 	r = httptest.NewRequest(http.MethodGet, "/api/config/status", nil)
 	r = withUserID(r, adminID)
@@ -502,12 +503,12 @@ func TestHandleGetSMTPConfig_AdminNoSettings(t *testing.T) {
 func TestHandleGetSMTPConfig_AdminWithSettings(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
-	_ = h.DB.SetSetting(context.Background(), settingSMTPHost, "smtp.example.com")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPPort, "465")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPUsername, "user@example.com")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPPassword, "secret")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPFrom, "noreply@example.com")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPTLS, "tls")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyHost, "smtp.example.com")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyPort, "465")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyUsername, "user@example.com")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyPassword, "secret")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyFrom, "noreply@example.com")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyTLS, "tls")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/config/smtp", nil)
 	r = withUserID(r, adminID)
@@ -692,7 +693,7 @@ func TestHandleSetSMTPConfig_Success(t *testing.T) {
 	}
 
 	// Verify settings were persisted
-	host, err := h.DB.GetSetting(context.Background(), settingSMTPHost)
+	host, err := h.DB.GetSetting(context.Background(), smtp.SettingKeyHost)
 	if err != nil {
 		t.Fatalf("GetSetting(smtp_host) error: %v", err)
 	}
@@ -700,7 +701,7 @@ func TestHandleSetSMTPConfig_Success(t *testing.T) {
 		t.Errorf("saved smtp_host = %q, want %q", host, "smtp.example.com")
 	}
 
-	from, err := h.DB.GetSetting(context.Background(), settingSMTPFrom)
+	from, err := h.DB.GetSetting(context.Background(), smtp.SettingKeyFrom)
 	if err != nil {
 		t.Fatalf("GetSetting(smtp_from) error: %v", err)
 	}
@@ -708,7 +709,7 @@ func TestHandleSetSMTPConfig_Success(t *testing.T) {
 		t.Errorf("saved smtp_from = %q, want %q", from, "noreply@example.com")
 	}
 
-	port, err := h.DB.GetSetting(context.Background(), settingSMTPPort)
+	port, err := h.DB.GetSetting(context.Background(), smtp.SettingKeyPort)
 	if err != nil {
 		t.Fatalf("GetSetting(smtp_port) error: %v", err)
 	}
@@ -716,7 +717,7 @@ func TestHandleSetSMTPConfig_Success(t *testing.T) {
 		t.Errorf("saved smtp_port = %q, want %q", port, "465")
 	}
 
-	pw, err := h.DB.GetSetting(context.Background(), settingSMTPPassword)
+	pw, err := h.DB.GetSetting(context.Background(), smtp.SettingKeyPassword)
 	if err != nil {
 		t.Fatalf("GetSetting(smtp_password) error: %v", err)
 	}
@@ -739,7 +740,7 @@ func TestHandleSetSMTPConfig_DefaultsPortAndTLS(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
-	port, err := h.DB.GetSetting(context.Background(), settingSMTPPort)
+	port, err := h.DB.GetSetting(context.Background(), smtp.SettingKeyPort)
 	if err != nil {
 		t.Fatalf("get setting: %v", err)
 	}
@@ -747,7 +748,7 @@ func TestHandleSetSMTPConfig_DefaultsPortAndTLS(t *testing.T) {
 		t.Errorf("default port = %q, want %q", port, "587")
 	}
 
-	tlsMode, err := h.DB.GetSetting(context.Background(), settingSMTPTLS)
+	tlsMode, err := h.DB.GetSetting(context.Background(), smtp.SettingKeyTLS)
 	if err != nil {
 		t.Fatalf("get setting: %v", err)
 	}
@@ -761,12 +762,12 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 
 	ctx := context.Background()
 	existing := []db.Setting{
-		{Key: settingSMTPHost, Value: "old.example.com"},
-		{Key: settingSMTPPort, Value: "587"},
-		{Key: settingSMTPUsername, Value: "old-user"},
-		{Key: settingSMTPPassword, Value: "old-secret"},
-		{Key: settingSMTPFrom, Value: "old@example.com"},
-		{Key: settingSMTPTLS, Value: "starttls"},
+		{Key: smtp.SettingKeyHost, Value: "old.example.com"},
+		{Key: smtp.SettingKeyPort, Value: "587"},
+		{Key: smtp.SettingKeyUsername, Value: "old-user"},
+		{Key: smtp.SettingKeyPassword, Value: "old-secret"},
+		{Key: smtp.SettingKeyFrom, Value: "old@example.com"},
+		{Key: smtp.SettingKeyTLS, Value: "starttls"},
 	}
 	for _, setting := range existing {
 		if err := h.DB.SetSetting(ctx, setting.Key, setting.Value); err != nil {
@@ -781,7 +782,7 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 		BEGIN
 			SELECT RAISE(FAIL, 'forced smtp save failure');
 		END;
-	`, settingSMTPUsername)); err != nil {
+	`, smtp.SettingKeyUsername)); err != nil {
 		t.Fatalf("create trigger: %v", err)
 	}
 	t.Cleanup(func() {
@@ -878,8 +879,8 @@ func TestHandleSetSMTPConfig_PreservesExistingPassword(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
 	// Pre-store a username and password
-	_ = h.DB.SetSetting(context.Background(), settingSMTPUsername, "user")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPPassword, "existing-pw")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyUsername, "user")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyPassword, "existing-pw")
 
 	// Send request with empty password — should reuse the existing one
 	body := `{"host":"smtp.example.com","from":"noreply@example.com","username":"user","password":""}`
@@ -893,7 +894,7 @@ func TestHandleSetSMTPConfig_PreservesExistingPassword(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
-	pw, err := h.DB.GetSetting(context.Background(), settingSMTPPassword)
+	pw, err := h.DB.GetSetting(context.Background(), smtp.SettingKeyPassword)
 	if err != nil {
 		t.Fatalf("GetSetting(smtp_password): %v", err)
 	}
@@ -922,8 +923,8 @@ func TestHandleSetSMTPConfig_UnauthenticatedSMTP_ClearsExistingPassword(t *testi
 	h, adminID, _ := setupConfigHandler(t)
 
 	// Pre-store credentials
-	_ = h.DB.SetSetting(context.Background(), settingSMTPPassword, "old-secret")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPUsername, "old-user")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyPassword, "old-secret")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyUsername, "old-user")
 
 	// Switch to unauthenticated — both fields intentionally empty
 	body := `{"host":"smtp.example.com","from":"noreply@example.com","username":"","password":""}`
@@ -937,7 +938,7 @@ func TestHandleSetSMTPConfig_UnauthenticatedSMTP_ClearsExistingPassword(t *testi
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
-	pw, err := h.DB.GetSetting(context.Background(), settingSMTPPassword)
+	pw, err := h.DB.GetSetting(context.Background(), smtp.SettingKeyPassword)
 	if err != nil {
 		t.Fatalf("GetSetting(smtp_password): %v", err)
 	}
@@ -999,13 +1000,13 @@ func TestHandleSMTPTest_Success(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
 	// Configure SMTP in DB
-	_ = h.DB.SetSetting(context.Background(), settingSMTPHost, "smtp.example.com")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPPort, "587")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPFrom, "noreply@example.com")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPTLS, "starttls")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyHost, "smtp.example.com")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyPort, "587")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyFrom, "noreply@example.com")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyTLS, "starttls")
 
 	var calledFrom, calledTo string
-	h.SendMailFunc = func(_ context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
+	h.SendMailFunc = func(_ context.Context, addr string, a netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
 		calledFrom = from
 		calledTo = to
 		return nil
@@ -1031,12 +1032,12 @@ func TestHandleSMTPTest_Success(t *testing.T) {
 func TestHandleSMTPTest_SendMailFailure(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
-	_ = h.DB.SetSetting(context.Background(), settingSMTPHost, "smtp.example.com")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPPort, "587")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPFrom, "noreply@example.com")
-	_ = h.DB.SetSetting(context.Background(), settingSMTPTLS, "starttls")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyHost, "smtp.example.com")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyPort, "587")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyFrom, "noreply@example.com")
+	_ = h.DB.SetSetting(context.Background(), smtp.SettingKeyTLS, "starttls")
 
-	h.SendMailFunc = func(_ context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
+	h.SendMailFunc = func(_ context.Context, addr string, a netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
 		return fmt.Errorf("connection refused")
 	}
 
