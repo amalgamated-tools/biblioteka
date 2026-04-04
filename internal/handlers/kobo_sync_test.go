@@ -78,9 +78,9 @@ func TestHandleSync_BooksLastModifiedHeader(t *testing.T) {
 	}
 }
 
-// TestHandleSync_NonGETMethodFails verifies that non-GET methods on the sync
-// endpoint return an error or no-op response.
-func TestHandleSync_NonGETMethodFails(t *testing.T) {
+// TestHandleSync_NonGETMethodReturnsEmpty verifies that non-GET methods on the
+// sync endpoint return an empty array response (Kobo compatibility).
+func TestHandleSync_NonGETMethodReturnsEmpty(t *testing.T) {
 	t.Parallel()
 
 	h, userID := setupKoboHandler(t)
@@ -92,13 +92,13 @@ func TestHandleSync_NonGETMethodFails(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	// The handler should not succeed for non-GET.
-	if w.Code == http.StatusOK {
-		var results []any
-		if err := json.NewDecoder(w.Body).Decode(&results); err == nil {
-			// If it returns 200 with a valid response, that's OK too — test doesn't enforce.
-			_ = results
-		}
+	// The handler does not restrict by method; it returns 200 with an empty sync response.
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	var results []any
+	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
+		t.Fatalf("decode response: %v", err)
 	}
 }
 
