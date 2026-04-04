@@ -121,7 +121,7 @@ type StatusInfo struct {
 
 // ReadingState represents the reading-state object expected by Kobo devices.
 type ReadingState struct {
-	EntitlementId     string            `json:"EntitlementId"`
+	EntitlementID     string            `json:"EntitlementId"`
 	Created           string            `json:"Created"`
 	LastModified      string            `json:"LastModified"`
 	PriorityTimestamp string            `json:"PriorityTimestamp"`
