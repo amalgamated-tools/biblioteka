@@ -178,8 +178,8 @@
                   aria-label={tokenList.copy.copiedId === token.id
                     ? `Copied sync URL for ${token.name}`
                     : `Copy sync URL for ${token.name}`}
-                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {tokenList.copy.copiedId ===
-                  token.id
+                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {tokenList
+                    .copy.copiedId === token.id
                     ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
                     : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
                 >
