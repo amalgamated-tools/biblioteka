@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
 import { tick } from "svelte";
 
@@ -11,15 +11,20 @@ vi.mock("lucide-svelte", () => ({ Shield: () => {} }));
 import OidcTab from "./OidcTab.svelte";
 import { setOidcConfig } from "../../lib/api";
 
-const defaultProps = {
-  initialOidcConfigured: false,
-  initialIssuerUrl: "",
-  initialClientId: "",
-  initialRedirectUri: "",
-  onOidcSaved: vi.fn(),
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let defaultProps: any;
 
 describe("OidcTab", () => {
+  beforeEach(() => {
+    defaultProps = {
+      initialOidcConfigured: false,
+      initialIssuerUrl: "",
+      initialClientId: "",
+      initialRedirectUri: "",
+      onOidcSaved: vi.fn(),
+    };
+  });
+
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();

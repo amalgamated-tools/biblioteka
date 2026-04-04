@@ -221,8 +221,8 @@ describe("SmtpTab form validation", () => {
 describe("SmtpTab test email", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => {
-    vi.useRealTimers();
     cleanup();
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
