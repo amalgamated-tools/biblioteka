@@ -948,7 +948,7 @@ When the author exists but has no associated books, the response is `200 OK` wit
 
 | Status | Meaning |
 |--------|---------|
-| `404` | Author not found |
+| `404` | Author not found (only checked when the author has no associated books) |
 | `500` | Unexpected server error |
 
 ---
@@ -1068,11 +1068,13 @@ List books associated with a specific series, with pagination. Results use the s
 
 When the series exists but has no associated books, the response is `200 OK` with `"books": []` and `"total": 0`.
 
+Results are ordered by series position ascending (books with no assigned position appear last on PostgreSQL, first on SQLite), then by title ascending within the same position.
+
 **Errors:**
 
 | Status | Meaning |
 |--------|---------|
-| `404` | Series not found |
+| `404` | Series not found (only checked when the series has no associated books) |
 | `500` | Unexpected server error |
 
 ---
