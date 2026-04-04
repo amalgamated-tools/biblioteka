@@ -33,7 +33,7 @@ type Entitlement struct {
 	IsLocked            bool         `json:"IsLocked"`
 	LastModified        string       `json:"LastModified"`
 	OriginCategory      string       `json:"OriginCategory"`
-	RevisionId          string       `json:"RevisionId"`
+	RevisionID          string       `json:"RevisionId"`
 	Status              string       `json:"Status"`
 }
 
