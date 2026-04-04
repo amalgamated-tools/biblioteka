@@ -7,27 +7,34 @@
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
-  import { autofocusFirstButton } from "../../lib/actions";
-  import { TokenListState } from "../../lib/tokenList.svelte";
-  import { CopyTimeoutState } from "../../lib/copyTimeout.svelte";
+  import DeleteConfirmation from "../ui/DeleteConfirmation.svelte";
+  import { createTokenManager } from "../../lib/tokenManager.svelte";
 
-  const tokenList = new TokenListState<APIKey>({
-    load: listAPIKeys,
-    delete: deleteAPIKey,
-    loadError: "Failed to load API keys",
-    deleteError: "Failed to delete API key",
+  const mgr = createTokenManager<APIKey>({
+    loadFn: listAPIKeys,
+    deleteFn: deleteAPIKey,
+    loadErrorMessage: "Failed to load API keys",
+    deleteErrorMessage: "Failed to delete API key",
   });
 
-  const copyState = new CopyTimeoutState();
-  const keyCopied = $derived(copyState.copiedId !== null);
   let newKeyName = $state("");
   let newlyCreatedKey: string | null = $state(null);
   let createKeyLoading = $state(false);
+  let keyCopied = $state(false);
+  let keyCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  onDestroy(() => copyState.clear());
+  function clearCopyTimeout() {
+    if (keyCopiedTimeout !== null) {
+      clearTimeout(keyCopiedTimeout);
+      keyCopiedTimeout = null;
+    }
+  }
+
+  onDestroy(clearCopyTimeout);
+  onDestroy(mgr.clearCopyTimeout);
 
   onMount(() => {
-    void tokenList.load();
+    void mgr.load();
   });
 
   async function handleCreateAPIKey(e: SubmitEvent) {
@@ -35,16 +42,17 @@
     if (!newKeyName.trim()) return;
 
     createKeyLoading = true;
-    tokenList.error = null;
+    mgr.error = null;
     newlyCreatedKey = null;
     // Reset any previous "copied" state when starting to create a new key
-    copyState.clear();
+    clearCopyTimeout();
+    keyCopied = false;
 
     try {
       const result = await createAPIKey(newKeyName.trim());
       newlyCreatedKey = result.key;
       newKeyName = "";
-      tokenList.items = [
+      mgr.items = [
         {
           id: result.id,
           name: result.name,
@@ -52,10 +60,10 @@
           last_used_at: result.last_used_at,
           created_at: result.created_at,
         },
-        ...tokenList.items,
+        ...mgr.items,
       ];
     } catch (err) {
-      tokenList.error =
+      mgr.error =
         err instanceof Error ? err.message : "Failed to create API key";
     } finally {
       createKeyLoading = false;
@@ -65,9 +73,14 @@
   async function handleCopyKey(text: string) {
     try {
       await copyToClipboard(text);
-      copyState.set("key");
+      keyCopied = true;
+      clearCopyTimeout();
+      keyCopiedTimeout = window.setTimeout(() => {
+        keyCopied = false;
+        keyCopiedTimeout = null;
+      }, 2000);
     } catch {
-      tokenList.error =
+      mgr.error =
         "Failed to copy to clipboard. Please select and copy the key manually.";
     }
   }
@@ -142,13 +155,13 @@
       </div>
     {/if}
 
-    {#if tokenList.error}
-      <AlertBanner variant="error" class="mb-4">{tokenList.error}</AlertBanner>
+    {#if mgr.error}
+      <AlertBanner variant="error" class="mb-4">{mgr.error}</AlertBanner>
     {/if}
 
-    {#if tokenList.loading}
+    {#if mgr.loading}
       <p class="text-ink-400 dark:text-ink-400">Loading API keys...</p>
-    {:else if tokenList.items.length === 0}
+    {:else if mgr.items.length === 0}
       <p class="text-sm text-ink-400 dark:text-ink-500">
         No API keys yet. Create one above to get started.
       </p>
@@ -169,7 +182,7 @@
             </tr>
           </thead>
           <tbody>
-            {#each tokenList.items as key (key.id)}
+            {#each mgr.items as key (key.id)}
               <tr
                 class="border-b border-ink-50 dark:border-ink-800 hover:bg-ink-50/50 dark:hover:bg-ink-800/50 transition-colors"
               >
@@ -192,45 +205,17 @@
                     : "Never"}
                 </td>
                 <td class="py-3 text-right">
-                  {#if tokenList.pendingDelete?.id === key.id}
-                    <div
-                      class="flex items-center justify-end gap-2 animate-scale-in"
-                      role="alertdialog"
-                      aria-modal="false"
-                      aria-labelledby={`delete-key-confirm-label-${key.id}`}
-                      tabindex="-1"
-                      use:autofocusFirstButton
-                      onkeydown={(e: KeyboardEvent) => {
-                        if (e.key === "Escape")
-                          tokenList.cancelDeleteWithFocus();
-                      }}
-                    >
-                      <span
-                        id={`delete-key-confirm-label-${key.id}`}
-                        class="text-xs text-danger-600 dark:text-red-400"
-                        >Delete "{key.name}"?</span
-                      >
-                      <Button
-                        type="button"
-                        variant="danger"
-                        onclick={() => tokenList.confirmDelete()}
-                        class="px-3 py-1 text-xs"
-                      >
-                        Delete
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onclick={() => tokenList.cancelDeleteWithFocus()}
-                        class="px-3 py-1 text-xs"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+                  {#if mgr.pendingDelete?.id === key.id}
+                    <DeleteConfirmation
+                      itemId={key.id}
+                      itemName={key.name}
+                      onConfirm={mgr.confirmDelete}
+                      onCancel={mgr.cancelDelete}
+                    />
                   {:else}
                     <button
                       data-delete-trigger={key.id}
-                      onclick={() => tokenList.handleDelete(key.id, key.name)}
+                      onclick={() => mgr.handleDelete(key.id, key.name)}
                       aria-label={`Delete API key ${key.name} (${key.key_prefix}...)`}
                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                     >
