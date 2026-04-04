@@ -18,7 +18,10 @@ describe("AlertBanner", () => {
   });
 
   it("renders with role='status' for success variant", () => {
-    render(AlertBanner, { variant: "success", children: makeChildren("Done!") });
+    render(AlertBanner, {
+      variant: "success",
+      children: makeChildren("Done!"),
+    });
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
@@ -56,7 +59,9 @@ describe("AlertBanner", () => {
       testId: "my-banner",
       children: makeChildren("Success"),
     });
-    expect(container.querySelector('[data-testid="my-banner"]')).toBeInTheDocument();
+    expect(
+      container.querySelector('[data-testid="my-banner"]'),
+    ).toBeInTheDocument();
   });
 
   it("renders children content", () => {

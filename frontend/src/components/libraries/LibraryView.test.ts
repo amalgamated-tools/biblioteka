@@ -73,7 +73,9 @@ describe("LibraryView", () => {
     });
     await tick();
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Library");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Library",
+    );
   });
 
   it("renders the library settings button", async () => {
@@ -93,13 +95,19 @@ describe("LibraryView", () => {
     });
     await tick();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Library settings" }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Library settings" }),
+    );
     expect(routerStore.navigate).toHaveBeenCalledWith("libraries/edit/lib-1");
   });
 
   it("shows an error banner when the error prop is set", async () => {
     render(LibraryView, {
-      props: { library: fakeLibrary, libraryId: "lib-1", error: "Failed to load" },
+      props: {
+        library: fakeLibrary,
+        libraryId: "lib-1",
+        error: "Failed to load",
+      },
     });
     await tick();
 
@@ -152,7 +160,9 @@ describe("LibraryView", () => {
       limit: 24,
       offset: 0,
     });
-    vi.mocked(libraryStore).scanningIds = { has: vi.fn().mockReturnValue(true) } as unknown as SvelteSet<string>;
+    vi.mocked(libraryStore).scanningIds = {
+      has: vi.fn().mockReturnValue(true),
+    } as unknown as SvelteSet<string>;
     render(LibraryView, {
       props: { library: fakeLibrary, libraryId: "lib-1", error: null },
     });

@@ -50,7 +50,9 @@ describe("Settings navigation", () => {
     render(Settings);
     await tick();
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Settings");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Settings",
+    );
   });
 
   it("renders user-facing navigation links", async () => {
@@ -59,8 +61,12 @@ describe("Settings navigation", () => {
 
     expect(screen.getByRole("link", { name: /Account/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /API Keys/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Preferences/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Kobo Sync/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Preferences/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Kobo Sync/i }),
+    ).toBeInTheDocument();
   });
 
   it("does not render admin-only navigation links for non-admin users", async () => {
@@ -88,8 +94,12 @@ describe("Settings navigation", () => {
     await tick();
     await tick();
 
-    expect(screen.getByRole("link", { name: /OIDC \/ SSO/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Email \/ SMTP/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /OIDC \/ SSO/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Email \/ SMTP/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Users/i })).toBeInTheDocument();
   });
 

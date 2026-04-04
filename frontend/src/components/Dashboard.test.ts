@@ -40,7 +40,9 @@ describe("Dashboard", () => {
 
   it("renders the Dashboard heading", () => {
     render(Dashboard);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Dashboard");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Dashboard",
+    );
   });
 
   it("shows the onboarding card when libraries are loaded and empty", async () => {
@@ -71,7 +73,9 @@ describe("Dashboard", () => {
     render(Dashboard);
     await tick();
 
-    await fireEvent.click(screen.getByRole("button", { name: /Add Your First Library/i }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: /Add Your First Library/i }),
+    );
     expect(routerStore.navigate).toHaveBeenCalledWith("libraries/new");
   });
 
@@ -112,9 +116,7 @@ describe("Dashboard", () => {
     render(Dashboard);
     await tick();
 
-    expect(
-      screen.queryByRole("heading", { name: /Get started/i }),
-    ).toBeNull();
+    expect(screen.queryByRole("heading", { name: /Get started/i })).toBeNull();
   });
 
   it("shows the library count in the stats grid", async () => {
