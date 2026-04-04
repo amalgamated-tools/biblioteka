@@ -126,7 +126,12 @@
       >
     </header>
 
-    <main id="main-content" tabindex="-1" class="md:ml-64 p-4 md:p-8" inert={sidebarOpen}>
+    <main
+      id="main-content"
+      tabindex="-1"
+      class="md:ml-64 p-4 md:p-8"
+      inert={sidebarOpen}
+    >
       <div class="max-w-6xl mx-auto animate-fade-in">
         {#if routerStore.isKnownView === false}
           <NotFound />
