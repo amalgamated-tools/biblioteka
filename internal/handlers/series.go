@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -79,23 +80,35 @@ func (h *SeriesHandler) HandleSeriesList(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// HandleSeries handles GET/PUT/DELETE /api/series/{id}.
+// HandleSeries handles requests under /api/series/{id} and /api/series/{id}/books.
 func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
-	id, ok := extractPathID(r.URL.Path, "/api/series/")
+	id, sub, ok := extractPathSegments(r.URL.Path, "/api/series/")
 	if !ok {
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid series ID")
 		return
 	}
 
-	switch r.Method {
-	case http.MethodGet:
-		h.getSeries(w, r, id)
-	case http.MethodPut:
-		h.updateSeries(w, r, id)
-	case http.MethodDelete:
-		h.deleteSeries(w, r, id)
+	switch sub {
+	case "":
+		switch r.Method {
+		case http.MethodGet:
+			h.getSeries(w, r, id)
+		case http.MethodPut:
+			h.updateSeries(w, r, id)
+		case http.MethodDelete:
+			h.deleteSeries(w, r, id)
+		default:
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
+	case "books":
+		switch r.Method {
+		case http.MethodGet:
+			h.listSeriesBooks(w, r, id)
+		default:
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
 	default:
-		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}
 }
 
@@ -191,4 +204,50 @@ func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id 
 		db.AuditActionSeriesDeleted,
 		func(s *db.Series) map[string]any { return map[string]any{"name": s.Name} },
 	)
+}
+
+// listSeriesBooks godoc
+//
+//	@Summary		List books in a series
+//	@Description	Returns paginated books for a specific series, ordered by position then title
+//	@Tags			Series
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string	true	"Series ID"
+//	@Param			limit	query		int		false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int		false	"Number of items to skip (default 0)"
+//	@Success		200		{object}	bookListDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/series/{id}/books [get]
+func (h *SeriesHandler) listSeriesBooks(w http.ResponseWriter, r *http.Request, seriesID string) {
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+
+	books, total, err := h.DB.ListBooksBySeriesPaginated(r.Context(), seriesID, limit, offset)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to list series books",
+			slog.String(otelkeys.SeriesID, seriesID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list series books")
+		return
+	}
+
+	// If no books found, check whether the series actually exists.
+	if total == 0 {
+		if _, err := h.DB.GetSeries(r.Context(), seriesID); handleDBErr(r.Context(), w, err, "series") {
+			return
+		}
+	}
+
+	dtos := mapSlice(books, toBookSummaryDTO)
+
+	writeJSON(r.Context(), w, http.StatusOK, bookListDTO{
+		Books:  dtos,
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
+	})
 }

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 )
 
 func setupSeriesHandler(t *testing.T) (*SeriesHandler, string) {
@@ -211,5 +213,95 @@ func TestDeleteSeries_NotFound(t *testing.T) {
 	}
 	if resp.Error != "series not found" {
 		t.Errorf("error = %q, want %q", resp.Error, "series not found")
+	}
+}
+
+func TestListSeriesBooks_Handler(t *testing.T) {
+	h, userID := setupSeriesHandler(t)
+
+	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create series: %v", err)
+	}
+
+	b1, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	b2, err := h.DB.CreateBook(context.Background(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	if err := h.DB.SetBookSeries(context.Background(), b1.ID, []db.BookSeriesInput{{SeriesID: s.ID}}); err != nil {
+		t.Fatalf("set book series: %v", err)
+	}
+	if err := h.DB.SetBookSeries(context.Background(), b2.ID, []db.BookSeriesInput{{SeriesID: s.ID}}); err != nil {
+		t.Fatalf("set book series: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/api/series/"+s.ID+"/books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleSeries(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var result bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if result.Total != 2 {
+		t.Errorf("total = %d, want 2", result.Total)
+	}
+	if len(result.Books) != 2 {
+		t.Errorf("len(books) = %d, want 2", len(result.Books))
+	}
+}
+
+func TestListSeriesBooks_SeriesNotFound(t *testing.T) {
+	h, userID := setupSeriesHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/series/nonexistent/books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleSeries(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestListSeriesBooks_Empty(t *testing.T) {
+	h, userID := setupSeriesHandler(t)
+
+	s, err := h.DB.CreateSeries(context.Background(), "Empty Series", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("create series: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/api/series/"+s.ID+"/books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleSeries(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var result bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if result.Total != 0 {
+		t.Errorf("total = %d, want 0", result.Total)
+	}
+	if result.Books == nil {
+		t.Error("books should be empty slice, not nil")
 	}
 }
