@@ -45,7 +45,7 @@ func TestScanLibraryHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
@@ -74,7 +74,7 @@ func TestScanLibraryHandler_EmptyPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
@@ -94,7 +94,7 @@ func TestScanLibraryHandler_EnqueueError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("handler should not fail on enqueue errors: %v", err)
 	}
 
@@ -111,7 +111,7 @@ func TestScanLibraryHandler_MissingLibraryID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	if err := handler(context.Background(), payload); err == nil {
+	if err := handler(t.Context(), payload); err == nil {
 		t.Fatal("expected error when library_id is missing")
 	}
 }
@@ -120,7 +120,7 @@ func TestScanLibraryHandler_InvalidPayload(t *testing.T) {
 	enq := &genericMockEnqueuer{}
 	handler := NewScanLibraryHandler(enq)
 
-	if err := handler(context.Background(), []byte("not json")); err == nil {
+	if err := handler(t.Context(), []byte("not json")); err == nil {
 		t.Fatal("expected error for invalid payload")
 	}
 }

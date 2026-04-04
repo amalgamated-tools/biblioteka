@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"database/sql"
 	"testing"
 )
@@ -9,7 +8,7 @@ import (
 func TestCreateLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, err := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/books/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	lib, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/books/fiction"]`, LibraryOrganizationBookPerFolder, false)
 	if err != nil {
 		t.Fatalf("CreateLibrary() error: %v", err)
 	}
@@ -39,12 +38,12 @@ func TestCreateLibrary(t *testing.T) {
 func TestCreateLibrary_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/books/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	_, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/books/fiction"]`, LibraryOrganizationBookPerFolder, false)
 	if err != nil {
 		t.Fatalf("first CreateLibrary() error: %v", err)
 	}
 
-	_, err = d.CreateLibrary(context.Background(), "Fiction", `["/mnt/books/other"]`, LibraryOrganizationBookPerFolder, false)
+	_, err = d.CreateLibrary(t.Context(), "Fiction", `["/mnt/books/other"]`, LibraryOrganizationBookPerFolder, false)
 	if err != ErrLibraryNameExists {
 		t.Errorf("expected ErrLibraryNameExists, got %v", err)
 	}
@@ -53,12 +52,12 @@ func TestCreateLibrary_DuplicateName(t *testing.T) {
 func TestGetLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	created, err := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/books/fiction"]`, LibraryOrganizationBookPerFolder, true)
+	created, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/books/fiction"]`, LibraryOrganizationBookPerFolder, true)
 	if err != nil {
 		t.Fatalf("CreateLibrary() error: %v", err)
 	}
 
-	found, err := d.GetLibrary(context.Background(), created.ID)
+	found, err := d.GetLibrary(t.Context(), created.ID)
 	if err != nil {
 		t.Fatalf("GetLibrary() error: %v", err)
 	}
@@ -76,7 +75,7 @@ func TestGetLibrary(t *testing.T) {
 func TestGetLibrary_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.GetLibrary(context.Background(), "nonexistent-id")
+	_, err := d.GetLibrary(t.Context(), "nonexistent-id")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
@@ -85,14 +84,14 @@ func TestGetLibrary_NotFound(t *testing.T) {
 func TestListLibraries(t *testing.T) {
 	d := newTestDB(t)
 
-	if _, err := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false); err != nil {
+	if _, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false); err != nil {
 		t.Fatalf("CreateLibrary() for Fiction error: %v", err)
 	}
-	if _, err := d.CreateLibrary(context.Background(), "Non-Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, true); err != nil {
+	if _, err := d.CreateLibrary(t.Context(), "Non-Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, true); err != nil {
 		t.Fatalf("CreateLibrary() for Non-Fiction error: %v", err)
 	}
 
-	libs, err := d.ListLibraries(context.Background())
+	libs, err := d.ListLibraries(t.Context())
 	if err != nil {
 		t.Fatalf("ListLibraries() error: %v", err)
 	}
@@ -107,12 +106,12 @@ func TestListLibraries(t *testing.T) {
 func TestUpdateLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	created, err := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	created, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
 	if err != nil {
 		t.Fatalf("CreateLibrary() error: %v", err)
 	}
 
-	updated, err := d.UpdateLibrary(context.Background(), created.ID, "Novels", `["/mnt/novels","/mnt/fiction"]`, LibraryOrganizationBookPerFolder, true)
+	updated, err := d.UpdateLibrary(t.Context(), created.ID, "Novels", `["/mnt/novels","/mnt/fiction"]`, LibraryOrganizationBookPerFolder, true)
 	if err != nil {
 		t.Fatalf("UpdateLibrary() error: %v", err)
 	}
@@ -130,15 +129,15 @@ func TestUpdateLibrary(t *testing.T) {
 func TestUpdateLibrary_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	if _, err := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false); err != nil {
+	if _, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false); err != nil {
 		t.Fatalf("CreateLibrary() for Fiction error: %v", err)
 	}
-	lib2, err := d.CreateLibrary(context.Background(), "Non-Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, false)
+	lib2, err := d.CreateLibrary(t.Context(), "Non-Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, false)
 	if err != nil {
 		t.Fatalf("CreateLibrary() for Non-Fiction error: %v", err)
 	}
 
-	_, err = d.UpdateLibrary(context.Background(), lib2.ID, "Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, false)
+	_, err = d.UpdateLibrary(t.Context(), lib2.ID, "Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, false)
 	if err != ErrLibraryNameExists {
 		t.Errorf("expected ErrLibraryNameExists, got %v", err)
 	}
@@ -147,17 +146,17 @@ func TestUpdateLibrary_DuplicateName(t *testing.T) {
 func TestDeleteLibrary(t *testing.T) {
 	d := newTestDB(t)
 
-	lib, err := d.CreateLibrary(context.Background(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	lib, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
 	if err != nil {
 		t.Fatalf("CreateLibrary() error: %v", err)
 	}
 
-	err = d.DeleteLibrary(context.Background(), lib.ID)
+	err = d.DeleteLibrary(t.Context(), lib.ID)
 	if err != nil {
 		t.Fatalf("DeleteLibrary() error: %v", err)
 	}
 
-	_, err = d.GetLibrary(context.Background(), lib.ID)
+	_, err = d.GetLibrary(t.Context(), lib.ID)
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
 	}
@@ -166,7 +165,7 @@ func TestDeleteLibrary(t *testing.T) {
 func TestDeleteLibrary_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	err := d.DeleteLibrary(context.Background(), "nonexistent-id")
+	err := d.DeleteLibrary(t.Context(), "nonexistent-id")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}

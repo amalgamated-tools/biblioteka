@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"net/http"
@@ -30,7 +31,7 @@ func requireExifToolExtractor(t *testing.T) *metadata.Extractor {
 		ext.Close(t.Context())
 		t.Skip("exiftool not available, skipping EPUB3 cover import test")
 	}
-	t.Cleanup(func() { ext.Close(t.Context()) })
+	t.Cleanup(func() { ext.Close(context.Background()) })
 	return ext
 }
 

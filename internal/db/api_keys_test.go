@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -10,7 +9,7 @@ import (
 
 func createTestUser(t *testing.T, d *DB) *User {
 	t.Helper()
-	u, err := d.CreateUser(context.Background(), "Test User", t.Name()+"@example.com", "password1")
+	u, err := d.CreateUser(t.Context(), "Test User", t.Name()+"@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
