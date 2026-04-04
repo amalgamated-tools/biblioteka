@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestHandleBookMetadata_CoverURLIncluded verifies that a book with a cover
@@ -24,17 +26,13 @@ func TestHandleBookMetadata_CoverURLIncluded(t *testing.T) {
 		"Cover URL Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		&coverURL,
 	)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	// A book file is required for metadata to be returned.
 	_, err = h.DB.CreateBookFile(
 		context.Background(), book.ID, "epub", "cover-book.epub", 1024, nil,
 		filepath.Join(t.TempDir(), "cover-book.epub"),
 	)
-	if err != nil {
-		t.Fatalf("create book file: %v", err)
-	}
+	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/metadata", nil)
 	r.Host = "localhost:8080"
@@ -42,14 +40,14 @@ func TestHandleBookMetadata_CoverURLIncluded(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var results []map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
-		t.Fatalf("decode: %v", err)
+		require.NoError(t, err, "decode")
 	}
 	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
+		require.Failf(t, "failed", "expected 1 result, got %d", len(results))
 	}
 	if results[0]["Title"] != "Cover URL Book" {
 		t.Errorf("Title = %v, want Cover URL Book", results[0]["Title"])
@@ -71,16 +69,12 @@ func TestHandleBookMetadata_MultipleEntitlementsEachHaveMetadata(t *testing.T) {
 
 	// Create a book with a file so metadata is returned.
 	book, err := h.DB.CreateBook(context.Background(), "Book Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	_, err = h.DB.CreateBookFile(
 		context.Background(), book.ID, "epub", "alpha.epub", 512, nil,
 		filepath.Join(t.TempDir(), "alpha.epub"),
 	)
-	if err != nil {
-		t.Fatalf("create book file: %v", err)
-	}
+	require.NoError(t, err, "create book file")
 
 	// Fetch metadata for just the first book.
 	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/metadata", nil)
@@ -89,14 +83,14 @@ func TestHandleBookMetadata_MultipleEntitlementsEachHaveMetadata(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var results []map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
-		t.Fatalf("decode: %v", err)
+		require.NoError(t, err, "decode")
 	}
 	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
+		require.Failf(t, "failed", "expected 1 result, got %d", len(results))
 	}
 	if results[0]["Title"] != "Book Alpha" {
 		t.Errorf("Title = %v, want Book Alpha", results[0]["Title"])
@@ -113,16 +107,12 @@ func TestHandleBookMetadata_ContainsEntitlementID(t *testing.T) {
 	tokenValue := createTestKoboToken(t, h, userID)
 
 	book, err := h.DB.CreateBook(context.Background(), "Entitlement Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	_, err = h.DB.CreateBookFile(
 		context.Background(), book.ID, "epub", "entitlement.epub", 512, nil,
 		filepath.Join(t.TempDir(), "entitlement.epub"),
 	)
-	if err != nil {
-		t.Fatalf("create book file: %v", err)
-	}
+	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/metadata", nil)
 	r.Host = "localhost:8080"
@@ -131,10 +121,10 @@ func TestHandleBookMetadata_ContainsEntitlementID(t *testing.T) {
 
 	var results []map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
-		t.Fatalf("decode: %v", err)
+		require.NoError(t, err, "decode")
 	}
 	if len(results) < 1 {
-		t.Fatal("expected at least 1 result")
+		require.Fail(t, "expected at least 1 result")
 	}
 	if results[0]["Title"] != "Entitlement Book" {
 		t.Errorf("Title = %v, want Entitlement Book", results[0]["Title"])

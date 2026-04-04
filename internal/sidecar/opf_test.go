@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestWriteOPF_AllFields(t *testing.T) {
@@ -24,13 +26,11 @@ func TestWriteOPF_AllFields(t *testing.T) {
 	}
 
 	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		t.Fatalf("WriteOPF: %v", err)
+		require.NoError(t, err, "WriteOPF")
 	}
 
 	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
-	if err != nil {
-		t.Fatalf("read metadata.opf: %v", err)
-	}
+	require.NoError(t, err, "read metadata.opf")
 
 	s := string(content)
 
@@ -68,13 +68,11 @@ func TestWriteOPF_MinimalData(t *testing.T) {
 	}
 
 	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		t.Fatalf("WriteOPF: %v", err)
+		require.NoError(t, err, "WriteOPF")
 	}
 
 	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
-	if err != nil {
-		t.Fatalf("read metadata.opf: %v", err)
-	}
+	require.NoError(t, err, "read metadata.opf")
 
 	s := string(content)
 	if !strings.Contains(s, `<dc:title>Untitled</dc:title>`) {
@@ -106,7 +104,7 @@ func TestWriteOPF_EmptyTitle(t *testing.T) {
 	data := OPFData{}
 
 	if err := WriteOPF(t.Context(), dir, data, ""); err == nil {
-		t.Fatal("expected error when title is empty")
+		require.Fail(t, "expected error when title is empty")
 	}
 }
 
@@ -118,26 +116,22 @@ func TestWriteOPF_UUIDIsDeterministic(t *testing.T) {
 	}
 
 	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		t.Fatalf("first WriteOPF: %v", err)
+		require.NoError(t, err, "first WriteOPF")
 	}
 	first, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
-	if err != nil {
-		t.Fatalf("read first metadata.opf: %v", err)
-	}
+	require.NoError(t, err, "read first metadata.opf")
 
 	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		t.Fatalf("second WriteOPF: %v", err)
+		require.NoError(t, err, "second WriteOPF")
 	}
 	second, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
-	if err != nil {
-		t.Fatalf("read second metadata.opf: %v", err)
-	}
+	require.NoError(t, err, "read second metadata.opf")
 
 	uuidRe := regexp.MustCompile(`urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 	uuid1 := uuidRe.FindString(string(first))
 	uuid2 := uuidRe.FindString(string(second))
 	if uuid1 == "" || uuid2 == "" {
-		t.Fatalf("expected UUIDs in both OPF files, got %q and %q", uuid1, uuid2)
+		require.Failf(t, "failed", "expected UUIDs in both OPF files, got %q and %q", uuid1, uuid2)
 	}
 	if uuid1 != uuid2 {
 		t.Errorf("UUID changed between calls: %q vs %q", uuid1, uuid2)
@@ -151,13 +145,11 @@ func TestWriteOPF_NoCover(t *testing.T) {
 	}
 
 	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		t.Fatalf("WriteOPF: %v", err)
+		require.NoError(t, err, "WriteOPF")
 	}
 
 	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
-	if err != nil {
-		t.Fatalf("read metadata.opf: %v", err)
-	}
+	require.NoError(t, err, "read metadata.opf")
 
 	s := string(content)
 	if strings.Contains(s, `name="cover"`) {
@@ -181,13 +173,11 @@ func TestWriteOPF_PNGCover(t *testing.T) {
 	}
 
 	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		t.Fatalf("WriteOPF: %v", err)
+		require.NoError(t, err, "WriteOPF")
 	}
 
 	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
-	if err != nil {
-		t.Fatalf("read metadata.opf: %v", err)
-	}
+	require.NoError(t, err, "read metadata.opf")
 
 	s := string(content)
 	checks := []string{
@@ -210,13 +200,11 @@ func TestWriteOPF_XMLSpecialChars(t *testing.T) {
 	}
 
 	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		t.Fatalf("WriteOPF: %v", err)
+		require.NoError(t, err, "WriteOPF")
 	}
 
 	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
-	if err != nil {
-		t.Fatalf("read metadata.opf: %v", err)
-	}
+	require.NoError(t, err, "read metadata.opf")
 
 	// Verify it's valid XML (special chars properly escaped).
 	if err := xml.Unmarshal(content, new(any)); err != nil {
@@ -258,7 +246,7 @@ func TestWriteOPF_CustomBaseName(t *testing.T) {
 
 	baseName := "Alice's Adventures in Wonderland by Lewis Carroll"
 	if err := WriteOPF(t.Context(), dir, data, baseName); err != nil {
-		t.Fatalf("WriteOPF: %v", err)
+		require.NoError(t, err, "WriteOPF")
 	}
 
 	expectedFile := baseName + ".opf"
@@ -276,6 +264,6 @@ func TestWriteOPF_InvalidBaseName(t *testing.T) {
 	data := OPFData{Title: "Unsafe"}
 
 	if err := WriteOPF(t.Context(), dir, data, "../escape"); err == nil {
-		t.Fatal("expected error for invalid base name")
+		require.Fail(t, "expected error for invalid base name")
 	}
 }

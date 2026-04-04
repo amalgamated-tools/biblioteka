@@ -6,6 +6,8 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/exif"
 	"github.com/amalgamated-tools/biblioteka/internal/pathparser"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestCreateBookRecord_BasicFields verifies that createBookRecord correctly
@@ -23,11 +25,9 @@ func TestCreateBookRecord_BasicFields(t *testing.T) {
 	}
 
 	book, err := createBookRecord(t.Context(), database, "My Test Book", nil, p, p.Path)
-	if err != nil {
-		t.Fatalf("createBookRecord() error: %v", err)
-	}
+	require.NoError(t, err, "createBookRecord() error")
 	if book == nil {
-		t.Fatal("expected book, got nil")
+		require.Fail(t, "expected book, got nil")
 	}
 	if book.Title != "My Test Book" {
 		t.Errorf("book.Title = %q, want %q", book.Title, "My Test Book")
@@ -58,9 +58,7 @@ func TestCreateBookRecord_WithMetadata(t *testing.T) {
 	}
 
 	book, err := createBookRecord(t.Context(), database, "Metadata Book", meta, p, p.Path)
-	if err != nil {
-		t.Fatalf("createBookRecord() error: %v", err)
-	}
+	require.NoError(t, err, "createBookRecord() error")
 
 	if book.Description == nil || *book.Description != description {
 		t.Errorf("Description = %v, want %q", book.Description, description)
@@ -93,9 +91,7 @@ func TestCreateBookRecord_ISBN10(t *testing.T) {
 	}
 
 	book, err := createBookRecord(t.Context(), database, "ISBN10 Book", meta, p, p.Path)
-	if err != nil {
-		t.Fatalf("createBookRecord() error: %v", err)
-	}
+	require.NoError(t, err, "createBookRecord() error")
 
 	if book.ISBN10 == nil || *book.ISBN10 != "123456789X" {
 		t.Errorf("ISBN10 = %v, want 123456789X", book.ISBN10)
@@ -115,18 +111,14 @@ func TestLinkBookAssociations_Author(t *testing.T) {
 		FileType: "epub",
 		FileSize: 512,
 	}, "/library/book.epub")
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	linkBookAssociations(t.Context(), database, book.ID, "Terry Pratchett", "", pathparser.PathInfo{}, "/library/book.epub")
 
 	authors, err := database.GetBookAuthors(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("get book authors: %v", err)
-	}
+	require.NoError(t, err, "get book authors")
 	if len(authors) != 1 {
-		t.Fatalf("expected 1 author, got %d", len(authors))
+		require.Failf(t, "failed", "expected 1 author, got %d", len(authors))
 	}
 	if authors[0].Name != "Terry Pratchett" {
 		t.Errorf("author name = %q, want Terry Pratchett", authors[0].Name)
@@ -146,16 +138,12 @@ func TestLinkBookAssociations_EmptyAuthor(t *testing.T) {
 		FileType: "epub",
 		FileSize: 512,
 	}, "/library/book.epub")
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	linkBookAssociations(t.Context(), database, book.ID, "", "", pathparser.PathInfo{}, "/library/book.epub")
 
 	authors, err := database.GetBookAuthors(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("get book authors: %v", err)
-	}
+	require.NoError(t, err, "get book authors")
 	if len(authors) != 0 {
 		t.Errorf("expected 0 authors, got %d", len(authors))
 	}
@@ -174,9 +162,7 @@ func TestLinkBookAssociations_Series(t *testing.T) {
 		FileType: "epub",
 		FileSize: 512,
 	}, "/library/book.epub")
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	pos := 1.0
 	pathInfo := pathparser.PathInfo{
@@ -186,11 +172,9 @@ func TestLinkBookAssociations_Series(t *testing.T) {
 	linkBookAssociations(t.Context(), database, book.ID, "", "", pathInfo, "/library/book.epub")
 
 	series, err := database.GetBookSeries(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("get book series: %v", err)
-	}
+	require.NoError(t, err, "get book series")
 	if len(series) != 1 {
-		t.Fatalf("expected 1 series, got %d", len(series))
+		require.Failf(t, "failed", "expected 1 series, got %d", len(series))
 	}
 	if series[0].Series.Name != "Discworld" {
 		t.Errorf("series name = %q, want Discworld", series[0].Series.Name)
@@ -212,9 +196,7 @@ func TestCreateBookRecord_NilMetadata(t *testing.T) {
 	}
 
 	book, err := createBookRecord(context.Background(), database, "Nil Meta Book", nil, p, p.Path)
-	if err != nil {
-		t.Fatalf("createBookRecord() error: %v", err)
-	}
+	require.NoError(t, err, "createBookRecord() error")
 	if book.Title != "Nil Meta Book" {
 		t.Errorf("book.Title = %q, want Nil Meta Book", book.Title)
 	}

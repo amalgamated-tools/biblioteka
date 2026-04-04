@@ -12,18 +12,18 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	_ "modernc.org/sqlite"
+
+	"github.com/stretchr/testify/require"
 )
 
 // newTestDB creates an in-memory SQLite database with all real migrations applied.
 func newTestDB(t *testing.T) *db.DB {
 	t.Helper()
 	sqlDB, err := sql.Open("sqlite", ":memory:")
-	if err != nil {
-		t.Fatalf("newTestDB: open: %v", err)
-	}
+	require.NoError(t, err, "newTestDB: open")
 	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
 		_ = sqlDB.Close()
-		t.Fatalf("newTestDB: migrations: %v", err)
+		require.NoError(t, err, "newTestDB: migrations")
 	}
 	t.Cleanup(func() { _ = sqlDB.Close() })
 	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
@@ -32,9 +32,7 @@ func newTestDB(t *testing.T) *db.DB {
 func newTestJWT(t *testing.T) *auth.JWTManager {
 	t.Helper()
 	jm, err := auth.NewJWTManager("testsecret", time.Hour)
-	if err != nil {
-		t.Fatalf("newTestJWT: %v", err)
-	}
+	require.NoError(t, err, "newTestJWT")
 	return jm
 }
 
@@ -60,7 +58,7 @@ func TestSignup_Success(t *testing.T) {
 	}
 	var resp authResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Token == "" {
 		t.Error("expected non-empty token")
@@ -119,7 +117,7 @@ func TestSignup_DuplicateEmail(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("first signup failed: %s", w.Body.String())
+		require.Failf(t, "failed", "first signup failed: %s", w.Body.String())
 	}
 
 	// Second signup with same email should fail
@@ -166,7 +164,7 @@ func TestLogin_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("signup failed: %s", w.Body.String())
+		require.Failf(t, "failed", "signup failed: %s", w.Body.String())
 	}
 
 	loginBody := `{"email":"bob@example.com","password":"secret123"}`
@@ -179,7 +177,7 @@ func TestLogin_Success(t *testing.T) {
 	}
 	var resp authResponse
 	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Token == "" {
 		t.Error("expected non-empty token")
@@ -268,7 +266,7 @@ func TestMe_Success(t *testing.T) {
 	}
 	var resp userDTO
 	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Email != "dave@example.com" {
 		t.Errorf("email = %q, want %q", resp.Email, "dave@example.com")
@@ -429,7 +427,7 @@ func assertAuthCookie(t *testing.T, w *httptest.ResponseRecorder, wantValue bool
 		}
 	}
 	if found == nil {
-		t.Fatal("expected Set-Cookie header for auth cookie, but none found")
+		require.Fail(t, "expected Set-Cookie header for auth cookie, but none found")
 	}
 	if wantValue && found.Value == "" {
 		t.Error("expected non-empty cookie value")
@@ -457,7 +455,7 @@ func TestSignup_SetsCookie(t *testing.T) {
 	h.Signup(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 	assertAuthCookie(t, w, true)
 }
@@ -472,7 +470,7 @@ func TestLogin_SetsCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("signup failed: %s", w.Body.String())
+		require.Failf(t, "failed", "signup failed: %s", w.Body.String())
 	}
 
 	loginBody := `{"email":"cookielogin@example.com","password":"secret123"}`
@@ -481,7 +479,7 @@ func TestLogin_SetsCookie(t *testing.T) {
 	h.Login(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 	assertAuthCookie(t, w2, true)
 }
@@ -496,7 +494,7 @@ func TestLogout_ClearsCookie(t *testing.T) {
 	h.Logout(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	cookies := w.Result().Cookies()
@@ -508,7 +506,7 @@ func TestLogout_ClearsCookie(t *testing.T) {
 		}
 	}
 	if found == nil {
-		t.Fatal("expected Set-Cookie header for auth cookie on logout, but none found")
+		require.Fail(t, "expected Set-Cookie header for auth cookie on logout, but none found")
 	}
 	if found.MaxAge != -1 {
 		t.Errorf("MaxAge = %d, want -1 (cookie deletion)", found.MaxAge)

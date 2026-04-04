@@ -13,15 +13,15 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mustMarshal marshals v to JSON and fails the test if marshaling fails.
 func mustMarshal(t *testing.T, v any) []byte {
 	t.Helper()
 	data, err := json.Marshal(v)
-	if err != nil {
-		t.Fatalf("mustMarshal: %v", err)
-	}
+	require.NoError(t, err, "mustMarshal")
 	return data
 }
 
@@ -37,7 +37,7 @@ func Test_WriteJSON(t *testing.T) {
 	}
 	var result map[string]string
 	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
+		require.NoError(t, err, "failed to unmarshal")
 	}
 	if result["key"] != "value" {
 		t.Errorf("key = %q, want %q", result["key"], "value")
@@ -56,7 +56,7 @@ func Test_WriteError(t *testing.T) {
 	}
 	var result map[string]string
 	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
+		require.NoError(t, err, "failed to unmarshal")
 	}
 	if result["error"] != "something went wrong" {
 		t.Errorf("error = %q, want %q", result["error"], "something went wrong")
@@ -81,7 +81,7 @@ func Test_ValidateName(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := validateName(t.Context(), w, tt.input)
 			if got != tt.wantValid {
-				t.Fatalf("validateName(%q) = %v, want %v", tt.input, got, tt.wantValid)
+				require.Failf(t, "failed", "validateName(%q) = %v, want %v", tt.input, got, tt.wantValid)
 			}
 			if tt.wantValid {
 				if w.Code != http.StatusOK {
@@ -97,7 +97,7 @@ func Test_ValidateName(t *testing.T) {
 			}
 			var result map[string]string
 			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-				t.Fatalf("failed to unmarshal: %v", err)
+				require.NoError(t, err, "failed to unmarshal")
 			}
 			if result["error"] != "name is required" {
 				t.Errorf("error = %q, want %q", result["error"], "name is required")
@@ -259,7 +259,7 @@ func Test_HandleNameErr(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := handleNameErr(t.Context(), w, tt.err, errInvalid, errExists, tt.resourceArt)
 			if got != tt.wantHandled {
-				t.Fatalf("handleNameErr() = %v, want %v", got, tt.wantHandled)
+				require.Failf(t, "failed", "handleNameErr() = %v, want %v", got, tt.wantHandled)
 			}
 			if !tt.wantHandled {
 				if w.Code != http.StatusOK {
@@ -275,7 +275,7 @@ func Test_HandleNameErr(t *testing.T) {
 			}
 			var result map[string]string
 			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-				t.Fatalf("failed to unmarshal: %v", err)
+				require.NoError(t, err, "failed to unmarshal")
 			}
 			if result["error"] != tt.wantErrMsg {
 				t.Errorf("error = %q, want %q", result["error"], tt.wantErrMsg)
@@ -330,7 +330,7 @@ func Test_HandleDBErr(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := handleDBErr(t.Context(), w, tt.err, tt.resource)
 			if got != tt.wantHandled {
-				t.Fatalf("handleDBErr() = %v, want %v", got, tt.wantHandled)
+				require.Failf(t, "failed", "handleDBErr() = %v, want %v", got, tt.wantHandled)
 			}
 			if !tt.wantHandled {
 				return
@@ -340,7 +340,7 @@ func Test_HandleDBErr(t *testing.T) {
 			}
 			var result map[string]string
 			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-				t.Fatalf("failed to unmarshal: %v", err)
+				require.NoError(t, err, "failed to unmarshal")
 			}
 			if result["error"] != tt.wantMsg {
 				t.Errorf("error = %q, want %q", result["error"], tt.wantMsg)
@@ -355,11 +355,9 @@ func Test_LogAudit(t *testing.T) {
 	logAudit(t.Context(), d, "user-42", db.AuditActionBookCreated, "book", "book-1", map[string]any{"title": "Audited"})
 
 	logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
-	if err != nil {
-		t.Fatalf("list audit logs: %v", err)
-	}
+	require.NoError(t, err, "list audit logs")
 	if len(logs) != 1 {
-		t.Fatalf("len(logs) = %d, want 1", len(logs))
+		require.Failf(t, "failed", "len(logs) = %d, want 1", len(logs))
 	}
 	if logs[0].UserID == nil || *logs[0].UserID != "user-42" {
 		t.Errorf("user id = %v, want %q", logs[0].UserID, "user-42")
@@ -374,7 +372,7 @@ func Test_LogAudit(t *testing.T) {
 		t.Errorf("entity id = %q, want %q", logs[0].EntityID, "book-1")
 	}
 	if logs[0].Metadata == nil {
-		t.Fatal("metadata = nil, want JSON metadata")
+		require.Fail(t, "metadata = nil, want JSON metadata")
 	}
 }
 
@@ -460,7 +458,7 @@ func Test_HandleUpdateErr(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := handleUpdateErr(t.Context(), w, tt.err, errInvalid, errExists, tt.resourceArt, tt.resource, tt.id)
 			if got != tt.wantHandled {
-				t.Fatalf("handleUpdateErr() = %v, want %v", got, tt.wantHandled)
+				require.Failf(t, "failed", "handleUpdateErr() = %v, want %v", got, tt.wantHandled)
 			}
 			if !tt.wantHandled {
 				if w.Code != http.StatusOK {
@@ -476,7 +474,7 @@ func Test_HandleUpdateErr(t *testing.T) {
 			}
 			var result map[string]string
 			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-				t.Fatalf("failed to unmarshal: %v", err)
+				require.NoError(t, err, "failed to unmarshal")
 			}
 			if result["error"] != tt.wantErrMsg {
 				t.Errorf("error = %q, want %q", result["error"], tt.wantErrMsg)
@@ -511,7 +509,7 @@ func Test_ListEntities(t *testing.T) {
 		}
 		var result map[string]string
 		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-			t.Fatalf("failed to unmarshal: %v", err)
+			require.NoError(t, err, "failed to unmarshal")
 		}
 		if result["error"] != "failed to list widgets" {
 			t.Errorf("error = %q, want %q", result["error"], "failed to list widgets")
@@ -532,10 +530,10 @@ func Test_ListEntities(t *testing.T) {
 		}
 		var dtos []dto
 		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			t.Fatalf("failed to unmarshal: %v", err)
+			require.NoError(t, err, "failed to unmarshal")
 		}
 		if len(dtos) != 2 {
-			t.Fatalf("len = %d, want 2", len(dtos))
+			require.Failf(t, "failed", "len = %d, want 2", len(dtos))
 		}
 		if dtos[0].Label != "Alpha" {
 			t.Errorf("dtos[0].Label = %q, want %q", dtos[0].Label, "Alpha")
@@ -559,7 +557,7 @@ func Test_ListEntities(t *testing.T) {
 		}
 		var dtos []dto
 		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			t.Fatalf("failed to unmarshal: %v", err)
+			require.NoError(t, err, "failed to unmarshal")
 		}
 		if len(dtos) != 0 {
 			t.Errorf("len = %d, want 0", len(dtos))
@@ -583,7 +581,7 @@ func Test_MapSlice(t *testing.T) {
 		items := []entity{{ID: 1, Name: "Alpha"}, {ID: 2, Name: "Beta"}}
 		result := mapSlice(items, toDTO)
 		if len(result) != 2 {
-			t.Fatalf("len = %d, want 2", len(result))
+			require.Failf(t, "failed", "len = %d, want 2", len(result))
 		}
 		if result[0].Label != "Alpha" {
 			t.Errorf("result[0].Label = %q, want %q", result[0].Label, "Alpha")
@@ -596,7 +594,7 @@ func Test_MapSlice(t *testing.T) {
 	t.Run("empty input returns empty slice", func(t *testing.T) {
 		result := mapSlice([]entity{}, toDTO)
 		if result == nil {
-			t.Fatal("result is nil, want non-nil empty slice")
+			require.Fail(t, "result is nil, want non-nil empty slice")
 		}
 		if len(result) != 0 {
 			t.Errorf("len = %d, want 0", len(result))
@@ -606,7 +604,7 @@ func Test_MapSlice(t *testing.T) {
 	t.Run("nil input returns empty slice", func(t *testing.T) {
 		result := mapSlice(nil, toDTO)
 		if result == nil {
-			t.Fatal("result is nil, want non-nil empty slice")
+			require.Fail(t, "result is nil, want non-nil empty slice")
 		}
 		if len(result) != 0 {
 			t.Errorf("len = %d, want 0", len(result))
@@ -674,7 +672,7 @@ func Test_ListUserEntities(t *testing.T) {
 		}
 		var result map[string]string
 		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-			t.Fatalf("failed to unmarshal: %v", err)
+			require.NoError(t, err, "failed to unmarshal")
 		}
 		if result["error"] != "failed to list tokens" {
 			t.Errorf("error = %q, want %q", result["error"], "failed to list tokens")
@@ -716,7 +714,7 @@ func Test_ListUserEntities(t *testing.T) {
 		}
 		var dtos []dto
 		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			t.Fatalf("failed to unmarshal: %v", err)
+			require.NoError(t, err, "failed to unmarshal")
 		}
 		if len(dtos) != 0 {
 			t.Errorf("len = %d, want 0", len(dtos))
@@ -738,10 +736,10 @@ func Test_ListUserEntities(t *testing.T) {
 		}
 		var dtos []dto
 		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			t.Fatalf("failed to unmarshal: %v", err)
+			require.NoError(t, err, "failed to unmarshal")
 		}
 		if len(dtos) != 2 {
-			t.Fatalf("len = %d, want 2", len(dtos))
+			require.Failf(t, "failed", "len = %d, want 2", len(dtos))
 		}
 		if dtos[0].Label != "Alpha" {
 			t.Errorf("dtos[0].Label = %q, want %q", dtos[0].Label, "Alpha")
@@ -756,9 +754,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 	d := newTestDB(t)
 
 	user, err := d.CreateUser(t.Context(), "Token User", "tokens@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 
 	t.Run("empty name yields 400", func(t *testing.T) {
 		ops := tokenOps{
@@ -767,7 +763,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 			auditEntityType: "test_token",
 			auditCreate:     db.AuditActionAPIKeyCreated,
 			create: func(_ context.Context, _, _ string) (string, any, error) {
-				t.Fatal("create should not be called for invalid name")
+				require.Fail(t, "create should not be called for invalid name")
 				return "", nil, nil
 			},
 		}
@@ -786,9 +782,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 	t.Run("create error yields 500", func(t *testing.T) {
 		d := newTestDB(t)
 		user, err := d.CreateUser(t.Context(), "Error User", "error@example.com", "password1")
-		if err != nil {
-			t.Fatalf("create user: %v", err)
-		}
+		require.NoError(t, err, "create user")
 
 		ops := tokenOps{
 			db:              d,
@@ -812,9 +806,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 
 		// Verify no audit log written on error.
 		logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
-		if err != nil {
-			t.Fatalf("list audit logs: %v", err)
-		}
+		require.NoError(t, err, "list audit logs")
 		if len(logs) != 0 {
 			t.Errorf("expected no audit logs on error, got %d", len(logs))
 		}
@@ -849,7 +841,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 		}
 		var resp tokenResp
 		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-			t.Fatalf("unmarshal: %v", err)
+			require.NoError(t, err, "unmarshal")
 		}
 		if resp.Token != "secret" {
 			t.Errorf("token = %q, want %q", resp.Token, "secret")
@@ -874,13 +866,11 @@ func Test_HandleTokenCreate(t *testing.T) {
 		handleTokenCreate(ops, w, r)
 
 		if w.Code != http.StatusCreated {
-			t.Fatalf("status = %d, want %d", w.Code, http.StatusCreated)
+			require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusCreated)
 		}
 
 		logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
-		if err != nil {
-			t.Fatalf("list audit logs: %v", err)
-		}
+		require.NoError(t, err, "list audit logs")
 		found := false
 		for _, l := range logs {
 			if l.Action == db.AuditActionAPIKeyCreated && l.EntityID == "audit-entity-1" {
@@ -896,9 +886,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 	t.Run("tokenError returns specific message", func(t *testing.T) {
 		d := newTestDB(t)
 		user, err := d.CreateUser(t.Context(), "Test User", "test3@example.com", "password1")
-		if err != nil {
-			t.Fatalf("create user: %v", err)
-		}
+		require.NoError(t, err, "create user")
 
 		ops := tokenOps{
 			db:              d,
@@ -921,7 +909,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 		}
 		var result map[string]string
 		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-			t.Fatalf("unmarshal: %v", err)
+			require.NoError(t, err, "unmarshal")
 		}
 		if result["error"] != "failed to generate widget" {
 			t.Errorf("error = %q, want %q", result["error"], "failed to generate widget")

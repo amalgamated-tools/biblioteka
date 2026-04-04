@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestKoboTokenList_WithTokens verifies that the list endpoint returns all
@@ -24,7 +26,7 @@ func TestKoboTokenList_WithTokens(t *testing.T) {
 		w := httptest.NewRecorder()
 		h.HandleKoboTokens(w, r)
 		if w.Code != http.StatusCreated {
-			t.Fatalf("create token %q: status = %d, want %d", name, w.Code, http.StatusCreated)
+			require.Failf(t, "failed", "create token %q: status = %d, want %d", name, w.Code, http.StatusCreated)
 		}
 	}
 
@@ -35,12 +37,12 @@ func TestKoboTokenList_WithTokens(t *testing.T) {
 	h.HandleKoboTokens(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("list tokens: status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "list tokens: status = %d, want %d", w.Code, http.StatusOK)
 	}
 
 	var tokens []map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&tokens); err != nil {
-		t.Fatalf("decode list response: %v", err)
+		require.NoError(t, err, "decode list response")
 	}
 	if len(tokens) != 2 {
 		t.Errorf("expected 2 tokens, got %d", len(tokens))
@@ -61,11 +63,11 @@ func TestKoboTokenCreate_ResponseContainsToken(t *testing.T) {
 	h.HandleKoboTokens(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusCreated)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusCreated)
 	}
 	var resp map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode create response: %v", err)
+		require.NoError(t, err, "decode create response")
 	}
 	token, _ := resp["token"].(string)
 	if len(token) == 0 {
@@ -109,11 +111,11 @@ func TestKoboTokenCreate_NameTrimmed(t *testing.T) {
 	h.HandleKoboTokens(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusCreated)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusCreated)
 	}
 	var resp map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode create response: %v", err)
+		require.NoError(t, err, "decode create response")
 	}
 	name, _ := resp["name"].(string)
 	if name != "My Device" {
@@ -128,9 +130,7 @@ func TestKoboTokenDelete_UserIsolation(t *testing.T) {
 
 	h, userID1 := setupKoboHandler(t)
 	user2, err := h.DB.CreateUser(context.Background(), "User2", "user2@example.com", "password")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	require.NoError(t, err, "create user2")
 
 	// Create a token for user1.
 	createBody := mustMarshal(t, koboTokenCreateRequest{Name: "User1 Device"})
@@ -139,11 +139,11 @@ func TestKoboTokenDelete_UserIsolation(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleKoboTokens(w, r)
 	if w.Code != http.StatusCreated {
-		t.Fatalf("create token: status = %d, want %d", w.Code, http.StatusCreated)
+		require.Failf(t, "failed", "create token: status = %d, want %d", w.Code, http.StatusCreated)
 	}
 	var created map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&created); err != nil {
-		t.Fatalf("decode create response: %v", err)
+		require.NoError(t, err, "decode create response")
 	}
 	tokenID, _ := created["id"].(string)
 

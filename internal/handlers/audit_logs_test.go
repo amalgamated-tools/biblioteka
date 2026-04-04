@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 // setupAuditLogHandler creates a DB with an admin user (first user) and a regular user,
@@ -17,13 +19,9 @@ func setupAuditLogHandler(t *testing.T) (*AuditLogHandler, string, string) {
 	h := &AuditLogHandler{DB: d}
 
 	admin, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create admin: %v", err)
-	}
+	require.NoError(t, err, "create admin")
 	regular, err := d.CreateUser(t.Context(), "Regular", "regular@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create regular user: %v", err)
-	}
+	require.NoError(t, err, "create regular user")
 	return h, admin.ID, regular.ID
 }
 
@@ -33,10 +31,10 @@ func TestHandleAuditLogs_AdminSuccess(t *testing.T) {
 	// Seed a couple of audit log entries.
 	ctx := t.Context()
 	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-1", nil); err != nil {
-		t.Fatalf("create audit log: %v", err)
+		require.NoError(t, err, "create audit log")
 	}
 	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionLibraryCreated, "library", "lib-1", nil); err != nil {
-		t.Fatalf("create audit log: %v", err)
+		require.NoError(t, err, "create audit log")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs", nil)
@@ -51,7 +49,7 @@ func TestHandleAuditLogs_AdminSuccess(t *testing.T) {
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	// CreateUser itself may generate audit entries; just verify we got at least 2 from our inserts.
 	if len(resp.Entries) < 2 {
@@ -100,12 +98,12 @@ func TestHandleAuditLogs_DefaultPagination(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Limit != 50 {
 		t.Errorf("limit = %d, want 50", resp.Limit)
@@ -125,12 +123,12 @@ func TestHandleAuditLogs_CustomPagination(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Limit != 10 {
 		t.Errorf("limit = %d, want 10", resp.Limit)
@@ -150,12 +148,12 @@ func TestHandleAuditLogs_LimitCappedAtMax(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Limit != 200 {
 		t.Errorf("limit = %d, want 200 (max)", resp.Limit)
@@ -216,12 +214,12 @@ func TestHandleAuditLogs_EmptyList(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if len(resp.Entries) != 0 {
 		t.Errorf("expected 0 entries, got %d", len(resp.Entries))
@@ -234,7 +232,7 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 	meta := map[string]any{"title": "Go Programming", "isbn": "978-0-123"}
 	ctx := t.Context()
 	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-meta-1", meta); err != nil {
-		t.Fatalf("create audit log with metadata: %v", err)
+		require.NoError(t, err, "create audit log with metadata")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs", nil)
@@ -244,12 +242,12 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 	h.HandleAuditLogs(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp auditLogListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 
 	// Find the entry we inserted with metadata.
@@ -258,11 +256,11 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 		if e.EntityID == "book-meta-1" {
 			found = true
 			if e.Metadata == nil {
-				t.Fatal("expected metadata to be non-nil")
+				require.Fail(t, "expected metadata to be non-nil")
 			}
 			var m map[string]any
 			if err := json.Unmarshal(e.Metadata, &m); err != nil {
-				t.Fatalf("unmarshal metadata: %v", err)
+				require.NoError(t, err, "unmarshal metadata")
 			}
 			if m["title"] != "Go Programming" {
 				t.Errorf("metadata title = %v, want %q", m["title"], "Go Programming")
@@ -330,12 +328,12 @@ func TestToAuditLogDTO_ValidMetadata(t *testing.T) {
 	dto := toAuditLogDTO(entry)
 
 	if dto.Metadata == nil {
-		t.Fatal("Metadata should not be nil")
+		require.Fail(t, "Metadata should not be nil")
 	}
 
 	var m map[string]any
 	if err := json.Unmarshal(dto.Metadata, &m); err != nil {
-		t.Fatalf("unmarshal metadata: %v", err)
+		require.NoError(t, err, "unmarshal metadata")
 	}
 	if m["title"] != "Test Book" {
 		t.Errorf("metadata title = %v, want %q", m["title"], "Test Book")

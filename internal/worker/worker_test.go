@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/hibiken/asynq"
+
+	"github.com/stretchr/testify/require"
 )
 
 const testRedisURL = "redis://192.0.2.1:6379" // TEST-NET (RFC 5737) — guaranteed non-routable
@@ -15,9 +17,7 @@ const testRedisURL = "redis://192.0.2.1:6379" // TEST-NET (RFC 5737) — guarant
 func newTestWorker(t *testing.T) *Worker {
 	t.Helper()
 	w, err := New(testRedisURL)
-	if err != nil {
-		t.Fatalf("New(%q): %v", testRedisURL, err)
-	}
+	require.NoError(t, err, "New(%q)", testRedisURL)
 	t.Cleanup(func() {
 		if err := w.Close(); err != nil {
 			t.Logf("cleanup Close: %v", err)
@@ -47,26 +47,20 @@ func TestNew_ValidURL(t *testing.T) {
 // TestNew_InvalidURL verifies that New returns an error for a non-Redis URI.
 func TestNew_InvalidURL(t *testing.T) {
 	_, err := New("not-a-valid-redis-url")
-	if err == nil {
-		t.Fatal("expected error for invalid Redis URL, got nil")
-	}
+	require.Error(t, err, "expected error for invalid Redis URL, got nil")
 }
 
 // TestNew_EmptyURL verifies that New returns an error for an empty string.
 func TestNew_EmptyURL(t *testing.T) {
 	_, err := New("")
-	if err == nil {
-		t.Fatal("expected error for empty Redis URL, got nil")
-	}
+	require.Error(t, err, "expected error for empty Redis URL, got nil")
 }
 
 // TestNew_WrongScheme verifies that New returns an error when the URL uses an
 // unsupported scheme such as http://.
 func TestNew_WrongScheme(t *testing.T) {
 	_, err := New("http://localhost:6379")
-	if err == nil {
-		t.Fatal("expected error for http:// URL, got nil")
-	}
+	require.Error(t, err, "expected error for http:// URL, got nil")
 }
 
 // TestRedisConnOpt verifies that RedisConnOpt returns the option that was
@@ -95,7 +89,7 @@ func TestRegister(t *testing.T) {
 
 	task := asynq.NewTask("test:register", []byte(`{"hello":"world"}`))
 	if err := w.mux.ProcessTask(t.Context(), task); err != nil {
-		t.Fatalf("ProcessTask: %v", err)
+		require.NoError(t, err, "ProcessTask")
 	}
 
 	if !called {
@@ -139,7 +133,7 @@ func TestRegister_NilPayload(t *testing.T) {
 
 	task := asynq.NewTask("test:nil-payload", nil)
 	if err := w.mux.ProcessTask(t.Context(), task); err != nil {
-		t.Fatalf("ProcessTask: %v", err)
+		require.NoError(t, err, "ProcessTask")
 	}
 	if !called {
 		t.Error("expected handler to be called")
@@ -152,9 +146,7 @@ func TestRegisterSchedule(t *testing.T) {
 	w := newTestWorker(t)
 
 	entryID, err := w.RegisterSchedule("@every 1m", "test:sched", map[string]string{"k": "v"})
-	if err != nil {
-		t.Fatalf("RegisterSchedule: %v", err)
-	}
+	require.NoError(t, err, "RegisterSchedule")
 	if entryID == "" {
 		t.Error("expected non-empty entry ID")
 	}
@@ -166,9 +158,7 @@ func TestRegisterSchedule_NilPayload(t *testing.T) {
 	w := newTestWorker(t)
 
 	entryID, err := w.RegisterSchedule("@every 1h", "test:sched-nil", nil)
-	if err != nil {
-		t.Fatalf("RegisterSchedule with nil payload: %v", err)
-	}
+	require.NoError(t, err, "RegisterSchedule with nil payload")
 	if entryID == "" {
 		t.Error("expected non-empty entry ID for nil payload")
 	}
@@ -191,23 +181,19 @@ func TestRegisterSchedule_DistinctIDs(t *testing.T) {
 	})
 
 	id1, err := w.RegisterSchedule("@every 1m", "test:multi-a", nil)
-	if err != nil {
-		t.Fatalf("first RegisterSchedule: %v", err)
-	}
+	require.NoError(t, err, "first RegisterSchedule")
 	id2, err := w.RegisterSchedule("@every 2m", "test:multi-b", nil)
-	if err != nil {
-		t.Fatalf("second RegisterSchedule: %v", err)
-	}
+	require.NoError(t, err, "second RegisterSchedule")
 	if id1 == id2 {
 		t.Errorf("expected distinct entry IDs, got %q for both", id1)
 	}
 
 	// Verify both handlers are actually wired up.
 	if err := w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-a", nil)); err != nil {
-		t.Fatalf("ProcessTask for multi-a: %v", err)
+		require.NoError(t, err, "ProcessTask for multi-a")
 	}
 	if err := w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-b", nil)); err != nil {
-		t.Fatalf("ProcessTask for multi-b: %v", err)
+		require.NoError(t, err, "ProcessTask for multi-b")
 	}
 	if !called1 {
 		t.Error("handler for test:multi-a was not called")
@@ -223,9 +209,7 @@ func TestRegisterSchedule_InvalidCronspec(t *testing.T) {
 	w := newTestWorker(t)
 
 	_, err := w.RegisterSchedule("not a valid cron expression", "test:sched", nil)
-	if err == nil {
-		t.Fatal("expected error for invalid cron spec, got nil")
-	}
+	require.Error(t, err, "expected error for invalid cron spec, got nil")
 }
 
 // TestRegisterSchedule_NonMarshalablePayload verifies that a payload that
@@ -235,9 +219,7 @@ func TestRegisterSchedule_NonMarshalablePayload(t *testing.T) {
 	w := newTestWorker(t)
 
 	_, err := w.RegisterSchedule("@every 1m", "test:sched", make(chan int))
-	if err == nil {
-		t.Fatal("expected error for non-marshalable payload, got nil")
-	}
+	require.Error(t, err, "expected error for non-marshalable payload, got nil")
 }
 
 // TestEnqueue_NonMarshalablePayload verifies that Enqueue returns an error
@@ -247,18 +229,14 @@ func TestEnqueue_NonMarshalablePayload(t *testing.T) {
 	w := newTestWorker(t)
 
 	_, err := w.Enqueue(t.Context(), "test:enqueue", make(chan int))
-	if err == nil {
-		t.Fatal("expected error for non-marshalable payload, got nil")
-	}
+	require.Error(t, err, "expected error for non-marshalable payload, got nil")
 }
 
 // TestClose verifies that Close can be called on a newly-created Worker that
 // has never been started without panicking.
 func TestClose(t *testing.T) {
 	w, err := New(testRedisURL)
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
+	require.NoError(t, err, "New")
 	if err := w.Close(); err != nil {
 		// asynq.Client.Close() may error when Redis is unreachable.
 		// Accept in unit-test environments; live-Redis path belongs in integration tests.

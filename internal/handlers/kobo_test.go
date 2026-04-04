@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/kobo"
+
+	"github.com/stretchr/testify/require"
 )
 
 // ---- Sync token round-trip tests ----
@@ -63,9 +65,7 @@ func setupKoboHandler(t *testing.T) (*KoboHandler, string) {
 	h := &KoboHandler{DB: d}
 	h.RegisterRoutes()
 	user, err := d.CreateUser(t.Context(), "Kobo User", "kobo@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	return h, user.ID
 }
 
@@ -80,12 +80,12 @@ func TestKoboTokenCreate_Success(t *testing.T) {
 	h.HandleKoboTokens(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	var tok map[string]any
 	if err := json.Unmarshal(w.Body.Bytes(), &tok); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if tok["token"] == "" || tok["token"] == nil {
 		t.Error("expected non-empty token in response")
@@ -120,12 +120,12 @@ func TestKoboTokenList_Empty(t *testing.T) {
 	h.HandleKoboTokens(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 
 	var list []any
 	if err := json.Unmarshal(w.Body.Bytes(), &list); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if len(list) != 0 {
 		t.Errorf("expected empty list, got %d items", len(list))
@@ -172,7 +172,7 @@ func TestKoboTokenDelete_Success(t *testing.T) {
 
 	var tokens []any
 	if err := json.Unmarshal(listW.Body.Bytes(), &tokens); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if len(tokens) != 0 {
 		t.Errorf("expected 0 tokens after delete, got %d", len(tokens))
@@ -217,15 +217,15 @@ func createTestKoboTokenID(t *testing.T, h *KoboHandler, userID string) string {
 	wCreate := httptest.NewRecorder()
 	h.HandleKoboTokens(wCreate, rCreate)
 	if wCreate.Code != http.StatusCreated {
-		t.Fatalf("create token failed: %s", wCreate.Body.String())
+		require.Failf(t, "failed", "create token failed: %s", wCreate.Body.String())
 	}
 	var tok map[string]any
 	if err := json.Unmarshal(wCreate.Body.Bytes(), &tok); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	id, ok := tok["id"].(string)
 	if !ok || id == "" {
-		t.Fatal("expected non-empty id in token response")
+		require.Fail(t, "expected non-empty id in token response")
 	}
 	return id
 }

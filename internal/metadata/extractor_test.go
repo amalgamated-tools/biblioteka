@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"encoding/base64"
-	"errors"
 	_ "image/png"
 	"os"
 	"path/filepath"
@@ -24,9 +23,7 @@ func (e *Extractor) exiftool() *exif.Exiftool {
 func requireExifTool(t *testing.T) *Extractor {
 	t.Helper()
 	ext, err := NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	if ext.exiftool() == nil {
 		t.Skip("exiftool not available, skipping")
 	}
@@ -47,9 +44,7 @@ func TestExtractMetadata_EPUB(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	require.NoError(t, err, "extract")
 
 	if meta.Format != "epub" {
 		t.Errorf("expected format epub, got %q", meta.Format)
@@ -94,12 +89,10 @@ func TestExtractMetadata_EPUBCoverImage(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	require.NoError(t, err, "extract")
 
 	if !strings.HasPrefix(meta.CoverImageURL, "data:image/png;base64,") {
-		t.Fatalf("expected PNG data URL, got %q", meta.CoverImageURL)
+		require.Failf(t, "failed", "expected PNG data URL, got %q", meta.CoverImageURL)
 	}
 
 	b64 := strings.TrimPrefix(meta.CoverImageURL, "data:image/png;base64,")
@@ -124,9 +117,7 @@ func TestExtractMetadata_EPUBOversizedCover(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	require.NoError(t, err, "extract")
 
 	// The oversized cover should be silently skipped, not cause an extraction error.
 	if meta.CoverImageURL != "" {
@@ -143,9 +134,7 @@ func TestExtractMetadata_EPUBWithISBN10(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	require.NoError(t, err, "extract")
 
 	if meta.ISBN10 != "0743273567" {
 		t.Errorf("expected ISBN %q, got %q", "0743273567", meta.ISBN10)
@@ -161,9 +150,7 @@ func TestExtractMetadata_EPUBWithNoISBN(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	require.NoError(t, err, "extract")
 
 	if meta.ISBN() != "" {
 		t.Errorf("expected ISBN %q, got %q", "", meta.ISBN())
@@ -179,9 +166,7 @@ func TestExtractMetadata_EPUBCaseInsensitive(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	require.NoError(t, err, "extract")
 
 	if meta.Title != "Upper Case" {
 		t.Errorf("expected title %q, got %q", "Upper Case", meta.Title)
@@ -393,9 +378,7 @@ func TestExtractMetadata_PDF(t *testing.T) {
 	testutils.MakeTestPDF(t, pdfPath, "PDF Title", "PDF Author", ext.exiftool())
 
 	meta, err := ext.ExtractMetadata(t.Context(), pdfPath)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	require.NoError(t, err, "extract")
 
 	if meta.Format != "pdf" {
 		t.Errorf("expected format pdf, got %q", meta.Format)
@@ -412,7 +395,7 @@ func TestExtractMetadata_InvalidFile(t *testing.T) {
 	dir := t.TempDir()
 	badPath := filepath.Join(dir, "bad.epub")
 	if err := os.WriteFile(badPath, []byte("not a real epub"), 0o644); err != nil {
-		t.Fatalf("write test file: %v", err)
+		require.NoError(t, err, "write test file")
 	}
 
 	ext := requireExifTool(t)
@@ -421,9 +404,7 @@ func TestExtractMetadata_InvalidFile(t *testing.T) {
 	// ExifTool processes the file without error — it just won't find book metadata.
 	// Title falls back to the filename stem.
 	meta, err := ext.ExtractMetadata(t.Context(), badPath)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if meta.Title != "bad" {
 		t.Errorf("expected title %q (filename fallback), got %q", "bad", meta.Title)
 	}
@@ -434,18 +415,14 @@ func TestExtractMetadata_NonexistentFile(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	_, err := ext.ExtractMetadata(t.Context(), "/nonexistent/file.pdf")
-	if err == nil {
-		t.Fatal("expected error for nonexistent file")
-	}
+	require.Error(t, err, "expected error for nonexistent file")
 }
 
 func TestExtractMetadata_Unavailable(t *testing.T) {
 	// An extractor with nil et should return ErrExifToolUnavailable.
 	ext := &Extractor{}
 	_, err := ext.ExtractMetadata(t.Context(), "/any/file.epub")
-	if !errors.Is(err, ErrExifToolUnavailable) {
-		t.Fatalf("expected ErrExifToolUnavailable, got %v", err)
-	}
+	require.ErrorIs(t, err, ErrExifToolUnavailable)
 }
 
 func TestNormalizeISBN(t *testing.T) {

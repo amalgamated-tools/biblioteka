@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setupOPDSHandler(t *testing.T) *OPDSHandler {
@@ -20,7 +22,7 @@ func parseOPDSFeed(t *testing.T, body []byte) opdspkg.Feed {
 	t.Helper()
 	var feed opdspkg.Feed
 	if err := xml.Unmarshal(body, &feed); err != nil {
-		t.Fatalf("unmarshal feed: %v\nbody: %s", err, body)
+		require.Failf(t, "failed", "unmarshal feed: %v\nbody: %s", err, body)
 	}
 	return feed
 }

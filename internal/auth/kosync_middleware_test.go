@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mockKOSyncChecker implements KOSyncCredentialChecker for testing.
@@ -35,9 +37,7 @@ func (m *mockKOSyncChecker) GetKOSyncCredential(_ context.Context, username stri
 func newKOSyncCheckerWithUser(t *testing.T, username, authKey, userID string) *mockKOSyncChecker {
 	t.Helper()
 	hash, err := bcrypt.GenerateFromPassword([]byte(authKey), bcrypt.MinCost)
-	if err != nil {
-		t.Fatalf("bcrypt hash: %v", err)
-	}
+	require.NoError(t, err, "bcrypt hash")
 	return &mockKOSyncChecker{
 		creds: map[string]*ProtocolCredentialResult{
 			username: {UserID: userID, PasswordHash: string(hash)},

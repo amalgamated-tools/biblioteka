@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setupSeriesHandler(t *testing.T) (*SeriesHandler, string) {
@@ -15,9 +17,7 @@ func setupSeriesHandler(t *testing.T) (*SeriesHandler, string) {
 	d := newTestDB(t)
 	h := &SeriesHandler{DB: d}
 	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	return h, user.ID
 }
 
@@ -37,7 +37,7 @@ func TestCreateSeries_Handler(t *testing.T) {
 
 	var dto seriesDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if dto.Name != "The Dark Tower" {
 		t.Errorf("name = %q, want %q", dto.Name, "The Dark Tower")
@@ -78,9 +78,7 @@ func TestUpdateSeries_WhitespaceOnlyName(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
 	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create series: %v", err)
-	}
+	require.NoError(t, err, "create series")
 
 	body := mustMarshal(t, seriesRequest{Name: "   "})
 	r := httptest.NewRequest(http.MethodPut, "/api/series/"+s.ID, bytes.NewReader(body))
@@ -117,10 +115,10 @@ func TestListSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
 	if _, err := h.DB.CreateSeries(t.Context(), "Discworld", nil, nil, nil); err != nil {
-		t.Fatalf("create series: %v", err)
+		require.NoError(t, err, "create series")
 	}
 	if _, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil); err != nil {
-		t.Fatalf("create series: %v", err)
+		require.NoError(t, err, "create series")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/series", nil)
@@ -135,7 +133,7 @@ func TestListSeries_Handler(t *testing.T) {
 
 	var dtos []seriesDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if len(dtos) != 2 {
 		t.Errorf("len = %d, want 2", len(dtos))
@@ -146,9 +144,7 @@ func TestGetSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
 	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create series: %v", err)
-	}
+	require.NoError(t, err, "create series")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/series/"+s.ID, nil)
 	r = withUserID(r, userID)
@@ -179,9 +175,7 @@ func TestDeleteSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
 	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create series: %v", err)
-	}
+	require.NoError(t, err, "create series")
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/series/"+s.ID, nil)
 	r = withUserID(r, userID)
@@ -209,7 +203,7 @@ func TestDeleteSeries_NotFound(t *testing.T) {
 
 	var resp errorResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Error != "series not found" {
 		t.Errorf("error = %q, want %q", resp.Error, "series not found")
@@ -220,24 +214,18 @@ func TestListSeriesBooks_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
 	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create series: %v", err)
-	}
+	require.NoError(t, err, "create series")
 
 	b1, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	b2, err := h.DB.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	if err := h.DB.SetBookSeries(t.Context(), b1.ID, []db.BookSeriesInput{{SeriesID: s.ID}}); err != nil {
-		t.Fatalf("set book series: %v", err)
+		require.NoError(t, err, "set book series")
 	}
 	if err := h.DB.SetBookSeries(t.Context(), b2.ID, []db.BookSeriesInput{{SeriesID: s.ID}}); err != nil {
-		t.Fatalf("set book series: %v", err)
+		require.NoError(t, err, "set book series")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/series/"+s.ID+"/books", nil)
@@ -252,7 +240,7 @@ func TestListSeriesBooks_Handler(t *testing.T) {
 
 	var result bookListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if result.Total != 2 {
 		t.Errorf("total = %d, want 2", result.Total)
@@ -280,9 +268,7 @@ func TestListSeriesBooks_Empty(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
 	s, err := h.DB.CreateSeries(t.Context(), "Empty Series", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create series: %v", err)
-	}
+	require.NoError(t, err, "create series")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/series/"+s.ID+"/books", nil)
 	r = withUserID(r, userID)
@@ -296,7 +282,7 @@ func TestListSeriesBooks_Empty(t *testing.T) {
 
 	var result bookListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if result.Total != 0 {
 		t.Errorf("total = %d, want 0", result.Total)

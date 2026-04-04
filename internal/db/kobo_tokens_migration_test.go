@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // ---- hasColumn ----
@@ -13,9 +15,7 @@ func TestHasColumn_ExistingColumn(t *testing.T) {
 
 	// The books table is guaranteed to exist after migrations.
 	exists, err := hasColumn(t.Context(), d, "books", "title")
-	if err != nil {
-		t.Fatalf("hasColumn(books, title) error: %v", err)
-	}
+	require.NoError(t, err, "hasColumn(books, title) error")
 	if !exists {
 		t.Error("hasColumn(books, title) = false, want true")
 	}
@@ -25,9 +25,7 @@ func TestHasColumn_MissingColumn(t *testing.T) {
 	d := newTestDB(t)
 
 	exists, err := hasColumn(t.Context(), d, "books", "nonexistent_column_xyz")
-	if err != nil {
-		t.Fatalf("hasColumn(books, nonexistent_column_xyz) error: %v", err)
-	}
+	require.NoError(t, err, "hasColumn(books, nonexistent_column_xyz) error")
 	if exists {
 		t.Error("hasColumn(books, nonexistent_column_xyz) = true, want false")
 	}
@@ -39,9 +37,7 @@ func TestHasColumn_KoboTokensColumns(t *testing.T) {
 	// Verify the columns that backfillKoboTokenHashes depends on are present.
 	for _, col := range []string{"token", "token_hash"} {
 		exists, err := hasColumn(t.Context(), d, "kobo_tokens", col)
-		if err != nil {
-			t.Fatalf("hasColumn(kobo_tokens, %q) error: %v", col, err)
-		}
+		require.NoError(t, err, "hasColumn(kobo_tokens, %q) error", col)
 		if !exists {
 			t.Errorf("hasColumn(kobo_tokens, %q) = false, want true", col)
 		}
@@ -63,18 +59,16 @@ func TestBackfillKoboTokenHashes_NothingToBackfill(t *testing.T) {
 
 	// CreateKoboToken always sets token_hash, so nothing needs backfilling.
 	if _, err := d.CreateKoboToken(t.Context(), user.ID, "Already Hashed", "pre-hashed-value"); err != nil {
-		t.Fatalf("CreateKoboToken(): %v", err)
+		require.NoError(t, err, "CreateKoboToken()")
 	}
 
 	// backfillKoboTokenHashes should be a no-op.
 	if err := backfillKoboTokenHashes(t.Context(), d); err != nil {
-		t.Fatalf("backfillKoboTokenHashes() error: %v", err)
+		require.NoError(t, err, "backfillKoboTokenHashes() error")
 	}
 
 	got, err := d.GetKoboTokenByHash(t.Context(), "pre-hashed-value")
-	if err != nil {
-		t.Fatalf("GetKoboTokenByHash() after backfill error: %v", err)
-	}
+	require.NoError(t, err, "GetKoboTokenByHash() after backfill error")
 	if got.TokenHash != "pre-hashed-value" {
 		t.Errorf("TokenHash = %q, want pre-hashed-value (unchanged)", got.TokenHash)
 	}
@@ -92,20 +86,16 @@ func TestBackfillKoboTokenHashes_BackfillsNullHash(t *testing.T) {
 		`INSERT INTO kobo_tokens (user_id, name, token, token_hash) VALUES ($1, $2, $3, '') RETURNING id`,
 		user.ID, "Legacy Token", rawToken,
 	).Scan(&tokenID)
-	if err != nil {
-		t.Fatalf("manual insert legacy token: %v", err)
-	}
+	require.NoError(t, err, "manual insert legacy token")
 
 	if err := backfillKoboTokenHashes(t.Context(), d); err != nil {
-		t.Fatalf("backfillKoboTokenHashes() error: %v", err)
+		require.NoError(t, err, "backfillKoboTokenHashes() error")
 	}
 
 	// Verify the token can now be found by its computed hash.
 	hash := expectedHash(rawToken)
 	got, err := d.GetKoboTokenByHash(t.Context(), hash)
-	if err != nil {
-		t.Fatalf("GetKoboTokenByHash() after backfill error: %v", err)
-	}
+	require.NoError(t, err, "GetKoboTokenByHash() after backfill error")
 	if got.ID != tokenID {
 		t.Errorf("ID = %q, want %q", got.ID, tokenID)
 	}
@@ -121,12 +111,10 @@ func TestBackfillKoboTokenHashes_SkipsEmptyToken(t *testing.T) {
 		`INSERT INTO kobo_tokens (user_id, name, token, token_hash) VALUES ($1, $2, '', '') RETURNING id`,
 		user.ID, "Empty Token",
 	).Scan(&tokenID)
-	if err != nil {
-		t.Fatalf("manual insert empty-token row: %v", err)
-	}
+	require.NoError(t, err, "manual insert empty-token row")
 
 	if err := backfillKoboTokenHashes(t.Context(), d); err != nil {
-		t.Fatalf("backfillKoboTokenHashes() error: %v", err)
+		require.NoError(t, err, "backfillKoboTokenHashes() error")
 	}
 
 	// The row should still have an empty token_hash since the token was empty.
@@ -134,7 +122,7 @@ func TestBackfillKoboTokenHashes_SkipsEmptyToken(t *testing.T) {
 	if err := d.QueryRowContext(t.Context(),
 		`SELECT token_hash FROM kobo_tokens WHERE id = $1`, tokenID,
 	).Scan(&gotHash); err != nil {
-		t.Fatalf("fetch token_hash: %v", err)
+		require.NoError(t, err, "fetch token_hash")
 	}
 	if gotHash != "" {
 		t.Errorf("token_hash = %q, want empty (skip empty-token rows)", gotHash)

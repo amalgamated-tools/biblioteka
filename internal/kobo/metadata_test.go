@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 func strPtr(s string) *string   { return &s }
@@ -43,7 +45,7 @@ func TestDownloadURLs_OnlySupportedFormats(t *testing.T) {
 	}
 	urls := DownloadURLs("https://host", "tok", "book1", files)
 	if len(urls) != 2 {
-		t.Fatalf("len = %d, want 2", len(urls))
+		require.Failf(t, "failed", "len = %d, want 2", len(urls))
 	}
 	if urls[0].Format != "EPUB3" {
 		t.Errorf("first format = %v, want EPUB3", urls[0].Format)
@@ -57,7 +59,7 @@ func TestDownloadURLs_URLContainsToken(t *testing.T) {
 	files := []db.BookFile{{ID: "f1", FileType: "epub"}}
 	urls := DownloadURLs("https://host", "mytoken", "book1", files)
 	if len(urls) != 1 {
-		t.Fatalf("len = %d, want 1", len(urls))
+		require.Failf(t, "failed", "len = %d, want 1", len(urls))
 	}
 	if !strings.Contains(urls[0].URL, "mytoken") {
 		t.Errorf("URL %q does not contain token", urls[0].URL)
@@ -109,7 +111,7 @@ func TestBookMetadata_Series(t *testing.T) {
 	meta := BookMetadata(book, nil, series, nil)
 
 	if meta.Series == nil {
-		t.Fatalf("Series not in metadata")
+		require.Fail(t, "Series not in metadata")
 	}
 	if meta.Series.Name != "My Series" {
 		t.Errorf("Series.Name = %v", meta.Series.Name)

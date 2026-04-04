@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRequestIDHandler_GeneratesID(t *testing.T) {
@@ -177,9 +179,7 @@ func TestStatusRecorder_WriteWithoutHeader(t *testing.T) {
 	rec := &statusRecorder{ResponseWriter: w}
 
 	n, err := rec.Write([]byte("data"))
-	if err != nil {
-		t.Fatalf("Write error: %v", err)
-	}
+	require.NoError(t, err, "Write error")
 	if n != 4 {
 		t.Errorf("Write returned %d, want 4", n)
 	}

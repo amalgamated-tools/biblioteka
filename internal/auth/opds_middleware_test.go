@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mockOPDSChecker implements OPDSCredentialChecker for testing.
@@ -31,9 +33,7 @@ func (m *mockOPDSChecker) GetOPDSCredential(_ context.Context, username string) 
 func newOPDSCheckerWithUser(t *testing.T, username, password, userID string) *mockOPDSChecker {
 	t.Helper()
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
-	if err != nil {
-		t.Fatalf("bcrypt hash: %v", err)
-	}
+	require.NoError(t, err, "bcrypt hash")
 	return &mockOPDSChecker{
 		creds: map[string]*ProtocolCredentialResult{
 			username: {UserID: userID, PasswordHash: string(hash)},

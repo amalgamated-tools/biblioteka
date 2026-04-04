@@ -9,6 +9,8 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/pathparser"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestValidateField verifies that validateField rejects blank and
@@ -47,9 +49,7 @@ func TestValidateField_ErrorContainsFieldName(t *testing.T) {
 	t.Parallel()
 
 	err := validateField(context.Background(), "my_special_field", "")
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
+	require.Error(t, err, "expected error, got nil")
 	errStr := err.Error()
 	if !strings.Contains(errStr, "my_special_field") {
 		t.Errorf("error message %q should contain field name %q", errStr, "my_special_field")
@@ -132,13 +132,11 @@ func TestReorganizedCandidatePaths_BookPerFolder(t *testing.T) {
 	candidates := reorganizedCandidatePaths(context.Background(), p, pathInfo, db.LibraryOrganizationBookPerFolder)
 
 	if len(candidates) != 1 {
-		t.Fatalf("expected 1 candidate, got %d: %v", len(candidates), candidates)
+		require.Failf(t, "failed", "expected 1 candidate, got %d: %v", len(candidates), candidates)
 	}
 	// The candidate should be under libraryRoot/Author/Title/
 	rel, err := filepath.Rel(dir, candidates[0])
-	if err != nil {
-		t.Fatalf("filepath.Rel: %v", err)
-	}
+	require.NoError(t, err, "filepath.Rel")
 	if rel == "" || rel == "." {
 		t.Errorf("expected candidate path to be a subdirectory, got %q", rel)
 	}
@@ -205,7 +203,7 @@ func TestReorganizedCandidatePaths_BookPerFile(t *testing.T) {
 	candidates := reorganizedCandidatePaths(context.Background(), p, pathInfo, db.LibraryOrganizationBookPerFile)
 
 	if len(candidates) != 1 {
-		t.Fatalf("expected 1 candidate, got %d: %v", len(candidates), candidates)
+		require.Failf(t, "failed", "expected 1 candidate, got %d: %v", len(candidates), candidates)
 	}
 	// Flat layout: libraryRoot/Author/filename
 	expected := filepath.Join(dir, "Terry Pratchett", "book.epub")
@@ -301,7 +299,7 @@ func TestReorganizedCandidatePaths_NoDuplicates(t *testing.T) {
 	title := "Book Title"
 	organizedDir := filepath.Join(dir, author, title)
 	if err := os.MkdirAll(organizedDir, 0o750); err != nil {
-		t.Fatalf("mkdir: %v", err)
+		require.NoError(t, err, "mkdir")
 	}
 	filePath := filepath.Join(organizedDir, "book.epub")
 

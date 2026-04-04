@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 // inMemoryCredStore is a simple in-memory credential store used to test the
@@ -67,9 +69,7 @@ func makeTestCredOps(t *testing.T) (credentialOps, string) {
 	t.Helper()
 	d := newTestDB(t)
 	user, err := d.CreateUser(t.Context(), "CredUser", "cred@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 
 	store := newInMemoryCredStore()
 
@@ -150,7 +150,7 @@ func TestGetCredential_Success(t *testing.T) {
 	putW := httptest.NewRecorder()
 	handleCredentials(ops, putW, putR)
 	if putW.Code != http.StatusOK {
-		t.Fatalf("PUT setup failed: status=%d body=%s", putW.Code, putW.Body.String())
+		require.Failf(t, "failed", "PUT setup failed: status=%d body=%s", putW.Code, putW.Body.String())
 	}
 
 	// Now GET it.
@@ -161,12 +161,12 @@ func TestGetCredential_Success(t *testing.T) {
 	handleCredentials(ops, w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Username != "myuser" {
 		t.Errorf("username = %q, want %q", resp.Username, "myuser")
@@ -291,12 +291,12 @@ func TestUpsertCredential_Success(t *testing.T) {
 	handleCredentials(ops, w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Username != "myuser" {
 		t.Errorf("username = %q, want %q", resp.Username, "myuser")
@@ -315,12 +315,12 @@ func TestUpsertCredential_UsernameNormalized(t *testing.T) {
 	handleCredentials(ops, w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Username != "myuser" {
 		t.Errorf("username = %q, want lowercase trimmed %q", resp.Username, "myuser")
@@ -343,7 +343,7 @@ func TestUpsertCredential_WithDeriveKey(t *testing.T) {
 	handleCredentials(ops, w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	if derivedKey != "derived:validpassword" {
 		t.Errorf("deriveKey was not called with plaintext password; got %q", derivedKey)
@@ -445,7 +445,7 @@ func TestDeleteCredential_Success(t *testing.T) {
 	putW := httptest.NewRecorder()
 	handleCredentials(ops, putW, putR)
 	if putW.Code != http.StatusOK {
-		t.Fatalf("PUT setup failed: status=%d body=%s", putW.Code, putW.Body.String())
+		require.Failf(t, "failed", "PUT setup failed: status=%d body=%s", putW.Code, putW.Body.String())
 	}
 
 	// Now delete it.

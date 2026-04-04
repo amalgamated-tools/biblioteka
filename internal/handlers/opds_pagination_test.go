@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
+
+	"github.com/stretchr/testify/require"
 )
 
 // --- Pagination ---
@@ -19,7 +21,7 @@ func TestAllBooks_Pagination(t *testing.T) {
 	// Create enough books to have a second page (opdspkg.PageSize is 50).
 	for i := range 55 {
 		if _, err := h.DB.CreateBook(ctx, "Book "+padInt(i), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-			t.Fatalf("create book %d: %v", i, err)
+			require.NoError(t, err, "create book %d", i)
 		}
 	}
 
@@ -29,7 +31,7 @@ func TestAllBooks_Pagination(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("page 1: status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "page 1: status = %d, want %d", w.Code, http.StatusOK)
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
@@ -49,7 +51,7 @@ func TestAllBooks_Pagination(t *testing.T) {
 	h.HandleOPDS(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Fatalf("page 2: status = %d, want %d", w2.Code, http.StatusOK)
+		require.Failf(t, "failed", "page 2: status = %d, want %d", w2.Code, http.StatusOK)
 	}
 
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
@@ -75,13 +77,13 @@ func TestBaseURL_XForwardedProto(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	selfLink := findLink(feed.Links, opdspkg.RelSelf)
 	if selfLink == nil {
-		t.Fatal("missing self link")
+		require.Fail(t, "missing self link")
 	}
 	if !strings.HasPrefix(selfLink.Href, "https://") {
 		t.Errorf("self link = %q, want https:// prefix", selfLink.Href)
@@ -97,13 +99,13 @@ func TestBaseURL_InvalidXForwardedProto(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	selfLink := findLink(feed.Links, opdspkg.RelSelf)
 	if selfLink == nil {
-		t.Fatal("missing self link")
+		require.Fail(t, "missing self link")
 	}
 	// Should fallback to http, not use the injected value.
 	if strings.HasPrefix(selfLink.Href, "javascript:") {
@@ -178,7 +180,7 @@ func TestPaginationLinks_SearchURL(t *testing.T) {
 	links := opdspkg.PaginationLinks("/opds/search?q=test", 1, 100, 50, opdspkg.AcqContentType)
 	selfLink := findLink(links, opdspkg.RelSelf)
 	if selfLink == nil {
-		t.Fatal("missing self link")
+		require.Fail(t, "missing self link")
 	}
 	if strings.Contains(selfLink.Href, "?q=test?page=") {
 		t.Errorf("self link has double '?': %q", selfLink.Href)
@@ -202,7 +204,7 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 	const totalAuthors = opdspkg.PageSize + 5
 	for i := range totalAuthors {
 		if _, err := h.DB.CreateAuthor(ctx, fmt.Sprintf("Author %03d", i), nil, nil, nil, nil); err != nil {
-			t.Fatalf("create author %d: %v", i, err)
+			require.NoError(t, err, "create author %d", i)
 		}
 	}
 
@@ -212,7 +214,7 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("page 1: status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "page 1: status = %d, want %d", w.Code, http.StatusOK)
 	}
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != opdspkg.PageSize {
@@ -231,7 +233,7 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 	h.HandleOPDS(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Fatalf("page 2: status = %d, want %d", w2.Code, http.StatusOK)
+		require.Failf(t, "failed", "page 2: status = %d, want %d", w2.Code, http.StatusOK)
 	}
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
 	if len(feed2.Entries) != totalAuthors-opdspkg.PageSize {
@@ -252,7 +254,7 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 	const totalSeries = opdspkg.PageSize + 5
 	for i := range totalSeries {
 		if _, err := h.DB.CreateSeries(ctx, fmt.Sprintf("Series %03d", i), nil, nil, nil); err != nil {
-			t.Fatalf("create series %d: %v", i, err)
+			require.NoError(t, err, "create series %d", i)
 		}
 	}
 
@@ -261,7 +263,7 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("page 1: status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "page 1: status = %d, want %d", w.Code, http.StatusOK)
 	}
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != opdspkg.PageSize {
@@ -280,7 +282,7 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 	h.HandleOPDS(w2, r2)
 
 	if w2.Code != http.StatusOK {
-		t.Fatalf("page 2: status = %d, want %d", w2.Code, http.StatusOK)
+		require.Failf(t, "failed", "page 2: status = %d, want %d", w2.Code, http.StatusOK)
 	}
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
 	if len(feed2.Entries) != totalSeries-opdspkg.PageSize {

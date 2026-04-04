@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setupKOSyncHandler(t *testing.T) (*KOSyncHandler, string) {
@@ -16,9 +18,7 @@ func setupKOSyncHandler(t *testing.T) (*KOSyncHandler, string) {
 	h := &KOSyncHandler{DB: d}
 
 	user, err := d.CreateUser(t.Context(), "KOUser", "ko@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	return h, user.ID
 }
 
@@ -68,7 +68,7 @@ func TestKOSyncCredentials_Put_Success(t *testing.T) {
 
 	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
+		require.NoError(t, err, "decode response")
 	}
 	if resp.Username != "myreader" {
 		t.Errorf("Username = %q, want %q", resp.Username, "myreader")
@@ -91,7 +91,7 @@ func TestKOSyncCredentials_Put_LowercasesUsername(t *testing.T) {
 
 	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
+		require.NoError(t, err, "decode response")
 	}
 	if resp.Username != "myreader" {
 		t.Errorf("Username = %q, want %q (should be lowercase)", resp.Username, "myreader")
@@ -154,7 +154,7 @@ func TestKOSyncCredentials_Get_AfterPut(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w, r)
 	if w.Code != http.StatusOK {
-		t.Fatalf("PUT status = %d; body: %s", w.Code, w.Body.String())
+		require.Failf(t, "failed", "PUT status = %d; body: %s", w.Code, w.Body.String())
 	}
 
 	// Fetch
@@ -168,7 +168,7 @@ func TestKOSyncCredentials_Get_AfterPut(t *testing.T) {
 
 	var resp credentialResponse
 	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode GET response: %v", err)
+		require.NoError(t, err, "decode GET response")
 	}
 	if resp.Username != "myreader" {
 		t.Errorf("Username = %q, want %q", resp.Username, "myreader")
@@ -185,7 +185,7 @@ func TestKOSyncCredentials_Delete(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w, r)
 	if w.Code != http.StatusOK {
-		t.Fatalf("PUT status = %d; body: %s", w.Code, w.Body.String())
+		require.Failf(t, "failed", "PUT status = %d; body: %s", w.Code, w.Body.String())
 	}
 
 	// Delete
@@ -226,13 +226,9 @@ func TestKOSyncCredentials_UsernameConflict(t *testing.T) {
 	h := &KOSyncHandler{DB: d}
 
 	user1, err := d.CreateUser(t.Context(), "User1", "u1@example.com", "pw")
-	if err != nil {
-		t.Fatalf("create user1: %v", err)
-	}
+	require.NoError(t, err, "create user1")
 	user2, err := d.CreateUser(t.Context(), "User2", "u2@example.com", "pw")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	require.NoError(t, err, "create user2")
 
 	// user1 claims "shared"
 	body := `{"username":"shared","password":"secretpass"}`
@@ -241,7 +237,7 @@ func TestKOSyncCredentials_UsernameConflict(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w, r)
 	if w.Code != http.StatusOK {
-		t.Fatalf("user1 PUT status = %d; body: %s", w.Code, w.Body.String())
+		require.Failf(t, "failed", "user1 PUT status = %d; body: %s", w.Code, w.Body.String())
 	}
 
 	// user2 tries to claim "shared"
@@ -298,7 +294,7 @@ func TestKOSyncUserAuth_Success(t *testing.T) {
 
 	var resp map[string]string
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
+		require.NoError(t, err, "decode response")
 	}
 	if resp["authorized"] != "OK" {
 		t.Errorf("authorized = %q, want %q", resp["authorized"], "OK")
@@ -334,7 +330,7 @@ func TestKOSyncProgress_Put_Success(t *testing.T) {
 
 	var resp kosyncProgressResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
+		require.NoError(t, err, "decode response")
 	}
 	if resp.Document != "abc123" {
 		t.Errorf("Document = %q, want %q", resp.Document, "abc123")
@@ -408,7 +404,7 @@ func TestKOSyncProgress_Get_Success(t *testing.T) {
 	wPut := httptest.NewRecorder()
 	h.HandleKOSyncProgress(wPut, rPut)
 	if wPut.Code != http.StatusOK {
-		t.Fatalf("PUT status = %d; body: %s", wPut.Code, wPut.Body.String())
+		require.Failf(t, "failed", "PUT status = %d; body: %s", wPut.Code, wPut.Body.String())
 	}
 
 	// Now GET
@@ -423,7 +419,7 @@ func TestKOSyncProgress_Get_Success(t *testing.T) {
 
 	var resp kosyncProgressResponse
 	if err := json.Unmarshal(wGet.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode GET response: %v", err)
+		require.NoError(t, err, "decode GET response")
 	}
 	if resp.Document != "doc42" {
 		t.Errorf("Document = %q, want %q", resp.Document, "doc42")
@@ -480,13 +476,9 @@ func TestKOSyncProgress_IsolatedByUser(t *testing.T) {
 	h := &KOSyncHandler{DB: d}
 
 	user1, err := d.CreateUser(t.Context(), "User1", "u1@example.com", "pw")
-	if err != nil {
-		t.Fatalf("create user1: %v", err)
-	}
+	require.NoError(t, err, "create user1")
 	user2, err := d.CreateUser(t.Context(), "User2", "u2@example.com", "pw")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	require.NoError(t, err, "create user2")
 
 	// user1 writes progress
 	putBody := `{"document":"shared-doc","progress":"/body/p[1]","percentage":0.1}`
@@ -495,7 +487,7 @@ func TestKOSyncProgress_IsolatedByUser(t *testing.T) {
 	wPut := httptest.NewRecorder()
 	h.HandleKOSyncProgress(wPut, rPut)
 	if wPut.Code != http.StatusOK {
-		t.Fatalf("user1 PUT status = %d", wPut.Code)
+		require.Failf(t, "failed", "user1 PUT status = %d", wPut.Code)
 	}
 
 	// user2 cannot see user1's progress
