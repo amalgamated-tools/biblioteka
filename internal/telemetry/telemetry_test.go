@@ -5,14 +5,17 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
 // TestSendBoot_DisabledByDefault verifies that SendBoot is a no-op when the
-// TELEMETRY_ENABLED environment variable is not set.
+// TELEMETRY_ENABLED environment variable is not set at all.
 func TestSendBoot_DisabledByDefault(t *testing.T) {
-	// Remove the env var so telemetry is disabled.
+	// Register cleanup to restore the original value, then unset so
+	// os.LookupEnv returns ok=false (the "not set" branch).
 	t.Setenv(EnvTelemetryEnabled, "")
+	os.Unsetenv(EnvTelemetryEnabled)
 
 	// Point telemetry at a test server that would fail the test if hit.
 	called := false
@@ -27,7 +30,7 @@ func TestSendBoot_DisabledByDefault(t *testing.T) {
 	SendBoot(context.Background(), "test-version")
 
 	if called {
-		t.Error("expected SendBoot to be a no-op when TELEMETRY_ENABLED is empty/false")
+		t.Error("expected SendBoot to be a no-op when TELEMETRY_ENABLED is not set")
 	}
 }
 
