@@ -86,7 +86,7 @@ Paginated responses include envelope fields alongside the data array:
 | `limit`  | integer | Effective limit used for this page |
 | `offset` | integer | Effective offset used for this page |
 
-**Behavior:** Most paginated endpoints (`GET /api/books`, `GET /api/libraries/{id}/books`) use `parseLimitOffset`, which **silently clamps** out-of-range values — a non-integer or negative `offset` falls back to `0`, and a `limit` below `1` falls back to `50`. The `GET /api/audit-logs` endpoint uses stricter validation and returns `400 Bad Request` for a non-integer or out-of-range `limit`/`offset`.
+**Behavior:** Most paginated endpoints (`GET /api/books`, `GET /api/libraries/{id}/books`, `GET /api/authors/{id}/books`, `GET /api/series/{id}/books`) use `parseLimitOffset`, which **silently clamps** out-of-range values — a non-integer or negative `offset` falls back to `0`, and a `limit` below `1` falls back to `50`. The `GET /api/audit-logs` endpoint uses stricter validation and returns `400 Bad Request` for a non-integer or out-of-range `limit`/`offset`.
 
 ---
 
@@ -920,6 +920,39 @@ Delete an author. Returns `204 No Content`.
 
 ---
 
+### `GET /api/authors/{id}/books` 🔒
+
+List books associated with a specific author, with pagination. Results are sorted by `title` ascending. Results use the same shape as [`GET /api/books`](#get-apibooks).
+
+**Query parameters:**
+
+| Parameter | Type    | Default | Description |
+|-----------|---------|---------|-------------|
+| `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
+| `offset`  | integer | `0`     | Number of books to skip |
+
+**Response body (`200`):** Paginated books object (same shape as [`GET /api/books`](#get-apibooks)).
+
+```json
+{
+  "books": [ /* book summary objects */ ],
+  "total": 3,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+When the author exists but has no associated books, the response is `200 OK` with `"books": []` and `"total": 0`.
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `404` | Author not found (only checked when the author has no associated books) |
+| `500` | Unexpected server error |
+
+---
+
 ## Series
 
 ### `GET /api/series` 🔒
@@ -1008,6 +1041,39 @@ Update a series (full update).
 Delete a series. Returns `204 No Content`.
 
 > **Cascade:** Deleting a series also removes all `book_series` join entries for that series. Books themselves are **not** deleted. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
+
+---
+
+### `GET /api/series/{id}/books` 🔒
+
+List books associated with a specific series, with pagination. Results are ordered by series position ascending (books with no assigned position appear last on PostgreSQL, first on SQLite), then by title ascending within the same position. Results use the same shape as [`GET /api/books`](#get-apibooks).
+
+**Query parameters:**
+
+| Parameter | Type    | Default | Description |
+|-----------|---------|---------|-------------|
+| `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
+| `offset`  | integer | `0`     | Number of books to skip |
+
+**Response body (`200`):** Paginated books object (same shape as [`GET /api/books`](#get-apibooks)).
+
+```json
+{
+  "books": [ /* book summary objects */ ],
+  "total": 2,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+When the series exists but has no associated books, the response is `200 OK` with `"books": []` and `"total": 0`.
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `404` | Series not found (only checked when the series has no associated books) |
+| `500` | Unexpected server error |
 
 ---
 
