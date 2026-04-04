@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/svelte";
+import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
 
 vi.mock("../stores/auth.svelte", () => ({
   authStore: {
@@ -146,5 +146,34 @@ describe("Sidebar navigation accessibility", () => {
     expect(
       screen.queryByRole("heading", { name: "biblioteka" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("backdrop button does not have tabindex=-1 so keyboard users can close the sidebar", () => {
+    render(Sidebar, {
+      props: { currentView: "dashboard", open: true, onClose: () => {} },
+    });
+
+    const backdrop = screen.getByRole("button", { name: "Close sidebar" });
+    expect(backdrop).not.toHaveAttribute("tabindex");
+  });
+
+  it("calls onClose when Escape key is pressed while sidebar is open", async () => {
+    const onClose = vi.fn();
+    render(Sidebar, {
+      props: { currentView: "dashboard", open: true, onClose },
+    });
+
+    await fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("does not call onClose when Escape key is pressed while sidebar is closed", async () => {
+    const onClose = vi.fn();
+    render(Sidebar, {
+      props: { currentView: "dashboard", open: false, onClose },
+    });
+
+    await fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
   });
 });
