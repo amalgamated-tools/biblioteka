@@ -922,7 +922,7 @@ Delete an author. Returns `204 No Content`.
 
 ### `GET /api/authors/{id}/books` 🔒
 
-List books associated with a specific author, with pagination. Results use the same shape as [`GET /api/books`](#get-apibooks).
+List books associated with a specific author, with pagination. Results are sorted by `title` ascending. Results use the same shape as [`GET /api/books`](#get-apibooks).
 
 **Query parameters:**
 
@@ -1046,7 +1046,7 @@ Delete a series. Returns `204 No Content`.
 
 ### `GET /api/series/{id}/books` 🔒
 
-List books associated with a specific series, with pagination. Results use the same shape as [`GET /api/books`](#get-apibooks).
+List books associated with a specific series, with pagination. Results are ordered by series position ascending (books with no assigned position appear last on PostgreSQL, first on SQLite), then by title ascending within the same position. Results use the same shape as [`GET /api/books`](#get-apibooks).
 
 **Query parameters:**
 
@@ -1067,8 +1067,6 @@ List books associated with a specific series, with pagination. Results use the s
 ```
 
 When the series exists but has no associated books, the response is `200 OK` with `"books": []` and `"total": 0`.
-
-Results are ordered by series position ascending (books with no assigned position appear last on PostgreSQL, first on SQLite), then by title ascending within the same position.
 
 **Errors:**
 
