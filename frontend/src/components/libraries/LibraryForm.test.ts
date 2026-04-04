@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { render, fireEvent, cleanup } from "@testing-library/svelte";
 import { tick } from "svelte";
 import {
@@ -29,6 +29,7 @@ vi.mock("lucide-svelte", () => ({
 }));
 
 import LibraryForm from "./LibraryForm.svelte";
+import { libraryStore } from "../../stores/libraries.svelte";
 
 describe("LibraryForm accessibility", () => {
   afterEach(() => cleanup());
@@ -236,5 +237,127 @@ describe("LibraryForm organization type dropdown", () => {
     const label = container.querySelector('label[for="lib-org-type"]');
     expect(label).toBeInTheDocument();
     expect(label).toHaveTextContent("File Organization");
+  });
+});
+
+describe("LibraryForm delete confirmation accessibility", () => {
+  const mockLibrary = {
+    id: "lib-1",
+    name: "My Fiction",
+    paths: ["/books"],
+    monitored: false,
+    organization_type: LIBRARY_ORGANIZATION_TYPES.BOOK_PER_FOLDER,
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  };
+
+  beforeEach(() => {
+    Object.assign(libraryStore, { libraries: [mockLibrary] });
+  });
+
+  afterEach(() => {
+    Object.assign(libraryStore, { libraries: [] });
+    cleanup();
+  });
+
+  it("shows the delete trigger button in edit mode", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "edit", editId: "lib-1" },
+    });
+    await tick();
+
+    const trigger = container.querySelector(
+      '[data-delete-trigger="lib-delete"]',
+    );
+    expect(trigger).toBeInTheDocument();
+    expect(trigger).toHaveTextContent("Delete Library");
+  });
+
+  it("shows delete confirmation with role=alertdialog when trigger is clicked", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "edit", editId: "lib-1" },
+    });
+    await tick();
+
+    const trigger = container.querySelector<HTMLButtonElement>(
+      '[data-delete-trigger="lib-delete"]',
+    )!;
+    await fireEvent.click(trigger);
+    await tick();
+
+    const dialog = container.querySelector('[role="alertdialog"]');
+    expect(dialog).toBeInTheDocument();
+  });
+
+  it("delete confirmation has aria-labelledby pointing to label element", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "edit", editId: "lib-1" },
+    });
+    await tick();
+
+    const trigger = container.querySelector<HTMLButtonElement>(
+      '[data-delete-trigger="lib-delete"]',
+    )!;
+    await fireEvent.click(trigger);
+    await tick();
+
+    const dialog = container.querySelector('[role="alertdialog"]')!;
+    const labelledBy = dialog.getAttribute("aria-labelledby");
+    expect(labelledBy).toBeTruthy();
+
+    const label = container.querySelector(`#${labelledBy}`);
+    expect(label).toBeInTheDocument();
+    expect(label).toHaveTextContent('Delete "My Fiction"?');
+  });
+
+  it("pressing Escape on the confirmation dismisses it and restores focus to the trigger", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "edit", editId: "lib-1" },
+    });
+    await tick();
+
+    const trigger = container.querySelector<HTMLButtonElement>(
+      '[data-delete-trigger="lib-delete"]',
+    )!;
+    await fireEvent.click(trigger);
+    await tick();
+
+    const dialog = container.querySelector('[role="alertdialog"]')!;
+    await fireEvent.keyDown(dialog, { key: "Escape" });
+    await tick();
+
+    expect(container.querySelector('[role="alertdialog"]')).toBeNull();
+    const restoredTrigger = container.querySelector<HTMLButtonElement>(
+      '[data-delete-trigger="lib-delete"]',
+    )!;
+    expect(restoredTrigger).toBeInTheDocument();
+    expect(document.activeElement).toBe(restoredTrigger);
+  });
+
+  it("clicking the cancel button dismisses the confirmation and restores focus to the trigger", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "edit", editId: "lib-1" },
+    });
+    await tick();
+
+    const trigger = container.querySelector<HTMLButtonElement>(
+      '[data-delete-trigger="lib-delete"]',
+    )!;
+    await fireEvent.click(trigger);
+    await tick();
+
+    const buttons = container.querySelectorAll('[role="alertdialog"] button');
+    const cancelButton = Array.from(buttons).find(
+      (b) => b.textContent?.trim() === "Cancel",
+    )!;
+    await fireEvent.click(cancelButton);
+    await tick();
+
+    expect(container.querySelector('[role="alertdialog"]')).toBeNull();
+    const restoredTrigger = container.querySelector<HTMLButtonElement>(
+      '[data-delete-trigger="lib-delete"]',
+    )!;
+    expect(restoredTrigger).toBeInTheDocument();
+    expect(document.activeElement).toBe(restoredTrigger);
   });
 });
