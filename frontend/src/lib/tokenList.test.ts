@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { TokenListState } from "./tokenList.svelte";
+import { CopyTimeoutState } from "./copyTimeout.svelte";
 
 interface TestToken {
   id: string;
@@ -162,6 +163,39 @@ describe("TokenListState", () => {
       state.handleDelete("tok-1", "Token 1");
       await state.confirmDelete();
       expect(state.items).toEqual([tok1, tok2]);
+    });
+  });
+
+  describe("copy", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("exposes a CopyTimeoutState instance", () => {
+      expect(state.copy).toBeInstanceOf(CopyTimeoutState);
+    });
+
+    it("copy.copiedId starts as null", () => {
+      expect(state.copy.copiedId).toBeNull();
+    });
+
+    it("copy.set() updates copiedId and resets after duration", () => {
+      state.copy.set("tok-1");
+      expect(state.copy.copiedId).toBe("tok-1");
+      vi.advanceTimersByTime(2000);
+      expect(state.copy.copiedId).toBeNull();
+    });
+
+    it("copy.clear() cancels the timeout and resets copiedId", () => {
+      state.copy.set("tok-1");
+      state.copy.clear();
+      expect(state.copy.copiedId).toBeNull();
+      vi.advanceTimersByTime(2000);
+      expect(state.copy.copiedId).toBeNull();
     });
   });
 });
