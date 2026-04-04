@@ -46,13 +46,14 @@
   }
 </script>
 
+<svelte:window onkeydown={(e) => { if (open && e.key === "Escape") onClose(); }} />
+
 <!-- Mobile overlay backdrop -->
 {#if open}
   <button
     class="fixed inset-0 z-40 bg-ink-900/60 dark:bg-ink-950/70 backdrop-blur-sm md:hidden"
     onclick={onClose}
     aria-label="Close sidebar"
-    tabindex="-1"
   ></button>
 {/if}
 
