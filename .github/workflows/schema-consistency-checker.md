@@ -110,7 +110,7 @@ Set a boolean flag for each layer (`true` = changed, `false` = unchanged).
 Schema Consistency Checker has nothing to analyze today.
 ```
 
-Then call the `noop` safe-output with a brief explanation and exit. Do not proceed to analysis.
+Then exit without invoking any analysis safe-outputs. Do not proceed to analysis.
 
 **Partial run**: If only some layers changed, skip the analysis sections for unchanged layers and note which layers were skipped in the report. For example, if only `LAYER_HANDLERS` and `LAYER_FRONTEND` changed, skip Analysis Area 1 (DB Migrations vs Go DB Layer) and focus only on Area 2 (Go Handler DTOs vs TypeScript) and Area 4 (Go DB Types vs Handler DTO Mappings).
 
@@ -278,7 +278,7 @@ Here are proven strategies you can use or build upon:
 Run the scope detection from the [Scope Detection](#scope-detection) section above:
 1. Get the list of files changed in the last 24 hours
 2. Map them to the five schema layer flags
-3. Early-exit with a `noop` safe-output if no schema layers changed
+3. Exit gracefully if no schema layers changed
 4. Record which layers are active for this run — only active layers are analyzed in Steps 3–4
 
 ### Step 1: Load Previous Strategies
@@ -456,7 +456,7 @@ You have access to:
 
 A successful run:
 - ✅ Runs scope detection (Step 0) before any analysis
-- ✅ Exits gracefully with `noop` when no schema-related files changed in the last 24 hours
+- ✅ Exits gracefully when no schema-related files changed in the last 24 hours
 - ✅ Analyzes only the layers affected by recent changes (skips unchanged layers)
 - ✅ Uses or creates an effective detection strategy
 - ✅ Updates cache with strategy results
