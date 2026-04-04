@@ -27,7 +27,7 @@ type Entitlement struct {
 	ActivePeriod        ActivePeriod `json:"ActivePeriod"`
 	Created             string       `json:"Created"`
 	CrossRevisionID     string       `json:"CrossRevisionId"`
-	Id                  string       `json:"Id"`
+	ID                  string       `json:"Id"`
 	IsRemoved           bool         `json:"IsRemoved"`
 	IsHiddenFromArchive bool         `json:"IsHiddenFromArchive"`
 	IsLocked            bool         `json:"IsLocked"`
