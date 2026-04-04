@@ -1,3 +1,6 @@
+// Package pathparser extracts book metadata (author, title, series name,
+// series position, and publication year) from a book file's path relative to
+// its library root directory.
 package pathparser
 
 import (

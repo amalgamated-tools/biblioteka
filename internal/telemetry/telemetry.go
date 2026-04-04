@@ -1,3 +1,8 @@
+// Package telemetry sends anonymous, opt-in usage pings to the Biblioteka
+// telemetry endpoint. The payload contains only non-identifying system
+// information (OS, architecture, version) and a randomly generated install ID.
+// Telemetry is disabled by default and can be enabled via the
+// TELEMETRY_ENABLED=true environment variable.
 package telemetry
 
 import (
@@ -16,6 +21,8 @@ import (
 	"github.com/google/uuid"
 )
 
+// Payload is the JSON body sent to the telemetry endpoint on each boot.
+// All fields are non-identifying system information.
 type Payload struct {
 	Application string `json:"application"`
 	InstallID   string `json:"install_id"`
@@ -26,11 +33,17 @@ type Payload struct {
 }
 
 const (
-	EnvTelemetryEnabled      = "TELEMETRY_ENABLED"
+	// EnvTelemetryEnabled is the environment variable that must be set to
+	// "true" to opt in to telemetry. Telemetry is disabled by default.
+	EnvTelemetryEnabled = "TELEMETRY_ENABLED"
+	// EnvTelemetryEndpoint overrides the default telemetry endpoint URL.
 	EnvTelemetryEndpoint     = "TELEMETRY_ENDPOINT"
 	DefaultTelemetryEndpoint = "https://telemetry-worker.amalgamated-tools.workers.dev"
 )
 
+// SendBoot fires a single telemetry ping if TELEMETRY_ENABLED=true. It is
+// called once during server startup and may block the application boot path
+// while the request is performed. The request times out after 3 seconds.
 func SendBoot(ctx context.Context, version string) {
 	// Telemetry is opt-in meaning it is disabled by default unless explicitly enabled
 	envTelemetryEnabled, ok := os.LookupEnv(EnvTelemetryEnabled)
