@@ -1,18 +1,24 @@
-package handlers
+package smtp
 
 import (
 	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
-	"net/smtp"
+	netsmtp "net/smtp"
 	"time"
 )
 
-const smtpSessionTimeout = 30 * time.Second
+// SessionTimeout is the maximum duration for a single SMTP session.
+const SessionTimeout = 30 * time.Second
 
-func newSMTPClientWithContext(ctx context.Context, conn net.Conn, host string) (*smtp.Client, func(), error) {
-	sessionDeadline := time.Now().Add(smtpSessionTimeout)
+// newClientWithContext creates an SMTP client over conn, setting a deadline
+// derived from ctx or SessionTimeout (whichever comes first). It returns the
+// client, a cleanup function that must be called to release the underlying
+// connection, and any error. On success the caller is responsible for calling
+// both cleanup() and client.Close().
+func newClientWithContext(ctx context.Context, conn net.Conn, host string) (*netsmtp.Client, func(), error) {
+	sessionDeadline := time.Now().Add(SessionTimeout)
 	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(sessionDeadline) {
 		sessionDeadline = ctxDeadline
 	}
@@ -36,7 +42,7 @@ func newSMTPClientWithContext(ctx context.Context, conn net.Conn, host string) (
 		}
 	}(conn, done, ctx)
 
-	client, err := smtp.NewClient(conn, host)
+	client, err := netsmtp.NewClient(conn, host)
 	if err != nil {
 		close(done)
 		// Don't also call conn.Close() here; the goroutine (via done or ctx.Done())
@@ -47,7 +53,9 @@ func newSMTPClientWithContext(ctx context.Context, conn net.Conn, host string) (
 	return client, func() { close(done) }, nil
 }
 
-func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, msg []byte, tlsMode string) error {
+// Send dials addr, negotiates TLS according to tlsMode, authenticates with a
+// if non-nil, and delivers a single message from → to.
+func Send(ctx context.Context, addr string, a netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		return fmt.Errorf("invalid address: %w", err)
@@ -63,19 +71,19 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		if err != nil {
 			return fmt.Errorf("TLS connection failed: %w", err)
 		}
-		client, cleanup, err := newSMTPClientWithContext(ctx, conn, host)
+		client, cleanup, err := newClientWithContext(ctx, conn, host)
 		if err != nil {
 			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
 		defer client.Close()
 		defer cleanup()
-		return smtpSend(client, a, from, to, msg)
+		return send(client, a, from, to, msg)
 	case "starttls":
 		conn, err := netDialer.DialContext(ctx, "tcp", addr)
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
-		client, cleanup, err := newSMTPClientWithContext(ctx, conn, host)
+		client, cleanup, err := newClientWithContext(ctx, conn, host)
 		if err != nil {
 			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
@@ -84,25 +92,25 @@ func sendMail(ctx context.Context, addr string, a smtp.Auth, from, to string, ms
 		if err := client.StartTLS(tlsConfig); err != nil {
 			return fmt.Errorf("STARTTLS failed: %w", err)
 		}
-		return smtpSend(client, a, from, to, msg)
+		return send(client, a, from, to, msg)
 	case "none":
 		conn, err := netDialer.DialContext(ctx, "tcp", addr)
 		if err != nil {
 			return fmt.Errorf("SMTP connection failed: %w", err)
 		}
-		client, cleanup, err := newSMTPClientWithContext(ctx, conn, host)
+		client, cleanup, err := newClientWithContext(ctx, conn, host)
 		if err != nil {
 			return fmt.Errorf("SMTP client creation failed: %w", err)
 		}
 		defer client.Close()
 		defer cleanup()
-		return smtpSend(client, a, from, to, msg)
+		return send(client, a, from, to, msg)
 	default:
 		return fmt.Errorf("unsupported TLS mode %q", tlsMode)
 	}
 }
 
-func smtpSend(c *smtp.Client, a smtp.Auth, from, to string, msg []byte) error {
+func send(c *netsmtp.Client, a netsmtp.Auth, from, to string, msg []byte) error {
 	if a != nil {
 		if err := c.Auth(a); err != nil {
 			return fmt.Errorf("SMTP auth failed: %w", err)

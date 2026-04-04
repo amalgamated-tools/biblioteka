@@ -11,6 +11,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/kobo"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -55,7 +56,7 @@ func (h *KoboHandler) getBookState(w http.ResponseWriter, r *http.Request, userI
 		}
 	}
 
-	writeKoboJSON(w, http.StatusOK, []any{koboReadingStateResponse(state)})
+	writeKoboJSON(w, http.StatusOK, []any{kobo.ReadingStateResponse(state)})
 }
 
 type koboStateUpdateRequest struct {
@@ -150,48 +151,4 @@ func (h *KoboHandler) updateBookState(w http.ResponseWriter, r *http.Request, us
 			},
 		},
 	})
-}
-
-func koboReadingStateResponse(state *db.KoboReadingState) map[string]any {
-	now := time.Now().UTC().Format(time.RFC3339)
-
-	updatedAt := now
-	if !state.UpdatedAt.IsZero() {
-		updatedAt = state.UpdatedAt.UTC().Format(time.RFC3339)
-	}
-	createdAt := updatedAt
-	if !state.CreatedAt.IsZero() {
-		createdAt = state.CreatedAt.UTC().Format(time.RFC3339)
-	}
-
-	statusInfo := map[string]any{
-		"LastModified":        updatedAt,
-		"Status":              state.Status,
-		"TimesStartedReading": 0,
-	}
-
-	currentBookmark := map[string]any{
-		"LastModified": updatedAt,
-	}
-	if state.PercentRead != nil {
-		currentBookmark["ProgressPercent"] = *state.PercentRead
-		currentBookmark["ContentSourceProgressPercent"] = *state.PercentRead
-	}
-	if state.LocationValue != nil && state.LocationType != nil && state.LocationSource != nil {
-		currentBookmark["Location"] = map[string]any{
-			"Value":  *state.LocationValue,
-			"Type":   *state.LocationType,
-			"Source": *state.LocationSource,
-		}
-	}
-
-	return map[string]any{
-		"EntitlementId":     state.BookID,
-		"Created":           createdAt,
-		"LastModified":      updatedAt,
-		"PriorityTimestamp": updatedAt,
-		"StatusInfo":        statusInfo,
-		"Statistics":        map[string]any{"LastModified": updatedAt},
-		"CurrentBookmark":   currentBookmark,
-	}
 }
