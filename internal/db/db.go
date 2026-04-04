@@ -1,3 +1,7 @@
+// Package db is the database access layer for Biblioteka. It supports both
+// SQLite (default) and PostgreSQL backends and provides CRUD operations for
+// all application entities: books, authors, series, libraries, users, audit
+// logs, API keys, Kobo tokens, and protocol credentials.
 package db
 
 import (

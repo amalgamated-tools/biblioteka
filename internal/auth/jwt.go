@@ -1,3 +1,6 @@
+// Package auth provides JWT token management, API-key validation, per-IP rate
+// limiting, and protocol-specific authentication middleware for OPDS, KOSync,
+// and Kobo clients.
 package auth
 
 import (
