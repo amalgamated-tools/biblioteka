@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -253,29 +254,47 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 // listBooks godoc
 //
 //	@Summary		List books
-//	@Description	Returns paginated books (summary without relations)
+//	@Description	Returns paginated books (summary without relations). When query is provided, performs a title/description search.
 //	@Tags			Books
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			limit	query		int	false	"Max items per page (default 50, max 200)"
-//	@Param			offset	query		int	false	"Number of items to skip (default 0)"
+//	@Param			query	query		string	false	"Search query (title/description substring match)"
+//	@Param			limit	query		int		false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int		false	"Number of items to skip (default 0)"
 //	@Success		200		{object}	bookListDTO
 //	@Failure		401		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse
 //	@Router			/books [get]
 func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+	query := strings.TrimSpace(r.URL.Query().Get("query"))
 
 	slog.DebugContext(r.Context(), "listing books",
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
+		slog.String(otelkeys.Query, query),
 	)
 
-	books, total, err := h.DB.ListBooksPaginated(r.Context(), limit, offset)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list books", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list books")
-		return
+	var (
+		books []db.Book
+		total int
+		err   error
+	)
+
+	if query != "" {
+		books, total, err = h.DB.SearchBooks(r.Context(), query, limit, offset)
+		if err != nil {
+			slog.ErrorContext(r.Context(), "failed to search books", slog.Any(otelkeys.Error, err))
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to search books")
+			return
+		}
+	} else {
+		books, total, err = h.DB.ListBooksPaginated(r.Context(), limit, offset)
+		if err != nil {
+			slog.ErrorContext(r.Context(), "failed to list books", slog.Any(otelkeys.Error, err))
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to list books")
+			return
+		}
 	}
 
 	slog.DebugContext(r.Context(), "books listed", slog.Int(otelkeys.Count, len(books)))
