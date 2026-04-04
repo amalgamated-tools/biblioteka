@@ -226,31 +226,10 @@ func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id 
 //	@Failure		500		{object}	errorResponse
 //	@Router			/authors/{id}/books [get]
 func (h *AuthorHandler) listAuthorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
-	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
-
-	books, total, err := h.DB.ListBooksByAuthorPaginated(r.Context(), authorID, limit, offset)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list author books",
-			slog.String(otelkeys.AuthorID, authorID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list author books")
-		return
-	}
-
-	// If no books found, check whether the author actually exists.
-	if total == 0 {
-		if _, err := h.DB.GetAuthor(r.Context(), authorID); handleDBErr(r.Context(), w, err, "author") {
-			return
-		}
-	}
-
-	dtos := mapSlice(books, toBookSummaryDTO)
-
-	writeJSON(r.Context(), w, http.StatusOK, bookListDTO{
-		Books:  dtos,
-		Total:  total,
-		Limit:  limit,
-		Offset: offset,
-	})
+	listParentBooks(w, r, authorID,
+		slog.String(otelkeys.AuthorID, authorID),
+		h.DB.ListBooksByAuthorPaginated,
+		h.DB.GetAuthor,
+		"author",
+	)
 }
