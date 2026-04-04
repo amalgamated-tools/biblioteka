@@ -95,6 +95,7 @@
         document.getElementById("main-content")?.focus();
       }}
       class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-accent-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
+      inert={sidebarOpen}
     >
       Skip to main content
     </a>
@@ -112,6 +113,7 @@
     <header
       aria-label="Mobile header"
       class="sticky top-0 z-30 flex items-center gap-3 bg-cream-50/90 dark:bg-ink-950/90 backdrop-blur-md border-b border-ink-100 dark:border-ink-800 px-4 py-3 md:hidden"
+      inert={sidebarOpen}
     >
       <button
         onclick={() => (sidebarOpen = true)}
@@ -126,7 +128,12 @@
       >
     </header>
 
-    <main id="main-content" tabindex="-1" class="md:ml-64 p-4 md:p-8">
+    <main
+      id="main-content"
+      tabindex="-1"
+      class="md:ml-64 p-4 md:p-8"
+      inert={sidebarOpen}
+    >
       <div class="max-w-6xl mx-auto animate-fade-in">
         {#if routerStore.isKnownView === false}
           <NotFound />
