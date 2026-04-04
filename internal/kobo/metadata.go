@@ -73,7 +73,7 @@ type Metadata struct {
 	CurrentLoveDisplayPrice DisplayPrice      `json:"CurrentLoveDisplayPrice"`
 	Description             *string           `json:"Description"`
 	DownloadUrls            []DownloadURL     `json:"DownloadUrls"`
-	EntitlementId           string            `json:"EntitlementId"`
+	EntitlementID           string            `json:"EntitlementId"`
 	ExternalIds             []any             `json:"ExternalIds"`
 	Genre                   string            `json:"Genre"`
 	IsEligibleForKoboLove   bool              `json:"IsEligibleForKoboLove"`
