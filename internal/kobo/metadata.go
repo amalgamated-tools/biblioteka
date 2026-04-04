@@ -8,21 +8,143 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 )
 
+// DownloadURL represents a Kobo download URL entry.
+type DownloadURL struct {
+	Format   string `json:"Format"`
+	Size     int64  `json:"Size"`
+	Url      string `json:"Url"`
+	Platform string `json:"Platform"`
+}
+
+// ActivePeriod represents the active period of a Kobo entitlement.
+type ActivePeriod struct {
+	From string `json:"From"`
+}
+
+// Entitlement represents the BookEntitlement object expected by Kobo devices.
+type Entitlement struct {
+	Accessibility       string       `json:"Accessibility"`
+	ActivePeriod        ActivePeriod `json:"ActivePeriod"`
+	Created             string       `json:"Created"`
+	CrossRevisionId     string       `json:"CrossRevisionId"`
+	Id                  string       `json:"Id"`
+	IsRemoved           bool         `json:"IsRemoved"`
+	IsHiddenFromArchive bool         `json:"IsHiddenFromArchive"`
+	IsLocked            bool         `json:"IsLocked"`
+	LastModified        string       `json:"LastModified"`
+	OriginCategory      string       `json:"OriginCategory"`
+	RevisionId          string       `json:"RevisionId"`
+	Status              string       `json:"Status"`
+}
+
+// DisplayPrice represents a display price in a Kobo metadata response.
+type DisplayPrice struct {
+	CurrencyCode string `json:"CurrencyCode,omitempty"`
+	TotalAmount  int    `json:"TotalAmount"`
+}
+
+// PublisherInfo represents the publisher object in a Kobo metadata response.
+type PublisherInfo struct {
+	Imprint string  `json:"Imprint"`
+	Name    *string `json:"Name"`
+}
+
+// ContributorRole represents a contributor role in a Kobo metadata response.
+type ContributorRole struct {
+	Name string `json:"Name"`
+}
+
+// SeriesInfo represents the series object in a Kobo metadata response.
+type SeriesInfo struct {
+	Name string `json:"Name"`
+	// Number is either an int (when position is a whole number) or a float64
+	// to match the Kobo protocol wire format, which expects e.g. 3 not 3.0.
+	Number      any      `json:"Number"`
+	NumberFloat *float64 `json:"NumberFloat"`
+	Id          string   `json:"Id"`
+}
+
+// Metadata represents the BookMetadata object expected by Kobo devices.
+type Metadata struct {
+	Categories              []string          `json:"Categories"`
+	CoverImageId            string            `json:"CoverImageId"`
+	CrossRevisionId         string            `json:"CrossRevisionId"`
+	CurrentDisplayPrice     DisplayPrice      `json:"CurrentDisplayPrice"`
+	CurrentLoveDisplayPrice DisplayPrice      `json:"CurrentLoveDisplayPrice"`
+	Description             *string           `json:"Description"`
+	DownloadUrls            []DownloadURL     `json:"DownloadUrls"`
+	EntitlementId           string            `json:"EntitlementId"`
+	ExternalIds             []any             `json:"ExternalIds"`
+	Genre                   string            `json:"Genre"`
+	IsEligibleForKoboLove   bool              `json:"IsEligibleForKoboLove"`
+	IsInternetArchive       bool              `json:"IsInternetArchive"`
+	IsPreOrder              bool              `json:"IsPreOrder"`
+	IsSocialEnabled         bool              `json:"IsSocialEnabled"`
+	Language                string            `json:"Language"`
+	PhoneticPronunciations  map[string]any    `json:"PhoneticPronunciations"`
+	PublicationDate         string            `json:"PublicationDate"`
+	Publisher               PublisherInfo     `json:"Publisher"`
+	RevisionId              string            `json:"RevisionId"`
+	Title                   string            `json:"Title"`
+	WorkId                  string            `json:"WorkId"`
+	ContributorRoles        []ContributorRole `json:"ContributorRoles"`
+	Contributors            []string          `json:"Contributors"`
+	Series                  *SeriesInfo       `json:"Series,omitempty"`
+}
+
+// Location represents a reading location within a Kobo book.
+type Location struct {
+	Value  string `json:"Value"`
+	Type   string `json:"Type"`
+	Source string `json:"Source"`
+}
+
+// Bookmark represents the current bookmark in a Kobo reading state.
+type Bookmark struct {
+	LastModified                 string    `json:"LastModified"`
+	ProgressPercent              *float64  `json:"ProgressPercent,omitempty"`
+	ContentSourceProgressPercent *float64  `json:"ContentSourceProgressPercent,omitempty"`
+	Location                     *Location `json:"Location,omitempty"`
+}
+
+// ReadingStatistics represents reading statistics in a Kobo reading state.
+type ReadingStatistics struct {
+	LastModified string `json:"LastModified"`
+}
+
+// StatusInfo represents reading status information in a Kobo reading state.
+type StatusInfo struct {
+	LastModified        string `json:"LastModified"`
+	Status              string `json:"Status"`
+	TimesStartedReading int    `json:"TimesStartedReading"`
+}
+
+// ReadingState represents the reading-state object expected by Kobo devices.
+type ReadingState struct {
+	EntitlementId     string            `json:"EntitlementId"`
+	Created           string            `json:"Created"`
+	LastModified      string            `json:"LastModified"`
+	PriorityTimestamp string            `json:"PriorityTimestamp"`
+	StatusInfo        StatusInfo        `json:"StatusInfo"`
+	Statistics        ReadingStatistics `json:"Statistics"`
+	CurrentBookmark   Bookmark          `json:"CurrentBookmark"`
+}
+
 // DownloadURLs builds the slice of Kobo download-URL objects for bookID given
 // its associated files. base is the scheme+host prefix (e.g.
 // "https://example.com") and tokenValue is the Kobo device token.
-func DownloadURLs(base, tokenValue, bookID string, files []db.BookFile) []map[string]any {
-	var urls []map[string]any
+func DownloadURLs(base, tokenValue, bookID string, files []db.BookFile) []DownloadURL {
+	var urls []DownloadURL
 	for _, f := range files {
 		koboFmt, ok := FormatForFileType(f.FileType)
 		if !ok {
 			continue
 		}
-		urls = append(urls, map[string]any{
-			"Format":   koboFmt,
-			"Size":     f.FileSize,
-			"Url":      fmt.Sprintf("%s/kobo/%s/download/%s/%s", base, tokenValue, bookID, strings.ToLower(f.FileType)),
-			"Platform": "Generic",
+		urls = append(urls, DownloadURL{
+			Format:   koboFmt,
+			Size:     f.FileSize,
+			Url:      fmt.Sprintf("%s/kobo/%s/download/%s/%s", base, tokenValue, bookID, strings.ToLower(f.FileType)),
+			Platform: "Generic",
 		})
 	}
 	return urls
@@ -49,74 +171,74 @@ func FormatForFileType(fileType string) (string, bool) {
 }
 
 // BookEntitlement builds the BookEntitlement object expected by Kobo devices.
-func BookEntitlement(book *db.Book) map[string]any {
+func BookEntitlement(book *db.Book) *Entitlement {
 	now := time.Now().UTC().Format(time.RFC3339)
-	return map[string]any{
-		"Accessibility":       "Full",
-		"ActivePeriod":        map[string]any{"From": now},
-		"Created":             book.CreatedAt.UTC().Format(time.RFC3339),
-		"CrossRevisionId":     book.ID,
-		"Id":                  book.ID,
-		"IsRemoved":           false,
-		"IsHiddenFromArchive": false,
-		"IsLocked":            false,
-		"LastModified":        book.UpdatedAt.UTC().Format(time.RFC3339),
-		"OriginCategory":      "Imported",
-		"RevisionId":          book.ID,
-		"Status":              "Active",
+	return &Entitlement{
+		Accessibility:       "Full",
+		ActivePeriod:        ActivePeriod{From: now},
+		Created:             book.CreatedAt.UTC().Format(time.RFC3339),
+		CrossRevisionId:     book.ID,
+		Id:                  book.ID,
+		IsRemoved:           false,
+		IsHiddenFromArchive: false,
+		IsLocked:            false,
+		LastModified:        book.UpdatedAt.UTC().Format(time.RFC3339),
+		OriginCategory:      "Imported",
+		RevisionId:          book.ID,
+		Status:              "Active",
 	}
 }
 
 // BookMetadata builds the BookMetadata object expected by Kobo devices.
-func BookMetadata(book *db.Book, authors []db.Author, series []db.BookSeriesEntry, downloadURLs []map[string]any) map[string]any {
-	var contributorRoles []map[string]any
+func BookMetadata(book *db.Book, authors []db.Author, series []db.BookSeriesEntry, downloadURLs []DownloadURL) *Metadata {
+	var contributorRoles []ContributorRole
 	var contributors []string
 	for _, a := range authors {
-		contributorRoles = append(contributorRoles, map[string]any{"Name": a.Name})
+		contributorRoles = append(contributorRoles, ContributorRole{Name: a.Name})
 		contributors = append(contributors, a.Name)
 	}
 
-	metadata := map[string]any{
-		"Categories":              []string{"00000000-0000-0000-0000-000000000001"},
-		"CoverImageId":            book.ID,
-		"CrossRevisionId":         book.ID,
-		"CurrentDisplayPrice":     map[string]any{"CurrencyCode": "USD", "TotalAmount": 0},
-		"CurrentLoveDisplayPrice": map[string]any{"TotalAmount": 0},
-		"Description":             ptrStr(book.Description),
-		"DownloadUrls":            downloadURLs,
-		"EntitlementId":           book.ID,
-		"ExternalIds":             []any{},
-		"Genre":                   "00000000-0000-0000-0000-000000000001",
-		"IsEligibleForKoboLove":   false,
-		"IsInternetArchive":       false,
-		"IsPreOrder":              false,
-		"IsSocialEnabled":         true,
-		"Language":                language(book),
-		"PhoneticPronunciations":  map[string]any{},
-		"PublicationDate":         pubDate(book),
-		"Publisher":               map[string]any{"Imprint": "", "Name": ptrStr(book.Publisher)},
-		"RevisionId":              book.ID,
-		"Title":                   book.Title,
-		"WorkId":                  book.ID,
-		"ContributorRoles":        contributorRoles,
-		"Contributors":            contributors,
+	m := &Metadata{
+		Categories:              []string{"00000000-0000-0000-0000-000000000001"},
+		CoverImageId:            book.ID,
+		CrossRevisionId:         book.ID,
+		CurrentDisplayPrice:     DisplayPrice{CurrencyCode: "USD", TotalAmount: 0},
+		CurrentLoveDisplayPrice: DisplayPrice{TotalAmount: 0},
+		Description:             book.Description,
+		DownloadUrls:            downloadURLs,
+		EntitlementId:           book.ID,
+		ExternalIds:             []any{},
+		Genre:                   "00000000-0000-0000-0000-000000000001",
+		IsEligibleForKoboLove:   false,
+		IsInternetArchive:       false,
+		IsPreOrder:              false,
+		IsSocialEnabled:         true,
+		Language:                language(book),
+		PhoneticPronunciations:  map[string]any{},
+		PublicationDate:         pubDate(book),
+		Publisher:               PublisherInfo{Imprint: "", Name: book.Publisher},
+		RevisionId:              book.ID,
+		Title:                   book.Title,
+		WorkId:                  book.ID,
+		ContributorRoles:        contributorRoles,
+		Contributors:            contributors,
 	}
 
 	if len(series) > 0 {
 		s := series[0]
-		metadata["Series"] = map[string]any{
-			"Name":        s.Series.Name,
-			"Number":      seriesNumber(s.Position),
-			"NumberFloat": s.Position,
-			"Id":          s.Series.ID,
+		m.Series = &SeriesInfo{
+			Name:        s.Series.Name,
+			Number:      seriesNumber(s.Position),
+			NumberFloat: s.Position,
+			Id:          s.Series.ID,
 		}
 	}
 
-	return metadata
+	return m
 }
 
 // ReadingStateResponse builds the reading-state object expected by Kobo devices.
-func ReadingStateResponse(state *db.KoboReadingState) map[string]any {
+func ReadingStateResponse(state *db.KoboReadingState) *ReadingState {
 	now := time.Now().UTC().Format(time.RFC3339)
 
 	updatedAt := now
@@ -128,43 +250,34 @@ func ReadingStateResponse(state *db.KoboReadingState) map[string]any {
 		createdAt = state.CreatedAt.UTC().Format(time.RFC3339)
 	}
 
-	statusInfo := map[string]any{
-		"LastModified":        updatedAt,
-		"Status":              state.Status,
-		"TimesStartedReading": 0,
-	}
-
-	currentBookmark := map[string]any{
-		"LastModified": updatedAt,
+	bookmark := Bookmark{
+		LastModified: updatedAt,
 	}
 	if state.PercentRead != nil {
-		currentBookmark["ProgressPercent"] = *state.PercentRead
-		currentBookmark["ContentSourceProgressPercent"] = *state.PercentRead
+		bookmark.ProgressPercent = state.PercentRead
+		bookmark.ContentSourceProgressPercent = state.PercentRead
 	}
 	if state.LocationValue != nil && state.LocationType != nil && state.LocationSource != nil {
-		currentBookmark["Location"] = map[string]any{
-			"Value":  *state.LocationValue,
-			"Type":   *state.LocationType,
-			"Source": *state.LocationSource,
+		bookmark.Location = &Location{
+			Value:  *state.LocationValue,
+			Type:   *state.LocationType,
+			Source: *state.LocationSource,
 		}
 	}
 
-	return map[string]any{
-		"EntitlementId":     state.BookID,
-		"Created":           createdAt,
-		"LastModified":      updatedAt,
-		"PriorityTimestamp": updatedAt,
-		"StatusInfo":        statusInfo,
-		"Statistics":        map[string]any{"LastModified": updatedAt},
-		"CurrentBookmark":   currentBookmark,
+	return &ReadingState{
+		EntitlementId:     state.BookID,
+		Created:           createdAt,
+		LastModified:      updatedAt,
+		PriorityTimestamp: updatedAt,
+		StatusInfo: StatusInfo{
+			LastModified:        updatedAt,
+			Status:              state.Status,
+			TimesStartedReading: 0,
+		},
+		Statistics:      ReadingStatistics{LastModified: updatedAt},
+		CurrentBookmark: bookmark,
 	}
-}
-
-func ptrStr(s *string) any {
-	if s == nil {
-		return nil
-	}
-	return *s
 }
 
 func language(book *db.Book) string {
