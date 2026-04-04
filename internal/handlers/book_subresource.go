@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -54,4 +55,49 @@ func putBookSubResource[T any, DTO any, Req any, Payload any](
 		return
 	}
 	respondBookSubResource(ctx, w, bookID, getFn, toDTO, resourceName)
+}
+
+// listParentBooks is a generic helper for GET /{parent}/{id}/books endpoints.
+// It fetches a paginated list of books belonging to the given parent entity,
+// handles errors, and writes the JSON response. If no books are found it
+// verifies the parent exists (returning 404 if not) before writing an empty
+// result. idAttr is a slog attribute identifying the parent (e.g.
+// slog.String(otelkeys.AuthorID, authorID)). parentLabel is used in error
+// response messages (e.g. "author" or "series").
+func listParentBooks[Parent any](
+	w http.ResponseWriter,
+	r *http.Request,
+	parentID string,
+	idAttr slog.Attr,
+	listFn func(context.Context, string, int, int) ([]db.Book, int, error),
+	getFn func(context.Context, string) (*Parent, error),
+	parentLabel string,
+) {
+	ctx := r.Context()
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
+
+	books, total, err := listFn(ctx, parentID, limit, offset)
+	if err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to list "+parentLabel+" books",
+			idAttr,
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+parentLabel+" books")
+		return
+	}
+
+	if total == 0 {
+		if _, err := getFn(ctx, parentID); handleDBErr(ctx, w, err, parentLabel) {
+			return
+		}
+	}
+
+	writeJSON(ctx, w, http.StatusOK, bookListDTO{
+		Books:  mapSlice(books, toBookSummaryDTO),
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
+	})
 }
