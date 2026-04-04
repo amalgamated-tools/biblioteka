@@ -86,7 +86,7 @@ type Metadata struct {
 	Publisher               PublisherInfo     `json:"Publisher"`
 	RevisionID              string            `json:"RevisionId"`
 	Title                   string            `json:"Title"`
-	WorkId                  string            `json:"WorkId"`
+	WorkID                  string            `json:"WorkId"`
 	ContributorRoles        []ContributorRole `json:"ContributorRoles"`
 	Contributors            []string          `json:"Contributors"`
 	Series                  *SeriesInfo       `json:"Series,omitempty"`
