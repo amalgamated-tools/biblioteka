@@ -1,3 +1,7 @@
+// Package otelkeys defines string constants for all structured log field keys
+// used in slog calls throughout the Biblioteka codebase. Centralizing keys
+// here ensures consistent field naming across all packages and enables
+// reliable log querying and alerting.
 package otelkeys
 
 // This file defines common attribute keys for structured logging and telemetry.

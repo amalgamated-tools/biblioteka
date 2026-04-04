@@ -238,6 +238,136 @@ func TestListBooks_MaxLimitClamping(t *testing.T) {
 	}
 }
 
+func TestListBooks_Search_MatchesTitle(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/api/books?query=Gunslinger", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(resp.Books) != 1 {
+		t.Errorf("len = %d, want 1", len(resp.Books))
+	}
+	if resp.Total != 1 {
+		t.Errorf("total = %d, want 1", resp.Total)
+	}
+	if len(resp.Books) > 0 && resp.Books[0].Title != "The Gunslinger" {
+		t.Errorf("title = %q, want %q", resp.Books[0].Title, "The Gunslinger")
+	}
+}
+
+func TestListBooks_Search_NoResults(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/api/books?query=nonexistent", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(resp.Books) != 0 {
+		t.Errorf("len = %d, want 0", len(resp.Books))
+	}
+	if resp.Total != 0 {
+		t.Errorf("total = %d, want 0", resp.Total)
+	}
+}
+
+func TestListBooks_EmptyQuery_ReturnsAll(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	// Empty query string should behave like no query (list all).
+	r := httptest.NewRequest(http.MethodGet, "/api/books?query=", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(resp.Books) != 2 {
+		t.Errorf("len = %d, want 2", len(resp.Books))
+	}
+	if resp.Total != 2 {
+		t.Errorf("total = %d, want 2", resp.Total)
+	}
+}
+
+func TestListBooks_WhitespaceOnlyQuery_ReturnsAll(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	if _, err := h.DB.CreateBook(context.Background(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+	if _, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
+		t.Fatalf("create book: %v", err)
+	}
+
+	// Whitespace-only query should behave like no query (list all).
+	r := httptest.NewRequest(http.MethodGet, "/api/books?query=%20%20%20", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var resp bookListDTO
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(resp.Books) != 2 {
+		t.Errorf("len = %d, want 2", len(resp.Books))
+	}
+	if resp.Total != 2 {
+		t.Errorf("total = %d, want 2", resp.Total)
+	}
+}
+
 func TestGetBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 

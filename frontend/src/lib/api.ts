@@ -361,11 +361,16 @@ export async function deleteSeries(id: string): Promise<void> {
 export async function listBooks(
   limit = 50,
   offset = 0,
+  query = "",
 ): Promise<PaginatedBooks> {
-  return request<PaginatedBooks>(
-    "GET",
-    `/api/books?limit=${limit}&offset=${offset}`,
-  );
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (query) {
+    params.set("query", query);
+  }
+  return request<PaginatedBooks>("GET", `/api/books?${params.toString()}`);
 }
 
 export async function getBook(id: string): Promise<Book> {
