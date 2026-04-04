@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +12,7 @@ func setupSeriesHandler(t *testing.T) (*SeriesHandler, string) {
 	t.Helper()
 	d := newTestDB(t)
 	h := &SeriesHandler{DB: d}
-	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
+	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -76,7 +75,7 @@ func TestCreateSeries_WhitespaceOnlyName(t *testing.T) {
 func TestUpdateSeries_WhitespaceOnlyName(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series: %v", err)
 	}
@@ -115,10 +114,10 @@ func TestCreateSeries_Duplicate(t *testing.T) {
 func TestListSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	if _, err := h.DB.CreateSeries(context.Background(), "Discworld", nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateSeries(t.Context(), "Discworld", nil, nil, nil); err != nil {
 		t.Fatalf("create series: %v", err)
 	}
-	if _, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil); err != nil {
 		t.Fatalf("create series: %v", err)
 	}
 
@@ -144,7 +143,7 @@ func TestListSeries_Handler(t *testing.T) {
 func TestGetSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series: %v", err)
 	}
@@ -177,7 +176,7 @@ func TestGetSeries_NotFound(t *testing.T) {
 func TestDeleteSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series: %v", err)
 	}

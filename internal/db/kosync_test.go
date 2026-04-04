@@ -1,14 +1,13 @@
 package db
 
 import (
-	"context"
 	"database/sql"
 	"testing"
 )
 
 func createTestUserForKOSync(t *testing.T, d *DB, email string) *User {
 	t.Helper()
-	user, err := d.CreateUser(context.Background(), "Test User", email, "hashedpw")
+	user, err := d.CreateUser(t.Context(), "Test User", email, "hashedpw")
 	if err != nil {
 		t.Fatalf("CreateUser(%q): %v", email, err)
 	}
@@ -20,7 +19,7 @@ func createTestUserForKOSync(t *testing.T, d *DB, email string) *User {
 func TestKOSyncCredential_UpsertAndGet(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUserForKOSync(t, d, "alice@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cred, err := d.UpsertKOSyncCredential(ctx, user.ID, "alice", "hashval")
 	if err != nil {
@@ -61,7 +60,7 @@ func TestKOSyncCredential_UpsertAndGet(t *testing.T) {
 func TestKOSyncCredential_Upsert_UpdatesExisting(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUserForKOSync(t, d, "bob@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.UpsertKOSyncCredential(ctx, user.ID, "bob", "hash1")
 	if err != nil {
@@ -84,7 +83,7 @@ func TestKOSyncCredential_UsernameConflict(t *testing.T) {
 	d := newTestDB(t)
 	user1 := createTestUserForKOSync(t, d, "user1@example.com")
 	user2 := createTestUserForKOSync(t, d, "user2@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.UpsertKOSyncCredential(ctx, user1.ID, "shared", "hash1")
 	if err != nil {
@@ -99,7 +98,7 @@ func TestKOSyncCredential_UsernameConflict(t *testing.T) {
 
 func TestKOSyncCredential_GetByUserID_NotFound(t *testing.T) {
 	d := newTestDB(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.GetKOSyncCredentialByUserID(ctx, "nonexistent")
 	if err != sql.ErrNoRows {
@@ -109,7 +108,7 @@ func TestKOSyncCredential_GetByUserID_NotFound(t *testing.T) {
 
 func TestKOSyncCredential_GetByUsername_NotFound(t *testing.T) {
 	d := newTestDB(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.GetKOSyncCredentialByUsername(ctx, "nobody")
 	if err != sql.ErrNoRows {
@@ -120,7 +119,7 @@ func TestKOSyncCredential_GetByUsername_NotFound(t *testing.T) {
 func TestKOSyncCredential_Delete(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUserForKOSync(t, d, "del@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.UpsertKOSyncCredential(ctx, user.ID, "delme", "hash")
 	if err != nil {
@@ -139,7 +138,7 @@ func TestKOSyncCredential_Delete(t *testing.T) {
 
 func TestKOSyncCredential_Delete_NotFound(t *testing.T) {
 	d := newTestDB(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err := d.DeleteKOSyncCredential(ctx, "nonexistent")
 	if err != sql.ErrNoRows {
@@ -152,7 +151,7 @@ func TestKOSyncCredential_Delete_NotFound(t *testing.T) {
 func TestReadingProgress_UpsertAndGet(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUserForKOSync(t, d, "reader@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	device := "MyKindle"
 	deviceID := "device-001"
@@ -192,7 +191,7 @@ func TestReadingProgress_UpsertAndGet(t *testing.T) {
 func TestReadingProgress_Upsert_UpdatesExisting(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUserForKOSync(t, d, "reader2@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.UpsertReadingProgress(ctx, user.ID, "doc456", "/body/p[1]", 0.1, nil, nil)
 	if err != nil {
@@ -214,7 +213,7 @@ func TestReadingProgress_Upsert_UpdatesExisting(t *testing.T) {
 func TestReadingProgress_GetNotFound(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUserForKOSync(t, d, "nobody@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.GetReadingProgress(ctx, user.ID, "missing-doc")
 	if err != sql.ErrNoRows {
@@ -226,7 +225,7 @@ func TestReadingProgress_IsolatedByUser(t *testing.T) {
 	d := newTestDB(t)
 	user1 := createTestUserForKOSync(t, d, "user1@books.com")
 	user2 := createTestUserForKOSync(t, d, "user2@books.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.UpsertReadingProgress(ctx, user1.ID, "shared-doc", "/body/p[5]", 0.3, nil, nil)
 	if err != nil {

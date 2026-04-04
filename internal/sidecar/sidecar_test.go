@@ -1,7 +1,6 @@
 package sidecar
 
 import (
-	"context"
 	"encoding/base64"
 	"os"
 	"path/filepath"
@@ -26,7 +25,7 @@ func TestWriteSidecarFiles_BothFiles(t *testing.T) {
 		ISBN10:          "1234567890",
 	}
 
-	WriteSidecarFiles(context.Background(), bookPath, meta, "Test Book", "Test Author", db.LibraryOrganizationBookPerFolder)
+	WriteSidecarFiles(t.Context(), bookPath, meta, "Test Book", "Test Author", db.LibraryOrganizationBookPerFolder)
 
 	if _, err := os.Stat(filepath.Join(dir, "cover.jpg")); err != nil {
 		t.Errorf("cover.jpg not found: %v", err)
@@ -44,7 +43,7 @@ func TestWriteSidecarFiles_NoCover(t *testing.T) {
 		Language:    "en",
 	}
 
-	WriteSidecarFiles(context.Background(), bookPath, meta, "No Cover Book", "Author", db.LibraryOrganizationBookPerFolder)
+	WriteSidecarFiles(t.Context(), bookPath, meta, "No Cover Book", "Author", db.LibraryOrganizationBookPerFolder)
 
 	for _, ext := range []string{".jpg", ".png", ".webp", ".avif"} {
 		name := "cover" + ext
@@ -61,7 +60,7 @@ func TestWriteSidecarFiles_NilMetadata(t *testing.T) {
 	dir := t.TempDir()
 	bookPath := filepath.Join(dir, "Title Only.epub")
 
-	WriteSidecarFiles(context.Background(), bookPath, nil, "Title Only", "", db.LibraryOrganizationBookPerFolder)
+	WriteSidecarFiles(t.Context(), bookPath, nil, "Title Only", "", db.LibraryOrganizationBookPerFolder)
 
 	for _, ext := range []string{".jpg", ".png", ".webp", ".avif"} {
 		name := "cover" + ext
@@ -86,7 +85,7 @@ func TestWriteSidecarFiles_BookPerFileUsesBookFilename(t *testing.T) {
 	}
 
 	baseName := "Alice's Adventures in Wonderland by Lewis Carroll"
-	WriteSidecarFiles(context.Background(), bookPath, meta, "Alice's Adventures in Wonderland", "Lewis Carroll", db.LibraryOrganizationBookPerFile)
+	WriteSidecarFiles(t.Context(), bookPath, meta, "Alice's Adventures in Wonderland", "Lewis Carroll", db.LibraryOrganizationBookPerFile)
 
 	if _, err := os.Stat(filepath.Join(dir, baseName+".jpg")); err != nil {
 		t.Errorf("expected %s.jpg: %v", baseName, err)

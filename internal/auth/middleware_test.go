@@ -121,7 +121,7 @@ func TestMiddleware_ValidToken(t *testing.T) {
 }
 
 func TestUserIDFromContext_NotSet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	id := UserIDFromContext(ctx)
 	if id != "" {
 		t.Errorf("expected empty user ID, got %q", id)
@@ -129,7 +129,7 @@ func TestUserIDFromContext_NotSet(t *testing.T) {
 }
 
 func TestContextWithUserID(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = ContextWithUserID(ctx, "test-user-123")
 	got := UserIDFromContext(ctx)
 	if got != "test-user-123" {

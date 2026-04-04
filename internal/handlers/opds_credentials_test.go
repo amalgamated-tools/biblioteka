@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +14,7 @@ func setupOPDSCredentialHandler(t *testing.T) (*OPDSCredentialHandler, string) {
 	d := newTestDB(t)
 	h := &OPDSCredentialHandler{DB: d}
 
-	user, err := d.CreateUser(context.Background(), "TestUser", "test@example.com", "password1")
+	user, err := d.CreateUser(t.Context(), "TestUser", "test@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -223,7 +222,7 @@ func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
 	d := newTestDB(t)
 	h := &OPDSCredentialHandler{DB: d}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	user1, err := d.CreateUser(ctx, "User1", "user1@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user1: %v", err)

@@ -1,13 +1,12 @@
 package db
 
 import (
-	"context"
 	"testing"
 )
 
 func TestCreateAuditLog(t *testing.T) {
 	d := newTestDB(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err := d.CreateAuditLog(ctx, "user1", AuditActionLibraryCreated, "library", "lib1", map[string]any{"name": "Fiction"})
 	if err != nil {
@@ -51,7 +50,7 @@ func TestCreateAuditLog(t *testing.T) {
 
 func TestCreateAuditLog_SystemAction(t *testing.T) {
 	d := newTestDB(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Empty userID → NULL user_id in DB.
 	err := d.CreateAuditLog(ctx, "", AuditActionBookCreated, "book", "book1", nil)
@@ -76,7 +75,7 @@ func TestCreateAuditLog_SystemAction(t *testing.T) {
 
 func TestListAuditLogs_Pagination(t *testing.T) {
 	d := newTestDB(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for i := range 5 {
 		_ = i
@@ -124,7 +123,7 @@ func TestListAuditLogs_Pagination(t *testing.T) {
 
 func TestListAuditLogs_Empty(t *testing.T) {
 	d := newTestDB(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	entries, total, err := d.ListAuditLogs(ctx, 10, 0)
 	if err != nil {
