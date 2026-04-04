@@ -11,9 +11,9 @@ on:
       - 'e2e/**'
       - 'go.mod'
       - 'go.sum'
-      # docs/docs.go is auto-generated Swagger code imported by internal/server;
+      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
       # a bad regeneration would break the Go binary build
-      - 'docs/docs.go'
+      - 'docs/swagger/docs.go'
       - '.github/workflows/e2etest.yml'
   pull_request:
     branches: [main]
@@ -25,9 +25,9 @@ on:
       - 'e2e/**'
       - 'go.mod'
       - 'go.sum'
-      # docs/docs.go is auto-generated Swagger code imported by internal/server;
+      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
       # a bad regeneration would break the Go binary build
-      - 'docs/docs.go'
+      - 'docs/swagger/docs.go'
       - '.github/workflows/e2etest.yml'
 
 permissions:
