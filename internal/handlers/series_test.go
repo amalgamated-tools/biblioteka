@@ -219,24 +219,24 @@ func TestDeleteSeries_NotFound(t *testing.T) {
 func TestListSeriesBooks_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	s, err := h.DB.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
+	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series: %v", err)
 	}
 
-	b1, err := h.DB.CreateBook(context.Background(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b1, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
-	b2, err := h.DB.CreateBook(context.Background(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b2, err := h.DB.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create book: %v", err)
 	}
 
-	if err := h.DB.SetBookSeries(context.Background(), b1.ID, []db.BookSeriesInput{{SeriesID: s.ID}}); err != nil {
+	if err := h.DB.SetBookSeries(t.Context(), b1.ID, []db.BookSeriesInput{{SeriesID: s.ID}}); err != nil {
 		t.Fatalf("set book series: %v", err)
 	}
-	if err := h.DB.SetBookSeries(context.Background(), b2.ID, []db.BookSeriesInput{{SeriesID: s.ID}}); err != nil {
+	if err := h.DB.SetBookSeries(t.Context(), b2.ID, []db.BookSeriesInput{{SeriesID: s.ID}}); err != nil {
 		t.Fatalf("set book series: %v", err)
 	}
 
@@ -279,7 +279,7 @@ func TestListSeriesBooks_SeriesNotFound(t *testing.T) {
 func TestListSeriesBooks_Empty(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	s, err := h.DB.CreateSeries(context.Background(), "Empty Series", nil, nil, nil)
+	s, err := h.DB.CreateSeries(t.Context(), "Empty Series", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create series: %v", err)
 	}
