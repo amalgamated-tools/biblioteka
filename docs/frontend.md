@@ -783,7 +783,7 @@ Padding is intentionally left to the caller via the `class` prop to avoid Tailwi
 
 ### `DeleteConfirmation.svelte`
 
-An accessible inline delete-confirmation dialog that replaces the cursor's Delete button with a two-button (`Delete` / `Cancel`) confirmation row. Use this whenever a destructive action requires a user confirmation step. It implements the full accessible pattern — `role="alertdialog"`, autofocus on open, and Escape-to-dismiss — so consumers do not need to repeat any of that boilerplate.
+An accessible inline delete-confirmation dialog that replaces the current item's Delete button with a two-button (`Delete` / `Cancel`) confirmation row. Use this whenever a destructive action requires a user confirmation step. It implements the full accessible pattern — `role="alertdialog"`, autofocus on open, and Escape-to-dismiss — so consumers do not need to repeat any of that boilerplate.
 
 **Props:**
 
@@ -805,7 +805,15 @@ An accessible inline delete-confirmation dialog that replaces the cursor's Delet
 
 ```svelte
 <script lang="ts">
+  import { tick } from "svelte";
   import DeleteConfirmation from "./ui/DeleteConfirmation.svelte";
+
+  // These come from your component's props or local state:
+  const itemId = "item-123";
+  const item = { name: "Example item" };
+  const api = {
+    async deleteItem(id: string) { /* your delete logic */ }
+  };
 
   let showDeleteConfirm = $state(false);
   let deleteButtonEl: HTMLButtonElement | null = $state(null);
@@ -815,8 +823,9 @@ An accessible inline delete-confirmation dialog that replaces the cursor's Delet
     showDeleteConfirm = false;
   }
 
-  function cancelDelete() {
+  async function cancelDelete() {
     showDeleteConfirm = false;
+    await tick(); // wait for Svelte to re-mount the trigger button
     deleteButtonEl?.focus(); // restore focus to the trigger
   }
 </script>
