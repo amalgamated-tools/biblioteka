@@ -922,7 +922,9 @@ Delete an author. Returns `204 No Content`.
 
 ### `GET /api/authors/{id}/books` 🔒
 
-List books associated with a specific author, with pagination. Results are sorted by `title` ascending. Results use the same shape as [`GET /api/books`](#get-apibooks).
+List all books associated with an author, with pagination. Results are sorted by `title` ascending.
+
+**Path parameters:** `{id}` — Author resource ID.
 
 **Query parameters:**
 
@@ -931,25 +933,15 @@ List books associated with a specific author, with pagination. Results are sorte
 | `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
 | `offset`  | integer | `0`     | Number of books to skip |
 
-**Response body (`200`):** Paginated books object (same shape as [`GET /api/books`](#get-apibooks)).
+**Response body (`200`):** Paginated books object (same envelope and book summary shape as [`GET /api/books`](#get-apibooks)).
 
-```json
-{
-  "books": [ /* book summary objects */ ],
-  "total": 3,
-  "limit": 50,
-  "offset": 0
-}
-```
-
-When the author exists but has no associated books, the response is `200 OK` with `"books": []` and `"total": 0`.
+If no associated books are found (`total: 0`), Biblioteka first checks whether the author ID exists. If the author does not exist, the response is `404 Not Found`; otherwise, the response is `200 OK` with an empty `books` array and `total: 0`.
 
 **Errors:**
 
 | Status | Meaning |
 |--------|---------|
-| `404` | Author not found (only checked when the author has no associated books) |
-| `500` | Unexpected server error |
+| `404` | Author not found when no books are associated with the given ID and the author does not exist |
 
 ---
 
@@ -1046,7 +1038,9 @@ Delete a series. Returns `204 No Content`.
 
 ### `GET /api/series/{id}/books` 🔒
 
-List books associated with a specific series, with pagination. Results are ordered by series position ascending (books with no assigned position appear last on PostgreSQL, first on SQLite), then by title ascending within the same position. Results use the same shape as [`GET /api/books`](#get-apibooks).
+List all books in a series, with pagination. Results are ordered by series position ascending, then by `title` ascending. Books with no assigned position appear last on PostgreSQL and first on SQLite.
+
+**Path parameters:** `{id}` — Series resource ID.
 
 **Query parameters:**
 
@@ -1055,25 +1049,15 @@ List books associated with a specific series, with pagination. Results are order
 | `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
 | `offset`  | integer | `0`     | Number of books to skip |
 
-**Response body (`200`):** Paginated books object (same shape as [`GET /api/books`](#get-apibooks)).
+**Response body (`200`):** Paginated books object (same envelope and book summary shape as [`GET /api/books`](#get-apibooks)).
 
-```json
-{
-  "books": [ /* book summary objects */ ],
-  "total": 2,
-  "limit": 50,
-  "offset": 0
-}
-```
-
-When the series exists but has no associated books, the response is `200 OK` with `"books": []` and `"total": 0`.
+If no associated books are found (`total: 0`), Biblioteka first checks whether the series ID exists. If the series does not exist, the response is `404 Not Found`; otherwise, the response is `200 OK` with an empty `books` array and `total: 0`.
 
 **Errors:**
 
 | Status | Meaning |
 |--------|---------|
-| `404` | Series not found (only checked when the series has no associated books) |
-| `500` | Unexpected server error |
+| `404` | Series not found when no books are associated with the given ID and the series does not exist |
 
 ---
 
