@@ -1051,13 +1051,13 @@ List all books in a series, with pagination. Results are ordered by series posit
 
 **Response body (`200`):** Paginated books object (same envelope and book summary shape as [`GET /api/books`](#get-apibooks)).
 
-When the series has no associated books the response is `200 OK` with an empty `books` array and `total: 0`. In that case Biblioteka checks whether the series ID is valid and returns `404` if it does not exist.
+If no associated books are found (`total: 0`), Biblioteka first checks whether the series ID exists. If the series does not exist, the response is `404 Not Found`; otherwise, the response is `200 OK` with an empty `books` array and `total: 0`.
 
 **Errors:**
 
 | Status | Meaning |
 |--------|---------|
-| `404` | Series not found (only checked when no books are associated with the given ID) |
+| `404` | Series not found when no books are associated with the given ID and the series does not exist |
 
 ---
 
