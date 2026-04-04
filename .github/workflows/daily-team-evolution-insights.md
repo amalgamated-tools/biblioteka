@@ -10,7 +10,7 @@ permissions:
   pull-requests: read
   discussions: read
 tracker-id: daily-team-evolution-insights
-engine: claude
+engine: copilot
 strict: false
 network:
   allowed:
