@@ -37,6 +37,7 @@
   let pathsError: string | null = $state(null);
   let showDeleteConfirm = $state(false);
   let deleteButtonEl: HTMLButtonElement | null = $state(null);
+  let savedName = $state("");
 
   const submitLabel = $derived.by(() => {
     if (saving) return "Saving...";
@@ -48,6 +49,7 @@
     if (mode === "create") {
       editingId = null;
       formName = "";
+      savedName = "";
       formPaths = [{ id: nextPathId++, value: "" }];
       formMonitored = false;
       formOrganizationType = LIBRARY_ORGANIZATION_TYPES.BOOK_PER_FOLDER;
@@ -60,6 +62,7 @@
       if (lib) {
         editingId = lib.id;
         formName = lib.name;
+        savedName = lib.name;
         formPaths =
           lib.paths.length > 0
             ? lib.paths.map((p) => ({ id: nextPathId++, value: p }))
@@ -143,7 +146,7 @@
       routerStore.navigate("libraries");
     } catch (e) {
       formError = e instanceof Error ? e.message : "Failed to delete library";
-      showDeleteConfirm = false;
+      cancelDeleteConfirm();
     } finally {
       saving = false;
     }
@@ -339,7 +342,7 @@
         {#if showDeleteConfirm}
           <DeleteConfirmation
             itemId={editingId ?? "lib-delete"}
-            itemName={formName}
+            itemName={savedName}
             onConfirm={handleDelete}
             onCancel={cancelDeleteConfirm}
           />
