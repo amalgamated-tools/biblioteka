@@ -356,13 +356,13 @@ Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs
 
 ### `tokenList.svelte.ts`
 
-`frontend/src/lib/tokenList.svelte.ts` exports the generic `TokenListState<T>` class, which manages the load/delete lifecycle for lists of token-like resources (API keys, Kobo tokens, etc.). It encapsulates loading state, inline delete-confirmation flow, and error state using Svelte 5 `$state` runes.
+`frontend/src/lib/tokenList.svelte.ts` exports the generic `TokenListState<T extends { id: string }>` class, which manages the load/delete lifecycle for lists of token-like resources (API keys, Kobo tokens, etc.). It encapsulates loading state, inline delete-confirmation flow, and error state using Svelte 5 `$state` runes. The type parameter must include an `id: string` field, because the class uses `item.id` to identify and remove deleted entries from the in-memory list.
 
-**`TokenListOps<T>` interface** — passed to the constructor:
+**`TokenListOps<T extends { id: string }>` interface** — passed to the constructor:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `load` | `() => Promise<T[]>` | Fetches the full list of items |
+| `load` | `() => Promise<T[]>` | Fetches the full list of items; each item must have an `id: string` field |
 | `delete` | `(id: string) => Promise<void>` | Deletes the item with the given ID |
 | `loadError` | `string` | Fallback error message shown when `load` rejects without an `Error` object |
 | `deleteError` | `string` | Fallback error message shown when `delete` rejects without an `Error` object |
@@ -382,8 +382,9 @@ Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs
 |--------|-------------|
 | `load()` | Fetches items; sets `loading = true` and clears `error` before the call |
 | `handleDelete(id, name)` | Begins the confirmation flow by setting `pendingDelete` |
+| `cancelDelete(onAfterClear?)` | Clears `pendingDelete`, waits for a DOM tick, then calls the optional `onAfterClear` callback |
 | `cancelDeleteWithFocus()` | Clears `pendingDelete` and returns keyboard focus to the trigger button (`[data-delete-trigger="${id}"]`) |
-| `confirmDelete()` | Calls `ops.delete`, removes the deleted item from `items`, and clears `pendingDelete` |
+| `confirmDelete()` | Clears `pendingDelete` immediately (closes the dialog), then calls `ops.delete`; on success removes the item from `items`, on failure sets `error` |
 
 Components that render a delete confirmation dialog should add `data-delete-trigger="${item.id}"` to the Delete button so that `cancelDeleteWithFocus` can restore focus when the user dismisses the dialog.
 
@@ -407,7 +408,7 @@ Components that render a delete confirmation dialog should add `data-delete-trig
 </script>
 
 {#if tokenList.error}
-  <AlertBanner message={tokenList.error} />
+  <AlertBanner variant="error">{tokenList.error}</AlertBanner>
 {/if}
 
 {#each tokenList.items as key}
@@ -420,9 +421,18 @@ Components that render a delete confirmation dialog should add `data-delete-trig
 {/each}
 
 {#if tokenList.pendingDelete}
-  <div role="alertdialog">
-    <p>Delete "{tokenList.pendingDelete.name}"?</p>
-    <button onclick={() => tokenList.cancelDeleteWithFocus()}>Cancel</button>
+  <div
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby={`delete-api-key-title-${tokenList.pendingDelete.id}`}
+    tabindex="-1"
+    onkeydown={(event) =>
+      event.key === "Escape" && tokenList.cancelDeleteWithFocus()}
+  >
+    <p id={`delete-api-key-title-${tokenList.pendingDelete.id}`}>
+      Delete "{tokenList.pendingDelete.name}"?
+    </p>
+    <button autofocus onclick={() => tokenList.cancelDeleteWithFocus()}>Cancel</button>
     <button onclick={() => tokenList.confirmDelete()}>Confirm</button>
   </div>
 {/if}
@@ -464,22 +474,35 @@ Always call `clear()` from `onDestroy` to prevent timer leaks when the component
   import { copyToClipboard } from "../lib/clipboard";
 
   const copyState = new CopyTimeoutState(); // auto-resets after 2 s
+  let copyError: string | null = null;
+
   onDestroy(() => copyState.clear());
 
   async function handleCopy(id: string, value: string) {
-    await copyToClipboard(value);
-    copyState.set(id);
+    try {
+      copyError = null;
+      await copyToClipboard(value);
+      copyState.set(id);
+    } catch {
+      copyError = "Could not copy to clipboard. Please try again.";
+    }
   }
 </script>
 
+{#if copyError}
+  <p role="alert" class="text-sm text-red-600">{copyError}</p>
+{/if}
+
 {#each items as item}
-  <button onclick={() => handleCopy(item.id, item.token)}>
+  <button onclick={() => { void handleCopy(item.id, item.token); }}>
     {copyState.copiedId === item.id ? "Copied!" : "Copy"}
   </button>
 {/each}
 ```
 
 Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback after a clipboard write. Do **not** manage copy timers inline with `setTimeout` in components.
+
+## TypeScript types
 
 Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping shared/exported types in one file gives every component, store, and the API module a single import path, while `frontend/src/lib/api.ts` may still define small module-local helper types for its own internal use.
 
