@@ -1,7 +1,6 @@
 // Package kobo provides protocol-level types and helpers for the Kobo device
-// sync API. It is free of HTTP and database dependencies so that the codec and
-// metadata builders can be tested and reused independently of the HTTP handler
-// layer.
+// sync API, including sync-token codecs and metadata builders used by the
+// Kobo integration layer.
 package kobo
 
 import (

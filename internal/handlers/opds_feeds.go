@@ -17,7 +17,7 @@ func (h *OPDSHandler) rootFeed(w http.ResponseWriter, r *http.Request) {
 	baseURL := opdsBaseURL(r)
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
-		XMLNSOPDS: opdspkg.XMLNSOPDs,
+		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        baseURL + "/",
 		Title:     "Biblioteka OPDS Catalog",
 		Updated:   time.Now().UTC().Format(time.RFC3339),
@@ -94,7 +94,7 @@ func (h *OPDSHandler) writeBooksFeed(
 	links = append(links, extraLinks...)
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
-		XMLNSOPDS: opdspkg.XMLNSOPDs,
+		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        selfURL,
 		Title:     title,
 		Updated:   time.Now().UTC().Format(time.RFC3339),
@@ -265,7 +265,7 @@ func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
 	selfURL := baseURL + "/search?q=" + escapedQuery
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
-		XMLNSOPDS: opdspkg.XMLNSOPDs,
+		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        selfURL,
 		Title:     fmt.Sprintf("Search: %s", query),
 		Updated:   time.Now().UTC().Format(time.RFC3339),

@@ -1016,7 +1016,7 @@ func padInt(n int) string {
 func TestOPDSFeed_XMLMarshal(t *testing.T) {
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
-		XMLNSOPDS: opdspkg.XMLNSOPDs,
+		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        "urn:test",
 		Title:     "Test Feed",
 		Updated:   "2024-01-01T00:00:00Z",
@@ -1037,7 +1037,7 @@ func TestOPDSFeed_XMLMarshal(t *testing.T) {
 		t.Errorf("XML missing Atom xmlns attribute: %s", s)
 	}
 	// OPDS xmlns must be present
-	if !strings.Contains(s, opdspkg.XMLNSOPDs) {
+	if !strings.Contains(s, opdspkg.XMLNSOPDS) {
 		t.Errorf("XML missing OPDS xmlns attribute: %s", s)
 	}
 	// ID and Title must be child elements
