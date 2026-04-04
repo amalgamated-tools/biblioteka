@@ -94,4 +94,18 @@ describe("App", () => {
 
     expect(document.activeElement).toBe(main);
   });
+
+  it("sets inert on main when the mobile sidebar is open", async () => {
+    render(App);
+    await tick();
+
+    const main = screen.getByRole("main") as HTMLElement & { inert: boolean };
+    expect(main.inert).toBe(false);
+
+    const openMenuButton = screen.getByRole("button", { name: "Open menu" });
+    await fireEvent.click(openMenuButton);
+    await tick();
+
+    expect(main.inert).toBe(true);
+  });
 });
