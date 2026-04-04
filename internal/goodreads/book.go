@@ -8,6 +8,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// GetBookByLegacyID fetches a single book from Goodreads using its numeric
+// legacy work ID (the integer visible in older Goodreads URLs).
 func (c *Client) GetBookByLegacyID(ctx context.Context, legacyID int64) (*BookResult, error) {
 	resp, err := GetBookByLegacyId(ctx, c.client, legacyID)
 	if err != nil {
@@ -23,6 +25,8 @@ func (c *Client) GetBookByLegacyID(ctx context.Context, legacyID int64) (*BookRe
 	return loadBookResult(ctx, resp.GetBookByLegacyId.Work)
 }
 
+// GetBookByID fetches a single book from Goodreads using its GraphQL work ID
+// (the opaque string used by the Goodreads GraphQL API).
 func (c *Client) GetBookByID(ctx context.Context, grID string) (*BookResult, error) {
 	resp, err := GetBook(ctx, c.client, grID)
 	if err != nil {
@@ -37,6 +41,7 @@ func (c *Client) GetBookByID(ctx context.Context, grID string) (*BookResult, err
 	return loadBookResult(ctx, resp.GetBook.Work)
 }
 
+// GetBookByASIN fetches a single book from Goodreads using its Amazon ASIN.
 func (c *Client) GetBookByASIN(ctx context.Context, asin string) (*BookResult, error) {
 	resp, err := GetBookByAsin(ctx, c.client, asin)
 	if err != nil {

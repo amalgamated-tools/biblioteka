@@ -1,3 +1,7 @@
+// Package exif implements a long-running ExifTool subprocess wrapper that
+// extracts and writes book metadata for EPUB, MOBI, AZW3, and PDF files.
+// The wrapper keeps a single ExifTool process alive for the application
+// lifetime, communicating over stdin/stdout using ExifTool's -stay_open protocol.
 package exif
 
 import (
