@@ -8,8 +8,10 @@
   } from "../../types";
   import { required, validate } from "../../lib/validation";
   import { Plus, FolderOpen, Trash2, X } from "lucide-svelte";
+  import { tick } from "svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
+  import DeleteConfirmation from "../ui/DeleteConfirmation.svelte";
   import TextInput from "../ui/TextInput.svelte";
 
   interface Props {
@@ -34,6 +36,7 @@
   let nameError: string | null = $state(null);
   let pathsError: string | null = $state(null);
   let showDeleteConfirm = $state(false);
+  let deleteButtonEl: HTMLButtonElement | null = $state(null);
 
   const submitLabel = $derived.by(() => {
     if (saving) return "Saving...";
@@ -144,6 +147,12 @@
     } finally {
       saving = false;
     }
+  }
+
+  async function cancelDeleteConfirm() {
+    showDeleteConfirm = false;
+    await tick();
+    deleteButtonEl?.focus();
   }
 </script>
 
@@ -328,30 +337,16 @@
       </div>
       {#if mode === "edit"}
         {#if showDeleteConfirm}
-          <div class="flex items-center gap-2 animate-scale-in">
-            <span class="text-sm text-danger-600 dark:text-red-400"
-              >Delete this library?</span
-            >
-            <Button
-              type="button"
-              variant="danger"
-              onclick={handleDelete}
-              disabled={saving}
-              class="px-3 py-1.5 text-sm"
-            >
-              Yes
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onclick={() => (showDeleteConfirm = false)}
-              class="px-3 py-1.5 text-sm"
-            >
-              No
-            </Button>
-          </div>
+          <DeleteConfirmation
+            itemId={editingId ?? "lib-delete"}
+            itemName={formName}
+            onConfirm={handleDelete}
+            onCancel={cancelDeleteConfirm}
+          />
         {:else}
           <button
+            bind:this={deleteButtonEl}
+            data-delete-trigger="lib-delete"
             type="button"
             onclick={() => (showDeleteConfirm = true)}
             class="inline-flex items-center gap-1.5 text-sm text-danger-600 hover:text-danger-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
