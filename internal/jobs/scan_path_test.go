@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mockEnqueuer records all enqueued jobs for test assertions.
@@ -54,28 +56,26 @@ func TestScanPathHandler(t *testing.T) {
 
 	for name := range testFiles {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte("test content"), 0o644); err != nil {
-			t.Fatalf("write file %s: %v", name, err)
+			require.NoError(t, err, "write file %s", name)
 		}
 	}
 
 	// Create a subdirectory with another book
 	subdir := filepath.Join(dir, "subdir")
 	if err := os.MkdirAll(subdir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+		require.NoError(t, err, "mkdir")
 	}
 	if err := os.WriteFile(filepath.Join(subdir, "Nested.pdf"), []byte("nested content"), 0o644); err != nil {
-		t.Fatalf("write nested file: %v", err)
+		require.NoError(t, err, "write nested file")
 	}
 
 	// Run the handler
 	handler := NewScanPathHandler(mock)
 	payload, err := json.Marshal(ScanPathPayload{Path: dir})
-	if err != nil {
-		t.Fatalf("marshal payload: %v", err)
-	}
+	require.NoError(t, err, "marshal payload")
 
 	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
+		require.NoError(t, err, "handler")
 	}
 
 	// 6 matching files: My Book.epub, Another Book.mobi, Third Book.pdf, Kindle Book.azw3, UPPERCASE.EPUB, MixedCase.Mobi
@@ -106,13 +106,9 @@ func TestScanPathHandler_EmptyPath(t *testing.T) {
 	handler := NewScanPathHandler(mock)
 
 	payload, err := json.Marshal(ScanPathPayload{Path: ""})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 	err = handler(t.Context(), payload)
-	if err == nil {
-		t.Fatal("expected error for empty path")
-	}
+	require.Error(t, err, "expected error for empty path")
 }
 
 func TestScanPathHandler_NonexistentPath(t *testing.T) {
@@ -120,13 +116,9 @@ func TestScanPathHandler_NonexistentPath(t *testing.T) {
 	handler := NewScanPathHandler(mock)
 
 	payload, err := json.Marshal(ScanPathPayload{Path: "/nonexistent/path/that/does/not/exist"})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 	err = handler(t.Context(), payload)
-	if err == nil {
-		t.Fatal("expected error for nonexistent path")
-	}
+	require.Error(t, err, "expected error for nonexistent path")
 }
 
 func TestScanPathHandler_EmptyDirectory(t *testing.T) {
@@ -135,12 +127,10 @@ func TestScanPathHandler_EmptyDirectory(t *testing.T) {
 
 	dir := t.TempDir()
 	payload, err := json.Marshal(ScanPathPayload{Path: dir})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 
 	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
+		require.NoError(t, err, "handler")
 	}
 
 	if len(mock.jobs) != 0 {

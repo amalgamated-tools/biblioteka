@@ -12,6 +12,8 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/smtp"
+
+	"github.com/stretchr/testify/require"
 )
 
 // --- HandleConfigStatus SMTP ---
@@ -29,7 +31,7 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 
 	var resp configStatusResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.SMTPConfigured {
 		t.Error("expected SMTPConfigured=false when only host is set")
@@ -44,7 +46,7 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 	h.HandleConfigStatus(w, r)
 
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if !resp.SMTPConfigured {
 		t.Error("expected SMTPConfigured=true when host and from are set")
@@ -67,7 +69,7 @@ func TestHandleGetSMTPConfig_AdminNoSettings(t *testing.T) {
 	}
 	var resp smtpConfigResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Host != "" {
 		t.Errorf("Host = %q, want empty", resp.Host)
@@ -101,7 +103,7 @@ func TestHandleGetSMTPConfig_AdminWithSettings(t *testing.T) {
 	}
 	var resp smtpConfigResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Host != "smtp.example.com" {
 		t.Errorf("Host = %q, want %q", resp.Host, "smtp.example.com")
@@ -154,7 +156,7 @@ func TestHandleGetSMTPConfig_EnvOverride(t *testing.T) {
 	}
 	var resp smtpConfigResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Host != "env-smtp.example.com" {
 		t.Errorf("Host = %q, want %q", resp.Host, "env-smtp.example.com")
@@ -274,33 +276,25 @@ func TestHandleSetSMTPConfig_Success(t *testing.T) {
 
 	// Verify settings were persisted
 	host, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyHost)
-	if err != nil {
-		t.Fatalf("GetSetting(smtp_host) error: %v", err)
-	}
+	require.NoError(t, err, "GetSetting(smtp_host) error")
 	if host != "smtp.example.com" {
 		t.Errorf("saved smtp_host = %q, want %q", host, "smtp.example.com")
 	}
 
 	from, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyFrom)
-	if err != nil {
-		t.Fatalf("GetSetting(smtp_from) error: %v", err)
-	}
+	require.NoError(t, err, "GetSetting(smtp_from) error")
 	if from != "noreply@example.com" {
 		t.Errorf("saved smtp_from = %q, want %q", from, "noreply@example.com")
 	}
 
 	port, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPort)
-	if err != nil {
-		t.Fatalf("GetSetting(smtp_port) error: %v", err)
-	}
+	require.NoError(t, err, "GetSetting(smtp_port) error")
 	if port != "465" {
 		t.Errorf("saved smtp_port = %q, want %q", port, "465")
 	}
 
 	pw, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPassword)
-	if err != nil {
-		t.Fatalf("GetSetting(smtp_password) error: %v", err)
-	}
+	require.NoError(t, err, "GetSetting(smtp_password) error")
 	if pw != "secret" {
 		t.Errorf("saved smtp_password = %q, want %q", pw, "secret")
 	}
@@ -321,17 +315,13 @@ func TestHandleSetSMTPConfig_DefaultsPortAndTLS(t *testing.T) {
 	}
 
 	port, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPort)
-	if err != nil {
-		t.Fatalf("get setting: %v", err)
-	}
+	require.NoError(t, err, "get setting")
 	if port != "587" {
 		t.Errorf("default port = %q, want %q", port, "587")
 	}
 
 	tlsMode, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyTLS)
-	if err != nil {
-		t.Fatalf("get setting: %v", err)
-	}
+	require.NoError(t, err, "get setting")
 	if tlsMode != "starttls" {
 		t.Errorf("default tls = %q, want %q", tlsMode, "starttls")
 	}
@@ -351,7 +341,7 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 	}
 	for _, setting := range existing {
 		if err := h.DB.SetSetting(ctx, setting.Key, setting.Value); err != nil {
-			t.Fatalf("SetSetting(%s): %v", setting.Key, err)
+			require.NoError(t, err, "SetSetting(%s)", setting.Key)
 		}
 	}
 
@@ -363,11 +353,11 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 			SELECT RAISE(FAIL, 'forced smtp save failure');
 		END;
 	`, smtp.SettingKeyUsername)); err != nil {
-		t.Fatalf("create trigger: %v", err)
+		require.NoError(t, err, "create trigger")
 	}
 	t.Cleanup(func() {
 		if _, err := h.DB.ExecContext(context.Background(), `DROP TRIGGER IF EXISTS test_settings_fail_smtp_username_update`); err != nil {
-			t.Fatalf("drop trigger: %v", err)
+			require.NoError(t, err, "drop trigger")
 		}
 	})
 
@@ -379,14 +369,12 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 	h.HandleSMTPConfig(w, r)
 
 	if w.Code != http.StatusInternalServerError {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusInternalServerError, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusInternalServerError, w.Body.String())
 	}
 
 	for _, setting := range existing {
 		value, err := h.DB.GetSetting(ctx, setting.Key)
-		if err != nil {
-			t.Fatalf("GetSetting(%s): %v", setting.Key, err)
-		}
+		require.NoError(t, err, "GetSetting(%s)", setting.Key)
 		if value != setting.Value {
 			t.Errorf("setting %s = %q, want %q after rollback", setting.Key, value, setting.Value)
 		}
@@ -475,9 +463,7 @@ func TestHandleSetSMTPConfig_PreservesExistingPassword(t *testing.T) {
 	}
 
 	pw, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPassword)
-	if err != nil {
-		t.Fatalf("GetSetting(smtp_password): %v", err)
-	}
+	require.NoError(t, err, "GetSetting(smtp_password)")
 	if pw != "existing-pw" {
 		t.Errorf("smtp_password = %q, want %q", pw, "existing-pw")
 	}
@@ -519,9 +505,7 @@ func TestHandleSetSMTPConfig_UnauthenticatedSMTP_ClearsExistingPassword(t *testi
 	}
 
 	pw, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPassword)
-	if err != nil {
-		t.Fatalf("GetSetting(smtp_password): %v", err)
-	}
+	require.NoError(t, err, "GetSetting(smtp_password)")
 	if pw != "" {
 		t.Errorf("smtp_password = %q, want empty after switching to unauthenticated SMTP", pw)
 	}

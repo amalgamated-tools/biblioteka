@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestDataURLMIMEType(t *testing.T) {
@@ -67,7 +69,7 @@ func TestDataURLMIMEType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotMIME, gotOK := dataURLMIMEType(tt.input)
 			if gotOK != tt.wantOK {
-				t.Fatalf("dataURLMIMEType(%q) ok = %v, want %v", tt.input, gotOK, tt.wantOK)
+				require.Failf(t, "failed", "dataURLMIMEType(%q) ok = %v, want %v", tt.input, gotOK, tt.wantOK)
 			}
 			if gotMIME != tt.wantMIME {
 				t.Errorf("dataURLMIMEType(%q) mime = %q, want %q", tt.input, gotMIME, tt.wantMIME)
@@ -180,9 +182,7 @@ func TestDecodeDataURL(t *testing.T) {
 		encoded := "data:image/png;base64," + base64.StdEncoding.EncodeToString(payload)
 
 		mime, got, err := decodeDataURL(encoded)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+		require.NoError(t, err)
 		if mime != "image/png" {
 			t.Errorf("mime = %q, want %q", mime, "image/png")
 		}
@@ -193,9 +193,7 @@ func TestDecodeDataURL(t *testing.T) {
 
 	t.Run("not a data URL returns ErrNotDataURL", func(t *testing.T) {
 		_, _, err := decodeDataURL("https://example.com/image.png")
-		if err == nil {
-			t.Fatal("expected error for non-data URL, got nil")
-		}
+		require.Error(t, err, "expected error for non-data URL, got nil")
 		if !errors.Is(err, errNotDataURL) {
 			t.Errorf("want errNotDataURL, got %v", err)
 		}
@@ -203,9 +201,7 @@ func TestDecodeDataURL(t *testing.T) {
 
 	t.Run("empty string returns ErrNotDataURL", func(t *testing.T) {
 		_, _, err := decodeDataURL("")
-		if err == nil {
-			t.Fatal("expected error for empty string, got nil")
-		}
+		require.Error(t, err, "expected error for empty string, got nil")
 		if !errors.Is(err, errNotDataURL) {
 			t.Errorf("want errNotDataURL, got %v", err)
 		}
@@ -216,9 +212,7 @@ func TestDecodeDataURL(t *testing.T) {
 		encoded := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(payload)
 
 		mime, got, err := decodeDataURL(encoded)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+		require.NoError(t, err)
 		if mime != "image/jpeg" {
 			t.Errorf("mime = %q, want %q", mime, "image/jpeg")
 		}
@@ -229,8 +223,6 @@ func TestDecodeDataURL(t *testing.T) {
 
 	t.Run("invalid base64 payload returns error", func(t *testing.T) {
 		_, _, err := decodeDataURL("data:image/png;base64,!!!invalid!!!")
-		if err == nil {
-			t.Fatal("expected error for invalid base64, got nil")
-		}
+		require.Error(t, err, "expected error for invalid base64, got nil")
 	})
 }

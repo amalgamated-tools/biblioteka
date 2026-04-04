@@ -9,6 +9,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // fakeItem is a simple entity used by book_subresource tests.
@@ -41,10 +43,10 @@ func TestRespondBookSubResource(t *testing.T) {
 		}
 		var dtos []fakeItemDTO
 		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			t.Fatalf("unmarshal: %v", err)
+			require.NoError(t, err, "unmarshal")
 		}
 		if len(dtos) != 2 {
-			t.Fatalf("len = %d, want 2", len(dtos))
+			require.Failf(t, "failed", "len = %d, want 2", len(dtos))
 		}
 		if dtos[0].Name != "Alpha" {
 			t.Errorf("dtos[0].Name = %q, want %q", dtos[0].Name, "Alpha")
@@ -67,7 +69,7 @@ func TestRespondBookSubResource(t *testing.T) {
 		}
 		var dtos []fakeItemDTO
 		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			t.Fatalf("unmarshal: %v", err)
+			require.NoError(t, err, "unmarshal")
 		}
 		if len(dtos) != 0 {
 			t.Errorf("len = %d, want 0", len(dtos))
@@ -87,7 +89,7 @@ func TestRespondBookSubResource(t *testing.T) {
 		}
 		var resp errorResponse
 		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-			t.Fatalf("unmarshal: %v", err)
+			require.NoError(t, err, "unmarshal")
 		}
 		if resp.Error != "failed to get fake items" {
 			t.Errorf("error = %q, want %q", resp.Error, "failed to get fake items")
@@ -186,7 +188,7 @@ func TestPutBookSubResource(t *testing.T) {
 		}
 		var resp errorResponse
 		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-			t.Fatalf("unmarshal: %v", err)
+			require.NoError(t, err, "unmarshal")
 		}
 		if resp.Error != "failed to set fake items" {
 			t.Errorf("error = %q, want %q", resp.Error, "failed to set fake items")

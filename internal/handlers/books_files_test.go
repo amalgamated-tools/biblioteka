@@ -7,15 +7,15 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetBookFiles_Empty(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID+"/files", nil)
 	r = withUserID(r, userID)
@@ -24,12 +24,12 @@ func TestGetBookFiles_Empty(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var files []bookFileDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &files); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if len(files) != 0 {
 		t.Errorf("len = %d, want 0", len(files))
@@ -40,11 +40,9 @@ func TestGetBookFiles_WithFiles(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	if _, err := h.DB.CreateBookFile(t.Context(), b.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub"); err != nil {
-		t.Fatalf("create book file: %v", err)
+		require.NoError(t, err, "create book file")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID+"/files", nil)
@@ -54,15 +52,15 @@ func TestGetBookFiles_WithFiles(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	var files []bookFileDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &files); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if len(files) != 1 {
-		t.Fatalf("len = %d, want 1", len(files))
+		require.Failf(t, "failed", "len = %d, want 1", len(files))
 	}
 	if files[0].FileName != "gunslinger.epub" {
 		t.Errorf("file_name = %q, want %q", files[0].FileName, "gunslinger.epub")
@@ -73,9 +71,7 @@ func TestPostBookFiles_Success(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
 		FileType: "epub",
@@ -90,12 +86,12 @@ func TestPostBookFiles_Success(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	var dto bookFileDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if dto.FileName != "gunslinger.epub" {
 		t.Errorf("file_name = %q, want %q", dto.FileName, "gunslinger.epub")
@@ -115,9 +111,7 @@ func TestPostBookFiles_MissingFileType(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
 		FileName: "gunslinger.epub",
@@ -138,9 +132,7 @@ func TestPostBookFiles_MissingFileName(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
 		FileType: "epub",
@@ -161,9 +153,7 @@ func TestPostBookFiles_MissingFilePath(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
 		FileType: "epub",
@@ -184,9 +174,7 @@ func TestPostBookFiles_InvalidJSON(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/files", strings.NewReader("not-json"))
 	r = withUserID(r, userID)
@@ -203,9 +191,7 @@ func TestBookFiles_MethodNotAllowed(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/files", nil)
 	r = withUserID(r, userID)
@@ -222,9 +208,7 @@ func TestPostBookFiles_AuditLog(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
 		FileType: "epub",
@@ -238,13 +222,11 @@ func TestPostBookFiles_AuditLog(t *testing.T) {
 	h.HandleBookRoutes(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
-	if err != nil {
-		t.Fatalf("list audit logs: %v", err)
-	}
+	require.NoError(t, err, "list audit logs")
 
 	found := false
 	for _, l := range logs {

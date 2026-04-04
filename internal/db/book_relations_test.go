@@ -2,6 +2,8 @@ package db
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // These tests cover edge cases in book_relations.go that are not already
@@ -13,14 +15,10 @@ func TestGetBookAuthors_Empty(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "Authorless Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(): %v", err)
-	}
+	require.NoError(t, err, "CreateBook()")
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("GetBookAuthors() error: %v", err)
-	}
+	require.NoError(t, err, "GetBookAuthors() error")
 	if len(authors) != 0 {
 		t.Errorf("len(authors) = %d, want 0", len(authors))
 	}
@@ -32,27 +30,21 @@ func TestSetBookAuthors_ClearAll(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(): %v", err)
-	}
+	require.NoError(t, err, "CreateBook()")
 	author, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor(): %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor()")
 
 	if err := d.SetBookAuthors(t.Context(), book.ID, []string{author.ID}); err != nil {
-		t.Fatalf("SetBookAuthors(set): %v", err)
+		require.NoError(t, err, "SetBookAuthors(set)")
 	}
 
 	// Clear by passing an empty slice.
 	if err := d.SetBookAuthors(t.Context(), book.ID, []string{}); err != nil {
-		t.Fatalf("SetBookAuthors(clear): %v", err)
+		require.NoError(t, err, "SetBookAuthors(clear)")
 	}
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("GetBookAuthors() error: %v", err)
-	}
+	require.NoError(t, err, "GetBookAuthors() error")
 	if len(authors) != 0 {
 		t.Errorf("len(authors) = %d, want 0 after clear", len(authors))
 	}
@@ -62,23 +54,17 @@ func TestSetBookAuthors_DeduplicatesIDs(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "Shared Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(): %v", err)
-	}
+	require.NoError(t, err, "CreateBook()")
 	author, err := d.CreateAuthor(t.Context(), "Author A", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor(): %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor()")
 
 	// Pass the same author ID three times.
 	if err := d.SetBookAuthors(t.Context(), book.ID, []string{author.ID, author.ID, author.ID}); err != nil {
-		t.Fatalf("SetBookAuthors() with duplicates error: %v", err)
+		require.NoError(t, err, "SetBookAuthors() with duplicates error")
 	}
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("GetBookAuthors() error: %v", err)
-	}
+	require.NoError(t, err, "GetBookAuthors() error")
 	if len(authors) != 1 {
 		t.Errorf("len(authors) = %d, want 1 after deduplication", len(authors))
 	}
@@ -90,14 +76,10 @@ func TestGetBookSeries_Empty(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "Standalone Novel", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(): %v", err)
-	}
+	require.NoError(t, err, "CreateBook()")
 
 	entries, err := d.GetBookSeries(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("GetBookSeries() error: %v", err)
-	}
+	require.NoError(t, err, "GetBookSeries() error")
 	if len(entries) != 0 {
 		t.Errorf("len(entries) = %d, want 0", len(entries))
 	}
@@ -109,27 +91,21 @@ func TestSetBookSeries_ClearAll(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(): %v", err)
-	}
+	require.NoError(t, err, "CreateBook()")
 	s, err := d.CreateSeries(t.Context(), "Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries(): %v", err)
-	}
+	require.NoError(t, err, "CreateSeries()")
 
 	if err := d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{{SeriesID: s.ID}}); err != nil {
-		t.Fatalf("SetBookSeries(set): %v", err)
+		require.NoError(t, err, "SetBookSeries(set)")
 	}
 
 	// Clear by passing empty slice.
 	if err := d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{}); err != nil {
-		t.Fatalf("SetBookSeries(clear): %v", err)
+		require.NoError(t, err, "SetBookSeries(clear)")
 	}
 
 	entries, err := d.GetBookSeries(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("GetBookSeries() error: %v", err)
-	}
+	require.NoError(t, err, "GetBookSeries() error")
 	if len(entries) != 0 {
 		t.Errorf("len(entries) = %d, want 0 after clear", len(entries))
 	}
@@ -139,13 +115,9 @@ func TestSetBookSeries_DeduplicatesLastPositionWins(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "Crossover Novel", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(): %v", err)
-	}
+	require.NoError(t, err, "CreateBook()")
 	s, err := d.CreateSeries(t.Context(), "A Series", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries(): %v", err)
-	}
+	require.NoError(t, err, "CreateSeries()")
 
 	// Pass the same series ID twice with different positions; last position wins.
 	entries := []BookSeriesInput{
@@ -153,15 +125,13 @@ func TestSetBookSeries_DeduplicatesLastPositionWins(t *testing.T) {
 		{SeriesID: s.ID, Position: new(99.0)},
 	}
 	if err := d.SetBookSeries(t.Context(), book.ID, entries); err != nil {
-		t.Fatalf("SetBookSeries() with duplicates error: %v", err)
+		require.NoError(t, err, "SetBookSeries() with duplicates error")
 	}
 
 	got, err := d.GetBookSeries(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("GetBookSeries() error: %v", err)
-	}
+	require.NoError(t, err, "GetBookSeries() error")
 	if len(got) != 1 {
-		t.Fatalf("len(got) = %d, want 1 after deduplication", len(got))
+		require.Failf(t, "failed", "len(got) = %d, want 1 after deduplication", len(got))
 	}
 	// The implementation processes entries in reverse order so the last
 	// element (position 99) is the one that survives deduplication.
@@ -176,9 +146,7 @@ func TestGetAuthorsForBooks_EmptyInput(t *testing.T) {
 	d := newTestDB(t)
 
 	result, err := d.GetAuthorsForBooks(t.Context(), []string{})
-	if err != nil {
-		t.Fatalf("GetAuthorsForBooks(empty) error: %v", err)
-	}
+	require.NoError(t, err, "GetAuthorsForBooks(empty) error")
 	if result != nil {
 		t.Errorf("result = %v, want nil for empty input", result)
 	}
@@ -188,9 +156,7 @@ func TestGetAuthorsForBooks_NilInput(t *testing.T) {
 	d := newTestDB(t)
 
 	result, err := d.GetAuthorsForBooks(t.Context(), nil)
-	if err != nil {
-		t.Fatalf("GetAuthorsForBooks(nil) error: %v", err)
-	}
+	require.NoError(t, err, "GetAuthorsForBooks(nil) error")
 	if result != nil {
 		t.Errorf("result = %v, want nil for nil input", result)
 	}
@@ -200,14 +166,10 @@ func TestGetAuthorsForBooks_BookWithNoAuthors(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "Orphan Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(): %v", err)
-	}
+	require.NoError(t, err, "CreateBook()")
 
 	result, err := d.GetAuthorsForBooks(t.Context(), []string{book.ID})
-	if err != nil {
-		t.Fatalf("GetAuthorsForBooks() error: %v", err)
-	}
+	require.NoError(t, err, "GetAuthorsForBooks() error")
 	// Map is returned but the key for this book should be absent.
 	if authors, ok := result[book.ID]; ok && len(authors) > 0 {
 		t.Errorf("expected no authors for book, got %d", len(authors))

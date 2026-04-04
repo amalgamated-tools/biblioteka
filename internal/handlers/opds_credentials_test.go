@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setupOPDSCredentialHandler(t *testing.T) (*OPDSCredentialHandler, string) {
@@ -15,9 +17,7 @@ func setupOPDSCredentialHandler(t *testing.T) (*OPDSCredentialHandler, string) {
 	h := &OPDSCredentialHandler{DB: d}
 
 	user, err := d.CreateUser(t.Context(), "TestUser", "test@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	return h, user.ID
 }
 
@@ -64,7 +64,7 @@ func TestOPDSCredentials_PutSuccess(t *testing.T) {
 	}
 	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Username != "myreader" {
 		t.Errorf("username = %q, want %q", resp.Username, "myreader")
@@ -82,7 +82,7 @@ func TestOPDSCredentials_GetAfterPut(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+		require.Failf(t, "failed", "PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 
 	// Now GET them.
@@ -96,7 +96,7 @@ func TestOPDSCredentials_GetAfterPut(t *testing.T) {
 	}
 	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Username != "myreader" {
 		t.Errorf("username = %q, want %q", resp.Username, "myreader")
@@ -114,7 +114,7 @@ func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("first PUT status = %d; body: %s", w.Code, w.Body.String())
+		require.Failf(t, "failed", "first PUT status = %d; body: %s", w.Code, w.Body.String())
 	}
 
 	// Update with new username.
@@ -129,7 +129,7 @@ func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
 	}
 	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Username != "newname" {
 		t.Errorf("username = %q, want %q", resp.Username, "newname")
@@ -211,7 +211,7 @@ func TestOPDSCredentials_PutUsernameLowercased(t *testing.T) {
 	}
 	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Username != "myreader" {
 		t.Errorf("username = %q, want %q (should be lowercased)", resp.Username, "myreader")
@@ -224,13 +224,9 @@ func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
 
 	ctx := t.Context()
 	user1, err := d.CreateUser(ctx, "User1", "user1@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user1: %v", err)
-	}
+	require.NoError(t, err, "create user1")
 	user2, err := d.CreateUser(ctx, "User2", "user2@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	require.NoError(t, err, "create user2")
 
 	// User1 creates credentials with username "reader".
 	body := mustMarshal(t, credentialRequest{Username: "reader", Password: "secret123"})
@@ -240,7 +236,7 @@ func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("user1 PUT status = %d; body: %s", w.Code, w.Body.String())
+		require.Failf(t, "failed", "user1 PUT status = %d; body: %s", w.Code, w.Body.String())
 	}
 
 	// User2 tries to use the same username.
@@ -266,7 +262,7 @@ func TestOPDSCredentials_DeleteSuccess(t *testing.T) {
 	h.HandleOPDSCredentials(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("PUT status = %d; body: %s", w.Code, w.Body.String())
+		require.Failf(t, "failed", "PUT status = %d; body: %s", w.Code, w.Body.String())
 	}
 
 	// Delete them.
@@ -319,7 +315,7 @@ func TestOPDSCredentials_PutUsernameTrimmed(t *testing.T) {
 	}
 	var resp credentialResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Username != "spacey" {
 		t.Errorf("username = %q, want %q (should be trimmed and lowercased)", resp.Username, "spacey")

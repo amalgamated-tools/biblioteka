@@ -6,26 +6,28 @@ import (
 	"os"
 	"syscall"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsCrossDeviceRenameError(t *testing.T) {
 	t.Run("matches wrapped EXDEV", func(t *testing.T) {
 		err := fmt.Errorf("wrapped: %w", syscall.EXDEV)
 		if !isCrossDeviceRenameError(err) {
-			t.Fatal("expected wrapped EXDEV to be classified as cross-device")
+			require.Fail(t, "expected wrapped EXDEV to be classified as cross-device")
 		}
 	})
 
 	t.Run("does not match unrelated errors", func(t *testing.T) {
 		err := fmt.Errorf("wrapped: %w", os.ErrExist)
 		if isCrossDeviceRenameError(err) {
-			t.Fatal("expected os.ErrExist not to be classified as cross-device")
+			require.Fail(t, "expected os.ErrExist not to be classified as cross-device")
 		}
 	})
 
 	t.Run("handles nil", func(t *testing.T) {
 		if isCrossDeviceRenameError(nil) {
-			t.Fatal("expected nil not to be classified as cross-device")
+			require.Fail(t, "expected nil not to be classified as cross-device")
 		}
 	})
 }
@@ -62,7 +64,7 @@ func TestIsBenignCleanupRemoveError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := isBenignCleanupRemoveError(tt.err)
 			if got != tt.want {
-				t.Fatalf("got %v, want %v", got, tt.want)
+				require.Failf(t, "failed", "got %v, want %v", got, tt.want)
 			}
 		})
 	}

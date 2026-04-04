@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setupAuthorHandler(t *testing.T) (*AuthorHandler, string) {
@@ -13,9 +15,7 @@ func setupAuthorHandler(t *testing.T) (*AuthorHandler, string) {
 	d := newTestDB(t)
 	h := &AuthorHandler{DB: d}
 	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	return h, user.ID
 }
 
@@ -35,7 +35,7 @@ func TestCreateAuthor_Handler(t *testing.T) {
 
 	var dto authorDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if dto.Name != "Stephen King" {
 		t.Errorf("name = %q, want %q", dto.Name, "Stephen King")
@@ -76,9 +76,7 @@ func TestUpdateAuthor_WhitespaceOnlyName(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
 	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	require.NoError(t, err, "create author")
 
 	body := mustMarshal(t, authorRequest{Name: "   "})
 	r := httptest.NewRequest(http.MethodPut, "/api/authors/"+a.ID, bytes.NewReader(body))
@@ -115,10 +113,10 @@ func TestListAuthors_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
 	if _, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil); err != nil {
-		t.Fatalf("create author: %v", err)
+		require.NoError(t, err, "create author")
 	}
 	if _, err := h.DB.CreateAuthor(t.Context(), "Brandon Sanderson", nil, nil, nil, nil); err != nil {
-		t.Fatalf("create author: %v", err)
+		require.NoError(t, err, "create author")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors", nil)
@@ -133,7 +131,7 @@ func TestListAuthors_Handler(t *testing.T) {
 
 	var dtos []authorDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if len(dtos) != 2 {
 		t.Errorf("len = %d, want 2", len(dtos))
@@ -144,9 +142,7 @@ func TestGetAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
 	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	require.NoError(t, err, "create author")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID, nil)
 	r = withUserID(r, userID)
@@ -177,9 +173,7 @@ func TestDeleteAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
 	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	require.NoError(t, err, "create author")
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/authors/"+a.ID, nil)
 	r = withUserID(r, userID)
@@ -207,7 +201,7 @@ func TestDeleteAuthor_NotFound(t *testing.T) {
 
 	var resp errorResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp.Error != "author not found" {
 		t.Errorf("error = %q, want %q", resp.Error, "author not found")
@@ -218,24 +212,18 @@ func TestListAuthorBooks_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
 	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	require.NoError(t, err, "create author")
 
 	b1, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	b2, err := h.DB.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	if err := h.DB.SetBookAuthors(t.Context(), b1.ID, []string{a.ID}); err != nil {
-		t.Fatalf("set book authors: %v", err)
+		require.NoError(t, err, "set book authors")
 	}
 	if err := h.DB.SetBookAuthors(t.Context(), b2.ID, []string{a.ID}); err != nil {
-		t.Fatalf("set book authors: %v", err)
+		require.NoError(t, err, "set book authors")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID+"/books", nil)
@@ -250,7 +238,7 @@ func TestListAuthorBooks_Handler(t *testing.T) {
 
 	var result bookListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if result.Total != 2 {
 		t.Errorf("total = %d, want 2", result.Total)
@@ -278,9 +266,7 @@ func TestListAuthorBooks_Empty(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
 	a, err := h.DB.CreateAuthor(t.Context(), "Unknown Author", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	require.NoError(t, err, "create author")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID+"/books", nil)
 	r = withUserID(r, userID)
@@ -294,7 +280,7 @@ func TestListAuthorBooks_Empty(t *testing.T) {
 
 	var result bookListDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if result.Total != 0 {
 		t.Errorf("total = %d, want 0", result.Total)

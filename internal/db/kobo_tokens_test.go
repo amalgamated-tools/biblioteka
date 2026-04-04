@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 // ---- CreateKoboToken ----
@@ -14,9 +16,7 @@ func TestCreateKoboToken(t *testing.T) {
 	user := createTestUser(t, d)
 
 	token, err := d.CreateKoboToken(t.Context(), user.ID, "My Device", "hash-abc123")
-	if err != nil {
-		t.Fatalf("CreateKoboToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateKoboToken() error")
 	if token.ID == "" {
 		t.Error("token.ID is empty")
 	}
@@ -41,14 +41,10 @@ func TestGetKoboToken(t *testing.T) {
 	user := createTestUser(t, d)
 
 	created, err := d.CreateKoboToken(t.Context(), user.ID, "Tablet", "hash-tablet")
-	if err != nil {
-		t.Fatalf("CreateKoboToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateKoboToken() error")
 
 	got, err := d.GetKoboToken(t.Context(), created.ID, user.ID)
-	if err != nil {
-		t.Fatalf("GetKoboToken() error: %v", err)
-	}
+	require.NoError(t, err, "GetKoboToken() error")
 	if got.ID != created.ID {
 		t.Errorf("ID = %q, want %q", got.ID, created.ID)
 	}
@@ -74,14 +70,10 @@ func TestGetKoboToken_WrongUser(t *testing.T) {
 	d := newTestDB(t)
 	user1 := createTestUser(t, d)
 	user2, err := d.CreateUser(t.Context(), "Other Token User", "other_tok@example.com", "pass2")
-	if err != nil {
-		t.Fatalf("CreateUser(user2): %v", err)
-	}
+	require.NoError(t, err, "CreateUser(user2)")
 
 	created, err := d.CreateKoboToken(t.Context(), user1.ID, "Private Token", "hash-private")
-	if err != nil {
-		t.Fatalf("CreateKoboToken(): %v", err)
-	}
+	require.NoError(t, err, "CreateKoboToken()")
 
 	_, err = d.GetKoboToken(t.Context(), created.ID, user2.ID)
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -96,14 +88,10 @@ func TestGetKoboTokenByHash(t *testing.T) {
 	user := createTestUser(t, d)
 
 	created, err := d.CreateKoboToken(t.Context(), user.ID, "Hash Lookup", "unique-hash-xyz")
-	if err != nil {
-		t.Fatalf("CreateKoboToken(): %v", err)
-	}
+	require.NoError(t, err, "CreateKoboToken()")
 
 	got, err := d.GetKoboTokenByHash(t.Context(), "unique-hash-xyz")
-	if err != nil {
-		t.Fatalf("GetKoboTokenByHash() error: %v", err)
-	}
+	require.NoError(t, err, "GetKoboTokenByHash() error")
 	if got.ID != created.ID {
 		t.Errorf("ID = %q, want %q", got.ID, created.ID)
 	}
@@ -128,9 +116,7 @@ func TestListKoboTokens_Empty(t *testing.T) {
 	user := createTestUser(t, d)
 
 	tokens, err := d.ListKoboTokens(t.Context(), user.ID)
-	if err != nil {
-		t.Fatalf("ListKoboTokens() error: %v", err)
-	}
+	require.NoError(t, err, "ListKoboTokens() error")
 	if len(tokens) != 0 {
 		t.Errorf("len(tokens) = %d, want 0", len(tokens))
 	}
@@ -140,32 +126,26 @@ func TestListKoboTokens_ReturnsUserTokensOnly(t *testing.T) {
 	d := newTestDB(t)
 	user1 := createTestUser(t, d)
 	user2, err := d.CreateUser(t.Context(), "User 2 Kobo", "u2kobo@example.com", "pass2")
-	if err != nil {
-		t.Fatalf("CreateUser(user2): %v", err)
-	}
+	require.NoError(t, err, "CreateUser(user2)")
 
 	if _, err := d.CreateKoboToken(t.Context(), user1.ID, "Token A", "hash-A"); err != nil {
-		t.Fatalf("CreateKoboToken(A): %v", err)
+		require.NoError(t, err, "CreateKoboToken(A)")
 	}
 	if _, err := d.CreateKoboToken(t.Context(), user1.ID, "Token B", "hash-B"); err != nil {
-		t.Fatalf("CreateKoboToken(B): %v", err)
+		require.NoError(t, err, "CreateKoboToken(B)")
 	}
 	if _, err := d.CreateKoboToken(t.Context(), user2.ID, "Token C", "hash-C"); err != nil {
-		t.Fatalf("CreateKoboToken(C): %v", err)
+		require.NoError(t, err, "CreateKoboToken(C)")
 	}
 
 	tokens1, err := d.ListKoboTokens(t.Context(), user1.ID)
-	if err != nil {
-		t.Fatalf("ListKoboTokens(user1) error: %v", err)
-	}
+	require.NoError(t, err, "ListKoboTokens(user1) error")
 	if len(tokens1) != 2 {
 		t.Errorf("user1 len = %d, want 2", len(tokens1))
 	}
 
 	tokens2, err := d.ListKoboTokens(t.Context(), user2.ID)
-	if err != nil {
-		t.Fatalf("ListKoboTokens(user2) error: %v", err)
-	}
+	require.NoError(t, err, "ListKoboTokens(user2) error")
 	if len(tokens2) != 1 {
 		t.Errorf("user2 len = %d, want 1", len(tokens2))
 	}
@@ -176,22 +156,16 @@ func TestListKoboTokens_OrderedNewestFirst(t *testing.T) {
 	user := createTestUser(t, d)
 
 	t1, err := d.CreateKoboToken(t.Context(), user.ID, "First Token", "hash-first")
-	if err != nil {
-		t.Fatalf("CreateKoboToken(first): %v", err)
-	}
+	require.NoError(t, err, "CreateKoboToken(first)")
 	// Sleep to guarantee distinct created_at timestamps in SQLite (second precision).
 	time.Sleep(1100 * time.Millisecond)
 	t2, err := d.CreateKoboToken(t.Context(), user.ID, "Second Token", "hash-second")
-	if err != nil {
-		t.Fatalf("CreateKoboToken(second): %v", err)
-	}
+	require.NoError(t, err, "CreateKoboToken(second)")
 
 	tokens, err := d.ListKoboTokens(t.Context(), user.ID)
-	if err != nil {
-		t.Fatalf("ListKoboTokens() error: %v", err)
-	}
+	require.NoError(t, err, "ListKoboTokens() error")
 	if len(tokens) != 2 {
-		t.Fatalf("len(tokens) = %d, want 2", len(tokens))
+		require.Failf(t, "failed", "len(tokens) = %d, want 2", len(tokens))
 	}
 
 	// Ordered by created_at DESC then id DESC: second token should come first.
@@ -210,12 +184,10 @@ func TestDeleteKoboToken(t *testing.T) {
 	user := createTestUser(t, d)
 
 	created, err := d.CreateKoboToken(t.Context(), user.ID, "Delete Me", "hash-del")
-	if err != nil {
-		t.Fatalf("CreateKoboToken(): %v", err)
-	}
+	require.NoError(t, err, "CreateKoboToken()")
 
 	if err := d.DeleteKoboToken(t.Context(), created.ID, user.ID); err != nil {
-		t.Fatalf("DeleteKoboToken() error: %v", err)
+		require.NoError(t, err, "DeleteKoboToken() error")
 	}
 
 	_, err = d.GetKoboToken(t.Context(), created.ID, user.ID)
@@ -238,14 +210,10 @@ func TestDeleteKoboToken_WrongUser(t *testing.T) {
 	d := newTestDB(t)
 	user1 := createTestUser(t, d)
 	user2, err := d.CreateUser(t.Context(), "Unauthorized", "unauth_tok@example.com", "pass2")
-	if err != nil {
-		t.Fatalf("CreateUser(user2): %v", err)
-	}
+	require.NoError(t, err, "CreateUser(user2)")
 
 	created, err := d.CreateKoboToken(t.Context(), user1.ID, "Protected Token", "hash-protected")
-	if err != nil {
-		t.Fatalf("CreateKoboToken(): %v", err)
-	}
+	require.NoError(t, err, "CreateKoboToken()")
 
 	// user2 cannot delete user1's token.
 	err = d.DeleteKoboToken(t.Context(), created.ID, user2.ID)

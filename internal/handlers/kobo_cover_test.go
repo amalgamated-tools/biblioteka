@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestHandleCoverImage_JPEGDataURL verifies that a JPEG data URL cover
@@ -28,16 +30,14 @@ func TestHandleCoverImage_JPEGDataURL(t *testing.T) {
 		"JPEG Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		&jpegDataURL,
 	)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
 	w := httptest.NewRecorder()
 	h.HandleCoverImage(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	ct := w.Header().Get("Content-Type")
 	if !strings.HasPrefix(ct, "image/") {
@@ -59,16 +59,14 @@ func TestHandleCoverImage_PNGDataURL(t *testing.T) {
 		"PNG Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		&pngDataURL,
 	)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
 	w := httptest.NewRecorder()
 	h.HandleCoverImage(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	ct := w.Header().Get("Content-Type")
 	if !strings.HasPrefix(ct, "image/png") {
@@ -90,9 +88,7 @@ func TestHandleCoverImage_InvalidDataURL(t *testing.T) {
 		"Bad Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		&badURL,
 	)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
 	w := httptest.NewRecorder()

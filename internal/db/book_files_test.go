@@ -3,25 +3,23 @@ package db
 import (
 	"database/sql"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateBookFile(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	if book == nil {
-		t.Fatalf("CreateBook() returned nil book")
+		require.Fail(t, "CreateBook() returned nil book")
 	}
 
 	bf, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024000, new("abc123hash"), "/books/gunslinger.epub")
-	if err != nil {
-		t.Fatalf("CreateBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBookFile() error")
 	if bf == nil {
-		t.Fatalf("CreateBookFile() returned nil book file")
+		require.Fail(t, "CreateBookFile() returned nil book file")
 	}
 	if bf.ID == "" {
 		t.Error("CreateBookFile() returned empty ID")
@@ -50,18 +48,12 @@ func TestGetBookFile(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	created, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
-	if err != nil {
-		t.Fatalf("CreateBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBookFile() error")
 
 	found, err := d.GetBookFile(t.Context(), created.ID)
-	if err != nil {
-		t.Fatalf("GetBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "GetBookFile() error")
 	if found.ID != created.ID {
 		t.Errorf("ID = %q, want %q", found.ID, created.ID)
 	}
@@ -80,22 +72,18 @@ func TestListBookFiles(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	if _, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub"); err != nil {
-		t.Fatalf("CreateBookFile() for epub error: %v", err)
+		require.NoError(t, err, "CreateBookFile() for epub error")
 	}
 	if _, err := d.CreateBookFile(t.Context(), book.ID, "pdf", "gunslinger.pdf", 2048, nil, "/books/gunslinger.pdf"); err != nil {
-		t.Fatalf("CreateBookFile() for pdf error: %v", err)
+		require.NoError(t, err, "CreateBookFile() for pdf error")
 	}
 
 	files, err := d.ListBookFiles(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("ListBookFiles() error: %v", err)
-	}
+	require.NoError(t, err, "ListBookFiles() error")
 	if len(files) != 2 {
-		t.Fatalf("ListBookFiles() returned %d, want 2", len(files))
+		require.Failf(t, "failed", "ListBookFiles() returned %d, want 2", len(files))
 	}
 	if files[0].FileName != "gunslinger.epub" {
 		t.Errorf("first file FileName = %q, want %q", files[0].FileName, "gunslinger.epub")
@@ -106,18 +94,12 @@ func TestDeleteBookFile(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	bf, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
-	if err != nil {
-		t.Fatalf("CreateBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBookFile() error")
 
 	err = d.DeleteBookFile(t.Context(), bf.ID)
-	if err != nil {
-		t.Fatalf("DeleteBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "DeleteBookFile() error")
 
 	_, err = d.GetBookFile(t.Context(), bf.ID)
 	if err != sql.ErrNoRows {
@@ -138,22 +120,18 @@ func TestDeleteBook_CascadeFiles(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	if book == nil {
-		t.Fatalf("CreateBook() returned nil book")
+		require.Fail(t, "CreateBook() returned nil book")
 	}
 	bf, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
-	if err != nil {
-		t.Fatalf("CreateBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBookFile() error")
 	if bf == nil {
-		t.Fatalf("CreateBookFile() returned nil book file")
+		require.Fail(t, "CreateBookFile() returned nil book file")
 	}
 
 	if err := d.DeleteBook(t.Context(), book.ID); err != nil {
-		t.Fatalf("DeleteBook() error: %v", err)
+		require.NoError(t, err, "DeleteBook() error")
 	}
 
 	_, err = d.GetBookFile(t.Context(), bf.ID)
@@ -166,39 +144,33 @@ func TestGetFilesForBooks(t *testing.T) {
 	d := newTestDB(t)
 
 	book1, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() for book1 error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() for book1 error")
 	if book1 == nil {
-		t.Fatalf("CreateBook() returned nil book1")
+		require.Fail(t, "CreateBook() returned nil book1")
 	}
 	book2, err := d.CreateBook(t.Context(), "Wizard and Glass", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() for book2 error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() for book2 error")
 	if book2 == nil {
-		t.Fatalf("CreateBook() returned nil book2")
+		require.Fail(t, "CreateBook() returned nil book2")
 	}
 
 	if _, err = d.CreateBookFile(t.Context(), book1.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub"); err != nil {
-		t.Fatalf("CreateBookFile() for book1 epub error: %v", err)
+		require.NoError(t, err, "CreateBookFile() for book1 epub error")
 	}
 	if _, err = d.CreateBookFile(t.Context(), book1.ID, "pdf", "gunslinger.pdf", 2048, nil, "/books/gunslinger.pdf"); err != nil {
-		t.Fatalf("CreateBookFile() for book1 pdf error: %v", err)
+		require.NoError(t, err, "CreateBookFile() for book1 pdf error")
 	}
 	if _, err = d.CreateBookFile(t.Context(), book2.ID, "epub", "wizard-and-glass.epub", 4096, nil, "/books/wizard-and-glass.epub"); err != nil {
-		t.Fatalf("CreateBookFile() for book2 epub error: %v", err)
+		require.NoError(t, err, "CreateBookFile() for book2 epub error")
 	}
 
 	got, err := d.GetFilesForBooks(t.Context(), []string{book1.ID, book2.ID})
-	if err != nil {
-		t.Fatalf("GetFilesForBooks() error: %v", err)
-	}
+	require.NoError(t, err, "GetFilesForBooks() error")
 	if len(got) != 2 {
-		t.Fatalf("GetFilesForBooks() returned %d book entries, want 2", len(got))
+		require.Failf(t, "failed", "GetFilesForBooks() returned %d book entries, want 2", len(got))
 	}
 	if len(got[book1.ID]) != 2 {
-		t.Fatalf("GetFilesForBooks()[book1] returned %d files, want 2", len(got[book1.ID]))
+		require.Failf(t, "failed", "GetFilesForBooks()[book1] returned %d files, want 2", len(got[book1.ID]))
 	}
 	if got[book1.ID][0].FileName != "gunslinger.epub" {
 		t.Errorf("first file for book1 = %q, want %q", got[book1.ID][0].FileName, "gunslinger.epub")

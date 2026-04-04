@@ -2,6 +2,8 @@ package db
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // ---- ListBooksPaginated ----
@@ -10,9 +12,7 @@ func TestListBooksPaginated_Empty(t *testing.T) {
 	d := newTestDB(t)
 
 	books, total, err := d.ListBooksPaginated(t.Context(), 10, 0)
-	if err != nil {
-		t.Fatalf("ListBooksPaginated() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksPaginated() error")
 	if total != 0 {
 		t.Errorf("total = %d, want 0", total)
 	}
@@ -26,19 +26,17 @@ func TestListBooksPaginated_OrdersByTitle(t *testing.T) {
 
 	for _, title := range []string{"Zebra", "Apple", "Mango"} {
 		if _, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-			t.Fatalf("CreateBook(%q): %v", title, err)
+			require.NoError(t, err, "CreateBook(%q)", title)
 		}
 	}
 
 	books, total, err := d.ListBooksPaginated(t.Context(), 10, 0)
-	if err != nil {
-		t.Fatalf("ListBooksPaginated() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksPaginated() error")
 	if total != 3 {
 		t.Errorf("total = %d, want 3", total)
 	}
 	if len(books) != 3 {
-		t.Fatalf("len(books) = %d, want 3", len(books))
+		require.Failf(t, "failed", "len(books) = %d, want 3", len(books))
 	}
 	if books[0].Title != "Apple" {
 		t.Errorf("books[0].Title = %q, want Apple", books[0].Title)
@@ -56,19 +54,17 @@ func TestListBooksPaginated_FirstPage(t *testing.T) {
 
 	for _, title := range []string{"A", "B", "C", "D", "E"} {
 		if _, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-			t.Fatalf("CreateBook(%q): %v", title, err)
+			require.NoError(t, err, "CreateBook(%q)", title)
 		}
 	}
 
 	page1, total, err := d.ListBooksPaginated(t.Context(), 2, 0)
-	if err != nil {
-		t.Fatalf("ListBooksPaginated(limit=2, offset=0) error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksPaginated(limit=2, offset=0) error")
 	if total != 5 {
 		t.Errorf("total = %d, want 5", total)
 	}
 	if len(page1) != 2 {
-		t.Fatalf("len(page1) = %d, want 2", len(page1))
+		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
 	}
 	if page1[0].Title != "A" {
 		t.Errorf("page1[0].Title = %q, want A", page1[0].Title)
@@ -83,19 +79,17 @@ func TestListBooksPaginated_SecondPage(t *testing.T) {
 
 	for _, title := range []string{"A", "B", "C", "D", "E"} {
 		if _, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-			t.Fatalf("CreateBook(%q): %v", title, err)
+			require.NoError(t, err, "CreateBook(%q)", title)
 		}
 	}
 
 	page2, total, err := d.ListBooksPaginated(t.Context(), 2, 2)
-	if err != nil {
-		t.Fatalf("ListBooksPaginated(limit=2, offset=2) error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksPaginated(limit=2, offset=2) error")
 	if total != 5 {
 		t.Errorf("total = %d, want 5", total)
 	}
 	if len(page2) != 2 {
-		t.Fatalf("len(page2) = %d, want 2", len(page2))
+		require.Failf(t, "failed", "len(page2) = %d, want 2", len(page2))
 	}
 	if page2[0].Title != "C" {
 		t.Errorf("page2[0].Title = %q, want C", page2[0].Title)
@@ -109,13 +103,11 @@ func TestListBooksPaginated_OffsetBeyondTotal(t *testing.T) {
 	d := newTestDB(t)
 
 	if _, err := d.CreateBook(t.Context(), "Only Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(): %v", err)
+		require.NoError(t, err, "CreateBook()")
 	}
 
 	books, total, err := d.ListBooksPaginated(t.Context(), 10, 100)
-	if err != nil {
-		t.Fatalf("ListBooksPaginated(offset=100) error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksPaginated(offset=100) error")
 	if total != 1 {
 		t.Errorf("total = %d, want 1", total)
 	}
@@ -130,9 +122,7 @@ func TestListRecentBooks_Empty(t *testing.T) {
 	d := newTestDB(t)
 
 	books, total, err := d.ListRecentBooks(t.Context(), 10, 0)
-	if err != nil {
-		t.Fatalf("ListRecentBooks() error: %v", err)
-	}
+	require.NoError(t, err, "ListRecentBooks() error")
 	if total != 0 {
 		t.Errorf("total = %d, want 0", total)
 	}
@@ -146,30 +136,26 @@ func TestListRecentBooks_Paginated(t *testing.T) {
 
 	for _, title := range []string{"A", "B", "C", "D", "E"} {
 		if _, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-			t.Fatalf("CreateBook(%q): %v", title, err)
+			require.NoError(t, err, "CreateBook(%q)", title)
 		}
 	}
 
 	page1, total, err := d.ListRecentBooks(t.Context(), 2, 0)
-	if err != nil {
-		t.Fatalf("ListRecentBooks(limit=2, offset=0) error: %v", err)
-	}
+	require.NoError(t, err, "ListRecentBooks(limit=2, offset=0) error")
 	if total != 5 {
 		t.Errorf("total = %d, want 5", total)
 	}
 	if len(page1) != 2 {
-		t.Fatalf("len(page1) = %d, want 2", len(page1))
+		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
 	}
 
 	page2, total2, err := d.ListRecentBooks(t.Context(), 2, 2)
-	if err != nil {
-		t.Fatalf("ListRecentBooks(limit=2, offset=2) error: %v", err)
-	}
+	require.NoError(t, err, "ListRecentBooks(limit=2, offset=2) error")
 	if total2 != 5 {
 		t.Errorf("page2 total = %d, want 5", total2)
 	}
 	if len(page2) != 2 {
-		t.Fatalf("len(page2) = %d, want 2", len(page2))
+		require.Failf(t, "failed", "len(page2) = %d, want 2", len(page2))
 	}
 }
 
@@ -177,13 +163,11 @@ func TestListRecentBooks_OffsetBeyondTotal(t *testing.T) {
 	d := newTestDB(t)
 
 	if _, err := d.CreateBook(t.Context(), "Solo", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(): %v", err)
+		require.NoError(t, err, "CreateBook()")
 	}
 
 	books, total, err := d.ListRecentBooks(t.Context(), 10, 50)
-	if err != nil {
-		t.Fatalf("ListRecentBooks(offset=50) error: %v", err)
-	}
+	require.NoError(t, err, "ListRecentBooks(offset=50) error")
 	if total != 1 {
 		t.Errorf("total = %d, want 1", total)
 	}
@@ -198,14 +182,10 @@ func TestListBooksByAuthor_Empty(t *testing.T) {
 	d := newTestDB(t)
 
 	author, err := d.CreateAuthor(t.Context(), "Nobody", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor(): %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor()")
 
 	books, err := d.ListBooksByAuthor(t.Context(), author.ID)
-	if err != nil {
-		t.Fatalf("ListBooksByAuthor() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksByAuthor() error")
 	if len(books) != 0 {
 		t.Errorf("len(books) = %d, want 0", len(books))
 	}
@@ -215,43 +195,31 @@ func TestListBooksByAuthor_ReturnsMatchingBooks(t *testing.T) {
 	d := newTestDB(t)
 
 	author, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor(): %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor()")
 	other, err := d.CreateAuthor(t.Context(), "J.K. Rowling", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor(other): %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor(other)")
 
 	b1, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(b1): %v", err)
-	}
+	require.NoError(t, err, "CreateBook(b1)")
 	b2, err := d.CreateBook(t.Context(), "It", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(b2): %v", err)
-	}
+	require.NoError(t, err, "CreateBook(b2)")
 	b3, err := d.CreateBook(t.Context(), "Harry Potter", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(b3): %v", err)
-	}
+	require.NoError(t, err, "CreateBook(b3)")
 
 	if err := d.SetBookAuthors(t.Context(), b1.ID, []string{author.ID}); err != nil {
-		t.Fatalf("SetBookAuthors(b1): %v", err)
+		require.NoError(t, err, "SetBookAuthors(b1)")
 	}
 	if err := d.SetBookAuthors(t.Context(), b2.ID, []string{author.ID}); err != nil {
-		t.Fatalf("SetBookAuthors(b2): %v", err)
+		require.NoError(t, err, "SetBookAuthors(b2)")
 	}
 	if err := d.SetBookAuthors(t.Context(), b3.ID, []string{other.ID}); err != nil {
-		t.Fatalf("SetBookAuthors(b3): %v", err)
+		require.NoError(t, err, "SetBookAuthors(b3)")
 	}
 
 	books, err := d.ListBooksByAuthor(t.Context(), author.ID)
-	if err != nil {
-		t.Fatalf("ListBooksByAuthor() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksByAuthor() error")
 	if len(books) != 2 {
-		t.Fatalf("len(books) = %d, want 2", len(books))
+		require.Failf(t, "failed", "len(books) = %d, want 2", len(books))
 	}
 	// Ordered by title: "It" before "The Gunslinger".
 	if books[0].Title != "It" {
@@ -266,43 +234,35 @@ func TestListBooksByAuthorPaginated(t *testing.T) {
 	d := newTestDB(t)
 
 	author, err := d.CreateAuthor(t.Context(), "Prolific Author", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor(): %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor()")
 
 	for _, title := range []string{"Book A", "Book B", "Book C", "Book D"} {
 		b, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-		if err != nil {
-			t.Fatalf("CreateBook(%q): %v", title, err)
-		}
+		require.NoError(t, err, "CreateBook(%q)", title)
 		if err := d.SetBookAuthors(t.Context(), b.ID, []string{author.ID}); err != nil {
-			t.Fatalf("SetBookAuthors(%q): %v", title, err)
+			require.NoError(t, err, "SetBookAuthors(%q)", title)
 		}
 	}
 
 	page1, total, err := d.ListBooksByAuthorPaginated(t.Context(), author.ID, 2, 0)
-	if err != nil {
-		t.Fatalf("ListBooksByAuthorPaginated(page1) error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksByAuthorPaginated(page1) error")
 	if total != 4 {
 		t.Errorf("total = %d, want 4", total)
 	}
 	if len(page1) != 2 {
-		t.Fatalf("len(page1) = %d, want 2", len(page1))
+		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
 	}
 	if page1[0].Title != "Book A" {
 		t.Errorf("page1[0].Title = %q, want Book A", page1[0].Title)
 	}
 
 	page2, total2, err := d.ListBooksByAuthorPaginated(t.Context(), author.ID, 2, 2)
-	if err != nil {
-		t.Fatalf("ListBooksByAuthorPaginated(page2) error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksByAuthorPaginated(page2) error")
 	if total2 != 4 {
 		t.Errorf("page2 total = %d, want 4", total2)
 	}
 	if len(page2) != 2 {
-		t.Fatalf("len(page2) = %d, want 2", len(page2))
+		require.Failf(t, "failed", "len(page2) = %d, want 2", len(page2))
 	}
 	if page2[0].Title != "Book C" {
 		t.Errorf("page2[0].Title = %q, want Book C", page2[0].Title)
@@ -313,21 +273,15 @@ func TestListBooksByAuthorPaginated_OffsetBeyondTotal(t *testing.T) {
 	d := newTestDB(t)
 
 	author, err := d.CreateAuthor(t.Context(), "Solo Author", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor(): %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor()")
 	b, err := d.CreateBook(t.Context(), "One Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(): %v", err)
-	}
+	require.NoError(t, err, "CreateBook()")
 	if err := d.SetBookAuthors(t.Context(), b.ID, []string{author.ID}); err != nil {
-		t.Fatalf("SetBookAuthors(): %v", err)
+		require.NoError(t, err, "SetBookAuthors()")
 	}
 
 	books, total, err := d.ListBooksByAuthorPaginated(t.Context(), author.ID, 10, 50)
-	if err != nil {
-		t.Fatalf("ListBooksByAuthorPaginated(offset=50) error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksByAuthorPaginated(offset=50) error")
 	if total != 1 {
 		t.Errorf("total = %d, want 1", total)
 	}
@@ -342,14 +296,10 @@ func TestListBooksBySeries_Empty(t *testing.T) {
 	d := newTestDB(t)
 
 	s, err := d.CreateSeries(t.Context(), "Empty Series", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries(): %v", err)
-	}
+	require.NoError(t, err, "CreateSeries()")
 
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
-	if err != nil {
-		t.Fatalf("ListBooksBySeries() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksBySeries() error")
 	if len(books) != 0 {
 		t.Errorf("len(books) = %d, want 0", len(books))
 	}
@@ -359,40 +309,30 @@ func TestListBooksBySeries_OrderedByPosition(t *testing.T) {
 	d := newTestDB(t)
 
 	s, err := d.CreateSeries(t.Context(), "Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries(): %v", err)
-	}
+	require.NoError(t, err, "CreateSeries()")
 
 	b1, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(b1): %v", err)
-	}
+	require.NoError(t, err, "CreateBook(b1)")
 	b2, err := d.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(b2): %v", err)
-	}
+	require.NoError(t, err, "CreateBook(b2)")
 	b3, err := d.CreateBook(t.Context(), "The Waste Lands", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(b3): %v", err)
-	}
+	require.NoError(t, err, "CreateBook(b3)")
 
 	// Assign series entries out of order.
 	if err := d.SetBookSeries(t.Context(), b1.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.0)}}); err != nil {
-		t.Fatalf("SetBookSeries(b1): %v", err)
+		require.NoError(t, err, "SetBookSeries(b1)")
 	}
 	if err := d.SetBookSeries(t.Context(), b3.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(3.0)}}); err != nil {
-		t.Fatalf("SetBookSeries(b3): %v", err)
+		require.NoError(t, err, "SetBookSeries(b3)")
 	}
 	if err := d.SetBookSeries(t.Context(), b2.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(2.0)}}); err != nil {
-		t.Fatalf("SetBookSeries(b2): %v", err)
+		require.NoError(t, err, "SetBookSeries(b2)")
 	}
 
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
-	if err != nil {
-		t.Fatalf("ListBooksBySeries() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksBySeries() error")
 	if len(books) != 3 {
-		t.Fatalf("len(books) = %d, want 3", len(books))
+		require.Failf(t, "failed", "len(books) = %d, want 3", len(books))
 	}
 	if books[0].ID != b1.ID {
 		t.Errorf("books[0] = %q, want book 1 (%q)", books[0].Title, b1.Title)
@@ -413,32 +353,24 @@ func TestListBooksBySeries_NullPositionSorting(t *testing.T) {
 	d := newTestDB(t)
 
 	s, err := d.CreateSeries(t.Context(), "Nullable Positions", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries(): %v", err)
-	}
+	require.NoError(t, err, "CreateSeries()")
 
 	b1, err := d.CreateBook(t.Context(), "Positioned", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(positioned): %v", err)
-	}
+	require.NoError(t, err, "CreateBook(positioned)")
 	b2, err := d.CreateBook(t.Context(), "Unpositioned", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(unpositioned): %v", err)
-	}
+	require.NoError(t, err, "CreateBook(unpositioned)")
 
 	if err := d.SetBookSeries(t.Context(), b2.ID, []BookSeriesInput{{SeriesID: s.ID, Position: nil}}); err != nil {
-		t.Fatalf("SetBookSeries(b2 nil position): %v", err)
+		require.NoError(t, err, "SetBookSeries(b2 nil position)")
 	}
 	if err := d.SetBookSeries(t.Context(), b1.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.0)}}); err != nil {
-		t.Fatalf("SetBookSeries(b1 pos 1): %v", err)
+		require.NoError(t, err, "SetBookSeries(b1 pos 1)")
 	}
 
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
-	if err != nil {
-		t.Fatalf("ListBooksBySeries() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksBySeries() error")
 	if len(books) != 2 {
-		t.Fatalf("len(books) = %d, want 2", len(books))
+		require.Failf(t, "failed", "len(books) = %d, want 2", len(books))
 	}
 	// Both books must appear; collect the IDs to verify without relying on
 	// dialect-specific NULL ordering.
@@ -455,30 +387,24 @@ func TestListBooksBySeriesPaginated(t *testing.T) {
 	d := newTestDB(t)
 
 	s, err := d.CreateSeries(t.Context(), "Big Series", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries(): %v", err)
-	}
+	require.NoError(t, err, "CreateSeries()")
 
 	for i, title := range []string{"Book One", "Book Two", "Book Three", "Book Four"} {
 		b, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-		if err != nil {
-			t.Fatalf("CreateBook(%q): %v", title, err)
-		}
+		require.NoError(t, err, "CreateBook(%q)", title)
 		pos := float64(i + 1)
 		if err := d.SetBookSeries(t.Context(), b.ID, []BookSeriesInput{{SeriesID: s.ID, Position: &pos}}); err != nil {
-			t.Fatalf("SetBookSeries(%q): %v", title, err)
+			require.NoError(t, err, "SetBookSeries(%q)", title)
 		}
 	}
 
 	page1, total, err := d.ListBooksBySeriesPaginated(t.Context(), s.ID, 2, 0)
-	if err != nil {
-		t.Fatalf("ListBooksBySeriesPaginated(page1) error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksBySeriesPaginated(page1) error")
 	if total != 4 {
 		t.Errorf("total = %d, want 4", total)
 	}
 	if len(page1) != 2 {
-		t.Fatalf("len(page1) = %d, want 2", len(page1))
+		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
 	}
 	if page1[0].Title != "Book One" {
 		t.Errorf("page1[0].Title = %q, want Book One", page1[0].Title)
@@ -489,21 +415,15 @@ func TestListBooksBySeriesPaginated_OffsetBeyondTotal(t *testing.T) {
 	d := newTestDB(t)
 
 	s, err := d.CreateSeries(t.Context(), "Small Series", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries(): %v", err)
-	}
+	require.NoError(t, err, "CreateSeries()")
 	b, err := d.CreateBook(t.Context(), "One Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook(): %v", err)
-	}
+	require.NoError(t, err, "CreateBook()")
 	if err := d.SetBookSeries(t.Context(), b.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.0)}}); err != nil {
-		t.Fatalf("SetBookSeries(): %v", err)
+		require.NoError(t, err, "SetBookSeries()")
 	}
 
 	books, total, err := d.ListBooksBySeriesPaginated(t.Context(), s.ID, 10, 50)
-	if err != nil {
-		t.Fatalf("ListBooksBySeriesPaginated(offset=50) error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksBySeriesPaginated(offset=50) error")
 	if total != 1 {
 		t.Errorf("total = %d, want 1", total)
 	}
@@ -518,13 +438,11 @@ func TestSearchBooks_NoMatch(t *testing.T) {
 	d := newTestDB(t)
 
 	if _, err := d.CreateBook(t.Context(), "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(): %v", err)
+		require.NoError(t, err, "CreateBook()")
 	}
 
 	books, total, err := d.SearchBooks(t.Context(), "Asimov", 10, 0)
-	if err != nil {
-		t.Fatalf("SearchBooks() error: %v", err)
-	}
+	require.NoError(t, err, "SearchBooks() error")
 	if total != 0 {
 		t.Errorf("total = %d, want 0", total)
 	}
@@ -537,19 +455,17 @@ func TestSearchBooks_MatchesByTitle(t *testing.T) {
 	d := newTestDB(t)
 
 	if _, err := d.CreateBook(t.Context(), "Foundation", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(Foundation): %v", err)
+		require.NoError(t, err, "CreateBook(Foundation)")
 	}
 	if _, err := d.CreateBook(t.Context(), "Foundation and Empire", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(Foundation and Empire): %v", err)
+		require.NoError(t, err, "CreateBook(Foundation and Empire)")
 	}
 	if _, err := d.CreateBook(t.Context(), "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(Dune): %v", err)
+		require.NoError(t, err, "CreateBook(Dune)")
 	}
 
 	books, total, err := d.SearchBooks(t.Context(), "Foundation", 10, 0)
-	if err != nil {
-		t.Fatalf("SearchBooks() error: %v", err)
-	}
+	require.NoError(t, err, "SearchBooks() error")
 	if total != 2 {
 		t.Errorf("total = %d, want 2", total)
 	}
@@ -563,21 +479,19 @@ func TestSearchBooks_MatchesByDescription(t *testing.T) {
 
 	desc := "A story about a desert planet"
 	if _, err := d.CreateBook(t.Context(), "Dune", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(Dune): %v", err)
+		require.NoError(t, err, "CreateBook(Dune)")
 	}
 	if _, err := d.CreateBook(t.Context(), "Foundation", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(Foundation): %v", err)
+		require.NoError(t, err, "CreateBook(Foundation)")
 	}
 
 	books, total, err := d.SearchBooks(t.Context(), "desert planet", 10, 0)
-	if err != nil {
-		t.Fatalf("SearchBooks() error: %v", err)
-	}
+	require.NoError(t, err, "SearchBooks() error")
 	if total != 1 {
 		t.Errorf("total = %d, want 1", total)
 	}
 	if len(books) != 1 {
-		t.Fatalf("len(books) = %d, want 1", len(books))
+		require.Failf(t, "failed", "len(books) = %d, want 1", len(books))
 	}
 	if books[0].Title != "Dune" {
 		t.Errorf("books[0].Title = %q, want Dune", books[0].Title)
@@ -588,14 +502,12 @@ func TestSearchBooks_CaseInsensitive(t *testing.T) {
 	d := newTestDB(t)
 
 	if _, err := d.CreateBook(t.Context(), "Foundation", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(): %v", err)
+		require.NoError(t, err, "CreateBook()")
 	}
 
 	for _, q := range []string{"foundation", "FOUNDATION", "Foundation", "fOuNdAtIoN"} {
 		books, total, err := d.SearchBooks(t.Context(), q, 10, 0)
-		if err != nil {
-			t.Fatalf("SearchBooks(%q) error: %v", q, err)
-		}
+		require.NoError(t, err, "SearchBooks(%q) error", q)
 		if total != 1 {
 			t.Errorf("SearchBooks(%q) total = %d, want 1", q, total)
 		}
@@ -609,17 +521,15 @@ func TestSearchBooks_SpecialCharacterEscaping(t *testing.T) {
 	d := newTestDB(t)
 
 	if _, err := d.CreateBook(t.Context(), "100% Pure Fiction", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(100%% Pure Fiction): %v", err)
+		require.NoError(t, err)
 	}
 	if _, err := d.CreateBook(t.Context(), "Something Else", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(Something Else): %v", err)
+		require.NoError(t, err, "CreateBook(Something Else)")
 	}
 
 	// Searching for "%" as a literal character should find exactly one book.
 	books, total, err := d.SearchBooks(t.Context(), "%", 10, 0)
-	if err != nil {
-		t.Fatalf("SearchBooks(%%) error: %v", err)
-	}
+	require.NoError(t, err)
 	if total != 1 {
 		t.Errorf("SearchBooks(%%) total = %d, want 1", total)
 	}
@@ -635,17 +545,15 @@ func TestSearchBooks_UnderscoreEscaping(t *testing.T) {
 	d := newTestDB(t)
 
 	if _, err := d.CreateBook(t.Context(), "hello_world", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(hello_world): %v", err)
+		require.NoError(t, err, "CreateBook(hello_world)")
 	}
 	if _, err := d.CreateBook(t.Context(), "helloXworld", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(helloXworld): %v", err)
+		require.NoError(t, err, "CreateBook(helloXworld)")
 	}
 
 	// Searching for literal underscore should find only the one with "_".
 	books, _, err := d.SearchBooks(t.Context(), "hello_world", 10, 0)
-	if err != nil {
-		t.Fatalf("SearchBooks(hello_world) error: %v", err)
-	}
+	require.NoError(t, err, "SearchBooks(hello_world) error")
 	if len(books) != 1 {
 		t.Errorf("len(books) = %d, want 1 (literal underscore)", len(books))
 	}
@@ -655,16 +563,14 @@ func TestSearchBooks_BackslashEscaping(t *testing.T) {
 	d := newTestDB(t)
 
 	if _, err := d.CreateBook(t.Context(), `Back\slash`, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(): %v", err)
+		require.NoError(t, err, "CreateBook()")
 	}
 	if _, err := d.CreateBook(t.Context(), "BackXslash", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(BackXslash): %v", err)
+		require.NoError(t, err, "CreateBook(BackXslash)")
 	}
 
 	books, _, err := d.SearchBooks(t.Context(), `\`, 10, 0)
-	if err != nil {
-		t.Fatalf("SearchBooks(backslash) error: %v", err)
-	}
+	require.NoError(t, err, "SearchBooks(backslash) error")
 	if len(books) != 1 {
 		t.Errorf("len(books) = %d, want 1 (literal backslash)", len(books))
 	}
@@ -675,33 +581,29 @@ func TestSearchBooks_Paginated(t *testing.T) {
 
 	for _, title := range []string{"Abc Foundation", "Def Foundation", "Ghi Foundation", "Jkl Foundation"} {
 		if _, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-			t.Fatalf("CreateBook(%q): %v", title, err)
+			require.NoError(t, err, "CreateBook(%q)", title)
 		}
 	}
 
 	page1, total, err := d.SearchBooks(t.Context(), "Foundation", 2, 0)
-	if err != nil {
-		t.Fatalf("SearchBooks(page1) error: %v", err)
-	}
+	require.NoError(t, err, "SearchBooks(page1) error")
 	if total != 4 {
 		t.Errorf("total = %d, want 4", total)
 	}
 	if len(page1) != 2 {
-		t.Fatalf("len(page1) = %d, want 2", len(page1))
+		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
 	}
 	if page1[0].Title != "Abc Foundation" {
 		t.Errorf("page1[0].Title = %q, want Abc Foundation", page1[0].Title)
 	}
 
 	page2, total2, err := d.SearchBooks(t.Context(), "Foundation", 2, 2)
-	if err != nil {
-		t.Fatalf("SearchBooks(page2) error: %v", err)
-	}
+	require.NoError(t, err, "SearchBooks(page2) error")
 	if total2 != 4 {
 		t.Errorf("page2 total = %d, want 4", total2)
 	}
 	if len(page2) != 2 {
-		t.Fatalf("len(page2) = %d, want 2", len(page2))
+		require.Failf(t, "failed", "len(page2) = %d, want 2", len(page2))
 	}
 	if page2[0].Title != "Ghi Foundation" {
 		t.Errorf("page2[0].Title = %q, want Ghi Foundation", page2[0].Title)
@@ -712,13 +614,11 @@ func TestSearchBooks_OffsetBeyondTotal(t *testing.T) {
 	d := newTestDB(t)
 
 	if _, err := d.CreateBook(t.Context(), "Searchable Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook(): %v", err)
+		require.NoError(t, err, "CreateBook()")
 	}
 
 	books, total, err := d.SearchBooks(t.Context(), "Searchable", 10, 50)
-	if err != nil {
-		t.Fatalf("SearchBooks(offset=50) error: %v", err)
-	}
+	require.NoError(t, err, "SearchBooks(offset=50) error")
 	if total != 1 {
 		t.Errorf("total = %d, want 1", total)
 	}

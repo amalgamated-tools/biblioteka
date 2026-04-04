@@ -19,7 +19,7 @@ func TestParseTSV_IdentifierWithoutScheme(t *testing.T) {
 	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if got := len(out.Identifiers); got != 1 {
-		t.Fatalf("expected 1 identifier, got %d", got)
+		require.Failf(t, "failed", "expected 1 identifier, got %d", got)
 	}
 	require.Equal(t, "urn:isbn:1234567890", out.Identifiers[0].Value, "Identifiers[0].Value")
 	require.Equal(t, "", out.Identifiers[0].Scheme, "Identifiers[0].Scheme")
@@ -30,7 +30,7 @@ func TestParseTSV_IdentifierWithScheme(t *testing.T) {
 	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if got := len(out.Identifiers); got != 1 {
-		t.Fatalf("expected 1 identifier, got %d", got)
+		require.Failf(t, "failed", "expected 1 identifier, got %d", got)
 	}
 	require.Equal(t, "B08FHBV4ZX", out.Identifiers[0].Value, "Identifiers[0].Value")
 	require.Equal(t, "AMAZON", out.Identifiers[0].Scheme, "Identifiers[0].Scheme")
@@ -41,7 +41,7 @@ func TestParseTSV_IdentifierIdPrecedesValue(t *testing.T) {
 	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if got := len(out.Identifiers); got != 2 {
-		t.Fatalf("expected 2 identifiers, got %d", got)
+		require.Failf(t, "failed", "expected 2 identifiers, got %d", got)
 	}
 	require.Equal(t, "12345", out.Identifiers[0].Value, "Identifiers[0].Value")
 	require.Equal(t, "uid", out.Identifiers[0].ID, "Identifiers[0].ID")
@@ -56,7 +56,7 @@ func TestParseTSV_MultipleIdentifiers(t *testing.T) {
 	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if got := len(out.Identifiers); got != 3 {
-		t.Fatalf("expected 3 identifiers, got %d", got)
+		require.Failf(t, "failed", "expected 3 identifiers, got %d", got)
 	}
 	require.Equal(t, "AAA", out.Identifiers[0].Value, "Identifiers[0].Value")
 	require.Equal(t, "ISBN", out.Identifiers[0].Scheme, "Identifiers[0].Scheme")
@@ -71,7 +71,7 @@ func TestParseTSV_MetaPairs(t *testing.T) {
 	out, err := ParseTSV(t.Context(), input, "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
 	if got := len(out.MetaTags); got != 2 {
-		t.Fatalf("expected 2 meta tags, got %d", got)
+		require.Failf(t, "failed", "expected 2 meta tags, got %d", got)
 	}
 	require.Equal(t, "cover", out.MetaTags[0].Content, "MetaTags[0].Content")
 	require.Equal(t, "cover", out.MetaTags[0].Name, "MetaTags[0].Name")

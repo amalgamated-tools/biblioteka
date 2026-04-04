@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 func makeTestTokenOps(t *testing.T) tokenOps {
@@ -37,7 +39,7 @@ func TestHandleTokenCreate_Success(t *testing.T) {
 	handleTokenCreate(ops, w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	// Verify cache-prevention headers are set.
@@ -50,7 +52,7 @@ func TestHandleTokenCreate_Success(t *testing.T) {
 
 	var resp map[string]string
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if resp["name"] != "My Token" {
 		t.Errorf("name = %q, want %q", resp["name"], "My Token")
@@ -73,7 +75,7 @@ func TestHandleTokenCreate_NameTrimmed(t *testing.T) {
 	handleTokenCreate(ops, w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 	if capturedName != "padded name" {
 		t.Errorf("create received name %q, want trimmed %q", capturedName, "padded name")
@@ -159,7 +161,7 @@ func TestHandleTokenCreate_GenericCreateError(t *testing.T) {
 
 	var resp errorResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	// Generic error should use the default "failed to create <resource>" message.
 	if resp.Error != "failed to create test token" {
@@ -189,7 +191,7 @@ func TestHandleTokenCreate_TokenErrorMessage(t *testing.T) {
 
 	var resp errorResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	// tokenError.message should be used instead of the generic message.
 	if resp.Error != "failed to generate secure token" {
@@ -217,13 +219,11 @@ func TestHandleTokenCreate_AuditLog(t *testing.T) {
 	handleTokenCreate(ops, w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 
 	logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
-	if err != nil {
-		t.Fatalf("list audit logs: %v", err)
-	}
+	require.NoError(t, err, "list audit logs")
 
 	found := false
 	for _, l := range logs {

@@ -11,6 +11,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // testEntity is a minimal entity type used in named_entity unit tests.
@@ -95,7 +97,7 @@ func TestCreateNamedEntity_Success(t *testing.T) {
 
 	var dto testEntityDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if dto.Name != "My Widget" {
 		t.Errorf("name = %q, want %q", dto.Name, "My Widget")
@@ -238,7 +240,7 @@ func TestGetNamedEntity_Success(t *testing.T) {
 
 	var dto testEntityDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if dto.Name != "Existing Widget" {
 		t.Errorf("name = %q, want %q", dto.Name, "Existing Widget")
@@ -332,7 +334,7 @@ func TestUpdateNamedEntity_Success(t *testing.T) {
 
 	var dto testEntityDTO
 	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+		require.NoError(t, err, "unmarshal")
 	}
 	if dto.Name != "Updated Widget" {
 		t.Errorf("name = %q, want %q", dto.Name, "Updated Widget")

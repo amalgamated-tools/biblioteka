@@ -3,15 +3,15 @@ package db
 import (
 	"database/sql"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateBook(t *testing.T) {
 	d := newTestDB(t)
 
 	b, err := d.CreateBook(t.Context(), "The Gunslinger", new("The first book"), nil, new("1234567890"), nil, nil, nil, nil, new("1982-06-10"), new("Grant"), new("en"), nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	if b.ID == "" {
 		t.Error("CreateBook() returned empty ID")
 	}
@@ -30,14 +30,10 @@ func TestGetBook(t *testing.T) {
 	d := newTestDB(t)
 
 	created, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 
 	found, err := d.GetBook(t.Context(), created.ID)
-	if err != nil {
-		t.Fatalf("GetBook() error: %v", err)
-	}
+	require.NoError(t, err, "GetBook() error")
 	if found.ID != created.ID {
 		t.Errorf("ID = %q, want %q", found.ID, created.ID)
 	}
@@ -59,18 +55,16 @@ func TestListBooks(t *testing.T) {
 	d := newTestDB(t)
 
 	if _, err := d.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook() for A Game of Thrones error: %v", err)
+		require.NoError(t, err, "CreateBook() for A Game of Thrones error")
 	}
 	if _, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("CreateBook() for The Gunslinger error: %v", err)
+		require.NoError(t, err, "CreateBook() for The Gunslinger error")
 	}
 
 	books, err := d.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("ListBooks() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooks() error")
 	if len(books) != 2 {
-		t.Fatalf("ListBooks() returned %d, want 2", len(books))
+		require.Failf(t, "failed", "ListBooks() returned %d, want 2", len(books))
 	}
 	if books[0].Title != "A Game of Thrones" {
 		t.Errorf("first book Title = %q, want %q", books[0].Title, "A Game of Thrones")
@@ -81,14 +75,10 @@ func TestUpdateBook(t *testing.T) {
 	d := newTestDB(t)
 
 	created, err := d.CreateBook(t.Context(), "Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 
 	updated, err := d.UpdateBook(t.Context(), created.ID, "The Gunslinger", new("Revised edition"), nil, nil, nil, nil, nil, nil, nil, nil, new("en"), nil)
-	if err != nil {
-		t.Fatalf("UpdateBook() error: %v", err)
-	}
+	require.NoError(t, err, "UpdateBook() error")
 	if updated.Title != "The Gunslinger" {
 		t.Errorf("Title = %q, want %q", updated.Title, "The Gunslinger")
 	}
@@ -98,14 +88,10 @@ func TestDeleteBook(t *testing.T) {
 	d := newTestDB(t)
 
 	b, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 
 	err = d.DeleteBook(t.Context(), b.ID)
-	if err != nil {
-		t.Fatalf("DeleteBook() error: %v", err)
-	}
+	require.NoError(t, err, "DeleteBook() error")
 
 	_, err = d.GetBook(t.Context(), b.ID)
 	if err != sql.ErrNoRows {
@@ -126,25 +112,17 @@ func TestAddBookToLibrary(t *testing.T) {
 	d := newTestDB(t)
 
 	lib, err := d.CreateLibrary(t.Context(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
-	if err != nil {
-		t.Fatalf("CreateLibrary() error: %v", err)
-	}
+	require.NoError(t, err, "CreateLibrary() error")
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 
 	err = d.AddBookToLibrary(t.Context(), lib.ID, book.ID)
-	if err != nil {
-		t.Fatalf("AddBookToLibrary() error: %v", err)
-	}
+	require.NoError(t, err, "AddBookToLibrary() error")
 
 	books, err := d.ListBooksByLibrary(t.Context(), lib.ID)
-	if err != nil {
-		t.Fatalf("ListBooksByLibrary() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksByLibrary() error")
 	if len(books) != 1 {
-		t.Fatalf("ListBooksByLibrary() returned %d, want 1", len(books))
+		require.Failf(t, "failed", "ListBooksByLibrary() returned %d, want 1", len(books))
 	}
 	if books[0].ID != book.ID {
 		t.Errorf("book ID = %q, want %q", books[0].ID, book.ID)
@@ -155,38 +133,22 @@ func TestListBooksByLibraryPaginated(t *testing.T) {
 	d := newTestDB(t)
 
 	lib, err := d.CreateLibrary(t.Context(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
-	if err != nil {
-		t.Fatalf("CreateLibrary() error: %v", err)
-	}
+	require.NoError(t, err, "CreateLibrary() error")
 	b1, err := d.CreateBook(t.Context(), "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() for Alpha error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() for Alpha error")
 	b2, err := d.CreateBook(t.Context(), "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() for Beta error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() for Beta error")
 	b3, err := d.CreateBook(t.Context(), "Gamma", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() for Gamma error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() for Gamma error")
 	err = d.AddBookToLibrary(t.Context(), lib.ID, b1.ID)
-	if err != nil {
-		t.Fatalf("AddBookToLibrary() for Alpha error: %v", err)
-	}
+	require.NoError(t, err, "AddBookToLibrary() for Alpha error")
 	err = d.AddBookToLibrary(t.Context(), lib.ID, b2.ID)
-	if err != nil {
-		t.Fatalf("AddBookToLibrary() for Beta error: %v", err)
-	}
+	require.NoError(t, err, "AddBookToLibrary() for Beta error")
 	err = d.AddBookToLibrary(t.Context(), lib.ID, b3.ID)
-	if err != nil {
-		t.Fatalf("AddBookToLibrary() for Gamma error: %v", err)
-	}
+	require.NoError(t, err, "AddBookToLibrary() for Gamma error")
 
 	books, total, err := d.ListBooksByLibraryPaginated(t.Context(), lib.ID, 2, 0)
-	if err != nil {
-		t.Fatalf("ListBooksByLibraryPaginated() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksByLibraryPaginated() error")
 	if total != 3 {
 		t.Errorf("total = %d, want 3", total)
 	}
@@ -198,9 +160,7 @@ func TestListBooksByLibraryPaginated(t *testing.T) {
 	}
 
 	books2, total2, err := d.ListBooksByLibraryPaginated(t.Context(), lib.ID, 2, 2)
-	if err != nil {
-		t.Fatalf("ListBooksByLibraryPaginated() page 2 error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksByLibraryPaginated() page 2 error")
 	if total2 != 3 {
 		t.Errorf("total page 2 = %d, want 3", total2)
 	}
@@ -213,26 +173,18 @@ func TestRemoveBookFromLibrary(t *testing.T) {
 	d := newTestDB(t)
 
 	lib, err := d.CreateLibrary(t.Context(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
-	if err != nil {
-		t.Fatalf("CreateLibrary() error: %v", err)
-	}
+	require.NoError(t, err, "CreateLibrary() error")
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	if err := d.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-		t.Fatalf("AddBookToLibrary() error: %v", err)
+		require.NoError(t, err, "AddBookToLibrary() error")
 	}
 
 	err = d.RemoveBookFromLibrary(t.Context(), lib.ID, book.ID)
-	if err != nil {
-		t.Fatalf("RemoveBookFromLibrary() error: %v", err)
-	}
+	require.NoError(t, err, "RemoveBookFromLibrary() error")
 
 	books, err := d.ListBooksByLibrary(t.Context(), lib.ID)
-	if err != nil {
-		t.Fatalf("ListBooksByLibrary() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooksByLibrary() error")
 	if len(books) != 0 {
 		t.Errorf("ListBooksByLibrary() returned %d, want 0", len(books))
 	}
@@ -242,29 +194,19 @@ func TestSetBookAuthors(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	a1, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor() for Stephen King error: %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor() for Stephen King error")
 	a2, err := d.CreateAuthor(t.Context(), "Peter Straub", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor() for Peter Straub error: %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor() for Peter Straub error")
 
 	err = d.SetBookAuthors(t.Context(), book.ID, []string{a1.ID, a2.ID})
-	if err != nil {
-		t.Fatalf("SetBookAuthors() error: %v", err)
-	}
+	require.NoError(t, err, "SetBookAuthors() error")
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("GetBookAuthors() error: %v", err)
-	}
+	require.NoError(t, err, "GetBookAuthors() error")
 	if len(authors) != 2 {
-		t.Fatalf("GetBookAuthors() returned %d, want 2", len(authors))
+		require.Failf(t, "failed", "GetBookAuthors() returned %d, want 2", len(authors))
 	}
 }
 
@@ -272,33 +214,23 @@ func TestSetBookAuthors_Replace(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Talisman", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	a1, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor() for Stephen King error: %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor() for Stephen King error")
 	a2, err := d.CreateAuthor(t.Context(), "Peter Straub", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor() for Peter Straub error: %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor() for Peter Straub error")
 
 	if err := d.SetBookAuthors(t.Context(), book.ID, []string{a1.ID}); err != nil {
-		t.Fatalf("SetBookAuthors() initial error: %v", err)
+		require.NoError(t, err, "SetBookAuthors() initial error")
 	}
 
 	err = d.SetBookAuthors(t.Context(), book.ID, []string{a2.ID})
-	if err != nil {
-		t.Fatalf("SetBookAuthors() replace error: %v", err)
-	}
+	require.NoError(t, err, "SetBookAuthors() replace error")
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("GetBookAuthors() error: %v", err)
-	}
+	require.NoError(t, err, "GetBookAuthors() error")
 	if len(authors) != 1 {
-		t.Fatalf("GetBookAuthors() returned %d, want 1", len(authors))
+		require.Failf(t, "failed", "GetBookAuthors() returned %d, want 1", len(authors))
 	}
 	if authors[0].ID != a2.ID {
 		t.Errorf("author ID = %q, want %q", authors[0].ID, a2.ID)
@@ -309,32 +241,24 @@ func TestSetBookSeries(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	if book == nil {
-		t.Fatal("CreateBook() returned nil book")
+		require.Fail(t, "CreateBook() returned nil book")
 	}
 
 	s, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() error: %v", err)
-	}
+	require.NoError(t, err, "CreateSeries() error")
 	if s == nil {
-		t.Fatal("CreateSeries() returned nil series")
+		require.Fail(t, "CreateSeries() returned nil series")
 	}
 
 	err = d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(float64(1))}})
-	if err != nil {
-		t.Fatalf("SetBookSeries() error: %v", err)
-	}
+	require.NoError(t, err, "SetBookSeries() error")
 
 	entries, err := d.GetBookSeries(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("GetBookSeries() error: %v", err)
-	}
+	require.NoError(t, err, "GetBookSeries() error")
 	if len(entries) != 1 {
-		t.Fatalf("GetBookSeries() returned %d, want 1", len(entries))
+		require.Failf(t, "failed", "GetBookSeries() returned %d, want 1", len(entries))
 	}
 	if entries[0].Series.ID != s.ID {
 		t.Errorf("series ID = %q, want %q", entries[0].Series.ID, s.ID)
@@ -348,53 +272,43 @@ func TestGetAuthorsForBooks(t *testing.T) {
 	d := newTestDB(t)
 
 	book1, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() for book1 error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() for book1 error")
 	if book1 == nil {
-		t.Fatal("CreateBook() for book1 returned nil book")
+		require.Fail(t, "CreateBook() for book1 returned nil book")
 	}
 
 	book2, err := d.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() for book2 error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() for book2 error")
 	if book2 == nil {
-		t.Fatal("CreateBook() for book2 returned nil book")
+		require.Fail(t, "CreateBook() for book2 returned nil book")
 	}
 
 	author1, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor() for author1 error: %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor() for author1 error")
 	if author1 == nil {
-		t.Fatal("CreateAuthor() for author1 returned nil author")
+		require.Fail(t, "CreateAuthor() for author1 returned nil author")
 	}
 
 	author2, err := d.CreateAuthor(t.Context(), "Robin Furth", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor() for author2 error: %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor() for author2 error")
 	if author2 == nil {
-		t.Fatal("CreateAuthor() for author2 returned nil author")
+		require.Fail(t, "CreateAuthor() for author2 returned nil author")
 	}
 
 	if err := d.SetBookAuthors(t.Context(), book1.ID, []string{author2.ID, author1.ID}); err != nil {
-		t.Fatalf("SetBookAuthors() for book1 error: %v", err)
+		require.NoError(t, err, "SetBookAuthors() for book1 error")
 	}
 	if err := d.SetBookAuthors(t.Context(), book2.ID, []string{author1.ID}); err != nil {
-		t.Fatalf("SetBookAuthors() for book2 error: %v", err)
+		require.NoError(t, err, "SetBookAuthors() for book2 error")
 	}
 
 	got, err := d.GetAuthorsForBooks(t.Context(), []string{book1.ID, book2.ID})
-	if err != nil {
-		t.Fatalf("GetAuthorsForBooks() error: %v", err)
-	}
+	require.NoError(t, err, "GetAuthorsForBooks() error")
 	if len(got) != 2 {
-		t.Fatalf("GetAuthorsForBooks() returned %d book entries, want 2", len(got))
+		require.Failf(t, "failed", "GetAuthorsForBooks() returned %d book entries, want 2", len(got))
 	}
 	if len(got[book1.ID]) != 2 {
-		t.Fatalf("GetAuthorsForBooks()[book1] returned %d authors, want 2", len(got[book1.ID]))
+		require.Failf(t, "failed", "GetAuthorsForBooks()[book1] returned %d authors, want 2", len(got[book1.ID]))
 	}
 	seen := map[string]bool{}
 	for _, author := range got[book1.ID] {
@@ -412,27 +326,21 @@ func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 	d := newTestDB(t)
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	a, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateAuthor() error: %v", err)
-	}
+	require.NoError(t, err, "CreateAuthor() error")
 	s, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() error: %v", err)
-	}
+	require.NoError(t, err, "CreateSeries() error")
 
 	if err := d.SetBookAuthors(t.Context(), book.ID, []string{a.ID}); err != nil {
-		t.Fatalf("SetBookAuthors() error: %v", err)
+		require.NoError(t, err, "SetBookAuthors() error")
 	}
 	if err := d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.1)}}); err != nil {
-		t.Fatalf("SetBookSeries() error: %v", err)
+		require.NoError(t, err, "SetBookSeries() error")
 	}
 
 	if err := d.DeleteBook(t.Context(), book.ID); err != nil {
-		t.Fatalf("DeleteBook() error: %v", err)
+		require.NoError(t, err, "DeleteBook() error")
 	}
 
 	// Author and series should still exist (only join table entries are cascaded)
@@ -467,9 +375,7 @@ func TestCreateBookWithFile(t *testing.T) {
 		nil,
 		"/books/the-gunslinger.epub",
 	)
-	if err != nil {
-		t.Fatalf("CreateBookWithFile() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBookWithFile() error")
 	if b.ID == "" {
 		t.Error("book ID is empty")
 	}
@@ -522,9 +428,7 @@ func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
 			SELECT RAISE(ABORT, 'book_files insert forced failure');
 		END;
 	`)
-	if err != nil {
-		t.Fatalf("failed to create trigger: %v", err)
-	}
+	require.NoError(t, err, "failed to create trigger")
 
 	_, _, err = d.CreateBookWithFile(
 		t.Context(),
@@ -536,15 +440,11 @@ func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
 		nil,
 		"/books/orphan.epub",
 	)
-	if err == nil {
-		t.Fatal("expected error from failing book_files insert")
-	}
+	require.Error(t, err, "expected error from failing book_files insert")
 
 	// Verify no book was committed
 	books, err := d.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("ListBooks() error: %v", err)
-	}
+	require.NoError(t, err, "ListBooks() error")
 	if len(books) != 0 {
 		t.Errorf("expected 0 books after rollback, got %d", len(books))
 	}
@@ -554,26 +454,20 @@ func TestDeleteLibrary_DoesNotDeleteBook(t *testing.T) {
 	d := newTestDB(t)
 
 	lib, err := d.CreateLibrary(t.Context(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
-	if err != nil {
-		t.Fatalf("CreateLibrary() error: %v", err)
-	}
+	require.NoError(t, err, "CreateLibrary() error")
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateBook() error: %v", err)
-	}
+	require.NoError(t, err, "CreateBook() error")
 	if err := d.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-		t.Fatalf("AddBookToLibrary() error: %v", err)
+		require.NoError(t, err, "AddBookToLibrary() error")
 	}
 
 	if err := d.DeleteLibrary(t.Context(), lib.ID); err != nil {
-		t.Fatalf("DeleteLibrary() error: %v", err)
+		require.NoError(t, err, "DeleteLibrary() error")
 	}
 
 	// Book should still exist
 	found, err := d.GetBook(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("book should still exist after library delete, got: %v", err)
-	}
+	require.NoError(t, err, "book should still exist after library delete, got")
 	if found.ID != book.ID {
 		t.Errorf("book ID = %q, want %q", found.ID, book.ID)
 	}

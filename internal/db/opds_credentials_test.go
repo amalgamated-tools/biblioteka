@@ -3,14 +3,14 @@ package db
 import (
 	"database/sql"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func createTestUserForOPDS(t *testing.T, d *DB, email string) *User {
 	t.Helper()
 	user, err := d.CreateUser(t.Context(), "Test User", email, "hashedpw")
-	if err != nil {
-		t.Fatalf("CreateUser(%q): %v", email, err)
-	}
+	require.NoError(t, err, "CreateUser(%q)", email)
 	return user
 }
 
@@ -20,9 +20,7 @@ func TestOPDSCredential_UpsertAndGet(t *testing.T) {
 	ctx := t.Context()
 
 	cred, err := d.UpsertOPDSCredential(ctx, user.ID, "alice", "hashval")
-	if err != nil {
-		t.Fatalf("UpsertOPDSCredential: %v", err)
-	}
+	require.NoError(t, err, "UpsertOPDSCredential")
 	if cred.ID == "" {
 		t.Error("cred.ID is empty")
 	}
@@ -38,18 +36,14 @@ func TestOPDSCredential_UpsertAndGet(t *testing.T) {
 
 	// Fetch by userID
 	fetched, err := d.GetOPDSCredentialByUserID(ctx, user.ID)
-	if err != nil {
-		t.Fatalf("GetOPDSCredentialByUserID: %v", err)
-	}
+	require.NoError(t, err, "GetOPDSCredentialByUserID")
 	if fetched.Username != "alice" {
 		t.Errorf("fetched Username = %q, want %q", fetched.Username, "alice")
 	}
 
 	// Fetch by username (lowercase, as the middleware always lowercases before calling)
 	fetched2, err := d.GetOPDSCredentialByUsername(ctx, "alice")
-	if err != nil {
-		t.Fatalf("GetOPDSCredentialByUsername: %v", err)
-	}
+	require.NoError(t, err, "GetOPDSCredentialByUsername")
 	if fetched2.UserID != user.ID {
 		t.Errorf("fetched2 UserID = %q, want %q", fetched2.UserID, user.ID)
 	}
@@ -61,14 +55,10 @@ func TestOPDSCredential_Upsert_UpdatesExisting(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.UpsertOPDSCredential(ctx, user.ID, "bob", "hash1")
-	if err != nil {
-		t.Fatalf("first upsert: %v", err)
-	}
+	require.NoError(t, err, "first upsert")
 
 	updated, err := d.UpsertOPDSCredential(ctx, user.ID, "bob2", "hash2")
-	if err != nil {
-		t.Fatalf("second upsert: %v", err)
-	}
+	require.NoError(t, err, "second upsert")
 	if updated.Username != "bob2" {
 		t.Errorf("updated Username = %q, want %q", updated.Username, "bob2")
 	}
@@ -84,9 +74,7 @@ func TestOPDSCredential_UsernameConflict(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.UpsertOPDSCredential(ctx, user1.ID, "shared", "hash1")
-	if err != nil {
-		t.Fatalf("first upsert: %v", err)
-	}
+	require.NoError(t, err, "first upsert")
 
 	_, err = d.UpsertOPDSCredential(ctx, user2.ID, "shared", "hash2")
 	if err != ErrOPDSUsernameExists {
@@ -120,12 +108,10 @@ func TestOPDSCredential_Delete(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.UpsertOPDSCredential(ctx, user.ID, "delme", "hash")
-	if err != nil {
-		t.Fatalf("upsert: %v", err)
-	}
+	require.NoError(t, err, "upsert")
 
 	if err := d.DeleteOPDSCredential(ctx, user.ID); err != nil {
-		t.Fatalf("DeleteOPDSCredential: %v", err)
+		require.NoError(t, err, "DeleteOPDSCredential")
 	}
 
 	_, err = d.GetOPDSCredentialByUserID(ctx, user.ID)

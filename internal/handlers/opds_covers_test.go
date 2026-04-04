@@ -10,6 +10,8 @@ import (
 
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
+
+	"github.com/stretchr/testify/require"
 )
 
 // --- Cover image MIME type ---
@@ -45,7 +47,7 @@ func TestCoverImageInFeed(t *testing.T) {
 
 	coverURL := "https://example.com/cover.png"
 	if _, err := h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
@@ -53,16 +55,16 @@ func TestCoverImageInFeed(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 1 {
-		t.Fatalf("entries = %d, want 1", len(feed.Entries))
+		require.Failf(t, "failed", "entries = %d, want 1", len(feed.Entries))
 	}
 	imgLink := findLink(feed.Entries[0].Links, opdspkg.RelImage)
 	if imgLink == nil {
-		t.Fatal("missing image link")
+		require.Fail(t, "missing image link")
 	}
 	if imgLink.Type != "image/png" {
 		t.Errorf("image type = %q, want %q", imgLink.Type, "image/png")
@@ -76,25 +78,23 @@ func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
 	pngBytes := testutils.TinyPNG()
 	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
 	book, err := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 1 {
-		t.Fatalf("entries = %d, want 1", len(feed.Entries))
+		require.Failf(t, "failed", "entries = %d, want 1", len(feed.Entries))
 	}
 	imgLink := findLink(feed.Entries[0].Links, opdspkg.RelImage)
 	if imgLink == nil {
-		t.Fatal("missing image link")
+		require.Fail(t, "missing image link")
 	}
 	wantHref := "http://example.com/opds/covers/" + book.ID
 	if imgLink.Href != wantHref {
@@ -112,16 +112,14 @@ func TestServeCover_DataURL(t *testing.T) {
 	pngBytes := testutils.TinyPNG()
 	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
 	book, err := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "image/") {
 		t.Errorf("content-type = %q, want image/*", ct)
@@ -146,9 +144,7 @@ func TestServeCover_MissingCover(t *testing.T) {
 			ctx := t.Context()
 
 			book, err := h.DB.CreateBook(ctx, "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, tc.cover)
-			if err != nil {
-				t.Fatalf("create book: %v", err)
-			}
+			require.NoError(t, err, "create book")
 
 			r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
 			w := httptest.NewRecorder()
@@ -167,9 +163,7 @@ func TestServeCover_ExternalURL(t *testing.T) {
 
 	coverURL := "https://example.com/cover.jpg"
 	book, err := h.DB.CreateBook(ctx, "External Cover", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
 	w := httptest.NewRecorder()
@@ -187,7 +181,7 @@ func TestServeCover_ExternalURL(t *testing.T) {
 func TestServeCover_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
 	if err := h.DB.Close(); err != nil {
-		t.Fatalf("close db: %v", err)
+		require.NoError(t, err, "close db")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/covers/someid", nil)

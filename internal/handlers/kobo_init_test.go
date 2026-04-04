@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestHandleInit_DeviceAuthKey verifies that HandleInit response includes
@@ -23,15 +25,15 @@ func TestHandleInit_DeviceAuthKey(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var resp map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode: %v", err)
+		require.NoError(t, err, "decode")
 	}
 	resources, ok := resp["Resources"].(map[string]any)
 	if !ok {
-		t.Fatal("expected Resources object in response")
+		require.Fail(t, "expected Resources object in response")
 	}
 
 	// device_auth URL should contain the token value to allow per-device routing.
@@ -57,7 +59,7 @@ func TestHandleInit_ImageHostKey(t *testing.T) {
 
 	var resp map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode: %v", err)
+		require.NoError(t, err, "decode")
 	}
 	resources, _ := resp["Resources"].(map[string]any)
 	imageHost, _ := resources["image_host"].(string)
@@ -85,7 +87,7 @@ func TestHandleInit_LibrarySyncURL(t *testing.T) {
 
 	var resp map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode: %v", err)
+		require.NoError(t, err, "decode")
 	}
 	resources, _ := resp["Resources"].(map[string]any)
 	librarySync, _ := resources["library_sync"].(string)
@@ -110,7 +112,7 @@ func TestHandleInit_ConfigurationDataKey(t *testing.T) {
 
 	var resp map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode: %v", err)
+		require.NoError(t, err, "decode")
 	}
 	resources, _ := resp["Resources"].(map[string]any)
 
@@ -138,12 +140,12 @@ func TestHandleInit_BlackstoneHeaderKey(t *testing.T) {
 
 	var resp map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode: %v", err)
+		require.NoError(t, err, "decode")
 	}
 	resources, _ := resp["Resources"].(map[string]any)
 	blackstone, ok := resources["blackstone_header"].(map[string]any)
 	if !ok {
-		t.Fatal("expected blackstone_header to be an object in Resources")
+		require.Fail(t, "expected blackstone_header to be an object in Resources")
 	}
 	if blackstone["key"] == nil || blackstone["value"] == nil {
 		t.Error("expected key and value in blackstone_header")

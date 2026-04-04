@@ -4,25 +4,23 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewJWTManager_WithSecret(t *testing.T) {
 	jm, err := NewJWTManager("mysecret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() unexpected error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() unexpected error")
 	if jm == nil {
-		t.Fatal("NewJWTManager() returned nil")
+		require.Fail(t, "NewJWTManager() returned nil")
 	}
 }
 
 func TestNewJWTManager_RandomSecret(t *testing.T) {
 	jm, err := NewJWTManager("", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() with empty secret unexpected error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() with empty secret unexpected error")
 	if jm == nil {
-		t.Fatal("NewJWTManager() returned nil")
+		require.Fail(t, "NewJWTManager() returned nil")
 	}
 	if len(jm.secret) != 32 {
 		t.Errorf("expected 32-byte random secret, got %d bytes", len(jm.secret))
@@ -31,23 +29,17 @@ func TestNewJWTManager_RandomSecret(t *testing.T) {
 
 func TestCreateAndValidateToken(t *testing.T) {
 	jm, err := NewJWTManager("testsecret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 
 	userID := "user-123"
 	token, err := jm.CreateToken(t.Context(), userID)
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 	if token == "" {
-		t.Fatal("CreateToken() returned empty token")
+		require.Fail(t, "CreateToken() returned empty token")
 	}
 
 	claims, err := jm.ValidateToken(t.Context(), token)
-	if err != nil {
-		t.Fatalf("ValidateToken() error: %v", err)
-	}
+	require.NoError(t, err, "ValidateToken() error")
 	if claims.UserID != userID {
 		t.Errorf("ValidateToken() UserID = %q, want %q", claims.UserID, userID)
 	}
@@ -55,9 +47,7 @@ func TestCreateAndValidateToken(t *testing.T) {
 
 func TestValidateToken_InvalidToken(t *testing.T) {
 	jm, err := NewJWTManager("testsecret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 
 	_, err = jm.ValidateToken(t.Context(), "not-a-valid-token")
 	if !errors.Is(err, ErrInvalidToken) {
@@ -68,14 +58,10 @@ func TestValidateToken_InvalidToken(t *testing.T) {
 func TestValidateToken_ExpiredToken(t *testing.T) {
 	// Create manager with very short TTL
 	jm, err := NewJWTManager("testsecret", -time.Second)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 
 	token, err := jm.CreateToken(t.Context(), "user-123")
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 
 	_, err = jm.ValidateToken(t.Context(), token)
 	if !errors.Is(err, ErrExpiredToken) {
@@ -85,18 +71,12 @@ func TestValidateToken_ExpiredToken(t *testing.T) {
 
 func TestValidateToken_WrongSecret(t *testing.T) {
 	jm1, err := NewJWTManager("secret1", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	jm2, err := NewJWTManager("secret2", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 
 	token, err := jm1.CreateToken(t.Context(), "user-123")
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 
 	_, err = jm2.ValidateToken(t.Context(), token)
 	if !errors.Is(err, ErrInvalidToken) {
@@ -106,9 +86,7 @@ func TestValidateToken_WrongSecret(t *testing.T) {
 
 func TestValidateToken_Empty(t *testing.T) {
 	jm, err := NewJWTManager("testsecret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	_, err = jm.ValidateToken(t.Context(), "")
 	if !errors.Is(err, ErrInvalidToken) {
 		t.Errorf("ValidateToken() with empty token: got %v, want ErrInvalidToken", err)

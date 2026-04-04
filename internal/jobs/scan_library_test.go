@@ -6,6 +6,8 @@ import (
 	"errors"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // genericMockEnqueuer records enqueued job names and raw payloads.
@@ -42,15 +44,13 @@ func TestScanLibraryHandler(t *testing.T) {
 		LibraryID: "lib1",
 		Paths:     []string{"/books/fiction", "/books/scifi"},
 	})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
+		require.NoError(t, err, "handler")
 	}
 
 	if got := len(enq.jobs); got != 2 {
-		t.Fatalf("expected 2 enqueued jobs, got %d", got)
+		require.Failf(t, "failed", "expected 2 enqueued jobs, got %d", got)
 	}
 	for i, want := range []string{"/books/fiction", "/books/scifi"} {
 		if enq.jobs[i].Name != JobScanPath {
@@ -58,7 +58,7 @@ func TestScanLibraryHandler(t *testing.T) {
 		}
 		var p ScanPathPayload
 		if err := json.Unmarshal(enq.jobs[i].Payload, &p); err != nil {
-			t.Fatalf("unmarshal job[%d]: %v", i, err)
+			require.NoError(t, err, "unmarshal job[%d]", i)
 		}
 		if p.Path != want {
 			t.Errorf("job[%d] path = %q, want %q", i, p.Path, want)
@@ -71,11 +71,9 @@ func TestScanLibraryHandler_EmptyPaths(t *testing.T) {
 	handler := NewScanLibraryHandler(enq)
 
 	payload, err := json.Marshal(ScanLibraryPayload{LibraryID: "lib1"})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
+		require.NoError(t, err, "handler")
 	}
 
 	if len(enq.jobs) != 0 {
@@ -91,11 +89,9 @@ func TestScanLibraryHandler_EnqueueError(t *testing.T) {
 		LibraryID: "lib1",
 		Paths:     []string{"/books/fiction", "/books/scifi"},
 	})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("handler should not fail on enqueue errors: %v", err)
+		require.NoError(t, err, "handler should not fail on enqueue errors")
 	}
 
 	if len(enq.jobs) != 0 {
@@ -108,11 +104,9 @@ func TestScanLibraryHandler_MissingLibraryID(t *testing.T) {
 	handler := NewScanLibraryHandler(enq)
 
 	payload, err := json.Marshal(ScanLibraryPayload{Paths: []string{"/books/fiction"}})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 	if err := handler(t.Context(), payload); err == nil {
-		t.Fatal("expected error when library_id is missing")
+		require.Fail(t, "expected error when library_id is missing")
 	}
 }
 
@@ -121,6 +115,6 @@ func TestScanLibraryHandler_InvalidPayload(t *testing.T) {
 	handler := NewScanLibraryHandler(enq)
 
 	if err := handler(t.Context(), []byte("not json")); err == nil {
-		t.Fatal("expected error for invalid payload")
+		require.Fail(t, "expected error for invalid payload")
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestReorganizeFile_MovesToAuthorTitle(t *testing.T) {
@@ -12,13 +14,11 @@ func TestReorganizeFile_MovesToAuthorTitle(t *testing.T) {
 	// Create a flat file in root.
 	srcPath := filepath.Join(root, "test.epub")
 	if err := os.WriteFile(srcPath, []byte("epub content"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		require.NoError(t, err, "write file")
 	}
 
 	newPath, err := ReorganizeFile(t.Context(), srcPath, root, "Jane Austen", "Pride and Prejudice")
-	if err != nil {
-		t.Fatalf("reorganize: %v", err)
-	}
+	require.NoError(t, err, "reorganize")
 
 	expected := filepath.Join(root, "Jane Austen", "Pride and Prejudice", "test.epub")
 	if newPath != expected {
@@ -27,9 +27,7 @@ func TestReorganizeFile_MovesToAuthorTitle(t *testing.T) {
 
 	// Verify file exists at new location.
 	content, err := os.ReadFile(newPath)
-	if err != nil {
-		t.Fatalf("read new file: %v", err)
-	}
+	require.NoError(t, err, "read new file")
 	if string(content) != "epub content" {
 		t.Errorf("content mismatch: %q", string(content))
 	}
@@ -44,17 +42,15 @@ func TestReorganizeFile_AlreadyInPlace(t *testing.T) {
 	root := t.TempDir()
 	targetDir := filepath.Join(root, "Jane Austen", "Pride and Prejudice")
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+		require.NoError(t, err, "mkdir")
 	}
 	filePath := filepath.Join(targetDir, "book.epub")
 	if err := os.WriteFile(filePath, []byte("content"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		require.NoError(t, err, "write file")
 	}
 
 	newPath, err := ReorganizeFile(t.Context(), filePath, root, "Jane Austen", "Pride and Prejudice")
-	if err != nil {
-		t.Fatalf("reorganize: %v", err)
-	}
+	require.NoError(t, err, "reorganize")
 	if newPath != filePath {
 		t.Errorf("expected same path %q, got %q", filePath, newPath)
 	}
@@ -64,21 +60,17 @@ func TestReorganizeFile_EmptyAuthorOrTitle(t *testing.T) {
 	root := t.TempDir()
 	filePath := filepath.Join(root, "book.epub")
 	if err := os.WriteFile(filePath, []byte("content"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		require.NoError(t, err, "write file")
 	}
 
 	newPath, err := ReorganizeFile(t.Context(), filePath, root, "", "Title")
-	if err != nil {
-		t.Fatalf("reorganize: %v", err)
-	}
+	require.NoError(t, err, "reorganize")
 	if newPath != filePath {
 		t.Errorf("expected unchanged path for empty author")
 	}
 
 	newPath, err = ReorganizeFile(t.Context(), filePath, root, "Author", "")
-	if err != nil {
-		t.Fatalf("reorganize: %v", err)
-	}
+	require.NoError(t, err, "reorganize")
 	if newPath != filePath {
 		t.Errorf("expected unchanged path for empty title")
 	}
@@ -90,17 +82,15 @@ func TestReorganizeFile_CleansEmptySourceDirs(t *testing.T) {
 	// Create file in a nested dir that should be cleaned up after move.
 	srcDir := filepath.Join(root, "OldAuthor", "OldTitle")
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+		require.NoError(t, err, "mkdir")
 	}
 	srcPath := filepath.Join(srcDir, "book.epub")
 	if err := os.WriteFile(srcPath, []byte("content"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		require.NoError(t, err, "write file")
 	}
 
 	_, err := ReorganizeFile(t.Context(), srcPath, root, "NewAuthor", "NewTitle")
-	if err != nil {
-		t.Fatalf("reorganize: %v", err)
-	}
+	require.NoError(t, err, "reorganize")
 
 	// Both OldTitle/ and OldAuthor/ should be removed (empty).
 	if _, err := os.Stat(filepath.Join(root, "OldAuthor")); !os.IsNotExist(err) {
@@ -113,13 +103,11 @@ func TestReorganizeFileFlat_MovesToAuthor(t *testing.T) {
 
 	srcPath := filepath.Join(root, "test.epub")
 	if err := os.WriteFile(srcPath, []byte("epub content"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		require.NoError(t, err, "write file")
 	}
 
 	newPath, err := ReorganizeFileFlat(t.Context(), srcPath, root, "Jane Austen")
-	if err != nil {
-		t.Fatalf("reorganize flat: %v", err)
-	}
+	require.NoError(t, err, "reorganize flat")
 
 	expected := filepath.Join(root, "Jane Austen", "test.epub")
 	if newPath != expected {
@@ -127,9 +115,7 @@ func TestReorganizeFileFlat_MovesToAuthor(t *testing.T) {
 	}
 
 	content, err := os.ReadFile(newPath)
-	if err != nil {
-		t.Fatalf("read new file: %v", err)
-	}
+	require.NoError(t, err, "read new file")
 	if string(content) != "epub content" {
 		t.Errorf("content mismatch: %q", string(content))
 	}
@@ -143,17 +129,15 @@ func TestReorganizeFileFlat_AlreadyInPlace(t *testing.T) {
 	root := t.TempDir()
 	targetDir := filepath.Join(root, "Jane Austen")
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+		require.NoError(t, err, "mkdir")
 	}
 	filePath := filepath.Join(targetDir, "book.epub")
 	if err := os.WriteFile(filePath, []byte("content"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		require.NoError(t, err, "write file")
 	}
 
 	newPath, err := ReorganizeFileFlat(t.Context(), filePath, root, "Jane Austen")
-	if err != nil {
-		t.Fatalf("reorganize flat: %v", err)
-	}
+	require.NoError(t, err, "reorganize flat")
 	if newPath != filePath {
 		t.Errorf("expected same path %q, got %q", filePath, newPath)
 	}
@@ -163,13 +147,11 @@ func TestReorganizeFileFlat_EmptyAuthor(t *testing.T) {
 	root := t.TempDir()
 	filePath := filepath.Join(root, "book.epub")
 	if err := os.WriteFile(filePath, []byte("content"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		require.NoError(t, err, "write file")
 	}
 
 	newPath, err := ReorganizeFileFlat(t.Context(), filePath, root, "")
-	if err != nil {
-		t.Fatalf("reorganize flat: %v", err)
-	}
+	require.NoError(t, err, "reorganize flat")
 	if newPath != filePath {
 		t.Errorf("expected unchanged path for empty author")
 	}
@@ -180,17 +162,15 @@ func TestReorganizeFileFlat_CleansEmptySourceDirs(t *testing.T) {
 
 	srcDir := filepath.Join(root, "OldAuthor", "OldTitle")
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+		require.NoError(t, err, "mkdir")
 	}
 	srcPath := filepath.Join(srcDir, "book.epub")
 	if err := os.WriteFile(srcPath, []byte("content"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		require.NoError(t, err, "write file")
 	}
 
 	_, err := ReorganizeFileFlat(t.Context(), srcPath, root, "NewAuthor")
-	if err != nil {
-		t.Fatalf("reorganize flat: %v", err)
-	}
+	require.NoError(t, err, "reorganize flat")
 
 	if _, err := os.Stat(filepath.Join(root, "OldAuthor")); !os.IsNotExist(err) {
 		t.Errorf("expected OldAuthor dir to be cleaned up")
@@ -214,25 +194,23 @@ func TestReorganizeFileFlat_TargetExists(t *testing.T) {
 	root := t.TempDir()
 	authorDir := filepath.Join(root, "Jane Austen")
 	if err := os.MkdirAll(authorDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+		require.NoError(t, err, "mkdir")
 	}
 
 	// Create the target file first.
 	existingPath := filepath.Join(authorDir, "book.epub")
 	if err := os.WriteFile(existingPath, []byte("existing"), 0o644); err != nil {
-		t.Fatalf("write existing: %v", err)
+		require.NoError(t, err, "write existing")
 	}
 
 	// Create source file with the same name at root.
 	srcPath := filepath.Join(root, "book.epub")
 	if err := os.WriteFile(srcPath, []byte("new content"), 0o644); err != nil {
-		t.Fatalf("write source: %v", err)
+		require.NoError(t, err, "write source")
 	}
 
 	_, err := ReorganizeFileFlat(t.Context(), srcPath, root, "Jane Austen")
-	if err == nil {
-		t.Fatal("expected error when target file already exists")
-	}
+	require.Error(t, err, "expected error when target file already exists")
 
 	// Original file should still exist.
 	if _, err := os.Stat(srcPath); err != nil {
@@ -244,23 +222,21 @@ func TestReorganizeFile_TargetExists(t *testing.T) {
 	root := t.TempDir()
 	targetDir := filepath.Join(root, "Author", "Title")
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+		require.NoError(t, err, "mkdir")
 	}
 
 	existingPath := filepath.Join(targetDir, "book.epub")
 	if err := os.WriteFile(existingPath, []byte("existing"), 0o644); err != nil {
-		t.Fatalf("write existing: %v", err)
+		require.NoError(t, err, "write existing")
 	}
 
 	srcPath := filepath.Join(root, "book.epub")
 	if err := os.WriteFile(srcPath, []byte("new content"), 0o644); err != nil {
-		t.Fatalf("write source: %v", err)
+		require.NoError(t, err, "write source")
 	}
 
 	_, err := ReorganizeFile(t.Context(), srcPath, root, "Author", "Title")
-	if err == nil {
-		t.Fatal("expected error when target file already exists")
-	}
+	require.Error(t, err, "expected error when target file already exists")
 
 	if _, err := os.Stat(srcPath); err != nil {
 		t.Errorf("expected original file to still exist: %v", err)
@@ -271,14 +247,12 @@ func TestReorganizeFileFlat_SanitizedAuthorEmpty(t *testing.T) {
 	root := t.TempDir()
 	srcPath := filepath.Join(root, "book.epub")
 	if err := os.WriteFile(srcPath, []byte("content"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		require.NoError(t, err, "write file")
 	}
 
 	// Author that sanitizes to empty (only dots and special chars).
 	newPath, err := ReorganizeFileFlat(t.Context(), srcPath, root, "...")
-	if err != nil {
-		t.Fatalf("reorganize flat: %v", err)
-	}
+	require.NoError(t, err, "reorganize flat")
 	if newPath != srcPath {
 		t.Errorf("expected unchanged path for sanitized-to-empty author, got %q", newPath)
 	}
@@ -288,23 +262,19 @@ func TestReorganizeFile_SanitizedFieldsEmpty(t *testing.T) {
 	root := t.TempDir()
 	srcPath := filepath.Join(root, "book.epub")
 	if err := os.WriteFile(srcPath, []byte("content"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
+		require.NoError(t, err, "write file")
 	}
 
 	// Author sanitizes to empty.
 	newPath, err := ReorganizeFile(t.Context(), srcPath, root, "...", "Title")
-	if err != nil {
-		t.Fatalf("reorganize: %v", err)
-	}
+	require.NoError(t, err, "reorganize")
 	if newPath != srcPath {
 		t.Errorf("expected unchanged path for sanitized-to-empty author")
 	}
 
 	// Title sanitizes to empty.
 	newPath, err = ReorganizeFile(t.Context(), srcPath, root, "Author", "...")
-	if err != nil {
-		t.Fatalf("reorganize: %v", err)
-	}
+	require.NoError(t, err, "reorganize")
 	if newPath != srcPath {
 		t.Errorf("expected unchanged path for sanitized-to-empty title")
 	}

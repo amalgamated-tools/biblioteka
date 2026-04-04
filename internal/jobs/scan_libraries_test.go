@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mockLibraryLister records calls to ListLibraries and returns a preset list.
@@ -47,12 +49,12 @@ func TestScanLibrariesHandler(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	if err := handler(t.Context(), nil); err != nil {
-		t.Fatalf("handler: %v", err)
+		require.NoError(t, err, "handler")
 	}
 
 	// Expect 2 scan:library jobs (lib1 and lib2; lib3 is not monitored)
 	if got := len(enq.jobs); got != 2 {
-		t.Fatalf("expected 2 enqueued jobs, got %d", got)
+		require.Failf(t, "failed", "expected 2 enqueued jobs, got %d", got)
 	}
 
 	wantJobs := map[string][]string{
@@ -89,7 +91,7 @@ func TestScanLibrariesHandler_NoMonitoredLibraries(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	if err := handler(t.Context(), nil); err != nil {
-		t.Fatalf("handler: %v", err)
+		require.NoError(t, err, "handler")
 	}
 
 	if len(enq.jobs) != 0 {
@@ -103,7 +105,7 @@ func TestScanLibrariesHandler_EmptyLibraryList(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	if err := handler(t.Context(), nil); err != nil {
-		t.Fatalf("handler: %v", err)
+		require.NoError(t, err, "handler")
 	}
 
 	if len(enq.jobs) != 0 {
@@ -117,7 +119,7 @@ func TestScanLibrariesHandler_ListError(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	if err := handler(t.Context(), nil); err == nil {
-		t.Fatal("expected error when ListLibraries fails")
+		require.Fail(t, "expected error when ListLibraries fails")
 	}
 }
 
@@ -142,7 +144,7 @@ func TestScanLibrariesHandler_InvalidPaths(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	if err := handler(t.Context(), nil); err != nil {
-		t.Fatalf("handler should not fail on one bad library: %v", err)
+		require.NoError(t, err, "handler should not fail on one bad library")
 	}
 
 	// Only the good library should produce a job
@@ -167,6 +169,6 @@ func TestScanLibrariesHandler_EnqueueError(t *testing.T) {
 	handler := NewScanLibrariesHandler(lister, enq)
 	// Enqueue errors should be logged but not cause the handler to fail
 	if err := handler(t.Context(), nil); err != nil {
-		t.Fatalf("handler should not fail on enqueue errors: %v", err)
+		require.NoError(t, err, "handler should not fail on enqueue errors")
 	}
 }

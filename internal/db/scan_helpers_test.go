@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // --- fakes ---------------------------------------------------------------
@@ -38,9 +40,7 @@ func (f *fakeRow) Scan(dest ...any) error {
 func memDB(t *testing.T) *sql.DB {
 	t.Helper()
 	d, err := sql.Open("sqlite", ":memory:")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	t.Cleanup(func() { d.Close() })
 	return d
 }
@@ -60,11 +60,9 @@ func TestScanRow_HappyPath(t *testing.T) {
 	row := &fakeRow{vals: []any{"Alice", 30}}
 
 	got, err := scanRow(row, fillSample)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if got.Name != "Alice" || got.Age != 30 {
-		t.Fatalf("got %+v, want {Name:Alice Age:30}", *got)
+		require.Failf(t, "failed", "got %+v, want {Name:Alice Age:30}", *got)
 	}
 }
 
@@ -73,11 +71,9 @@ func TestScanRow_PropagatesScanError(t *testing.T) {
 	row := &fakeRow{err: scanErr}
 
 	got, err := scanRow(row, fillSample)
-	if !errors.Is(err, scanErr) {
-		t.Fatalf("expected %v, got %v", scanErr, err)
-	}
+	require.ErrorIs(t, err, scanErr)
 	if got != nil {
-		t.Fatalf("expected nil result on error, got %+v", *got)
+		require.Failf(t, "failed", "expected nil result on error, got %+v", *got)
 	}
 }
 
@@ -91,25 +87,17 @@ func scanSample(row interface{ Scan(...any) error }) (*sample, error) {
 func TestCollectRows_HappyPath(t *testing.T) {
 	d := memDB(t)
 	_, err := d.Exec(`CREATE TABLE t (name TEXT, age INTEGER)`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	_, err = d.Exec(`INSERT INTO t VALUES ('Alice', 30), ('Bob', 25), ('Carol', 40)`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	rows, err := d.Query(`SELECT name, age FROM t ORDER BY age`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	items, err := collectRows(rows, scanSample)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if len(items) != 3 {
-		t.Fatalf("got %d items, want 3", len(items))
+		require.Failf(t, "failed", "got %d items, want 3", len(items))
 	}
 	want := []sample{{"Bob", 25}, {"Alice", 30}, {"Carol", 40}}
 	for i, w := range want {
@@ -122,21 +110,15 @@ func TestCollectRows_HappyPath(t *testing.T) {
 func TestCollectRows_EmptyResult(t *testing.T) {
 	d := memDB(t)
 	_, err := d.Exec(`CREATE TABLE t (name TEXT, age INTEGER)`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	rows, err := d.Query(`SELECT name, age FROM t`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	items, err := collectRows(rows, scanSample)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if items != nil {
-		t.Fatalf("expected nil slice for empty result, got %v", items)
+		require.Failf(t, "failed", "expected nil slice for empty result, got %v", items)
 	}
 }
 
@@ -146,18 +128,12 @@ func TestCollectRows_PropagatesMidIterationScanError(t *testing.T) {
 	// two destinations. The first row's Scan will fail with a column-count
 	// mismatch.
 	_, err := d.Exec(`CREATE TABLE t (name TEXT)`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	_, err = d.Exec(`INSERT INTO t VALUES ('Alice')`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	rows, err := d.Query(`SELECT name FROM t`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// scanBadDest asks for two fields from a one-column result set.
 	scanBadDest := func(row interface{ Scan(...any) error }) (*sample, error) {
@@ -165,54 +141,38 @@ func TestCollectRows_PropagatesMidIterationScanError(t *testing.T) {
 	}
 
 	items, err := collectRows(rows, scanBadDest)
-	if err == nil {
-		t.Fatalf("expected scan error, got nil with items: %+v", items)
-	}
+	require.Error(t, err, "expected scan error, got nil with items: %+v", items)
 }
 
 func TestCollectRows_AlwaysClosesRows(t *testing.T) {
 	d := memDB(t)
 	_, err := d.Exec(`CREATE TABLE t (name TEXT, age INTEGER)`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	_, err = d.Exec(`INSERT INTO t VALUES ('Alice', 30)`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	rows, err := d.Query(`SELECT name, age FROM t`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// Succeed — rows should be closed after collectRows returns.
 	_, err = collectRows(rows, scanSample)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 
 	// Calling rows.Next() after Close returns false.
 	if rows.Next() {
-		t.Fatal("rows.Next() returned true after collectRows; rows should be closed")
+		require.Fail(t, "rows.Next() returned true after collectRows; rows should be closed")
 	}
 }
 
 func TestCollectRows_ClosesRowsOnError(t *testing.T) {
 	d := memDB(t)
 	_, err := d.Exec(`CREATE TABLE t (name TEXT)`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	_, err = d.Exec(`INSERT INTO t VALUES ('Alice')`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	rows, err := d.Query(`SELECT name FROM t`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	scanBadDest := func(row interface{ Scan(...any) error }) (*sample, error) {
 		return scanRow(row, fillSample)
@@ -222,7 +182,7 @@ func TestCollectRows_ClosesRowsOnError(t *testing.T) {
 
 	// Even after an error, rows should be closed.
 	if rows.Next() {
-		t.Fatal("rows.Next() returned true after failed collectRows; rows should be closed")
+		require.Fail(t, "rows.Next() returned true after failed collectRows; rows should be closed")
 	}
 }
 
@@ -234,21 +194,17 @@ func TestCollectRows_PropagatesRowsErr(t *testing.T) {
 	// result sets entirely, we insert enough rows to exceed the buffer.
 	d := memDB(t)
 	_, err := d.Exec(`CREATE TABLE t (name TEXT, age INTEGER)`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	// Insert a large batch to prevent the driver from buffering everything.
 	for range 10000 {
 		if _, err = d.Exec(`INSERT INTO t VALUES ('x', 1)`); err != nil {
-			t.Fatal(err)
+			require.NoError(t, err)
 		}
 	}
 
 	ctx, cancel := context.WithCancel(t.Context())
 	rows, err := d.QueryContext(ctx, `SELECT name, age FROM t`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// Cancel the context so rows.Err() reports context.Canceled.
 	cancel()
@@ -260,7 +216,5 @@ func TestCollectRows_PropagatesRowsErr(t *testing.T) {
 	if err == nil {
 		t.Skip("SQLite driver buffered all rows; context cancel did not propagate to rows.Err()")
 	}
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("expected context.Canceled, got %v", err)
-	}
+	require.ErrorIs(t, err, context.Canceled)
 }

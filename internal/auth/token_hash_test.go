@@ -2,6 +2,8 @@ package auth
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestHashHighEntropyTokenWrappers(t *testing.T) {
@@ -35,13 +37,13 @@ func TestHashHighEntropyTokenWrappers(t *testing.T) {
 			t.Parallel()
 
 			if got := hashHighEntropyToken(tt.token); got != tt.want {
-				t.Fatalf("hashHighEntropyToken(%q) = %q, want %q", tt.token, got, tt.want)
+				require.Failf(t, "failed", "hashHighEntropyToken(%q) = %q, want %q", tt.token, got, tt.want)
 			}
 			if got := HashAPIKey(tt.token); got != tt.want {
-				t.Fatalf("HashAPIKey(%q) = %q, want %q", tt.token, got, tt.want)
+				require.Failf(t, "failed", "HashAPIKey(%q) = %q, want %q", tt.token, got, tt.want)
 			}
 			if got := HashKoboToken(tt.token); got != tt.want {
-				t.Fatalf("HashKoboToken(%q) = %q, want %q", tt.token, got, tt.want)
+				require.Failf(t, "failed", "HashKoboToken(%q) = %q, want %q", tt.token, got, tt.want)
 			}
 		})
 	}

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestScanDirectory_EmptyPath verifies that an empty path is rejected.
@@ -14,9 +16,7 @@ func TestScanDirectory_EmptyPath(t *testing.T) {
 	t.Parallel()
 
 	err := ScanDirectory(context.Background(), &mockEnqueuer{}, ScanPathPayload{})
-	if err == nil {
-		t.Fatal("expected error for empty path")
-	}
+	require.Error(t, err, "expected error for empty path")
 }
 
 // TestScanDirectory_NonExistentPath verifies that a nonexistent path is rejected.
@@ -26,9 +26,7 @@ func TestScanDirectory_NonExistentPath(t *testing.T) {
 	err := ScanDirectory(context.Background(), &mockEnqueuer{}, ScanPathPayload{
 		Path: "/nonexistent/path/that/does/not/exist",
 	})
-	if err == nil {
-		t.Fatal("expected error for nonexistent path")
-	}
+	require.Error(t, err, "expected error for nonexistent path")
 }
 
 // TestScanDirectory_NotADirectory verifies that a regular file path is rejected.
@@ -36,14 +34,12 @@ func TestScanDirectory_NotADirectory(t *testing.T) {
 	t.Parallel()
 
 	f, err := os.CreateTemp(t.TempDir(), "test-*.txt")
-	if err != nil {
-		t.Fatalf("create temp file: %v", err)
-	}
+	require.NoError(t, err, "create temp file")
 	_ = f.Close()
 
 	scanErr := ScanDirectory(context.Background(), &mockEnqueuer{}, ScanPathPayload{Path: f.Name()})
 	if scanErr == nil {
-		t.Fatal("expected error for file path, not directory")
+		require.Fail(t, "expected error for file path, not directory")
 	}
 }
 
@@ -56,7 +52,7 @@ func TestScanDirectory_EmptyDirectory(t *testing.T) {
 	enqueuer := &mockEnqueuer{}
 
 	if err := ScanDirectory(context.Background(), enqueuer, ScanPathPayload{Path: dir}); err != nil {
-		t.Fatalf("ScanDirectory() unexpected error: %v", err)
+		require.NoError(t, err, "ScanDirectory() unexpected error")
 	}
 
 	enqueuer.mu.Lock()
@@ -82,18 +78,18 @@ func TestScanDirectory_SupportedExtensions(t *testing.T) {
 
 	for name := range supported {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte("data"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", name, err)
+			require.NoError(t, err, "write %s", name)
 		}
 	}
 	for _, name := range skipped {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte("data"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", name, err)
+			require.NoError(t, err, "write %s", name)
 		}
 	}
 
 	enqueuer := &mockEnqueuer{}
 	if err := ScanDirectory(context.Background(), enqueuer, ScanPathPayload{Path: dir}); err != nil {
-		t.Fatalf("ScanDirectory() unexpected error: %v", err)
+		require.NoError(t, err, "ScanDirectory() unexpected error")
 	}
 
 	enqueuer.mu.Lock()
@@ -125,13 +121,13 @@ func TestScanDirectory_CaseInsensitiveExtensions(t *testing.T) {
 	files := []string{"BOOK.EPUB", "Novel.Mobi", "Manual.PDF", "Kindle.AZW3"}
 	for _, name := range files {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte("data"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", name, err)
+			require.NoError(t, err, "write %s", name)
 		}
 	}
 
 	enqueuer := &mockEnqueuer{}
 	if err := ScanDirectory(context.Background(), enqueuer, ScanPathPayload{Path: dir}); err != nil {
-		t.Fatalf("ScanDirectory() unexpected error: %v", err)
+		require.NoError(t, err, "ScanDirectory() unexpected error")
 	}
 
 	enqueuer.mu.Lock()
@@ -151,7 +147,7 @@ func TestScanDirectory_RecursiveWalk(t *testing.T) {
 	dir := t.TempDir()
 	subdir := filepath.Join(dir, "Author", "Series")
 	if err := os.MkdirAll(subdir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
+		require.NoError(t, err, "mkdir")
 	}
 
 	files := []string{
@@ -161,13 +157,13 @@ func TestScanDirectory_RecursiveWalk(t *testing.T) {
 	}
 	for _, f := range files {
 		if err := os.WriteFile(f, []byte("data"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", f, err)
+			require.NoError(t, err, "write %s", f)
 		}
 	}
 
 	enqueuer := &mockEnqueuer{}
 	if err := ScanDirectory(context.Background(), enqueuer, ScanPathPayload{Path: dir}); err != nil {
-		t.Fatalf("ScanDirectory() unexpected error: %v", err)
+		require.NoError(t, err, "ScanDirectory() unexpected error")
 	}
 
 	enqueuer.mu.Lock()
@@ -187,15 +183,13 @@ func TestScanDirectory_EnqueueError(t *testing.T) {
 	dir := t.TempDir()
 	for _, name := range []string{"a.epub", "b.epub", "c.epub"} {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte("data"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", name, err)
+			require.NoError(t, err, "write %s", name)
 		}
 	}
 
 	failEnqueuer := &errEnqueuer{err: errors.New("queue full")}
 	err := ScanDirectory(context.Background(), failEnqueuer, ScanPathPayload{Path: dir})
-	if err != nil {
-		t.Fatalf("ScanDirectory() unexpected error when enqueue fails: %v", err)
-	}
+	require.NoError(t, err, "ScanDirectory() unexpected error when enqueue fails")
 }
 
 // TestScanDirectory_PayloadFields verifies that the enqueued job payload
@@ -206,7 +200,7 @@ func TestScanDirectory_PayloadFields(t *testing.T) {
 	dir := t.TempDir()
 	bookPath := filepath.Join(dir, "my-novel.epub")
 	if err := os.WriteFile(bookPath, []byte("epub content"), 0o644); err != nil {
-		t.Fatalf("write: %v", err)
+		require.NoError(t, err, "write")
 	}
 
 	enqueuer := &mockEnqueuer{}
@@ -214,7 +208,7 @@ func TestScanDirectory_PayloadFields(t *testing.T) {
 		Path:      dir,
 		LibraryID: "lib-123",
 	}); err != nil {
-		t.Fatalf("ScanDirectory() error: %v", err)
+		require.NoError(t, err, "ScanDirectory() error")
 	}
 
 	enqueuer.mu.Lock()
@@ -222,7 +216,7 @@ func TestScanDirectory_PayloadFields(t *testing.T) {
 	enqueuer.mu.Unlock()
 
 	if len(jobs) != 1 {
-		t.Fatalf("expected 1 job, got %d", len(jobs))
+		require.Failf(t, "failed", "expected 1 job, got %d", len(jobs))
 	}
 	p := jobs[0].Payload
 	if p.FileName != "my-novel.epub" {
@@ -249,10 +243,10 @@ func TestScanDirectory_ContextCancellation(t *testing.T) {
 	for i := range 10 {
 		name := filepath.Join(dir, fmt.Sprintf("sub%d", i), "book.epub")
 		if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
-			t.Fatalf("mkdir: %v", err)
+			require.NoError(t, err, "mkdir")
 		}
 		if err := os.WriteFile(name, []byte("data"), 0o644); err != nil {
-			t.Fatalf("write: %v", err)
+			require.NoError(t, err, "write")
 		}
 	}
 
@@ -260,12 +254,8 @@ func TestScanDirectory_ContextCancellation(t *testing.T) {
 	cancel() // cancel immediately
 
 	err := ScanDirectory(ctx, &mockEnqueuer{}, ScanPathPayload{Path: dir})
-	if err == nil {
-		t.Fatal("expected context cancellation error")
-	}
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("expected error to wrap context.Canceled, got %v", err)
-	}
+	require.Error(t, err, "expected context cancellation error")
+	require.ErrorIs(t, err, context.Canceled)
 }
 
 // errEnqueuer is an Enqueuer that always returns the configured error.
