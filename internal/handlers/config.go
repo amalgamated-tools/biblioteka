@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -24,26 +23,7 @@ const (
 )
 
 func isValidSMTPHostForStatus(host string) bool {
-	if host == "" {
-		return false
-	}
-
-	for _, r := range host {
-		if r <= 0x20 || r == 0x7f {
-			return false
-		}
-	}
-	if strings.ContainsAny(host, "[]") {
-		return false
-	}
-
-	if strings.Contains(host, ":") {
-		if ip := net.ParseIP(host); ip == nil {
-			return false
-		}
-	}
-
-	return true
+	return smtp.ValidateHost(host) == nil
 }
 
 // ConfigHandler holds dependencies for configuration endpoints.
