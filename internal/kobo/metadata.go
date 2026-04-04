@@ -12,7 +12,7 @@ import (
 type DownloadURL struct {
 	Format   string `json:"Format"`
 	Size     int64  `json:"Size"`
-	Url      string `json:"Url"`
+	URL      string `json:"Url"`
 	Platform string `json:"Platform"`
 }
 
