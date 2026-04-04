@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +12,7 @@ func setupAuthorHandler(t *testing.T) (*AuthorHandler, string) {
 	t.Helper()
 	d := newTestDB(t)
 	h := &AuthorHandler{DB: d}
-	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
+	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -76,7 +75,7 @@ func TestCreateAuthor_WhitespaceOnlyName(t *testing.T) {
 func TestUpdateAuthor_WhitespaceOnlyName(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author: %v", err)
 	}
@@ -115,10 +114,10 @@ func TestCreateAuthor_Duplicate(t *testing.T) {
 func TestListAuthors_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	if _, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil); err != nil {
 		t.Fatalf("create author: %v", err)
 	}
-	if _, err := h.DB.CreateAuthor(context.Background(), "Brandon Sanderson", nil, nil, nil, nil); err != nil {
+	if _, err := h.DB.CreateAuthor(t.Context(), "Brandon Sanderson", nil, nil, nil, nil); err != nil {
 		t.Fatalf("create author: %v", err)
 	}
 
@@ -144,7 +143,7 @@ func TestListAuthors_Handler(t *testing.T) {
 func TestGetAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author: %v", err)
 	}
@@ -177,7 +176,7 @@ func TestGetAuthor_NotFound(t *testing.T) {
 func TestDeleteAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
+	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("create author: %v", err)
 	}

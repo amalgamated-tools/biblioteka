@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"database/sql"
 	"testing"
 )
@@ -18,7 +17,7 @@ func createTestUserForOPDS(t *testing.T, d *DB, email string) *User {
 func TestOPDSCredential_UpsertAndGet(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUserForOPDS(t, d, "alice@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cred, err := d.UpsertOPDSCredential(ctx, user.ID, "alice", "hashval")
 	if err != nil {
@@ -59,7 +58,7 @@ func TestOPDSCredential_UpsertAndGet(t *testing.T) {
 func TestOPDSCredential_Upsert_UpdatesExisting(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUserForOPDS(t, d, "bob@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.UpsertOPDSCredential(ctx, user.ID, "bob", "hash1")
 	if err != nil {
@@ -82,7 +81,7 @@ func TestOPDSCredential_UsernameConflict(t *testing.T) {
 	d := newTestDB(t)
 	user1 := createTestUserForOPDS(t, d, "user1@example.com")
 	user2 := createTestUserForOPDS(t, d, "user2@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.UpsertOPDSCredential(ctx, user1.ID, "shared", "hash1")
 	if err != nil {
@@ -97,7 +96,7 @@ func TestOPDSCredential_UsernameConflict(t *testing.T) {
 
 func TestOPDSCredential_GetByUserID_NotFound(t *testing.T) {
 	d := newTestDB(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.GetOPDSCredentialByUserID(ctx, "nonexistent")
 	if err != sql.ErrNoRows {
@@ -107,7 +106,7 @@ func TestOPDSCredential_GetByUserID_NotFound(t *testing.T) {
 
 func TestOPDSCredential_GetByUsername_NotFound(t *testing.T) {
 	d := newTestDB(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.GetOPDSCredentialByUsername(ctx, "nobody")
 	if err != sql.ErrNoRows {
@@ -118,7 +117,7 @@ func TestOPDSCredential_GetByUsername_NotFound(t *testing.T) {
 func TestOPDSCredential_Delete(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUserForOPDS(t, d, "del@example.com")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := d.UpsertOPDSCredential(ctx, user.ID, "delme", "hash")
 	if err != nil {
@@ -137,7 +136,7 @@ func TestOPDSCredential_Delete(t *testing.T) {
 
 func TestOPDSCredential_Delete_NotFound(t *testing.T) {
 	d := newTestDB(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err := d.DeleteOPDSCredential(ctx, "nonexistent")
 	if err != sql.ErrNoRows {

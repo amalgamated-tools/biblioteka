@@ -1,7 +1,6 @@
 package jobs
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"os"
@@ -63,11 +62,11 @@ func TestProcessFileHandler(t *testing.T) {
 		t.Fatalf("marshal: %v", err)
 	}
 
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
-	books, err := database.ListBooks(context.Background())
+	books, err := database.ListBooks(t.Context())
 	if err != nil {
 		t.Fatalf("list books: %v", err)
 	}
@@ -78,7 +77,7 @@ func TestProcessFileHandler(t *testing.T) {
 		t.Errorf("expected title %q, got %q", "The Great Gatsby", books[0].Title)
 	}
 
-	files, err := database.ListBookFiles(context.Background(), books[0].ID)
+	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	if err != nil {
 		t.Fatalf("list book files: %v", err)
 	}
@@ -96,7 +95,7 @@ func TestProcessFileHandler(t *testing.T) {
 	}
 
 	// Verify author was created and associated with the book
-	authors, err := database.GetBookAuthors(context.Background(), books[0].ID)
+	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	if err != nil {
 		t.Fatalf("get book authors: %v", err)
 	}
@@ -145,11 +144,11 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 		t.Fatalf("marshal: %v", err)
 	}
 
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
-	books, err := database.ListBooks(context.Background())
+	books, err := database.ListBooks(t.Context())
 	if err != nil {
 		t.Fatalf("list books: %v", err)
 	}
@@ -178,7 +177,7 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 	}
 
 	// Verify author creation and association
-	authors, err := database.GetBookAuthors(context.Background(), book.ID)
+	authors, err := database.GetBookAuthors(t.Context(), book.ID)
 	if err != nil {
 		t.Fatalf("get book authors: %v", err)
 	}
@@ -203,7 +202,7 @@ func TestProcessFileHandler_EmptyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	err = handler(context.Background(), payload)
+	err = handler(t.Context(), payload)
 	if err == nil {
 		t.Fatal("expected error for empty path")
 	}
@@ -219,7 +218,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	handler := NewProcessFileHandler(database, extractor)
 
 	// Create a library to link the book to.
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["/books"]`, db.LibraryOrganizationBookPerFolder, true)
+	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["/books"]`, db.LibraryOrganizationBookPerFolder, true)
 	if err != nil {
 		t.Fatalf("create library: %v", err)
 	}
@@ -245,12 +244,12 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 		t.Fatalf("marshal: %v", err)
 	}
 
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
 	// Verify book was created.
-	books, err := database.ListBooks(context.Background())
+	books, err := database.ListBooks(t.Context())
 	if err != nil {
 		t.Fatalf("list books: %v", err)
 	}
@@ -259,7 +258,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	}
 
 	// Verify author was linked.
-	authors, err := database.GetBookAuthors(context.Background(), books[0].ID)
+	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	if err != nil {
 		t.Fatalf("get book authors: %v", err)
 	}
@@ -271,7 +270,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	}
 
 	// Verify book was added to library.
-	libBooks, err := database.ListBooksByLibrary(context.Background(), lib.ID)
+	libBooks, err := database.ListBooksByLibrary(t.Context(), lib.ID)
 	if err != nil {
 		t.Fatalf("list library books: %v", err)
 	}
@@ -309,11 +308,11 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 		t.Fatalf("marshal: %v", err)
 	}
 
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
-	books, err := database.ListBooks(context.Background())
+	books, err := database.ListBooks(t.Context())
 	if err != nil {
 		t.Fatalf("list books: %v", err)
 	}
@@ -322,7 +321,7 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 	}
 
 	// Verify series was linked.
-	seriesEntries, err := database.GetBookSeries(context.Background(), books[0].ID)
+	seriesEntries, err := database.GetBookSeries(t.Context(), books[0].ID)
 	if err != nil {
 		t.Fatalf("get book series: %v", err)
 	}
@@ -337,7 +336,7 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 	}
 
 	// Verify author was linked from directory.
-	authors, err := database.GetBookAuthors(context.Background(), books[0].ID)
+	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	if err != nil {
 		t.Fatalf("get book authors: %v", err)
 	}
@@ -372,16 +371,16 @@ func TestProcessFileHandler_DuplicateSkipped(t *testing.T) {
 	}
 
 	// Process once.
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("first handler call: %v", err)
 	}
 
 	// Process again — should be skipped (no error, no duplicate book).
-	if err := handler(context.Background(), payload); err != nil {
+	if err := handler(t.Context(), payload); err != nil {
 		t.Fatalf("second handler call: %v", err)
 	}
 
-	books, err := database.ListBooks(context.Background())
+	books, err := database.ListBooks(t.Context())
 	if err != nil {
 		t.Fatalf("list books: %v", err)
 	}

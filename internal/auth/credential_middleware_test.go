@@ -46,7 +46,7 @@ func TestLookupByUsername_Found(t *testing.T) {
 
 	lookup := lookupByUsername(getFn, extract)
 
-	userID, hash, err := lookup(context.Background(), "alice")
+	userID, hash, err := lookup(t.Context(), "alice")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestLookupByUsername_NotFound(t *testing.T) {
 
 	lookup := lookupByUsername(getFn, func(*result) (string, string) { return "", "" })
 
-	_, _, err := lookup(context.Background(), "unknown")
+	_, _, err := lookup(t.Context(), "unknown")
 	if err == nil {
 		t.Fatal("expected error for unknown user, got nil")
 	}

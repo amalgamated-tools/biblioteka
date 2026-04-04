@@ -59,7 +59,7 @@ func TestCredentialGetAdapter_Success(t *testing.T) {
 	}
 
 	adapted := credGetAdapter(fakeFn)
-	entity, err := adapted(context.Background(), "user-1")
+	entity, err := adapted(t.Context(), "user-1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestCredentialGetAdapter_Error(t *testing.T) {
 	}
 
 	adapted := credGetAdapter(fakeFn)
-	_, err := adapted(context.Background(), "user-1")
+	_, err := adapted(t.Context(), "user-1")
 	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
@@ -96,7 +96,7 @@ func TestCredentialUpsertAdapter_Success(t *testing.T) {
 	}
 
 	adapted := credUpsertAdapter(fakeFn)
-	entity, err := adapted(context.Background(), "user-1", "alice", "hash")
+	entity, err := adapted(t.Context(), "user-1", "alice", "hash")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestCredentialUpsertAdapter_Error(t *testing.T) {
 	}
 
 	adapted := credUpsertAdapter(fakeFn)
-	_, err := adapted(context.Background(), "user-1", "alice", "hash")
+	_, err := adapted(t.Context(), "user-1", "alice", "hash")
 	if !errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}

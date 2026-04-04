@@ -46,7 +46,7 @@ func TestScanLibrariesHandler(t *testing.T) {
 	}
 
 	handler := NewScanLibrariesHandler(lister, enq)
-	if err := handler(context.Background(), nil); err != nil {
+	if err := handler(t.Context(), nil); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
@@ -88,7 +88,7 @@ func TestScanLibrariesHandler_NoMonitoredLibraries(t *testing.T) {
 	}
 
 	handler := NewScanLibrariesHandler(lister, enq)
-	if err := handler(context.Background(), nil); err != nil {
+	if err := handler(t.Context(), nil); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
@@ -102,7 +102,7 @@ func TestScanLibrariesHandler_EmptyLibraryList(t *testing.T) {
 	lister := &mockLibraryLister{libraries: nil}
 
 	handler := NewScanLibrariesHandler(lister, enq)
-	if err := handler(context.Background(), nil); err != nil {
+	if err := handler(t.Context(), nil); err != nil {
 		t.Fatalf("handler: %v", err)
 	}
 
@@ -116,7 +116,7 @@ func TestScanLibrariesHandler_ListError(t *testing.T) {
 	lister := &mockLibraryLister{err: errors.New("db error")}
 
 	handler := NewScanLibrariesHandler(lister, enq)
-	if err := handler(context.Background(), nil); err == nil {
+	if err := handler(t.Context(), nil); err == nil {
 		t.Fatal("expected error when ListLibraries fails")
 	}
 }
@@ -141,7 +141,7 @@ func TestScanLibrariesHandler_InvalidPaths(t *testing.T) {
 	}
 
 	handler := NewScanLibrariesHandler(lister, enq)
-	if err := handler(context.Background(), nil); err != nil {
+	if err := handler(t.Context(), nil); err != nil {
 		t.Fatalf("handler should not fail on one bad library: %v", err)
 	}
 
@@ -166,7 +166,7 @@ func TestScanLibrariesHandler_EnqueueError(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	// Enqueue errors should be logged but not cause the handler to fail
-	if err := handler(context.Background(), nil); err != nil {
+	if err := handler(t.Context(), nil); err != nil {
 		t.Fatalf("handler should not fail on enqueue errors: %v", err)
 	}
 }

@@ -87,14 +87,14 @@ func TestRegister(t *testing.T) {
 	var gotPayload []byte
 	// ctx here is only used for the registration-time debug log.
 	// The handler receives the context from ProcessTask, not this one.
-	w.Register(context.Background(), "test:register", func(_ context.Context, payload []byte) error {
+	w.Register(t.Context(), "test:register", func(_ context.Context, payload []byte) error {
 		called = true
 		gotPayload = payload
 		return nil
 	})
 
 	task := asynq.NewTask("test:register", []byte(`{"hello":"world"}`))
-	if err := w.mux.ProcessTask(context.Background(), task); err != nil {
+	if err := w.mux.ProcessTask(t.Context(), task); err != nil {
 		t.Fatalf("ProcessTask: %v", err)
 	}
 
@@ -112,12 +112,12 @@ func TestRegister_HandlerError(t *testing.T) {
 	w := newTestWorker(t)
 
 	sentinel := errors.New("handler error")
-	w.Register(context.Background(), "test:fail", func(_ context.Context, _ []byte) error {
+	w.Register(t.Context(), "test:fail", func(_ context.Context, _ []byte) error {
 		return sentinel
 	})
 
 	task := asynq.NewTask("test:fail", nil)
-	err := w.mux.ProcessTask(context.Background(), task)
+	err := w.mux.ProcessTask(t.Context(), task)
 	if !errors.Is(err, sentinel) {
 		t.Errorf("ProcessTask returned %v, want %v", err, sentinel)
 	}
@@ -129,7 +129,7 @@ func TestRegister_NilPayload(t *testing.T) {
 	w := newTestWorker(t)
 
 	var called bool
-	w.Register(context.Background(), "test:nil-payload", func(_ context.Context, payload []byte) error {
+	w.Register(t.Context(), "test:nil-payload", func(_ context.Context, payload []byte) error {
 		called = true
 		if payload != nil && len(payload) != 0 {
 			t.Errorf("handler received payload %q, want nil or empty", payload)
@@ -138,7 +138,7 @@ func TestRegister_NilPayload(t *testing.T) {
 	})
 
 	task := asynq.NewTask("test:nil-payload", nil)
-	if err := w.mux.ProcessTask(context.Background(), task); err != nil {
+	if err := w.mux.ProcessTask(t.Context(), task); err != nil {
 		t.Fatalf("ProcessTask: %v", err)
 	}
 	if !called {
@@ -181,11 +181,11 @@ func TestRegisterSchedule_DistinctIDs(t *testing.T) {
 	w := newTestWorker(t)
 
 	var called1, called2 bool
-	w.Register(context.Background(), "test:multi-a", func(_ context.Context, _ []byte) error {
+	w.Register(t.Context(), "test:multi-a", func(_ context.Context, _ []byte) error {
 		called1 = true
 		return nil
 	})
-	w.Register(context.Background(), "test:multi-b", func(_ context.Context, _ []byte) error {
+	w.Register(t.Context(), "test:multi-b", func(_ context.Context, _ []byte) error {
 		called2 = true
 		return nil
 	})
@@ -203,10 +203,10 @@ func TestRegisterSchedule_DistinctIDs(t *testing.T) {
 	}
 
 	// Verify both handlers are actually wired up.
-	if err := w.mux.ProcessTask(context.Background(), asynq.NewTask("test:multi-a", nil)); err != nil {
+	if err := w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-a", nil)); err != nil {
 		t.Fatalf("ProcessTask for multi-a: %v", err)
 	}
-	if err := w.mux.ProcessTask(context.Background(), asynq.NewTask("test:multi-b", nil)); err != nil {
+	if err := w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-b", nil)); err != nil {
 		t.Fatalf("ProcessTask for multi-b: %v", err)
 	}
 	if !called1 {
@@ -246,7 +246,7 @@ func TestRegisterSchedule_NonMarshalablePayload(t *testing.T) {
 func TestEnqueue_NonMarshalablePayload(t *testing.T) {
 	w := newTestWorker(t)
 
-	_, err := w.Enqueue(context.Background(), "test:enqueue", make(chan int))
+	_, err := w.Enqueue(t.Context(), "test:enqueue", make(chan int))
 	if err == nil {
 		t.Fatal("expected error for non-marshalable payload, got nil")
 	}

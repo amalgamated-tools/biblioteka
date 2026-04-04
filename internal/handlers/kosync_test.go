@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,7 +15,7 @@ func setupKOSyncHandler(t *testing.T) (*KOSyncHandler, string) {
 	d := newTestDB(t)
 	h := &KOSyncHandler{DB: d}
 
-	user, err := d.CreateUser(context.Background(), "KOUser", "ko@example.com", "password1")
+	user, err := d.CreateUser(t.Context(), "KOUser", "ko@example.com", "password1")
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -226,11 +225,11 @@ func TestKOSyncCredentials_UsernameConflict(t *testing.T) {
 	d := newTestDB(t)
 	h := &KOSyncHandler{DB: d}
 
-	user1, err := d.CreateUser(context.Background(), "User1", "u1@example.com", "pw")
+	user1, err := d.CreateUser(t.Context(), "User1", "u1@example.com", "pw")
 	if err != nil {
 		t.Fatalf("create user1: %v", err)
 	}
-	user2, err := d.CreateUser(context.Background(), "User2", "u2@example.com", "pw")
+	user2, err := d.CreateUser(t.Context(), "User2", "u2@example.com", "pw")
 	if err != nil {
 		t.Fatalf("create user2: %v", err)
 	}
@@ -480,11 +479,11 @@ func TestKOSyncProgress_IsolatedByUser(t *testing.T) {
 	d := newTestDB(t)
 	h := &KOSyncHandler{DB: d}
 
-	user1, err := d.CreateUser(context.Background(), "User1", "u1@example.com", "pw")
+	user1, err := d.CreateUser(t.Context(), "User1", "u1@example.com", "pw")
 	if err != nil {
 		t.Fatalf("create user1: %v", err)
 	}
-	user2, err := d.CreateUser(context.Background(), "User2", "u2@example.com", "pw")
+	user2, err := d.CreateUser(t.Context(), "User2", "u2@example.com", "pw")
 	if err != nil {
 		t.Fatalf("create user2: %v", err)
 	}
