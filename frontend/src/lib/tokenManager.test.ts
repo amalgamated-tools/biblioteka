@@ -127,18 +127,18 @@ describe("createTokenManager", () => {
       expect(mgr.copiedId).toBe("a");
     });
 
-    it("clears copiedId after the specified duration", () => {
+    it("clears copiedId after the default duration", () => {
       const mgr = createTokenManager(makeOps());
-      mgr.setCopied("a", 1000);
+      mgr.setCopied("a");
       expect(mgr.copiedId).toBe("a");
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(2000);
       expect(mgr.copiedId).toBeNull();
     });
 
     it("replaces a previous copiedId and cancels the first timer", () => {
       const mgr = createTokenManager(makeOps());
-      mgr.setCopied("a", 1000);
-      mgr.setCopied("b", 2000);
+      mgr.setCopied("a");
+      mgr.setCopied("b");
       vi.advanceTimersByTime(1000); // first timer would fire here if not cancelled
       expect(mgr.copiedId).toBe("b"); // still set — first timer was cancelled
       vi.advanceTimersByTime(1000); // second timer fires

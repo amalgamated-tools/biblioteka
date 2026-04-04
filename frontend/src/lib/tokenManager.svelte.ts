@@ -1,4 +1,5 @@
 import { tick } from "svelte";
+import { CopyTimeoutState } from "./copyTimeout.svelte";
 
 export interface TokenManagerOps<T> {
   loadFn: () => Promise<T[]>;
@@ -21,15 +22,7 @@ export function createTokenManager<T extends { id: string }>(
   let loading = $state(false);
   let error: string | null = $state(null);
   let pendingDelete: { id: string; name: string } | null = $state(null);
-  let copiedId: string | null = $state(null);
-  let copiedTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  function clearCopyTimeout() {
-    if (copiedTimeout !== null) {
-      clearTimeout(copiedTimeout);
-      copiedTimeout = null;
-    }
-  }
+  const copyState = new CopyTimeoutState();
 
   async function load() {
     loading = true;
@@ -72,13 +65,8 @@ export function createTokenManager<T extends { id: string }>(
     }
   }
 
-  function setCopied(id: string, duration = 2000) {
-    copiedId = id;
-    clearCopyTimeout();
-    copiedTimeout = window.setTimeout(() => {
-      copiedId = null;
-      copiedTimeout = null;
-    }, duration);
+  function setCopied(id: string) {
+    copyState.set(id);
   }
 
   return {
@@ -101,9 +89,9 @@ export function createTokenManager<T extends { id: string }>(
       return pendingDelete;
     },
     get copiedId() {
-      return copiedId;
+      return copyState.copiedId;
     },
-    clearCopyTimeout,
+    clearCopyTimeout: () => copyState.clear(),
     load,
     handleDelete,
     cancelDelete,
