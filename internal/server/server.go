@@ -103,7 +103,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	if s.port == 0 {
 		s.port = 8080
 	}
-	s.Address = net.JoinHostPort("0.0.0.0", strconv.Itoa(s.port))
+	if s.Address == "" {
+		s.Address = net.JoinHostPort("0.0.0.0", strconv.Itoa(s.port))
+	}
 
 	if s.DB == nil {
 		database, err := db.SetupDatabase(ctx)

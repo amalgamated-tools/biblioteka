@@ -42,8 +42,8 @@ const (
 )
 
 // SendBoot fires a single telemetry ping if TELEMETRY_ENABLED=true. It is
-// called once during server startup and runs asynchronously so it never blocks
-// the application boot path. The request times out after 5 seconds.
+// called once during server startup and may block the application boot path
+// while the request is performed. The request times out after 3 seconds.
 func SendBoot(ctx context.Context, version string) {
 	// Telemetry is opt-in meaning it is disabled by default unless explicitly enabled
 	envTelemetryEnabled, ok := os.LookupEnv(EnvTelemetryEnabled)
