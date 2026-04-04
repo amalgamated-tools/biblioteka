@@ -78,7 +78,12 @@ func listParentBooks[Parent any](
 
 	books, total, err := listFn(ctx, parentID, limit, offset)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to list "+parentLabel+" books", idAttr, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(
+			ctx,
+			"failed to list "+parentLabel+" books",
+			idAttr,
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+parentLabel+" books")
 		return
 	}
