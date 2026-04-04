@@ -89,15 +89,15 @@ func TestKoboBookMetadata_WithSeries(t *testing.T) {
 	series := []db.BookSeriesEntry{{Series: *s, Position: &pos}}
 	meta := kobo.BookMetadata(book, nil, series, nil)
 
-	seriesMeta, ok := meta["Series"].(map[string]any)
-	if !ok {
+	seriesMeta := meta.Series
+	if seriesMeta == nil {
 		t.Fatal("expected Series in metadata")
 	}
-	if seriesMeta["Name"] != seriesName {
-		t.Errorf("Series.Name = %v, want %q", seriesMeta["Name"], seriesName)
+	if seriesMeta.Name != seriesName {
+		t.Errorf("Series.Name = %v, want %q", seriesMeta.Name, seriesName)
 	}
-	if seriesMeta["Number"] != int(1) {
-		t.Errorf("Series.Number = %v, want 1", seriesMeta["Number"])
+	if seriesMeta.Number != int(1) {
+		t.Errorf("Series.Number = %v, want 1", seriesMeta.Number)
 	}
 }
 
