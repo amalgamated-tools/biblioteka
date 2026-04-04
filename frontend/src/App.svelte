@@ -68,7 +68,7 @@
     class="min-h-screen bg-cream-50 dark:bg-ink-950 flex items-center justify-center relative bg-texture"
   >
     <div class="text-center animate-fade-in">
-      <div class="relative w-16 h-16 mx-auto mb-6">
+      <div class="relative w-16 h-16 mx-auto mb-6" aria-hidden="true">
         <div
           class="absolute inset-0 rounded-2xl bg-accent-500/20 dark:bg-accent-500/10"
           style="animation: spin-slow 3s linear infinite"
@@ -79,7 +79,10 @@
           <span class="text-white font-display text-2xl font-bold">B</span>
         </div>
       </div>
-      <p class="text-ink-400 dark:text-ink-300 font-body text-sm tracking-wide">
+      <p
+        role="status"
+        class="text-ink-400 dark:text-ink-300 font-body text-sm tracking-wide"
+      >
         Loading your library…
       </p>
     </div>
