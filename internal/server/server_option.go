@@ -11,11 +11,13 @@ import (
 // ServerOption is a functional option for configuring a Server.
 type ServerOption func(*Server)
 
-// WithAddr sets the listen address (e.g. "0.0.0.0"). Takes precedence over
-// WithPort when both are supplied to NewServer.
+// WithAddr sets the full listen address (for example, "0.0.0.0:8080").
+// When set, NewServer uses this address directly instead of building one
+// from WithPort.
 func WithAddr(addr string) ServerOption {
 	return func(s *Server) {
 		s.addr = addr
+		s.Address = addr
 	}
 }
 

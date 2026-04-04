@@ -19,7 +19,8 @@ var _, b, _, _ = runtime.Caller(0)
 // backend based on the DATABASE_URL environment variable: a postgres:// or
 // postgresql:// URL uses PostgreSQL; anything else uses a local SQLite file.
 // SQLite files are stored at /data/biblioteka.db when a /data directory is
-// present (Docker/production), or at ./db/biblioteka.db otherwise.
+// present (Docker/production), or at <project root>/db/biblioteka.db
+// otherwise, where the project root is derived by getProjectRoot().
 // Migrations are applied automatically before returning.
 func SetupDatabase(ctx context.Context) (*DB, error) {
 	slog.DebugContext(ctx, "Setting up database")

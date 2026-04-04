@@ -15,11 +15,12 @@ import (
 var Version = "dev"
 
 // SetupLogger configures the global slog logger based on the LOG_FORMAT and
-// LOG_LEVEL environment variables. LOG_FORMAT may be "json" (default) or
-// "text". LOG_LEVEL may be "debug", "info" (default), "warn", or "error".
-// Debug level also enables source location in log entries. After configuration,
-// the version is injected as a default log attribute and a boot telemetry ping
-// is sent if telemetry is enabled.
+// LOG_LEVEL environment variables. LOG_FORMAT defaults to "json"; when set to
+// exactly "json" it enables JSON output, and any other value falls back to
+// text output. LOG_LEVEL may be "debug", "info" (default), "warn", or
+// "error". Debug level also enables source location in log entries. After
+// configuration, the version is injected as a default log attribute and a
+// boot telemetry ping is sent if telemetry is enabled.
 func SetupLogger(ctx context.Context) {
 	format := "json"
 	level := slog.LevelInfo
