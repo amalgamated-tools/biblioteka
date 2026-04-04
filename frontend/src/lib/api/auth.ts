@@ -52,6 +52,14 @@ export async function getOidcEnabled(): Promise<boolean> {
   return data.enabled === true;
 }
 
+export async function createOidcLinkNonce(): Promise<string> {
+  const data = await request<{ nonce: string }>(
+    "POST",
+    "/api/auth/oidc/link-nonce",
+  );
+  return data.nonce;
+}
+
 export async function changePassword(
   currentPassword: string,
   newPassword: string,
