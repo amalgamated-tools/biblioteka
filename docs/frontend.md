@@ -1537,7 +1537,7 @@ The following components apply this pattern. When you add icons to any of these 
 | Component | Icons hidden |
 |---|---|
 | `Auth.svelte` | `BookCheck` (app logo alongside the app name heading) |
-| `Sidebar.svelte` | `BookCheck`, `LayoutDashboard`, `BookOpen`, `Library`, `Settings2`, `SettingsIcon`, `LogOut` (all nav-link icons alongside their text labels) |
+| `Sidebar.svelte` | `BookCheck`, `LayoutDashboard`, `BookOpen`, `Library`, `SettingsIcon`, `LogOut` (nav-link icons alongside their text labels) |
 | `Dashboard.svelte` | `LayoutDashboard`, `Library`, `Plus`, `ArrowRight` |
 | `Books.svelte` | `BookOpen` (page-heading icon) |
 | `Libraries.svelte` | `LibraryIcon` (empty-state illustration), `Plus` (button with visible text) |
