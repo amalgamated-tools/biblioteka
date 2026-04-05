@@ -136,7 +136,9 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	require.Equal(t, http.StatusCreated, w.Code, "status; body: %s", w.Body.String())
+	if w.Code != http.StatusCreated {
+		require.Failf(t, "unexpected status", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
+	}
 
 	require.Len(t, mock.jobs, 1, "enqueued jobs")
 	if mock.jobs[0].Name != jobs.JobScanLibrary {
