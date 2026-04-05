@@ -3,7 +3,7 @@
   import { authStore } from "../../stores/auth.svelte";
   import { changePassword, createOidcLinkNonce } from "../../lib/api";
   import { required, minLength, matches, validate } from "../../lib/validation";
-  import { SuccessTimerState } from "../../lib/successTimer.svelte";
+  import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
   import { Lock, Mail, Link } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -21,7 +21,7 @@
   let passwordError: string | null = $state(null);
   let passwordLoading = $state(false);
   let linkSsoLoading = $state(false);
-  const successTimer = new SuccessTimerState();
+  const successTimer = new AutoDismissTimer();
 
   onDestroy(() => successTimer.clear());
 

@@ -2,7 +2,7 @@
   import { onDestroy } from "svelte";
   import { setOidcConfig } from "../../lib/api";
   import { required, validate } from "../../lib/validation";
-  import { SuccessTimerState } from "../../lib/successTimer.svelte";
+  import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
   import { Shield } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -41,7 +41,7 @@
   let oidcRedirectUri = $state(initialRedirectUri);
   let oidcError: string | null = $state(null);
   let oidcLoading = $state(false);
-  const successTimer = new SuccessTimerState();
+  const successTimer = new AutoDismissTimer();
 
   let submitLabel = $derived.by(() => {
     if (oidcLoading) return "Saving...";

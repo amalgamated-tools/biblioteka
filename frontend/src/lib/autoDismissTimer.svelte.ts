@@ -1,12 +1,12 @@
 /**
- * Manages a success/feedback UI state with an auto-dismiss timeout.
+ * Manages a temporary UI visibility state with an auto-dismiss timeout.
  *
- * Tracks whether a success message should be visible and automatically
- * clears that state after a configurable duration.
+ * Tracks whether a message (success, error, or informational) should be
+ * visible and automatically clears that state after a configurable duration.
  *
  * State is reactive via Svelte 5 `$state` runes.
  */
-export class SuccessTimerState {
+export class AutoDismissTimer {
   visible = $state(false);
 
   private timeoutId: number | null = null;
