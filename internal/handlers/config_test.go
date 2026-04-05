@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // setupConfigHandler creates a ConfigHandler with a test DB, an admin user, and
@@ -15,13 +17,9 @@ func setupConfigHandler(t *testing.T) (*ConfigHandler, string, string) {
 	d := newTestDB(t)
 
 	admin, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create admin: %v", err)
-	}
+	require.NoError(t, err, "create admin")
 	regular, err := d.CreateUser(t.Context(), "Regular", "regular@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create regular user: %v", err)
-	}
+	require.NoError(t, err, "create regular user")
 
 	h := &ConfigHandler{
 		DB:               d,
@@ -45,9 +43,7 @@ func TestHandleConfigStatus_Success(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp configStatusResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.OIDCConfigured {
 		t.Error("expected OIDCConfigured=false")
 	}
@@ -69,9 +65,7 @@ func TestHandleConfigStatus_RegularUser(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp configStatusResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.IsAdmin {
 		t.Error("expected IsAdmin=false for regular user")
 	}
@@ -88,9 +82,7 @@ func TestHandleConfigStatus_WhenConfigured(t *testing.T) {
 	h.HandleConfigStatus(w, r)
 
 	var resp configStatusResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if !resp.OIDCConfigured {
 		t.Error("expected OIDCConfigured=true")
 	}

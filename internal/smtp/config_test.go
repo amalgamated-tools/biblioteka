@@ -3,6 +3,8 @@ package smtp
 import (
 	"context"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsLoopbackHost(t *testing.T) {
@@ -110,9 +112,7 @@ func TestValidateForSend_PlaintextAuthOnLoopback(t *testing.T) {
 		Password: "pass",
 		TLS:      "none",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if params.Auth == nil {
 		t.Error("expected non-nil Auth for username+password")
 	}
@@ -125,9 +125,7 @@ func TestValidateForSend_Valid(t *testing.T) {
 		From: "noreply@example.com",
 		TLS:  "starttls",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if params.Addr != "smtp.example.com:587" {
 		t.Errorf("Addr = %q, want %q", params.Addr, "smtp.example.com:587")
 	}
@@ -145,9 +143,7 @@ func TestValidateForSend_DefaultPort(t *testing.T) {
 		From: "noreply@example.com",
 		TLS:  "starttls",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if params.Addr != "smtp.example.com:587" {
 		t.Errorf("Addr = %q, want %q", params.Addr, "smtp.example.com:587")
 	}

@@ -10,6 +10,8 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setupAPIKeyHandler(t *testing.T) (*APIKeyHandler, string) {
@@ -17,9 +19,7 @@ func setupAPIKeyHandler(t *testing.T) (*APIKeyHandler, string) {
 	d := newTestDB(t)
 	h := &APIKeyHandler{DB: d}
 	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	return h, user.ID
 }
 
@@ -33,14 +33,10 @@ func TestCreateAPIKey_Success(t *testing.T) {
 
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var resp apiKeyCreateResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Key == "" {
 		t.Error("expected non-empty key in response")
 	}
@@ -98,14 +94,10 @@ func TestListAPIKeys_Empty(t *testing.T) {
 
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dtos []apiKeyDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	if len(dtos) != 0 {
 		t.Errorf("len = %d, want 0", len(dtos))
 	}
@@ -117,16 +109,12 @@ func TestListAPIKeys_AfterCreate(t *testing.T) {
 	// Create two keys.
 	for _, name := range []string{"Key A", "Key B"} {
 		body, err := json.Marshal(apiKeyCreateRequest{Name: name})
-		if err != nil {
-			t.Fatalf("marshal create request for %q: %v", name, err)
-		}
+		require.NoError(t, err, "marshal create request for %q", name)
 		r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 		r = withUserID(r, userID)
 		w := httptest.NewRecorder()
 		h.HandleAPIKeys(w, r)
-		if w.Code != http.StatusCreated {
-			t.Fatalf("create %q: status = %d", name, w.Code)
-		}
+		require.Equal(t, http.StatusCreated, w.Code)
 	}
 
 	// List them.
@@ -135,14 +123,10 @@ func TestListAPIKeys_AfterCreate(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dtos []apiKeyDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	if len(dtos) != 2 {
 		t.Errorf("len = %d, want 2", len(dtos))
 	}
@@ -158,19 +142,13 @@ func TestListAPIKeys_UserScoped(t *testing.T) {
 	h := &APIKeyHandler{DB: d}
 
 	user1, err := d.CreateUser(t.Context(), "User 1", "u1@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user1: %v", err)
-	}
+	require.NoError(t, err, "create user1")
 	user2, err := d.CreateUser(t.Context(), "User 2", "u2@example.com", "password2")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	require.NoError(t, err, "create user2")
 
 	// Create a key for user1.
 	body, err := json.Marshal(apiKeyCreateRequest{Name: "User1 Key"})
-	if err != nil {
-		t.Fatalf("marshal create request: %v", err)
-	}
+	require.NoError(t, err, "marshal create request")
 	r := httptest.NewRequest(http.MethodPost, "/api/api-keys", bytes.NewReader(body))
 	r = withUserID(r, user1.ID)
 	w := httptest.NewRecorder()
@@ -183,9 +161,7 @@ func TestListAPIKeys_UserScoped(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var dtos []apiKeyDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		t.Fatalf("unmarshal list response: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal list response")
 	if len(dtos) != 0 {
 		t.Errorf("user2 should see 0 keys, got %d", len(dtos))
 	}
@@ -202,9 +178,7 @@ func TestDeleteAPIKey_Success(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var created apiKeyCreateResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal create response: %v; body: %s", err, w.Body.String())
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal create response; body: %s", w.Body.String())
 
 	// Delete it.
 	r = httptest.NewRequest(http.MethodDelete, "/api/api-keys/"+created.ID, nil)
@@ -223,9 +197,7 @@ func TestDeleteAPIKey_Success(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var remaining []apiKeyDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &remaining); err != nil {
-		t.Fatalf("unmarshal list response: %v; body: %s", err, w.Body.String())
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &remaining), "unmarshal list response; body: %s", w.Body.String())
 	if len(remaining) != 0 {
 		t.Errorf("expected 0 keys after delete, got %d", len(remaining))
 	}
@@ -249,13 +221,9 @@ func TestDeleteAPIKey_OtherUserCannotDelete(t *testing.T) {
 	h := &APIKeyHandler{DB: d}
 
 	user1, err := d.CreateUser(t.Context(), "User 1", "u1@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user1: %v", err)
-	}
+	require.NoError(t, err, "create user1")
 	user2, err := d.CreateUser(t.Context(), "User 2", "u2@example.com", "password2")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	require.NoError(t, err, "create user2")
 
 	// Create a key as user1.
 	body := mustMarshal(t, apiKeyCreateRequest{Name: "User1 Key"})
@@ -265,9 +233,7 @@ func TestDeleteAPIKey_OtherUserCannotDelete(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var created apiKeyCreateResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("failed to unmarshal response body: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "failed to unmarshal response body")
 
 	// Try to delete as user2.
 	r = httptest.NewRequest(http.MethodDelete, "/api/api-keys/"+created.ID, nil)
@@ -289,14 +255,10 @@ func TestCreateAPIKey_AuditLog(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusCreated)
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
-	if err != nil {
-		t.Fatalf("list audit logs: %v", err)
-	}
+	require.NoError(t, err, "list audit logs")
 
 	found := false
 	for _, l := range logs {
@@ -321,9 +283,7 @@ func TestDeleteAPIKey_AuditLog(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var created apiKeyCreateResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal create response: %v; body: %s", err, w.Body.String())
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal create response; body: %s", w.Body.String())
 
 	r = httptest.NewRequest(http.MethodDelete, "/api/api-keys/"+created.ID, nil)
 	r = withUserID(r, userID)
@@ -331,9 +291,7 @@ func TestDeleteAPIKey_AuditLog(t *testing.T) {
 	h.HandleAPIKey(w, r)
 
 	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
-	if err != nil {
-		t.Fatalf("list audit logs: %v", err)
-	}
+	require.NoError(t, err, "list audit logs")
 
 	found := false
 	for _, l := range logs {

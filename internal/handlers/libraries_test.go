@@ -14,6 +14,8 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mockEnqueuer records all enqueued jobs for test assertions.
@@ -48,16 +50,10 @@ func setupLibraryHandler(t *testing.T) (*LibraryHandler, string, string) {
 	h := &LibraryHandler{DB: d}
 
 	admin, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create admin: %v", err)
-	}
-	if err := d.SetAdmin(t.Context(), admin.ID, true); err != nil {
-		t.Fatalf("set admin role: %v", err)
-	}
+	require.NoError(t, err, "create admin")
+	require.NoError(t, d.SetAdmin(t.Context(), admin.ID, true), "set admin role")
 	regular, err := d.CreateUser(t.Context(), "Regular", "regular@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create regular user: %v", err)
-	}
+	require.NoError(t, err, "create regular user")
 	return h, admin.ID, regular.ID
 }
 
@@ -81,9 +77,7 @@ func TestCreateLibrary_ValidPath(t *testing.T) {
 	}
 
 	var dto libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.Name != "Books" {
 		t.Errorf("name = %q, want %q", dto.Name, "Books")
 	}
@@ -111,9 +105,7 @@ func TestCreateLibrary_NonexistentPath(t *testing.T) {
 	}
 
 	var resp map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if msg := resp["error"]; msg == "" {
 		t.Error("expected error message in response")
 	}
@@ -124,9 +116,7 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "not-a-dir.txt")
-	if err := os.WriteFile(filePath, []byte("hello"), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
-	}
+	require.NoError(t, os.WriteFile(filePath, []byte("hello"), 0o644), "write file")
 
 	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
@@ -144,9 +134,7 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 	}
 
 	var resp map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if msg := resp["error"]; msg != "path is not a folder: "+filePath {
 		t.Errorf("error = %q, want 'path is not a folder: %s'", msg, filePath)
 	}
@@ -189,20 +177,14 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
-	if len(mock.jobs) != 1 {
-		t.Fatalf("enqueued jobs = %d, want 1", len(mock.jobs))
-	}
+	require.Len(t, mock.jobs, 1)
 	if mock.jobs[0].Name != jobs.JobScanLibrary {
 		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
 	var p jobs.ScanLibraryPayload
-	if err := json.Unmarshal(mock.jobs[0].Payload, &p); err != nil {
-		t.Fatalf("unmarshal payload: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(mock.jobs[0].Payload, &p), "unmarshal payload")
 	if len(p.Paths) != 1 || p.Paths[0] != dir {
 		t.Errorf("job paths = %v, want [%s]", p.Paths, dir)
 	}
@@ -226,23 +208,15 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
-	if len(mock.jobs) != 1 {
-		t.Fatalf("enqueued jobs = %d, want 1", len(mock.jobs))
-	}
+	require.Len(t, mock.jobs, 1)
 	if mock.jobs[0].Name != jobs.JobScanLibrary {
 		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
 	var p jobs.ScanLibraryPayload
-	if err := json.Unmarshal(mock.jobs[0].Payload, &p); err != nil {
-		t.Fatalf("unmarshal payload: %v", err)
-	}
-	if len(p.Paths) != 2 {
-		t.Fatalf("job paths count = %d, want 2", len(p.Paths))
-	}
+	require.NoError(t, json.Unmarshal(mock.jobs[0].Payload, &p), "unmarshal payload")
+	require.Len(t, p.Paths, 2)
 	for i, dir := range []string{dir1, dir2} {
 		if p.Paths[i] != dir {
 			t.Errorf("job paths[%d] = %q, want %q", i, p.Paths[i], dir)
@@ -303,22 +277,14 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var lib libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		t.Fatalf("unmarshal library: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// Create a book and link it to the library.
 	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
-	if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-		t.Fatalf("add book to library: %v", err)
-	}
+	require.NoError(t, err, "create book")
+	require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book to library")
 
 	// List books for the library.
 	r2 := httptest.NewRequest(http.MethodGet, "/api/libraries/"+lib.ID+"/books", nil)
@@ -331,12 +297,8 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal books: %v", err)
-	}
-	if len(resp.Books) != 1 {
-		t.Fatalf("books count = %d, want 1", len(resp.Books))
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
+	require.Len(t, resp.Books, 1)
 	if resp.Books[0].Title != "The Gunslinger" {
 		t.Errorf("title = %q, want %q", resp.Books[0].Title, "The Gunslinger")
 	}
@@ -355,25 +317,17 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var lib libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		t.Fatalf("unmarshal library: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// Create multiple books and link them to the library.
 	const totalBooks = 3
 	for i := range totalBooks {
 		title := fmt.Sprintf("Book %d", i+1)
 		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-		if err != nil {
-			t.Fatalf("create book %d: %v", i+1, err)
-		}
-		if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-			t.Fatalf("add book %d to library: %v", i+1, err)
-		}
+		require.NoError(t, err, "create book %d", i+1)
+		require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book %d to library", i+1)
 	}
 
 	// Request a paginated slice of books.
@@ -382,21 +336,14 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal books: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 
-	if resp.Total != totalBooks {
-		t.Fatalf("total = %d, want %d", resp.Total, totalBooks)
-	}
-	if len(resp.Books) == 0 || len(resp.Books) > 2 {
-		t.Fatalf("books count = %d, want between 1 and 2", len(resp.Books))
-	}
+	require.Equal(t, totalBooks, resp.Total)
+	require.NotEmpty(t, resp.Books)
+	require.LessOrEqual(t, len(resp.Books), 2)
 }
 
 func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
@@ -409,25 +356,17 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var lib libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		t.Fatalf("unmarshal library: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// Create multiple books and link them to the library.
 	const totalBooks = 3
 	for i := range totalBooks {
 		title := fmt.Sprintf("Invalid Book %d", i+1)
 		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-		if err != nil {
-			t.Fatalf("create book %d: %v", i+1, err)
-		}
-		if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-			t.Fatalf("add book %d to library: %v", i+1, err)
-		}
+		require.NoError(t, err, "create book %d", i+1)
+		require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book %d to library", i+1)
 	}
 
 	// Use negative values that should be validated/clamped by the handler.
@@ -436,21 +375,13 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal books: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 
-	if resp.Total != totalBooks {
-		t.Fatalf("total = %d, want %d", resp.Total, totalBooks)
-	}
-	if len(resp.Books) == 0 {
-		t.Fatalf("books count = %d, want > 0", len(resp.Books))
-	}
+	require.Equal(t, totalBooks, resp.Total)
+	require.NotEmpty(t, resp.Books)
 }
 
 func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
@@ -463,25 +394,17 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var lib libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		t.Fatalf("unmarshal library: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// Create several books and link them to the library.
 	const totalBooks = 10
 	for i := range totalBooks {
 		title := fmt.Sprintf("Clamped Book %d", i+1)
 		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-		if err != nil {
-			t.Fatalf("create book %d: %v", i+1, err)
-		}
-		if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-			t.Fatalf("add book %d to library: %v", i+1, err)
-		}
+		require.NoError(t, err, "create book %d", i+1)
+		require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book %d to library", i+1)
 	}
 
 	// Request with an excessively large limit to ensure it is clamped internally.
@@ -490,21 +413,13 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal books: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 
-	if resp.Total != totalBooks {
-		t.Fatalf("total = %d, want %d", resp.Total, totalBooks)
-	}
-	if len(resp.Books) != totalBooks {
-		t.Fatalf("books count = %d, want %d", len(resp.Books), totalBooks)
-	}
+	require.Equal(t, totalBooks, resp.Total)
+	require.Equal(t, totalBooks, len(resp.Books))
 }
 
 func TestListLibraryBooks_NotFound(t *testing.T) {
@@ -530,13 +445,9 @@ func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("create library: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var lib libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		t.Fatalf("unmarshal library: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// POST to /books sub-resource should be method not allowed.
 	r2 := httptest.NewRequest(http.MethodPost, "/api/libraries/"+lib.ID+"/books", nil)
@@ -563,14 +474,10 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal created: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal created")
 
 	// Update with an invalid path.
 	updateBody := mustMarshal(t, libraryRequest{
@@ -604,14 +511,10 @@ func TestUpdateLibrary_ValidPath(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal")
 
 	// Update to dir2.
 	updateBody := mustMarshal(t, libraryRequest{
@@ -659,13 +562,9 @@ func TestUpdateLibrary_NonAdminForbidden(t *testing.T) {
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("setup: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal")
 
 	// Attempt update as regular user.
 	updateBody := mustMarshal(t, libraryRequest{Name: "Updated", Paths: []string{dir}})
@@ -690,13 +589,9 @@ func TestDeleteLibrary_NonAdminForbidden(t *testing.T) {
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("setup: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal")
 
 	// Attempt delete as regular user.
 	r2 := httptest.NewRequest(http.MethodDelete, "/api/libraries/"+created.ID, nil)
@@ -724,9 +619,7 @@ func TestDeleteLibrary_NotFound(t *testing.T) {
 	}
 
 	var resp errorResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Error != "library not found" {
 		t.Errorf("error = %q, want %q", resp.Error, "library not found")
 	}
@@ -767,9 +660,7 @@ func TestCreateLibrary_InvalidOrganizationType(t *testing.T) {
 	}
 
 	var resp map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if msg := resp["error"]; msg == "" {
 		t.Error("expected error message about organization_type")
 	}
@@ -798,9 +689,7 @@ func TestCreateLibrary_ValidOrganizationTypes(t *testing.T) {
 			}
 
 			var dto libraryDTO
-			if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-				t.Fatalf("unmarshal: %v", err)
-			}
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 			if dto.OrganizationType != orgType {
 				t.Errorf("organization_type = %q, want %q", dto.OrganizationType, orgType)
 			}
@@ -829,9 +718,7 @@ func TestCreateLibrary_EmptyOrganizationTypeDefaultsToBookPerFolder(t *testing.T
 	}
 
 	var dto libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.OrganizationType != db.LibraryOrganizationBookPerFolder {
 		t.Errorf("organization_type = %q, want %q", dto.OrganizationType, db.LibraryOrganizationBookPerFolder)
 	}
@@ -850,14 +737,10 @@ func TestUpdateLibrary_InvalidOrganizationType(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal created: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal created")
 
 	updateBody := mustMarshal(t, libraryRequest{
 		Name:             "Books",
@@ -889,14 +772,10 @@ func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		t.Fatalf("unmarshal created: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal created")
 
 	updateBody := mustMarshal(t, libraryRequest{
 		Name:  "Books Updated",
@@ -908,14 +787,10 @@ func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T)
 
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var updated libraryDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &updated); err != nil {
-		t.Fatalf("unmarshal updated: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &updated), "unmarshal updated")
 	if updated.OrganizationType != db.LibraryOrganizationNone {
 		t.Errorf("organization_type = %q, want %q", updated.OrganizationType, db.LibraryOrganizationNone)
 	}

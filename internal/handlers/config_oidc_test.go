@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // --- HandleGetOIDCConfig ---
@@ -24,9 +26,7 @@ func TestHandleGetOIDCConfig_AdminNoSettings(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp oidcConfigResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.IssuerURL != "" {
 		t.Errorf("IssuerURL = %q, want empty", resp.IssuerURL)
 	}
@@ -54,9 +54,7 @@ func TestHandleGetOIDCConfig_AdminWithSettings(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp oidcConfigResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.IssuerURL != "https://auth.example.com" {
 		t.Errorf("IssuerURL = %q, want %q", resp.IssuerURL, "https://auth.example.com")
 	}
@@ -231,17 +229,13 @@ func TestHandleSetOIDCConfig_ValidProviderSavesSettings(t *testing.T) {
 
 	// Verify settings were persisted
 	issuerURL, err := h.DB.GetSetting(t.Context(), settingOIDCIssuerURL)
-	if err != nil {
-		t.Fatalf("GetSetting(issuer_url) error: %v", err)
-	}
+	require.NoError(t, err, "GetSetting(issuer_url) error")
 	if issuerURL != oidcServer.URL {
 		t.Errorf("saved issuer_url = %q, want %q", issuerURL, oidcServer.URL)
 	}
 
 	clientID, err := h.DB.GetSetting(t.Context(), settingOIDCClientID)
-	if err != nil {
-		t.Fatalf("GetSetting(client_id) error: %v", err)
-	}
+	require.NoError(t, err, "GetSetting(client_id) error")
 	if clientID != "my-client" {
 		t.Errorf("saved client_id = %q, want %q", clientID, "my-client")
 	}
@@ -287,9 +281,7 @@ func TestHandleSetOIDCConfig_PreservesExistingSecret(t *testing.T) {
 
 	// The stored secret should still be the original one
 	secret, err := h.DB.GetSetting(t.Context(), settingOIDCClientSecret)
-	if err != nil {
-		t.Fatalf("GetSetting(client_secret): %v", err)
-	}
+	require.NoError(t, err, "GetSetting(client_secret)")
 	if secret != "existing-secret" {
 		t.Errorf("client_secret = %q, want %q", secret, "existing-secret")
 	}

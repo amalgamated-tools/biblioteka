@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/kobo"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestHandleSync_PageSizeLimit verifies that HandleSync returns at most
@@ -27,17 +29,13 @@ func TestHandleSync_PageSizeLimit(t *testing.T) {
 			context.Background(),
 			"Sync Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		)
-		if err != nil {
-			t.Fatalf("create book %d: %v", i, err)
-		}
+		require.NoError(t, err, "create book %d", i)
 		filePath := filepath.Join(dir, "book-"+book.ID+".epub")
 		_, err = h.DB.CreateBookFile(
 			context.Background(), book.ID, "epub", "book.epub", 512, nil,
 			filePath,
 		)
-		if err != nil {
-			t.Fatalf("create book file %d: %v", i, err)
-		}
+		require.NoError(t, err, "create book file %d", i)
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/sync", nil)
@@ -45,13 +43,9 @@ func TestHandleSync_PageSizeLimit(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var results []any
-	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
 	if len(results) > kobo.SyncPageSize {
 		t.Errorf("expected at most %d sync results, got %d", kobo.SyncPageSize, len(results))
 	}
@@ -71,9 +65,7 @@ func TestHandleSync_BooksLastModifiedHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if w.Header().Get("x-kobo-synctoken") == "" {
 		t.Error("expected x-kobo-synctoken header in sync response")
 	}
@@ -98,7 +90,5 @@ func TestHandleSync_NonGETMethodReturnsEmpty(t *testing.T) {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var results []any
-	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode response")
 }
