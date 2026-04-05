@@ -104,7 +104,8 @@
           id="email-display-hint"
           class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
-          Contact support to change your email address</p>
+          Contact support to change your email address
+        </p>
       </div>
     </div>
   </div>
