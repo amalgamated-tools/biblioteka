@@ -12,7 +12,7 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <Palette class="w-5 h-5 text-accent-600" />
+      <Palette class="w-5 h-5 text-accent-600" aria-hidden="true" />
       Display Preferences
     </h2>
     <div class="space-y-6">
