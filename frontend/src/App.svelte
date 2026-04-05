@@ -81,7 +81,7 @@
       </div>
       <p
         role="status"
-        class="text-ink-400 dark:text-ink-300 font-body text-sm tracking-wide"
+        class="text-ink-500 dark:text-ink-300 font-body text-sm tracking-wide"
       >
         Loading your library…
       </p>

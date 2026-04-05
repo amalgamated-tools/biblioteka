@@ -102,7 +102,7 @@
       >
         biblioteka
       </h1>
-      <p class="text-ink-400 dark:text-ink-400 font-body">
+      <p class="text-ink-500 dark:text-ink-300 font-body">
         Your personal digital library
       </p>
     </div>
@@ -126,7 +126,7 @@
           </div>
           <div class="relative flex justify-center text-sm">
             <span
-              class="px-3 bg-white dark:bg-ink-900 text-ink-400 dark:text-ink-400"
+              class="px-3 bg-white dark:bg-ink-900 text-ink-500 dark:text-ink-300"
               >or</span
             >
           </div>
@@ -150,7 +150,7 @@
           onclick={() => (isLogin = true)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
-            : 'text-ink-400 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'}"
+            : 'text-ink-500 dark:text-ink-300 hover:text-ink-700 dark:hover:text-ink-200'}"
         >
           Login
         </button>
@@ -164,7 +164,7 @@
           onclick={() => (isLogin = false)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {!isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
-            : 'text-ink-400 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'}"
+            : 'text-ink-500 dark:text-ink-300 hover:text-ink-700 dark:hover:text-ink-200'}"
         >
           Sign Up
         </button>
