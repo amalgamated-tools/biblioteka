@@ -465,8 +465,13 @@ Components that render a delete confirmation dialog should add `data-delete-trig
   onDestroy(() => tokenList.copy.clear());
 
   async function handleCopy(id: string, value: string) {
-    await copyToClipboard(value);
-    tokenList.copy.set(id);
+    try {
+      await copyToClipboard(value);
+      tokenList.copy.set(id);
+    } catch (err) {
+      tokenList.error =
+        err instanceof Error ? err.message : "Failed to copy to clipboard";
+    }
   }
 </script>
 
@@ -475,7 +480,7 @@ Components that render a delete confirmation dialog should add `data-delete-trig
 {/if}
 
 {#each tokenList.items as key}
-  <button onclick={() => void handleCopy(key.id, key.token)}>
+  <button onclick={() => void handleCopy(key.id, key.key_prefix)}>
     {tokenList.copy.copiedId === key.id ? "Copied!" : "Copy"}
   </button>
   <button
@@ -576,17 +581,15 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
 
 ### Nullable optional fields in input types
 
-Input interfaces (e.g. `AuthorInput`, `SeriesInput`, `BookInput`, `BookFileInput`) use `?: string | null` for optional nullable fields, mirroring their counterpart response types. The `?` marks the field as omittable (no key in the JSON body), while `| null` allows callers to explicitly send `null` to clear a field:
+Input interfaces (e.g. `AuthorInput`, `SeriesInput`, `BookInput`, `BookFileInput`) use `?: string | null` for optional nullable fields, mirroring their counterpart response types. The current PUT update handlers decode both key-omission and explicit `null` into a nil `*string`, which writes `NULL` to the database column — there is no distinction between "leave unchanged" and "clear this field":
 
 ```ts
-// Omit the field — Go backend treats it as no-op (nil pointer unchanged)
-const input: AuthorInput = { name: "Ursula K. Le Guin" };
-
-// Set to null — Go backend treats it as "clear this field" (nil pointer → NULL in DB)
-const input: AuthorInput = { name: "Ursula K. Le Guin", goodreads_id: null };
+// Both of these result in goodreads_id being set to NULL in the database:
+const input: AuthorInput = { name: "Ursula K. Le Guin" };                       // key omitted
+const input: AuthorInput = { name: "Ursula K. Le Guin", goodreads_id: null };    // explicit null
 ```
 
-> **Note:** The Go backend currently treats key-omission and `null` identically (both map to a nil `*string`). The `?: string | null` typing makes the intent explicit and keeps the door open for future PATCH semantics where `null` ("clear") must be distinguishable from `undefined` ("no-op").
+> **Note:** The `?: string | null` typing mirrors the response type's nullability and keeps the door open for future PATCH-style handling where `undefined` ("no-op") would be distinguishable from `null` ("clear"). That distinction would require changes to the Go backend (e.g., a custom JSON unmarshaler or a wrapper type). Until then, omission and `null` behave identically.
 
 When adding a new input interface, always match the nullability of the corresponding response interface — if the response field is `string | null`, the input field should be `?: string | null`.
 
