@@ -37,7 +37,9 @@ const (
 	// "true" to opt in to telemetry. Telemetry is disabled by default.
 	EnvTelemetryEnabled = "TELEMETRY_ENABLED"
 	// EnvTelemetryEndpoint overrides the default telemetry endpoint URL.
-	EnvTelemetryEndpoint     = "TELEMETRY_ENDPOINT"
+	EnvTelemetryEndpoint = "TELEMETRY_ENDPOINT"
+	// DefaultTelemetryEndpoint is the URL used when TELEMETRY_ENDPOINT is not
+	// set. It points to the Biblioteka telemetry ingestion endpoint.
 	DefaultTelemetryEndpoint = "https://telemetry-worker.amalgamated-tools.workers.dev"
 )
 

@@ -15,6 +15,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// ErrExifToolUnavailable is returned by ExtractMetadata when the ExifTool
+// binary was not found or failed to start at Extractor creation time.
 var ErrExifToolUnavailable = errors.New("exiftool is not available on this system")
 
 // Extractor extracts metadata from book files. Concurrent ExtractMetadata calls are safe,
