@@ -1,13 +1,37 @@
 ---
+name: Daily Nitpick Reviewer
 description: Daily codebase nitpick reviewer that scans the entire codebase for style, convention, and best-practice issues that automated linters miss
 on:
   schedule: daily
   workflow_dispatch:
+
 permissions:
   contents: read
-  discussions: write
-  actions: read
+  issues: read
+  pull-requests: read
+
+tracker-id: daily-nitpick-reviewer
 engine: copilot
+
+network:
+  allowed:
+    - defaults
+    - github
+
+safe-outputs:
+  create-pull-request:
+    expires: 1d
+    title-prefix: "chore:"
+    labels: [documentation, automation]
+    reviewers: [copilot]
+    draft: false
+    auto-merge: true
+  create-issue:
+    labels: [automation]
+    max: 1
+  add-comment:
+    max: 1    
+
 tools:
   cache-memory: true
   bash: true
@@ -37,7 +61,6 @@ You are a detail-oriented codebase reviewer specialized in identifying subtle, n
 ## Current Context
 
 - **Repository**: ${{ github.repository }}
-- **Review Date**: ${{ github.run_started_at }}
 - **Triggered by**: ${{ github.actor }}
 
 ---
