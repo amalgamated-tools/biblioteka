@@ -476,9 +476,9 @@ Always commit the updated spec files alongside the handler changes that prompted
       t.Fatal(err)
   }
   ```
-- **Real database**: Go tests run against a real SQLite database configured with WAL mode, `synchronous=NORMAL`, and `foreign_keys=ON`. See `internal/db/testhelper_test.go` for the shared test-database helper.
+- **Real database**: Go tests should run against a real SQLite database. When creating SQLite databases in tests, configure them with WAL mode, `synchronous=NORMAL`, and `foreign_keys=ON`. See `internal/db/testhelper_test.go` for a canonical example/reference helper pattern.
 - **Every new feature needs tests**: Any new handler, function, or component must include tests. Treat missing tests as a failing CI check — do not consider a task done until tests are written and passing.
-- **Test file organisation**: Large handler test files are split by sub-concern. For example, `books_authors_test.go` covers only the books↔authors relationship handlers, while `books_test.go` covers book CRUD. Follow this pattern when adding tests for new endpoints or sub-resources.
+- **Test file organization**: Large handler test files are split by sub-concern. For example, `books_authors_test.go` covers only the books↔authors relationship handlers, while `books_test.go` covers book CRUD. Follow this pattern when adding tests for new endpoints or sub-resources.
 
 ### Frontend tests
 
