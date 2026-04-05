@@ -5,14 +5,14 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func createTestUser(t *testing.T, d *DB) *User {
 	t.Helper()
 	u, err := d.CreateUser(t.Context(), "Test User", t.Name()+"@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	return u
 }
 
@@ -21,9 +21,7 @@ func TestCreateAPIKey(t *testing.T) {
 	user := createTestUser(t, d)
 
 	key, err := d.CreateAPIKey(t.Context(), user.ID, "CI Pipeline", "hash123", "bib_abcd")
-	if err != nil {
-		t.Fatalf("CreateAPIKey() error: %v", err)
-	}
+	require.NoError(t, err, "CreateAPIKey() error")
 	if key.ID == "" {
 		t.Error("expected non-empty ID")
 	}
@@ -52,9 +50,7 @@ func TestListAPIKeys_Empty(t *testing.T) {
 	user := createTestUser(t, d)
 
 	keys, err := d.ListAPIKeys(t.Context(), user.ID)
-	if err != nil {
-		t.Fatalf("ListAPIKeys() error: %v", err)
-	}
+	require.NoError(t, err, "ListAPIKeys() error")
 	if len(keys) != 0 {
 		t.Errorf("len = %d, want 0", len(keys))
 	}
@@ -65,34 +61,28 @@ func TestListAPIKeys_ReturnsUserKeysOnly(t *testing.T) {
 	user1 := createTestUser(t, d)
 
 	u2, err := d.CreateUser(t.Context(), "Other", "other@example.com", "password2")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	require.NoError(t, err, "create user2")
 
 	// Create keys for both users.
 	if _, err := d.CreateAPIKey(t.Context(), user1.ID, "Key A", "hashA", "prefixA"); err != nil {
-		t.Fatalf("CreateAPIKey A: %v", err)
+		require.NoError(t, err, "CreateAPIKey A")
 	}
 	if _, err := d.CreateAPIKey(t.Context(), user1.ID, "Key B", "hashB", "prefixB"); err != nil {
-		t.Fatalf("CreateAPIKey B: %v", err)
+		require.NoError(t, err, "CreateAPIKey B")
 	}
 	if _, err := d.CreateAPIKey(t.Context(), u2.ID, "Key C", "hashC", "prefixC"); err != nil {
-		t.Fatalf("CreateAPIKey C: %v", err)
+		require.NoError(t, err, "CreateAPIKey C")
 	}
 
 	keys, err := d.ListAPIKeys(t.Context(), user1.ID)
-	if err != nil {
-		t.Fatalf("ListAPIKeys() error: %v", err)
-	}
+	require.NoError(t, err, "ListAPIKeys() error")
 	if len(keys) != 2 {
 		t.Errorf("len = %d, want 2", len(keys))
 	}
 
 	// user2 should only see their own key.
 	keys2, err := d.ListAPIKeys(t.Context(), u2.ID)
-	if err != nil {
-		t.Fatalf("ListAPIKeys(user2) error: %v", err)
-	}
+	require.NoError(t, err, "ListAPIKeys(user2) error")
 	if len(keys2) != 1 {
 		t.Errorf("user2 len = %d, want 1", len(keys2))
 	}
@@ -103,14 +93,10 @@ func TestGetAPIKey(t *testing.T) {
 	user := createTestUser(t, d)
 
 	created, err := d.CreateAPIKey(t.Context(), user.ID, "Fetch Me", "hashFetch", "prefFetch")
-	if err != nil {
-		t.Fatalf("CreateAPIKey() error: %v", err)
-	}
+	require.NoError(t, err, "CreateAPIKey() error")
 
 	got, err := d.GetAPIKey(t.Context(), created.ID, user.ID)
-	if err != nil {
-		t.Fatalf("GetAPIKey() error: %v", err)
-	}
+	require.NoError(t, err, "GetAPIKey() error")
 	if got.ID != created.ID {
 		t.Errorf("ID = %q, want %q", got.ID, created.ID)
 	}
@@ -124,14 +110,10 @@ func TestGetAPIKey_WrongUser(t *testing.T) {
 	user1 := createTestUser(t, d)
 
 	u2, err := d.CreateUser(t.Context(), "Other", "other2@example.com", "password2")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	require.NoError(t, err, "create user2")
 
 	created, err := d.CreateAPIKey(t.Context(), user1.ID, "Private", "hashPriv", "prefPriv")
-	if err != nil {
-		t.Fatalf("CreateAPIKey() error: %v", err)
-	}
+	require.NoError(t, err, "CreateAPIKey() error")
 
 	_, err = d.GetAPIKey(t.Context(), created.ID, u2.ID)
 	if err != sql.ErrNoRows {
@@ -144,13 +126,9 @@ func TestDeleteAPIKey(t *testing.T) {
 	user := createTestUser(t, d)
 
 	created, err := d.CreateAPIKey(t.Context(), user.ID, "Delete Me", "hashDel", "prefDel")
-	if err != nil {
-		t.Fatalf("CreateAPIKey() error: %v", err)
-	}
+	require.NoError(t, err, "CreateAPIKey() error")
 
-	if err := d.DeleteAPIKey(t.Context(), created.ID, user.ID); err != nil {
-		t.Fatalf("DeleteAPIKey() error: %v", err)
-	}
+	require.NoError(t, d.DeleteAPIKey(t.Context(), created.ID, user.ID), "DeleteAPIKey() error")
 
 	// Should be gone.
 	_, err = d.GetAPIKey(t.Context(), created.ID, user.ID)
@@ -174,14 +152,10 @@ func TestDeleteAPIKey_WrongUser(t *testing.T) {
 	user1 := createTestUser(t, d)
 
 	u2, err := d.CreateUser(t.Context(), "Other", "other3@example.com", "password2")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	require.NoError(t, err, "create user2")
 
 	created, err := d.CreateAPIKey(t.Context(), user1.ID, "Protected", "hashProt", "prefProt")
-	if err != nil {
-		t.Fatalf("CreateAPIKey() error: %v", err)
-	}
+	require.NoError(t, err, "CreateAPIKey() error")
 
 	err = d.DeleteAPIKey(t.Context(), created.ID, u2.ID)
 	if err != sql.ErrNoRows {
@@ -204,14 +178,10 @@ func TestValidateAPIKey(t *testing.T) {
 	keyHash := hex.EncodeToString(h[:])
 
 	created, err := d.CreateAPIKey(t.Context(), user.ID, "Auth Key", keyHash, fullKey[:8])
-	if err != nil {
-		t.Fatalf("CreateAPIKey() error: %v", err)
-	}
+	require.NoError(t, err, "CreateAPIKey() error")
 
 	userID, keyID, err := d.ValidateAPIKey(t.Context(), keyHash)
-	if err != nil {
-		t.Fatalf("ValidateAPIKey() error: %v", err)
-	}
+	require.NoError(t, err, "ValidateAPIKey() error")
 	if userID != user.ID {
 		t.Errorf("userID = %q, want %q", userID, user.ID)
 	}
@@ -234,22 +204,14 @@ func TestTouchAPIKeyLastUsed(t *testing.T) {
 	user := createTestUser(t, d)
 
 	created, err := d.CreateAPIKey(t.Context(), user.ID, "Touch Me", "hashTouch", "prefTouch")
-	if err != nil {
-		t.Fatalf("CreateAPIKey() error: %v", err)
-	}
-	if created.LastUsedAt != nil {
-		t.Fatal("LastUsedAt should be nil initially")
-	}
+	require.NoError(t, err, "CreateAPIKey() error")
+	require.Nil(t, created.LastUsedAt)
 
-	if err := d.TouchAPIKeyLastUsed(t.Context(), created.ID); err != nil {
-		t.Fatalf("TouchAPIKeyLastUsed() error: %v", err)
-	}
+	require.NoError(t, d.TouchAPIKeyLastUsed(t.Context(), created.ID), "TouchAPIKeyLastUsed() error")
 
 	// Re-fetch and verify last_used_at is now set.
 	got, err := d.GetAPIKey(t.Context(), created.ID, user.ID)
-	if err != nil {
-		t.Fatalf("GetAPIKey() error: %v", err)
-	}
+	require.NoError(t, err, "GetAPIKey() error")
 	if got.LastUsedAt == nil {
 		t.Error("LastUsedAt should be non-nil after touch")
 	}
@@ -260,14 +222,10 @@ func TestGetAPIKeyByHash(t *testing.T) {
 	user := createTestUser(t, d)
 
 	created, err := d.CreateAPIKey(t.Context(), user.ID, "Hash Lookup", "uniqueHash42", "prefHash")
-	if err != nil {
-		t.Fatalf("CreateAPIKey() error: %v", err)
-	}
+	require.NoError(t, err, "CreateAPIKey() error")
 
 	got, err := d.GetAPIKeyByHash(t.Context(), "uniqueHash42")
-	if err != nil {
-		t.Fatalf("GetAPIKeyByHash() error: %v", err)
-	}
+	require.NoError(t, err, "GetAPIKeyByHash() error")
 	if got.ID != created.ID {
 		t.Errorf("ID = %q, want %q", got.ID, created.ID)
 	}

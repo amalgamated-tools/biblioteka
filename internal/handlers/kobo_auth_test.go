@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestHandleAuth_RefreshEndpoint verifies that HandleAuth handles the
@@ -23,13 +25,9 @@ func TestHandleAuth_RefreshEndpoint(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	if resp["AccessToken"] == nil || resp["AccessToken"] == "" {
 		t.Error("expected non-empty AccessToken in refresh response")
 	}
@@ -52,9 +50,7 @@ func TestHandleAuth_ExchangeEndpoint(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 // TestHandleAuth_NilBody verifies that HandleAuth works correctly when no
@@ -71,13 +67,9 @@ func TestHandleAuth_NilBody(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	// When no body is provided, UserKey should be the zero value.
 	if _, ok := resp["UserKey"]; !ok {
 		t.Error("expected UserKey field in response even when body is nil")
@@ -100,9 +92,7 @@ func TestHandleAuth_TokenType(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	if resp["TokenType"] != "Bearer" {
 		t.Errorf("TokenType = %v, want Bearer", resp["TokenType"])
 	}
@@ -122,9 +112,7 @@ func TestHandleAuth_TrackingIDFormat(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	trackingID, _ := resp["TrackingId"].(string)
 	if len(trackingID) == 0 {
 		t.Error("expected non-empty TrackingId")
@@ -170,9 +158,7 @@ func TestKoboRandomUUID_IsUnique(t *testing.T) {
 	seen := make(map[string]bool)
 	for range 10 {
 		id, err := koboRandomUUID()
-		if err != nil {
-			t.Fatalf("koboRandomUUID() error: %v", err)
-		}
+		require.NoError(t, err, "koboRandomUUID() error")
 		if seen[id] {
 			t.Errorf("koboRandomUUID() returned duplicate value %q", id)
 		}
@@ -189,22 +175,16 @@ func TestHandleAuth_DirectHandler(t *testing.T) {
 	h := &KoboHandler{DB: d}
 
 	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	_ = user
 
 	r := httptest.NewRequest(http.MethodPost, "/v1/auth/device", bytes.NewBufferString(`{"UserKey":"direct-key"}`))
 	w := httptest.NewRecorder()
 	h.HandleAuth(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	if resp["UserKey"] != "direct-key" {
 		t.Errorf("UserKey = %v, want direct-key", resp["UserKey"])
 	}

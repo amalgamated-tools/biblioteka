@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // findOrCreate is tested directly here because its race-condition branch and
@@ -68,12 +70,8 @@ func TestFindOrCreate_CreatesNewEntity(t *testing.T) {
 			return e, nil
 		},
 	)
-	if err != nil {
-		t.Fatalf("findOrCreate() error: %v", err)
-	}
-	if result == nil {
-		t.Fatal("findOrCreate() returned nil")
-	}
+	require.NoError(t, err, "findOrCreate() error")
+	require.NotNil(t, result)
 	if result.name != "newEntity" {
 		t.Errorf("result.name = %q, want newEntity", result.name)
 	}
@@ -96,9 +94,7 @@ func TestFindOrCreate_ReturnsExistingEntity(t *testing.T) {
 			return e, nil
 		},
 	)
-	if err != nil {
-		t.Fatalf("findOrCreate() error: %v", err)
-	}
+	require.NoError(t, err, "findOrCreate() error")
 	if result != existing {
 		t.Errorf("findOrCreate() returned different entity, want original")
 	}
@@ -127,9 +123,7 @@ func TestFindOrCreate_RaceCondition(t *testing.T) {
 			return nil, errFakeExists
 		},
 	)
-	if err != nil {
-		t.Fatalf("findOrCreate() error: %v", err)
-	}
+	require.NoError(t, err, "findOrCreate() error")
 	if result != winner {
 		t.Errorf("findOrCreate() did not return the race winner")
 	}
@@ -178,18 +172,14 @@ func TestFindOrCreate_ViaFindOrCreateAuthor(t *testing.T) {
 
 	// First call creates.
 	a1, err := d.FindOrCreateAuthor(t.Context(), "Neil Gaiman")
-	if err != nil {
-		t.Fatalf("first FindOrCreateAuthor() error: %v", err)
-	}
+	require.NoError(t, err, "first FindOrCreateAuthor() error")
 	if a1.ID == "" {
 		t.Error("created author has empty ID")
 	}
 
 	// Second call finds the same record.
 	a2, err := d.FindOrCreateAuthor(t.Context(), "Neil Gaiman")
-	if err != nil {
-		t.Fatalf("second FindOrCreateAuthor() error: %v", err)
-	}
+	require.NoError(t, err, "second FindOrCreateAuthor() error")
 	if a2.ID != a1.ID {
 		t.Errorf("IDs differ: %q vs %q", a2.ID, a1.ID)
 	}

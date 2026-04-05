@@ -11,40 +11,34 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 	_ "modernc.org/sqlite"
+
+	"github.com/stretchr/testify/require"
 )
 
 func newTestDB(t *testing.T) *db.DB {
 	t.Helper()
 
 	sqlDB, err := sql.Open("sqlite", ":memory:")
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
+	require.NoError(t, err, "open")
+	t.Cleanup(func() { _ = sqlDB.Close() })
 
-	if _, err := sqlDB.Exec(`
+	_, err = sqlDB.Exec(`
 		PRAGMA journal_mode = WAL;
 		PRAGMA synchronous = NORMAL;
 		PRAGMA foreign_keys = ON;
-	`); err != nil {
-		_ = sqlDB.Close()
-		t.Fatalf("pragmas: %v", err)
-	}
+	`)
+	require.NoError(t, err, "pragmas")
 
-	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
-		_ = sqlDB.Close()
-		t.Fatalf("migrations: %v", err)
-	}
+	err = db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite)
+	require.NoError(t, err, "migrations")
 
-	t.Cleanup(func() { _ = sqlDB.Close() })
 	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
 }
 
 func TestProcessFileHandler(t *testing.T) {
 	database := newTestDB(t)
 	extractor, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("failed to create metadata extractor: %v", err)
-	}
+	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 	dir := t.TempDir()
@@ -58,32 +52,20 @@ func TestProcessFileHandler(t *testing.T) {
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 
-	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	if books[0].Title != "The Great Gatsby" {
 		t.Errorf("expected title %q, got %q", "The Great Gatsby", books[0].Title)
 	}
 
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	if err != nil {
-		t.Fatalf("list book files: %v", err)
-	}
-	if len(files) != 1 {
-		t.Fatalf("expected 1 file, got %d", len(files))
-	}
+	require.NoError(t, err, "list book files")
+	require.Len(t, files, 1)
 	if files[0].FileType != "epub" {
 		t.Errorf("expected file type %q, got %q", "epub", files[0].FileType)
 	}
@@ -96,12 +78,8 @@ func TestProcessFileHandler(t *testing.T) {
 
 	// Verify author was created and associated with the book
 	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
-	if err != nil {
-		t.Fatalf("get book authors: %v", err)
-	}
-	if len(authors) != 1 {
-		t.Fatalf("expected 1 author, got %d", len(authors))
-	}
+	require.NoError(t, err, "get book authors")
+	require.Len(t, authors, 1)
 	if authors[0].Name != "F. Scott Fitzgerald" {
 		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", authors[0].Name)
 	}
@@ -120,9 +98,7 @@ func TestProcessFileHandler(t *testing.T) {
 func TestProcessFileHandler_MetadataFields(t *testing.T) {
 	database := newTestDB(t)
 	extractor, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("failed to create metadata extractor: %v", err)
-	}
+	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 	dir := t.TempDir()
@@ -140,21 +116,13 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 		FileType: "epub",
 		FileSize: 2048,
 	})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 
-	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	book := books[0]
 
 	if book.Title != "Dune" {
@@ -178,12 +146,8 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 
 	// Verify author creation and association
 	authors, err := database.GetBookAuthors(t.Context(), book.ID)
-	if err != nil {
-		t.Fatalf("get book authors: %v", err)
-	}
-	if len(authors) != 1 {
-		t.Fatalf("expected 1 author, got %d", len(authors))
-	}
+	require.NoError(t, err, "get book authors")
+	require.Len(t, authors, 1)
 	if authors[0].Name != "Frank Herbert" {
 		t.Errorf("expected author %q, got %q", "Frank Herbert", authors[0].Name)
 	}
@@ -192,43 +156,31 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 func TestProcessFileHandler_EmptyPath(t *testing.T) {
 	database := newTestDB(t)
 	extractor, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("failed to create metadata extractor: %v", err)
-	}
+	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 
 	payload, err := json.Marshal(ProcessFilePayload{Path: ""})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 	err = handler(t.Context(), payload)
-	if err == nil {
-		t.Fatal("expected error for empty path")
-	}
+	require.Error(t, err, "expected error for empty path")
 }
 
 func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	database := newTestDB(t)
 	extractor, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("failed to create metadata extractor: %v", err)
-	}
+	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 
 	// Create a library to link the book to.
 	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["/books"]`, db.LibraryOrganizationBookPerFolder, true)
-	if err != nil {
-		t.Fatalf("create library: %v", err)
-	}
+	require.NoError(t, err, "create library")
 
 	// Set up: Author/Title.epub structure in a temp dir simulating a library root.
 	root := t.TempDir()
 	authorDir := filepath.Join(root, "F. Scott Fitzgerald")
-	if err := os.MkdirAll(authorDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
+	require.NoError(t, os.MkdirAll(authorDir, 0o755), "mkdir")
 	epubPath := filepath.Join(authorDir, "The Great Gatsby.epub")
 	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
@@ -240,60 +192,40 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 		LibraryID:   lib.ID,
 		LibraryRoot: root,
 	})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 
-	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	// Verify book was created.
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 
 	// Verify author was linked.
 	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
-	if err != nil {
-		t.Fatalf("get book authors: %v", err)
-	}
-	if len(authors) != 1 {
-		t.Fatalf("expected 1 author, got %d", len(authors))
-	}
+	require.NoError(t, err, "get book authors")
+	require.Len(t, authors, 1)
 	if authors[0].Name != "F. Scott Fitzgerald" {
 		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", authors[0].Name)
 	}
 
 	// Verify book was added to library.
 	libBooks, err := database.ListBooksByLibrary(t.Context(), lib.ID)
-	if err != nil {
-		t.Fatalf("list library books: %v", err)
-	}
-	if len(libBooks) != 1 {
-		t.Fatalf("expected 1 library book, got %d", len(libBooks))
-	}
+	require.NoError(t, err, "list library books")
+	require.Len(t, libBooks, 1)
 }
 
 func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 	database := newTestDB(t)
 	extractor, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("failed to create metadata extractor: %v", err)
-	}
+	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 
 	// Set up: Author/Series/N. Title.epub
 	root := t.TempDir()
 	seriesDir := filepath.Join(root, "Alexander McCall Smith", "No. 1 Ladies' Detective Agency")
-	if err := os.MkdirAll(seriesDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
+	require.NoError(t, os.MkdirAll(seriesDir, 0o755), "mkdir")
 	epubPath := filepath.Join(seriesDir, "10. Tea Time for the Traditionally Built (2009).epub")
 	testutils.MakeTestEPUB(t, epubPath, "", "", "")
 
@@ -304,30 +236,18 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 		FileSize:    512,
 		LibraryRoot: root,
 	})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 
-	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("handler: %v", err)
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 
 	// Verify series was linked.
 	seriesEntries, err := database.GetBookSeries(t.Context(), books[0].ID)
-	if err != nil {
-		t.Fatalf("get book series: %v", err)
-	}
-	if len(seriesEntries) != 1 {
-		t.Fatalf("expected 1 series entry, got %d", len(seriesEntries))
-	}
+	require.NoError(t, err, "get book series")
+	require.Len(t, seriesEntries, 1)
 	if seriesEntries[0].Series.Name != "No. 1 Ladies' Detective Agency" {
 		t.Errorf("expected series %q, got %q", "No. 1 Ladies' Detective Agency", seriesEntries[0].Series.Name)
 	}
@@ -337,12 +257,8 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 
 	// Verify author was linked from directory.
 	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
-	if err != nil {
-		t.Fatalf("get book authors: %v", err)
-	}
-	if len(authors) != 1 {
-		t.Fatalf("expected 1 author, got %d", len(authors))
-	}
+	require.NoError(t, err, "get book authors")
+	require.Len(t, authors, 1)
 	if authors[0].Name != "Alexander McCall Smith" {
 		t.Errorf("expected author %q, got %q", "Alexander McCall Smith", authors[0].Name)
 	}
@@ -351,9 +267,7 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 func TestProcessFileHandler_DuplicateSkipped(t *testing.T) {
 	database := newTestDB(t)
 	extractor, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("failed to create metadata extractor: %v", err)
-	}
+	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
 	handler := NewProcessFileHandler(database, extractor)
 	dir := t.TempDir()
@@ -366,24 +280,16 @@ func TestProcessFileHandler_DuplicateSkipped(t *testing.T) {
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err, "marshal")
 
 	// Process once.
-	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("first handler call: %v", err)
-	}
+	require.NoError(t, handler(t.Context(), payload), "first handler call")
 
 	// Process again — should be skipped (no error, no duplicate book).
-	if err := handler(t.Context(), payload); err != nil {
-		t.Fatalf("second handler call: %v", err)
-	}
+	require.NoError(t, handler(t.Context(), payload), "second handler call")
 
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
+	require.NoError(t, err, "list books")
 	if len(books) != 1 {
 		t.Errorf("expected 1 book after duplicate processing, got %d", len(books))
 	}

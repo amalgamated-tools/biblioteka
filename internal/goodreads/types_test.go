@@ -3,6 +3,8 @@ package goodreads
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestBookResult_JSONRoundTrip verifies that a BookResult can be marshaled to
@@ -28,14 +30,10 @@ func TestBookResult_JSONRoundTrip(t *testing.T) {
 	}
 
 	data, err := json.Marshal(original)
-	if err != nil {
-		t.Fatalf("json.Marshal() error: %v", err)
-	}
+	require.NoError(t, err, "json.Marshal() error")
 
 	var decoded BookResult
-	if err := json.Unmarshal(data, &decoded); err != nil {
-		t.Fatalf("json.Unmarshal() error: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(data, &decoded), "json.Unmarshal() error")
 
 	if decoded.WorkID != original.WorkID {
 		t.Errorf("WorkID = %q, want %q", decoded.WorkID, original.WorkID)
@@ -66,14 +64,10 @@ func TestBookResult_JSONFieldNames(t *testing.T) {
 	}
 
 	data, err := json.Marshal(br)
-	if err != nil {
-		t.Fatalf("json.Marshal() error: %v", err)
-	}
+	require.NoError(t, err, "json.Marshal() error")
 
 	var raw map[string]any
-	if err := json.Unmarshal(data, &raw); err != nil {
-		t.Fatalf("json.Unmarshal() error: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(data, &raw), "json.Unmarshal() error")
 
 	// Verify snake_case JSON keys.
 	if _, ok := raw["work_id"]; !ok {
@@ -94,9 +88,7 @@ func TestBookResult_ZeroValue(t *testing.T) {
 
 	var br BookResult
 	data, err := json.Marshal(br)
-	if err != nil {
-		t.Fatalf("json.Marshal() error for zero value: %v", err)
-	}
+	require.NoError(t, err, "json.Marshal() error for zero value")
 	if len(data) == 0 {
 		t.Error("expected non-empty JSON for zero value BookResult")
 	}

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // setupAdminHandler creates a DB with an admin user (first user) and a regular user,
@@ -16,13 +18,9 @@ func setupAdminHandler(t *testing.T) (*AdminHandler, string, string) {
 	h := &AdminHandler{DB: d}
 
 	admin, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create admin: %v", err)
-	}
+	require.NoError(t, err, "create admin")
 	regular, err := d.CreateUser(t.Context(), "Regular", "regular@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create regular user: %v", err)
-	}
+	require.NoError(t, err, "create regular user")
 	return h, admin.ID, regular.ID
 }
 
@@ -41,9 +39,7 @@ func TestHandleListUsers_AdminSuccess(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var users []adminUserDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &users); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &users), "unmarshal")
 	if len(users) != 2 {
 		t.Errorf("expected 2 users, got %d", len(users))
 	}
@@ -87,9 +83,7 @@ func TestHandleListUsers_ResponseContainsAdminFlag(t *testing.T) {
 	h.HandleListUsers(w, r)
 
 	var users []adminUserDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &users); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &users), "unmarshal")
 
 	var foundAdmin, foundRegular bool
 	for _, u := range users {
@@ -119,13 +113,9 @@ func TestHandleListUsers_OIDCLinkedField(t *testing.T) {
 	h := &AdminHandler{DB: d}
 
 	local, err := d.CreateUser(t.Context(), "Local User", "local@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create local user: %v", err)
-	}
+	require.NoError(t, err, "create local user")
 	oidcUser, err := d.CreateOIDCUser(t.Context(), "OIDC User", "oidc@example.com", "oidc-subject-123")
-	if err != nil {
-		t.Fatalf("create OIDC user: %v", err)
-	}
+	require.NoError(t, err, "create OIDC user")
 	// First user is auto-admin; promote the local user so we can query.
 	_ = d.SetAdmin(t.Context(), local.ID, true)
 
@@ -135,14 +125,10 @@ func TestHandleListUsers_OIDCLinkedField(t *testing.T) {
 
 	h.HandleListUsers(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var users []adminUserDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &users); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &users), "unmarshal")
 
 	for _, u := range users {
 		switch u.ID {
@@ -175,9 +161,7 @@ func TestHandleSetAdmin_AdminPromotesUser(t *testing.T) {
 	}
 
 	isAdmin, err := h.DB.IsAdmin(t.Context(), regularID)
-	if err != nil {
-		t.Fatalf("IsAdmin() error: %v", err)
-	}
+	require.NoError(t, err, "IsAdmin() error")
 	if !isAdmin {
 		t.Error("regular user should now be admin")
 	}
@@ -201,9 +185,7 @@ func TestHandleSetAdmin_AdminDemotesUser(t *testing.T) {
 	}
 
 	isAdmin, err := h.DB.IsAdmin(t.Context(), regularID)
-	if err != nil {
-		t.Fatalf("check admin: %v", err)
-	}
+	require.NoError(t, err, "check admin")
 	if isAdmin {
 		t.Error("user should no longer be admin")
 	}
