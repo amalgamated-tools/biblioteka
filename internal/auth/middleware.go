@@ -192,7 +192,7 @@ func Middleware(jwt *JWTManager, apiKeys APIKeyValidator) func(http.Handler) htt
 			if err != nil {
 				// Distinguish between expected auth failures (invalid/expired token)
 				// and unexpected internal errors (e.g., database/network issues).
-				if errors.Is(err, ErrInvalidToken) {
+				if errors.Is(err, ErrInvalidToken) || errors.Is(err, ErrExpiredToken) {
 					slog.InfoContext(r.Context(), "invalid or expired token", slog.Any(otelkeys.Error, err))
 					jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 				} else {
@@ -332,7 +332,7 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker, apiKeys APIKeyValida
 
 			userID, err := resolveUser(r.Context(), token, source, jwt, apiKeys)
 			if err != nil {
-				if errors.Is(err, ErrInvalidToken) {
+				if errors.Is(err, ErrInvalidToken) || errors.Is(err, ErrExpiredToken) {
 					slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any(otelkeys.Error, err))
 					jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 				} else {
