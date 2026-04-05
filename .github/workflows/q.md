@@ -15,6 +15,8 @@ permissions:
   issues: read
   pull-requests: read
 
+tracker-id: q
+
 network: defaults
 
 safe-outputs:

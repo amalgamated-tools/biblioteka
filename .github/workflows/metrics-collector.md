@@ -196,6 +196,22 @@ find /tmp/gh-aw/repo-memory/default/metrics/daily/ -name "*.json" -mtime +30 -de
 - If token/cost data is unavailable, omit or set to null
 - Always include workflows in the metrics even if they have no activity (helps detect stalled workflows)
 
+### Always-Track Workflows
+
+These workflows must always appear in the metrics output, even with zero runs or outputs. Several are slash-command- or manually-triggered and will frequently have no daily activity, but must still be represented in the ecosystem view for accurate counts and trend analysis:
+
+| Workflow | Tracker ID | Trigger type |
+|---|---|---|
+| artifacts-summary | artifacts-summary | weekly schedule |
+| grumpy-reviewer | grumpy-reviewer | slash command (`/grumpy`) |
+| pr-nitpick-reviewer | pr-nitpick-reviewer | slash command (`/nit`) |
+| q | q | slash command (`/q`) / reaction |
+| weekly-repo-map | weekly-repo-map | weekly schedule |
+| portfolio-analyst | portfolio-analyst-weekly | weekly schedule |
+| commit-changes-analyzer | commit-changes-analyzer | manual dispatch |
+
+When building the `workflows` object in the output JSON, ensure each of these tracker IDs has an entry. Set all numeric fields to `0` and rates to `null` when no data is available.
+
 ### Workflow Name Extraction
 
 The agentic-workflows logs tool provides structured data with workflow names already extracted. Use this instead of parsing footers manually.
