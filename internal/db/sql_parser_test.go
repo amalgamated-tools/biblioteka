@@ -3,6 +3,8 @@ package db
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSplitStatements_DollarQuoting(t *testing.T) {
@@ -16,9 +18,7 @@ CREATE TABLE foo (id int)`
 
 	stmts := splitStatements(sql)
 
-	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %v", len(stmts), stmts)
-	}
+	require.Len(t, stmts, 2)
 	if !strings.Contains(stmts[0], "notify_change") {
 		t.Errorf("first statement should contain the full function body, got: %s", stmts[0])
 	}
@@ -37,9 +37,7 @@ SELECT 1`
 
 	stmts := splitStatements(sql)
 
-	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %v", len(stmts), stmts)
-	}
+	require.Len(t, stmts, 2)
 }
 
 func TestSplitStatements_CreateTableWithTriggerColumnName(t *testing.T) {
@@ -48,9 +46,7 @@ func TestSplitStatements_CreateTableWithTriggerColumnName(t *testing.T) {
 
 	stmts := splitStatements(sql)
 
-	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %v", len(stmts), stmts)
-	}
+	require.Len(t, stmts, 2)
 }
 
 func TestSplitStatements_CreateIndexNotTrigger(t *testing.T) {
@@ -58,9 +54,7 @@ func TestSplitStatements_CreateIndexNotTrigger(t *testing.T) {
 
 	stmts := splitStatements(sql)
 
-	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %v", len(stmts), stmts)
-	}
+	require.Len(t, stmts, 2)
 }
 
 func TestSplitStatements_CreateTrigger(t *testing.T) {
@@ -69,9 +63,7 @@ SELECT 1`
 
 	stmts := splitStatements(sql)
 
-	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %v", len(stmts), stmts)
-	}
+	require.Len(t, stmts, 2)
 	if !strings.Contains(stmts[0], "my_trigger") {
 		t.Errorf("first statement should contain trigger, got: %s", stmts[0])
 	}

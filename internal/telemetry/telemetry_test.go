@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestSendBoot_DisabledByDefault verifies that SendBoot is a no-op when the
@@ -86,13 +88,9 @@ func TestPayload_Fields(t *testing.T) {
 	}
 
 	data, err := json.Marshal(p)
-	if err != nil {
-		t.Fatalf("marshal payload: %v", err)
-	}
+	require.NoError(t, err, "marshal payload")
 	var m map[string]any
-	if err := json.Unmarshal(data, &m); err != nil {
-		t.Fatalf("unmarshal payload: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(data, &m), "unmarshal payload")
 
 	expectedKeys := []string{"application", "install_id", "version", "os", "arch", "timestamp"}
 	for _, key := range expectedKeys {

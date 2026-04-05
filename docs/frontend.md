@@ -50,8 +50,19 @@ frontend/
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
       actions.ts              Svelte action utilities (`autofocusFirstButton`)
-      api.ts                  Centralised API client
-      api.test.ts             API client unit tests
+      api.ts                  Barrel re-export; re-exports every symbol from `api/` sub-modules
+      api.test.ts             API client unit tests; imports from the barrel and exercises each sub-module through it
+      api/                    Domain-specific API sub-modules
+        core.ts               Token storage, `ApiError`, `request`, `getVersion`
+        auth.ts               `signup`, `login`, `logout`, `getMe`, OIDC helpers, `changePassword`
+        config.ts             OIDC + SMTP server configuration
+        admin.ts              User management and audit logs
+        credentials.ts        OPDS + KOSync credentials
+        libraries.ts          Library CRUD + paginated book listing
+        authors.ts            Author CRUD + author–book relationships
+        series.ts             Series CRUD + series–book relationships
+        books.ts              Book CRUD, associations, and file management
+        tokens.ts             API keys, Kobo tokens
       clipboard.ts            Async clipboard helper with `execCommand` fallback
       clipboard.test.ts       Clipboard helper unit tests
       copyTimeout.svelte.ts   `CopyTimeoutState` class — auto-resetting copied-ID feedback state
@@ -284,11 +295,37 @@ When a view component renders, it reads `routerStore.subPath` as a `$derived` va
 
 ## API client
 
-All HTTP calls go through `frontend/src/lib/api.ts`. This module:
+All HTTP calls go through `frontend/src/lib/api.ts`, which is a barrel re-export of ten domain-specific sub-modules under `frontend/src/lib/api/`. The barrel preserves all existing import paths so no call-site changes are required when the internal structure evolves.
 
-- Stores the JWT token in `localStorage` and attaches it as the `Authorization: Bearer` header on every authenticated request.
-- Throws a typed `Error` with the server's `error` message on non-2xx responses.
-- Exports a function per API resource (e.g. `listBooks`, `createBook`, `updateBook`, `deleteBook`).
+### Module overview
+
+| Sub-module | Contents |
+|------------|----------|
+| `api/core.ts` | Token storage (`setToken`, `clearToken`, `hasToken`, `getToken`), `ApiError`, the `request` helper, `getVersion` |
+| `api/auth.ts` | `signup`, `login`, `logout`, `getMe`, OIDC helpers, `changePassword` |
+| `api/config.ts` | OIDC + SMTP server configuration |
+| `api/admin.ts` | User management (`listUsers`, `setUserAdmin`) and audit logs (`getAuditLogs`) |
+| `api/credentials.ts` | OPDS and KOSync credential operations |
+| `api/libraries.ts` | Library CRUD + paginated book listing |
+| `api/authors.ts` | Author CRUD + author–book relationships |
+| `api/series.ts` | Series CRUD + series–book relationships |
+| `api/books.ts` | Book CRUD, associations, and file management |
+| `api/tokens.ts` | API key and Kobo token management |
+
+Each sub-module imports `request` (and `setToken` where needed) from `./core`; there are no circular dependencies.
+
+### Core module
+
+`api/core.ts` contains the building blocks used by all other sub-modules:
+
+- **Token storage** — Stores the JWT in `localStorage` under the key `biblioteka_token`. Use `setToken`, `clearToken`, `hasToken`, and `getToken` to manage it.
+- **`ApiError`** — A typed subclass of `Error` that carries a numeric `status` field (the HTTP status code). Catch `ApiError` when you need to branch on a specific status code.
+- **`request<T>`** — The shared fetch wrapper. It attaches the `Authorization: Bearer` header when a token is stored and throws `ApiError` on any non-2xx response.
+- **`getVersion`** — Fetches the server version from `GET /api/version`.
+
+### Usage
+
+Import from the barrel (`../lib/api`) — not from the individual sub-modules — so that call sites do not depend on the internal file layout:
 
 ```ts
 // Example usage inside a store method
@@ -297,7 +334,23 @@ import * as api from "../lib/api";
 const book = await api.createBook({ title: "Dune", … });
 ```
 
-Never call `fetch` directly from components or stores — always go through `api.ts`.
+Never call `fetch` directly from components or stores — always go through the API modules.
+
+### `ApiError` handling
+
+```ts
+import { ApiError, login } from "../lib/api";
+
+try {
+  await login(email, password);
+} catch (err) {
+  if (err instanceof ApiError && err.status === 401) {
+    // handle wrong credentials
+  } else {
+    throw err;
+  }
+}
+```
 
 ## Utility modules
 
@@ -505,9 +558,28 @@ Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback af
 
 ## TypeScript types
 
-Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping shared/exported types in one file gives every component, store, and the API module a single import path, while `frontend/src/lib/api.ts` may still define small module-local helper types for its own internal use.
+Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping shared/exported types in one file gives every component, store, and the API modules a single import path, while individual sub-modules under `frontend/src/lib/api/` may still define small module-local helper types for their own internal use.
 
 Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to `types.ts`.
+
+## Adding a new API function
+
+1. Identify the right sub-module in `frontend/src/lib/api/`. Use the module overview table above as your guide (e.g., a new book endpoint goes in `books.ts`; a new auth endpoint goes in `auth.ts`).
+2. Add the exported function to that sub-module. Import `request` from `./core`:
+
+   ```ts
+   // frontend/src/lib/api/books.ts
+   import { request } from "./core";
+
+   export async function archiveBook(id: string): Promise<void> {
+     return request("POST", `/api/books/${id}/archive`);
+   }
+   ```
+
+3. The barrel (`api.ts`) already re-exports every symbol from every sub-module via `export * from "./api/<module>"`, so the new function is immediately available to all existing import sites — **no changes to `api.ts` are needed**.
+4. Add a test in `frontend/src/lib/api.test.ts` covering the new function.
+
+> **Do not add new functions directly to `api.ts`** — that file is a barrel only. Adding logic there breaks the modular structure.
 
 ## Adding a new store
 
@@ -1979,7 +2051,7 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `api.test.ts`
 
-`frontend/src/lib/api.test.ts` exercises the centralised API client (`frontend/src/lib/api.ts`). `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into nine `describe` blocks:
+`frontend/src/lib/api.test.ts` exercises the centralised API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and exercise each sub-module through it. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into nine `describe` blocks:
 
 **`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying `localStorage` read/write semantics, including the edge case of an empty string being treated as "no token".
 

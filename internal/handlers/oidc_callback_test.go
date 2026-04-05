@@ -11,6 +11,8 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v4"
 	"golang.org/x/oauth2"
+
+	"github.com/stretchr/testify/require"
 )
 
 // newTestOIDCHandlerWithTokenResponse creates a handler wired to a mock OIDC
@@ -60,9 +62,7 @@ func newTestOIDCHandlerWithTokenResponse(t *testing.T, rawResponse map[string]an
 	t.Cleanup(srv.Close)
 
 	provider, err := oidc.NewProvider(t.Context(), srv.URL)
-	if err != nil {
-		t.Fatalf("newTestOIDCHandlerWithTokenResponse: oidc.NewProvider: %v", err)
-	}
+	require.NoError(t, err, "newTestOIDCHandlerWithTokenResponse: oidc.NewProvider")
 
 	return &OIDCHandler{
 		DB:       newTestDB(t),
@@ -95,9 +95,7 @@ func TestOIDCCallback_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("expected status 405, got %d", w.Code)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestOIDCCallback_MissingStateCookie(t *testing.T) {
@@ -109,9 +107,7 @@ func TestOIDCCallback_MissingStateCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestOIDCCallback_StateMismatch(t *testing.T) {
@@ -124,9 +120,7 @@ func TestOIDCCallback_StateMismatch(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestOIDCCallback_MissingVerifierCookie(t *testing.T) {
@@ -139,9 +133,7 @@ func TestOIDCCallback_MissingVerifierCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestOIDCCallback_ProviderError(t *testing.T) {
@@ -156,9 +148,7 @@ func TestOIDCCallback_ProviderError(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status 401, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
 func TestOIDCCallback_MissingCode(t *testing.T) {
@@ -172,9 +162,7 @@ func TestOIDCCallback_MissingCode(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 // ---------------------------------------------------------------------------
@@ -193,13 +181,9 @@ func TestOIDCCallback_MissingIDToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status 401, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
 	if body["error"] != "missing id_token in response" {
 		t.Errorf("unexpected error message: %q", body["error"])
 	}
@@ -218,13 +202,9 @@ func TestOIDCCallback_MissingSub(t *testing.T) {
 	w := httptest.NewRecorder()
 	tp.handler.Callback(w, callbackRequest("test-state"))
 
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
 	if body["error"] != "sub claim is required" {
 		t.Errorf("unexpected error message: %q", body["error"])
 	}
@@ -243,13 +223,9 @@ func TestOIDCCallback_MissingEmail(t *testing.T) {
 	w := httptest.NewRecorder()
 	tp.handler.Callback(w, callbackRequest("test-state"))
 
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
 	if body["error"] != "email claim is required" {
 		t.Errorf("unexpected error message: %q", body["error"])
 	}
@@ -270,15 +246,11 @@ func TestOIDCCallback_NameFallsBackToEmail(t *testing.T) {
 	tp.handler.Callback(w, callbackRequest("test-state"))
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
-	}
+	require.Equal(t, http.StatusFound, resp.StatusCode)
 
 	// Verify the created user has the email as their display name.
 	user, err := tp.handler.DB.GetUserByOIDCSubject(t.Context(), "name-fallback-sub")
-	if err != nil {
-		t.Fatalf("GetUserByOIDCSubject: %v", err)
-	}
+	require.NoError(t, err, "GetUserByOIDCSubject")
 	if user.Name != "namefallback@example.com" {
 		t.Errorf("expected user name %q (email fallback), got %q", "namefallback@example.com", user.Name)
 	}
@@ -300,9 +272,7 @@ func TestOIDCCallback_LinkFlow_UserNotFound(t *testing.T) {
 	tp.handler.Callback(w, callbackRequest(signedState))
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
-	}
+	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
 	if !strings.Contains(loc, "oidc_link_error=") {
 		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
@@ -317,9 +287,7 @@ func TestOIDCCallback_LinkFlow_AlreadyLinked(t *testing.T) {
 
 	// Create a user that already has an OIDC subject linked.
 	user, err := tp.handler.DB.CreateOIDCUser(t.Context(), "Already Linked", "alreadylinked@example.com", "existing-sub")
-	if err != nil {
-		t.Fatalf("CreateOIDCUser: %v", err)
-	}
+	require.NoError(t, err, "CreateOIDCUser")
 
 	tp.setClaims(map[string]any{
 		"sub":            "new-sub-for-linked-user",
@@ -334,9 +302,7 @@ func TestOIDCCallback_LinkFlow_AlreadyLinked(t *testing.T) {
 	tp.handler.Callback(w, callbackRequest(signedState))
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
-	}
+	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
 	if !strings.Contains(loc, "oidc_link_error=") {
 		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
@@ -351,15 +317,11 @@ func TestOIDCCallback_LinkFlow_SubjectAlreadyLinkedToOther(t *testing.T) {
 
 	// Create user A (the intended link target, with no OIDC subject).
 	userA, err := tp.handler.DB.CreateUser(t.Context(), "User A", "usera@example.com", "password123")
-	if err != nil {
-		t.Fatalf("CreateUser (A): %v", err)
-	}
+	require.NoError(t, err, "CreateUser (A)")
 
 	// Create user B who already owns the OIDC subject we will claim in the callback.
 	_, err = tp.handler.DB.CreateOIDCUser(t.Context(), "User B", "userb@example.com", "taken-sub")
-	if err != nil {
-		t.Fatalf("CreateOIDCUser (B): %v", err)
-	}
+	require.NoError(t, err, "CreateOIDCUser (B)")
 
 	// The callback presents "taken-sub", which belongs to user B, not user A.
 	tp.setClaims(map[string]any{
@@ -375,9 +337,7 @@ func TestOIDCCallback_LinkFlow_SubjectAlreadyLinkedToOther(t *testing.T) {
 	tp.handler.Callback(w, callbackRequest(signedState))
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
-	}
+	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
 	if !strings.Contains(loc, "oidc_link_error=") {
 		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
@@ -401,9 +361,7 @@ func TestOIDCCallback_Success_SetsCookie(t *testing.T) {
 	tp.handler.Callback(w, callbackRequest("test-state"))
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusFound {
-		t.Fatalf("expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
-	}
+	require.Equal(t, http.StatusFound, resp.StatusCode)
 	if loc := resp.Header.Get("Location"); loc != "/?oidc_login=1" {
 		t.Errorf("expected Location /?oidc_login=1, got %q", loc)
 	}
@@ -416,9 +374,7 @@ func TestOIDCCallback_Success_SetsCookie(t *testing.T) {
 			break
 		}
 	}
-	if authCookie == nil {
-		t.Fatal("expected auth cookie to be set, but none found")
-	}
+	require.NotNil(t, authCookie)
 	if authCookie.Value == "" {
 		t.Error("auth cookie value should be non-empty")
 	}
@@ -436,14 +392,10 @@ func TestFindOrCreateUser_FoundBySubject(t *testing.T) {
 
 	// Pre-create a user linked to a known OIDC subject.
 	existing, err := h.DB.CreateOIDCUser(t.Context(), "Subject User", "subject@example.com", "known-sub")
-	if err != nil {
-		t.Fatalf("CreateOIDCUser: %v", err)
-	}
+	require.NoError(t, err, "CreateOIDCUser")
 
 	user, err := h.findOrCreateUser(t.Context(), "known-sub", "subject@example.com", "Subject User")
-	if err != nil {
-		t.Fatalf("findOrCreateUser: %v", err)
-	}
+	require.NoError(t, err, "findOrCreateUser")
 	if user.ID != existing.ID {
 		t.Errorf("expected user ID %q (found by subject), got %q", existing.ID, user.ID)
 	}
@@ -454,24 +406,18 @@ func TestFindOrCreateUser_FoundByEmail_LinksSubject(t *testing.T) {
 
 	// Pre-create a regular (non-OIDC) user.
 	existing, err := h.DB.CreateUser(t.Context(), "Email User", "emailmatch@example.com", "password123")
-	if err != nil {
-		t.Fatalf("CreateUser: %v", err)
-	}
+	require.NoError(t, err, "CreateUser")
 
 	// findOrCreateUser should find the user by email and link the new OIDC subject.
 	user, err := h.findOrCreateUser(t.Context(), "new-oidc-sub", "emailmatch@example.com", "Email User")
-	if err != nil {
-		t.Fatalf("findOrCreateUser: %v", err)
-	}
+	require.NoError(t, err, "findOrCreateUser")
 	if user.ID != existing.ID {
 		t.Errorf("expected user ID %q (found by email), got %q", existing.ID, user.ID)
 	}
 
 	// The OIDC subject should now be linked to the existing user.
 	linked, err := h.DB.GetUserByOIDCSubject(t.Context(), "new-oidc-sub")
-	if err != nil {
-		t.Fatalf("GetUserByOIDCSubject after link: %v", err)
-	}
+	require.NoError(t, err, "GetUserByOIDCSubject after link")
 	if linked.ID != existing.ID {
 		t.Errorf("OIDC subject not linked to the correct user: expected %q, got %q", existing.ID, linked.ID)
 	}
@@ -481,9 +427,7 @@ func TestFindOrCreateUser_CreatesNewUser(t *testing.T) {
 	h := newTestOIDCHandler(t)
 
 	user, err := h.findOrCreateUser(t.Context(), "brand-new-sub", "brandnew@example.com", "Brand New User")
-	if err != nil {
-		t.Fatalf("findOrCreateUser: %v", err)
-	}
+	require.NoError(t, err, "findOrCreateUser")
 
 	if user.Email != "brandnew@example.com" {
 		t.Errorf("expected email %q, got %q", "brandnew@example.com", user.Email)
@@ -494,9 +438,7 @@ func TestFindOrCreateUser_CreatesNewUser(t *testing.T) {
 
 	// Confirm the user is retrievable from the DB by OIDC subject.
 	found, err := h.DB.GetUserByOIDCSubject(t.Context(), "brand-new-sub")
-	if err != nil {
-		t.Fatalf("GetUserByOIDCSubject: %v", err)
-	}
+	require.NoError(t, err, "GetUserByOIDCSubject")
 	if found.ID != user.ID {
 		t.Errorf("DB lookup returned ID %q, expected %q", found.ID, user.ID)
 	}
