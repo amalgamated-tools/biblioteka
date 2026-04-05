@@ -35,7 +35,7 @@ func TestGetBook_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetBook(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListBooks(t *testing.T) {
