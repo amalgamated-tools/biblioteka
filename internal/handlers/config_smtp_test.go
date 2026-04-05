@@ -457,7 +457,7 @@ func TestHandleSetSMTPConfig_InvalidFromAddress(t *testing.T) {
 func TestHandleSetSMTPConfig_FromWithDisplayName(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
-	// "Display Name <addr>" should be rejected — only bare email addresses allowed
+	// "Display Name <addr>" format should be accepted
 	body := `{"host":"smtp.example.com","from":"App <noreply@example.com>","password":"secret"}`
 	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
 	r = withUserID(r, adminID)
@@ -465,7 +465,9 @@ func TestHandleSetSMTPConfig_FromWithDisplayName(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	require.Equal(t, http.StatusBadRequest, w.Code)
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
 }
 
 // --- HandleSMTPTest success path ---
