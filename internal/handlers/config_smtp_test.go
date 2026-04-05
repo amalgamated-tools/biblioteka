@@ -45,7 +45,22 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 	require.True(t, resp.SMTPConfigured)
 }
 
-// --- HandleSMTPConfig (GET) ---
+func TestHandleConfigStatus_SMTPConfiguredWithDisplayName(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	// Set both host and a From address with a display name.
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyHost, "smtp.example.com"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyFrom, "\"My App\" <noreply@example.com>"))
+
+	r := httptest.NewRequest(http.MethodGet, "/api/config/status", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+	h.HandleConfigStatus(w, r)
+
+	var resp configStatusResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.True(t, resp.SMTPConfigured, "expected SMTPConfigured=true when From has a display name")
+}
 
 func TestHandleGetSMTPConfig_AdminNoSettings(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
