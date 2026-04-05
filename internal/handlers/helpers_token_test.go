@@ -27,7 +27,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 			auditEntityType: "test_token",
 			auditCreate:     db.AuditActionAPIKeyCreated,
 			create: func(_ context.Context, _, _ string) (string, any, error) {
-				t.Fatal("create should not be called for invalid name")
+				require.Fail(t, "create should not be called for invalid name")
 				return "", nil, nil
 			},
 		}
@@ -127,9 +127,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 		w := httptest.NewRecorder()
 		handleTokenCreate(ops, w, r)
 
-		if w.Code != http.StatusCreated {
-			t.Fatalf("status = %d, want %d", w.Code, http.StatusCreated)
-		}
+		require.Equal(t, http.StatusCreated, w.Code, "status")
 
 		logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
 		require.NoError(t, err, "list audit logs")
