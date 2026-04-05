@@ -210,7 +210,7 @@ These workflows must always appear in the metrics output, even with zero runs or
 | portfolio-analyst | portfolio-analyst-weekly | weekly schedule |
 | commit-changes-analyzer | commit-changes-analyzer | manual dispatch |
 
-When building the `workflows` object in the output JSON, ensure each of these tracker IDs has an entry. Set all numeric fields to `0` and rates to `null` when no data is available.
+When building the `workflows` object in the output JSON, ensure each of these tracker IDs has an entry. If a workflow has no runs or activity in the collection window, set count- and duration-style numeric fields to `0`, and set rate fields to `null`. If token usage or cost data is not present in the logs, leave those fields as `null` or omit them rather than forcing them to `0`, even when the workflow had runs.
 
 ### Workflow Name Extraction
 
