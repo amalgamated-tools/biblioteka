@@ -85,7 +85,7 @@
       <KeyRound class="w-5 h-5 text-accent-600" aria-hidden="true" />
       API Keys
     </h2>
-    <p class="text-sm text-ink-500 dark:text-ink-400 mb-6">
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-6">
       Create API keys to authenticate programmatic requests. Keys are shown only
       once at creation.
     </p>
@@ -150,9 +150,9 @@
     {/if}
 
     {#if tokenList.loading}
-      <p class="text-ink-400 dark:text-ink-400">Loading API keys...</p>
+      <p class="text-ink-500 dark:text-ink-300">Loading API keys...</p>
     {:else if tokenList.items.length === 0}
-      <p class="text-sm text-ink-400 dark:text-ink-500">
+      <p class="text-sm text-ink-500 dark:text-ink-300">
         No API keys yet. Create one above to get started.
       </p>
     {:else}
@@ -160,7 +160,7 @@
         <table class="w-full text-sm">
           <thead>
             <tr
-              class="text-left text-ink-400 dark:text-ink-400 border-b border-ink-100 dark:border-ink-800"
+              class="text-left text-ink-500 dark:text-ink-300 border-b border-ink-100 dark:border-ink-800"
             >
               <th scope="col" class="pb-3 font-medium">Name</th>
               <th scope="col" class="pb-3 font-medium">Key</th>
@@ -181,15 +181,15 @@
                 >
                 <td class="py-3">
                   <code
-                    class="px-2 py-1 bg-ink-50 dark:bg-ink-800 rounded text-xs font-mono text-ink-500 dark:text-ink-400"
+                    class="px-2 py-1 bg-ink-50 dark:bg-ink-800 rounded text-xs font-mono text-ink-500 dark:text-ink-300"
                   >
                     {key.key_prefix}...
                   </code>
                 </td>
-                <td class="py-3 text-ink-400 dark:text-ink-500"
+                <td class="py-3 text-ink-500 dark:text-ink-300"
                   >{new Date(key.created_at).toLocaleDateString()}</td
                 >
-                <td class="py-3 text-ink-400 dark:text-ink-500">
+                <td class="py-3 text-ink-500 dark:text-ink-300">
                   {key.last_used_at
                     ? new Date(key.last_used_at).toLocaleDateString()
                     : "Never"}

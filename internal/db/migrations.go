@@ -127,9 +127,5 @@ func runMigrations(ctx context.Context, d *DB) error {
 		}
 	}
 
-	if err := backfillKoboTokenHashes(ctx, d); err != nil {
-		return fmt.Errorf("failed to backfill kobo token hashes: %w", err)
-	}
-
 	return nil
 }

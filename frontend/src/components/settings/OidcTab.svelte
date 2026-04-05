@@ -2,6 +2,7 @@
   import { onDestroy } from "svelte";
   import { setOidcConfig } from "../../lib/api";
   import { required, validate } from "../../lib/validation";
+  import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
   import { Shield } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -39,23 +40,20 @@
   // svelte-ignore state_referenced_locally
   let oidcRedirectUri = $state(initialRedirectUri);
   let oidcError: string | null = $state(null);
-  let oidcSuccess = $state(false);
   let oidcLoading = $state(false);
-  let successTimer: ReturnType<typeof setTimeout> | undefined;
+  const successTimer = new AutoDismissTimer();
 
   let submitLabel = $derived.by(() => {
     if (oidcLoading) return "Saving...";
     return oidcConfigured ? "Update Configuration" : "Save Configuration";
   });
 
-  onDestroy(() => {
-    if (successTimer) clearTimeout(successTimer);
-  });
+  onDestroy(() => successTimer.clear());
 
   async function handleOidcSave(e: SubmitEvent) {
     e.preventDefault();
     oidcError = null;
-    oidcSuccess = false;
+    successTimer.clear();
 
     oidcError =
       validate(oidcIssuerUrl, [required("Issuer URL is required")]) ??
@@ -75,7 +73,6 @@
         client_secret: oidcClientSecret.trim(),
         redirect_uri: oidcRedirectUri.trim(),
       });
-      oidcSuccess = true;
       oidcConfigured = true;
       oidcClientSecret = "";
       onOidcSaved({
@@ -84,7 +81,7 @@
         clientId: oidcClientId.trim(),
         redirectUri: oidcRedirectUri.trim(),
       });
-      successTimer = setTimeout(() => (oidcSuccess = false), 3000);
+      successTimer.show();
     } catch (err) {
       oidcError =
         err instanceof Error
@@ -109,7 +106,7 @@
 
     <div class="mb-4">
       <div class="flex items-center gap-2 text-sm">
-        <span class="text-ink-500">Status:</span>
+        <span class="text-ink-500 dark:text-ink-300">Status:</span>
         {#if oidcConfigured}
           <span
             class="inline-flex items-center gap-1.5 text-success-700 dark:text-green-400 bg-success-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full font-medium"
@@ -128,7 +125,7 @@
       </div>
     </div>
 
-    <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
       Configure an OpenID Connect (OIDC) provider to enable Single Sign-On.
       Users will be able to log in using your identity provider.
     </p>
@@ -152,7 +149,7 @@
         />
         <p
           id="oidc-issuer-url-hint"
-          class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+          class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
           The OIDC provider's issuer URL (must support
           .well-known/openid-configuration)
@@ -199,7 +196,7 @@
         {#if oidcConfigured}
           <p
             id="oidc-client-secret-hint"
-            class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+            class="text-xs text-ink-500 dark:text-ink-300 mt-1"
           >
             Leave blank to keep the existing secret
           </p>
@@ -224,7 +221,7 @@
         />
         <p
           id="oidc-redirect-uri-hint"
-          class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+          class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
           Must match the redirect URI registered with your OIDC provider
         </p>
@@ -234,7 +231,7 @@
         <AlertBanner variant="error">{oidcError}</AlertBanner>
       {/if}
 
-      {#if oidcSuccess}
+      {#if successTimer.visible}
         <AlertBanner variant="success"
           >OIDC configuration saved successfully</AlertBanner
         >

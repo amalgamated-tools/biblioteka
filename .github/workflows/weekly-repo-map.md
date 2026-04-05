@@ -8,6 +8,7 @@ permissions:
   discussions: read
   issues: read
   pull-requests: read
+tracker-id: weekly-repo-map
 engine: copilot
 tools:
   edit:

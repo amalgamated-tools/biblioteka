@@ -6,6 +6,7 @@ permissions:
   contents: read
   pull-requests: read
   actions: read
+tracker-id: pr-nitpick-reviewer
 engine: copilot
 tools:
   cache-memory: true
