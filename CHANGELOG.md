@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.7.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.6.1...v0.7.0) (2026-04-05)
+
+
+### Features
+
+* **api:** add GET /api/authors/{id}/books and GET /api/series/{id}/books ([#1232](https://github.com/amalgamated-tools/biblioteka/issues/1232)) ([6c2c151](https://github.com/amalgamated-tools/biblioteka/commit/6c2c15137b3f09dab4b0e44da293da44a0967fd6))
+* **books:** expose SearchBooks via GET /api/books?query= ([#1222](https://github.com/amalgamated-tools/biblioteka/issues/1222)) ([17fbb17](https://github.com/amalgamated-tools/biblioteka/commit/17fbb17201e010a15ef4941c33aea9bd5e05aba9))
+* **frontend:** extract SuccessTimerState to eliminate duplicated timeout management ([#1341](https://github.com/amalgamated-tools/biblioteka/issues/1341)) ([9fc4600](https://github.com/amalgamated-tools/biblioteka/commit/9fc4600d322cec08e753d02112ec31d6ddab5029))
+* **jobs:** add enrich:goodreads background job for book metadata ([#1354](https://github.com/amalgamated-tools/biblioteka/issues/1354)) ([a1d8e20](https://github.com/amalgamated-tools/biblioteka/commit/a1d8e208b3222bd9647825c87de86e7fa191cfcb))
+* **metrics:** add tracker-id to 7 workflows missing from ecosystem metrics ([#1349](https://github.com/amalgamated-tools/biblioteka/issues/1349)) ([ccb3a24](https://github.com/amalgamated-tools/biblioteka/commit/ccb3a249404d9010b17ac2d80b0c2de8169a109d))
+* **workflows:** add daily codebase nitpick reviewer workflow ([#1344](https://github.com/amalgamated-tools/biblioteka/issues/1344)) ([524a32a](https://github.com/amalgamated-tools/biblioteka/commit/524a32a11180a463d7c4a19122e75d7f4dabc4d2))
+* **workflows:** compile and improve agentic workflow ecosystem ([#1355](https://github.com/amalgamated-tools/biblioteka/issues/1355)) ([c096674](https://github.com/amalgamated-tools/biblioteka/commit/c09667445b51e12561599ffecf11a7cc10680f75))
+* **workflows:** explicit [@copilot](https://github.com/copilot) assignee on daily-accessibility-review issues ([#1342](https://github.com/amalgamated-tools/biblioteka/issues/1342)) ([6c8e806](https://github.com/amalgamated-tools/biblioteka/commit/6c8e806764fb503d1f811a26aeabd8028f9c492e))
+
+
+### Bug Fixes
+
+* **accessibility:** add aria-hidden="true" to decorative Lucide icons throughout the app ([#1338](https://github.com/amalgamated-tools/biblioteka/issues/1338)) ([559ee21](https://github.com/amalgamated-tools/biblioteka/commit/559ee21c81afa5f80cda689f04ad2aece8ff5823))
+* **accessibility:** hide decorative spinner from screen readers; add role=status to loading message ([#1276](https://github.com/amalgamated-tools/biblioteka/issues/1276)) ([5be6a90](https://github.com/amalgamated-tools/biblioteka/commit/5be6a908d7b66c6c4e66a4b1290b7c4b86830aa9))
+* **accessibility:** resolve WCAG 1.4.3 color contrast failures for secondary/informational text ([#1339](https://github.com/amalgamated-tools/biblioteka/issues/1339)) ([d3c1e50](https://github.com/amalgamated-tools/biblioteka/commit/d3c1e50299b2417e0c8592a445c2b899e7b40575))
+* **accessibility:** trap keyboard focus in mobile sidebar using `inert` and Escape key ([#1275](https://github.com/amalgamated-tools/biblioteka/issues/1275)) ([7325e00](https://github.com/amalgamated-tools/biblioteka/commit/7325e00b147678895948c1a966b19f9d971acf1c))
+* **accessibility:** use DeleteConfirmation component in LibraryForm ([#1250](https://github.com/amalgamated-tools/biblioteka/issues/1250)) ([a9ec408](https://github.com/amalgamated-tools/biblioteka/commit/a9ec408046746488243e0c452c37448b8a3fd540))
+* **accessibility:** use dl/dt/dd semantic structure for Dashboard stat cards ([#1312](https://github.com/amalgamated-tools/biblioteka/issues/1312)) ([c782047](https://github.com/amalgamated-tools/biblioteka/commit/c782047c324433b7a093d21d9f2840df2024fd37))
+* **code-simplifier:** refactor(dashboard): extract stat cards into data-driven loop ([#1327](https://github.com/amalgamated-tools/biblioteka/issues/1327)) ([8d75593](https://github.com/amalgamated-tools/biblioteka/commit/8d755936af53fa471faeab35bed6c3487baf563e))
+* **code-simplifier:** refactor(handlers): extract listParentBooks helper and use mapSlice in listBooks ([#1258](https://github.com/amalgamated-tools/biblioteka/issues/1258)) ([4ccda47](https://github.com/amalgamated-tools/biblioteka/commit/4ccda47f26b6d9a6cb7abcc886a9c349b34db4bd))
+* **code-simplifier:** refactor(tests): replace t.Fatal/t.Fatalf with testify/require ([#1336](https://github.com/amalgamated-tools/biblioteka/issues/1336)) ([e1e4b7b](https://github.com/amalgamated-tools/biblioteka/commit/e1e4b7b02251eb640340eb65ae44da28e7158b38))
+* **db:** drop legacy kobo_tokens.token column ([#1345](https://github.com/amalgamated-tools/biblioteka/issues/1345)) ([fd6a05e](https://github.com/amalgamated-tools/biblioteka/commit/fd6a05ef0e1cabe27efbae91ca5a2acfd8a3735d))
+* **db:** standardize goodreads_metadata index names across SQLite and PostgreSQL ([#1224](https://github.com/amalgamated-tools/biblioteka/issues/1224)) ([b6e7c53](https://github.com/amalgamated-tools/biblioteka/commit/b6e7c5394094477c32eac909acddc50d098c61aa))
+* **q:** allow Q workflow to modify protected workflow files ([#1299](https://github.com/amalgamated-tools/biblioteka/issues/1299)) ([1d823f1](https://github.com/amalgamated-tools/biblioteka/commit/1d823f1f81d0a27173636eab5e2a7aa5e41c1aea))
+* **types:** use `string | null` for optional input type fields ([#1297](https://github.com/amalgamated-tools/biblioteka/issues/1297)) ([be9498d](https://github.com/amalgamated-tools/biblioteka/commit/be9498dba955ebdee4e5ac29bd46d3caf75308ec))
+* **workflows:** switch daily-team-evolution-insights from claude to copilot engine ([#1280](https://github.com/amalgamated-tools/biblioteka/issues/1280)) ([b9bbe70](https://github.com/amalgamated-tools/biblioteka/commit/b9bbe70f68899cc7f8ff5ae82cf636362a809a62))
+* **workflows:** trigger update-docs after Test CI succeeds instead of every push ([#1226](https://github.com/amalgamated-tools/biblioteka/issues/1226)) ([e8cdbe5](https://github.com/amalgamated-tools/biblioteka/commit/e8cdbe5dd3c908657d1935d6e3e630904cf071d4))
+
 ## [0.6.1](https://github.com/amalgamated-tools/biblioteka/compare/v0.6.0...v0.6.1) (2026-04-03)
 
 
