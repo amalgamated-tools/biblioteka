@@ -25,7 +25,10 @@
     <div
       class="aspect-[2/3] bg-ink-100 dark:bg-ink-800 flex items-center justify-center"
     >
-      <BookOpen class="w-10 h-10 text-ink-300 dark:text-ink-600" />
+      <BookOpen
+        class="w-10 h-10 text-ink-300 dark:text-ink-600"
+        aria-hidden="true"
+      />
     </div>
   {/if}
   <div class="p-3">
