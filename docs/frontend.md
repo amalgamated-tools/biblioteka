@@ -1517,17 +1517,18 @@ Add `aria-hidden="true"` to the icon element to remove it from the accessibility
   Books
 </h1>
 
-<!-- Empty-state illustration: no meaningful text alternative needed -->
+<!-- Empty-state illustration (purely decorative standalone — no adjacent text,
+     no information conveyed): aria-hidden suppresses the unlabelled image node -->
 <Library class="w-16 h-16 text-ink-300" aria-hidden="true" />
 ```
 
 This pattern applies whenever **all three** of these conditions hold:
 
-1. An icon appears alongside visible text in the same element or immediately adjacent.
-2. The visible text already fully communicates the meaning to a sighted user.
+1. An icon appears alongside visible text in the same element or immediately adjacent, **or** is a purely decorative standalone illustration (e.g., an empty-state graphic).
+2. The visible text already fully communicates the meaning to a sighted user (or, for standalone illustrations, the icon conveys no information at all).
 3. The icon adds no information that the text does not already convey.
 
-If the icon conveys information that the text does not (e.g., a warning triangle icon next to a plain number indicating an error count), it is **not** decorative — use `aria-label` or an `<svg title>` element to provide an accessible description.
+If the icon conveys information that the text does not (e.g., a warning triangle icon next to a plain number indicating an error count), it is **not** decorative — give it an accessible name with `aria-label` or `aria-labelledby` (typically with `role="img"`), or include a `<title>` element inside the `<svg>` to provide an accessible description.
 
 #### Affected components
 
@@ -1535,7 +1536,6 @@ The following components apply this pattern. When you add icons to any of these 
 
 | Component | Icons hidden |
 |---|---|
-| `App.svelte` | `Menu` (inside a button with `aria-label="Open menu"`) |
 | `Auth.svelte` | `BookCheck` (app logo alongside the app name heading) |
 | `Sidebar.svelte` | `BookCheck`, `LayoutDashboard`, `BookOpen`, `Library`, `Settings2`, `SettingsIcon`, `LogOut` (all nav-link icons alongside their text labels) |
 | `Dashboard.svelte` | `LayoutDashboard`, `Library`, `Plus`, `ArrowRight` |
@@ -1551,8 +1551,8 @@ The following components apply this pattern. When you add icons to any of these 
 | `settings/UsersTab.svelte` | `Users` (section-heading icon) |
 | `ui/BookCard.svelte` | `BookOpen` (decorative cover placeholder) |
 | `ui/BookList.svelte` | `BookOpen` ×2, `LayoutGrid`, `List`, `ChevronLeft`, `ChevronRight` |
-| `libraries/LibraryView.svelte` | `LibraryIcon` (heading), `Settings2` (icon inside labeled button) |
-| `libraries/LibraryForm.svelte` | `X` (close/remove buttons), `FolderOpen`, `Plus` (add folder), `Trash2` (delete) |
+| `libraries/LibraryView.svelte` | `LibraryIcon` (heading alongside visible library name) |
+| `libraries/LibraryForm.svelte` | `FolderOpen`, `Plus` (add folder), `Trash2` (delete) |
 
 ### Maintaining accessibility
 
