@@ -18,14 +18,14 @@ test.describe("Authentication flow", () => {
 
     await signUp(page, testUser);
     await expect(page.getByText("Get started with Biblioteka")).toBeVisible();
-    await expect(page.getByText(testUser.email)).toBeVisible();
+    await expect(page.getByText(testUser.displayName)).toBeVisible();
 
     await signOut(page);
     await signIn(page, testUser.email, testUser.password);
 
     await expect(page).toHaveURL("/");
     await expect(page.getByText("Get started with Biblioteka")).toBeVisible();
-    await expect(page.getByText(testUser.email)).toBeVisible();
+    await expect(page.getByText(testUser.displayName)).toBeVisible();
   });
 
   test("show validation and invalid credential errors", async ({ page }) => {
