@@ -1517,16 +1517,23 @@ Add `aria-hidden="true"` to the icon element to remove it from the accessibility
   Books
 </h1>
 
-<!-- Empty-state illustration (purely decorative standalone — no adjacent text,
-     no information conveyed): aria-hidden suppresses the unlabelled image node -->
+<!-- Standalone decorative illustration (purely decorative exception, WCAG 1.1.1):
+     no adjacent text; icon adds no information, so hide it from the accessibility tree / assistive technologies via aria-hidden="true". -->
 <Library class="w-16 h-16 text-ink-300" aria-hidden="true" />
 ```
 
-This pattern applies whenever **all three** of these conditions hold:
+This pattern applies in either of the following situations:
 
-1. An icon appears alongside visible text in the same element or immediately adjacent, **or** is a purely decorative standalone illustration (e.g., an empty-state graphic).
-2. The visible text already fully communicates the meaning to a sighted user (or, for standalone illustrations, the icon conveys no information at all).
-3. The icon adds no information that the text does not already convey.
+**Situation A — Icon alongside visible text (all of the following must hold):**
+
+1. An icon appears alongside a visible text label in the same element or immediately adjacent.
+2. The visible text already fully communicates the meaning to a sighted user.
+3. The icon adds no information beyond what the text conveys.
+
+**Situation B — Standalone decorative illustration (both of the following must hold):**
+
+1. The icon is a purely decorative standalone graphic (e.g., an empty-state illustration) with no adjacent text.
+2. It conveys no information by itself.
 
 If the icon conveys information that the text does not (e.g., a warning triangle icon next to a plain number indicating an error count), it is **not** decorative — give it an accessible name with `aria-label` or `aria-labelledby` (typically with `role="img"`), or include a `<title>` element inside the `<svg>` to provide an accessible description.
 
