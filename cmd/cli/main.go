@@ -175,6 +175,7 @@ func runProcessFile(ctx context.Context, path string) error {
 		ctx,
 		database,
 		ext,
+		nil,
 		jobs.ProcessFilePayload{
 			FileName: fileName,
 			FileType: fileType,
