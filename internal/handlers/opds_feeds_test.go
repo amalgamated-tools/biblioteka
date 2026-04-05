@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -24,34 +23,23 @@ func TestRootFeed(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
-		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
-	}
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.NavContentType, ct)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if feed.Title != "Biblioteka OPDS Catalog" {
-		t.Errorf("title = %q, want %q", feed.Title, "Biblioteka OPDS Catalog")
-	}
+	require.Equal(t, "Biblioteka OPDS Catalog", feed.Title)
 
 	// Root feed has 4 navigation entries.
 	require.Len(t, feed.Entries, 4)
 	titles := []string{"All Books", "Recent Books", "Authors", "Series"}
 	for i, want := range titles {
-		if feed.Entries[i].Title != want {
-			t.Errorf("entry[%d].title = %q, want %q", i, feed.Entries[i].Title, want)
-		}
+		require.Equal(t, want, feed.Entries[i].Title)
 	}
 
 	// Must have self, start, and search links.
-	if l := findLink(feed.Links, opdspkg.RelSelf); l == nil {
-		t.Error("missing self link")
-	}
-	if l := findLink(feed.Links, opdspkg.RelStart); l == nil {
-		t.Error("missing start link")
-	}
-	if l := findLink(feed.Links, opdspkg.RelSearch); l == nil {
-		t.Error("missing search link")
-	}
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelSelf), "missing self link")
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelStart), "missing start link")
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelSearch), "missing search link")
 }
 
 func TestRootFeed_TrailingSlash(t *testing.T) {
@@ -61,9 +49,7 @@ func TestRootFeed_TrailingSlash(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestRootFeed_HEAD(t *testing.T) {
@@ -73,9 +59,7 @@ func TestRootFeed_HEAD(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 // --- All books feed ---
@@ -88,29 +72,23 @@ func TestAllBooks_Empty(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
-		t.Errorf("content-type = %q, want %q", ct, opdspkg.AcqContentType)
-	}
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.AcqContentType, ct)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if feed.Title != "All Books" {
-		t.Errorf("title = %q, want %q", feed.Title, "All Books")
-	}
-	if len(feed.Entries) != 0 {
-		t.Errorf("entries = %d, want 0", len(feed.Entries))
-	}
+	require.Equal(t, "All Books", feed.Title)
+	require.Len(t, feed.Entries, 0)
 }
 
 func TestAllBooks_WithBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	if _, err := h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create book Alpha")
-	}
-	if _, err := h.DB.CreateBook(ctx, "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create book Beta")
-	}
+	_, err := h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	require.NoError(t, err, "create book Alpha")
+	_, err = h.DB.CreateBook(ctx, "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "create book Beta")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -119,13 +97,9 @@ func TestAllBooks_WithBooks(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 2 {
-		t.Errorf("entries = %d, want 2", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 2)
 	// Books should be sorted by title.
-	if feed.Entries[0].Title != "Alpha" {
-		t.Errorf("entries[0].title = %q, want %q", feed.Entries[0].Title, "Alpha")
-	}
+	require.Equal(t, "Alpha", feed.Entries[0].Title)
 }
 
 func TestAllBooks_WithDescription(t *testing.T) {
@@ -133,9 +107,8 @@ func TestAllBooks_WithDescription(t *testing.T) {
 	ctx := t.Context()
 
 	desc := "A great book"
-	if _, err := h.DB.CreateBook(ctx, "Alpha", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create book")
-	}
+	_, err := h.DB.CreateBook(ctx, "Alpha", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -146,9 +119,7 @@ func TestAllBooks_WithDescription(t *testing.T) {
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	require.Len(t, feed.Entries, 1)
 	require.NotNil(t, feed.Entries[0].Content)
-	if feed.Entries[0].Content.Value != "A great book" {
-		t.Errorf("content = %q, want %q", feed.Entries[0].Content.Value, "A great book")
-	}
+	require.Equal(t, "A great book", feed.Entries[0].Content.Value)
 }
 
 func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
@@ -173,15 +144,12 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	require.Len(t, feed.Entries, 1)
 
 	entry := feed.Entries[0]
-	if len(entry.Authors) != 1 || entry.Authors[0].Name != "Stephen King" {
-		t.Errorf("authors = %v, want [Stephen King]", entry.Authors)
-	}
+	require.Len(t, entry.Authors, 1)
+	require.Equal(t, "Stephen King", entry.Authors[0].Name)
 
 	acqLink := findLink(entry.Links, opdspkg.RelAcquisition)
 	require.NotNil(t, acqLink)
-	if acqLink.Type != "application/epub+zip" {
-		t.Errorf("acquisition type = %q, want %q", acqLink.Type, "application/epub+zip")
-	}
+	require.Equal(t, "application/epub+zip", acqLink.Type)
 }
 
 // --- Recent books feed ---
@@ -190,12 +158,11 @@ func TestRecentBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	if _, err := h.DB.CreateBook(ctx, "First", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create book First")
-	}
-	if _, err := h.DB.CreateBook(ctx, "Second", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create book Second")
-	}
+	_, err := h.DB.CreateBook(ctx, "First", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	require.NoError(t, err, "create book First")
+	_, err = h.DB.CreateBook(ctx, "Second", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "create book Second")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/recent", nil)
 	w := httptest.NewRecorder()
@@ -204,12 +171,8 @@ func TestRecentBooks(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if feed.Title != "Recent Books" {
-		t.Errorf("title = %q, want %q", feed.Title, "Recent Books")
-	}
-	if len(feed.Entries) != 2 {
-		t.Errorf("entries = %d, want 2", len(feed.Entries))
-	}
+	require.Equal(t, "Recent Books", feed.Title)
+	require.Len(t, feed.Entries, 2)
 }
 
 // --- Authors feed ---
@@ -222,29 +185,23 @@ func TestAuthorsFeed_Empty(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
-		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
-	}
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.NavContentType, ct)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 0 {
-		t.Errorf("entries = %d, want 0", len(feed.Entries))
-	}
-	if l := findLink(feed.Links, opdspkg.RelStart); l == nil {
-		t.Error("missing start link")
-	}
+	require.Len(t, feed.Entries, 0)
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelStart), "missing start link")
 }
 
 func TestAuthorsFeed_WithAuthors(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	if _, err := h.DB.CreateAuthor(ctx, "Brandon Sanderson", nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create author")
-	}
-	if _, err := h.DB.CreateAuthor(ctx, "Anne McCaffrey", nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create author")
-	}
+	_, err := h.DB.CreateAuthor(ctx, "Brandon Sanderson", nil, nil, nil, nil)
+
+	require.NoError(t, err, "create author")
+	_, err = h.DB.CreateAuthor(ctx, "Anne McCaffrey", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors", nil)
 	w := httptest.NewRecorder()
@@ -253,15 +210,11 @@ func TestAuthorsFeed_WithAuthors(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 2 {
-		t.Errorf("entries = %d, want 2", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 2)
 
 	// Each entry should have a subsection link.
 	for i, e := range feed.Entries {
-		if l := findLink(e.Links, opdspkg.RelSubsection); l == nil {
-			t.Errorf("entry[%d]: missing subsection link", i)
-		}
+		require.NotNil(t, findLink(e.Links, opdspkg.RelSubsection), "entry[%d]: missing subsection link", i)
 	}
 }
 
@@ -284,16 +237,10 @@ func TestAuthorBooks(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if feed.Title != "Books by Stephen King" {
-		t.Errorf("title = %q, want %q", feed.Title, "Books by Stephen King")
-	}
+	require.Equal(t, "Books by Stephen King", feed.Title)
 	require.Len(t, feed.Entries, 1)
-	if feed.Entries[0].Title != "The Shining" {
-		t.Errorf("entry title = %q, want %q", feed.Entries[0].Title, "The Shining")
-	}
-	if l := findLink(feed.Links, opdspkg.RelStart); l == nil {
-		t.Error("missing start link")
-	}
+	require.Equal(t, "The Shining", feed.Entries[0].Title)
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelStart), "missing start link")
 }
 
 func TestAuthorBooks_NotFound(t *testing.T) {
@@ -303,9 +250,7 @@ func TestAuthorBooks_NotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 // --- Series feed ---
@@ -318,26 +263,22 @@ func TestSeriesFeed_Empty(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
-		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
-	}
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.NavContentType, ct)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 0 {
-		t.Errorf("entries = %d, want 0", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 0)
 }
 
 func TestSeriesFeed_WithSeries(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	if _, err := h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil); err != nil {
-		require.NoError(t, err, "create series")
-	}
-	if _, err := h.DB.CreateSeries(ctx, "Discworld", nil, nil, nil); err != nil {
-		require.NoError(t, err, "create series")
-	}
+	_, err := h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil)
+
+	require.NoError(t, err, "create series")
+	_, err = h.DB.CreateSeries(ctx, "Discworld", nil, nil, nil)
+	require.NoError(t, err, "create series")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series", nil)
 	w := httptest.NewRecorder()
@@ -346,9 +287,7 @@ func TestSeriesFeed_WithSeries(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 2 {
-		t.Errorf("entries = %d, want 2", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 2)
 }
 
 // --- Series books feed ---
@@ -371,16 +310,10 @@ func TestSeriesBooks(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if feed.Title != "The Dark Tower" {
-		t.Errorf("title = %q, want %q", feed.Title, "The Dark Tower")
-	}
+	require.Equal(t, "The Dark Tower", feed.Title)
 	require.Len(t, feed.Entries, 1)
-	if feed.Entries[0].Title != "The Gunslinger" {
-		t.Errorf("entry title = %q, want %q", feed.Entries[0].Title, "The Gunslinger")
-	}
-	if l := findLink(feed.Links, opdspkg.RelStart); l == nil {
-		t.Error("missing start link")
-	}
+	require.Equal(t, "The Gunslinger", feed.Entries[0].Title)
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelStart), "missing start link")
 }
 
 func TestSeriesBooks_NotFound(t *testing.T) {
@@ -390,9 +323,7 @@ func TestSeriesBooks_NotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 // --- Search ---
@@ -401,15 +332,13 @@ func TestSearch_WithResults(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	if _, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create book")
-	}
-	if _, err := h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create book")
-	}
-	if _, err := h.DB.CreateBook(ctx, "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create book")
-	}
+	_, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	require.NoError(t, err, "create book")
+	_, err = h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "create book")
+	_, err = h.DB.CreateBook(ctx, "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=The", nil)
 	w := httptest.NewRecorder()
@@ -418,12 +347,8 @@ func TestSearch_WithResults(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 2 {
-		t.Errorf("entries = %d, want 2", len(feed.Entries))
-	}
-	if !strings.Contains(feed.Title, "The") {
-		t.Errorf("title = %q, should contain search query", feed.Title)
-	}
+	require.Len(t, feed.Entries, 2)
+	require.Contains(t, feed.Title, "The")
 }
 
 func TestSearch_NoResults(t *testing.T) {
@@ -436,21 +361,18 @@ func TestSearch_NoResults(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 0 {
-		t.Errorf("entries = %d, want 0", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 0)
 }
 
 func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	if _, err := h.DB.CreateBook(ctx, "100% Pure", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create book")
-	}
-	if _, err := h.DB.CreateBook(ctx, "Other Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "create book")
-	}
+	_, err := h.DB.CreateBook(ctx, "100% Pure", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	require.NoError(t, err, "create book")
+	_, err = h.DB.CreateBook(ctx, "Other Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "create book")
 
 	// Search for "%" should not match everything due to LIKE wildcard escaping.
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=%25", nil) // %25 = URL-encoded "%"
@@ -460,9 +382,7 @@ func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 1 {
-		t.Errorf("entries = %d, want 1 (only '100%% Pure' should match)", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 1)
 }
 
 func TestSearch_URLEncodesQueryInLinks(t *testing.T) {
@@ -478,9 +398,7 @@ func TestSearch_URLEncodesQueryInLinks(t *testing.T) {
 	selfLink := findLink(feed.Links, opdspkg.RelSelf)
 	require.NotNil(t, selfLink)
 	// The query should be URL-encoded in the self link.
-	if strings.Contains(selfLink.Href, "q=foo bar") {
-		t.Errorf("self link has unencoded query: %q", selfLink.Href)
-	}
+	require.NotContains(t, selfLink.Href, "q=foo bar")
 }
 
 // --- OpenSearch description ---
@@ -493,16 +411,11 @@ func TestOpenSearchDescription(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.SearchType {
-		t.Errorf("content-type = %q, want %q", ct, opdspkg.SearchType)
-	}
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.SearchType, ct)
 	body := w.Body.String()
-	if !strings.Contains(body, "OpenSearchDescription") {
-		t.Error("response should contain OpenSearchDescription element")
-	}
-	if !strings.Contains(body, "{searchTerms}") {
-		t.Error("response should contain {searchTerms} template")
-	}
+	require.Contains(t, body, "OpenSearchDescription")
+	require.Contains(t, body, "{searchTerms}")
 }
 
 // --- Download ---
@@ -527,15 +440,11 @@ func TestDownload_Success(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if ct := w.Header().Get("Content-Type"); ct != "application/epub+zip" {
-		t.Errorf("content-type = %q, want %q", ct, "application/epub+zip")
-	}
-	if disp := w.Header().Get("Content-Disposition"); !strings.Contains(disp, "test.epub") {
-		t.Errorf("content-disposition = %q, should contain filename", disp)
-	}
-	if w.Body.String() != "fake epub content" {
-		t.Errorf("body = %q, want %q", w.Body.String(), "fake epub content")
-	}
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, "application/epub+zip", ct)
+	disp := w.Header().Get("Content-Disposition")
+	require.Contains(t, disp, "test.epub", "content-disposition should contain filename")
+	require.Equal(t, "fake epub content", w.Body.String())
 }
 
 func TestDownload_NotFound(t *testing.T) {
@@ -545,9 +454,7 @@ func TestDownload_NotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestDownload_FileMissing(t *testing.T) {
@@ -563,9 +470,7 @@ func TestDownload_FileMissing(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestDownload_UnknownFileType(t *testing.T) {
@@ -587,7 +492,6 @@ func TestDownload_UnknownFileType(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if ct := w.Header().Get("Content-Type"); ct != "application/octet-stream" {
-		t.Errorf("content-type = %q, want %q", ct, "application/octet-stream")
-	}
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, "application/octet-stream", ct)
 }

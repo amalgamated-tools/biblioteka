@@ -86,9 +86,7 @@ func TestEPUB3CoverImport_EndToEnd(t *testing.T) {
 	b64 := strings.TrimPrefix(*book.CoverImageURL, "data:image/png;base64,")
 	gotCover, err := base64.StdEncoding.DecodeString(b64)
 	require.NoError(t, err, "decode cover base64")
-	if !bytes.Equal(gotCover, coverBytes) {
-		t.Errorf("cover bytes mismatch: got %d bytes, want %d bytes", len(gotCover), len(coverBytes))
-	}
+	require.True(t, bytes.Equal(gotCover, coverBytes))
 
 	// Verify the cover is served and accessible via HandleCoverImage.
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil).WithContext(t.Context())

@@ -12,21 +12,12 @@ func TestCreateAuthor(t *testing.T) {
 
 	a, err := d.CreateAuthor(t.Context(), "Stephen King", new("123"), nil, nil, new("http://example.com/king.jpg"))
 	require.NoError(t, err, "CreateAuthor() error")
-	if a.ID == "" {
-		t.Error("CreateAuthor() returned empty ID")
-	}
-	if a.Name != "Stephen King" {
-		t.Errorf("Name = %q, want %q", a.Name, "Stephen King")
-	}
-	if a.GoodreadsID == nil || *a.GoodreadsID != "123" {
-		t.Errorf("GoodreadsID = %v, want %q", a.GoodreadsID, "123")
-	}
-	if a.HardcoverID != nil {
-		t.Errorf("HardcoverID = %v, want nil", a.HardcoverID)
-	}
-	if a.CreatedAt.IsZero() {
-		t.Error("CreatedAt is zero")
-	}
+	require.NotEqual(t, "", a.ID)
+	require.Equal(t, "Stephen King", a.Name)
+	require.NotNil(t, a.GoodreadsID)
+	require.Equal(t, "123", *a.GoodreadsID)
+	require.Nil(t, a.HardcoverID)
+	require.False(t, a.CreatedAt.IsZero())
 }
 
 func TestCreateAuthor_NormalizesWhitespace(t *testing.T) {
@@ -44,9 +35,7 @@ func TestCreateAuthor_NormalizesWhitespace(t *testing.T) {
 	for _, tt := range tests {
 		a, err := d.CreateAuthor(t.Context(), tt.input, nil, nil, nil, nil)
 		require.NoError(t, err, "CreateAuthor(%q) error", tt.input)
-		if a.Name != tt.want {
-			t.Errorf("CreateAuthor(%q).Name = %q, want %q", tt.input, a.Name, tt.want)
-		}
+		require.Equal(t, tt.want, a.Name)
 	}
 }
 
@@ -65,9 +54,7 @@ func TestCreateAuthor_PreservesCapitalization(t *testing.T) {
 	for _, tt := range tests {
 		a, err := d.CreateAuthor(t.Context(), tt.input, nil, nil, nil, nil)
 		require.NoError(t, err, "CreateAuthor(%q) error", tt.input)
-		if a.Name != tt.want {
-			t.Errorf("CreateAuthor(%q).Name = %q, want %q", tt.input, a.Name, tt.want)
-		}
+		require.Equal(t, tt.want, a.Name)
 	}
 }
 
@@ -78,9 +65,7 @@ func TestCreateAuthor_DuplicateName(t *testing.T) {
 	require.NoError(t, err, "first CreateAuthor() error")
 
 	_, err = d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != ErrAuthorNameExists {
-		t.Errorf("expected ErrAuthorNameExists, got %v", err)
-	}
+	require.Equal(t, ErrAuthorNameExists, err)
 }
 
 func TestCreateAuthor_DuplicateNameCaseInsensitive(t *testing.T) {
@@ -92,9 +77,7 @@ func TestCreateAuthor_DuplicateNameCaseInsensitive(t *testing.T) {
 	cases := []string{"jane austen", "JANE AUSTEN", "Jane AUSTEN", "jAnE aUsTeN"}
 	for _, name := range cases {
 		_, err = d.CreateAuthor(t.Context(), name, nil, nil, nil, nil)
-		if err != ErrAuthorNameExists {
-			t.Errorf("CreateAuthor(%q): expected ErrAuthorNameExists, got %v", name, err)
-		}
+		require.Equal(t, ErrAuthorNameExists, err)
 	}
 }
 
@@ -106,21 +89,15 @@ func TestGetAuthor(t *testing.T) {
 
 	found, err := d.GetAuthor(t.Context(), created.ID)
 	require.NoError(t, err, "GetAuthor() error")
-	if found.ID != created.ID {
-		t.Errorf("ID = %q, want %q", found.ID, created.ID)
-	}
-	if found.Name != "Stephen King" {
-		t.Errorf("Name = %q, want %q", found.Name, "Stephen King")
-	}
+	require.Equal(t, created.ID, found.ID)
+	require.Equal(t, "Stephen King", found.Name)
 }
 
 func TestGetAuthor_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetAuthor(t.Context(), "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestGetAuthorByName(t *testing.T) {
@@ -133,12 +110,8 @@ func TestGetAuthorByName(t *testing.T) {
 	for _, name := range []string{"Anne McCaffrey", "anne mccaffrey", "ANNE MCCAFFREY", "anne McCaffrey"} {
 		found, err := d.GetAuthorByName(t.Context(), name)
 		require.NoError(t, err, "GetAuthorByName(%q) error", name)
-		if found.ID != created.ID {
-			t.Errorf("GetAuthorByName(%q) ID = %q, want %q", name, found.ID, created.ID)
-		}
-		if found.Name != "Anne McCaffrey" {
-			t.Errorf("GetAuthorByName(%q) Name = %q, want %q", name, found.Name, "Anne McCaffrey")
-		}
+		require.Equal(t, created.ID, found.ID)
+		require.Equal(t, "Anne McCaffrey", found.Name)
 	}
 }
 
@@ -146,9 +119,7 @@ func TestGetAuthorByName_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetAuthorByName(t.Context(), "Nonexistent Author")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestListAuthors(t *testing.T) {
@@ -162,9 +133,7 @@ func TestListAuthors(t *testing.T) {
 	authors, err := d.ListAuthors(t.Context())
 	require.NoError(t, err, "ListAuthors() error")
 	require.Len(t, authors, 2)
-	if authors[0].Name != "Brandon Sanderson" {
-		t.Errorf("first author Name = %q, want %q", authors[0].Name, "Brandon Sanderson")
-	}
+	require.Equal(t, "Brandon Sanderson", authors[0].Name)
 }
 
 func TestListAuthorsEmptyTable(t *testing.T) {
@@ -172,12 +141,8 @@ func TestListAuthorsEmptyTable(t *testing.T) {
 
 	authors, err := d.ListAuthors(t.Context())
 	require.NoError(t, err, "ListAuthors() error")
-	if len(authors) != 0 {
-		t.Errorf("len(authors) = %d, want 0", len(authors))
-	}
-	if authors == nil {
-		t.Error("authors = nil, want empty slice")
-	}
+	require.Len(t, authors, 0)
+	require.NotNil(t, authors)
 }
 
 func TestUpdateAuthor(t *testing.T) {
@@ -188,12 +153,9 @@ func TestUpdateAuthor(t *testing.T) {
 
 	updated, err := d.UpdateAuthor(t.Context(), created.ID, "Stephen King", new("456"), nil, nil, nil)
 	require.NoError(t, err, "UpdateAuthor() error")
-	if updated.Name != "Stephen King" {
-		t.Errorf("Name = %q, want %q", updated.Name, "Stephen King")
-	}
-	if updated.GoodreadsID == nil || *updated.GoodreadsID != "456" {
-		t.Errorf("GoodreadsID = %v, want %q", updated.GoodreadsID, "456")
-	}
+	require.Equal(t, "Stephen King", updated.Name)
+	require.NotNil(t, updated.GoodreadsID)
+	require.Equal(t, "456", *updated.GoodreadsID)
 }
 
 func TestUpdateAuthor_PreservesCapitalization(t *testing.T) {
@@ -204,9 +166,7 @@ func TestUpdateAuthor_PreservesCapitalization(t *testing.T) {
 
 	updated, err := d.UpdateAuthor(t.Context(), created.ID, "  Anne  McCaffrey  ", nil, nil, nil, nil)
 	require.NoError(t, err, "UpdateAuthor() error")
-	if updated.Name != "Anne McCaffrey" {
-		t.Errorf("Name = %q, want %q", updated.Name, "Anne McCaffrey")
-	}
+	require.Equal(t, "Anne McCaffrey", updated.Name)
 }
 
 func TestUpdateAuthor_DuplicateName(t *testing.T) {
@@ -218,9 +178,7 @@ func TestUpdateAuthor_DuplicateName(t *testing.T) {
 	require.NoError(t, err, "CreateAuthor() error")
 
 	_, err = d.UpdateAuthor(t.Context(), a2.ID, "Stephen King", nil, nil, nil, nil)
-	if err != ErrAuthorNameExists {
-		t.Errorf("expected ErrAuthorNameExists, got %v", err)
-	}
+	require.Equal(t, ErrAuthorNameExists, err)
 }
 
 func TestDeleteAuthor(t *testing.T) {
@@ -233,18 +191,14 @@ func TestDeleteAuthor(t *testing.T) {
 	require.NoError(t, err, "DeleteAuthor() error")
 
 	_, err = d.GetAuthor(t.Context(), a.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestDeleteAuthor_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.DeleteAuthor(t.Context(), "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestListAuthorsPaginated(t *testing.T) {
@@ -259,44 +213,26 @@ func TestListAuthorsPaginated(t *testing.T) {
 	// First page: 2 of 4 authors.
 	page1, total, err := d.ListAuthorsPaginated(t.Context(), 2, 0)
 	require.NoError(t, err, "ListAuthorsPaginated() error")
-	if total != 4 {
-		t.Errorf("total = %d, want 4", total)
-	}
+	require.Equal(t, 4, total)
 	require.Len(t, page1, 2)
-	if page1[0].Name != "Brandon Sanderson" {
-		t.Errorf("page1[0].Name = %q, want %q", page1[0].Name, "Brandon Sanderson")
-	}
-	if page1[1].Name != "Isaac Asimov" {
-		t.Errorf("page1[1].Name = %q, want %q", page1[1].Name, "Isaac Asimov")
-	}
+	require.Equal(t, "Brandon Sanderson", page1[0].Name)
+	require.Equal(t, "Isaac Asimov", page1[1].Name)
 
 	// Second page: remaining 2 authors.
 	page2, total2, err := d.ListAuthorsPaginated(t.Context(), 2, 2)
 	require.NoError(t, err, "ListAuthorsPaginated() page 2 error")
-	if total2 != 4 {
-		t.Errorf("page 2 total = %d, want 4", total2)
-	}
+	require.Equal(t, 4, total2)
 	require.Len(t, page2, 2)
-	if page2[0].Name != "Stephen King" {
-		t.Errorf("page2[0].Name = %q, want %q", page2[0].Name, "Stephen King")
-	}
-	if page2[1].Name != "Ursula K. Le Guin" {
-		t.Errorf("page2[1].Name = %q, want %q", page2[1].Name, "Ursula K. Le Guin")
-	}
+	require.Equal(t, "Stephen King", page2[0].Name)
+	require.Equal(t, "Ursula K. Le Guin", page2[1].Name)
 
 	// Empty table: total should be 0.
 	d2 := newTestDB(t)
 	empty, total3, err := d2.ListAuthorsPaginated(t.Context(), 10, 0)
 	require.NoError(t, err, "ListAuthorsPaginated() empty error")
-	if total3 != 0 {
-		t.Errorf("empty total = %d, want 0", total3)
-	}
-	if len(empty) != 0 {
-		t.Errorf("empty result len = %d, want 0", len(empty))
-	}
-	if empty == nil {
-		t.Error("empty result = nil, want empty slice")
-	}
+	require.Equal(t, 0, total3)
+	require.Len(t, empty, 0)
+	require.NotNil(t, empty)
 }
 
 func TestListAuthorsPaginatedZeroLimit(t *testing.T) {
@@ -311,27 +247,15 @@ func TestListAuthorsPaginatedZeroLimit(t *testing.T) {
 	// limit=0 should return the real total with an empty items slice.
 	items, total, err := d.ListAuthorsPaginated(t.Context(), 0, 0)
 	require.NoError(t, err, "ListAuthorsPaginated(limit=0) error")
-	if total != 2 {
-		t.Errorf("total = %d, want 2", total)
-	}
-	if len(items) != 0 {
-		t.Errorf("len(items) = %d, want 0", len(items))
-	}
-	if items == nil {
-		t.Error("items = nil, want empty slice")
-	}
+	require.Equal(t, 2, total)
+	require.Len(t, items, 0)
+	require.NotNil(t, items)
 
 	items2, total2, err := d.ListAuthorsPaginated(t.Context(), -1, 0)
 	require.NoError(t, err, "ListAuthorsPaginated(limit=-1) error")
-	if total2 != 2 {
-		t.Errorf("total = %d, want 2", total2)
-	}
-	if len(items2) != 0 {
-		t.Errorf("len(items) = %d, want 0", len(items2))
-	}
-	if items2 == nil {
-		t.Error("items2 = nil, want empty slice")
-	}
+	require.Equal(t, 2, total2)
+	require.Len(t, items2, 0)
+	require.NotNil(t, items2)
 }
 
 func TestFindOrCreateAuthor_BlankName(t *testing.T) {
@@ -339,9 +263,7 @@ func TestFindOrCreateAuthor_BlankName(t *testing.T) {
 
 	for _, name := range []string{"", " ", "  \t  "} {
 		_, err := d.FindOrCreateAuthor(t.Context(), name)
-		if err != ErrInvalidAuthorName {
-			t.Errorf("FindOrCreateAuthor(%q) = %v, want ErrInvalidAuthorName", name, err)
-		}
+		require.Equal(t, ErrInvalidAuthorName, err)
 	}
 }
 
@@ -353,9 +275,7 @@ func TestFindOrCreateAuthor_CaseInsensitive(t *testing.T) {
 
 	found, err := d.FindOrCreateAuthor(t.Context(), "stephen king")
 	require.NoError(t, err, "second FindOrCreateAuthor() error")
-	if found.ID != created.ID {
-		t.Errorf("expected same author ID, got %q and %q", found.ID, created.ID)
-	}
+	require.Equal(t, created.ID, found.ID)
 }
 
 func TestFindOrCreateAuthor_NormalizesWhitespace(t *testing.T) {
@@ -366,10 +286,6 @@ func TestFindOrCreateAuthor_NormalizesWhitespace(t *testing.T) {
 
 	found, err := d.FindOrCreateAuthor(t.Context(), "  Brandon   Sanderson  ")
 	require.NoError(t, err, "second FindOrCreateAuthor() error")
-	if found.ID != created.ID {
-		t.Errorf("expected same author ID, got %q and %q", found.ID, created.ID)
-	}
-	if found.Name != "Brandon Sanderson" {
-		t.Errorf("FindOrCreateAuthor().Name = %q, want %q", found.Name, "Brandon Sanderson")
-	}
+	require.Equal(t, created.ID, found.ID)
+	require.Equal(t, "Brandon Sanderson", found.Name)
 }

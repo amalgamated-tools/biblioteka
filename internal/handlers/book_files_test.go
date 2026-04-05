@@ -32,15 +32,11 @@ func TestGetBookFile_Handler(t *testing.T) {
 
 	h.HandleBookFile(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dto bookFileDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
-	if dto.FileName != "gunslinger.epub" {
-		t.Errorf("file_name = %q, want %q", dto.FileName, "gunslinger.epub")
-	}
+	require.Equal(t, "gunslinger.epub", dto.FileName)
 }
 
 func TestGetBookFile_NotFound(t *testing.T) {
@@ -52,9 +48,7 @@ func TestGetBookFile_NotFound(t *testing.T) {
 
 	h.HandleBookFile(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestDeleteBookFile_Handler(t *testing.T) {
@@ -71,7 +65,5 @@ func TestDeleteBookFile_Handler(t *testing.T) {
 
 	h.HandleBookFile(w, r)
 
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
-	}
+	require.Equal(t, http.StatusNoContent, w.Code)
 }

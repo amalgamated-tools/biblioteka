@@ -28,24 +28,14 @@ func TestOPDSFeed_XMLMarshal(t *testing.T) {
 	s := string(data)
 
 	// Element name must be "feed"
-	if !strings.Contains(s, "<feed ") && !strings.Contains(s, "<feed>") {
-		t.Errorf("XML does not contain <feed> element: %s", s)
-	}
+	require.Contains(t, s, "<feed ")
 	// Atom xmlns must be present as attribute
-	if !strings.Contains(s, opdspkg.XMLNSAtom) {
-		t.Errorf("XML missing Atom xmlns attribute: %s", s)
-	}
+	require.Contains(t, s, opdspkg.XMLNSAtom)
 	// OPDS xmlns must be present
-	if !strings.Contains(s, opdspkg.XMLNSOPDS) {
-		t.Errorf("XML missing OPDS xmlns attribute: %s", s)
-	}
+	require.Contains(t, s, opdspkg.XMLNSOPDS)
 	// ID and Title must be child elements
-	if !strings.Contains(s, "<id>urn:test</id>") {
-		t.Errorf("XML missing <id> element: %s", s)
-	}
-	if !strings.Contains(s, "<title>Test Feed</title>") {
-		t.Errorf("XML missing <title> element: %s", s)
-	}
+	require.Contains(t, s, "<id>urn:test</id>")
+	require.Contains(t, s, "<title>Test Feed</title>")
 }
 
 func TestOPDSFeed_XMLMarshal_OmitEmptyOPDSNS(t *testing.T) {
@@ -61,9 +51,7 @@ func TestOPDSFeed_XMLMarshal_OmitEmptyOPDSNS(t *testing.T) {
 	s := string(data)
 
 	// When XMLNSOPDS is empty it should be omitted (omitempty)
-	if strings.Contains(s, "xmlns:opds") {
-		t.Errorf("xmlns:opds attribute should be absent when empty, got: %s", s)
-	}
+	require.NotContains(t, s, "xmlns:opds")
 }
 
 func TestOPDSLink_XMLMarshal(t *testing.T) {
@@ -77,15 +65,9 @@ func TestOPDSLink_XMLMarshal(t *testing.T) {
 	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
-	if !strings.Contains(s, `rel="self"`) {
-		t.Errorf("XML missing rel attribute: %s", s)
-	}
-	if !strings.Contains(s, `href="http://example.com/opds"`) {
-		t.Errorf("XML missing href attribute: %s", s)
-	}
-	if !strings.Contains(s, `type=`) {
-		t.Errorf("XML missing type attribute: %s", s)
-	}
+	require.Contains(t, s, `rel="self"`)
+	require.Contains(t, s, `href="http://example.com/opds"`)
+	require.Contains(t, s, `type=`)
 }
 
 func TestOPDSContent_XMLMarshal(t *testing.T) {
@@ -98,16 +80,10 @@ func TestOPDSContent_XMLMarshal(t *testing.T) {
 	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
-	if !strings.Contains(s, `type="text"`) {
-		t.Errorf("XML missing type attribute: %s", s)
-	}
+	require.Contains(t, s, `type="text"`)
 	// Value must be encoded as character data (not a child element)
-	if !strings.Contains(s, "Some description text") {
-		t.Errorf("XML missing chardata value: %s", s)
-	}
-	if strings.Contains(s, "<Value>") {
-		t.Errorf("Value should be chardata, not a child element: %s", s)
-	}
+	require.Contains(t, s, "Some description text")
+	require.NotContains(t, s, "<Value>")
 }
 
 func TestOPDSEntry_XMLMarshal_Full(t *testing.T) {
@@ -126,18 +102,10 @@ func TestOPDSEntry_XMLMarshal_Full(t *testing.T) {
 	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
-	if !strings.Contains(s, "<title>My Book</title>") {
-		t.Errorf("XML missing title: %s", s)
-	}
-	if !strings.Contains(s, "<id>urn:book:1</id>") {
-		t.Errorf("XML missing id: %s", s)
-	}
-	if !strings.Contains(s, "A description") {
-		t.Errorf("XML missing content: %s", s)
-	}
-	if !strings.Contains(s, "<name>Jane Doe</name>") {
-		t.Errorf("XML missing author name: %s", s)
-	}
+	require.Contains(t, s, "<title>My Book</title>")
+	require.Contains(t, s, "<id>urn:book:1</id>")
+	require.Contains(t, s, "A description")
+	require.Contains(t, s, "<name>Jane Doe</name>")
 }
 
 func TestOPDSEntry_XMLMarshal_NoContent(t *testing.T) {
@@ -153,9 +121,7 @@ func TestOPDSEntry_XMLMarshal_NoContent(t *testing.T) {
 	s := string(data)
 
 	// Content should be absent when nil (omitempty)
-	if strings.Contains(s, "<content") {
-		t.Errorf("XML should have no <content> when nil, got: %s", s)
-	}
+	require.NotContains(t, s, "<content")
 }
 
 func TestOPDSFeed_XMLMarshal_LinksAndEntries(t *testing.T) {
@@ -177,15 +143,9 @@ func TestOPDSFeed_XMLMarshal_LinksAndEntries(t *testing.T) {
 	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
-	if !strings.Contains(s, `rel="self"`) {
-		t.Errorf("XML missing self link: %s", s)
-	}
-	if !strings.Contains(s, `rel="next"`) {
-		t.Errorf("XML missing next link: %s", s)
-	}
-	if !strings.Contains(s, "<title>Book One</title>") {
-		t.Errorf("XML missing entry: %s", s)
-	}
+	require.Contains(t, s, `rel="self"`)
+	require.Contains(t, s, `rel="next"`)
+	require.Contains(t, s, "<title>Book One</title>")
 }
 
 // --- writeOPDSError (opds_helpers.go) ---
@@ -196,26 +156,17 @@ func TestWriteOPDSError(t *testing.T) {
 
 	writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "urn:biblioteka:opds:error", "Something went wrong")
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.AcqContentType)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.AcqContentType, ct)
 
 	body := w.Body.String()
-	if !strings.HasPrefix(body, "<?xml") {
-		t.Errorf("body should start with XML declaration, got: %s", body[:min(len(body), 50)])
-	}
+	require.True(t, strings.HasPrefix(body, "<?xml"))
 
 	// Must be a valid feed with the provided title
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if feed.Title != "Something went wrong" {
-		t.Errorf("title = %q, want %q", feed.Title, "Something went wrong")
-	}
-	if feed.ID != "urn:biblioteka:opds:error" {
-		t.Errorf("id = %q, want %q", feed.ID, "urn:biblioteka:opds:error")
-	}
+	require.Equal(t, "Something went wrong", feed.Title)
+	require.Equal(t, "urn:biblioteka:opds:error", feed.ID)
 }
 
 func TestWriteOPDSError_NavContentType(t *testing.T) {
@@ -224,12 +175,10 @@ func TestWriteOPDSError_NavContentType(t *testing.T) {
 
 	writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.NavContentType, "urn:test", "Nav error")
 
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.NavContentType)
-	}
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	ct := w.Header().Get("Content-Type")
+
+	require.Equal(t, opdspkg.NavContentType, ct)
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 // --- writeOPDSFeed (opds_helpers.go) ---
@@ -246,18 +195,11 @@ func TestWriteOPDSFeed_Direct(t *testing.T) {
 	}
 	writeOPDSFeed(r, w, opdspkg.AcqContentType, feed)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.AcqContentType)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.AcqContentType, ct)
 	body := w.Body.String()
-	if !strings.HasPrefix(body, "<?xml") {
-		t.Errorf("body should start with XML declaration, got: %s", body[:min(len(body), 50)])
-	}
+	require.True(t, strings.HasPrefix(body, "<?xml"))
 	parsed := parseOPDSFeed(t, w.Body.Bytes())
-	if parsed.Title != "Direct Feed" {
-		t.Errorf("title = %q, want %q", parsed.Title, "Direct Feed")
-	}
+	require.Equal(t, "Direct Feed", parsed.Title)
 }

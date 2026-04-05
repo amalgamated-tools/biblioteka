@@ -31,15 +31,11 @@ func TestCreateSeries_Handler(t *testing.T) {
 
 	h.HandleSeriesList(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var dto seriesDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
-	if dto.Name != "The Dark Tower" {
-		t.Errorf("name = %q, want %q", dto.Name, "The Dark Tower")
-	}
+	require.Equal(t, "The Dark Tower", dto.Name)
 }
 
 func TestCreateSeries_MissingName(t *testing.T) {
@@ -52,9 +48,7 @@ func TestCreateSeries_MissingName(t *testing.T) {
 
 	h.HandleSeriesList(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateSeries_WhitespaceOnlyName(t *testing.T) {
@@ -67,9 +61,7 @@ func TestCreateSeries_WhitespaceOnlyName(t *testing.T) {
 
 	h.HandleSeriesList(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpdateSeries_WhitespaceOnlyName(t *testing.T) {
@@ -85,9 +77,7 @@ func TestUpdateSeries_WhitespaceOnlyName(t *testing.T) {
 
 	h.HandleSeries(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateSeries_Duplicate(t *testing.T) {
@@ -104,20 +94,16 @@ func TestCreateSeries_Duplicate(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleSeriesList(w2, r2)
 
-	if w2.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusConflict)
-	}
+	require.Equal(t, http.StatusConflict, w2.Code)
 }
 
 func TestListSeries_Handler(t *testing.T) {
 	h, userID := setupSeriesHandler(t)
 
-	if _, err := h.DB.CreateSeries(t.Context(), "Discworld", nil, nil, nil); err != nil {
-		require.NoError(t, err, "create series")
-	}
-	if _, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil); err != nil {
-		require.NoError(t, err, "create series")
-	}
+	_, err := h.DB.CreateSeries(t.Context(), "Discworld", nil, nil, nil)
+	require.NoError(t, err, "create series")
+	_, err = h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "create series")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/series", nil)
 	r = withUserID(r, userID)
@@ -125,15 +111,11 @@ func TestListSeries_Handler(t *testing.T) {
 
 	h.HandleSeriesList(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dtos []seriesDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
-	if len(dtos) != 2 {
-		t.Errorf("len = %d, want 2", len(dtos))
-	}
+	require.Len(t, dtos, 2)
 }
 
 func TestGetSeries_Handler(t *testing.T) {
@@ -148,9 +130,7 @@ func TestGetSeries_Handler(t *testing.T) {
 
 	h.HandleSeries(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestGetSeries_NotFound(t *testing.T) {
@@ -162,9 +142,7 @@ func TestGetSeries_NotFound(t *testing.T) {
 
 	h.HandleSeries(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestDeleteSeries_Handler(t *testing.T) {
@@ -179,9 +157,7 @@ func TestDeleteSeries_Handler(t *testing.T) {
 
 	h.HandleSeries(w, r)
 
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
-	}
+	require.Equal(t, http.StatusNoContent, w.Code)
 }
 
 func TestDeleteSeries_NotFound(t *testing.T) {
@@ -193,15 +169,11 @@ func TestDeleteSeries_NotFound(t *testing.T) {
 
 	h.HandleSeries(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 
 	var resp errorResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Error != "series not found" {
-		t.Errorf("error = %q, want %q", resp.Error, "series not found")
-	}
+	require.Equal(t, "series not found", resp.Error)
 }
 
 func TestListSeriesBooks_Handler(t *testing.T) {
@@ -224,18 +196,12 @@ func TestListSeriesBooks_Handler(t *testing.T) {
 
 	h.HandleSeries(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var result bookListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "unmarshal")
-	if result.Total != 2 {
-		t.Errorf("total = %d, want 2", result.Total)
-	}
-	if len(result.Books) != 2 {
-		t.Errorf("len(books) = %d, want 2", len(result.Books))
-	}
+	require.Equal(t, 2, result.Total)
+	require.Len(t, result.Books, 2)
 }
 
 func TestListSeriesBooks_SeriesNotFound(t *testing.T) {
@@ -247,9 +213,7 @@ func TestListSeriesBooks_SeriesNotFound(t *testing.T) {
 
 	h.HandleSeries(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestListSeriesBooks_Empty(t *testing.T) {
@@ -264,16 +228,10 @@ func TestListSeriesBooks_Empty(t *testing.T) {
 
 	h.HandleSeries(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var result bookListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "unmarshal")
-	if result.Total != 0 {
-		t.Errorf("total = %d, want 0", result.Total)
-	}
-	if result.Books == nil {
-		t.Error("books should be empty slice, not nil")
-	}
+	require.Equal(t, 0, result.Total)
+	require.NotNil(t, result.Books)
 }

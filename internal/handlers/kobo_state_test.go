@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,9 +24,7 @@ func TestHandleBookState_UnknownMethodReturnsOK(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleBookState(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d (unknown method)", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 // TestHandleBookState_StatePathParsing verifies that HandleBookState correctly
@@ -44,9 +41,7 @@ func TestHandleBookState_StatePathParsing(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleBookState(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 // TestHandleBookState_ReadingProgressPercentage verifies that updating reading
@@ -63,9 +58,8 @@ func TestHandleBookState_ReadingProgressPercentage(t *testing.T) {
 	require.NoError(t, err, "create book")
 
 	pct := 0.35
-	if _, err := d.UpsertKoboReadingState(context.Background(), user.ID, book.ID, "Reading", &pct, nil, nil, nil); err != nil {
-		require.NoError(t, err, "upsert reading state")
-	}
+	_, err = d.UpsertKoboReadingState(context.Background(), user.ID, book.ID, "Reading", &pct, nil, nil, nil)
+	require.NoError(t, err, "upsert reading state")
 
 	r := httptest.NewRequest(http.MethodGet, "/v1/library/"+book.ID+"/state", nil)
 	r = withUserID(r, user.ID)
@@ -74,9 +68,7 @@ func TestHandleBookState_ReadingProgressPercentage(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
-	if !strings.Contains(body, "Reading") {
-		t.Errorf("expected Reading status in response, got: %s", body)
-	}
+	require.Contains(t, body, "Reading")
 }
 
 // TestHandleBookState_UserIsolation verifies that a user cannot read the
@@ -96,9 +88,8 @@ func TestHandleBookState_UserIsolation(t *testing.T) {
 
 	// Set state for user1.
 	pct := 0.5
-	if _, err := d.UpsertKoboReadingState(context.Background(), user1.ID, book.ID, "Reading", &pct, nil, nil, nil); err != nil {
-		require.NoError(t, err, "upsert state for user1")
-	}
+	_, err = d.UpsertKoboReadingState(context.Background(), user1.ID, book.ID, "Reading", &pct, nil, nil, nil)
+	require.NoError(t, err, "upsert state for user1")
 
 	// user2 should get a default (not user1's) state.
 	r := httptest.NewRequest(http.MethodGet, "/v1/library/"+book.ID+"/state", nil)

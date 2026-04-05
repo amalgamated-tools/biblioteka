@@ -19,12 +19,8 @@ func TestKoboSyncTokenRoundTrip_Zero(t *testing.T) {
 	tok := kobo.SyncToken{}
 	encoded := kobo.EncodeSyncToken(tok)
 	decoded := kobo.ParseSyncToken(encoded)
-	if !decoded.BooksLastModified.IsZero() {
-		t.Errorf("BooksLastModified: got %v, want zero", decoded.BooksLastModified)
-	}
-	if !decoded.ReadingStateLastModified.IsZero() {
-		t.Errorf("ReadingStateLastModified: got %v, want zero", decoded.ReadingStateLastModified)
-	}
+	require.True(t, decoded.BooksLastModified.IsZero())
+	require.True(t, decoded.ReadingStateLastModified.IsZero())
 }
 
 func TestKoboSyncTokenRoundTrip_NonZero(t *testing.T) {
@@ -35,26 +31,18 @@ func TestKoboSyncTokenRoundTrip_NonZero(t *testing.T) {
 	}
 	encoded := kobo.EncodeSyncToken(tok)
 	decoded := kobo.ParseSyncToken(encoded)
-	if !decoded.BooksLastModified.Equal(tok.BooksLastModified) {
-		t.Errorf("BooksLastModified: got %v, want %v", decoded.BooksLastModified, tok.BooksLastModified)
-	}
-	if !decoded.ReadingStateLastModified.Equal(tok.ReadingStateLastModified) {
-		t.Errorf("ReadingStateLastModified: got %v, want %v", decoded.ReadingStateLastModified, tok.ReadingStateLastModified)
-	}
+	require.True(t, decoded.BooksLastModified.Equal(tok.BooksLastModified))
+	require.True(t, decoded.ReadingStateLastModified.Equal(tok.ReadingStateLastModified))
 }
 
 func TestParseKoboSyncToken_Empty(t *testing.T) {
 	tok := kobo.ParseSyncToken("")
-	if !tok.BooksLastModified.IsZero() || !tok.ReadingStateLastModified.IsZero() {
-		t.Error("expected zero values for empty token")
-	}
+	require.True(t, tok.BooksLastModified.IsZero() || !tok.ReadingStateLastModified.IsZero())
 }
 
 func TestParseKoboSyncToken_Garbage(t *testing.T) {
 	tok := kobo.ParseSyncToken("not-base64!!!")
-	if !tok.BooksLastModified.IsZero() {
-		t.Error("expected zero BooksLastModified for garbage token")
-	}
+	require.True(t, tok.BooksLastModified.IsZero())
 }
 
 // ---- Token management API tests ----
@@ -83,12 +71,8 @@ func TestKoboTokenCreate_Success(t *testing.T) {
 
 	var tok map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &tok), "unmarshal")
-	if tok["token"] == "" || tok["token"] == nil {
-		t.Error("expected non-empty token in response")
-	}
-	if tok["name"] != "My Kobo" {
-		t.Errorf("name = %v, want 'My Kobo'", tok["name"])
-	}
+	require.NotEmpty(t, tok["token"], "expected non-empty token in response")
+	require.Equal(t, "My Kobo", tok["name"])
 }
 
 func TestKoboTokenCreate_EmptyName(t *testing.T) {
@@ -101,9 +85,7 @@ func TestKoboTokenCreate_EmptyName(t *testing.T) {
 
 	h.HandleKoboTokens(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestKoboTokenList_Empty(t *testing.T) {
@@ -119,9 +101,7 @@ func TestKoboTokenList_Empty(t *testing.T) {
 
 	var list []any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &list), "unmarshal")
-	if len(list) != 0 {
-		t.Errorf("expected empty list, got %d items", len(list))
-	}
+	require.Len(t, list, 0)
 }
 
 func TestKoboTokenDelete_NotFound(t *testing.T) {
@@ -133,9 +113,7 @@ func TestKoboTokenDelete_NotFound(t *testing.T) {
 
 	h.HandleKoboToken(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 // ---- Token management: delete success ----
@@ -152,9 +130,7 @@ func TestKoboTokenDelete_Success(t *testing.T) {
 
 	h.HandleKoboToken(w, r)
 
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNoContent, w.Body.String())
-	}
+	require.Equal(t, http.StatusNoContent, w.Code)
 
 	// Verify the token is gone.
 	listReq := httptest.NewRequest(http.MethodGet, "/api/kobo/tokens", nil)
@@ -164,9 +140,7 @@ func TestKoboTokenDelete_Success(t *testing.T) {
 
 	var tokens []any
 	require.NoError(t, json.Unmarshal(listW.Body.Bytes(), &tokens), "unmarshal")
-	if len(tokens) != 0 {
-		t.Errorf("expected 0 tokens after delete, got %d", len(tokens))
-	}
+	require.Len(t, tokens, 0)
 }
 
 func TestKoboTokenCollection_MethodNotAllowed(t *testing.T) {
@@ -178,9 +152,7 @@ func TestKoboTokenCollection_MethodNotAllowed(t *testing.T) {
 
 	h.HandleKoboTokens(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestKoboTokenSingle_MethodNotAllowed(t *testing.T) {
@@ -193,9 +165,7 @@ func TestKoboTokenSingle_MethodNotAllowed(t *testing.T) {
 
 	h.HandleKoboToken(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 // createTestKoboTokenID creates a token and returns its database ID (not the raw token value).

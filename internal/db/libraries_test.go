@@ -12,27 +12,13 @@ func TestCreateLibrary(t *testing.T) {
 
 	lib, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/books/fiction"]`, LibraryOrganizationBookPerFolder, false)
 	require.NoError(t, err, "CreateLibrary() error")
-	if lib.ID == "" {
-		t.Error("CreateLibrary() returned empty ID")
-	}
-	if lib.Name != "Fiction" {
-		t.Errorf("Name = %q, want %q", lib.Name, "Fiction")
-	}
-	if lib.Paths != `["/mnt/books/fiction"]` {
-		t.Errorf("Paths = %q, want %q", lib.Paths, `["/mnt/books/fiction"]`)
-	}
-	if lib.OrganizationType != LibraryOrganizationBookPerFolder {
-		t.Errorf("OrganizationType = %q, want %q", lib.OrganizationType, LibraryOrganizationBookPerFolder)
-	}
-	if lib.Monitored {
-		t.Error("Monitored should be false")
-	}
-	if lib.CreatedAt.IsZero() {
-		t.Error("CreatedAt is zero")
-	}
-	if lib.UpdatedAt.IsZero() {
-		t.Error("UpdatedAt is zero")
-	}
+	require.NotEqual(t, "", lib.ID)
+	require.Equal(t, "Fiction", lib.Name)
+	require.Equal(t, `["/mnt/books/fiction"]`, lib.Paths)
+	require.Equal(t, LibraryOrganizationBookPerFolder, lib.OrganizationType)
+	require.False(t, lib.Monitored)
+	require.False(t, lib.CreatedAt.IsZero())
+	require.False(t, lib.UpdatedAt.IsZero())
 }
 
 func TestCreateLibrary_DuplicateName(t *testing.T) {
@@ -42,9 +28,7 @@ func TestCreateLibrary_DuplicateName(t *testing.T) {
 	require.NoError(t, err, "first CreateLibrary() error")
 
 	_, err = d.CreateLibrary(t.Context(), "Fiction", `["/mnt/books/other"]`, LibraryOrganizationBookPerFolder, false)
-	if err != ErrLibraryNameExists {
-		t.Errorf("expected ErrLibraryNameExists, got %v", err)
-	}
+	require.Equal(t, ErrLibraryNameExists, err)
 }
 
 func TestGetLibrary(t *testing.T) {
@@ -55,42 +39,30 @@ func TestGetLibrary(t *testing.T) {
 
 	found, err := d.GetLibrary(t.Context(), created.ID)
 	require.NoError(t, err, "GetLibrary() error")
-	if found.ID != created.ID {
-		t.Errorf("ID = %q, want %q", found.ID, created.ID)
-	}
-	if found.Name != "Fiction" {
-		t.Errorf("Name = %q, want %q", found.Name, "Fiction")
-	}
-	if !found.Monitored {
-		t.Error("Monitored should be true")
-	}
+	require.Equal(t, created.ID, found.ID)
+	require.Equal(t, "Fiction", found.Name)
+	require.True(t, found.Monitored)
 }
 
 func TestGetLibrary_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetLibrary(t.Context(), "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestListLibraries(t *testing.T) {
 	d := newTestDB(t)
 
-	if _, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false); err != nil {
-		require.NoError(t, err, "CreateLibrary() for Fiction error")
-	}
-	if _, err := d.CreateLibrary(t.Context(), "Non-Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, true); err != nil {
-		require.NoError(t, err, "CreateLibrary() for Non-Fiction error")
-	}
+	_, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "CreateLibrary() for Fiction error")
+	_, err = d.CreateLibrary(t.Context(), "Non-Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, true)
+	require.NoError(t, err, "CreateLibrary() for Non-Fiction error")
 
 	libs, err := d.ListLibraries(t.Context())
 	require.NoError(t, err, "ListLibraries() error")
 	require.Len(t, libs, 2)
-	if libs[0].Name != "Fiction" {
-		t.Errorf("first library Name = %q, want %q", libs[0].Name, "Fiction")
-	}
+	require.Equal(t, "Fiction", libs[0].Name)
 }
 
 func TestUpdateLibrary(t *testing.T) {
@@ -101,30 +73,21 @@ func TestUpdateLibrary(t *testing.T) {
 
 	updated, err := d.UpdateLibrary(t.Context(), created.ID, "Novels", `["/mnt/novels","/mnt/fiction"]`, LibraryOrganizationBookPerFolder, true)
 	require.NoError(t, err, "UpdateLibrary() error")
-	if updated.Name != "Novels" {
-		t.Errorf("Name = %q, want %q", updated.Name, "Novels")
-	}
-	if updated.Paths != `["/mnt/novels","/mnt/fiction"]` {
-		t.Errorf("Paths = %q, want %q", updated.Paths, `["/mnt/novels","/mnt/fiction"]`)
-	}
-	if !updated.Monitored {
-		t.Error("Monitored should be true")
-	}
+	require.Equal(t, "Novels", updated.Name)
+	require.Equal(t, `["/mnt/novels","/mnt/fiction"]`, updated.Paths)
+	require.True(t, updated.Monitored)
 }
 
 func TestUpdateLibrary_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	if _, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false); err != nil {
-		require.NoError(t, err, "CreateLibrary() for Fiction error")
-	}
+	_, err := d.CreateLibrary(t.Context(), "Fiction", `["/mnt/fiction"]`, LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "CreateLibrary() for Fiction error")
 	lib2, err := d.CreateLibrary(t.Context(), "Non-Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, false)
 	require.NoError(t, err, "CreateLibrary() for Non-Fiction error")
 
 	_, err = d.UpdateLibrary(t.Context(), lib2.ID, "Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, false)
-	if err != ErrLibraryNameExists {
-		t.Errorf("expected ErrLibraryNameExists, got %v", err)
-	}
+	require.Equal(t, ErrLibraryNameExists, err)
 }
 
 func TestDeleteLibrary(t *testing.T) {
@@ -137,16 +100,12 @@ func TestDeleteLibrary(t *testing.T) {
 	require.NoError(t, err, "DeleteLibrary() error")
 
 	_, err = d.GetLibrary(t.Context(), lib.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestDeleteLibrary_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.DeleteLibrary(t.Context(), "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }

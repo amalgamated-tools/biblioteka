@@ -1,7 +1,6 @@
 package kobo
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -31,9 +30,8 @@ func TestFormatForFileType(t *testing.T) {
 	}
 	for _, tc := range cases {
 		got, ok := FormatForFileType(tc.ft)
-		if ok != tc.ok || got != tc.want {
-			t.Errorf("FormatForFileType(%q) = (%q, %v), want (%q, %v)", tc.ft, got, ok, tc.want, tc.ok)
-		}
+		require.Equal(t, tc.ok, ok)
+		require.Equal(t, tc.want, got)
 	}
 }
 
@@ -45,28 +43,20 @@ func TestDownloadURLs_OnlySupportedFormats(t *testing.T) {
 	}
 	urls := DownloadURLs("https://host", "tok", "book1", files)
 	require.Len(t, urls, 2)
-	if urls[0].Format != "EPUB3" {
-		t.Errorf("first format = %v, want EPUB3", urls[0].Format)
-	}
-	if urls[1].Format != "MOBI" {
-		t.Errorf("second format = %v, want MOBI", urls[1].Format)
-	}
+	require.Equal(t, "EPUB3", urls[0].Format)
+	require.Equal(t, "MOBI", urls[1].Format)
 }
 
 func TestDownloadURLs_URLContainsToken(t *testing.T) {
 	files := []db.BookFile{{ID: "f1", FileType: "epub"}}
 	urls := DownloadURLs("https://host", "mytoken", "book1", files)
 	require.Len(t, urls, 1)
-	if !strings.Contains(urls[0].URL, "mytoken") {
-		t.Errorf("URL %q does not contain token", urls[0].URL)
-	}
+	require.Contains(t, urls[0].URL, "mytoken")
 }
 
 func TestDownloadURLs_Empty(t *testing.T) {
 	urls := DownloadURLs("https://host", "tok", "book1", nil)
-	if urls != nil {
-		t.Errorf("expected nil for no files, got %v", urls)
-	}
+	require.Nil(t, urls)
 }
 
 func TestBookEntitlement_Fields(t *testing.T) {
@@ -77,15 +67,9 @@ func TestBookEntitlement_Fields(t *testing.T) {
 		UpdatedAt: now,
 	}
 	ent := BookEntitlement(book)
-	if ent.ID != "bk1" {
-		t.Errorf("Id = %v", ent.ID)
-	}
-	if ent.Accessibility != "Full" {
-		t.Errorf("Accessibility = %v", ent.Accessibility)
-	}
-	if ent.Status != "Active" {
-		t.Errorf("Status = %v", ent.Status)
-	}
+	require.Equal(t, "bk1", ent.ID)
+	require.Equal(t, "Full", ent.Accessibility)
+	require.Equal(t, "Active", ent.Status)
 }
 
 func TestBookMetadata_Authors(t *testing.T) {
@@ -93,9 +77,8 @@ func TestBookMetadata_Authors(t *testing.T) {
 	authors := []db.Author{{ID: "a1", Name: "Alice"}, {ID: "a2", Name: "Bob"}}
 	meta := BookMetadata(book, authors, nil, nil)
 
-	if len(meta.Contributors) != 2 || meta.Contributors[0] != "Alice" {
-		t.Errorf("Contributors = %v", meta.Contributors)
-	}
+	require.Len(t, meta.Contributors, 2)
+	require.Equal(t, "Alice", meta.Contributors[0])
 }
 
 func TestBookMetadata_Series(t *testing.T) {
@@ -107,28 +90,20 @@ func TestBookMetadata_Series(t *testing.T) {
 	meta := BookMetadata(book, nil, series, nil)
 
 	require.NotNil(t, meta.Series)
-	if meta.Series.Name != "My Series" {
-		t.Errorf("Series.Name = %v", meta.Series.Name)
-	}
-	if meta.Series.Number != 3 {
-		t.Errorf("Series.Number = %v, want 3", meta.Series.Number)
-	}
+	require.Equal(t, "My Series", meta.Series.Name)
+	require.Equal(t, 3, meta.Series.Number)
 }
 
 func TestBookMetadata_Language_Default(t *testing.T) {
 	book := &db.Book{ID: "bk1", Title: "No Lang"}
 	meta := BookMetadata(book, nil, nil, nil)
-	if meta.Language != "en" {
-		t.Errorf("Language = %v, want en", meta.Language)
-	}
+	require.Equal(t, "en", meta.Language)
 }
 
 func TestBookMetadata_Language_Set(t *testing.T) {
 	book := &db.Book{ID: "bk1", Title: "French", Language: strPtr("fr")}
 	meta := BookMetadata(book, nil, nil, nil)
-	if meta.Language != "fr" {
-		t.Errorf("Language = %v, want fr", meta.Language)
-	}
+	require.Equal(t, "fr", meta.Language)
 }
 
 func TestReadingStateResponse_Defaults(t *testing.T) {
@@ -137,12 +112,8 @@ func TestReadingStateResponse_Defaults(t *testing.T) {
 		Status: "ReadyToRead",
 	}
 	resp := ReadingStateResponse(state)
-	if resp.EntitlementID != "bk1" {
-		t.Errorf("EntitlementId = %v", resp.EntitlementID)
-	}
-	if resp.StatusInfo.Status != "ReadyToRead" {
-		t.Errorf("StatusInfo.Status = %v", resp.StatusInfo.Status)
-	}
+	require.Equal(t, "bk1", resp.EntitlementID)
+	require.Equal(t, "ReadyToRead", resp.StatusInfo.Status)
 }
 
 func TestReadingStateResponse_WithProgress(t *testing.T) {
@@ -153,7 +124,6 @@ func TestReadingStateResponse_WithProgress(t *testing.T) {
 		PercentRead: &pct,
 	}
 	resp := ReadingStateResponse(state)
-	if resp.CurrentBookmark.ProgressPercent == nil || *resp.CurrentBookmark.ProgressPercent != 42.5 {
-		t.Errorf("ProgressPercent = %v", resp.CurrentBookmark.ProgressPercent)
-	}
+	require.NotNil(t, resp.CurrentBookmark.ProgressPercent)
+	require.Equal(t, 42.5, *resp.CurrentBookmark.ProgressPercent)
 }

@@ -87,22 +87,14 @@ func Test_HandleNameErr(t *testing.T) {
 			got := handleNameErr(t.Context(), w, tt.err, errInvalid, errExists, tt.resourceArt)
 			require.Equal(t, tt.wantHandled, got, "handleNameErr()")
 			if !tt.wantHandled {
-				if w.Code != http.StatusOK {
-					t.Errorf("expected no response written, but got status %d", w.Code)
-				}
-				if w.Body.Len() != 0 {
-					t.Errorf("expected empty body, but got %q", w.Body.String())
-				}
+				require.Equal(t, http.StatusOK, w.Code)
+				require.Equal(t, 0, w.Body.Len())
 				return
 			}
-			if w.Code != tt.wantCode {
-				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
-			}
+			require.Equal(t, tt.wantCode, w.Code)
 			var result map[string]string
 			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
-			if result["error"] != tt.wantErrMsg {
-				t.Errorf("error = %q, want %q", result["error"], tt.wantErrMsg)
-			}
+			require.Equal(t, tt.wantErrMsg, result["error"])
 		})
 	}
 }
@@ -156,14 +148,10 @@ func Test_HandleDBErr(t *testing.T) {
 			if !tt.wantHandled {
 				return
 			}
-			if w.Code != tt.wantCode {
-				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
-			}
+			require.Equal(t, tt.wantCode, w.Code)
 			var result map[string]string
 			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
-			if result["error"] != tt.wantMsg {
-				t.Errorf("error = %q, want %q", result["error"], tt.wantMsg)
-			}
+			require.Equal(t, tt.wantMsg, result["error"])
 		})
 	}
 }
@@ -251,22 +239,14 @@ func Test_HandleUpdateErr(t *testing.T) {
 			got := handleUpdateErr(t.Context(), w, tt.err, errInvalid, errExists, tt.resourceArt, tt.resource, tt.id)
 			require.Equal(t, tt.wantHandled, got, "handleUpdateErr()")
 			if !tt.wantHandled {
-				if w.Code != http.StatusOK {
-					t.Errorf("expected no response written, but got status %d", w.Code)
-				}
-				if w.Body.Len() != 0 {
-					t.Errorf("expected empty body, but got %q", w.Body.String())
-				}
+				require.Equal(t, http.StatusOK, w.Code)
+				require.Equal(t, 0, w.Body.Len())
 				return
 			}
-			if w.Code != tt.wantCode {
-				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
-			}
+			require.Equal(t, tt.wantCode, w.Code)
 			var result map[string]string
 			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
-			if result["error"] != tt.wantErrMsg {
-				t.Errorf("error = %q, want %q", result["error"], tt.wantErrMsg)
-			}
+			require.Equal(t, tt.wantErrMsg, result["error"])
 		})
 	}
 }

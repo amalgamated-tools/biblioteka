@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -18,9 +17,7 @@ func TestNewJWTManager_RandomSecret(t *testing.T) {
 	jm, err := NewJWTManager("", time.Hour)
 	require.NoError(t, err, "NewJWTManager() with empty secret unexpected error")
 	require.NotNil(t, jm)
-	if len(jm.secret) != 32 {
-		t.Errorf("expected 32-byte random secret, got %d bytes", len(jm.secret))
-	}
+	require.Len(t, jm.secret, 32)
 }
 
 func TestCreateAndValidateToken(t *testing.T) {
@@ -34,9 +31,7 @@ func TestCreateAndValidateToken(t *testing.T) {
 
 	claims, err := jm.ValidateToken(t.Context(), token)
 	require.NoError(t, err, "ValidateToken() error")
-	if claims.UserID != userID {
-		t.Errorf("ValidateToken() UserID = %q, want %q", claims.UserID, userID)
-	}
+	require.Equal(t, userID, claims.UserID)
 }
 
 func TestValidateToken_InvalidToken(t *testing.T) {
@@ -44,9 +39,7 @@ func TestValidateToken_InvalidToken(t *testing.T) {
 	require.NoError(t, err, "NewJWTManager() error")
 
 	_, err = jm.ValidateToken(t.Context(), "not-a-valid-token")
-	if !errors.Is(err, ErrInvalidToken) {
-		t.Errorf("ValidateToken() with invalid token: got %v, want ErrInvalidToken", err)
-	}
+	require.ErrorIs(t, err, ErrInvalidToken)
 }
 
 func TestValidateToken_ExpiredToken(t *testing.T) {
@@ -58,9 +51,7 @@ func TestValidateToken_ExpiredToken(t *testing.T) {
 	require.NoError(t, err, "CreateToken() error")
 
 	_, err = jm.ValidateToken(t.Context(), token)
-	if !errors.Is(err, ErrExpiredToken) {
-		t.Errorf("ValidateToken() with expired token: got %v, want ErrExpiredToken", err)
-	}
+	require.ErrorIs(t, err, ErrExpiredToken)
 }
 
 func TestValidateToken_WrongSecret(t *testing.T) {
@@ -73,16 +64,12 @@ func TestValidateToken_WrongSecret(t *testing.T) {
 	require.NoError(t, err, "CreateToken() error")
 
 	_, err = jm2.ValidateToken(t.Context(), token)
-	if !errors.Is(err, ErrInvalidToken) {
-		t.Errorf("ValidateToken() with wrong secret: got %v, want ErrInvalidToken", err)
-	}
+	require.ErrorIs(t, err, ErrInvalidToken)
 }
 
 func TestValidateToken_Empty(t *testing.T) {
 	jm, err := NewJWTManager("testsecret", time.Hour)
 	require.NoError(t, err, "NewJWTManager() error")
 	_, err = jm.ValidateToken(t.Context(), "")
-	if !errors.Is(err, ErrInvalidToken) {
-		t.Errorf("ValidateToken() with empty token: got %v, want ErrInvalidToken", err)
-	}
+	require.ErrorIs(t, err, ErrInvalidToken)
 }
