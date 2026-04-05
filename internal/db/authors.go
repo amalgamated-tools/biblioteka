@@ -79,7 +79,7 @@ func (d *DB) CreateAuthor(ctx context.Context, name string, goodreadsID, hardcov
 
 // GetAuthor retrieves an author by its UUID. Returns sql.ErrNoRows if not found.
 func (d *DB) GetAuthor(ctx context.Context, id string) (*Author, error) {
-	slog.DebugContext(ctx, "db: fetching author", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: fetching author", slog.String(otelkeys.AuthorID, id))
 	return scanAuthor(d.QueryRowContext(ctx,
 		`SELECT `+authorColumns+` FROM authors WHERE id = $1`,
 		id,
@@ -142,6 +142,6 @@ func (d *DB) FindOrCreateAuthor(ctx context.Context, name string) (*Author, erro
 // DeleteAuthor removes the author with the given ID. Returns sql.ErrNoRows if
 // no matching author exists.
 func (d *DB) DeleteAuthor(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "db: deleting author", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: deleting author", slog.String(otelkeys.AuthorID, id))
 	return d.execAffected(ctx, `DELETE FROM authors WHERE id = $1`, id)
 }

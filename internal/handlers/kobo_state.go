@@ -94,7 +94,7 @@ func (h *KoboHandler) updateBookState(w http.ResponseWriter, r *http.Request, us
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to fetch book for kobo state update",
-			slog.String(otelkeys.ID, bookID),
+			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{"RequestResult": "ServerError"})
