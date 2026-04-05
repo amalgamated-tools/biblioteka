@@ -36,7 +36,7 @@ vi.mock("lucide-svelte", () => ({
 
 import AccountTab from "./AccountTab.svelte";
 import { authStore } from "../../stores/auth.svelte";
-import { changePassword, createOidcLinkNonce } from "../../lib/api";
+import { changePassword, createOidcLinkNonce, updateProfile } from "../../lib/api";
 
 describe("AccountTab email display", () => {
   afterEach(() => {
@@ -50,6 +50,77 @@ describe("AccountTab email display", () => {
     const emailInput = screen.getByLabelText("Email Address");
     expect(emailInput).toHaveValue("test@example.com");
     expect(emailInput).toBeDisabled();
+  });
+});
+
+describe("AccountTab display name", () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("displays the current user name in the name input", () => {
+    render(AccountTab, { props: { oidcConfigured: false } });
+
+    const nameInput = screen.getByLabelText("Name");
+    expect(nameInput).toHaveValue("Test User");
+  });
+
+  it("calls updateProfile with new name on valid submission", async () => {
+    render(AccountTab, { props: { oidcConfigured: false } });
+
+    const nameInput = screen.getByLabelText("Name");
+    await fireEvent.input(nameInput, { target: { value: "New Name" } });
+
+    const form = screen.getByRole("form", { name: "Update display name" });
+    await fireEvent.submit(form);
+    await tick();
+    await tick();
+
+    expect(updateProfile).toHaveBeenCalledWith("New Name");
+  });
+
+  it("shows success message after name update", async () => {
+    render(AccountTab, { props: { oidcConfigured: false } });
+
+    const nameInput = screen.getByLabelText("Name");
+    await fireEvent.input(nameInput, { target: { value: "Updated Name" } });
+
+    const form = screen.getByRole("form", { name: "Update display name" });
+    await fireEvent.submit(form);
+    await tick();
+    await tick();
+
+    expect(screen.getByText("Display name updated")).toBeInTheDocument();
+  });
+
+  it("shows validation error when name is empty on submit", async () => {
+    render(AccountTab, { props: { oidcConfigured: false } });
+
+    const nameInput = screen.getByLabelText("Name");
+    await fireEvent.input(nameInput, { target: { value: "" } });
+
+    const form = screen.getByRole("form", { name: "Update display name" });
+    await fireEvent.submit(form);
+    await tick();
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Display name is required",
+    );
+  });
+
+  it("shows error banner when updateProfile rejects", async () => {
+    vi.mocked(updateProfile).mockRejectedValueOnce(
+      new Error("Failed to update"),
+    );
+    render(AccountTab, { props: { oidcConfigured: false } });
+
+    const form = screen.getByRole("form", { name: "Update display name" });
+    await fireEvent.submit(form);
+    await tick();
+    await tick();
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Failed to update");
   });
 });
 
