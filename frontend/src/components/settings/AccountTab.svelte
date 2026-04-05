@@ -32,6 +32,13 @@
   let nameLoading = $state(false);
   const nameSuccessTimer = new AutoDismissTimer();
 
+  // Keep displayName in sync when the auth store user loads or updates externally.
+  $effect(() => {
+    if (authStore.user && !nameLoading) {
+      displayName = authStore.user.name;
+    }
+  });
+
   onDestroy(() => {
     successTimer.clear();
     nameSuccessTimer.clear();
