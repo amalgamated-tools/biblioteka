@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
@@ -14,9 +15,10 @@ import (
 
 // ProcessBookFile orchestrates the complete processing of a single book file:
 // validation, deduplication, metadata extraction, file reorganization, and
-// database record creation.
-func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, p ProcessFilePayload) error {
-	return processBookFile(ctx, database, extractor, p, defaultBookFileLookup)
+// database record creation. When enqueuer is non-nil, a Goodreads enrichment
+// job is enqueued after the book record is created.
+func ProcessBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, enqueuer Enqueuer, p ProcessFilePayload) error {
+	return processBookFile(ctx, database, extractor, enqueuer, p, defaultBookFileLookup)
 }
 
 func lookupOrganizationType(ctx context.Context, database *db.DB, p ProcessFilePayload) string {
@@ -36,7 +38,7 @@ func lookupOrganizationType(ctx context.Context, database *db.DB, p ProcessFileP
 	return lib.OrganizationType
 }
 
-func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, p ProcessFilePayload, lookup bookFileLookupFunc) error {
+func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, enqueuer Enqueuer, p ProcessFilePayload, lookup bookFileLookupFunc) error {
 	if database == nil {
 		err := fmt.Errorf("process book file: database is nil")
 		slog.ErrorContext(ctx, "book processing failed: database is nil",
@@ -109,6 +111,8 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	linkBookAssociations(ctx, database, book.ID, authorName, p.LibraryID, pathInfo, filePath)
 
+	maybeEnqueueGoodreads(ctx, database, enqueuer, book.ID)
+
 	sidecar.WriteSidecarFiles(ctx, filePath, meta, title, authorName, organizationType)
 
 	var format string
@@ -132,4 +136,41 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	)
 
 	return nil
+}
+
+// maybeEnqueueGoodreads enqueues an enrich:goodreads job for the given book
+// when an enqueuer is available. The user ID is resolved by fetching the first
+// user from the database. Failures are logged but never propagated.
+func maybeEnqueueGoodreads(ctx context.Context, database *db.DB, enqueuer Enqueuer, bookID string) {
+	if enqueuer == nil {
+		return
+	}
+
+	users, err := database.ListUsers(ctx)
+	if err != nil || len(users) == 0 {
+		if err != nil {
+			slog.WarnContext(ctx, "could not list users for Goodreads enrichment",
+				slog.String(otelkeys.BookID, bookID),
+				slog.Any(otelkeys.Error, err),
+			)
+		} else {
+			slog.WarnContext(ctx, "no users found, skipping Goodreads enrichment",
+				slog.String(otelkeys.BookID, bookID),
+			)
+		}
+		return
+	}
+
+	enqueueCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+
+	if _, err := enqueuer.Enqueue(enqueueCtx, JobEnrichGoodreads, EnrichGoodreadsPayload{
+		BookID: bookID,
+		UserID: users[0].ID,
+	}); err != nil {
+		slog.WarnContext(ctx, "failed to enqueue enrich:goodreads job",
+			slog.String(otelkeys.BookID, bookID),
+			slog.Any(otelkeys.Error, err),
+		)
+	}
 }

@@ -7,15 +7,20 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // BookHandler holds dependencies for book endpoints.
 type BookHandler struct {
-	DB *db.DB
+	DB       *db.DB
+	Enqueuer interface {
+		Enqueue(ctx context.Context, name string, payload any) (string, error)
+	}
 }
 
 type bookRequest struct {
@@ -353,6 +358,20 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	userID := auth.UserIDFromContext(r.Context())
 	logAudit(r.Context(), h.DB, userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title})
+
+	if h.Enqueuer != nil {
+		enqueueCtx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 10*time.Second)
+		defer cancel()
+		if _, err := h.Enqueuer.Enqueue(enqueueCtx, jobs.JobEnrichGoodreads, jobs.EnrichGoodreadsPayload{
+			BookID: b.ID,
+			UserID: userID,
+		}); err != nil {
+			slog.ErrorContext(r.Context(), "failed to enqueue enrich:goodreads job",
+				slog.String(otelkeys.BookID, b.ID),
+				slog.Any(otelkeys.Error, err),
+			)
+		}
+	}
 
 	writeJSON(r.Context(), w, http.StatusCreated, dto)
 }
