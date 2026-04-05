@@ -250,8 +250,9 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
-	if books[0].CoverImageURL == nil || !strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,") {
-		t.Fatalf("expected embedded cover data URL, got %#v", books[0].CoverImageURL)
+	require.NotNil(t, books[0].CoverImageURL, "expected embedded cover data URL")
+	if !strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,") {
+		t.Errorf("expected cover image to be a JPEG data URL, got %q", *books[0].CoverImageURL)
 	}
 }
 
