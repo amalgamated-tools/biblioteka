@@ -114,6 +114,7 @@ func TestValidateForSend_Valid(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "smtp.example.com:587", params.Addr, "Addr")
 	require.Equal(t, "noreply@example.com", params.From, "From")
+	require.Equal(t, "noreply@example.com", params.FromHeader, "FromHeader")
 	require.Equal(t, "starttls", params.TLS, "TLS")
 }
 
@@ -128,12 +129,14 @@ func TestValidateForSend_DefaultPort(t *testing.T) {
 }
 
 func TestValidateForSend_FromWithDisplayName(t *testing.T) {
-	_, err := ValidateForSend(Config{
+	params, err := ValidateForSend(Config{
 		Host: "smtp.example.com",
 		From: "Display Name <from@example.com>",
 		TLS:  "starttls",
 	})
-	require.Error(t, err, "expected error for from address with display name")
+	require.NoError(t, err, "expected no error for from address with display name")
+	require.Equal(t, "from@example.com", params.From, "From should be bare address for SMTP envelope")
+	require.Equal(t, `"Display Name" <from@example.com>`, params.FromHeader, "FromHeader should include display name")
 }
 
 func TestResolveConfig_EnvOverride(t *testing.T) {

@@ -39,9 +39,14 @@ type Config struct {
 // SendParams holds validated parameters ready for sending an email.
 type SendParams struct {
 	Addr string
+	// From is the bare email address used in the SMTP MAIL FROM envelope command.
 	From string
-	TLS  string
-	Auth netsmtp.Auth
+	// FromHeader is the formatted address for use in the RFC 5322 "From:" message
+	// header. It equals From when no display name is configured, or takes the form
+	// "\"Display Name\" <addr>" when a display name is present.
+	FromHeader string
+	TLS        string
+	Auth       netsmtp.Auth
 }
 
 // SendFunc is a function with the same signature as Send.
@@ -143,10 +148,15 @@ func ValidateForSend(cfg Config) (SendParams, error) {
 	if err != nil {
 		return SendParams{}, fmt.Errorf("from address is not a valid email address")
 	}
-	if parsedFrom.Name != "" {
-		return SendParams{}, fmt.Errorf("from address must be a plain email address without a display name")
+	// Use the bare email address for the SMTP MAIL FROM envelope command.
+	// The display name (if any) is preserved in FromHeader for the message header.
+	envelopeFrom := parsedFrom.Address
+	var fromHeader string
+	if parsedFrom.Name == "" {
+		fromHeader = parsedFrom.Address
+	} else {
+		fromHeader = parsedFrom.String()
 	}
-	from = parsedFrom.Address
 
 	port := strings.TrimSpace(cfg.Port)
 	if port == "" {
@@ -177,5 +187,5 @@ func ValidateForSend(cfg Config) (SendParams, error) {
 		smtpAuth = netsmtp.PlainAuth("", cfg.Username, cfg.Password, cfg.Host)
 	}
 
-	return SendParams{Addr: net.JoinHostPort(cfg.Host, port), From: from, TLS: tlsMode, Auth: smtpAuth}, nil
+	return SendParams{Addr: net.JoinHostPort(cfg.Host, port), From: envelopeFrom, FromHeader: fromHeader, TLS: tlsMode, Auth: smtpAuth}, nil
 }
