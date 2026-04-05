@@ -18,32 +18,35 @@ type visitor struct {
 
 // RateLimiter implements a per-IP token-bucket rate limiter.
 type RateLimiter struct {
-	mu       sync.Mutex
-	visitors map[string]*visitor
+	mu          sync.Mutex
+	visitors    map[string]*visitor
+	nextCleanup time.Time
 
 	rate    float64 // tokens added per second
 	burst   int     // max tokens (bucket size)
 	cleanup time.Duration
-	done    chan struct{}
 }
 
 // NewRateLimiter creates a rate limiter that allows `rate` requests per second
 // with a maximum burst size. Stale entries are cleaned up periodically.
 func NewRateLimiter(rate float64, burst int) *RateLimiter {
-	rl := &RateLimiter{
-		visitors: make(map[string]*visitor),
-		rate:     rate,
-		burst:    burst,
-		cleanup:  5 * time.Minute,
-		done:     make(chan struct{}),
+	cleanup := 5 * time.Minute
+	return &RateLimiter{
+		visitors:    make(map[string]*visitor),
+		nextCleanup: time.Now().Add(cleanup),
+		rate:        rate,
+		burst:       burst,
+		cleanup:     cleanup,
 	}
-	go rl.cleanupLoop()
-	return rl
 }
 
-// Stop shuts down the background cleanup goroutine.
-func (rl *RateLimiter) Stop() {
-	close(rl.done)
+func (rl *RateLimiter) cleanupVisitors(now time.Time) {
+	staleBefore := now.Add(-rl.cleanup)
+	for key, v := range rl.visitors {
+		if v.lastSeen.Before(staleBefore) {
+			delete(rl.visitors, key)
+		}
+	}
 }
 
 // allow checks whether the given key (IP) is allowed to proceed.
@@ -52,6 +55,11 @@ func (rl *RateLimiter) allow(key string) bool {
 	defer rl.mu.Unlock()
 
 	now := time.Now()
+	if !now.Before(rl.nextCleanup) {
+		rl.cleanupVisitors(now)
+		rl.nextCleanup = now.Add(rl.cleanup)
+	}
+
 	v, exists := rl.visitors[key]
 	if !exists {
 		rl.visitors[key] = &visitor{
@@ -75,27 +83,6 @@ func (rl *RateLimiter) allow(key string) bool {
 
 	v.tokens--
 	return true
-}
-
-// cleanupLoop removes stale visitor entries periodically.
-func (rl *RateLimiter) cleanupLoop() {
-	ticker := time.NewTicker(rl.cleanup)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-rl.done:
-			return
-		case <-ticker.C:
-			rl.mu.Lock()
-			cutoff := time.Now().Add(-rl.cleanup)
-			for ip, v := range rl.visitors {
-				if v.lastSeen.Before(cutoff) {
-					delete(rl.visitors, ip)
-				}
-			}
-			rl.mu.Unlock()
-		}
-	}
 }
 
 // ipFromRequest extracts the client IP from the request, preferring
