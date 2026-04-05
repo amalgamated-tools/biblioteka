@@ -24,6 +24,7 @@ export const LIBRARY_ORGANIZATION_OPTIONS = [
 
 export interface User {
   id: string;
+  name: string;
   email: string;
   oidc_linked: boolean;
   is_admin: boolean;
