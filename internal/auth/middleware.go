@@ -192,7 +192,7 @@ func Middleware(jwt *JWTManager, apiKeys APIKeyValidator) func(http.Handler) htt
 			if err != nil {
 				// Distinguish between expected auth failures (invalid/expired token)
 				// and unexpected internal errors (e.g., database/network issues).
-				if errors.Is(err, ErrInvalidToken) {
+				if errors.Is(err, ErrInvalidToken) || errors.Is(err, ErrExpiredToken) {
 					slog.InfoContext(r.Context(), "invalid or expired token", slog.Any(otelkeys.Error, err))
 					jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 				} else {
@@ -258,6 +258,10 @@ func newCachingAdminChecker(delegate AdminChecker, ttl time.Duration) AdminCheck
 	}
 }
 
+// IsAdmin reports whether the given user has admin privileges. Results are
+// cached for a short TTL to avoid repeated database lookups on busy admin
+// endpoints. The cache is process-local; expired entries are lazily evicted
+// when the cache exceeds a size threshold.
 func (c *cachingAdminChecker) IsAdmin(ctx context.Context, userID string) (bool, error) {
 	// Fast path: check cache under read lock.
 	now := time.Now()
@@ -303,6 +307,14 @@ func (c *cachingAdminChecker) IsAdmin(ctx context.Context, userID string) (bool,
 	return isAdmin, nil
 }
 
+// AdminMiddleware returns an HTTP middleware that validates the request token
+// (JWT or API key) and confirms the authenticated user has admin privileges
+// before allowing the request to proceed. It wraps the provided AdminChecker
+// with a short-lived in-memory cache to reduce database load on high-frequency
+// admin endpoints such as the Asynq dashboard.
+//
+// Requests without a token receive 401 Unauthorized. Requests from
+// authenticated non-admin users receive 403 Forbidden.
 func AdminMiddleware(jwt *JWTManager, checker AdminChecker, apiKeys APIKeyValidator) func(http.Handler) http.Handler {
 	// Wrap the provided AdminChecker with a short-lived cache to avoid
 	// repeated DB lookups for high-frequency admin endpoints (e.g., /asynqmon/).
@@ -320,7 +332,7 @@ func AdminMiddleware(jwt *JWTManager, checker AdminChecker, apiKeys APIKeyValida
 
 			userID, err := resolveUser(r.Context(), token, source, jwt, apiKeys)
 			if err != nil {
-				if errors.Is(err, ErrInvalidToken) {
+				if errors.Is(err, ErrInvalidToken) || errors.Is(err, ErrExpiredToken) {
 					slog.InfoContext(r.Context(), "admin middleware: invalid token", slog.Any(otelkeys.Error, err))
 					jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 				} else {

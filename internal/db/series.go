@@ -8,6 +8,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// Sentinel errors returned by series write operations.
 var (
 	ErrSeriesNameExists  = errors.New("series name already exists")
 	ErrInvalidSeriesName = errors.New("invalid series name")

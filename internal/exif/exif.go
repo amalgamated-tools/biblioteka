@@ -203,6 +203,14 @@ func (e *Exiftool) markDead() {
 	}
 }
 
+// ExtractMetadataFromFile extracts metadata from the given file by sending it
+// to the long-running ExifTool subprocess. The method is safe to call
+// concurrently, but must not be called after Close.
+//
+// Returns ErrDead if the Exiftool instance has been poisoned by a previous
+// protocol error, ErrNotExist if the file does not exist, ErrNotFile if the
+// path is a directory, or an error if the ExifTool subprocess returns an
+// error response.
 func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*ExifToolOutput, error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
