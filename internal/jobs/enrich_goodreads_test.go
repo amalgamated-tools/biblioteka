@@ -23,30 +23,30 @@ type mockGoodreadsClient struct {
 	getByIDResult      *goodreads.BookResult
 	getByIDErr         error
 
-	// Track which methods were called
-	searchCalled       bool
-	searchByISBNCalled bool
-	getByASINCalled    bool
-	getByIDCalled      bool
+	// Track calls with their arguments
+	searchQueries []string
+	isbnQueries   []string
+	asinQueries   []string
+	idQueries     []string
 }
 
-func (m *mockGoodreadsClient) Search(_ context.Context, _ string) ([]goodreads.BookResult, error) {
-	m.searchCalled = true
+func (m *mockGoodreadsClient) Search(_ context.Context, query string) ([]goodreads.BookResult, error) {
+	m.searchQueries = append(m.searchQueries, query)
 	return m.searchResult, m.searchErr
 }
 
-func (m *mockGoodreadsClient) SearchByISBN(_ context.Context, _ string) ([]goodreads.BookResult, error) {
-	m.searchByISBNCalled = true
+func (m *mockGoodreadsClient) SearchByISBN(_ context.Context, isbn string) ([]goodreads.BookResult, error) {
+	m.isbnQueries = append(m.isbnQueries, isbn)
 	return m.searchByISBNResult, m.searchByISBNErr
 }
 
-func (m *mockGoodreadsClient) GetBookByASIN(_ context.Context, _ string) (*goodreads.BookResult, error) {
-	m.getByASINCalled = true
+func (m *mockGoodreadsClient) GetBookByASIN(_ context.Context, asin string) (*goodreads.BookResult, error) {
+	m.asinQueries = append(m.asinQueries, asin)
 	return m.getByASINResult, m.getByASINErr
 }
 
-func (m *mockGoodreadsClient) GetBookByID(_ context.Context, _ string) (*goodreads.BookResult, error) {
-	m.getByIDCalled = true
+func (m *mockGoodreadsClient) GetBookByID(_ context.Context, id string) (*goodreads.BookResult, error) {
+	m.idQueries = append(m.idQueries, id)
 	return m.getByIDResult, m.getByIDErr
 }
 
@@ -97,9 +97,10 @@ func TestEnrichGoodreads_ISBNLookup(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.True(t, mock.searchByISBNCalled, "expected SearchByISBN to be called")
-	require.False(t, mock.getByASINCalled, "ASIN lookup should not be called when ISBN succeeds")
-	require.False(t, mock.searchCalled, "title search should not be called when ISBN succeeds")
+	require.Len(t, mock.isbnQueries, 1, "expected exactly one SearchByISBN call")
+	require.Equal(t, "9780593135204", mock.isbnQueries[0], "expected ISBN13 to be used for lookup")
+	require.Empty(t, mock.asinQueries, "ASIN lookup should not be called when ISBN succeeds")
+	require.Empty(t, mock.searchQueries, "title search should not be called when ISBN succeeds")
 
 	// Verify the metadata record was created
 	metadata, err := database.ListGoodreadsMetadataByUser(t.Context(), user.ID, 10, 0)
@@ -129,7 +130,8 @@ func TestEnrichGoodreads_ISBN10Lookup(t *testing.T) {
 		UserID: user.ID,
 	})
 	require.NoError(t, err)
-	require.True(t, mock.searchByISBNCalled)
+	require.Len(t, mock.isbnQueries, 1, "expected exactly one SearchByISBN call")
+	require.Equal(t, "0593135202", mock.isbnQueries[0], "expected ISBN10 to be used for lookup")
 
 	metadata, err := database.ListGoodreadsMetadataByUser(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
@@ -152,9 +154,10 @@ func TestEnrichGoodreads_ASINLookup(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.False(t, mock.searchByISBNCalled, "ISBN lookup should not be called when book has no ISBN")
-	require.True(t, mock.getByASINCalled, "expected GetBookByASIN to be called")
-	require.False(t, mock.searchCalled, "title search should not be called when ASIN succeeds")
+	require.Empty(t, mock.isbnQueries, "ISBN lookup should not be called when book has no ISBN")
+	require.Len(t, mock.asinQueries, 1, "expected exactly one GetBookByASIN call")
+	require.Equal(t, "B08FHBV4ZX", mock.asinQueries[0], "expected ASIN to be used for lookup")
+	require.Empty(t, mock.searchQueries, "title search should not be called when ASIN succeeds")
 
 	metadata, err := database.ListGoodreadsMetadataByUser(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
@@ -179,8 +182,9 @@ func TestEnrichGoodreads_GoodreadsIDLookup(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.True(t, mock.getByIDCalled, "expected GetBookByID to be called")
-	require.False(t, mock.searchCalled, "title search should not be called when Goodreads ID succeeds")
+	require.Len(t, mock.idQueries, 1, "expected exactly one GetBookByID call")
+	require.Equal(t, "kca://book/amzn1.gr.book.v3.xyz789", mock.idQueries[0], "expected Goodreads ID to be used for lookup")
+	require.Empty(t, mock.searchQueries, "title search should not be called when Goodreads ID succeeds")
 
 	metadata, err := database.ListGoodreadsMetadataByUser(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
@@ -202,10 +206,11 @@ func TestEnrichGoodreads_TitleSearchFallback(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.False(t, mock.searchByISBNCalled, "ISBN lookup should not be called when book has no ISBN")
-	require.False(t, mock.getByASINCalled, "ASIN lookup should not be called when book has no ASIN")
-	require.False(t, mock.getByIDCalled, "ID lookup should not be called when book has no Goodreads ID")
-	require.True(t, mock.searchCalled, "expected title search to be called as last resort")
+	require.Empty(t, mock.isbnQueries, "ISBN lookup should not be called when book has no ISBN")
+	require.Empty(t, mock.asinQueries, "ASIN lookup should not be called when book has no ASIN")
+	require.Empty(t, mock.idQueries, "ID lookup should not be called when book has no Goodreads ID")
+	require.Len(t, mock.searchQueries, 1, "expected exactly one title search call")
+	require.Equal(t, "Project Hail Mary", mock.searchQueries[0], "expected book title to be used for search")
 
 	metadata, err := database.ListGoodreadsMetadataByUser(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
@@ -229,8 +234,9 @@ func TestEnrichGoodreads_ISBNPreferredOverTitle(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.True(t, mock.searchByISBNCalled, "ISBN lookup should be called first")
-	require.False(t, mock.searchCalled, "title search should not be called when ISBN succeeds")
+	require.Len(t, mock.isbnQueries, 1, "ISBN lookup should be called first")
+	require.Equal(t, "9780593135204", mock.isbnQueries[0])
+	require.Empty(t, mock.searchQueries, "title search should not be called when ISBN succeeds")
 }
 
 func TestEnrichGoodreads_NoMatch(t *testing.T) {
@@ -270,8 +276,10 @@ func TestEnrichGoodreads_ISBNFailsFallsToTitle(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.True(t, mock.searchByISBNCalled, "ISBN lookup should be attempted")
-	require.True(t, mock.searchCalled, "title search should be called when ISBN fails")
+	require.Len(t, mock.isbnQueries, 1, "ISBN lookup should be attempted")
+	require.Equal(t, "9780593135204", mock.isbnQueries[0])
+	require.Len(t, mock.searchQueries, 1, "title search should be called when ISBN fails")
+	require.Equal(t, "Project Hail Mary", mock.searchQueries[0])
 
 	metadata, err := database.ListGoodreadsMetadataByUser(t.Context(), user.ID, 10, 0)
 	require.NoError(t, err)
