@@ -39,7 +39,7 @@
       {book.title}
     </h3>
     {#if book.publisher}
-      <p class="text-xs text-ink-400 dark:text-ink-500 truncate mt-0.5">
+      <p class="text-xs text-ink-500 dark:text-ink-300 truncate mt-0.5">
         {book.publisher}
       </p>
     {/if}

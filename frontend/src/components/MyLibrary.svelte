@@ -27,10 +27,10 @@
         class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4"
         aria-hidden="true"
       />
-      <p class="text-ink-400 dark:text-ink-400 text-lg">
+      <p class="text-ink-500 dark:text-ink-300 text-lg">
         Your personal library is empty.
       </p>
-      <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
+      <p class="text-ink-500 dark:text-ink-300 text-sm mt-1">
         Browse All Books to add some to your collection.
       </p>
     </div>

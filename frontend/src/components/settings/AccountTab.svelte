@@ -102,7 +102,7 @@
         />
         <p
           id="email-display-hint"
-          class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+          class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
           Contact support to change your email address
         </p>
@@ -129,7 +129,7 @@
             SSO Connected
           </span>
         </div>
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-2">
+        <p class="text-xs text-ink-500 dark:text-ink-300 mt-2">
           Your account is linked to your SSO provider. You can log in with
           either your password or SSO.
         </p>
@@ -139,7 +139,7 @@
             >{authStore.oidcLinkError}</AlertBanner
           >
         {/if}
-        <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
+        <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
           Link your account to the SSO provider to enable single sign-on login.
         </p>
         <Button
