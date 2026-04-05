@@ -22,7 +22,7 @@ safe-outputs:
   create-issue:
     labels: [security, automation]
     max: 5
-    expires: 7d
+    expires: 30d
   add-comment:
     max: 1
   create-discussion:
