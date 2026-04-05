@@ -11,8 +11,8 @@ type contextKey string
 
 // RequestID is the HTTP header name used to propagate request identifiers
 // between clients and the server. Incoming requests that already carry this
-// header have their value preserved; new IDs are generated for requests that
-// do not include it.
+// header have their value preserved; otherwise a new UUID is generated. If
+// UUID generation fails, the ID falls back to the literal string "none".
 const RequestID = "X-Request-ID"
 
 // RequestIDKey is the context key for the X-Request-ID value

@@ -60,8 +60,8 @@ func (r *statusRecorder) Push(target string, opts *http.PushOptions) error {
 
 // LoggingMiddleware returns an HTTP middleware that emits a structured debug
 // log entry at the start of each request (method, URL, remote address, user
-// agent, request ID, and user ID) and a second entry upon completion (adding
-// status code and elapsed duration).
+// agent, request ID, and user ID) and a second entry upon completion
+// (method, URL, status code, elapsed duration, request ID, and user ID).
 func LoggingMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
