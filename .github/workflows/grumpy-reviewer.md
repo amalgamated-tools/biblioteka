@@ -10,6 +10,7 @@ concurrency:
 permissions:
   contents: read
   pull-requests: read
+tracker-id: grumpy-reviewer
 tools:
   cache-memory: true
   github:

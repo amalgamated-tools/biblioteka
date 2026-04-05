@@ -7,6 +7,7 @@ permissions:
   contents: read
   actions: read
   discussions: read
+tracker-id: artifacts-summary
 engine: copilot
 network:
   allowed:
