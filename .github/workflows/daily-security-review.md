@@ -180,7 +180,7 @@ Read source files using bash (`cat`, `grep`, `head`) and look for the following 
 
 #### Cryptography & Secrets
 - Hardcoded secrets, API keys, passwords, or tokens in source code
-- Weak or deprecated cryptographic algorithms (`MD5`, `SHA1` for security-sensitive uses, `DES`, `RC4`)
+- Weak or deprecated cryptographic algorithms (`MD5`, `SHA1` for security-sensitive uses, `DES`, `RC4`) — skip occurrences carrying `#nosec` annotations or documented as protocol-mandated (e.g., KOReader kosync MD5 key derivation)
 - Insufficient bcrypt cost factor (below 12 for new code)
 - Random number generation using `math/rand` instead of `crypto/rand` for security-sensitive values
 - JWT secrets loaded from environment without minimum length validation
