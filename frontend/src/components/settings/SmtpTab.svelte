@@ -161,7 +161,7 @@
       <h2
         class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 flex items-center gap-2"
       >
-        <Send class="w-5 h-5 text-accent-600" />
+        <Send class="w-5 h-5 text-accent-600" aria-hidden="true" />
         Email / SMTP Configuration
       </h2>
       {#if smtpConfigured}
@@ -170,7 +170,7 @@
           disabled={smtpTestLoading}
           class="inline-flex items-center gap-2 px-4 py-2 text-sm"
         >
-          <Mail class="w-4 h-4" />
+          <Mail class="w-4 h-4" aria-hidden="true" />
           {smtpTestLoading ? "Sending..." : "Send Test Email"}
         </Button>
       {/if}
@@ -187,7 +187,7 @@
 
     <div class="mb-4">
       <div class="flex items-center gap-2 text-sm">
-        <span class="text-ink-500">Status:</span>
+        <span class="text-ink-500 dark:text-ink-300">Status:</span>
         {#if smtpConfigured}
           <span
             class="inline-flex items-center gap-1.5 text-success-700 dark:text-green-400 bg-success-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full font-medium"
@@ -206,7 +206,7 @@
       </div>
     </div>
 
-    <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
       Configure SMTP settings to enable email notifications from Biblioteka.
     </p>
 
@@ -296,7 +296,7 @@
           {#if smtpPasswordSet}
             <p
               id="smtp-password-hint"
-              class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+              class="text-xs text-ink-500 dark:text-ink-300 mt-1"
             >
               Leave blank to keep the existing password
             </p>
@@ -322,7 +322,7 @@
         />
         <p
           id="smtp-from-hint"
-          class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+          class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
           The email address that outgoing messages will be sent from
         </p>
