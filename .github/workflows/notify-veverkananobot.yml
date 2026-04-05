@@ -1,6 +1,0 @@
-# This workflow is no longer needed.
-# GitHub now sends pull_request webhook events directly to nanobot
-# at https://nanobot.veverka.net/github/webhook, which triggers
-# automatic reviews when veverkananobot is requested as a reviewer.
-#
-# This file is kept as a placeholder to document the previous approach.
