@@ -8,14 +8,13 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
@@ -31,9 +30,7 @@ func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
 	})
 
 	epubInfo, err := os.Stat(epubPath)
-	if err != nil {
-		t.Fatalf("stat epub: %v", err)
-	}
+	require.NoError(t, err, "stat epub")
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
 		Path:     epubPath,
@@ -41,20 +38,12 @@ func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
 		FileType: "epub",
 		FileSize: epubInfo.Size(),
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-	if books[0].CoverImageURL == nil {
-		t.Fatal("expected EPUB3 book to have a cover image URL after import, got nil")
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].CoverImageURL, "expected EPUB3 book to have a cover image URL after import")
 	if !strings.HasPrefix(*books[0].CoverImageURL, "data:image/png;base64,") {
 		t.Errorf("expected cover image to be a PNG data URL, got %q", *books[0].CoverImageURL)
 	}
@@ -62,9 +51,7 @@ func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
 
 func TestProcessBookFile_NilDatabase(t *testing.T) {
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	err = ProcessBookFile(t.Context(), nil, ext, ProcessFilePayload{
@@ -72,9 +59,7 @@ func TestProcessBookFile_NilDatabase(t *testing.T) {
 		FileName: "test.epub",
 		FileType: "epub",
 	})
-	if err == nil {
-		t.Fatal("expected error for nil database")
-	}
+	require.Error(t, err, "expected error for nil database")
 }
 
 func TestProcessBookFile_NilExtractor(t *testing.T) {
@@ -85,17 +70,13 @@ func TestProcessBookFile_NilExtractor(t *testing.T) {
 		FileName: "test.epub",
 		FileType: "epub",
 	})
-	if err == nil {
-		t.Fatal("expected error for nil extractor")
-	}
+	require.Error(t, err, "expected error for nil extractor")
 }
 
 func TestProcessBookFile_EmptyPath(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
@@ -103,17 +84,13 @@ func TestProcessBookFile_EmptyPath(t *testing.T) {
 		FileName: "test.epub",
 		FileType: "epub",
 	})
-	if err == nil {
-		t.Fatal("expected error for empty path")
-	}
+	require.Error(t, err, "expected error for empty path")
 }
 
 func TestProcessBookFile_WhitespacePath(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
@@ -121,17 +98,13 @@ func TestProcessBookFile_WhitespacePath(t *testing.T) {
 		FileName: "test.epub",
 		FileType: "epub",
 	})
-	if err == nil {
-		t.Fatal("expected error for whitespace-only path")
-	}
+	require.Error(t, err, "expected error for whitespace-only path")
 }
 
 func TestProcessBookFile_EmptyFileName(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
@@ -139,17 +112,13 @@ func TestProcessBookFile_EmptyFileName(t *testing.T) {
 		FileName: "",
 		FileType: "epub",
 	})
-	if err == nil {
-		t.Fatal("expected error for empty file name")
-	}
+	require.Error(t, err, "expected error for empty file name")
 }
 
 func TestProcessBookFile_EmptyFileType(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
@@ -157,26 +126,21 @@ func TestProcessBookFile_EmptyFileType(t *testing.T) {
 		FileName: "test.epub",
 		FileType: "",
 	})
-	if err == nil {
-		t.Fatal("expected error for empty file type")
-	}
+	require.Error(t, err, "expected error for empty file type")
 }
 
 func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	// Use a non-epub file so metadata extraction fails and title comes from filename
 	dir := t.TempDir()
 	path := filepath.Join(dir, "My Cool Book.pdf")
 	// Create an empty file so the path exists (extraction will fail but that's OK)
-	if err := os.WriteFile(path, []byte("not a real pdf"), 0o644); err != nil {
-		t.Fatalf("write test file: %v", err)
-	}
+	err = os.WriteFile(path, []byte("not a real pdf"), 0o644)
+	require.NoError(t, err, "write test file")
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
 		Path:     path,
@@ -184,17 +148,11 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 		FileType: "pdf",
 		FileSize: 14,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	// Extension should be stripped since it matches fileType
 	if books[0].Title != "My Cool Book" {
 		t.Errorf("expected title %q, got %q", "My Cool Book", books[0].Title)
@@ -204,16 +162,13 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "noext")
-	if err := os.WriteFile(path, []byte("content"), 0o644); err != nil {
-		t.Fatalf("write test file: %v", err)
-	}
+	err = os.WriteFile(path, []byte("content"), 0o644)
+	require.NoError(t, err, "write test file")
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
 		Path:     path,
@@ -221,17 +176,11 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 		FileType: "pdf",
 		FileSize: 7,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	// No extension to strip, so title is the full filename
 	if books[0].Title != "noext" {
 		t.Errorf("expected title %q, got %q", "noext", books[0].Title)
@@ -241,16 +190,12 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	// Pre-create the author
 	_, err = database.CreateAuthor(t.Context(), "F. Scott Fitzgerald", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	require.NoError(t, err, "create author")
 
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "gatsby.epub")
@@ -262,31 +207,19 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	// Should have reused the existing author, not created a duplicate
 	authors, err := database.ListAuthors(t.Context())
-	if err != nil {
-		t.Fatalf("list authors: %v", err)
-	}
-	if len(authors) != 1 {
-		t.Fatalf("expected 1 author (reused), got %d", len(authors))
-	}
+	require.NoError(t, err, "list authors")
+	require.Len(t, authors, 1, "expected 1 author (reused)")
 
 	// Verify the book is associated with the existing author
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
+	require.NoError(t, err, "list books")
 	bookAuthors, err := database.GetBookAuthors(t.Context(), books[0].ID)
-	if err != nil {
-		t.Fatalf("get book authors: %v", err)
-	}
-	if len(bookAuthors) != 1 {
-		t.Fatalf("expected 1 book author, got %d", len(bookAuthors))
-	}
+	require.NoError(t, err, "get book authors")
+	require.Len(t, bookAuthors, 1, "expected 1 book author")
 	if bookAuthors[0].Name != "F. Scott Fitzgerald" {
 		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", bookAuthors[0].Name)
 	}
@@ -295,9 +228,7 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
@@ -314,17 +245,11 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	if books[0].CoverImageURL == nil || !strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,") {
 		t.Fatalf("expected embedded cover data URL, got %#v", books[0].CoverImageURL)
 	}
@@ -333,9 +258,7 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
@@ -349,27 +272,19 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 		FileType: "epub",
 		FileSize: 512,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	// No author should be created
 	authors, err := database.ListAuthors(t.Context())
-	if err != nil {
-		t.Fatalf("list authors: %v", err)
-	}
+	require.NoError(t, err, "list authors")
 	if len(authors) != 0 {
 		t.Errorf("expected 0 authors, got %d", len(authors))
 	}
 
 	// Book should still be created
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	if books[0].Title != "Anonymous Work" {
 		t.Errorf("expected title %q, got %q", "Anonymous Work", books[0].Title)
 	}
@@ -378,17 +293,14 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	// Create a file that isn't a valid EPUB — extraction will fail
 	dir := t.TempDir()
 	path := filepath.Join(dir, "broken.epub")
-	if err := os.WriteFile(path, []byte("not a valid epub"), 0o644); err != nil {
-		t.Fatalf("write broken.epub: %v", err)
-	}
+	err = os.WriteFile(path, []byte("not a valid epub"), 0o644)
+	require.NoError(t, err, "write broken.epub")
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
 		Path:     path,
@@ -396,18 +308,12 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 		FileType: "epub",
 		FileSize: 16,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	// Book should still be created with filename-derived title
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	if books[0].Title != "broken" {
 		t.Errorf("expected title %q, got %q", "broken", books[0].Title)
 	}
@@ -416,9 +322,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 func TestProcessBookFile_ISBN10(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
@@ -431,17 +335,11 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	books, err := database.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	if books[0].ISBN10 == nil || *books[0].ISBN10 != "0306406152" {
 		t.Errorf("expected ISBN10 %q, got %v", "0306406152", books[0].ISBN10)
 	}

@@ -8,15 +8,14 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/stretchr/testify/require"
 )
 
 // mustMarshal marshals v to JSON and fails the test if marshaling fails.
 func mustMarshal(t *testing.T, v any) []byte {
 	t.Helper()
 	data, err := json.Marshal(v)
-	if err != nil {
-		t.Fatalf("mustMarshal: %v", err)
-	}
+	require.NoError(t, err, "mustMarshal")
 	return data
 }
 
@@ -31,9 +30,7 @@ func Test_WriteJSON(t *testing.T) {
 		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
 	}
 	var result map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
 	if result["key"] != "value" {
 		t.Errorf("key = %q, want %q", result["key"], "value")
 	}
@@ -50,9 +47,7 @@ func Test_WriteError(t *testing.T) {
 		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
 	}
 	var result map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
 	if result["error"] != "something went wrong" {
 		t.Errorf("error = %q, want %q", result["error"], "something went wrong")
 	}
@@ -64,12 +59,8 @@ func Test_LogAudit(t *testing.T) {
 	logAudit(t.Context(), d, "user-42", db.AuditActionBookCreated, "book", "book-1", map[string]any{"title": "Audited"})
 
 	logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
-	if err != nil {
-		t.Fatalf("list audit logs: %v", err)
-	}
-	if len(logs) != 1 {
-		t.Fatalf("len(logs) = %d, want 1", len(logs))
-	}
+	require.NoError(t, err, "list audit logs")
+	require.Len(t, logs, 1)
 	if logs[0].UserID == nil || *logs[0].UserID != "user-42" {
 		t.Errorf("user id = %v, want %q", logs[0].UserID, "user-42")
 	}
@@ -82,9 +73,7 @@ func Test_LogAudit(t *testing.T) {
 	if logs[0].EntityID != "book-1" {
 		t.Errorf("entity id = %q, want %q", logs[0].EntityID, "book-1")
 	}
-	if logs[0].Metadata == nil {
-		t.Fatal("metadata = nil, want JSON metadata")
-	}
+	require.NotNil(t, logs[0].Metadata, "metadata = nil, want JSON metadata")
 }
 
 func TestRequestScheme(t *testing.T) {
