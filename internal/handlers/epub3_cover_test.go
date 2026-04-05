@@ -65,7 +65,7 @@ func TestEPUB3CoverImport_EndToEnd(t *testing.T) {
 	// Import the EPUB3 file; this triggers metadata extraction (including cover).
 	epubInfo, err := os.Stat(epubPath)
 	require.NoError(t, err, "stat epub")
-	if err := jobs.ProcessBookFile(t.Context(), d, ext, jobs.ProcessFilePayload{
+	if err := jobs.ProcessBookFile(t.Context(), d, ext, nil, jobs.ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "epub3-with-cover.epub",
 		FileType: "epub",

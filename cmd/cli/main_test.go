@@ -63,7 +63,7 @@ func TestProcessFile_MOBI(t *testing.T) {
 	ext := requireExtractor(t)
 
 	info := fileInfo(t, mobiPath)
-	err := jobs.ProcessBookFile(t.Context(), database, ext, jobs.ProcessFilePayload{
+	err := jobs.ProcessBookFile(t.Context(), database, ext, nil, jobs.ProcessFilePayload{
 		Path:     mobiPath,
 		FileName: filepath.Base(mobiPath),
 		FileType: "mobi",
@@ -97,7 +97,7 @@ func TestProcessFile_AZW3(t *testing.T) {
 	ext := requireExtractor(t)
 
 	info := fileInfo(t, azw3Path)
-	err := jobs.ProcessBookFile(t.Context(), database, ext, jobs.ProcessFilePayload{
+	err := jobs.ProcessBookFile(t.Context(), database, ext, nil, jobs.ProcessFilePayload{
 		Path:     azw3Path,
 		FileName: filepath.Base(azw3Path),
 		FileType: "azw3",
@@ -133,7 +133,7 @@ func TestProcessFile_EPUB(t *testing.T) {
 	ext := requireExtractor(t)
 
 	info := fileInfo(t, epubPath)
-	err := jobs.ProcessBookFile(t.Context(), database, ext, jobs.ProcessFilePayload{
+	err := jobs.ProcessBookFile(t.Context(), database, ext, nil, jobs.ProcessFilePayload{
 		Path:     epubPath,
 		FileName: filepath.Base(epubPath),
 		FileType: "epub",
@@ -171,7 +171,7 @@ func TestProcessFile_EPUB3(t *testing.T) {
 	ext := requireExtractor(t)
 
 	info := fileInfo(t, epub3Path)
-	err := jobs.ProcessBookFile(t.Context(), database, ext, jobs.ProcessFilePayload{
+	err := jobs.ProcessBookFile(t.Context(), database, ext, nil, jobs.ProcessFilePayload{
 		Path:     epub3Path,
 		FileName: filepath.Base(epub3Path),
 		FileType: "epub",

@@ -30,7 +30,7 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
 	require.NoError(t, err, "create library")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:        epubPath,
 		FileName:    "The Great Gatsby.epub",
 		FileType:    "epub",
@@ -73,7 +73,7 @@ func TestProcessBookFile_OrganizeFiles_BookPerFile(t *testing.T) {
 	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
 	require.NoError(t, err, "create library")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:        epubPath,
 		FileName:    "The Great Gatsby.epub",
 		FileType:    "epub",
@@ -112,7 +112,7 @@ func TestProcessBookFile_OrganizeFiles_None(t *testing.T) {
 	lib, err := database.CreateLibrary(t.Context(), "Unorganized", `["`+root+`"]`, db.LibraryOrganizationNone, false)
 	require.NoError(t, err, "create library")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:        epubPath,
 		FileName:    "The Great Gatsby.epub",
 		FileType:    "epub",
@@ -147,7 +147,7 @@ func TestProcessBookFile_NonExistentLibrarySkipsOrganization(t *testing.T) {
 
 	// Use a non-existent library ID — lookup should fail gracefully and
 	// skip file organization rather than error out.
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:        epubPath,
 		FileName:    "The Great Gatsby.epub",
 		FileType:    "epub",
@@ -181,7 +181,7 @@ func TestProcessBookFile_NoLibraryIDSkipsOrganization(t *testing.T) {
 	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
 	// No library ID — organization type stays empty, no file moves.
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:        epubPath,
 		FileName:    "The Great Gatsby.epub",
 		FileType:    "epub",
@@ -211,7 +211,7 @@ func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.
 	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
 	require.NoError(t, err, "create library")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:        originalPath,
 		FileName:    filepath.Base(originalPath),
 		FileType:    "epub",
@@ -247,7 +247,7 @@ func TestProcessBookFile_ContinuesFromFlatReorganizedPathWhenSourceMoved(t *test
 	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
 	require.NoError(t, err, "create library")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:        originalPath,
 		FileName:    filepath.Base(originalPath),
 		FileType:    "epub",
@@ -286,7 +286,7 @@ func TestProcessBookFile_FlatRecoveryDoesNotUseFolderCandidate(t *testing.T) {
 	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
 	require.NoError(t, err, "create library")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:        originalPath,
 		FileName:    filepath.Base(originalPath),
 		FileType:    "epub",
@@ -335,7 +335,7 @@ func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 		}
 	}
 
-	err = processBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = processBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:        originalPath,
 		FileName:    filepath.Base(originalPath),
 		FileType:    "epub",
