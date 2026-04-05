@@ -37,7 +37,8 @@ func TestKoboSyncTokenRoundTrip_NonZero(t *testing.T) {
 
 func TestParseKoboSyncToken_Empty(t *testing.T) {
 	tok := kobo.ParseSyncToken("")
-	require.True(t, tok.BooksLastModified.IsZero() || !tok.ReadingStateLastModified.IsZero())
+	require.True(t, tok.BooksLastModified.IsZero())
+	require.True(t, tok.ReadingStateLastModified.IsZero())
 }
 
 func TestParseKoboSyncToken_Garbage(t *testing.T) {
