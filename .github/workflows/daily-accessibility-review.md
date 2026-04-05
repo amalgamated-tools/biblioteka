@@ -20,6 +20,7 @@ safe-outputs:
   create-issue:
     title-prefix: "fix(accessibility): "
     labels: [a11y, automated-analysis]
+    assignees: [copilot]
     max: 15
     expires: 7d
     group: true
