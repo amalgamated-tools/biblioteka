@@ -190,13 +190,11 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 
 	// When offset exceeds total rows, the window function returns nothing.
 	// Fall back to a COUNT query so the caller can report the true total.
-	if len(books) == 0 && offset > 0 {
-		if err := d.QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1`,
-			libraryID,
-		).Scan(&total); err != nil {
-			return nil, 0, err
-		}
+	if err := countFallback(ctx, d, &total, len(books), offset,
+		`SELECT COUNT(*) FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1`,
+		libraryID,
+	); err != nil {
+		return nil, 0, err
 	}
 
 	return books, total, nil
