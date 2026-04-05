@@ -9,7 +9,8 @@ import (
 
 func TestParseSyncToken_Empty(t *testing.T) {
 	tok := ParseSyncToken("")
-	require.True(t, tok.BooksLastModified.IsZero() || !tok.ReadingStateLastModified.IsZero())
+	require.True(t, tok.BooksLastModified.IsZero())
+	require.True(t, tok.ReadingStateLastModified.IsZero())
 }
 
 func TestParseSyncToken_Garbage(t *testing.T) {
