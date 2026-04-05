@@ -24,15 +24,11 @@ func TestHandleInit_DeviceAuthKey(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	resources, ok := resp["Resources"].(map[string]any)
-	if !ok {
-		require.Fail(t, "expected Resources object in response")
-	}
+	require.True(t, ok)
 
 	// device_auth URL should contain the token value to allow per-device routing.
 	deviceAuth, _ := resources["device_auth"].(string)
@@ -134,9 +130,7 @@ func TestHandleInit_BlackstoneHeaderKey(t *testing.T) {
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	resources, _ := resp["Resources"].(map[string]any)
 	blackstone, ok := resources["blackstone_header"].(map[string]any)
-	if !ok {
-		require.Fail(t, "expected blackstone_header to be an object in Resources")
-	}
+	require.True(t, ok)
 	if blackstone["key"] == nil || blackstone["value"] == nil {
 		t.Error("expected key and value in blackstone_header")
 	}

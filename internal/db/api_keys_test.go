@@ -205,9 +205,7 @@ func TestTouchAPIKeyLastUsed(t *testing.T) {
 
 	created, err := d.CreateAPIKey(t.Context(), user.ID, "Touch Me", "hashTouch", "prefTouch")
 	require.NoError(t, err, "CreateAPIKey() error")
-	if created.LastUsedAt != nil {
-		require.Fail(t, "LastUsedAt should be nil initially")
-	}
+	require.Nil(t, created.LastUsedAt)
 
 	require.NoError(t, d.TouchAPIKeyLastUsed(t.Context(), created.ID), "TouchAPIKeyLastUsed() error")
 

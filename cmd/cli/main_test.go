@@ -23,22 +23,18 @@ func newTestDB(t *testing.T) *db.DB {
 
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err, "open")
+	t.Cleanup(func() { _ = sqlDB.Close() })
 
-	if _, err := sqlDB.Exec(`
+	_, err = sqlDB.Exec(`
 		PRAGMA journal_mode = WAL;
 		PRAGMA synchronous = NORMAL;
 		PRAGMA foreign_keys = ON;
-	`); err != nil {
-		_ = sqlDB.Close()
-		require.NoError(t, err, "pragmas")
-	}
+	`)
+	require.NoError(t, err, "pragmas")
 
-	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
-		_ = sqlDB.Close()
-		require.NoError(t, err, "migrations")
-	}
+	err = db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite)
+	require.NoError(t, err, "migrations")
 
-	t.Cleanup(func() { _ = sqlDB.Close() })
 	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
 }
 
@@ -77,18 +73,14 @@ func TestProcessFile_MOBI(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	if books[0].Title != "The Prince" {
 		t.Errorf("expected title %q, got %q", "The Prince", books[0].Title)
 	}
 
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 book file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FileType != "mobi" {
 		t.Errorf("expected file type %q, got %q", "mobi", files[0].FileType)
 	}
@@ -119,18 +111,14 @@ func TestProcessFile_AZW3(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	if books[0].Title != "The Prince" {
 		t.Errorf("expected title %q, got %q", "The Prince", books[0].Title)
 	}
 
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 book file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FileType != "azw3" {
 		t.Errorf("expected file type %q, got %q", "azw3", files[0].FileType)
 	}
@@ -163,18 +151,14 @@ func TestProcessFile_EPUB(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	if books[0].Title != "Alice in Wonderland" {
 		t.Errorf("expected title %q, got %q", "Alice in Wonderland", books[0].Title)
 	}
 
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 book file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FileType != "epub" {
 		t.Errorf("expected file type %q, got %q", "epub", files[0].FileType)
 	}
@@ -209,18 +193,14 @@ func TestProcessFile_EPUB3(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	if books[0].Title != "EPUB 3 Specification" {
 		t.Errorf("expected title %q, got %q", "EPUB 3 Specification", books[0].Title)
 	}
 
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 book file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FileType != "epub" {
 		t.Errorf("expected file type %q, got %q", "epub", files[0].FileType)
 	}

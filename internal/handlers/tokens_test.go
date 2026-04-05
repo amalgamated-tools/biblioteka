@@ -38,9 +38,7 @@ func TestHandleTokenCreate_Success(t *testing.T) {
 
 	handleTokenCreate(ops, w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	// Verify cache-prevention headers are set.
 	if cc := w.Header().Get("Cache-Control"); cc != "no-store" {
@@ -72,9 +70,7 @@ func TestHandleTokenCreate_NameTrimmed(t *testing.T) {
 
 	handleTokenCreate(ops, w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	if capturedName != "padded name" {
 		t.Errorf("create received name %q, want trimmed %q", capturedName, "padded name")
 	}
@@ -212,9 +208,7 @@ func TestHandleTokenCreate_AuditLog(t *testing.T) {
 
 	handleTokenCreate(ops, w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
 	require.NoError(t, err, "list audit logs")

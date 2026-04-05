@@ -26,9 +26,7 @@ func TestCreateBookRecord_BasicFields(t *testing.T) {
 
 	book, err := createBookRecord(t.Context(), database, "My Test Book", nil, p, p.Path)
 	require.NoError(t, err, "createBookRecord() error")
-	if book == nil {
-		require.Fail(t, "expected book, got nil")
-	}
+	require.NotNil(t, book)
 	if book.Title != "My Test Book" {
 		t.Errorf("book.Title = %q, want %q", book.Title, "My Test Book")
 	}
@@ -117,9 +115,7 @@ func TestLinkBookAssociations_Author(t *testing.T) {
 
 	authors, err := database.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "get book authors")
-	if len(authors) != 1 {
-		require.Failf(t, "failed", "expected 1 author, got %d", len(authors))
-	}
+	require.Len(t, authors, 1)
 	if authors[0].Name != "Terry Pratchett" {
 		t.Errorf("author name = %q, want Terry Pratchett", authors[0].Name)
 	}
@@ -173,9 +169,7 @@ func TestLinkBookAssociations_Series(t *testing.T) {
 
 	series, err := database.GetBookSeries(t.Context(), book.ID)
 	require.NoError(t, err, "get book series")
-	if len(series) != 1 {
-		require.Failf(t, "failed", "expected 1 series, got %d", len(series))
-	}
+	require.Len(t, series, 1)
 	if series[0].Series.Name != "Discworld" {
 		t.Errorf("series name = %q, want Discworld", series[0].Series.Name)
 	}

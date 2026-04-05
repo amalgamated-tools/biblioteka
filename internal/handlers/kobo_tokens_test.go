@@ -25,9 +25,7 @@ func TestKoboTokenList_WithTokens(t *testing.T) {
 		r = withUserID(r, userID)
 		w := httptest.NewRecorder()
 		h.HandleKoboTokens(w, r)
-		if w.Code != http.StatusCreated {
-			require.Failf(t, "failed", "create token %q: status = %d, want %d", name, w.Code, http.StatusCreated)
-		}
+		require.Equal(t, http.StatusCreated, w.Code)
 	}
 
 	// List tokens.
@@ -36,9 +34,7 @@ func TestKoboTokenList_WithTokens(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleKoboTokens(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "list tokens: status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var tokens []map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&tokens), "decode list response")
@@ -60,9 +56,7 @@ func TestKoboTokenCreate_ResponseContainsToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleKoboTokens(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusCreated)
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode create response")
 	token, _ := resp["token"].(string)
@@ -106,9 +100,7 @@ func TestKoboTokenCreate_NameTrimmed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleKoboTokens(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusCreated)
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode create response")
 	name, _ := resp["name"].(string)
@@ -132,9 +124,7 @@ func TestKoboTokenDelete_UserIsolation(t *testing.T) {
 	r = withUserID(r, userID1)
 	w := httptest.NewRecorder()
 	h.HandleKoboTokens(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "create token: status = %d, want %d", w.Code, http.StatusCreated)
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var created map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&created), "decode create response")
 	tokenID, _ := created["id"].(string)

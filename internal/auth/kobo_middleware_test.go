@@ -41,9 +41,7 @@ func TestKoboTokenAuthMiddleware_ValidToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if gotPath != "/v1/library/sync" {
 		t.Errorf("path = %q, want /v1/library/sync", gotPath)
 	}
@@ -66,9 +64,7 @@ func TestKoboTokenAuthMiddleware_InvalidToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusUnauthorized {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 
 	var body map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body), "response is not valid JSON")
@@ -85,9 +81,7 @@ func TestKoboTokenAuthMiddleware_EmptyToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestKoboTokenAuthMiddleware_TokenWithNoSubPath(t *testing.T) {
@@ -107,9 +101,7 @@ func TestKoboTokenAuthMiddleware_TokenWithNoSubPath(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if gotPath != "/" {
 		t.Errorf("path = %q, want /", gotPath)
 	}

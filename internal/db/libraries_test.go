@@ -87,9 +87,7 @@ func TestListLibraries(t *testing.T) {
 
 	libs, err := d.ListLibraries(t.Context())
 	require.NoError(t, err, "ListLibraries() error")
-	if len(libs) != 2 {
-		require.Failf(t, "failed", "ListLibraries() returned %d, want 2", len(libs))
-	}
+	require.Len(t, libs, 2)
 	if libs[0].Name != "Fiction" {
 		t.Errorf("first library Name = %q, want %q", libs[0].Name, "Fiction")
 	}

@@ -54,18 +54,12 @@ func TestCoverImageInFeed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 1 {
-		require.Failf(t, "failed", "entries = %d, want 1", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 1)
 	imgLink := findLink(feed.Entries[0].Links, opdspkg.RelImage)
-	if imgLink == nil {
-		require.Fail(t, "missing image link")
-	}
+	require.NotNil(t, imgLink)
 	if imgLink.Type != "image/png" {
 		t.Errorf("image type = %q, want %q", imgLink.Type, "image/png")
 	}
@@ -84,18 +78,12 @@ func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 1 {
-		require.Failf(t, "failed", "entries = %d, want 1", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 1)
 	imgLink := findLink(feed.Entries[0].Links, opdspkg.RelImage)
-	if imgLink == nil {
-		require.Fail(t, "missing image link")
-	}
+	require.NotNil(t, imgLink)
 	wantHref := "http://example.com/opds/covers/" + book.ID
 	if imgLink.Href != wantHref {
 		t.Errorf("image href = %q, want %q", imgLink.Href, wantHref)
@@ -118,9 +106,7 @@ func TestServeCover_DataURL(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "image/") {
 		t.Errorf("content-type = %q, want image/*", ct)
 	}

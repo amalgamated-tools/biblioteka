@@ -67,9 +67,7 @@ func TestScanProtocolCredential_PropagatesNoRowsError(t *testing.T) {
 
 	cred, err := scanProtocolCredential(row)
 	require.ErrorIs(t, err, sql.ErrNoRows)
-	if cred != nil {
-		require.Failf(t, "failed", "expected nil credential on error, got %+v", *cred)
-	}
+	require.Nil(t, cred)
 }
 
 func TestScanProtocolCredential_PropagatesScanError(t *testing.T) {
@@ -85,10 +83,6 @@ func TestScanProtocolCredential_PropagatesScanError(t *testing.T) {
 
 	cred, err := scanProtocolCredential(row)
 	require.Error(t, err, "expected scan error, got nil")
-	if errors.Is(err, sql.ErrNoRows) {
-		require.Fail(t, "expected a scan error, not sql.ErrNoRows")
-	}
-	if cred != nil {
-		require.Failf(t, "failed", "expected nil credential on error, got %+v", *cred)
-	}
+	require.False(t, errors.Is(err, sql.ErrNoRows))
+	require.Nil(t, cred)
 }

@@ -61,9 +61,8 @@ func TestScanRow_HappyPath(t *testing.T) {
 
 	got, err := scanRow(row, fillSample)
 	require.NoError(t, err)
-	if got.Name != "Alice" || got.Age != 30 {
-		require.Failf(t, "failed", "got %+v, want {Name:Alice Age:30}", *got)
-	}
+	require.Equal(t, "Alice", got.Name)
+	require.Equal(t, 30, got.Age)
 }
 
 func TestScanRow_PropagatesScanError(t *testing.T) {
@@ -72,9 +71,7 @@ func TestScanRow_PropagatesScanError(t *testing.T) {
 
 	got, err := scanRow(row, fillSample)
 	require.ErrorIs(t, err, scanErr)
-	if got != nil {
-		require.Failf(t, "failed", "expected nil result on error, got %+v", *got)
-	}
+	require.Nil(t, got)
 }
 
 // --- collectRows tests ---------------------------------------------------
@@ -96,9 +93,7 @@ func TestCollectRows_HappyPath(t *testing.T) {
 
 	items, err := collectRows(rows, scanSample)
 	require.NoError(t, err)
-	if len(items) != 3 {
-		require.Failf(t, "failed", "got %d items, want 3", len(items))
-	}
+	require.Len(t, items, 3)
 	want := []sample{{"Bob", 25}, {"Alice", 30}, {"Carol", 40}}
 	for i, w := range want {
 		if items[i] != w {
@@ -117,9 +112,7 @@ func TestCollectRows_EmptyResult(t *testing.T) {
 
 	items, err := collectRows(rows, scanSample)
 	require.NoError(t, err)
-	if items != nil {
-		require.Failf(t, "failed", "expected nil slice for empty result, got %v", items)
-	}
+	require.Nil(t, items)
 }
 
 func TestCollectRows_PropagatesMidIterationScanError(t *testing.T) {
@@ -159,9 +152,7 @@ func TestCollectRows_AlwaysClosesRows(t *testing.T) {
 	require.NoError(t, err)
 
 	// Calling rows.Next() after Close returns false.
-	if rows.Next() {
-		require.Fail(t, "rows.Next() returned true after collectRows; rows should be closed")
-	}
+	require.False(t, rows.Next())
 }
 
 func TestCollectRows_ClosesRowsOnError(t *testing.T) {
@@ -181,9 +172,7 @@ func TestCollectRows_ClosesRowsOnError(t *testing.T) {
 	_, _ = collectRows(rows, scanBadDest)
 
 	// Even after an error, rows should be closed.
-	if rows.Next() {
-		require.Fail(t, "rows.Next() returned true after failed collectRows; rows should be closed")
-	}
+	require.False(t, rows.Next())
 }
 
 func TestCollectRows_PropagatesRowsErr(t *testing.T) {

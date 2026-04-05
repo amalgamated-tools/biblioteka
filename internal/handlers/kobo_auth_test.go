@@ -25,9 +25,7 @@ func TestHandleAuth_RefreshEndpoint(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	if resp["AccessToken"] == nil || resp["AccessToken"] == "" {
@@ -52,9 +50,7 @@ func TestHandleAuth_ExchangeEndpoint(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 // TestHandleAuth_NilBody verifies that HandleAuth works correctly when no
@@ -71,9 +67,7 @@ func TestHandleAuth_NilBody(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	// When no body is provided, UserKey should be the zero value.
@@ -188,9 +182,7 @@ func TestHandleAuth_DirectHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleAuth(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	if resp["UserKey"] != "direct-key" {

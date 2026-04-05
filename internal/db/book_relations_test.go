@@ -118,9 +118,7 @@ func TestSetBookSeries_DeduplicatesLastPositionWins(t *testing.T) {
 
 	got, err := d.GetBookSeries(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookSeries() error")
-	if len(got) != 1 {
-		require.Failf(t, "failed", "len(got) = %d, want 1 after deduplication", len(got))
-	}
+	require.Len(t, got, 1)
 	// The implementation processes entries in reverse order so the last
 	// element (position 99) is the one that survives deduplication.
 	if got[0].Position == nil || *got[0].Position != 99.0 {

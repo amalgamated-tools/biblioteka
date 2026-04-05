@@ -11,17 +11,13 @@ import (
 func TestNewJWTManager_WithSecret(t *testing.T) {
 	jm, err := NewJWTManager("mysecret", time.Hour)
 	require.NoError(t, err, "NewJWTManager() unexpected error")
-	if jm == nil {
-		require.Fail(t, "NewJWTManager() returned nil")
-	}
+	require.NotNil(t, jm)
 }
 
 func TestNewJWTManager_RandomSecret(t *testing.T) {
 	jm, err := NewJWTManager("", time.Hour)
 	require.NoError(t, err, "NewJWTManager() with empty secret unexpected error")
-	if jm == nil {
-		require.Fail(t, "NewJWTManager() returned nil")
-	}
+	require.NotNil(t, jm)
 	if len(jm.secret) != 32 {
 		t.Errorf("expected 32-byte random secret, got %d bytes", len(jm.secret))
 	}
@@ -34,9 +30,7 @@ func TestCreateAndValidateToken(t *testing.T) {
 	userID := "user-123"
 	token, err := jm.CreateToken(t.Context(), userID)
 	require.NoError(t, err, "CreateToken() error")
-	if token == "" {
-		require.Fail(t, "CreateToken() returned empty token")
-	}
+	require.NotEmpty(t, token)
 
 	claims, err := jm.ValidateToken(t.Context(), token)
 	require.NoError(t, err, "ValidateToken() error")

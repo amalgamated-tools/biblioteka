@@ -95,9 +95,7 @@ func TestOIDCCallback_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		require.Failf(t, "failed", "expected status 405, got %d", w.Code)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestOIDCCallback_MissingStateCookie(t *testing.T) {
@@ -109,9 +107,7 @@ func TestOIDCCallback_MissingStateCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		require.Failf(t, "failed", "expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestOIDCCallback_StateMismatch(t *testing.T) {
@@ -124,9 +120,7 @@ func TestOIDCCallback_StateMismatch(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		require.Failf(t, "failed", "expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestOIDCCallback_MissingVerifierCookie(t *testing.T) {
@@ -139,9 +133,7 @@ func TestOIDCCallback_MissingVerifierCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		require.Failf(t, "failed", "expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestOIDCCallback_ProviderError(t *testing.T) {
@@ -156,9 +148,7 @@ func TestOIDCCallback_ProviderError(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusUnauthorized {
-		require.Failf(t, "failed", "expected status 401, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
 func TestOIDCCallback_MissingCode(t *testing.T) {
@@ -172,9 +162,7 @@ func TestOIDCCallback_MissingCode(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		require.Failf(t, "failed", "expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 // ---------------------------------------------------------------------------
@@ -193,9 +181,7 @@ func TestOIDCCallback_MissingIDToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, r)
 
-	if w.Code != http.StatusUnauthorized {
-		require.Failf(t, "failed", "expected status 401, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
 	if body["error"] != "missing id_token in response" {
@@ -216,9 +202,7 @@ func TestOIDCCallback_MissingSub(t *testing.T) {
 	w := httptest.NewRecorder()
 	tp.handler.Callback(w, callbackRequest("test-state"))
 
-	if w.Code != http.StatusBadRequest {
-		require.Failf(t, "failed", "expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
 	if body["error"] != "sub claim is required" {
@@ -239,9 +223,7 @@ func TestOIDCCallback_MissingEmail(t *testing.T) {
 	w := httptest.NewRecorder()
 	tp.handler.Callback(w, callbackRequest("test-state"))
 
-	if w.Code != http.StatusBadRequest {
-		require.Failf(t, "failed", "expected status 400, got %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
 	if body["error"] != "email claim is required" {
@@ -264,9 +246,7 @@ func TestOIDCCallback_NameFallsBackToEmail(t *testing.T) {
 	tp.handler.Callback(w, callbackRequest("test-state"))
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusFound {
-		require.Failf(t, "failed", "expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
-	}
+	require.Equal(t, http.StatusFound, resp.StatusCode)
 
 	// Verify the created user has the email as their display name.
 	user, err := tp.handler.DB.GetUserByOIDCSubject(t.Context(), "name-fallback-sub")
@@ -292,9 +272,7 @@ func TestOIDCCallback_LinkFlow_UserNotFound(t *testing.T) {
 	tp.handler.Callback(w, callbackRequest(signedState))
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusFound {
-		require.Failf(t, "failed", "expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
-	}
+	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
 	if !strings.Contains(loc, "oidc_link_error=") {
 		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
@@ -324,9 +302,7 @@ func TestOIDCCallback_LinkFlow_AlreadyLinked(t *testing.T) {
 	tp.handler.Callback(w, callbackRequest(signedState))
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusFound {
-		require.Failf(t, "failed", "expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
-	}
+	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
 	if !strings.Contains(loc, "oidc_link_error=") {
 		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
@@ -361,9 +337,7 @@ func TestOIDCCallback_LinkFlow_SubjectAlreadyLinkedToOther(t *testing.T) {
 	tp.handler.Callback(w, callbackRequest(signedState))
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusFound {
-		require.Failf(t, "failed", "expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
-	}
+	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
 	if !strings.Contains(loc, "oidc_link_error=") {
 		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
@@ -387,9 +361,7 @@ func TestOIDCCallback_Success_SetsCookie(t *testing.T) {
 	tp.handler.Callback(w, callbackRequest("test-state"))
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusFound {
-		require.Failf(t, "failed", "expected redirect (302), got %d; body: %s", resp.StatusCode, w.Body.String())
-	}
+	require.Equal(t, http.StatusFound, resp.StatusCode)
 	if loc := resp.Header.Get("Location"); loc != "/?oidc_login=1" {
 		t.Errorf("expected Location /?oidc_login=1, got %q", loc)
 	}
@@ -402,9 +374,7 @@ func TestOIDCCallback_Success_SetsCookie(t *testing.T) {
 			break
 		}
 	}
-	if authCookie == nil {
-		require.Fail(t, "expected auth cookie to be set, but none found")
-	}
+	require.NotNil(t, authCookie)
 	if authCookie.Value == "" {
 		t.Error("auth cookie value should be non-empty")
 	}

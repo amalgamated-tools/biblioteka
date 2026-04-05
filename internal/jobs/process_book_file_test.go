@@ -47,12 +47,8 @@ func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
-	if books[0].CoverImageURL == nil {
-		require.Fail(t, "expected EPUB3 book to have a cover image URL after import, got nil")
-	}
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].CoverImageURL)
 	if !strings.HasPrefix(*books[0].CoverImageURL, "data:image/png;base64,") {
 		t.Errorf("expected cover image to be a PNG data URL, got %q", *books[0].CoverImageURL)
 	}
@@ -160,9 +156,7 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	// Extension should be stripped since it matches fileType
 	if books[0].Title != "My Cool Book" {
 		t.Errorf("expected title %q, got %q", "My Cool Book", books[0].Title)
@@ -189,9 +183,7 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	// No extension to strip, so title is the full filename
 	if books[0].Title != "noext" {
 		t.Errorf("expected title %q, got %q", "noext", books[0].Title)
@@ -223,18 +215,14 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 	// Should have reused the existing author, not created a duplicate
 	authors, err := database.ListAuthors(t.Context())
 	require.NoError(t, err, "list authors")
-	if len(authors) != 1 {
-		require.Failf(t, "failed", "expected 1 author (reused), got %d", len(authors))
-	}
+	require.Len(t, authors, 1)
 
 	// Verify the book is associated with the existing author
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
 	bookAuthors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book authors")
-	if len(bookAuthors) != 1 {
-		require.Failf(t, "failed", "expected 1 book author, got %d", len(bookAuthors))
-	}
+	require.Len(t, bookAuthors, 1)
 	if bookAuthors[0].Name != "F. Scott Fitzgerald" {
 		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", bookAuthors[0].Name)
 	}
@@ -264,12 +252,9 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
-	if books[0].CoverImageURL == nil || !strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,") {
-		require.Failf(t, "failed", "expected embedded cover data URL, got %#v", books[0].CoverImageURL)
-	}
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].CoverImageURL)
+	require.True(t, strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,"))
 }
 
 func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
@@ -301,9 +286,7 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 	// Book should still be created
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	if books[0].Title != "Anonymous Work" {
 		t.Errorf("expected title %q, got %q", "Anonymous Work", books[0].Title)
 	}
@@ -331,9 +314,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	// Book should still be created with filename-derived title
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	if books[0].Title != "broken" {
 		t.Errorf("expected title %q, got %q", "broken", books[0].Title)
 	}
@@ -359,9 +340,7 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	if books[0].ISBN10 == nil || *books[0].ISBN10 != "0306406152" {
 		t.Errorf("expected ISBN10 %q, got %v", "0306406152", books[0].ISBN10)
 	}
@@ -409,14 +388,10 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	// Verify book_files.file_path matches the new location.
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FilePath != expectedPath {
 		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
 	}
@@ -455,14 +430,10 @@ func TestProcessBookFile_OrganizeFiles_BookPerFile(t *testing.T) {
 	// Verify book_files.file_path matches the new location.
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FilePath != expectedPath {
 		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
 	}
@@ -499,14 +470,10 @@ func TestProcessBookFile_OrganizeFiles_None(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FilePath != epubPath {
 		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
 	}
@@ -541,14 +508,10 @@ func TestProcessBookFile_NonExistentLibrarySkipsOrganization(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FilePath != epubPath {
 		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
 	}
@@ -608,15 +571,11 @@ func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FilePath != reorganizedPath {
 		t.Errorf("expected file path %q, got %q", reorganizedPath, files[0].FilePath)
 	}
@@ -650,15 +609,11 @@ func TestProcessBookFile_ContinuesFromFlatReorganizedPathWhenSourceMoved(t *test
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FilePath != reorganizedPath {
 		t.Errorf("expected file path %q, got %q", reorganizedPath, files[0].FilePath)
 	}
@@ -695,15 +650,11 @@ func TestProcessBookFile_FlatRecoveryDoesNotUseFolderCandidate(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FilePath != flatPath {
 		t.Errorf("expected file path %q, got %q", flatPath, files[0].FilePath)
 	}

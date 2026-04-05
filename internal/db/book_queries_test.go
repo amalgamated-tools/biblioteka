@@ -35,9 +35,7 @@ func TestListBooksPaginated_OrdersByTitle(t *testing.T) {
 	if total != 3 {
 		t.Errorf("total = %d, want 3", total)
 	}
-	if len(books) != 3 {
-		require.Failf(t, "failed", "len(books) = %d, want 3", len(books))
-	}
+	require.Len(t, books, 3)
 	if books[0].Title != "Apple" {
 		t.Errorf("books[0].Title = %q, want Apple", books[0].Title)
 	}
@@ -63,9 +61,7 @@ func TestListBooksPaginated_FirstPage(t *testing.T) {
 	if total != 5 {
 		t.Errorf("total = %d, want 5", total)
 	}
-	if len(page1) != 2 {
-		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
-	}
+	require.Len(t, page1, 2)
 	if page1[0].Title != "A" {
 		t.Errorf("page1[0].Title = %q, want A", page1[0].Title)
 	}
@@ -88,9 +84,7 @@ func TestListBooksPaginated_SecondPage(t *testing.T) {
 	if total != 5 {
 		t.Errorf("total = %d, want 5", total)
 	}
-	if len(page2) != 2 {
-		require.Failf(t, "failed", "len(page2) = %d, want 2", len(page2))
-	}
+	require.Len(t, page2, 2)
 	if page2[0].Title != "C" {
 		t.Errorf("page2[0].Title = %q, want C", page2[0].Title)
 	}
@@ -145,18 +139,14 @@ func TestListRecentBooks_Paginated(t *testing.T) {
 	if total != 5 {
 		t.Errorf("total = %d, want 5", total)
 	}
-	if len(page1) != 2 {
-		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
-	}
+	require.Len(t, page1, 2)
 
 	page2, total2, err := d.ListRecentBooks(t.Context(), 2, 2)
 	require.NoError(t, err, "ListRecentBooks(limit=2, offset=2) error")
 	if total2 != 5 {
 		t.Errorf("page2 total = %d, want 5", total2)
 	}
-	if len(page2) != 2 {
-		require.Failf(t, "failed", "len(page2) = %d, want 2", len(page2))
-	}
+	require.Len(t, page2, 2)
 }
 
 func TestListRecentBooks_OffsetBeyondTotal(t *testing.T) {
@@ -212,9 +202,7 @@ func TestListBooksByAuthor_ReturnsMatchingBooks(t *testing.T) {
 
 	books, err := d.ListBooksByAuthor(t.Context(), author.ID)
 	require.NoError(t, err, "ListBooksByAuthor() error")
-	if len(books) != 2 {
-		require.Failf(t, "failed", "len(books) = %d, want 2", len(books))
-	}
+	require.Len(t, books, 2)
 	// Ordered by title: "It" before "The Gunslinger".
 	if books[0].Title != "It" {
 		t.Errorf("books[0].Title = %q, want It", books[0].Title)
@@ -241,9 +229,7 @@ func TestListBooksByAuthorPaginated(t *testing.T) {
 	if total != 4 {
 		t.Errorf("total = %d, want 4", total)
 	}
-	if len(page1) != 2 {
-		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
-	}
+	require.Len(t, page1, 2)
 	if page1[0].Title != "Book A" {
 		t.Errorf("page1[0].Title = %q, want Book A", page1[0].Title)
 	}
@@ -253,9 +239,7 @@ func TestListBooksByAuthorPaginated(t *testing.T) {
 	if total2 != 4 {
 		t.Errorf("page2 total = %d, want 4", total2)
 	}
-	if len(page2) != 2 {
-		require.Failf(t, "failed", "len(page2) = %d, want 2", len(page2))
-	}
+	require.Len(t, page2, 2)
 	if page2[0].Title != "Book C" {
 		t.Errorf("page2[0].Title = %q, want Book C", page2[0].Title)
 	}
@@ -315,9 +299,7 @@ func TestListBooksBySeries_OrderedByPosition(t *testing.T) {
 
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
 	require.NoError(t, err, "ListBooksBySeries() error")
-	if len(books) != 3 {
-		require.Failf(t, "failed", "len(books) = %d, want 3", len(books))
-	}
+	require.Len(t, books, 3)
 	if books[0].ID != b1.ID {
 		t.Errorf("books[0] = %q, want book 1 (%q)", books[0].Title, b1.Title)
 	}
@@ -349,9 +331,7 @@ func TestListBooksBySeries_NullPositionSorting(t *testing.T) {
 
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
 	require.NoError(t, err, "ListBooksBySeries() error")
-	if len(books) != 2 {
-		require.Failf(t, "failed", "len(books) = %d, want 2", len(books))
-	}
+	require.Len(t, books, 2)
 	// Both books must appear; collect the IDs to verify without relying on
 	// dialect-specific NULL ordering.
 	ids := map[string]bool{books[0].ID: true, books[1].ID: true}
@@ -381,9 +361,7 @@ func TestListBooksBySeriesPaginated(t *testing.T) {
 	if total != 4 {
 		t.Errorf("total = %d, want 4", total)
 	}
-	if len(page1) != 2 {
-		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
-	}
+	require.Len(t, page1, 2)
 	if page1[0].Title != "Book One" {
 		t.Errorf("page1[0].Title = %q, want Book One", page1[0].Title)
 	}
@@ -466,9 +444,7 @@ func TestSearchBooks_MatchesByDescription(t *testing.T) {
 	if total != 1 {
 		t.Errorf("total = %d, want 1", total)
 	}
-	if len(books) != 1 {
-		require.Failf(t, "failed", "len(books) = %d, want 1", len(books))
-	}
+	require.Len(t, books, 1)
 	if books[0].Title != "Dune" {
 		t.Errorf("books[0].Title = %q, want Dune", books[0].Title)
 	}
@@ -566,9 +542,7 @@ func TestSearchBooks_Paginated(t *testing.T) {
 	if total != 4 {
 		t.Errorf("total = %d, want 4", total)
 	}
-	if len(page1) != 2 {
-		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
-	}
+	require.Len(t, page1, 2)
 	if page1[0].Title != "Abc Foundation" {
 		t.Errorf("page1[0].Title = %q, want Abc Foundation", page1[0].Title)
 	}
@@ -578,9 +552,7 @@ func TestSearchBooks_Paginated(t *testing.T) {
 	if total2 != 4 {
 		t.Errorf("page2 total = %d, want 4", total2)
 	}
-	if len(page2) != 2 {
-		require.Failf(t, "failed", "len(page2) = %d, want 2", len(page2))
-	}
+	require.Len(t, page2, 2)
 	if page2[0].Title != "Ghi Foundation" {
 		t.Errorf("page2[0].Title = %q, want Ghi Foundation", page2[0].Title)
 	}

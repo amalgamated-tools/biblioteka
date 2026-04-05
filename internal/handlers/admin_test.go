@@ -125,9 +125,7 @@ func TestHandleListUsers_OIDCLinkedField(t *testing.T) {
 
 	h.HandleListUsers(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var users []adminUserDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &users), "unmarshal")

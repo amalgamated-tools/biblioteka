@@ -43,9 +43,7 @@ func TestHandleSync_PageSizeLimit(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var results []any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
 	if len(results) > kobo.SyncPageSize {
@@ -67,9 +65,7 @@ func TestHandleSync_BooksLastModifiedHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if w.Header().Get("x-kobo-synctoken") == "" {
 		t.Error("expected x-kobo-synctoken header in sync response")
 	}

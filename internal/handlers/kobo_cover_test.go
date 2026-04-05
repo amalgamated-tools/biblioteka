@@ -36,9 +36,7 @@ func TestHandleCoverImage_JPEGDataURL(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleCoverImage(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	ct := w.Header().Get("Content-Type")
 	if !strings.HasPrefix(ct, "image/") {
 		t.Errorf("Content-Type = %q, want image/* type", ct)
@@ -65,9 +63,7 @@ func TestHandleCoverImage_PNGDataURL(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleCoverImage(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	ct := w.Header().Get("Content-Type")
 	if !strings.HasPrefix(ct, "image/png") {
 		t.Errorf("Content-Type = %q, want image/png", ct)

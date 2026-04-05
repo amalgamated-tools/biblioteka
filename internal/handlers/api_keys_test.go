@@ -33,9 +33,7 @@ func TestCreateAPIKey_Success(t *testing.T) {
 
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var resp apiKeyCreateResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -96,9 +94,7 @@ func TestListAPIKeys_Empty(t *testing.T) {
 
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dtos []apiKeyDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
@@ -118,9 +114,7 @@ func TestListAPIKeys_AfterCreate(t *testing.T) {
 		r = withUserID(r, userID)
 		w := httptest.NewRecorder()
 		h.HandleAPIKeys(w, r)
-		if w.Code != http.StatusCreated {
-			require.Failf(t, "failed", "create %q: status = %d", name, w.Code)
-		}
+		require.Equal(t, http.StatusCreated, w.Code)
 	}
 
 	// List them.
@@ -129,9 +123,7 @@ func TestListAPIKeys_AfterCreate(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dtos []apiKeyDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
@@ -263,9 +255,7 @@ func TestCreateAPIKey_AuditLog(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusCreated)
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
 	require.NoError(t, err, "list audit logs")

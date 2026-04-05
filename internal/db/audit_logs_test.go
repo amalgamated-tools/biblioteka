@@ -15,12 +15,8 @@ func TestCreateAuditLog(t *testing.T) {
 
 	entries, total, err := d.ListAuditLogs(ctx, 10, 0)
 	require.NoError(t, err, "ListAuditLogs() error")
-	if total != 1 {
-		require.Failf(t, "failed", "total = %d, want 1", total)
-	}
-	if len(entries) != 1 {
-		require.Failf(t, "failed", "len(entries) = %d, want 1", len(entries))
-	}
+	require.Equal(t, 1, total)
+	require.Len(t, entries, 1)
 
 	e := entries[0]
 	if e.ID == "" {
@@ -56,9 +52,7 @@ func TestCreateAuditLog_SystemAction(t *testing.T) {
 
 	entries, _, err := d.ListAuditLogs(ctx, 10, 0)
 	require.NoError(t, err, "ListAuditLogs() error")
-	if len(entries) == 0 {
-		require.Fail(t, "expected at least one entry")
-	}
+	require.NotEmpty(t, entries)
 	if entries[0].UserID != nil {
 		t.Errorf("UserID = %v, want nil", entries[0].UserID)
 	}
@@ -79,9 +73,7 @@ func TestListAuditLogs_Pagination(t *testing.T) {
 
 	_, total, err := d.ListAuditLogs(ctx, 10, 0)
 	require.NoError(t, err, "ListAuditLogs() error")
-	if total != 5 {
-		require.Failf(t, "failed", "total = %d, want 5", total)
-	}
+	require.Equal(t, 5, total)
 
 	entries, total2, err := d.ListAuditLogs(ctx, 2, 0)
 	require.NoError(t, err, "ListAuditLogs() page1 error")

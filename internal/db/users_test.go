@@ -267,9 +267,7 @@ func TestListUsers(t *testing.T) {
 
 	users, err := d.ListUsers(t.Context())
 	require.NoError(t, err, "ListUsers() error")
-	if len(users) != 3 {
-		require.Failf(t, "failed", "ListUsers() returned %d users, want 3", len(users))
-	}
+	require.Len(t, users, 3)
 	if users[0].Name != "Alice" {
 		t.Errorf("first user Name = %q, want %q", users[0].Name, "Alice")
 	}

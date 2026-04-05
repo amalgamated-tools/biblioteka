@@ -13,22 +13,16 @@ import (
 func TestIsCrossDeviceRenameError(t *testing.T) {
 	t.Run("matches wrapped EXDEV", func(t *testing.T) {
 		err := fmt.Errorf("wrapped: %w", syscall.EXDEV)
-		if !isCrossDeviceRenameError(err) {
-			require.Fail(t, "expected wrapped EXDEV to be classified as cross-device")
-		}
+		require.True(t, isCrossDeviceRenameError(err))
 	})
 
 	t.Run("does not match unrelated errors", func(t *testing.T) {
 		err := fmt.Errorf("wrapped: %w", os.ErrExist)
-		if isCrossDeviceRenameError(err) {
-			require.Fail(t, "expected os.ErrExist not to be classified as cross-device")
-		}
+		require.False(t, isCrossDeviceRenameError(err))
 	})
 
 	t.Run("handles nil", func(t *testing.T) {
-		if isCrossDeviceRenameError(nil) {
-			require.Fail(t, "expected nil not to be classified as cross-device")
-		}
+		require.False(t, isCrossDeviceRenameError(nil))
 	})
 }
 
@@ -63,9 +57,7 @@ func TestIsBenignCleanupRemoveError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := isBenignCleanupRemoveError(tt.err)
-			if got != tt.want {
-				require.Failf(t, "failed", "got %v, want %v", got, tt.want)
-			}
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

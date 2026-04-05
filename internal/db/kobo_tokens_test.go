@@ -164,9 +164,7 @@ func TestListKoboTokens_OrderedNewestFirst(t *testing.T) {
 
 	tokens, err := d.ListKoboTokens(t.Context(), user.ID)
 	require.NoError(t, err, "ListKoboTokens() error")
-	if len(tokens) != 2 {
-		require.Failf(t, "failed", "len(tokens) = %d, want 2", len(tokens))
-	}
+	require.Len(t, tokens, 2)
 
 	// Ordered by created_at DESC then id DESC: second token should come first.
 	if tokens[0].ID != t2.ID {

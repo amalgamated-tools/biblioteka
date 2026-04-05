@@ -174,9 +174,7 @@ func TestListSeries(t *testing.T) {
 
 	list, err := d.ListSeries(t.Context())
 	require.NoError(t, err, "ListSeries() error")
-	if len(list) != 2 {
-		require.Failf(t, "failed", "ListSeries() returned %d, want 2", len(list))
-	}
+	require.Len(t, list, 2)
 	if list[0].Name != "Discworld" {
 		t.Errorf("first series Name = %q, want %q", list[0].Name, "Discworld")
 	}
@@ -309,9 +307,7 @@ func TestListSeriesPaginated(t *testing.T) {
 	if total != 4 {
 		t.Errorf("total = %d, want 4", total)
 	}
-	if len(page1) != 2 {
-		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
-	}
+	require.Len(t, page1, 2)
 	if page1[0].Name != "Discworld" {
 		t.Errorf("page1[0].Name = %q, want %q", page1[0].Name, "Discworld")
 	}
@@ -325,9 +321,7 @@ func TestListSeriesPaginated(t *testing.T) {
 	if total2 != 4 {
 		t.Errorf("page 2 total = %d, want 4", total2)
 	}
-	if len(page2) != 2 {
-		require.Failf(t, "failed", "len(page2) = %d, want 2", len(page2))
-	}
+	require.Len(t, page2, 2)
 	if page2[0].Name != "Foundation" {
 		t.Errorf("page2[0].Name = %q, want %q", page2[0].Name, "Foundation")
 	}

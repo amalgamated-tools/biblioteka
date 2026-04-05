@@ -29,15 +29,10 @@ func TestHandleCoverImage_DataURL(t *testing.T) {
 
 	h.HandleCoverImage(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if got := w.Header().Get("Content-Type"); got != "image/png" {
-		require.Failf(t, "failed", "content-type = %q, want %q", got, "image/png")
-	}
-	if body := w.Body.Bytes(); !bytes.Equal(body, pngBytes) {
-		require.Failf(t, "failed", "body length = %d, want %d", len(body), len(pngBytes))
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	got := w.Header().Get("Content-Type")
+	require.Equal(t, "image/png", got)
+	require.Equal(t, pngBytes, w.Body.Bytes())
 }
 
 // ---- HandleCoverImage edge cases ----
@@ -173,9 +168,7 @@ func TestHandleDownload_Success(t *testing.T) {
 
 	h.HandleDownload(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if !bytes.Equal(w.Body.Bytes(), content) {
 		t.Errorf("body = %q, want %q", w.Body.Bytes(), content)
 	}
@@ -239,9 +232,7 @@ func TestHandleDownload_ContentDispositionHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleDownload(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	cd := w.Header().Get("Content-Disposition")
 	if !strings.Contains(cd, "my-book.epub") {
 		t.Errorf("Content-Disposition %q should contain filename my-book.epub", cd)
@@ -275,9 +266,7 @@ func TestHandleDownload_ReturnsFileContents(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleDownload(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if got := w.Body.Bytes(); string(got) != string(fileContent) {
 		t.Errorf("body = %q, want %q", got, fileContent)
 	}
@@ -310,9 +299,7 @@ func TestKoboDownloadURLs_FiltersUnsupportedFormats(t *testing.T) {
 		{ID: "3", FileType: "pdf", FileName: "book.pdf", FileSize: 200},
 	}
 	urls := kobo.DownloadURLs("http://localhost", "mytoken", "book-id", files)
-	if len(urls) != 2 {
-		require.Failf(t, "failed", "expected 2 URLs (epub + pdf), got %d", len(urls))
-	}
+	require.Len(t, urls, 2)
 	formats := make(map[string]bool)
 	for _, u := range urls {
 		if u.Format == "" {

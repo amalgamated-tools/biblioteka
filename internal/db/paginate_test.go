@@ -37,9 +37,7 @@ func TestListAll_WithData(t *testing.T) {
 
 	results, err := listAll(t.Context(), d, authorListQuery{}, scanAuthor)
 	require.NoError(t, err, "listAll(authors) error")
-	if len(results) != 3 {
-		require.Failf(t, "failed", "len = %d, want 3", len(results))
-	}
+	require.Len(t, results, 3)
 	// Alphabetical order: Alice, Midge, Zoe.
 	if results[0].Name != "Alice Author" {
 		t.Errorf("results[0].Name = %q, want Alice Author", results[0].Name)
@@ -94,9 +92,7 @@ func TestListPaginated_FirstPage(t *testing.T) {
 	if total != 5 {
 		t.Errorf("total = %d, want 5", total)
 	}
-	if len(results) != 2 {
-		require.Failf(t, "failed", "len = %d, want 2", len(results))
-	}
+	require.Len(t, results, 2)
 	if results[0].Name != "Author A" {
 		t.Errorf("results[0].Name = %q, want Author A", results[0].Name)
 	}
@@ -116,9 +112,7 @@ func TestListPaginated_SecondPage(t *testing.T) {
 	if total != 5 {
 		t.Errorf("total = %d, want 5", total)
 	}
-	if len(results) != 2 {
-		require.Failf(t, "failed", "len = %d, want 2", len(results))
-	}
+	require.Len(t, results, 2)
 	if results[0].Name != "Author C" {
 		t.Errorf("results[0].Name = %q, want Author C", results[0].Name)
 	}
