@@ -19,7 +19,11 @@ type tokenError struct {
 	message string
 }
 
+// Error implements the error interface by delegating to the wrapped error.
 func (e *tokenError) Error() string { return e.err.Error() }
+
+// Unwrap returns the underlying error so that errors.Is and errors.As can
+// inspect the error chain.
 func (e *tokenError) Unwrap() error { return e.err }
 
 // tokenOps captures the token-type-specific details for token create handlers.

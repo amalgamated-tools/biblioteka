@@ -17,11 +17,15 @@ type statusRecorder struct {
 	statusCode int
 }
 
+// WriteHeader captures the status code before delegating to the underlying
+// ResponseWriter so that it can be included in the access log.
 func (r *statusRecorder) WriteHeader(code int) {
 	r.statusCode = code
 	r.ResponseWriter.WriteHeader(code)
 }
 
+// Write defaults the captured status code to 200 OK when WriteHeader was not
+// called before the first write, then delegates to the underlying ResponseWriter.
 func (r *statusRecorder) Write(b []byte) (int, error) {
 	if r.statusCode == 0 {
 		r.statusCode = http.StatusOK
@@ -54,6 +58,10 @@ func (r *statusRecorder) Push(target string, opts *http.PushOptions) error {
 	return p.Push(target, opts)
 }
 
+// LoggingMiddleware returns an HTTP middleware that emits a structured debug
+// log entry at the start of each request (method, URL, remote address, user
+// agent, request ID, and user ID) and a second entry upon completion (adding
+// status code and elapsed duration).
 func LoggingMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

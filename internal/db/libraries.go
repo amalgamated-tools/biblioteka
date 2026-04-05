@@ -33,6 +33,9 @@ func LibraryOrganizationTypeNames() []string {
 	return cpy
 }
 
+// IsValidLibraryOrganizationType reports whether organizationType is one of
+// the recognized library organization type values (book_per_folder,
+// book_per_file, or none).
 func IsValidLibraryOrganizationType(organizationType string) bool {
 	return slices.Contains(libraryOrganizationTypes, organizationType)
 }
