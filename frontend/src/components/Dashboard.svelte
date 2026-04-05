@@ -86,7 +86,7 @@
       </div>
     </div>
   {:else}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 stagger">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 stagger">
       {#each stats as { label, value } (label)}
         <div
           class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all"
