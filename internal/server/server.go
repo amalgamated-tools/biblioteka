@@ -54,8 +54,6 @@ type ShutdownFunc func(context.Context) error
 
 // Server represents the HTTP server with embedded frontend
 type Server struct {
-	addr string
-
 	Address string
 	port    int
 	version string
