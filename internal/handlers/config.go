@@ -84,7 +84,7 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 
 	smtpConfigured := false
 	if isValidSMTPHostForStatus(host) {
-		if parsed, err := mail.ParseAddress(from); err == nil && parsed != nil && parsed.Address != "" && parsed.Name == "" {
+		if parsed, err := mail.ParseAddress(from); err == nil && parsed != nil && parsed.Address != "" {
 			smtpConfigured = true
 		}
 	}
