@@ -6,21 +6,23 @@ Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task q
 
 ```
 ┌───────────────────────────┐        ┌───────────────┐
-│   HTTP Server             │        │    Redis       │
-│                           │        │                │
-│  POST /api/libraries ─────┼──────▶ │  "default"     │
-│  Scheduled (every 24 h) ──┼──────▶ │   queue        │
+│   HTTP Server             │        │    Redis      │
+│                           │        │               │
+│  POST /api/libraries ─────┼──────▶ │  "default"    │
+│  POST /api/books ─────────┼──────▶ │   queue       │
+│  Scheduled (every 24 h) ──┼──────▶ │               │
 └───────────────────────────┘        └───────┬───────┘
                                              │
-                                     ┌───────▼───────┐
-                                     │  asynq Worker  │
-                                     │  (4 goroutines)│
-                                     │                │
-                                     │  scan:libraries│
-                                     │  scan:library  │
-                                     │  scan:path     │
-                                     │  process:file  │
-                                     └────────────────┘
+                                     ┌───────▼───────────┐
+                                     │  asynq Worker      │
+                                     │  (4 goroutines)    │
+                                     │                    │
+                                     │  scan:libraries    │
+                                     │  scan:library      │
+                                     │  scan:path         │
+                                     │  process:file      │
+                                     │  enrich:goodreads  │
+                                     └────────────────────┘
 ```
 
 The HTTP server and the asynq worker can run in the same process (the default `all` mode) or as separate processes using the `-mode` flag. Both modes use the same Redis instance (via `REDIS_URL`) but create their own Redis connections. See [Run Modes](../README.md#run-modes) for details.
@@ -192,6 +194,30 @@ Cover data URLs are capped at **20 MB** of decoded bytes; inputs exceeding this 
 
 **Failure handling:** both the cover write and the OPF write are best-effort. A failure in either step is logged at `WARN` level and does **not** fail the `process:file` job. The book record committed to the database is not affected.
 
+### `enrich:goodreads`
+
+| | |
+|---|---|
+| **Source** | `internal/jobs/enrich_goodreads.go` — `NewEnrichGoodreadsHandler` |
+| **Trigger** | Enqueued by the API immediately after a book is created via `POST /api/books` |
+| **Payload** | `{ "book_id": "<uuid>", "user_id": "<uuid>" }` |
+
+Fetches Goodreads metadata for a newly imported book and stores the result as a `goodreads_metadata` record with `status = "pending"` for user review. The job tries the following lookup strategies in order, stopping at the first successful match:
+
+| Priority | Strategy | Condition |
+|----------|-----------|-----------|
+| 1 (highest) | ISBN-13 lookup | `books.isbn13` is non-empty |
+| 2 | ISBN-10 lookup | `books.isbn10` is non-empty |
+| 3 | ASIN lookup | `books.asin` is non-empty |
+| 4 | Goodreads ID lookup | `books.goodreads_id` is non-empty |
+| 5 (lowest) | Title search | `books.title` is non-empty |
+
+When no match is found, the job exits cleanly with no record created. A failed Goodreads API call at one strategy level is logged at `WARN` level, and the job falls through to the next strategy rather than failing immediately.
+
+The resulting `goodreads_metadata` record stores the Goodreads book title, identifiers (Goodreads ID, ASIN, ISBN, ISBN-13, work ID, and legacy integer IDs), author information (name, Goodreads author ID, legacy author ID, and profile image URL), language, and cover image URL. The `description` field is not populated (Goodreads does not return it via the search/lookup APIs used). The `hardcover_id`, `google_books_id`, `publication_date`, and `publisher` fields are also left unpopulated — the Goodreads search/lookup APIs used do not surface them. The user must review and apply the record via the metadata review UI before any data is merged into the book record.
+
+**Failure handling:** if the Goodreads client call or the database write fails, the error is returned and asynq retries the job up to `DefaultMaxRetry` (5) times with exponential back-off. A failed enrichment never blocks or modifies the book record already committed by `POST /api/books`.
+
 ### Job Chain
 
 A full scan flows through the jobs in a fan-out pattern:
@@ -201,6 +227,13 @@ scan:libraries
  └─▶ scan:library  (one per monitored library)
       └─▶ scan:path  (one per library path)
            └─▶ process:file  (one per supported file found)
+```
+
+Book creation also triggers a parallel enrichment job:
+
+```
+POST /api/books
+ └─▶ enrich:goodreads  (one per created book)
 ```
 
 ## Scheduling
@@ -229,7 +262,11 @@ Tasks enqueued via `Worker.Enqueue` use a **24-hour deduplication window** (via 
 
 Jobs enter the queue in two ways:
 
-1. **API-triggered** — When a user creates a library via `POST /api/libraries` and the library has paths, the handler immediately enqueues a `scan:library` job via `Worker.Enqueue` (see `internal/handlers/libraries.go`), and therefore benefits from the 24-hour deduplication window described above.
+1. **API-triggered** — Two handlers enqueue jobs on demand:
+   - When a user creates a library via `POST /api/libraries` and the library has paths, the handler immediately enqueues a `scan:library` job via `Worker.Enqueue` (see `internal/handlers/libraries.go`).
+   - When a book is created via `POST /api/books`, the handler immediately enqueues an `enrich:goodreads` job via `Worker.Enqueue` (see `internal/handlers/books.go`). A failure to enqueue is logged at `WARN` level and does not fail the book-creation response.
+
+   Both are subject to the 24-hour deduplication window described above.
 
 2. **Scheduled** — The asynq scheduler fires `scan:libraries` every 24 hours. The `scan:libraries` trigger itself is issued directly by the asynq scheduler (not through `Worker.Enqueue`) and carries no deduplication. However, when the `scan:libraries` handler runs, it calls `Worker.Enqueue` to create `scan:library` jobs, which cascade into `scan:path` and `process:file` jobs — all of which go through `Worker.Enqueue` and therefore benefit from the 24-hour deduplication window.
 
@@ -270,6 +307,7 @@ The dashboard lets you:
 cmd/server/main.go            # Registers handlers, schedules, starts worker
 internal/
   jobs/
+    enrich_goodreads.go            # enrich:goodreads handler — fetches Goodreads metadata and creates a pending goodreads_metadata record
     scan_directory.go          # ScanDirectory: walks a path and enqueues process:file jobs; defines Enqueuer interface and supportedExtensions
     scan_path.go               # scan:path handler (NewScanPathHandler → ScanDirectory)
     scan_libraries.go          # scan:libraries handler (scans all monitored libraries)
