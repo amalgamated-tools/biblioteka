@@ -8,7 +8,6 @@ import (
 
 func TestRateLimiter_AllowsInitialRequests(t *testing.T) {
 	rl := NewRateLimiter(10, 5)
-	t.Cleanup(rl.Stop)
 
 	for i := range 5 {
 		if !rl.allow("127.0.0.1") {
@@ -19,7 +18,6 @@ func TestRateLimiter_AllowsInitialRequests(t *testing.T) {
 
 func TestRateLimiter_BlocksWhenBucketEmpty(t *testing.T) {
 	rl := NewRateLimiter(0, 2) // rate=0 (no refill), burst=2
-	t.Cleanup(rl.Stop)
 
 	// First call: new visitor, starts with burst-1=1 token, allowed.
 	rl.allow("127.0.0.1")
@@ -33,7 +31,6 @@ func TestRateLimiter_BlocksWhenBucketEmpty(t *testing.T) {
 
 func TestRateLimiter_DifferentIPsAreIndependent(t *testing.T) {
 	rl := NewRateLimiter(0, 1) // burst=1, no refill
-	t.Cleanup(rl.Stop)
 
 	// First call for each IP uses burst, so first call is always allowed
 	if !rl.allow("1.1.1.1") {
@@ -84,7 +81,6 @@ func TestIpFromRequest_XForwardedFor_Single(t *testing.T) {
 
 func TestRateLimiter_Limit_BlockedRequest(t *testing.T) {
 	rl := NewRateLimiter(0, 1) // burst=1, no refill
-	t.Cleanup(rl.Stop)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
