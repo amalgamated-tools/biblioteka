@@ -32,7 +32,7 @@ jobs:
             // (including via a linked PR merge), and "not_planned" when closed
             // as out-of-scope or won't-fix.  Treat null/unknown as completed.
             const stateReason = issue.state_reason;
-            const isFixed     = stateReason !== 'not_planned';
+            const isFixed     = stateReason === 'completed' || stateReason === null;
 
             const labelName  = isFixed ? 'auto-closed: fixed'   : 'auto-closed: wontfix';
             const labelColor = isFixed ? '0e8a16'                : 'e4e669';
@@ -45,15 +45,33 @@ jobs:
               await github.rest.issues.getLabel({ owner, repo, name: labelName });
             } catch (e) {
               if (e.status === 404) {
-                await github.rest.issues.createLabel({
-                  owner, repo,
-                  name: labelName,
-                  color: labelColor,
-                  description: labelDesc,
-                });
+                try {
+                  await github.rest.issues.createLabel({
+                    owner, repo,
+                    name: labelName,
+                    color: labelColor,
+                    description: labelDesc,
+                  });
+                } catch (createErr) {
+                  // 422 = label already created by a concurrent run; safe to continue.
+                  if (createErr.status !== 422) throw createErr;
+                }
               } else {
                 throw e;
               }
+            }
+
+            // Remove the opposite resolution label (if present) so that
+            // reopened-then-reclosed issues don't end up with both labels.
+            const oppositeLabel = isFixed ? 'auto-closed: wontfix' : 'auto-closed: fixed';
+            try {
+              await github.rest.issues.removeLabel({
+                owner, repo,
+                issue_number: issue.number,
+                name: oppositeLabel,
+              });
+            } catch (e) {
+              if (e.status !== 404) throw e;
             }
 
             await github.rest.issues.addLabels({
