@@ -95,14 +95,14 @@
       <div
         class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl mb-4 shadow-lg shadow-accent-500/20 dark:shadow-accent-500/10"
       >
-        <BookCheck class="w-8 h-8 text-white" />
+        <BookCheck class="w-8 h-8 text-white" aria-hidden="true" />
       </div>
       <h1
         class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mb-2"
       >
         biblioteka
       </h1>
-      <p class="text-ink-400 dark:text-ink-400 font-body">
+      <p class="text-ink-500 dark:text-ink-300 font-body">
         Your personal digital library
       </p>
     </div>
@@ -126,7 +126,7 @@
           </div>
           <div class="relative flex justify-center text-sm">
             <span
-              class="px-3 bg-white dark:bg-ink-900 text-ink-400 dark:text-ink-400"
+              class="px-3 bg-white dark:bg-ink-900 text-ink-500 dark:text-ink-300"
               >or</span
             >
           </div>
@@ -150,7 +150,7 @@
           onclick={() => (isLogin = true)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
-            : 'text-ink-400 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'}"
+            : 'text-ink-500 dark:text-ink-300 hover:text-ink-700 dark:hover:text-ink-200'}"
         >
           Login
         </button>
@@ -164,7 +164,7 @@
           onclick={() => (isLogin = false)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {!isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
-            : 'text-ink-400 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'}"
+            : 'text-ink-500 dark:text-ink-300 hover:text-ink-700 dark:hover:text-ink-200'}"
         >
           Sign Up
         </button>
