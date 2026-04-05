@@ -21,7 +21,7 @@ func TestGetSetting_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetSetting(t.Context(), "nonexistent")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestSetSetting_Upsert(t *testing.T) {

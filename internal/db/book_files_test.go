@@ -44,7 +44,7 @@ func TestGetBookFile_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetBookFile(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListBookFiles(t *testing.T) {
@@ -75,14 +75,14 @@ func TestDeleteBookFile(t *testing.T) {
 	require.NoError(t, err, "DeleteBookFile() error")
 
 	_, err = d.GetBookFile(t.Context(), bf.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteBookFile_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.DeleteBookFile(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteBook_CascadeFiles(t *testing.T) {
@@ -98,7 +98,7 @@ func TestDeleteBook_CascadeFiles(t *testing.T) {
 	require.NoError(t, d.DeleteBook(t.Context(), book.ID), "DeleteBook() error")
 
 	_, err = d.GetBookFile(t.Context(), bf.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestGetFilesForBooks(t *testing.T) {
