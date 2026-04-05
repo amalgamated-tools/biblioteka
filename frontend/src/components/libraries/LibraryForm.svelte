@@ -171,7 +171,7 @@
       class="text-ink-300 hover:text-ink-500 dark:hover:text-ink-200 transition-colors"
       aria-label="Close form"
     >
-      <X class="w-5 h-5" />
+      <X class="w-5 h-5" aria-hidden="true" />
     </button>
   </div>
 
@@ -250,7 +250,7 @@
                 aria-label="Remove folder"
                 disabled={saving}
               >
-                <X class="w-4 h-4" />
+                <X class="w-4 h-4" aria-hidden="true" />
               </button>
             {/if}
           </div>
@@ -264,7 +264,7 @@
         class="mt-2 inline-flex items-center gap-1.5 text-sm text-accent-600 dark:text-accent-400 hover:text-accent-700 dark:hover:text-accent-300 transition-colors font-medium"
         disabled={saving}
       >
-        <Plus class="w-3.5 h-3.5" />
+        <Plus class="w-3.5 h-3.5" aria-hidden="true" />
         Add another folder
       </button>
       {#if pathsError}
@@ -355,7 +355,7 @@
             class="inline-flex items-center gap-1.5 text-sm text-danger-600 hover:text-danger-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
             disabled={saving}
           >
-            <Trash2 class="w-4 h-4" />
+            <Trash2 class="w-4 h-4" aria-hidden="true" />
             Delete Library
           </button>
         {/if}

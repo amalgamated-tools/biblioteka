@@ -81,7 +81,7 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <Mail class="w-5 h-5 text-accent-600" />
+      <Mail class="w-5 h-5 text-accent-600" aria-hidden="true" />
       Account Information
     </h2>
     <div class="space-y-4">
@@ -117,7 +117,7 @@
       <h2
         class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
       >
-        <Link class="w-5 h-5 text-accent-600" />
+        <Link class="w-5 h-5 text-accent-600" aria-hidden="true" />
         Single Sign-On
       </h2>
       {#if authStore.user?.oidc_linked}
@@ -147,7 +147,7 @@
           disabled={linkSsoLoading}
           class="inline-flex items-center gap-2 px-4 py-2.5"
         >
-          <Link class="w-4 h-4" />
+          <Link class="w-4 h-4" aria-hidden="true" />
           {linkSsoLoading ? "Redirecting..." : "Link SSO Account"}
         </Button>
       {/if}
@@ -160,7 +160,7 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <Lock class="w-5 h-5 text-accent-600" />
+      <Lock class="w-5 h-5 text-accent-600" aria-hidden="true" />
       Change Password
     </h2>
     <form onsubmit={handlePasswordChange} class="space-y-4">
