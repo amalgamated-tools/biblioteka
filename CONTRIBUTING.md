@@ -459,6 +459,33 @@ Always commit the updated spec files alongside the handler changes that prompted
 - **User scoping**: All data queries must include `user_id` to enforce per-user data isolation.
 - **Formatting**: Run `go fmt ./...` before committing Go code.
 
+## Testing Conventions
+
+### Go tests
+
+- **Use `testify/require`** for assertions — `require.NoError(t, err)`, `require.Equal(t, expected, actual)`, `require.True(t, cond)`, etc. Do **not** use `t.Fatal`, `t.Fatalf`, or `t.FailNow` directly. Using `testify/require` keeps assertion style consistent and produces better failure messages:
+  ```go
+  import "github.com/stretchr/testify/require"
+
+  // ✅ correct
+  require.NoError(t, err)
+  require.Equal(t, "expected", result)
+
+  // ❌ incorrect — use require instead
+  if err != nil {
+      t.Fatal(err)
+  }
+  ```
+- **Real database**: Go tests should run against a real SQLite database. When creating SQLite databases in tests, configure them with WAL mode, `synchronous=NORMAL`, and `foreign_keys=ON`. See `internal/db/testhelper_test.go` for a canonical example/reference helper pattern.
+- **Every new feature needs tests**: Any new handler, function, or component must include tests. Treat missing tests as a failing CI check — do not consider a task done until tests are written and passing.
+- **Test file organization**: Large handler test files are split by sub-concern. For example, `books_authors_test.go` covers only the books↔authors relationship handlers, while `books_test.go` covers book CRUD. Follow this pattern when adding tests for new endpoints or sub-resources.
+
+### Frontend tests
+
+- Frontend unit tests use [Vitest](https://vitest.dev/) and live alongside their source file (e.g. `copyTimeout.test.ts` next to `copyTimeout.svelte.ts`).
+- Use `vi.useFakeTimers()` for tests involving `setTimeout`/`setInterval` so tests run synchronously without real delays.
+- End-to-end tests live in `e2e/` and use Playwright (see [End-to-end tests](#end-to-end-tests-e2e) above).
+
 ## AI Coding Assistant Instructions
 
 The project provides per-agent instruction files so that AI coding assistants receive the full set of project conventions without needing them to be pasted into every prompt:
