@@ -132,7 +132,7 @@ const minPasswordLength = 6
 // simply return.
 func validatePassword(ctx context.Context, w http.ResponseWriter, password string) bool {
 	if len(password) < minPasswordLength {
-		writeError(ctx, w, http.StatusBadRequest, "password must be at least 6 characters")
+		writeError(ctx, w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
 		return false
 	}
 	return true
