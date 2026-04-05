@@ -115,7 +115,7 @@
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
               : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
           >
-            <Icon class="w-5 h-5" />
+            <Icon class="w-5 h-5" aria-hidden="true" />
             {tab.label}
           </a>
         {/each}
@@ -141,7 +141,7 @@
                 ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
                 : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
             >
-              <Icon class="w-5 h-5" />
+              <Icon class="w-5 h-5" aria-hidden="true" />
               {tab.label}
             </a>
           {/each}
