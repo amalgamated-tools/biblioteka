@@ -33,18 +33,21 @@ export class CrudStore<T extends { id: string }, TInput> {
   }
 
   async add(input: TInput): Promise<T> {
+    this.error = null;
     const created = await this.ops.create(input);
     this.items = [...this.items, created];
     return created;
   }
 
   async edit(id: string, input: TInput): Promise<T> {
+    this.error = null;
     const updated = await this.ops.update(id, input);
     this.items = this.items.map((item) => (item.id === id ? updated : item));
     return updated;
   }
 
   async remove(id: string): Promise<void> {
+    this.error = null;
     await this.ops.delete(id);
     this.items = this.items.filter((item) => item.id !== id);
   }
