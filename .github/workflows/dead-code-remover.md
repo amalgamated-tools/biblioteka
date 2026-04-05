@@ -30,8 +30,8 @@ safe-outputs:
     reviewers: [copilot]
   noop:
 timeout-minutes: 30
-features:
-  copilot-requests: true
+# features:
+#   copilot-requests: true
 steps:
   - name: Install deadcode analyzer
     run: go install golang.org/x/tools/cmd/deadcode@latest
