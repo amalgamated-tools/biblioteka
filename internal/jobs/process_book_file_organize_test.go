@@ -41,9 +41,8 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	require.NoError(t, err, "ProcessBookFile()")
 
 	// Verify the original file was moved.
-	if _, err := os.Stat(epubPath); !os.IsNotExist(err) {
-		require.Fail(t, "expected original file to be removed after reorganization")
-	}
+	_, err = os.Stat(epubPath)
+	require.ErrorIs(t, err, os.ErrNotExist, "expected original file to be removed after reorganization")
 
 	// Verify the file was moved to the expected Author/Title/ structure.
 	expectedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "The Great Gatsby.epub")
