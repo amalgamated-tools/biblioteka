@@ -92,13 +92,9 @@ func TestSearch_Success(t *testing.T) {
 	}
 
 	results, err := client.Search(t.Context(), "project hail mary")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 
 	r := results[0]
 	if r.WorkID != "kca://work/amzn1.gr.work.v1.abc123" {
@@ -155,9 +151,7 @@ func TestSearch_GraphQLError(t *testing.T) {
 	}
 
 	results, err := client.Search(t.Context(), "test")
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
+	require.Error(t, err, "expected error, got nil")
 	if len(results) != 0 {
 		t.Errorf("expected 0 results, got %d", len(results))
 	}
@@ -178,9 +172,7 @@ func TestSearch_EmptyEdges(t *testing.T) {
 	}
 
 	results, err := client.Search(t.Context(), "nonexistent book xyz")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if len(results) != 0 {
 		t.Errorf("expected 0 results, got %d", len(results))
 	}
@@ -243,9 +235,7 @@ func TestSearch_DeduplicatesBooks(t *testing.T) {
 func Test_SearchByISBN(t *testing.T) {
 	var response GetBookByLegacyIdResponse
 	err := json.Unmarshal(GetBookByLegacyID_54493401, &response)
-	if err != nil {
-		t.Fatalf("failed to unmarshal JSON response: %v", err)
-	}
+	require.NoError(t, err, "failed to unmarshal JSON response")
 	client := &Client{
 		httpClient: &mockHTTPClient{
 			handler: func(req *http.Request) (*http.Response, error) {
@@ -267,18 +257,12 @@ func Test_SearchByISBN(t *testing.T) {
 	}
 
 	results, err := client.SearchByISBN(t.Context(), response.GetBookByLegacyId.Work.BestBook.Details.Isbn)
-	if err != nil {
-		t.Fatalf("failed to search by ISBN: %v", err)
-	}
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
+	require.NoError(t, err, "failed to search by ISBN")
+	require.Len(t, results, 1)
 
 	r := results[0]
 	expected, err := loadBookResult(t.Context(), response.GetBookByLegacyId.Work)
-	if err != nil {
-		t.Fatalf("failed to load expected BookResult from response: %v", err)
-	}
+	require.NoError(t, err, "failed to load expected BookResult from response")
 
 	require.Equal(t, *expected, r)
 	require.Equal(t, expected.WorkID, r.WorkID)
@@ -342,9 +326,7 @@ func Test_SearchByISBN_NormalizesQuery(t *testing.T) {
 func TestParseISBNSearchResponse_Success(t *testing.T) {
 	var response GetBookByLegacyIdResponse
 	err := json.Unmarshal(GetBookByLegacyID_54493401, &response)
-	if err != nil {
-		t.Fatalf("failed to unmarshal JSON response: %v", err)
-	}
+	require.NoError(t, err, "failed to unmarshal JSON response")
 	client := &Client{
 		client: &mockGraphQLClient{
 			handler: func(req *graphql.Request, resp *graphql.Response) error {
@@ -357,15 +339,11 @@ func TestParseISBNSearchResponse_Success(t *testing.T) {
 
 	results, err := client.parseISBNSearchResponse(t.Context(), AutoComplete)
 	require.NoError(t, err)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 
 	r := results[0]
 	expected, err := loadBookResult(t.Context(), response.GetBookByLegacyId.Work)
-	if err != nil {
-		t.Fatalf("failed to load expected BookResult from response: %v", err)
-	}
+	require.NoError(t, err, "failed to load expected BookResult from response")
 
 	require.Equal(t, *expected, r)
 	require.Equal(t, expected.WorkID, r.WorkID)
@@ -458,9 +436,7 @@ func TestParseISBNSearchResponse_OptionalFieldsMissing(t *testing.T) {
 	body := `[{"bookId": "123", "workId": "456", "title": "Minimal Book"}]`
 	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 
 	r := results[0]
 	if r.BookTitle != "Minimal Book" {
@@ -495,9 +471,7 @@ func TestParseISBNSearchResponse_MultipleResults(t *testing.T) {
 	]`
 	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
-	if len(results) != 2 {
-		t.Fatalf("expected 2 results, got %d", len(results))
-	}
+	require.Len(t, results, 2)
 	if results[0].BookTitle != "Book One" {
 		t.Errorf("results[0].BookTitle = %q, want %q", results[0].BookTitle, "Book One")
 	}
@@ -519,9 +493,7 @@ func TestParseISBNSearchResponse_SkipsInvalidEntriesKeepsValid(t *testing.T) {
 	]`
 	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result (skipping invalid), got %d", len(results))
-	}
+	require.Len(t, results, 1)
 	if results[0].BookTitle != "Valid Entry" {
 		t.Errorf("BookTitle = %q, want %q", results[0].BookTitle, "Valid Entry")
 	}

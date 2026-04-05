@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // namedEntityCreate and namedEntityUpdate are tested directly here because
@@ -34,9 +36,7 @@ func TestNamedEntityCreate_Success(t *testing.T) {
 			return &fakeEntity{name: name}, nil
 		},
 	)
-	if err != nil {
-		t.Fatalf("namedEntityCreate() error: %v", err)
-	}
+	require.NoError(t, err, "namedEntityCreate() error")
 	if got.name != want.name {
 		t.Errorf("result.name = %q, want %q", got.name, want.name)
 	}
@@ -90,9 +90,7 @@ func TestNamedEntityUpdate_Success(t *testing.T) {
 			return &fakeEntity{name: name}, nil
 		},
 	)
-	if err != nil {
-		t.Fatalf("namedEntityUpdate() error: %v", err)
-	}
+	require.NoError(t, err, "namedEntityUpdate() error")
 	if got.name != "updated" {
 		t.Errorf("result.name = %q, want %q", got.name, "updated")
 	}

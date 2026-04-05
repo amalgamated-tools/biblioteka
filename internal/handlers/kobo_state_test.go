@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestHandleBookState_UnknownMethodReturnsOK verifies that HandleBookState
@@ -16,9 +18,7 @@ func TestHandleBookState_UnknownMethodReturnsOK(t *testing.T) {
 
 	h, userID := setupKoboHandler(t)
 	book, err := h.DB.CreateBook(context.Background(), "State Unknown Method", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodDelete, "/v1/library/"+book.ID+"/state", nil)
 	r = withUserID(r, userID)
@@ -37,9 +37,7 @@ func TestHandleBookState_StatePathParsing(t *testing.T) {
 
 	h, userID := setupKoboHandler(t)
 	book, err := h.DB.CreateBook(context.Background(), "Path Parsing Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/v1/library/"+book.ID+"/state", nil)
 	r = withUserID(r, userID)
@@ -60,17 +58,13 @@ func TestHandleBookState_ReadingProgressPercentage(t *testing.T) {
 	h := &KoboHandler{DB: d}
 
 	user, err := d.CreateUser(context.Background(), "Progress User", "progress@example.com", "password")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	book, err := d.CreateBook(context.Background(), "Progress Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	pct := 0.35
 	if _, err := d.UpsertKoboReadingState(context.Background(), user.ID, book.ID, "Reading", &pct, nil, nil, nil); err != nil {
-		t.Fatalf("upsert reading state: %v", err)
+		require.NoError(t, err, "upsert reading state")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/v1/library/"+book.ID+"/state", nil)
@@ -78,9 +72,7 @@ func TestHandleBookState_ReadingProgressPercentage(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleBookState(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
 	if !strings.Contains(body, "Reading") {
 		t.Errorf("expected Reading status in response, got: %s", body)
@@ -96,22 +88,16 @@ func TestHandleBookState_UserIsolation(t *testing.T) {
 	h := &KoboHandler{DB: d}
 
 	user1, err := d.CreateUser(context.Background(), "User1", "user1@example.com", "password")
-	if err != nil {
-		t.Fatalf("create user1: %v", err)
-	}
+	require.NoError(t, err, "create user1")
 	user2, err := d.CreateUser(context.Background(), "User2", "user2@example.com", "password")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	require.NoError(t, err, "create user2")
 	book, err := d.CreateBook(context.Background(), "Shared Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	// Set state for user1.
 	pct := 0.5
 	if _, err := d.UpsertKoboReadingState(context.Background(), user1.ID, book.ID, "Reading", &pct, nil, nil, nil); err != nil {
-		t.Fatalf("upsert state for user1: %v", err)
+		require.NoError(t, err, "upsert state for user1")
 	}
 
 	// user2 should get a default (not user1's) state.
@@ -120,7 +106,5 @@ func TestHandleBookState_UserIsolation(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleBookState(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }

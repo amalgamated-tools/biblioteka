@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestDecodeDataURL_ValidPNG(t *testing.T) {
@@ -13,9 +15,7 @@ func TestDecodeDataURL_ValidPNG(t *testing.T) {
 	raw := "data:image/png;base64," + encoded
 
 	mimeType, decoded, err := DecodeDataURL(raw)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if mimeType != "image/png" {
 		t.Errorf("mimeType = %q, want %q", mimeType, "image/png")
 	}
@@ -30,9 +30,7 @@ func TestDecodeDataURL_ValidJPEG(t *testing.T) {
 	raw := "data:image/jpeg;base64," + encoded
 
 	mimeType, decoded, err := DecodeDataURL(raw)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if mimeType != "image/jpeg" {
 		t.Errorf("mimeType = %q, want %q", mimeType, "image/jpeg")
 	}
@@ -57,9 +55,7 @@ func TestDecodeDataURL_EmptyString(t *testing.T) {
 
 func TestDecodeDataURL_UnsupportedEncoding(t *testing.T) {
 	_, _, err := DecodeDataURL("data:image/png;utf8,hello")
-	if err == nil {
-		t.Fatal("expected error for unsupported encoding")
-	}
+	require.Error(t, err, "expected error for unsupported encoding")
 }
 
 func TestDecodeDataURL_EmptyMIME(t *testing.T) {
@@ -68,9 +64,7 @@ func TestDecodeDataURL_EmptyMIME(t *testing.T) {
 	raw := "data:;base64," + encoded
 
 	mimeType, _, err := DecodeDataURL(raw)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if mimeType != "text/plain;charset=US-ASCII" {
 		t.Errorf("mimeType = %q, want %q", mimeType, "text/plain;charset=US-ASCII")
 	}
@@ -78,9 +72,7 @@ func TestDecodeDataURL_EmptyMIME(t *testing.T) {
 
 func TestDecodeDataURL_InvalidBase64(t *testing.T) {
 	_, _, err := DecodeDataURL("data:image/png;base64,!!!invalid!!!")
-	if err == nil {
-		t.Fatal("expected error for invalid base64")
-	}
+	require.Error(t, err, "expected error for invalid base64")
 }
 
 func TestDecodeDataURL_ExceedsSizeLimit(t *testing.T) {
@@ -89,7 +81,5 @@ func TestDecodeDataURL_ExceedsSizeLimit(t *testing.T) {
 	raw := "data:image/png;base64," + bigData
 
 	_, _, err := DecodeDataURL(raw)
-	if err == nil {
-		t.Fatal("expected error for oversized payload")
-	}
+	require.Error(t, err, "expected error for oversized payload")
 }

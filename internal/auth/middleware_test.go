@@ -9,13 +9,13 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	mw := Middleware(jm, nil)
 
 	called := false
@@ -38,9 +38,7 @@ func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 
 func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	mw := Middleware(jm, nil)
 
 	called := false
@@ -66,9 +64,7 @@ func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 
 func TestMiddleware_InvalidToken(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	mw := Middleware(jm, nil)
 
 	called := false
@@ -92,15 +88,11 @@ func TestMiddleware_InvalidToken(t *testing.T) {
 
 func TestMiddleware_ValidToken(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	mw := Middleware(jm, nil)
 
 	token, err := jm.CreateToken(t.Context(), "user-abc")
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -141,9 +133,7 @@ func TestContextWithUserID(t *testing.T) {
 func assertJSONError(t *testing.T, body []byte, wantMsg string) {
 	t.Helper()
 	var resp map[string]string
-	if err := json.Unmarshal(body, &resp); err != nil {
-		t.Fatalf("failed to unmarshal response body: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(body, &resp), "failed to unmarshal response body")
 	if resp["error"] != wantMsg {
 		t.Errorf("error message = %q, want %q", resp["error"], wantMsg)
 	}
@@ -242,15 +232,11 @@ func TestExtractToken(t *testing.T) {
 
 func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	mw := Middleware(jm, nil)
 
 	token, err := jm.CreateToken(t.Context(), "cookie-user")
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -272,9 +258,7 @@ func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 
 func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	mw := Middleware(jm, nil)
 
 	called := false
@@ -298,19 +282,13 @@ func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 
 func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	mw := Middleware(jm, nil)
 
 	headerToken, err := jm.CreateToken(t.Context(), "header-user")
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 	cookieToken, err := jm.CreateToken(t.Context(), "cookie-user")
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -345,9 +323,7 @@ func (m *mockAdminChecker) IsAdmin(_ context.Context, userID string) (bool, erro
 
 func TestAdminMiddleware_NoToken(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{admins: map[string]bool{}}
 	mw := AdminMiddleware(jm, checker, nil)
 
@@ -371,9 +347,7 @@ func TestAdminMiddleware_NoToken(t *testing.T) {
 
 func TestAdminMiddleware_InvalidToken(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{admins: map[string]bool{}}
 	mw := AdminMiddleware(jm, checker, nil)
 
@@ -398,16 +372,12 @@ func TestAdminMiddleware_InvalidToken(t *testing.T) {
 
 func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
 	mw := AdminMiddleware(jm, checker, nil)
 
 	token, err := jm.CreateToken(t.Context(), "regular-user")
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -430,16 +400,12 @@ func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 
 func TestAdminMiddleware_AdminUser(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
 	mw := AdminMiddleware(jm, checker, nil)
 
 	token, err := jm.CreateToken(t.Context(), "admin-user")
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -461,16 +427,12 @@ func TestAdminMiddleware_AdminUser(t *testing.T) {
 
 func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
 	mw := AdminMiddleware(jm, checker, nil)
 
 	token, err := jm.CreateToken(t.Context(), "admin-user")
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -492,16 +454,12 @@ func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 
 func TestAdminMiddleware_CheckerError(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	checker := &mockAdminChecker{err: errors.New("db down")}
 	mw := AdminMiddleware(jm, checker, nil)
 
 	token, err := jm.CreateToken(t.Context(), "some-user")
-	if err != nil {
-		t.Fatalf("CreateToken() error: %v", err)
-	}
+	require.NoError(t, err, "CreateToken() error")
 
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -549,9 +507,7 @@ func (m *mockAPIKeyValidator) TouchAPIKeyLastUsed(_ context.Context, id string) 
 
 func TestMiddleware_ValidAPIKey(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	apiKey := "bib_abcdef1234567890abcdef1234567890"
 	keyHash := HashAPIKey(apiKey)
 	validator := &mockAPIKeyValidator{
@@ -585,9 +541,7 @@ func TestMiddleware_ValidAPIKey(t *testing.T) {
 
 func TestMiddleware_InvalidAPIKey(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	validator := &mockAPIKeyValidator{
 		keys: map[string]struct{ userID, keyID string }{},
 	}
@@ -614,9 +568,7 @@ func TestMiddleware_InvalidAPIKey(t *testing.T) {
 
 func TestMiddleware_APIKeyViaCookieRejected(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	apiKey := "bib_abcdef1234567890abcdef1234567890"
 	keyHash := HashAPIKey(apiKey)
 	validator := &mockAPIKeyValidator{
@@ -647,9 +599,7 @@ func TestMiddleware_APIKeyViaCookieRejected(t *testing.T) {
 
 func TestAdminMiddleware_ValidAPIKey(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	if err != nil {
-		t.Fatalf("NewJWTManager() error: %v", err)
-	}
+	require.NoError(t, err, "NewJWTManager() error")
 	apiKey := "bib_abcdef1234567890abcdef1234567890"
 	keyHash := HashAPIKey(apiKey)
 	validator := &mockAPIKeyValidator{

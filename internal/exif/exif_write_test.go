@@ -2,6 +2,8 @@ package exif
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestHandleWriteMetadataResponse_Success verifies that the response with
@@ -21,9 +23,7 @@ func TestHandleWriteMetadataResponse_ErrorMessage(t *testing.T) {
 	t.Parallel()
 
 	err := handleWriteMetadataResponse("  Error writing file\n")
-	if err == nil {
-		t.Fatal("expected error for non-success response")
-	}
+	require.Error(t, err, "expected error for non-success response")
 	if err.Error() == "" {
 		t.Error("expected non-empty error message")
 	}
@@ -103,9 +103,7 @@ func TestFileMetadataSetStringAndGetStrings(t *testing.T) {
 	fm.SetString("Title", "My Test Title")
 
 	vals, err := fm.GetStrings("Title")
-	if err != nil {
-		t.Fatalf("GetStrings() error: %v", err)
-	}
+	require.NoError(t, err, "GetStrings() error")
 	if len(vals) != 1 || vals[0] != "My Test Title" {
 		t.Errorf("GetStrings(Title) = %v, want [My Test Title]", vals)
 	}
@@ -118,9 +116,7 @@ func TestFileMetadataGetStrings_KeyNotFound(t *testing.T) {
 
 	fm := EmptyFileMetadata()
 	_, err := fm.GetStrings("NonExistentKey")
-	if err == nil {
-		t.Fatal("expected ErrKeyNotFound for missing key")
-	}
+	require.Error(t, err, "expected ErrKeyNotFound for missing key")
 	if err != ErrKeyNotFound {
 		t.Errorf("err = %v, want ErrKeyNotFound", err)
 	}

@@ -15,6 +15,8 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
+
+	"github.com/stretchr/testify/require"
 )
 
 // requireExifToolExtractor creates a metadata.Extractor and skips the test if
@@ -62,40 +64,28 @@ func TestEPUB3CoverImport_EndToEnd(t *testing.T) {
 
 	// Import the EPUB3 file; this triggers metadata extraction (including cover).
 	epubInfo, err := os.Stat(epubPath)
-	if err != nil {
-		t.Fatalf("stat epub: %v", err)
-	}
+	require.NoError(t, err, "stat epub")
 	if err := jobs.ProcessBookFile(t.Context(), d, ext, jobs.ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "epub3-with-cover.epub",
 		FileType: "epub",
 		FileSize: epubInfo.Size(),
 	}); err != nil {
-		t.Fatalf("ProcessBookFile: %v", err)
+		require.NoError(t, err, "ProcessBookFile")
 	}
 
 	// Verify the cover is associated with the imported book.
 	books, err := d.ListBooks(t.Context())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	book := books[0]
-	if book.CoverImageURL == nil {
-		t.Fatal("expected cover image URL to be set, got nil")
-	}
-	if !strings.HasPrefix(*book.CoverImageURL, "data:image/png;base64,") {
-		t.Fatalf("expected PNG data URL cover, got %q", *book.CoverImageURL)
-	}
+	require.NotNil(t, book.CoverImageURL)
+	require.True(t, strings.HasPrefix(*book.CoverImageURL, "data:image/png;base64,"))
 
 	// Verify the decoded cover bytes match the original image.
 	b64 := strings.TrimPrefix(*book.CoverImageURL, "data:image/png;base64,")
 	gotCover, err := base64.StdEncoding.DecodeString(b64)
-	if err != nil {
-		t.Fatalf("decode cover base64: %v", err)
-	}
+	require.NoError(t, err, "decode cover base64")
 	if !bytes.Equal(gotCover, coverBytes) {
 		t.Errorf("cover bytes mismatch: got %d bytes, want %d bytes", len(gotCover), len(coverBytes))
 	}
@@ -105,9 +95,7 @@ func TestEPUB3CoverImport_EndToEnd(t *testing.T) {
 	w := httptest.NewRecorder()
 	koboH.HandleCoverImage(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("HandleCoverImage status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	ct := w.Header().Get("Content-Type")
 	if !strings.HasPrefix(ct, "image/png") {
 		t.Errorf("Content-Type = %q, want image/png", ct)

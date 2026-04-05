@@ -3,14 +3,14 @@ package db
 import (
 	"database/sql"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func createTestUserForKOSync(t *testing.T, d *DB, email string) *User {
 	t.Helper()
 	user, err := d.CreateUser(t.Context(), "Test User", email, "hashedpw")
-	if err != nil {
-		t.Fatalf("CreateUser(%q): %v", email, err)
-	}
+	require.NoError(t, err, "CreateUser(%q)", email)
 	return user
 }
 
@@ -22,9 +22,7 @@ func TestKOSyncCredential_UpsertAndGet(t *testing.T) {
 	ctx := t.Context()
 
 	cred, err := d.UpsertKOSyncCredential(ctx, user.ID, "alice", "hashval")
-	if err != nil {
-		t.Fatalf("UpsertKOSyncCredential: %v", err)
-	}
+	require.NoError(t, err, "UpsertKOSyncCredential")
 	if cred.ID == "" {
 		t.Error("cred.ID is empty")
 	}
@@ -40,18 +38,14 @@ func TestKOSyncCredential_UpsertAndGet(t *testing.T) {
 
 	// Fetch by userID
 	fetched, err := d.GetKOSyncCredentialByUserID(ctx, user.ID)
-	if err != nil {
-		t.Fatalf("GetKOSyncCredentialByUserID: %v", err)
-	}
+	require.NoError(t, err, "GetKOSyncCredentialByUserID")
 	if fetched.Username != "alice" {
 		t.Errorf("fetched Username = %q, want %q", fetched.Username, "alice")
 	}
 
 	// Fetch by username (lowercase, as the middleware always lowercases before calling)
 	fetched2, err := d.GetKOSyncCredentialByUsername(ctx, "alice")
-	if err != nil {
-		t.Fatalf("GetKOSyncCredentialByUsername: %v", err)
-	}
+	require.NoError(t, err, "GetKOSyncCredentialByUsername")
 	if fetched2.UserID != user.ID {
 		t.Errorf("fetched2 UserID = %q, want %q", fetched2.UserID, user.ID)
 	}
@@ -63,14 +57,10 @@ func TestKOSyncCredential_Upsert_UpdatesExisting(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.UpsertKOSyncCredential(ctx, user.ID, "bob", "hash1")
-	if err != nil {
-		t.Fatalf("first upsert: %v", err)
-	}
+	require.NoError(t, err, "first upsert")
 
 	updated, err := d.UpsertKOSyncCredential(ctx, user.ID, "bob2", "hash2")
-	if err != nil {
-		t.Fatalf("second upsert: %v", err)
-	}
+	require.NoError(t, err, "second upsert")
 	if updated.Username != "bob2" {
 		t.Errorf("updated Username = %q, want %q", updated.Username, "bob2")
 	}
@@ -86,9 +76,7 @@ func TestKOSyncCredential_UsernameConflict(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.UpsertKOSyncCredential(ctx, user1.ID, "shared", "hash1")
-	if err != nil {
-		t.Fatalf("first upsert: %v", err)
-	}
+	require.NoError(t, err, "first upsert")
 
 	_, err = d.UpsertKOSyncCredential(ctx, user2.ID, "shared", "hash2")
 	if err != ErrKOSyncUsernameExists {
@@ -122,13 +110,9 @@ func TestKOSyncCredential_Delete(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.UpsertKOSyncCredential(ctx, user.ID, "delme", "hash")
-	if err != nil {
-		t.Fatalf("upsert: %v", err)
-	}
+	require.NoError(t, err, "upsert")
 
-	if err := d.DeleteKOSyncCredential(ctx, user.ID); err != nil {
-		t.Fatalf("DeleteKOSyncCredential: %v", err)
-	}
+	require.NoError(t, d.DeleteKOSyncCredential(ctx, user.ID), "DeleteKOSyncCredential")
 
 	_, err = d.GetKOSyncCredentialByUserID(ctx, user.ID)
 	if err != sql.ErrNoRows {
@@ -156,9 +140,7 @@ func TestReadingProgress_UpsertAndGet(t *testing.T) {
 	device := "MyKindle"
 	deviceID := "device-001"
 	p, err := d.UpsertReadingProgress(ctx, user.ID, "doc123", "/body/p[1]", 0.25, &device, &deviceID)
-	if err != nil {
-		t.Fatalf("UpsertReadingProgress: %v", err)
-	}
+	require.NoError(t, err, "UpsertReadingProgress")
 	if p.ID == "" {
 		t.Error("p.ID is empty")
 	}
@@ -180,9 +162,7 @@ func TestReadingProgress_UpsertAndGet(t *testing.T) {
 
 	// Fetch
 	fetched, err := d.GetReadingProgress(ctx, user.ID, "doc123")
-	if err != nil {
-		t.Fatalf("GetReadingProgress: %v", err)
-	}
+	require.NoError(t, err, "GetReadingProgress")
 	if fetched.Progress != "/body/p[1]" {
 		t.Errorf("fetched Progress = %q, want %q", fetched.Progress, "/body/p[1]")
 	}
@@ -194,14 +174,10 @@ func TestReadingProgress_Upsert_UpdatesExisting(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.UpsertReadingProgress(ctx, user.ID, "doc456", "/body/p[1]", 0.1, nil, nil)
-	if err != nil {
-		t.Fatalf("first upsert: %v", err)
-	}
+	require.NoError(t, err, "first upsert")
 
 	updated, err := d.UpsertReadingProgress(ctx, user.ID, "doc456", "/body/p[10]", 0.5, nil, nil)
-	if err != nil {
-		t.Fatalf("second upsert: %v", err)
-	}
+	require.NoError(t, err, "second upsert")
 	if updated.Progress != "/body/p[10]" {
 		t.Errorf("updated Progress = %q, want %q", updated.Progress, "/body/p[10]")
 	}
@@ -228,9 +204,7 @@ func TestReadingProgress_IsolatedByUser(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.UpsertReadingProgress(ctx, user1.ID, "shared-doc", "/body/p[5]", 0.3, nil, nil)
-	if err != nil {
-		t.Fatalf("upsert user1: %v", err)
-	}
+	require.NoError(t, err, "upsert user1")
 
 	// user2 should see no progress for the same document
 	_, err = d.GetReadingProgress(ctx, user2.ID, "shared-doc")
