@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
-import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/svelte";
+import {
+  cleanup,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/svelte";
 import { tick } from "svelte";
 
 vi.mock("../stores/libraries.svelte", () => ({
@@ -17,7 +23,9 @@ vi.mock("../stores/router.svelte", () => ({
 }));
 
 vi.mock("../lib/api", () => ({
-  listBooks: vi.fn().mockResolvedValue({ books: [], total: 0, limit: 1, offset: 0 }),
+  listBooks: vi
+    .fn()
+    .mockResolvedValue({ books: [], total: 0, limit: 1, offset: 0 }),
 }));
 
 vi.mock("lucide-svelte", () => ({
