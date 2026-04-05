@@ -515,6 +515,7 @@ cd frontend && pnpm run test
 ```
 
 - Go tests use a real SQLite database configured with WAL, `synchronous=NORMAL`, and `foreign_keys=ON` (see `internal/db/testhelper_test.go`).
+- **Use `testify/require`** (e.g., `require.NoError`, `require.Equal`) for test assertions instead of `t.Fatal`, `t.Fatalf`, or `t.FailNow`. This keeps assertion style consistent across the codebase.
 - **Every new feature, component, handler, or function must include tests.** This applies to both Go and frontend code. Do not consider a task complete until tests are written and passing.
 
 ## Common Commands

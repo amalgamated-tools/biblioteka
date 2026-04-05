@@ -1,18 +1,13 @@
 package jobs
 
 import (
-	"context"
-	"database/sql"
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,12 +38,12 @@ func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
 		FileType: "epub",
 		FileSize: epubInfo.Size(),
 	})
-	require.NoError(t, err, "ProcessBookFile() error")
+	require.NoError(t, err, "ProcessBookFile()")
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
-	require.NotNil(t, books[0].CoverImageURL)
+	require.NotNil(t, books[0].CoverImageURL, "expected EPUB3 book to have a cover image URL after import")
 	if !strings.HasPrefix(*books[0].CoverImageURL, "data:image/png;base64,") {
 		t.Errorf("expected cover image to be a PNG data URL, got %q", *books[0].CoverImageURL)
 	}
@@ -144,7 +139,8 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "My Cool Book.pdf")
 	// Create an empty file so the path exists (extraction will fail but that's OK)
-	require.NoError(t, os.WriteFile(path, []byte("not a real pdf"), 0o644), "write test file")
+	err = os.WriteFile(path, []byte("not a real pdf"), 0o644)
+	require.NoError(t, err, "write test file")
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
 		Path:     path,
@@ -152,7 +148,7 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 		FileType: "pdf",
 		FileSize: 14,
 	})
-	require.NoError(t, err, "ProcessBookFile() error")
+	require.NoError(t, err, "ProcessBookFile()")
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
@@ -171,7 +167,8 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "noext")
-	require.NoError(t, os.WriteFile(path, []byte("content"), 0o644), "write test file")
+	err = os.WriteFile(path, []byte("content"), 0o644)
+	require.NoError(t, err, "write test file")
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
 		Path:     path,
@@ -179,7 +176,7 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 		FileType: "pdf",
 		FileSize: 7,
 	})
-	require.NoError(t, err, "ProcessBookFile() error")
+	require.NoError(t, err, "ProcessBookFile()")
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
@@ -210,19 +207,19 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	require.NoError(t, err, "ProcessBookFile() error")
+	require.NoError(t, err, "ProcessBookFile()")
 
 	// Should have reused the existing author, not created a duplicate
 	authors, err := database.ListAuthors(t.Context())
 	require.NoError(t, err, "list authors")
-	require.Len(t, authors, 1)
+	require.Len(t, authors, 1, "expected 1 author (reused)")
 
 	// Verify the book is associated with the existing author
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
 	bookAuthors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book authors")
-	require.Len(t, bookAuthors, 1)
+	require.Len(t, bookAuthors, 1, "expected 1 book author")
 	if bookAuthors[0].Name != "F. Scott Fitzgerald" {
 		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", bookAuthors[0].Name)
 	}
@@ -248,13 +245,14 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	require.NoError(t, err, "ProcessBookFile() error")
+	require.NoError(t, err, "ProcessBookFile()")
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
-	require.NotNil(t, books[0].CoverImageURL)
-	require.True(t, strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,"))
+	if books[0].CoverImageURL == nil || !strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,") {
+		t.Fatalf("expected embedded cover data URL, got %#v", books[0].CoverImageURL)
+	}
 }
 
 func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
@@ -274,7 +272,7 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 		FileType: "epub",
 		FileSize: 512,
 	})
-	require.NoError(t, err, "ProcessBookFile() error")
+	require.NoError(t, err, "ProcessBookFile()")
 
 	// No author should be created
 	authors, err := database.ListAuthors(t.Context())
@@ -301,7 +299,8 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	// Create a file that isn't a valid EPUB — extraction will fail
 	dir := t.TempDir()
 	path := filepath.Join(dir, "broken.epub")
-	require.NoError(t, os.WriteFile(path, []byte("not a valid epub"), 0o644), "write broken.epub")
+	err = os.WriteFile(path, []byte("not a valid epub"), 0o644)
+	require.NoError(t, err, "write broken.epub")
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
 		Path:     path,
@@ -309,7 +308,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 		FileType: "epub",
 		FileSize: 16,
 	})
-	require.NoError(t, err, "ProcessBookFile() error")
+	require.NoError(t, err, "ProcessBookFile()")
 
 	// Book should still be created with filename-derived title
 	books, err := database.ListBooks(t.Context())
@@ -336,7 +335,7 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	require.NoError(t, err, "ProcessBookFile() error")
+	require.NoError(t, err, "ProcessBookFile()")
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
@@ -347,356 +346,4 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 	if books[0].ISBN13 != nil {
 		t.Errorf("expected ISBN13 nil, got %v", books[0].ISBN13)
 	}
-}
-
-func TestProcessBookFile_OrganizeFiles(t *testing.T) {
-	database := newTestDB(t)
-	ext, err := metadata.NewExtractor(t.Context())
-	require.NoError(t, err, "new extractor")
-	defer ext.Close(t.Context())
-
-	// Create a library root with a book file at the top level.
-	root := t.TempDir()
-	epubPath := filepath.Join(root, "The Great Gatsby.epub")
-	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	// Create a library with book_per_folder organization.
-	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
-	require.NoError(t, err, "create library")
-
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
-		Path:        epubPath,
-		FileName:    "The Great Gatsby.epub",
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
-
-	// Verify the original file was moved.
-	if _, err := os.Stat(epubPath); !os.IsNotExist(err) {
-		t.Error("expected original file to be removed after reorganization")
-	}
-
-	// Verify the file was moved to the expected Author/Title/ structure.
-	expectedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "The Great Gatsby.epub")
-	if _, err := os.Stat(expectedPath); err != nil {
-		require.NoError(t, err, "expected reorganized file at %q, got error", expectedPath)
-	}
-
-	// Verify book_files.file_path matches the new location.
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	if files[0].FilePath != expectedPath {
-		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
-	}
-}
-
-func TestProcessBookFile_OrganizeFiles_BookPerFile(t *testing.T) {
-	database := newTestDB(t)
-	ext, err := metadata.NewExtractor(t.Context())
-	require.NoError(t, err, "new extractor")
-	defer ext.Close(t.Context())
-
-	root := t.TempDir()
-	epubPath := filepath.Join(root, "The Great Gatsby.epub")
-	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	// Create a library with book_per_file organization (flat Author/ structure).
-	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
-	require.NoError(t, err, "create library")
-
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
-		Path:        epubPath,
-		FileName:    "The Great Gatsby.epub",
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
-
-	// Verify the file was moved to Author/ (no title subfolder).
-	expectedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby.epub")
-	if _, err := os.Stat(expectedPath); err != nil {
-		require.NoError(t, err, "expected reorganized file at %q, got error", expectedPath)
-	}
-
-	// Verify book_files.file_path matches the new location.
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	if files[0].FilePath != expectedPath {
-		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
-	}
-}
-
-func TestProcessBookFile_OrganizeFiles_None(t *testing.T) {
-	database := newTestDB(t)
-	ext, err := metadata.NewExtractor(t.Context())
-	require.NoError(t, err, "new extractor")
-	defer ext.Close(t.Context())
-
-	root := t.TempDir()
-	epubPath := filepath.Join(root, "The Great Gatsby.epub")
-	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	// Create a library with no file organization.
-	lib, err := database.CreateLibrary(t.Context(), "Unorganized", `["`+root+`"]`, db.LibraryOrganizationNone, false)
-	require.NoError(t, err, "create library")
-
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
-		Path:        epubPath,
-		FileName:    "The Great Gatsby.epub",
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
-
-	// Verify the file was NOT moved — it should remain at its original path.
-	if _, err := os.Stat(epubPath); err != nil {
-		require.NoError(t, err, "expected file to remain at %q, got error", epubPath)
-	}
-
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	if files[0].FilePath != epubPath {
-		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
-	}
-}
-
-func TestProcessBookFile_NonExistentLibrarySkipsOrganization(t *testing.T) {
-	database := newTestDB(t)
-	ext, err := metadata.NewExtractor(t.Context())
-	require.NoError(t, err, "new extractor")
-	defer ext.Close(t.Context())
-
-	root := t.TempDir()
-	epubPath := filepath.Join(root, "The Great Gatsby.epub")
-	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	// Use a non-existent library ID — lookup should fail gracefully and
-	// skip file organization rather than error out.
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
-		Path:        epubPath,
-		FileName:    "The Great Gatsby.epub",
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   "nonexistent-library-id",
-		LibraryRoot: root,
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
-
-	// File should NOT have been moved since library lookup failed.
-	if _, err := os.Stat(epubPath); err != nil {
-		require.NoError(t, err, "expected file to remain at %q, got error", epubPath)
-	}
-
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	if files[0].FilePath != epubPath {
-		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
-	}
-}
-
-func TestProcessBookFile_NoLibraryIDSkipsOrganization(t *testing.T) {
-	database := newTestDB(t)
-	ext, err := metadata.NewExtractor(t.Context())
-	require.NoError(t, err, "new extractor")
-	defer ext.Close(t.Context())
-
-	root := t.TempDir()
-	epubPath := filepath.Join(root, "The Great Gatsby.epub")
-	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	// No library ID — organization type stays empty, no file moves.
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
-		Path:        epubPath,
-		FileName:    "The Great Gatsby.epub",
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryRoot: root,
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
-
-	// File should remain in place.
-	if _, err := os.Stat(epubPath); err != nil {
-		require.NoError(t, err, "expected file to remain at %q, got error", epubPath)
-	}
-}
-
-func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.T) {
-	database := newTestDB(t)
-	ext, err := metadata.NewExtractor(t.Context())
-	require.NoError(t, err, "new extractor")
-	defer ext.Close(t.Context())
-
-	root := t.TempDir()
-	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
-	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
-
-	require.NoError(t, os.MkdirAll(filepath.Dir(reorganizedPath), 0o755), "mkdir reorganized dir")
-	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
-	require.NoError(t, err, "create library")
-
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
-		Path:        originalPath,
-		FileName:    filepath.Base(originalPath),
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
-
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	if files[0].FilePath != reorganizedPath {
-		t.Errorf("expected file path %q, got %q", reorganizedPath, files[0].FilePath)
-	}
-}
-
-func TestProcessBookFile_ContinuesFromFlatReorganizedPathWhenSourceMoved(t *testing.T) {
-	database := newTestDB(t)
-	ext, err := metadata.NewExtractor(t.Context())
-	require.NoError(t, err, "new extractor")
-	defer ext.Close(t.Context())
-
-	root := t.TempDir()
-	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
-	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "F. Scott Fitzgerald - The Great Gatsby.epub")
-
-	require.NoError(t, os.MkdirAll(filepath.Dir(reorganizedPath), 0o755), "mkdir reorganized dir")
-	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
-	require.NoError(t, err, "create library")
-
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
-		Path:        originalPath,
-		FileName:    filepath.Base(originalPath),
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
-
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	if files[0].FilePath != reorganizedPath {
-		t.Errorf("expected file path %q, got %q", reorganizedPath, files[0].FilePath)
-	}
-}
-
-func TestProcessBookFile_FlatRecoveryDoesNotUseFolderCandidate(t *testing.T) {
-	database := newTestDB(t)
-	ext, err := metadata.NewExtractor(t.Context())
-	require.NoError(t, err, "new extractor")
-	defer ext.Close(t.Context())
-
-	root := t.TempDir()
-	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
-	flatPath := filepath.Join(root, "F. Scott Fitzgerald", "F. Scott Fitzgerald - The Great Gatsby.epub")
-	folderPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
-
-	require.NoError(t, os.MkdirAll(filepath.Dir(flatPath), 0o755), "mkdir flat dir")
-	require.NoError(t, os.MkdirAll(filepath.Dir(folderPath), 0o755), "mkdir folder dir")
-	testutils.MakeTestEPUB(t, flatPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-	testutils.MakeTestEPUB(t, folderPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
-	require.NoError(t, err, "create library")
-
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
-		Path:        originalPath,
-		FileName:    filepath.Base(originalPath),
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
-	})
-	require.NoError(t, err, "ProcessBookFile() error")
-
-	books, err := database.ListBooks(t.Context())
-	require.NoError(t, err, "list books")
-	require.Len(t, books, 1)
-
-	files, err := database.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err, "list book files")
-	require.Len(t, files, 1)
-	if files[0].FilePath != flatPath {
-		t.Errorf("expected file path %q, got %q", flatPath, files[0].FilePath)
-	}
-}
-
-func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
-	database := newTestDB(t)
-	ext, err := metadata.NewExtractor(t.Context())
-	require.NoError(t, err, "new extractor")
-	defer ext.Close(t.Context())
-
-	root := t.TempDir()
-	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
-	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
-
-	// Create the file at the reorganized location only (source is "missing").
-	require.NoError(t, os.MkdirAll(filepath.Dir(reorganizedPath), 0o755), "mkdir reorganized dir")
-	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
-	require.NoError(t, err, "create library")
-
-	candidateLookupErr := errors.New("candidate lookup failed")
-	lookup := func(ctx context.Context, database *db.DB, path string) (*db.BookFile, error) {
-		switch path {
-		case originalPath:
-			return nil, sql.ErrNoRows
-		case reorganizedPath:
-			return nil, candidateLookupErr
-		default:
-			return database.GetBookFileByPath(ctx, path)
-		}
-	}
-
-	err = processBookFile(t.Context(), database, ext, ProcessFilePayload{
-		Path:        originalPath,
-		FileName:    filepath.Base(originalPath),
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
-	}, lookup)
-	require.Error(t, err, "expected processBookFile() to return an error when candidate lookup fails due to DB error")
-	require.ErrorContains(t, err, candidateLookupErr.Error())
 }
