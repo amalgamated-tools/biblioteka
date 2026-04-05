@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setupBookFileHandler(t *testing.T) (*BookFileHandler, string) {
@@ -12,9 +14,7 @@ func setupBookFileHandler(t *testing.T) (*BookFileHandler, string) {
 	d := newTestDB(t)
 	h := &BookFileHandler{DB: d}
 	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	return h, user.ID
 }
 
@@ -22,13 +22,9 @@ func TestGetBookFile_Handler(t *testing.T) {
 	h, userID := setupBookFileHandler(t)
 
 	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
-	if err != nil {
-		t.Fatalf("create book file: %v", err)
-	}
+	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/book-files/"+bf.ID, nil)
 	r = withUserID(r, userID)
@@ -41,9 +37,7 @@ func TestGetBookFile_Handler(t *testing.T) {
 	}
 
 	var dto bookFileDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.FileName != "gunslinger.epub" {
 		t.Errorf("file_name = %q, want %q", dto.FileName, "gunslinger.epub")
 	}
@@ -67,13 +61,9 @@ func TestDeleteBookFile_Handler(t *testing.T) {
 	h, userID := setupBookFileHandler(t)
 
 	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
-	if err != nil {
-		t.Fatalf("create book file: %v", err)
-	}
+	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/book-files/"+bf.ID, nil)
 	r = withUserID(r, userID)

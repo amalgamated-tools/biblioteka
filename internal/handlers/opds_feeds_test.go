@@ -10,6 +10,8 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
+
+	"github.com/stretchr/testify/require"
 )
 
 // --- Root feed ---
@@ -21,9 +23,7 @@ func TestRootFeed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
 		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
 	}
@@ -34,9 +34,7 @@ func TestRootFeed(t *testing.T) {
 	}
 
 	// Root feed has 4 navigation entries.
-	if len(feed.Entries) != 4 {
-		t.Fatalf("entries = %d, want 4", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 4)
 	titles := []string{"All Books", "Recent Books", "Authors", "Series"}
 	for i, want := range titles {
 		if feed.Entries[i].Title != want {
@@ -89,9 +87,7 @@ func TestAllBooks_Empty(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
 		t.Errorf("content-type = %q, want %q", ct, opdspkg.AcqContentType)
 	}
@@ -110,19 +106,17 @@ func TestAllBooks_WithBooks(t *testing.T) {
 	ctx := t.Context()
 
 	if _, err := h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book Alpha: %v", err)
+		require.NoError(t, err, "create book Alpha")
 	}
 	if _, err := h.DB.CreateBook(ctx, "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book Beta: %v", err)
+		require.NoError(t, err, "create book Beta")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 2 {
@@ -140,24 +134,18 @@ func TestAllBooks_WithDescription(t *testing.T) {
 
 	desc := "A great book"
 	if _, err := h.DB.CreateBook(ctx, "Alpha", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 1 {
-		t.Fatalf("entries = %d, want 1", len(feed.Entries))
-	}
-	if feed.Entries[0].Content == nil {
-		t.Fatal("expected content, got nil")
-	}
+	require.Len(t, feed.Entries, 1)
+	require.NotNil(t, feed.Entries[0].Content)
 	if feed.Entries[0].Content.Value != "A great book" {
 		t.Errorf("content = %q, want %q", feed.Entries[0].Content.Value, "A great book")
 	}
@@ -168,33 +156,21 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	ctx := t.Context()
 
 	book, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	author, err := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
-	if err := h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}); err != nil {
-		t.Fatalf("set book authors: %v", err)
-	}
+	require.NoError(t, err, "create author")
+	require.NoError(t, h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}), "set book authors")
 	_, err = h.DB.CreateBookFile(ctx, book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
-	if err != nil {
-		t.Fatalf("create book file: %v", err)
-	}
+	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 1 {
-		t.Fatalf("entries = %d, want 1", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 1)
 
 	entry := feed.Entries[0]
 	if len(entry.Authors) != 1 || entry.Authors[0].Name != "Stephen King" {
@@ -202,9 +178,7 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	}
 
 	acqLink := findLink(entry.Links, opdspkg.RelAcquisition)
-	if acqLink == nil {
-		t.Fatal("missing acquisition link")
-	}
+	require.NotNil(t, acqLink)
 	if acqLink.Type != "application/epub+zip" {
 		t.Errorf("acquisition type = %q, want %q", acqLink.Type, "application/epub+zip")
 	}
@@ -217,19 +191,17 @@ func TestRecentBooks(t *testing.T) {
 	ctx := t.Context()
 
 	if _, err := h.DB.CreateBook(ctx, "First", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book First: %v", err)
+		require.NoError(t, err, "create book First")
 	}
 	if _, err := h.DB.CreateBook(ctx, "Second", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book Second: %v", err)
+		require.NoError(t, err, "create book Second")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/recent", nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if feed.Title != "Recent Books" {
@@ -249,9 +221,7 @@ func TestAuthorsFeed_Empty(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
 		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
 	}
@@ -270,19 +240,17 @@ func TestAuthorsFeed_WithAuthors(t *testing.T) {
 	ctx := t.Context()
 
 	if _, err := h.DB.CreateAuthor(ctx, "Brandon Sanderson", nil, nil, nil, nil); err != nil {
-		t.Fatalf("create author: %v", err)
+		require.NoError(t, err, "create author")
 	}
 	if _, err := h.DB.CreateAuthor(ctx, "Anne McCaffrey", nil, nil, nil, nil); err != nil {
-		t.Fatalf("create author: %v", err)
+		require.NoError(t, err, "create author")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors", nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 2 {
@@ -304,32 +272,22 @@ func TestAuthorBooks(t *testing.T) {
 	ctx := t.Context()
 
 	author, err := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	require.NoError(t, err, "create author")
 	book, err := h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
-	if err := h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}); err != nil {
-		t.Fatalf("set book authors: %v", err)
-	}
+	require.NoError(t, err, "create book")
+	require.NoError(t, h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}), "set book authors")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors/"+author.ID, nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if feed.Title != "Books by Stephen King" {
 		t.Errorf("title = %q, want %q", feed.Title, "Books by Stephen King")
 	}
-	if len(feed.Entries) != 1 {
-		t.Fatalf("entries = %d, want 1", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 1)
 	if feed.Entries[0].Title != "The Shining" {
 		t.Errorf("entry title = %q, want %q", feed.Entries[0].Title, "The Shining")
 	}
@@ -359,9 +317,7 @@ func TestSeriesFeed_Empty(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
 		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
 	}
@@ -377,19 +333,17 @@ func TestSeriesFeed_WithSeries(t *testing.T) {
 	ctx := t.Context()
 
 	if _, err := h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil); err != nil {
-		t.Fatalf("create series: %v", err)
+		require.NoError(t, err, "create series")
 	}
 	if _, err := h.DB.CreateSeries(ctx, "Discworld", nil, nil, nil); err != nil {
-		t.Fatalf("create series: %v", err)
+		require.NoError(t, err, "create series")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series", nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 2 {
@@ -404,33 +358,23 @@ func TestSeriesBooks(t *testing.T) {
 	ctx := t.Context()
 
 	series, err := h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create series: %v", err)
-	}
+	require.NoError(t, err, "create series")
 	book, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	pos := 1.0
-	if err := h.DB.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}}); err != nil {
-		t.Fatalf("set book series: %v", err)
-	}
+	require.NoError(t, h.DB.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}}), "set book series")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series/"+series.ID, nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if feed.Title != "The Dark Tower" {
 		t.Errorf("title = %q, want %q", feed.Title, "The Dark Tower")
 	}
-	if len(feed.Entries) != 1 {
-		t.Fatalf("entries = %d, want 1", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 1)
 	if feed.Entries[0].Title != "The Gunslinger" {
 		t.Errorf("entry title = %q, want %q", feed.Entries[0].Title, "The Gunslinger")
 	}
@@ -458,22 +402,20 @@ func TestSearch_WithResults(t *testing.T) {
 	ctx := t.Context()
 
 	if _, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 	if _, err := h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 	if _, err := h.DB.CreateBook(ctx, "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=The", nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 2 {
@@ -491,9 +433,7 @@ func TestSearch_NoResults(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 0 {
@@ -506,10 +446,10 @@ func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	ctx := t.Context()
 
 	if _, err := h.DB.CreateBook(ctx, "100% Pure", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 	if _, err := h.DB.CreateBook(ctx, "Other Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	// Search for "%" should not match everything due to LIKE wildcard escaping.
@@ -517,9 +457,7 @@ func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 1 {
@@ -534,15 +472,11 @@ func TestSearch_URLEncodesQueryInLinks(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	selfLink := findLink(feed.Links, opdspkg.RelSelf)
-	if selfLink == nil {
-		t.Fatal("missing self link")
-	}
+	require.NotNil(t, selfLink)
 	// The query should be URL-encoded in the self link.
 	if strings.Contains(selfLink.Href, "q=foo bar") {
 		t.Errorf("self link has unencoded query: %q", selfLink.Href)
@@ -558,9 +492,7 @@ func TestOpenSearchDescription(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != opdspkg.SearchType {
 		t.Errorf("content-type = %q, want %q", ct, opdspkg.SearchType)
 	}
@@ -580,29 +512,21 @@ func TestDownload_Success(t *testing.T) {
 	ctx := t.Context()
 
 	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	// Create a temp file to serve.
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.epub")
-	if err := os.WriteFile(filePath, []byte("fake epub content"), 0o644); err != nil {
-		t.Fatalf("write temp file: %v", err)
-	}
+	require.NoError(t, os.WriteFile(filePath, []byte("fake epub content"), 0o644), "write temp file")
 
 	bf, err := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 17, nil, filePath)
-	if err != nil {
-		t.Fatalf("create book file: %v", err)
-	}
+	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/download/"+bf.ID, nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != "application/epub+zip" {
 		t.Errorf("content-type = %q, want %q", ct, "application/epub+zip")
 	}
@@ -631,13 +555,9 @@ func TestDownload_FileMissing(t *testing.T) {
 	ctx := t.Context()
 
 	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	bf, err := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 100, nil, "/nonexistent/path.epub")
-	if err != nil {
-		t.Fatalf("create book file: %v", err)
-	}
+	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/download/"+bf.ID, nil)
 	w := httptest.NewRecorder()
@@ -653,28 +573,20 @@ func TestDownload_UnknownFileType(t *testing.T) {
 	ctx := t.Context()
 
 	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.xyz")
-	if err := os.WriteFile(filePath, []byte("data"), 0o644); err != nil {
-		t.Fatalf("write temp file: %v", err)
-	}
+	require.NoError(t, os.WriteFile(filePath, []byte("data"), 0o644), "write temp file")
 
 	bf, err := h.DB.CreateBookFile(ctx, book.ID, "xyz", "test.xyz", 4, nil, filePath)
-	if err != nil {
-		t.Fatalf("create book file: %v", err)
-	}
+	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/download/"+bf.ID, nil)
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != "application/octet-stream" {
 		t.Errorf("content-type = %q, want %q", ct, "application/octet-stream")
 	}

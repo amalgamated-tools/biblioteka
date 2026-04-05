@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
+
+	"github.com/stretchr/testify/require"
 )
 
 // --- XML marshaling (opds_types.go) ---
@@ -22,9 +24,7 @@ func TestOPDSFeed_XMLMarshal(t *testing.T) {
 	}
 
 	data, err := xml.Marshal(feed)
-	if err != nil {
-		t.Fatalf("xml.Marshal: %v", err)
-	}
+	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
 	// Element name must be "feed"
@@ -57,9 +57,7 @@ func TestOPDSFeed_XMLMarshal_OmitEmptyOPDSNS(t *testing.T) {
 	}
 
 	data, err := xml.Marshal(feed)
-	if err != nil {
-		t.Fatalf("xml.Marshal: %v", err)
-	}
+	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
 	// When XMLNSOPDS is empty it should be omitted (omitempty)
@@ -76,9 +74,7 @@ func TestOPDSLink_XMLMarshal(t *testing.T) {
 	}
 
 	data, err := xml.Marshal(link)
-	if err != nil {
-		t.Fatalf("xml.Marshal: %v", err)
-	}
+	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
 	if !strings.Contains(s, `rel="self"`) {
@@ -99,9 +95,7 @@ func TestOPDSContent_XMLMarshal(t *testing.T) {
 	}
 
 	data, err := xml.Marshal(content)
-	if err != nil {
-		t.Fatalf("xml.Marshal: %v", err)
-	}
+	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
 	if !strings.Contains(s, `type="text"`) {
@@ -129,9 +123,7 @@ func TestOPDSEntry_XMLMarshal_Full(t *testing.T) {
 	}
 
 	data, err := xml.Marshal(entry)
-	if err != nil {
-		t.Fatalf("xml.Marshal: %v", err)
-	}
+	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
 	if !strings.Contains(s, "<title>My Book</title>") {
@@ -157,9 +149,7 @@ func TestOPDSEntry_XMLMarshal_NoContent(t *testing.T) {
 	}
 
 	data, err := xml.Marshal(entry)
-	if err != nil {
-		t.Fatalf("xml.Marshal: %v", err)
-	}
+	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
 	// Content should be absent when nil (omitempty)
@@ -184,9 +174,7 @@ func TestOPDSFeed_XMLMarshal_LinksAndEntries(t *testing.T) {
 	}
 
 	data, err := xml.Marshal(feed)
-	if err != nil {
-		t.Fatalf("xml.Marshal: %v", err)
-	}
+	require.NoError(t, err, "xml.Marshal")
 	s := string(data)
 
 	if !strings.Contains(s, `rel="self"`) {

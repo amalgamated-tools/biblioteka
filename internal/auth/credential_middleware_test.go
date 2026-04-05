@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestNormalizeUsername(t *testing.T) {
@@ -47,9 +49,7 @@ func TestLookupByUsername_Found(t *testing.T) {
 	lookup := lookupByUsername(getFn, extract)
 
 	userID, hash, err := lookup(t.Context(), "alice")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if userID != "user-1" {
 		t.Errorf("userID = %q, want %q", userID, "user-1")
 	}
@@ -67,9 +67,7 @@ func TestLookupByUsername_NotFound(t *testing.T) {
 	lookup := lookupByUsername(getFn, func(*result) (string, string) { return "", "" })
 
 	_, _, err := lookup(t.Context(), "unknown")
-	if err == nil {
-		t.Fatal("expected error for unknown user, got nil")
-	}
+	require.Error(t, err, "expected error for unknown user, got nil")
 }
 
 func TestJSONErrorWriter(t *testing.T) {
