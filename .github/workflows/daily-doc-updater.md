@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
   pull-requests: read
 
 tracker-id: daily-doc-updater
@@ -26,6 +25,11 @@ safe-outputs:
     reviewers: [copilot]
     draft: false
     auto-merge: true
+  create-issue:
+    labels: [documentation, automation]
+    max: 1
+  add-comment:
+    max: 1
 
 tools:
   cache-memory: true
@@ -158,8 +162,8 @@ Before creating a pull request, check how many PRs the daily-doc-updater has alr
 2. **If the count is ≥ 12**, raise a threshold alert:
    - First, **check for an existing alert issue** for today by searching:
      `repo:${{ github.repository }} is:issue is:open label:automation label:documentation "daily-doc-updater volume alert" in:title created:>=YYYY-MM-DD` (replace YYYY-MM-DD with today's date in UTC)
-   - **If an existing alert issue is found**, add a comment to it with the updated count instead of creating a new issue.
-   - **If no existing alert issue is found**, create a GitHub issue titled `⚠️ daily-doc-updater volume alert: ≥12 PRs opened today (YYYY-MM-DD)` with body:
+   - **If an existing alert issue is found**, use the `add_comment` safe-outputs MCP tool to add a comment with the updated count.
+   - **If no existing alert issue is found**, use the `create_issue` safe-outputs MCP tool to create a GitHub issue titled `⚠️ daily-doc-updater volume alert: ≥12 PRs opened today (YYYY-MM-DD)` with body:
      ```
      The daily-doc-updater has opened 12 or more pull requests today, which exceeds the monitoring threshold.
 
