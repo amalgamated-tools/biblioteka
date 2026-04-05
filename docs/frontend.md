@@ -429,6 +429,7 @@ Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs
 | `loading` | `boolean` | `true` while `load()` is in progress |
 | `error` | `string \| null` | Load or delete error message; `null` when no error is present |
 | `pendingDelete` | `{ id: string; name: string } \| null` | The item currently awaiting confirmation; `null` when no delete is in progress |
+| `copy` | `CopyTimeoutState` | Integrated copy-to-clipboard feedback state; use `tokenList.copy.set(id)` after a clipboard write, check `tokenList.copy.copiedId` to drive per-row "Copied!" feedback, and call `tokenList.copy.clear()` from `onDestroy` |
 
 **Methods:**
 
@@ -446,9 +447,10 @@ Components that render a delete confirmation dialog should add `data-delete-trig
 
 ```svelte
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { TokenListState } from "../lib/tokenList.svelte";
   import { listAPIKeys, deleteAPIKey } from "../lib/api";
+  import { copyToClipboard } from "../lib/clipboard";
   import type { APIKey } from "../types";
 
   const tokenList = new TokenListState<APIKey>({
@@ -459,6 +461,13 @@ Components that render a delete confirmation dialog should add `data-delete-trig
   });
 
   onMount(() => void tokenList.load());
+  // Clear the copy timer when the component unmounts to prevent leaks
+  onDestroy(() => tokenList.copy.clear());
+
+  async function handleCopy(id: string, value: string) {
+    await copyToClipboard(value);
+    tokenList.copy.set(id);
+  }
 </script>
 
 {#if tokenList.error}
@@ -466,6 +475,9 @@ Components that render a delete confirmation dialog should add `data-delete-trig
 {/if}
 
 {#each tokenList.items as key}
+  <button onclick={() => void handleCopy(key.id, key.token)}>
+    {tokenList.copy.copiedId === key.id ? "Copied!" : "Copy"}
+  </button>
   <button
     data-delete-trigger={key.id}
     onclick={() => tokenList.handleDelete(key.id, key.name)}
@@ -492,7 +504,7 @@ Components that render a delete confirmation dialog should add `data-delete-trig
 {/if}
 ```
 
-Use `TokenListState` whenever a settings tab manages a list of user-owned tokens. Do **not** re-implement the load/delete/confirmation flow inline in components.
+Use `TokenListState` whenever a settings tab manages a list of user-owned tokens. Do **not** re-implement the load/delete/confirmation flow inline in components. The `copy` field is already composed in — there is no need to create a separate `CopyTimeoutState` for per-row clipboard feedback.
 
 ### `copyTimeout.svelte.ts`
 
@@ -561,6 +573,22 @@ Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback af
 Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping shared/exported types in one file gives every component, store, and the API modules a single import path, while individual sub-modules under `frontend/src/lib/api/` may still define small module-local helper types for their own internal use.
 
 Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to `types.ts`.
+
+### Nullable optional fields in input types
+
+Input interfaces (e.g. `AuthorInput`, `SeriesInput`, `BookInput`, `BookFileInput`) use `?: string | null` for optional nullable fields, mirroring their counterpart response types. The `?` marks the field as omittable (no key in the JSON body), while `| null` allows callers to explicitly send `null` to clear a field:
+
+```ts
+// Omit the field — Go backend treats it as no-op (nil pointer unchanged)
+const input: AuthorInput = { name: "Ursula K. Le Guin" };
+
+// Set to null — Go backend treats it as "clear this field" (nil pointer → NULL in DB)
+const input: AuthorInput = { name: "Ursula K. Le Guin", goodreads_id: null };
+```
+
+> **Note:** The Go backend currently treats key-omission and `null` identically (both map to a nil `*string`). The `?: string | null` typing makes the intent explicit and keeps the door open for future PATCH semantics where `null` ("clear") must be distinguishable from `undefined` ("no-op").
+
+When adding a new input interface, always match the nullability of the corresponding response interface — if the response field is `string | null`, the input field should be `?: string | null`.
 
 ## Adding a new API function
 
