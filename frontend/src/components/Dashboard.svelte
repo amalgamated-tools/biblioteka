@@ -52,7 +52,7 @@
           >
             Get started with Biblioteka
           </h2>
-          <p class="text-ink-400 dark:text-ink-400 mb-5 leading-relaxed">
+          <p class="text-ink-500 dark:text-ink-300 mb-5 leading-relaxed">
             To begin managing your books, add a library by pointing it to one or
             more folders on your system. Biblioteka will organize the books it
             finds using the Book Per Folder layout.
@@ -75,7 +75,7 @@
           class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all"
         >
           <dl class="flex flex-col gap-2">
-            <dt class="text-sm font-medium text-ink-400 dark:text-ink-400">
+            <dt class="text-sm font-medium text-ink-500 dark:text-ink-300">
               {label}
             </dt>
             <dd
@@ -96,7 +96,7 @@
       >
         Welcome to Biblioteka
       </h2>
-      <p class="text-ink-400 dark:text-ink-400 leading-relaxed">
+      <p class="text-ink-500 dark:text-ink-300 leading-relaxed">
         Your personal book management dashboard. Start by adding books to your
         library.
       </p>

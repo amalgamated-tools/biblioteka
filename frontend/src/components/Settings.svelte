@@ -94,7 +94,7 @@
     >
       Settings
     </h1>
-    <p class="text-sm text-ink-400 dark:text-ink-400">
+    <p class="text-sm text-ink-500 dark:text-ink-300">
       Manage your account and preferences
     </p>
   </div>
@@ -113,7 +113,7 @@
             aria-current={isActive ? "page" : undefined}
             class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isActive
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-ink-800'}"
           >
             <Icon class="w-5 h-5" aria-hidden="true" />
             {tab.label}
@@ -123,7 +123,7 @@
           <div class="hidden sm:flex items-center gap-2 px-4 pt-3 pb-1">
             <hr class="flex-1 border-ink-200 dark:border-ink-700" />
             <span
-              class="text-xs font-medium uppercase text-ink-400 dark:text-ink-500"
+              class="text-xs font-medium uppercase text-ink-500 dark:text-ink-300"
               >Admin</span
             >
             <hr class="flex-1 border-ink-200 dark:border-ink-700" />
@@ -139,7 +139,7 @@
               aria-current={isActive ? "page" : undefined}
               class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isActive
                 ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-                : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+                : 'text-ink-500 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-ink-800'}"
             >
               <Icon class="w-5 h-5" aria-hidden="true" />
               {tab.label}
