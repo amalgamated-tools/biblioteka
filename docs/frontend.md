@@ -24,7 +24,7 @@ frontend/
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
       Books.svelte        Book listing and detail view; reads `initialOffset` from the URL hash query string (`#books?offset=48`) and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
-      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise shows a three-card stats grid (Total Books, Libraries, Currently Reading); each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
+      Dashboard.svelte    Home screen; shows an empty-state onboarding card when loading has completed and no libraries exist; otherwise renders a three-card stats grid (Total Books, Libraries, Currently Reading) plus a "Welcome to Biblioteka" prose panel; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
@@ -429,6 +429,7 @@ Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs
 | `loading` | `boolean` | `true` while `load()` is in progress |
 | `error` | `string \| null` | Load or delete error message; `null` when no error is present |
 | `pendingDelete` | `{ id: string; name: string } \| null` | The item currently awaiting confirmation; `null` when no delete is in progress |
+| `copy` | `CopyTimeoutState` | Integrated copy-to-clipboard feedback state; use `tokenList.copy.set(id)` after a clipboard write, check `tokenList.copy.copiedId` to drive per-row "Copied!" feedback, and call `tokenList.copy.clear()` from `onDestroy` |
 
 **Methods:**
 
@@ -446,9 +447,10 @@ Components that render a delete confirmation dialog should add `data-delete-trig
 
 ```svelte
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { TokenListState } from "../lib/tokenList.svelte";
   import { listAPIKeys, deleteAPIKey } from "../lib/api";
+  import { copyToClipboard } from "../lib/clipboard";
   import type { APIKey } from "../types";
 
   const tokenList = new TokenListState<APIKey>({
@@ -459,6 +461,18 @@ Components that render a delete confirmation dialog should add `data-delete-trig
   });
 
   onMount(() => void tokenList.load());
+  // Clear the copy timer when the component unmounts to prevent leaks
+  onDestroy(() => tokenList.copy.clear());
+
+  async function handleCopy(id: string, value: string) {
+    try {
+      await copyToClipboard(value);
+      tokenList.copy.set(id);
+    } catch (err) {
+      tokenList.error =
+        err instanceof Error ? err.message : "Failed to copy to clipboard";
+    }
+  }
 </script>
 
 {#if tokenList.error}
@@ -466,6 +480,9 @@ Components that render a delete confirmation dialog should add `data-delete-trig
 {/if}
 
 {#each tokenList.items as key}
+  <button onclick={() => void handleCopy(key.id, key.key_prefix)}>
+    {tokenList.copy.copiedId === key.id ? "Copied!" : "Copy"}
+  </button>
   <button
     data-delete-trigger={key.id}
     onclick={() => tokenList.handleDelete(key.id, key.name)}
@@ -492,7 +509,7 @@ Components that render a delete confirmation dialog should add `data-delete-trig
 {/if}
 ```
 
-Use `TokenListState` whenever a settings tab manages a list of user-owned tokens. Do **not** re-implement the load/delete/confirmation flow inline in components.
+Use `TokenListState` whenever a settings tab manages a list of user-owned tokens. Do **not** re-implement the load/delete/confirmation flow inline in components. The `copy` field is already composed in — there is no need to create a separate `CopyTimeoutState` for per-row clipboard feedback.
 
 ### `copyTimeout.svelte.ts`
 
@@ -561,6 +578,20 @@ Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback af
 Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping shared/exported types in one file gives every component, store, and the API modules a single import path, while individual sub-modules under `frontend/src/lib/api/` may still define small module-local helper types for their own internal use.
 
 Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to `types.ts`.
+
+### Nullable optional fields in input types
+
+Input interfaces (e.g. `AuthorInput`, `SeriesInput`, `BookInput`, `BookFileInput`) use `?: string | null` for optional nullable fields, mirroring their counterpart response types. The current PUT update handlers decode both key-omission and explicit `null` into a nil `*string`, which writes `NULL` to the database column — there is no distinction between "leave unchanged" and "clear this field":
+
+```ts
+// Both of these result in goodreads_id being set to NULL in the database:
+const input: AuthorInput = { name: "Ursula K. Le Guin" };                       // key omitted
+const input: AuthorInput = { name: "Ursula K. Le Guin", goodreads_id: null };    // explicit null
+```
+
+> **Note:** The `?: string | null` typing mirrors the response type's nullability and keeps the door open for future PATCH-style handling where `undefined` ("no-op") would be distinguishable from `null` ("clear"). That distinction would require changes to the Go backend (e.g., a custom JSON unmarshaler or a wrapper type). Until then, omission and `null` behave identically.
+
+When adding a new input interface, always match the nullability of the corresponding response interface — if the response field is `string | null`, the input field should be `?: string | null`.
 
 ## Adding a new API function
 
