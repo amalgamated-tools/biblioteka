@@ -142,6 +142,6 @@ func (d *DB) FindOrCreateAuthor(ctx context.Context, name string) (*Author, erro
 // DeleteAuthor removes the author with the given ID. Returns sql.ErrNoRows if
 // no matching author exists.
 func (d *DB) DeleteAuthor(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "db: deleting author", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: deleting author", slog.String(otelkeys.AuthorID, id))
 	return d.execAffected(ctx, `DELETE FROM authors WHERE id = $1`, id)
 }
