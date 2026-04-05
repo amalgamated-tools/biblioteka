@@ -8,6 +8,12 @@
       libraryStore.load();
     }
   });
+
+  const stats = $derived([
+    { label: "Total Books", value: 0 },
+    { label: "Libraries", value: libraryStore.libraries.length },
+    { label: "Currently Reading", value: 0 },
+  ]);
 </script>
 
 <div>
@@ -58,48 +64,22 @@
     </div>
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5 stagger">
-      <div
-        class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all"
-      >
-        <dl class="flex flex-col gap-2">
-          <dt class="text-sm font-medium text-ink-400 dark:text-ink-400">
-            Total Books
-          </dt>
-          <dd
-            class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 m-0"
-          >
-            0
-          </dd>
-        </dl>
-      </div>
-      <div
-        class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all"
-      >
-        <dl class="flex flex-col gap-2">
-          <dt class="text-sm font-medium text-ink-400 dark:text-ink-400">
-            Libraries
-          </dt>
-          <dd
-            class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 m-0"
-          >
-            {libraryStore.libraries.length}
-          </dd>
-        </dl>
-      </div>
-      <div
-        class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all"
-      >
-        <dl class="flex flex-col gap-2">
-          <dt class="text-sm font-medium text-ink-400 dark:text-ink-400">
-            Currently Reading
-          </dt>
-          <dd
-            class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 m-0"
-          >
-            0
-          </dd>
-        </dl>
-      </div>
+      {#each stats as { label, value } (label)}
+        <div
+          class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all"
+        >
+          <dl class="flex flex-col gap-2">
+            <dt class="text-sm font-medium text-ink-400 dark:text-ink-400">
+              {label}
+            </dt>
+            <dd
+              class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 m-0"
+            >
+              {value}
+            </dd>
+          </dl>
+        </div>
+      {/each}
     </div>
 
     <div
