@@ -31,9 +31,7 @@ func TestSendBoot_DisabledByDefault(t *testing.T) {
 
 	SendBoot(context.Background(), "test-version")
 
-	if called {
-		t.Error("expected SendBoot to be a no-op when TELEMETRY_ENABLED is not set")
-	}
+	require.False(t, called, "expected SendBoot to be a no-op when TELEMETRY_ENABLED is not set")
 }
 
 // TestSendBoot_ExplicitlyDisabled verifies that SendBoot is a no-op when
@@ -50,9 +48,7 @@ func TestSendBoot_ExplicitlyDisabled(t *testing.T) {
 	t.Setenv(EnvTelemetryEndpoint, srv.URL)
 
 	SendBoot(context.Background(), "v1.2.3")
-	if called {
-		t.Error("expected SendBoot to skip HTTP call when TELEMETRY_ENABLED=false")
-	}
+	require.False(t, called, "expected SendBoot to skip HTTP call when TELEMETRY_ENABLED=false")
 }
 
 // TestSendBoot_Enabled verifies that SendBoot sends an HTTP request when
@@ -69,9 +65,7 @@ func TestSendBoot_Enabled(t *testing.T) {
 	t.Setenv(EnvTelemetryEndpoint, srv.URL)
 
 	SendBoot(context.Background(), "v1.0.0")
-	if !called {
-		t.Error("expected SendBoot to make an HTTP call when TELEMETRY_ENABLED=true")
-	}
+	require.True(t, called, "expected SendBoot to make an HTTP call when TELEMETRY_ENABLED=true")
 }
 
 // TestPayload_Fields verifies that the Payload struct has the expected JSON field names.
@@ -94,14 +88,8 @@ func TestPayload_Fields(t *testing.T) {
 
 	expectedKeys := []string{"application", "install_id", "version", "os", "arch", "timestamp"}
 	for _, key := range expectedKeys {
-		if _, ok := m[key]; !ok {
-			t.Errorf("expected JSON key %q not found in marshaled payload", key)
-		}
+		require.Contains(t, m, key, "expected JSON key %q not found in marshaled payload", key)
 	}
-	if m["application"] != "biblioteka" {
-		t.Errorf("application = %v, want biblioteka", m["application"])
-	}
-	if m["version"] != "v1.0.0" {
-		t.Errorf("version = %v, want v1.0.0", m["version"])
-	}
+	require.Equal(t, "biblioteka", m["application"], "application")
+	require.Equal(t, "v1.0.0", m["version"], "version")
 }

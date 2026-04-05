@@ -66,28 +66,16 @@ func TestOIDCLogin_Success(t *testing.T) {
 		switch c.Name {
 		case oidcStateCookieName:
 			foundState = true
-			if c.Value == "" {
-				t.Error("state cookie value is empty")
-			}
-			if !c.HttpOnly {
-				t.Error("state cookie should be HttpOnly")
-			}
+			require.NotEmpty(t, c.Value, "state cookie value is empty")
+			require.True(t, c.HttpOnly, "state cookie should be HttpOnly")
 		case oidcVerifierCookieName:
 			foundVerifier = true
-			if c.Value == "" {
-				t.Error("verifier cookie value is empty")
-			}
-			if !c.HttpOnly {
-				t.Error("verifier cookie should be HttpOnly")
-			}
+			require.NotEmpty(t, c.Value, "verifier cookie value is empty")
+			require.True(t, c.HttpOnly, "verifier cookie should be HttpOnly")
 		}
 	}
-	if !foundState {
-		t.Error("state cookie not set")
-	}
-	if !foundVerifier {
-		t.Error("verifier cookie not set")
-	}
+	require.True(t, foundState, "state cookie not set")
+	require.True(t, foundVerifier, "verifier cookie not set")
 }
 
 func TestOIDCLogin_MethodNotAllowed(t *testing.T) {
@@ -152,12 +140,8 @@ func TestOIDCCreateLinkNonce_StoresNonce(t *testing.T) {
 	h.linkNoncesMu.Unlock()
 
 	require.True(t, ok)
-	if entry.UserID != user.ID {
-		t.Errorf("expected UserID %q, got %q", user.ID, entry.UserID)
-	}
-	if time.Until(entry.ExpiresAt) <= 0 {
-		t.Error("nonce should not already be expired")
-	}
+	require.Equal(t, user.ID, entry.UserID)
+	require.True(t, time.Until(entry.ExpiresAt) > 0, "nonce should not already be expired")
 }
 
 // ---------------------------------------------------------------------------
@@ -202,9 +186,7 @@ func TestOIDCConsumeLinkNonce_ExpiredNonce(t *testing.T) {
 	h.linkNoncesMu.Lock()
 	_, exists := h.linkNonces["expired-nonce"]
 	h.linkNoncesMu.Unlock()
-	if exists {
-		t.Error("expired nonce should have been removed from the map")
-	}
+	require.False(t, exists, "expired nonce should have been removed from the map")
 }
 
 func TestOIDCConsumeLinkNonce_DoubleConsume(t *testing.T) {
@@ -310,36 +292,24 @@ func TestOIDCLink_Success(t *testing.T) {
 		case oidcStateCookieName:
 			foundState = true
 			stateValue = c.Value
-			if c.Value == "" {
-				t.Error("state cookie value is empty")
-			}
+			require.NotEmpty(t, c.Value, "state cookie value is empty")
 		case oidcVerifierCookieName:
 			foundVerifier = true
-			if c.Value == "" {
-				t.Error("verifier cookie value is empty")
-			}
+			require.NotEmpty(t, c.Value, "verifier cookie value is empty")
 		}
 	}
-	if !foundState {
-		t.Error("state cookie not set")
-	}
-	if !foundVerifier {
-		t.Error("verifier cookie not set")
-	}
+	require.True(t, foundState, "state cookie not set")
+	require.True(t, foundVerifier, "verifier cookie not set")
 
 	// Verify the state cookie contains a signed link state with the user ID
 	parsedUserID := h.parseLinkState(stateValue)
-	if parsedUserID != user.ID {
-		t.Errorf("expected parseLinkState to return %q, got %q", user.ID, parsedUserID)
-	}
+	require.Equal(t, user.ID, parsedUserID)
 
 	// Verify nonce was consumed
 	h.linkNoncesMu.Lock()
 	_, exists := h.linkNonces["good-nonce"]
 	h.linkNoncesMu.Unlock()
-	if exists {
-		t.Error("nonce should have been consumed")
-	}
+	require.False(t, exists, "nonce should have been consumed")
 }
 
 // ---------------------------------------------------------------------------
@@ -594,9 +564,7 @@ func TestOIDCCallback_EmailVerifiedTrue(t *testing.T) {
 	resp := w.Result()
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
-	if loc != "/?oidc_login=1" {
-		t.Errorf("expected redirect to /?oidc_login=1, got %q", loc)
-	}
+	require.Equal(t, "/?oidc_login=1", loc)
 }
 
 func TestOIDCCallback_EmailVerifiedFalse(t *testing.T) {
@@ -616,9 +584,7 @@ func TestOIDCCallback_EmailVerifiedFalse(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, w.Code)
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
-	if body["error"] != "OIDC email must be verified by the identity provider" {
-		t.Errorf("unexpected error message: %q", body["error"])
-	}
+	require.Equal(t, "OIDC email must be verified by the identity provider", body["error"])
 }
 
 func TestOIDCCallback_EmailVerifiedMissing(t *testing.T) {
@@ -663,7 +629,5 @@ func TestOIDCCallback_LinkFlowBypassesEmailVerified(t *testing.T) {
 	// Link flow should succeed (redirect) even without email_verified.
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
-	if loc != "/?oidc_linked=true" {
-		t.Errorf("expected redirect to /?oidc_linked=true, got %q", loc)
-	}
+	require.Equal(t, "/?oidc_linked=true", loc)
 }

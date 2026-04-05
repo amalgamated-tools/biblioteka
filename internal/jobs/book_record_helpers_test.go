@@ -27,9 +27,7 @@ func TestCreateBookRecord_BasicFields(t *testing.T) {
 	book, err := createBookRecord(t.Context(), database, "My Test Book", nil, p, p.Path)
 	require.NoError(t, err, "createBookRecord() error")
 	require.NotNil(t, book)
-	if book.Title != "My Test Book" {
-		t.Errorf("book.Title = %q, want %q", book.Title, "My Test Book")
-	}
+	require.Equal(t, "My Test Book", book.Title)
 }
 
 // TestCreateBookRecord_WithMetadata verifies that book metadata from
@@ -116,9 +114,7 @@ func TestLinkBookAssociations_Author(t *testing.T) {
 	authors, err := database.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "get book authors")
 	require.Len(t, authors, 1)
-	if authors[0].Name != "Terry Pratchett" {
-		t.Errorf("author name = %q, want Terry Pratchett", authors[0].Name)
-	}
+	require.Equal(t, "Terry Pratchett", authors[0].Name)
 }
 
 // TestLinkBookAssociations_EmptyAuthor verifies that no author is created when
@@ -140,9 +136,7 @@ func TestLinkBookAssociations_EmptyAuthor(t *testing.T) {
 
 	authors, err := database.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "get book authors")
-	if len(authors) != 0 {
-		t.Errorf("expected 0 authors, got %d", len(authors))
-	}
+	require.Empty(t, authors)
 }
 
 // TestLinkBookAssociations_Series verifies that a series is created and linked
@@ -170,9 +164,7 @@ func TestLinkBookAssociations_Series(t *testing.T) {
 	series, err := database.GetBookSeries(t.Context(), book.ID)
 	require.NoError(t, err, "get book series")
 	require.Len(t, series, 1)
-	if series[0].Series.Name != "Discworld" {
-		t.Errorf("series name = %q, want Discworld", series[0].Series.Name)
-	}
+	require.Equal(t, "Discworld", series[0].Series.Name)
 }
 
 // TestCreateBookRecord_NilMetadata verifies that createBookRecord works
@@ -191,11 +183,7 @@ func TestCreateBookRecord_NilMetadata(t *testing.T) {
 
 	book, err := createBookRecord(context.Background(), database, "Nil Meta Book", nil, p, p.Path)
 	require.NoError(t, err, "createBookRecord() error")
-	if book.Title != "Nil Meta Book" {
-		t.Errorf("book.Title = %q, want Nil Meta Book", book.Title)
-	}
+	require.Equal(t, "Nil Meta Book", book.Title)
 	// Without metadata, description, publisher, etc. should be nil.
-	if book.Description != nil {
-		t.Errorf("expected nil Description without metadata")
-	}
+	require.Nil(t, book.Description)
 }

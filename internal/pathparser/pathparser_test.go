@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseBookPath(t *testing.T) {
@@ -153,21 +155,13 @@ func TestParseBookPath(t *testing.T) {
 				lr = tt.libraryRoot
 			}
 			got := ParseBookPath(tt.filePath, lr)
-			if got.Author != tt.want.Author {
-				t.Errorf("Author: got %q, want %q", got.Author, tt.want.Author)
-			}
-			if got.Title != tt.want.Title {
-				t.Errorf("Title: got %q, want %q", got.Title, tt.want.Title)
-			}
-			if got.SeriesName != tt.want.SeriesName {
-				t.Errorf("SeriesName: got %q, want %q", got.SeriesName, tt.want.SeriesName)
-			}
-			if !float64PtrEqual(got.SeriesPosition, tt.want.SeriesPosition) {
-				t.Errorf("SeriesPosition: got %s, want %s", fmtF64(got.SeriesPosition), fmtF64(tt.want.SeriesPosition))
-			}
-			if !intPtrEqual(got.Year, tt.want.Year) {
-				t.Errorf("Year: got %s, want %s", fmtInt(got.Year), fmtInt(tt.want.Year))
-			}
+			require.Equal(t, tt.want.Author, got.Author, "Author")
+			require.Equal(t, tt.want.Title, got.Title, "Title")
+			require.Equal(t, tt.want.SeriesName, got.SeriesName, "SeriesName")
+			require.True(t, float64PtrEqual(got.SeriesPosition, tt.want.SeriesPosition),
+				"SeriesPosition: got %s, want %s", fmtF64(got.SeriesPosition), fmtF64(tt.want.SeriesPosition))
+			require.True(t, intPtrEqual(got.Year, tt.want.Year),
+				"Year: got %s, want %s", fmtInt(got.Year), fmtInt(tt.want.Year))
 		})
 	}
 }

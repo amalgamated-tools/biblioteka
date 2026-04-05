@@ -2,6 +2,8 @@ package exif
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestIsASIN verifies that isASIN correctly identifies alphanumeric strings.
@@ -29,9 +31,7 @@ func TestIsASIN(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := isASIN(tt.input)
-			if got != tt.want {
-				t.Errorf("isASIN(%q) = %v, want %v", tt.input, got, tt.want)
-			}
+			require.Equal(t, tt.want, got, "isASIN(%q)", tt.input)
 		})
 	}
 }
@@ -72,9 +72,7 @@ func TestIsLikelyImage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := isLikelyImage(tt.href, tt.mimeType)
-			if got != tt.want {
-				t.Errorf("isLikelyImage(%q, %q) = %v, want %v", tt.href, tt.mimeType, got, tt.want)
-			}
+			require.Equal(t, tt.want, got, "isLikelyImage(%q, %q)", tt.href, tt.mimeType)
 		})
 	}
 }
