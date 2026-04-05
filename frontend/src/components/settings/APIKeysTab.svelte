@@ -82,7 +82,7 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <KeyRound class="w-5 h-5 text-accent-600" />
+      <KeyRound class="w-5 h-5 text-accent-600" aria-hidden="true" />
       API Keys
     </h2>
     <p class="text-sm text-ink-500 dark:text-ink-400 mb-6">
@@ -138,7 +138,7 @@
               ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
               : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
           >
-            <Copy class="w-4 h-4" />
+            <Copy class="w-4 h-4" aria-hidden="true" />
             {newKeyCopyState.copiedId !== null ? "Copied" : "Copy"}
           </button>
         </div>
@@ -209,7 +209,7 @@
                       aria-label={`Delete API key ${key.name} (${key.key_prefix}...)`}
                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                     >
-                      <Trash2 class="w-3.5 h-3.5" />
+                      <Trash2 class="w-3.5 h-3.5" aria-hidden="true" />
                       Delete
                     </button>
                   {/if}
