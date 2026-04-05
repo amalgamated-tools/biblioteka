@@ -842,6 +842,15 @@ These workflows are triggered manually by posting a slash command in a PR or iss
 | `/nit` | PR comment or review comment | Performs a detailed nitpick review focused on style, naming, and best practices that linters miss. Posts up to 10 inline review comments and publishes a summary report as a GitHub Discussion. |
 | `/q` | Issue or PR comment | Answers questions about the codebase, analyzes agentic workflow performance, and can open pull requests with workflow optimizations. Also triggered by a 🚀 reaction on a comment. |
 
+#### Using the on-demand code reviewers
+
+Two workflows are available for requesting AI-assisted code review at any point during a pull request:
+
+- **`grumpy-reviewer`** (`/grumpy`) — takes a harsh, critical stance to surface edge cases and subtle bugs that are easy to overlook. Use it when you want a second opinion on correctness and robustness.
+- **`pr-nitpick-reviewer`** (`/nit`) — focuses on style, readability, and minor best-practice improvements. Use it when you want feedback on code polish after the logic is solid.
+
+Both are compiled and ready to use. To invoke either, post a comment on the PR containing only the slash command (e.g. `/grumpy` or `/nit`). The workflow will respond in-thread and post inline review comments on the changed files.
+
 ### On-demand workflows
 
 These workflows are triggered manually from the **Actions** tab in GitHub. They do not run automatically.

@@ -23,11 +23,14 @@ tools:
     mode: local
     toolsets: [repos, issues, pull_requests, discussions]
 timeout-minutes: 90
+safe-outputs:
+  create-discussion:
+    expires: 1d
+    category: "audits"
+    title-prefix: "[daily-team-evolution] "
+    max: 1
+    close-older-discussions: true
 imports:
-  - uses: shared/daily-audit-discussion.md
-    with:
-      title-prefix: "[daily-team-evolution] "
-      expires: 1d
   - shared/reporting.md
 source: github/gh-aw/.github/workflows/daily-team-evolution-insights.md@e2db3a4a4d844e8337b59db4bf5c1d8f9458778d
 ---
