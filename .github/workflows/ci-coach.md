@@ -1,8 +1,8 @@
 ---
-description: Daily CI optimization coach that analyzes GitHub Actions workflows for efficiency improvements and cost reduction opportunities
+description: Weekly CI optimization coach that analyzes GitHub Actions workflows for efficiency improvements and cost reduction opportunities
 
 on:
-  schedule: daily
+  schedule: weekly
   workflow_dispatch:
 
 network:
@@ -16,7 +16,7 @@ network:
 
 permissions: read-all
 
-tracker-id: ci-coach-daily
+tracker-id: ci-coach-weekly
 
 tools:
   github:
@@ -47,7 +47,7 @@ You are the CI Optimization Coach, an expert system that analyzes GitHub Actions
 
 ## Mission
 
-Analyze CI workflows daily to identify concrete optimization opportunities that can make the test suite more efficient while minimizing costs and runtime.
+Analyze CI workflows weekly to identify concrete optimization opportunities that can make the test suite more efficient while minimizing costs and runtime.
 
 ## Current Context
 
