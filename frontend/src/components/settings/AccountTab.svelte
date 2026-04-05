@@ -3,6 +3,7 @@
   import { authStore } from "../../stores/auth.svelte";
   import { changePassword, createOidcLinkNonce } from "../../lib/api";
   import { required, minLength, matches, validate } from "../../lib/validation";
+  import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
   import { Lock, Mail, Link } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -18,14 +19,11 @@
   let newPassword = $state("");
   let confirmPassword = $state("");
   let passwordError: string | null = $state(null);
-  let passwordSuccess = $state(false);
   let passwordLoading = $state(false);
   let linkSsoLoading = $state(false);
-  let successTimer: ReturnType<typeof setTimeout> | undefined;
+  const successTimer = new AutoDismissTimer();
 
-  onDestroy(() => {
-    if (successTimer) clearTimeout(successTimer);
-  });
+  onDestroy(() => successTimer.clear());
 
   async function handleLinkSso() {
     linkSsoLoading = true;
@@ -43,7 +41,7 @@
   async function handlePasswordChange(e: SubmitEvent) {
     e.preventDefault();
     passwordError = null;
-    passwordSuccess = false;
+    successTimer.clear();
 
     passwordError =
       validate(currentPassword, [required("Current password is required")]) ??
@@ -60,11 +58,10 @@
 
     try {
       await changePassword(currentPassword, newPassword);
-      passwordSuccess = true;
+      successTimer.show();
       currentPassword = "";
       newPassword = "";
       confirmPassword = "";
-      successTimer = setTimeout(() => (passwordSuccess = false), 3000);
     } catch (err) {
       passwordError =
         err instanceof Error ? err.message : "Failed to update password";
@@ -222,7 +219,7 @@
         <AlertBanner variant="error">{passwordError}</AlertBanner>
       {/if}
 
-      {#if passwordSuccess}
+      {#if successTimer.visible}
         <AlertBanner variant="success"
           >Password updated successfully</AlertBanner
         >

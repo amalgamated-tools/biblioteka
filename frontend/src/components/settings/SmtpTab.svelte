@@ -7,6 +7,7 @@
     testSmtpConfig,
   } from "../../lib/api";
   import { required, validate } from "../../lib/validation";
+  import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
   import { Mail, Send } from "lucide-svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
@@ -36,8 +37,8 @@
   let smtpTestMessage: string | null = $state(null);
   let smtpTestError: string | null = $state(null);
 
-  let smtpTestMessageTimeout: ReturnType<typeof setTimeout> | null = null;
-  let smtpTestErrorTimeout: ReturnType<typeof setTimeout> | null = null;
+  const testMessageTimer = new AutoDismissTimer(5000);
+  const testErrorTimer = new AutoDismissTimer(5000);
 
   let smtpSubmitLabel = $derived.by(() => {
     if (smtpLoading) return "Saving...";
@@ -60,14 +61,8 @@
   });
 
   onDestroy(() => {
-    if (smtpTestMessageTimeout !== null) {
-      clearTimeout(smtpTestMessageTimeout);
-      smtpTestMessageTimeout = null;
-    }
-    if (smtpTestErrorTimeout !== null) {
-      clearTimeout(smtpTestErrorTimeout);
-      smtpTestErrorTimeout = null;
-    }
+    testMessageTimer.clear();
+    testErrorTimer.clear();
   });
 
   async function handleSmtpSave(e: SubmitEvent) {
@@ -121,6 +116,8 @@
   }
 
   async function handleSmtpTest() {
+    testMessageTimer.clear();
+    testErrorTimer.clear();
     smtpTestMessage = null;
     smtpTestError = null;
     smtpTestLoading = true;
@@ -128,25 +125,11 @@
     try {
       const result = await testSmtpConfig();
       smtpTestMessage = result.message;
-      if (smtpTestMessageTimeout !== null) {
-        clearTimeout(smtpTestMessageTimeout);
-        smtpTestMessageTimeout = null;
-      }
-      smtpTestMessageTimeout = setTimeout(() => {
-        smtpTestMessage = null;
-        smtpTestMessageTimeout = null;
-      }, 5000);
+      testMessageTimer.show();
     } catch (err) {
       smtpTestError =
         err instanceof Error ? err.message : "Failed to send test email";
-      if (smtpTestErrorTimeout !== null) {
-        clearTimeout(smtpTestErrorTimeout);
-        smtpTestErrorTimeout = null;
-      }
-      smtpTestErrorTimeout = setTimeout(() => {
-        smtpTestError = null;
-        smtpTestErrorTimeout = null;
-      }, 5000);
+      testErrorTimer.show();
     } finally {
       smtpTestLoading = false;
     }
@@ -176,12 +159,12 @@
       {/if}
     </div>
 
-    {#if smtpTestMessage}
+    {#if testMessageTimer.visible && smtpTestMessage}
       <AlertBanner variant="success" class="mb-4">{smtpTestMessage}</AlertBanner
       >
     {/if}
 
-    {#if smtpTestError}
+    {#if testErrorTimer.visible && smtpTestError}
       <AlertBanner variant="error" class="mb-4">{smtpTestError}</AlertBanner>
     {/if}
 
