@@ -131,6 +131,16 @@ func (d *DB) LinkOIDCSubject(ctx context.Context, userID, oidcSubject string) er
 	return d.execAffected(ctx, `UPDATE users SET oidc_subject = $1 WHERE id = $2`, oidcSubject, userID)
 }
 
+// UpdateName updates the display name of a user.
+// Returns sql.ErrNoRows if the user does not exist.
+func (d *DB) UpdateName(ctx context.Context, userID, name string) (*User, error) {
+	slog.DebugContext(ctx, "db: updating user name", slog.String(otelkeys.UserID, userID))
+	return scanUser(d.QueryRowContext(ctx,
+		`UPDATE users SET name = $1 WHERE id = $2 RETURNING `+userColumns,
+		name, userID,
+	))
+}
+
 // UpdatePassword updates a user's password hash.
 func (d *DB) UpdatePassword(ctx context.Context, userID, newPasswordHash string) error {
 	slog.DebugContext(ctx, "db: updating password", slog.String(otelkeys.UserID, userID))

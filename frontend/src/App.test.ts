@@ -8,6 +8,7 @@ const authStoreMock = vi.hoisted(() => ({
   loading: false,
   user: {
     id: "1",
+    name: "Test User",
     email: "test@example.com",
     oidc_linked: false,
     is_admin: false,
@@ -144,6 +145,7 @@ describe("App", () => {
       authStoreMock.loading = false;
       authStoreMock.user = {
         id: "1",
+        name: "Test User",
         email: "test@example.com",
         oidc_linked: false,
         is_admin: false,

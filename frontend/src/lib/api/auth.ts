@@ -69,3 +69,7 @@ export async function changePassword(
     newPassword,
   });
 }
+
+export async function updateProfile(name: string): Promise<User> {
+  return request<User>("PUT", "/api/auth/me", { name });
+}
