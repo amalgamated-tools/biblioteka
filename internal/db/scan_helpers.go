@@ -2,14 +2,6 @@ package db
 
 import "database/sql"
 
-// rowScanner is the subset of *sql.Rows methods used by row-iteration helpers.
-// It is satisfied by *sql.Rows and by any compatible test double.
-type rowScanner interface {
-	Next() bool
-	Scan(...any) error
-	Err() error
-}
-
 // scanRow creates a new T, passes a pointer to it to fill (which returns the
 // destination pointers for row.Scan), and returns a pointer to the populated
 // value.
