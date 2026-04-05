@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  discussions: read
+  discussions: write
   actions: read
 engine: copilot
 tools:
@@ -13,18 +13,13 @@ tools:
   bash: true
   github:
     toolsets: [repos]
-safe-outputs:
-  create-discussion:
-    title-prefix: "[daily-nitpick] "
-    category: "audits"
-    max: 1
-    close-older-discussions: true
-    expires: 3d
 timeout-minutes: 30
 imports:
   - shared/mood.md
   - shared/reporting.md
-source: amalgamated-tools/biblioteka/.github/workflows/daily-nitpick-reviewer.md
+  - uses: shared/daily-audit-discussion.md
+    with:
+      title-prefix: "[daily-nitpick] "
 ---
 
 # Daily Codebase Nitpick Reviewer 🔍
@@ -62,7 +57,7 @@ If these files do not exist yet, treat this as the first run and proceed without
 `/tmp/gh-aw/cache-memory/nitpick-patterns.json`:
 ```json
 {
-  "patterns": [
+  "common_patterns": [
     {
       "id": "snake-case-in-go-struct",
       "description": "Go struct field uses snake_case instead of camelCase",
