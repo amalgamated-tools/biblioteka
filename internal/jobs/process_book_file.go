@@ -111,7 +111,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	linkBookAssociations(ctx, database, book.ID, authorName, p.LibraryID, pathInfo, filePath)
 
-	maybeEnqueueGoodreads(ctx, database, enqueuer, book.ID)
+	maybeEnqueueGoodreads(ctx, enqueuer, book.ID, p.UserID)
 
 	sidecar.WriteSidecarFiles(ctx, filePath, meta, title, authorName, organizationType)
 
@@ -139,25 +139,18 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 }
 
 // maybeEnqueueGoodreads enqueues an enrich:goodreads job for the given book
-// when an enqueuer is available. The user ID is resolved by fetching the first
-// user from the database. Failures are logged but never propagated.
-func maybeEnqueueGoodreads(ctx context.Context, database *db.DB, enqueuer Enqueuer, bookID string) {
+// when an enqueuer is available and a user ID is provided. When no user
+// context is available (e.g., during automated library scans), enrichment
+// is skipped. Failures are logged but never propagated.
+func maybeEnqueueGoodreads(ctx context.Context, enqueuer Enqueuer, bookID, userID string) {
 	if enqueuer == nil {
 		return
 	}
 
-	users, err := database.ListUsers(ctx)
-	if err != nil || len(users) == 0 {
-		if err != nil {
-			slog.WarnContext(ctx, "could not list users for Goodreads enrichment",
-				slog.String(otelkeys.BookID, bookID),
-				slog.Any(otelkeys.Error, err),
-			)
-		} else {
-			slog.WarnContext(ctx, "no users found, skipping Goodreads enrichment",
-				slog.String(otelkeys.BookID, bookID),
-			)
-		}
+	if userID == "" {
+		slog.DebugContext(ctx, "skipping Goodreads enrichment: no user context available",
+			slog.String(otelkeys.BookID, bookID),
+		)
 		return
 	}
 
@@ -166,7 +159,7 @@ func maybeEnqueueGoodreads(ctx context.Context, database *db.DB, enqueuer Enqueu
 
 	if _, err := enqueuer.Enqueue(enqueueCtx, JobEnrichGoodreads, EnrichGoodreadsPayload{
 		BookID: bookID,
-		UserID: users[0].ID,
+		UserID: userID,
 	}); err != nil {
 		slog.WarnContext(ctx, "failed to enqueue enrich:goodreads job",
 			slog.String(otelkeys.BookID, bookID),

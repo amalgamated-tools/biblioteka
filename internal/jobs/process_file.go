@@ -22,6 +22,7 @@ type ProcessFilePayload struct {
 	FileSize    int64  `json:"file_size"`
 	LibraryID   string `json:"library_id,omitempty"`
 	LibraryRoot string `json:"library_root,omitempty"`
+	UserID      string `json:"user_id,omitempty"`
 }
 
 // NewProcessFileHandler returns a worker.Func that extracts metadata for a file

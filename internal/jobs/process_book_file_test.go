@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -347,4 +348,91 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 	if books[0].ISBN13 != nil {
 		t.Errorf("expected ISBN13 nil, got %v", books[0].ISBN13)
 	}
+}
+
+func TestProcessBookFile_EnqueuesGoodreadsWithUserID(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	require.NoError(t, err, "new extractor")
+	defer ext.Close(t.Context())
+
+	user, err := database.CreateUser(t.Context(), "Test User", "test@example.com", "hashedpass")
+	require.NoError(t, err, "create user")
+
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "test-enqueue.epub")
+	testutils.MakeTestEPUB(t, epubPath, "Enqueue Test", "Test Author", "urn:isbn:9780000000001")
+
+	enq := &genericMockEnqueuer{}
+
+	err = ProcessBookFile(t.Context(), database, ext, enq, ProcessFilePayload{
+		Path:     epubPath,
+		FileName: "test-enqueue.epub",
+		FileType: "epub",
+		FileSize: 1024,
+		UserID:   user.ID,
+	})
+	require.NoError(t, err, "ProcessBookFile()")
+
+	enq.mu.Lock()
+	defer enq.mu.Unlock()
+	require.Len(t, enq.jobs, 1, "expected exactly one enqueued job")
+	require.Equal(t, JobEnrichGoodreads, enq.jobs[0].Name)
+}
+
+func TestProcessBookFile_SkipsEnqueueWithoutUserID(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	require.NoError(t, err, "new extractor")
+	defer ext.Close(t.Context())
+
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "test-no-user.epub")
+	testutils.MakeTestEPUB(t, epubPath, "No User Test", "Test Author", "urn:isbn:9780000000002")
+
+	enq := &genericMockEnqueuer{}
+
+	err = ProcessBookFile(t.Context(), database, ext, enq, ProcessFilePayload{
+		Path:     epubPath,
+		FileName: "test-no-user.epub",
+		FileType: "epub",
+		FileSize: 1024,
+		// UserID intentionally empty
+	})
+	require.NoError(t, err, "ProcessBookFile()")
+
+	enq.mu.Lock()
+	defer enq.mu.Unlock()
+	require.Empty(t, enq.jobs, "expected no enqueued jobs when UserID is empty")
+}
+
+func TestProcessBookFile_EnqueueFailureDoesNotFailProcessing(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	require.NoError(t, err, "new extractor")
+	defer ext.Close(t.Context())
+
+	user, err := database.CreateUser(t.Context(), "Test User", "fail@example.com", "hashedpass")
+	require.NoError(t, err, "create user")
+
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "test-fail-enqueue.epub")
+	testutils.MakeTestEPUB(t, epubPath, "Fail Enqueue Test", "Test Author", "urn:isbn:9780000000003")
+
+	enq := &genericMockEnqueuer{err: fmt.Errorf("redis unavailable")}
+
+	err = ProcessBookFile(t.Context(), database, ext, enq, ProcessFilePayload{
+		Path:     epubPath,
+		FileName: "test-fail-enqueue.epub",
+		FileType: "epub",
+		FileSize: 1024,
+		UserID:   user.ID,
+	})
+	require.NoError(t, err, "ProcessBookFile should succeed even when enqueue fails")
+
+	// Verify the book was still created
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.Equal(t, "Fail Enqueue Test", books[0].Title)
 }
