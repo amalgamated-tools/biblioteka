@@ -7,6 +7,7 @@ import {
   waitFor,
 } from "@testing-library/svelte";
 import { tick } from "svelte";
+import type { PaginatedBooks } from "../types";
 
 vi.mock("../stores/libraries.svelte", () => ({
   libraryStore: {
@@ -218,7 +219,7 @@ describe("Dashboard", () => {
       },
     ];
     // Never resolves, so totalBooks stays null → "…"
-    vi.mocked(listBooks).mockReturnValue(new Promise(() => {}));
+    vi.mocked(listBooks).mockReturnValue(new Promise<PaginatedBooks>(() => {}));
     render(Dashboard);
     await tick();
 

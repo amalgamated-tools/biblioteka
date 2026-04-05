@@ -20,6 +20,7 @@
       })
       .catch((err) => {
         console.error("Failed to fetch total books count:", err);
+        totalBooks = 0;
       });
   });
 
