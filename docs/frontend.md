@@ -1496,6 +1496,64 @@ When there is only one input in the list, omit the index to keep the label natur
 - Every `<input>` and `<select>` must have either a linked `<label for="...">` or an `aria-label` / `aria-labelledby`.
 - `title` attributes are not a substitute for `aria-label`; they are advisory only and are not reliably announced.
 
+### Decorative icons alongside visible text
+
+**WCAG criterion:** [1.1.1 Non-text Content](https://www.w3.org/WAI/WCAG21/Understanding/non-text-content.html) (Level A)
+
+When a Lucide icon appears next to a visible text label — for example, a nav link "Dashboard" with a `<LayoutDashboard>` icon, or a page heading "Books" with a `<BookOpen>` icon — the icon is purely **decorative**: the adjacent text already conveys the meaning to the user. Unless hidden, the SVG node is exposed to the accessibility tree as an unlabelled image node, causing screen readers to announce noise like "image" or the SVG's internal title alongside the text.
+
+Add `aria-hidden="true"` to the icon element to remove it from the accessibility tree and prevent the redundant announcement:
+
+```svelte
+<!-- Nav link: icon is decorative; the text "Dashboard" is the accessible label -->
+<a href="#dashboard">
+  <LayoutDashboard class="w-5 h-5" aria-hidden="true" />
+  Dashboard
+</a>
+
+<!-- Page heading: icon is decorative; the h1 text provides the heading -->
+<h1>
+  <BookOpen class="w-6 h-6" aria-hidden="true" />
+  Books
+</h1>
+
+<!-- Empty-state illustration (purely decorative standalone — no adjacent text,
+     no information conveyed): aria-hidden suppresses the unlabelled image node -->
+<Library class="w-16 h-16 text-ink-300" aria-hidden="true" />
+```
+
+This pattern applies whenever **all three** of these conditions hold:
+
+1. An icon appears alongside visible text in the same element or immediately adjacent, **or** is a purely decorative standalone illustration (e.g., an empty-state graphic).
+2. The visible text already fully communicates the meaning to a sighted user (or, for standalone illustrations, the icon conveys no information at all).
+3. The icon adds no information that the text does not already convey.
+
+If the icon conveys information that the text does not (e.g., a warning triangle icon next to a plain number indicating an error count), it is **not** decorative — give it an accessible name with `aria-label` or `aria-labelledby` (typically with `role="img"`), or include a `<title>` element inside the `<svg>` to provide an accessible description.
+
+#### Affected components
+
+The following components apply this pattern. When you add icons to any of these components or create a new component that matches the pattern above, follow the same convention:
+
+| Component | Icons hidden |
+|---|---|
+| `Auth.svelte` | `BookCheck` (app logo alongside the app name heading) |
+| `Sidebar.svelte` | `BookCheck`, `LayoutDashboard`, `BookOpen`, `Library`, `SettingsIcon`, `LogOut` (nav-link icons alongside their text labels) |
+| `Dashboard.svelte` | `LayoutDashboard`, `Library`, `Plus`, `ArrowRight` |
+| `Books.svelte` | `BookOpen` (page-heading icon) |
+| `Libraries.svelte` | `LibraryIcon` (empty-state illustration), `Plus` (button with visible text) |
+| `MyLibrary.svelte` | `Library` (page-heading icon and empty-state illustration) |
+| `settings/AccountTab.svelte` | `Mail`, `Link` ×2, `Lock` (section-heading icons) |
+| `settings/APIKeysTab.svelte` | `KeyRound` (section-heading icon), `Copy`, `Trash2` (buttons with adjacent text) |
+| `settings/PreferencesTab.svelte` | `Palette` (section-heading icon) |
+| `settings/OidcTab.svelte` | `Shield` (section-heading icon) |
+| `settings/KoboTab.svelte` | `BookOpen` (section-heading icon), `Trash2`, `Copy` |
+| `settings/SmtpTab.svelte` | `Send`, `Mail` |
+| `settings/UsersTab.svelte` | `Users` (section-heading icon) |
+| `ui/BookCard.svelte` | `BookOpen` (decorative cover placeholder) |
+| `ui/BookList.svelte` | `BookOpen` ×2, `LayoutGrid`, `List`, `ChevronLeft`, `ChevronRight` |
+| `libraries/LibraryView.svelte` | `LibraryIcon` (heading alongside visible library name) |
+| `libraries/LibraryForm.svelte` | `FolderOpen`, `Plus` (add folder), `Trash2` (delete) |
+
 ### Maintaining accessibility
 
 When editing the app shell or adding new persistent navigation elements:
@@ -1514,6 +1572,7 @@ When editing the app shell or adding new persistent navigation elements:
 12. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
 13. Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so the element is visible when focused. When the action is context-sensitive (e.g. per-library settings links), include the context in the `aria-label` so each link has a unique, descriptive name. See [Focus visible — Library settings link](#focus-visible--library-settings-link-sidebarsvelte) above.
 14. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+15. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
 
 ### Form accessibility
 
