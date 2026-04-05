@@ -115,3 +115,11 @@ jobs:
           path: e2e/playwright-report/
           # 3 days is sufficient for post-failure review; saves artifact storage.
           retention-days: 3
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: playwright-traces-${{ github.run_id }}
+          path: e2e/test-results/
+          retention-days: 7
