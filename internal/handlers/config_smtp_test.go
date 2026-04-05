@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	netsmtp "net/smtp"
+	"strings"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -465,9 +466,11 @@ func TestHandleSetSMTPConfig_FromWithDisplayName(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code, "body: %s", w.Body.String())
+
+	from, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyFrom)
+	require.NoError(t, err)
+	require.Equal(t, `"App" <noreply@example.com>`, from, "stored smtp_from should be canonical form")
 }
 
 // --- HandleSMTPTest success path ---
@@ -497,6 +500,34 @@ func TestHandleSMTPTest_Success(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "noreply@example.com", calledFrom)
 	require.Equal(t, "admin@example.com", calledTo)
+}
+
+func TestHandleSMTPTest_FromWithDisplayName(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	_ = h.DB.SetSetting(t.Context(), smtp.SettingKeyHost, "smtp.example.com")
+	_ = h.DB.SetSetting(t.Context(), smtp.SettingKeyPort, "587")
+	_ = h.DB.SetSetting(t.Context(), smtp.SettingKeyFrom, `"My App" <noreply@example.com>`)
+	_ = h.DB.SetSetting(t.Context(), smtp.SettingKeyTLS, "starttls")
+
+	var calledFrom string
+	var calledMsg []byte
+	h.SendMailFunc = func(_ context.Context, addr string, a netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
+		calledFrom = from
+		calledMsg = msg
+		return nil
+	}
+
+	r := httptest.NewRequest(http.MethodPost, "/api/config/smtp/test", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPTest(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code, "body: %s", w.Body.String())
+	require.Equal(t, "noreply@example.com", calledFrom, "envelope From should be bare address")
+	require.True(t, strings.Contains(string(calledMsg), `From: "My App" <noreply@example.com>`),
+		"message should contain display-name From header, got: %s", string(calledMsg))
 }
 
 func TestHandleSMTPTest_SendMailFailure(t *testing.T) {
