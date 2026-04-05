@@ -22,7 +22,8 @@ safe-outputs:
   create-issue:
     expires: 2d
     title-prefix: "chore: Duplicate Code Detected"
-    labels: [code-quality, automated-analysis, cookie]
+    labels: [code-quality, automated-analysis, cookie, needs-refactoring]
+    assignees: [copilot]
     group: true
     max: 3
 timeout-minutes: 15
@@ -250,6 +251,16 @@ instead — the tracker will apply `auto-closed: wontfix`.
 - Suggest practical refactoring approaches
 - Assign issue to @copilot for automated remediation
 - Use descriptive titles that clearly identify the specific pattern (e.g., "Duplicate Code: Error Handling Pattern in Parser Module")
+
+### Closure Tracking
+
+To track resolution rates and provide visibility into issue progress:
+
+- **Before creating new issues**, search GitHub for existing open `chore: Duplicate Code Detected` issues with the `needs-refactoring` label. For each existing open issue, check whether the duplicate pattern it describes still exists in the codebase:
+  - If the code duplication **has been fixed**: add the comment "✅ Duplication resolved — closing." and close the issue.
+  - If the duplication **still exists**: leave the issue open and skip creating a duplicate.
+- **When creating new issues**, always include the `needs-refactoring` label (automatically applied via safe-outputs config). This label signals that the issue is awaiting refactoring work.
+- Once a refactoring PR that references one of these issues is merged, the issue should be closed by the PR author with the label `auto-closed: fixed` to distinguish automated closures from manual ones.
 
 ## Tool Usage Sequence
 
