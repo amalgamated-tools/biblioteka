@@ -41,9 +41,7 @@ func TestListBooksBySeries_OrderedByPosition(t *testing.T) {
 
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
 	require.NoError(t, err, "ListBooksBySeries() error")
-	if len(books) != 3 {
-		t.Fatalf("len(books) = %d, want 3", len(books))
-	}
+	require.Len(t, books, 3, "len(books)")
 	if books[0].ID != b1.ID {
 		t.Errorf("books[0] = %q, want book 1 (%q)", books[0].Title, b1.Title)
 	}
@@ -75,9 +73,7 @@ func TestListBooksBySeries_NullPositionSorting(t *testing.T) {
 
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
 	require.NoError(t, err, "ListBooksBySeries() error")
-	if len(books) != 2 {
-		t.Fatalf("len(books) = %d, want 2", len(books))
-	}
+	require.Len(t, books, 2, "len(books)")
 	// Both books must appear; collect the IDs to verify without relying on
 	// dialect-specific NULL ordering.
 	ids := map[string]bool{books[0].ID: true, books[1].ID: true}
@@ -107,9 +103,7 @@ func TestListBooksBySeriesPaginated(t *testing.T) {
 	if total != 4 {
 		t.Errorf("total = %d, want 4", total)
 	}
-	if len(page1) != 2 {
-		t.Fatalf("len(page1) = %d, want 2", len(page1))
-	}
+	require.Len(t, page1, 2, "len(page1)")
 	if page1[0].Title != "Book One" {
 		t.Errorf("page1[0].Title = %q, want Book One", page1[0].Title)
 	}
