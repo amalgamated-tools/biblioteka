@@ -119,6 +119,34 @@ describe("Dashboard", () => {
     expect(screen.queryByRole("heading", { name: /Get started/i })).toBeNull();
   });
 
+  it("uses semantic dl/dt/dd structure for stat cards", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [
+      {
+        id: "lib-1",
+        name: "Fiction",
+        paths: [],
+        organization_type: "book_per_folder",
+        monitored: false,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    render(Dashboard);
+    await tick();
+
+    const terms = screen.getAllByRole("term");
+    const definitions = screen.getAllByRole("definition");
+
+    expect(terms).toHaveLength(3);
+    expect(definitions).toHaveLength(3);
+
+    const termTexts = terms.map((el) => el.textContent?.trim());
+    expect(termTexts).toContain("Total Books");
+    expect(termTexts).toContain("Libraries");
+    expect(termTexts).toContain("Currently Reading");
+  });
+
   it("shows the library count in the stats grid", async () => {
     vi.mocked(libraryStore).loaded = true;
     vi.mocked(libraryStore).libraries = [
