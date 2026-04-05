@@ -98,5 +98,5 @@ func TestEPUB3CoverImport_EndToEnd(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	ct := w.Header().Get("Content-Type")
 	require.True(t, strings.HasPrefix(ct, "image/png"), "Content-Type = %q, want image/png prefix", ct)
-	require.True(t, bytes.Equal(w.Body.Bytes(), coverBytes), "served cover bytes mismatch: got %d bytes, want %d bytes", len(w.Body.Bytes()), len(coverBytes))
+	require.Equal(t, coverBytes, w.Body.Bytes(), "served cover bytes mismatch")
 }

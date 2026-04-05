@@ -196,9 +196,7 @@ func TestHandleTokenCreate_AuditLog(t *testing.T) {
 			break
 		}
 	}
-	if !found {
-		require.Fail(t, "expected audit log entry was not found")
-	}
+	require.True(t, found, "expected audit log entry was not found")
 }
 
 func TestTokenError_ErrorAndUnwrap(t *testing.T) {
