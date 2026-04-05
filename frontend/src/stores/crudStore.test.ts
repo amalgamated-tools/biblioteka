@@ -66,14 +66,41 @@ describe("CrudStore", () => {
       expect(store.loaded).toBe(true);
     });
 
-    it("resets loading on API error", async () => {
-      listFn.mockRejectedValue(new Error("fail"));
+    it("sets error and resets loading on API error", async () => {
+      listFn.mockRejectedValue(new Error("network failure"));
 
       await store.load();
 
       expect(store.loading).toBe(false);
       expect(store.loaded).toBe(false);
       expect(store.items).toEqual([]);
+      expect(store.error).toBe("network failure");
+    });
+
+    it("falls back to a generic message for non-Error rejections", async () => {
+      listFn.mockRejectedValue("oops");
+
+      await store.load();
+
+      expect(store.error).toBe("Failed to load");
+    });
+
+    it("clears error on successful retry", async () => {
+      listFn.mockRejectedValueOnce(new Error("fail"));
+      await store.load();
+      expect(store.error).toBe("fail");
+
+      // loaded is still false, so a second call is allowed
+      listFn.mockResolvedValue([fakeEntity]);
+      await store.load();
+
+      expect(store.error).toBeNull();
+      expect(store.loaded).toBe(true);
+      expect(store.items).toEqual([fakeEntity]);
+    });
+
+    it("starts with no error", async () => {
+      expect(store.error).toBeNull();
     });
   });
 
