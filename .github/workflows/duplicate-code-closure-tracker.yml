@@ -1,0 +1,65 @@
+name: Duplicate Code Issue Closure Tracker
+
+# Track when duplicate-code-detector issues are closed, applying a resolution
+# label so that the issue list provides visibility into the resolution rate.
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  issues: write
+
+jobs:
+  track-closure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Only process issues opened by the duplicate-code-detector.
+    # That workflow attaches both "automated-analysis" and "code-quality" labels,
+    # which (as a pair) uniquely identify its output issues.
+    if: >-
+      contains(github.event.issue.labels.*.name, 'automated-analysis') &&
+      contains(github.event.issue.labels.*.name, 'code-quality')
+    steps:
+      - name: Apply resolution label
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue   = context.payload.issue;
+            const { owner, repo } = context.repo;
+
+            // GitHub sets state_reason to "completed" when closed as done
+            // (including via a linked PR merge), and "not_planned" when closed
+            // as out-of-scope or won't-fix.  Treat null/unknown as completed.
+            const stateReason = issue.state_reason;
+            const isFixed     = stateReason !== 'not_planned';
+
+            const labelName  = isFixed ? 'auto-closed: fixed'   : 'auto-closed: wontfix';
+            const labelColor = isFixed ? '0e8a16'                : 'e4e669';
+            const labelDesc  = isFixed
+              ? 'Duplicate-code issue resolved and closed as completed'
+              : "Duplicate-code issue closed as not planned / won't-fix";
+
+            // Ensure the label exists in the repo before adding it.
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: labelName });
+            } catch (e) {
+              if (e.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner, repo,
+                  name: labelName,
+                  color: labelColor,
+                  description: labelDesc,
+                });
+              } else {
+                throw e;
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              owner, repo,
+              issue_number: issue.number,
+              labels: [labelName],
+            });
+
+            core.info(`Issue #${issue.number}: applied label '${labelName}' (state_reason=${stateReason})`);
