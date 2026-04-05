@@ -35,9 +35,7 @@ func TestCoverMIMEType(t *testing.T) {
 
 	for _, tt := range tests {
 		got := coverMIMEType(tt.url)
-		if got != tt.want {
-			t.Errorf("coverMIMEType(%q) = %q, want %q", tt.url, got, tt.want)
-		}
+		require.Equal(t, tt.want, got)
 	}
 }
 
@@ -46,9 +44,8 @@ func TestCoverImageInFeed(t *testing.T) {
 	ctx := t.Context()
 
 	coverURL := "https://example.com/cover.png"
-	if _, err := h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL); err != nil {
-		require.NoError(t, err, "create book")
-	}
+	_, err := h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL)
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -60,9 +57,7 @@ func TestCoverImageInFeed(t *testing.T) {
 	require.Len(t, feed.Entries, 1)
 	imgLink := findLink(feed.Entries[0].Links, opdspkg.RelImage)
 	require.NotNil(t, imgLink)
-	if imgLink.Type != "image/png" {
-		t.Errorf("image type = %q, want %q", imgLink.Type, "image/png")
-	}
+	require.Equal(t, "image/png", imgLink.Type)
 }
 
 func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
@@ -85,12 +80,8 @@ func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
 	imgLink := findLink(feed.Entries[0].Links, opdspkg.RelImage)
 	require.NotNil(t, imgLink)
 	wantHref := "http://example.com/opds/covers/" + book.ID
-	if imgLink.Href != wantHref {
-		t.Errorf("image href = %q, want %q", imgLink.Href, wantHref)
-	}
-	if strings.HasPrefix(imgLink.Href, "data:") {
-		t.Error("image href should not be a data URL")
-	}
+	require.Equal(t, wantHref, imgLink.Href)
+	require.False(t, strings.HasPrefix(imgLink.Href, "data:"))
 }
 
 func TestServeCover_DataURL(t *testing.T) {
@@ -107,12 +98,9 @@ func TestServeCover_DataURL(t *testing.T) {
 	h.HandleOPDS(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "image/") {
-		t.Errorf("content-type = %q, want image/*", ct)
-	}
-	if !bytes.Equal(w.Body.Bytes(), pngBytes) {
-		t.Errorf("body length = %d, want %d", w.Body.Len(), len(pngBytes))
-	}
+	ct := w.Header().Get("Content-Type")
+	require.True(t, strings.HasPrefix(ct, "image/"), "content-type = %q, want image/*", ct)
+	require.True(t, bytes.Equal(w.Body.Bytes(), pngBytes))
 }
 
 // --- serveCover missing paths ---
@@ -136,9 +124,7 @@ func TestServeCover_MissingCover(t *testing.T) {
 			w := httptest.NewRecorder()
 			h.HandleOPDS(w, r)
 
-			if w.Code != http.StatusNotFound {
-				t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-			}
+			require.Equal(t, http.StatusNotFound, w.Code)
 		})
 	}
 }
@@ -155,13 +141,9 @@ func TestServeCover_ExternalURL(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusTemporaryRedirect {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusTemporaryRedirect)
-	}
+	require.Equal(t, http.StatusTemporaryRedirect, w.Code)
 	location := w.Header().Get("Location")
-	if location != coverURL {
-		t.Errorf("Location = %q, want %q", location, coverURL)
-	}
+	require.Equal(t, coverURL, location)
 }
 
 func TestServeCover_DBError(t *testing.T) {
@@ -175,7 +157,5 @@ func TestServeCover_DBError(t *testing.T) {
 	// serveCover intentionally returns 404 for all DB errors (not 500) to avoid
 	// leaking internal state to OPDS clients — a missing cover is indistinguishable
 	// from a DB failure from the client's perspective.
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }

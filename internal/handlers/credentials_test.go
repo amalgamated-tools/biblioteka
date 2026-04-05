@@ -98,9 +98,7 @@ func TestHandleCredentials_MethodNotAllowed(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 // ---- getCredential ----
@@ -114,9 +112,7 @@ func TestGetCredential_NotFound(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestGetCredential_Error(t *testing.T) {
@@ -135,9 +131,7 @@ func TestGetCredential_Error(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestGetCredential_Success(t *testing.T) {
@@ -162,9 +156,7 @@ func TestGetCredential_Success(t *testing.T) {
 
 	var resp credentialResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Username != "myuser" {
-		t.Errorf("username = %q, want %q", resp.Username, "myuser")
-	}
+	require.Equal(t, "myuser", resp.Username)
 }
 
 // ---- upsertCredential ----
@@ -179,9 +171,7 @@ func TestUpsertCredential_EmptyUsername(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpsertCredential_UsernameTooLong(t *testing.T) {
@@ -195,9 +185,7 @@ func TestUpsertCredential_UsernameTooLong(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpsertCredential_PasswordTooShort(t *testing.T) {
@@ -210,9 +198,7 @@ func TestUpsertCredential_PasswordTooShort(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpsertCredential_InvalidJSON(t *testing.T) {
@@ -224,9 +210,7 @@ func TestUpsertCredential_InvalidJSON(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpsertCredential_Conflict(t *testing.T) {
@@ -247,9 +231,7 @@ func TestUpsertCredential_Conflict(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusConflict, w.Body.String())
-	}
+	require.Equal(t, http.StatusConflict, w.Code)
 }
 
 func TestUpsertCredential_DBError(t *testing.T) {
@@ -269,9 +251,7 @@ func TestUpsertCredential_DBError(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestUpsertCredential_Success(t *testing.T) {
@@ -288,9 +268,7 @@ func TestUpsertCredential_Success(t *testing.T) {
 
 	var resp credentialResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Username != "myuser" {
-		t.Errorf("username = %q, want %q", resp.Username, "myuser")
-	}
+	require.Equal(t, "myuser", resp.Username)
 }
 
 func TestUpsertCredential_UsernameNormalized(t *testing.T) {
@@ -308,9 +286,7 @@ func TestUpsertCredential_UsernameNormalized(t *testing.T) {
 
 	var resp credentialResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Username != "myuser" {
-		t.Errorf("username = %q, want lowercase trimmed %q", resp.Username, "myuser")
-	}
+	require.Equal(t, "myuser", resp.Username)
 }
 
 func TestUpsertCredential_WithDeriveKey(t *testing.T) {
@@ -329,9 +305,7 @@ func TestUpsertCredential_WithDeriveKey(t *testing.T) {
 	handleCredentials(ops, w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if derivedKey != "derived:validpassword" {
-		t.Errorf("deriveKey was not called with plaintext password; got %q", derivedKey)
-	}
+	require.Equal(t, "derived:validpassword", derivedKey)
 }
 
 // ---- deleteCredential ----
@@ -345,9 +319,7 @@ func TestDeleteCredential_NotFound(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestDeleteCredential_FetchError(t *testing.T) {
@@ -366,9 +338,7 @@ func TestDeleteCredential_FetchError(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestDeleteCredential_DeleteError(t *testing.T) {
@@ -390,9 +360,7 @@ func TestDeleteCredential_DeleteError(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestDeleteCredential_DeleteNotFound(t *testing.T) {
@@ -414,9 +382,7 @@ func TestDeleteCredential_DeleteNotFound(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestDeleteCredential_Success(t *testing.T) {
@@ -437,7 +403,5 @@ func TestDeleteCredential_Success(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNoContent, w.Body.String())
-	}
+	require.Equal(t, http.StatusNoContent, w.Code)
 }

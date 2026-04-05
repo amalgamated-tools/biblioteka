@@ -31,18 +31,13 @@ func TestCreateLibrary_ValidPath(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var dto libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
-	if dto.Name != "Books" {
-		t.Errorf("name = %q, want %q", dto.Name, "Books")
-	}
-	if len(dto.Paths) != 1 || dto.Paths[0] != dir {
-		t.Errorf("paths = %v, want [%s]", dto.Paths, dir)
-	}
+	require.Equal(t, "Books", dto.Name)
+	require.Len(t, dto.Paths, 1)
+	require.Equal(t, dir, dto.Paths[0])
 }
 
 func TestCreateLibrary_NonexistentPath(t *testing.T) {
@@ -59,15 +54,12 @@ func TestCreateLibrary_NonexistentPath(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]string
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if msg := resp["error"]; msg == "" {
-		t.Error("expected error message in response")
-	}
+	msg := resp["error"]
+	require.NotEqual(t, "", msg)
 }
 
 func TestCreateLibrary_PathIsFile(t *testing.T) {
@@ -88,15 +80,12 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]string
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if msg := resp["error"]; msg != "path is not a folder: "+filePath {
-		t.Errorf("error = %q, want 'path is not a folder: %s'", msg, filePath)
-	}
+	msg := resp["error"]
+	require.Equal(t, "path is not a folder: "+filePath, msg)
 }
 
 func TestCreateLibrary_MixedValidAndInvalidPaths(t *testing.T) {
@@ -114,9 +103,7 @@ func TestCreateLibrary_MixedValidAndInvalidPaths(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
@@ -141,14 +128,11 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 	}
 
 	require.Len(t, mock.jobs, 1, "enqueued jobs")
-	if mock.jobs[0].Name != jobs.JobScanLibrary {
-		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
-	}
+	require.Equal(t, jobs.JobScanLibrary, mock.jobs[0].Name)
 	var p jobs.ScanLibraryPayload
 	require.NoError(t, json.Unmarshal(mock.jobs[0].Payload, &p), "unmarshal payload")
-	if len(p.Paths) != 1 || p.Paths[0] != dir {
-		t.Errorf("job paths = %v, want [%s]", p.Paths, dir)
-	}
+	require.Len(t, p.Paths, 1)
+	require.Equal(t, dir, p.Paths[0])
 }
 
 func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
@@ -172,16 +156,12 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 	require.Equal(t, http.StatusCreated, w.Code, "status; body: %s", w.Body.String())
 
 	require.Len(t, mock.jobs, 1, "enqueued jobs")
-	if mock.jobs[0].Name != jobs.JobScanLibrary {
-		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
-	}
+	require.Equal(t, jobs.JobScanLibrary, mock.jobs[0].Name)
 	var p jobs.ScanLibraryPayload
 	require.NoError(t, json.Unmarshal(mock.jobs[0].Payload, &p), "unmarshal payload")
 	require.Len(t, p.Paths, 2, "job paths count")
 	for i, dir := range []string{dir1, dir2} {
-		if p.Paths[i] != dir {
-			t.Errorf("job paths[%d] = %q, want %q", i, p.Paths[i], dir)
-		}
+		require.Equal(t, dir, p.Paths[i])
 	}
 }
 
@@ -202,9 +182,7 @@ func TestCreateLibrary_EnqueueErrorDoesNotFailRequest(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 }
 
 func TestCreateLibrary_NilEnqueuerDoesNotPanic(t *testing.T) {
@@ -223,9 +201,7 @@ func TestCreateLibrary_NilEnqueuerDoesNotPanic(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 }
 
 func TestCreateLibrary_NonAdminForbidden(t *testing.T) {
@@ -243,9 +219,7 @@ func TestCreateLibrary_NonAdminForbidden(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestCreateLibrary_InvalidOrganizationType(t *testing.T) {
@@ -264,15 +238,12 @@ func TestCreateLibrary_InvalidOrganizationType(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]string
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if msg := resp["error"]; msg == "" {
-		t.Error("expected error message about organization_type")
-	}
+	msg := resp["error"]
+	require.NotEqual(t, "", msg)
 }
 
 func TestCreateLibrary_ValidOrganizationTypes(t *testing.T) {
@@ -293,15 +264,11 @@ func TestCreateLibrary_ValidOrganizationTypes(t *testing.T) {
 
 			h.HandleLibraries(w, r)
 
-			if w.Code != http.StatusCreated {
-				t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-			}
+			require.Equal(t, http.StatusCreated, w.Code)
 
 			var dto libraryDTO
 			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
-			if dto.OrganizationType != orgType {
-				t.Errorf("organization_type = %q, want %q", dto.OrganizationType, orgType)
-			}
+			require.Equal(t, orgType, dto.OrganizationType)
 		})
 	}
 }
@@ -322,13 +289,9 @@ func TestCreateLibrary_EmptyOrganizationTypeDefaultsToBookPerFolder(t *testing.T
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var dto libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
-	if dto.OrganizationType != db.LibraryOrganizationBookPerFolder {
-		t.Errorf("organization_type = %q, want %q", dto.OrganizationType, db.LibraryOrganizationBookPerFolder)
-	}
+	require.Equal(t, db.LibraryOrganizationBookPerFolder, dto.OrganizationType)
 }

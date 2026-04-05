@@ -24,12 +24,8 @@ func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 	assertJSONError(t, w.Body.Bytes(), "authentication required")
 }
 
@@ -48,12 +44,8 @@ func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 	// Non-Bearer auth header is treated as "no valid token found" since
 	// extractToken checks header then cookie fallback.
 	assertJSONError(t, w.Body.Bytes(), "authentication required")
@@ -74,12 +66,8 @@ func TestMiddleware_InvalidToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
 
@@ -101,41 +89,30 @@ func TestMiddleware_ValidToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "user-abc" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "user-abc")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "user-abc", gotUserID)
 }
 
 func TestUserIDFromContext_NotSet(t *testing.T) {
 	ctx := t.Context()
 	id := UserIDFromContext(ctx)
-	if id != "" {
-		t.Errorf("expected empty user ID, got %q", id)
-	}
+	require.Equal(t, "", id)
 }
 
 func TestContextWithUserID(t *testing.T) {
 	ctx := t.Context()
 	ctx = ContextWithUserID(ctx, "test-user-123")
 	got := UserIDFromContext(ctx)
-	if got != "test-user-123" {
-		t.Errorf("UserIDFromContext() = %q, want %q", got, "test-user-123")
-	}
+	require.Equal(t, "test-user-123", got)
 }
 
 // assertJSONError checks that a JSON body contains the given error message.
 func assertJSONError(t *testing.T, body []byte, wantMsg string) {
 	t.Helper()
 	var resp map[string]string
-	if err := json.Unmarshal(body, &resp); err != nil {
-		require.NoError(t, err, "failed to unmarshal response body")
-	}
-	if resp["error"] != wantMsg {
-		t.Errorf("error message = %q, want %q", resp["error"], wantMsg)
-	}
+	err := json.Unmarshal(body, &resp)
+	require.NoError(t, err, "failed to unmarshal response body")
+	require.Equal(t, wantMsg, resp["error"])
 }
 
 // --- extractToken unit tests ---
@@ -217,12 +194,8 @@ func TestExtractToken(t *testing.T) {
 				r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: tt.cookie})
 			}
 			got, gotSource, _ := extractToken(r)
-			if got != tt.wantToken {
-				t.Errorf("extractToken() token = %q, want %q", got, tt.wantToken)
-			}
-			if gotSource != tt.wantSource {
-				t.Errorf("extractToken() source = %v, want %v", gotSource, tt.wantSource)
-			}
+			require.Equal(t, tt.wantToken, got)
+			require.Equal(t, tt.wantSource, gotSource)
 		})
 	}
 }
@@ -247,12 +220,8 @@ func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "cookie-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "cookie-user")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "cookie-user", gotUserID)
 }
 
 func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
@@ -270,12 +239,8 @@ func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
 
@@ -300,7 +265,5 @@ func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if gotUserID != "header-user" {
-		t.Errorf("UserIDFromContext = %q, want %q (header should take precedence)", gotUserID, "header-user")
-	}
+	require.Equal(t, "header-user", gotUserID)
 }

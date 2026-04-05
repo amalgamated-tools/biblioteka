@@ -37,21 +37,11 @@ func TestCreateAPIKey_Success(t *testing.T) {
 
 	var resp apiKeyCreateResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Key == "" {
-		t.Error("expected non-empty key in response")
-	}
-	if !strings.HasPrefix(resp.Key, auth.APIKeyPrefix) {
-		t.Errorf("key %q should start with %q", resp.Key, auth.APIKeyPrefix)
-	}
-	if resp.Name != "CI Pipeline" {
-		t.Errorf("name = %q, want %q", resp.Name, "CI Pipeline")
-	}
-	if resp.KeyPrefix == "" {
-		t.Error("expected non-empty key_prefix")
-	}
-	if resp.ID == "" {
-		t.Error("expected non-empty id")
-	}
+	require.NotEqual(t, "", resp.Key)
+	require.True(t, strings.HasPrefix(resp.Key, auth.APIKeyPrefix))
+	require.Equal(t, "CI Pipeline", resp.Name)
+	require.NotEqual(t, "", resp.KeyPrefix)
+	require.NotEqual(t, "", resp.ID)
 }
 
 func TestCreateAPIKey_EmptyName(t *testing.T) {
@@ -64,9 +54,7 @@ func TestCreateAPIKey_EmptyName(t *testing.T) {
 
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateAPIKey_NameTooLong(t *testing.T) {
@@ -80,9 +68,7 @@ func TestCreateAPIKey_NameTooLong(t *testing.T) {
 
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestListAPIKeys_Empty(t *testing.T) {
@@ -98,9 +84,7 @@ func TestListAPIKeys_Empty(t *testing.T) {
 
 	var dtos []apiKeyDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
-	if len(dtos) != 0 {
-		t.Errorf("len = %d, want 0", len(dtos))
-	}
+	require.Len(t, dtos, 0)
 }
 
 func TestListAPIKeys_AfterCreate(t *testing.T) {
@@ -127,14 +111,10 @@ func TestListAPIKeys_AfterCreate(t *testing.T) {
 
 	var dtos []apiKeyDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
-	if len(dtos) != 2 {
-		t.Errorf("len = %d, want 2", len(dtos))
-	}
-	// List should not expose the full key.
+	require.Len(t, dtos, 2)
+	// List should not expose the full key — bib_ should only appear in key_prefix fields.
 	raw := w.Body.String()
-	if strings.Contains(raw, auth.APIKeyPrefix) && strings.Count(raw, auth.APIKeyPrefix) != strings.Count(raw, "key_prefix") {
-		t.Error("list response should not contain full API key values")
-	}
+	require.Equal(t, strings.Count(raw, auth.APIKeyPrefix), strings.Count(raw, "key_prefix"), "list response should not contain full API key values")
 }
 
 func TestListAPIKeys_UserScoped(t *testing.T) {
@@ -162,9 +142,7 @@ func TestListAPIKeys_UserScoped(t *testing.T) {
 
 	var dtos []apiKeyDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal list response")
-	if len(dtos) != 0 {
-		t.Errorf("user2 should see 0 keys, got %d", len(dtos))
-	}
+	require.Len(t, dtos, 0)
 }
 
 func TestDeleteAPIKey_Success(t *testing.T) {
@@ -186,9 +164,7 @@ func TestDeleteAPIKey_Success(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.HandleAPIKey(w, r)
 
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNoContent, w.Body.String())
-	}
+	require.Equal(t, http.StatusNoContent, w.Code)
 
 	// Verify it's gone.
 	r = httptest.NewRequest(http.MethodGet, "/api/api-keys", nil)
@@ -198,9 +174,7 @@ func TestDeleteAPIKey_Success(t *testing.T) {
 
 	var remaining []apiKeyDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &remaining), "unmarshal list response; body: %s", w.Body.String())
-	if len(remaining) != 0 {
-		t.Errorf("expected 0 keys after delete, got %d", len(remaining))
-	}
+	require.Len(t, remaining, 0)
 }
 
 func TestDeleteAPIKey_NotFound(t *testing.T) {
@@ -211,9 +185,7 @@ func TestDeleteAPIKey_NotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleAPIKey(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestDeleteAPIKey_OtherUserCannotDelete(t *testing.T) {
@@ -241,9 +213,7 @@ func TestDeleteAPIKey_OtherUserCannotDelete(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.HandleAPIKey(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d (other user should not see the key)", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestCreateAPIKey_AuditLog(t *testing.T) {
@@ -267,9 +237,7 @@ func TestCreateAPIKey_AuditLog(t *testing.T) {
 			break
 		}
 	}
-	if !found {
-		t.Error("expected audit log entry with action api_key.created")
-	}
+	require.True(t, found)
 }
 
 func TestDeleteAPIKey_AuditLog(t *testing.T) {
@@ -300,9 +268,7 @@ func TestDeleteAPIKey_AuditLog(t *testing.T) {
 			break
 		}
 	}
-	if !found {
-		t.Error("expected audit log entry with action api_key.deleted")
-	}
+	require.True(t, found)
 }
 
 func TestHandleAPIKeys_MethodNotAllowed(t *testing.T) {
@@ -313,7 +279,5 @@ func TestHandleAPIKeys_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleAPIKeys(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }

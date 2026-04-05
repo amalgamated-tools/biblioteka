@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -184,9 +183,7 @@ func TestOIDCCallback_MissingIDToken(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, w.Code)
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
-	if body["error"] != "missing id_token in response" {
-		t.Errorf("unexpected error message: %q", body["error"])
-	}
+	require.Equal(t, "missing id_token in response", body["error"])
 }
 
 func TestOIDCCallback_MissingSub(t *testing.T) {
@@ -205,9 +202,7 @@ func TestOIDCCallback_MissingSub(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, w.Code)
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
-	if body["error"] != "sub claim is required" {
-		t.Errorf("unexpected error message: %q", body["error"])
-	}
+	require.Equal(t, "sub claim is required", body["error"])
 }
 
 func TestOIDCCallback_MissingEmail(t *testing.T) {
@@ -226,9 +221,7 @@ func TestOIDCCallback_MissingEmail(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, w.Code)
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
-	if body["error"] != "email claim is required" {
-		t.Errorf("unexpected error message: %q", body["error"])
-	}
+	require.Equal(t, "email claim is required", body["error"])
 }
 
 func TestOIDCCallback_NameFallsBackToEmail(t *testing.T) {
@@ -251,9 +244,7 @@ func TestOIDCCallback_NameFallsBackToEmail(t *testing.T) {
 	// Verify the created user has the email as their display name.
 	user, err := tp.handler.DB.GetUserByOIDCSubject(t.Context(), "name-fallback-sub")
 	require.NoError(t, err, "GetUserByOIDCSubject")
-	if user.Name != "namefallback@example.com" {
-		t.Errorf("expected user name %q (email fallback), got %q", "namefallback@example.com", user.Name)
-	}
+	require.Equal(t, "namefallback@example.com", user.Name)
 }
 
 func TestOIDCCallback_LinkFlow_UserNotFound(t *testing.T) {
@@ -274,12 +265,8 @@ func TestOIDCCallback_LinkFlow_UserNotFound(t *testing.T) {
 	resp := w.Result()
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
-	if !strings.Contains(loc, "oidc_link_error=") {
-		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
-	}
-	if !strings.Contains(loc, "User+not+found") {
-		t.Errorf("expected 'User not found' in redirect location, got %q", loc)
-	}
+	require.Contains(t, loc, "oidc_link_error=")
+	require.Contains(t, loc, "User+not+found")
 }
 
 func TestOIDCCallback_LinkFlow_AlreadyLinked(t *testing.T) {
@@ -304,12 +291,8 @@ func TestOIDCCallback_LinkFlow_AlreadyLinked(t *testing.T) {
 	resp := w.Result()
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
-	if !strings.Contains(loc, "oidc_link_error=") {
-		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
-	}
-	if !strings.Contains(loc, "already+linked") {
-		t.Errorf("expected 'already linked' in redirect location, got %q", loc)
-	}
+	require.Contains(t, loc, "oidc_link_error=")
+	require.Contains(t, loc, "already+linked")
 }
 
 func TestOIDCCallback_LinkFlow_SubjectAlreadyLinkedToOther(t *testing.T) {
@@ -339,12 +322,8 @@ func TestOIDCCallback_LinkFlow_SubjectAlreadyLinkedToOther(t *testing.T) {
 	resp := w.Result()
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	loc := resp.Header.Get("Location")
-	if !strings.Contains(loc, "oidc_link_error=") {
-		t.Errorf("expected oidc_link_error in redirect location, got %q", loc)
-	}
-	if !strings.Contains(loc, "already+linked+to+another") {
-		t.Errorf("expected 'already linked to another' in redirect location, got %q", loc)
-	}
+	require.Contains(t, loc, "oidc_link_error=")
+	require.Contains(t, loc, "already+linked+to+another")
 }
 
 func TestOIDCCallback_Success_SetsCookie(t *testing.T) {
@@ -362,9 +341,8 @@ func TestOIDCCallback_Success_SetsCookie(t *testing.T) {
 
 	resp := w.Result()
 	require.Equal(t, http.StatusFound, resp.StatusCode)
-	if loc := resp.Header.Get("Location"); loc != "/?oidc_login=1" {
-		t.Errorf("expected Location /?oidc_login=1, got %q", loc)
-	}
+	loc := resp.Header.Get("Location")
+	require.Equal(t, "/?oidc_login=1", loc)
 
 	// Verify the auth cookie is set with a non-empty token value.
 	var authCookie *http.Cookie
@@ -375,12 +353,8 @@ func TestOIDCCallback_Success_SetsCookie(t *testing.T) {
 		}
 	}
 	require.NotNil(t, authCookie)
-	if authCookie.Value == "" {
-		t.Error("auth cookie value should be non-empty")
-	}
-	if !authCookie.HttpOnly {
-		t.Error("auth cookie should be HttpOnly")
-	}
+	require.NotEqual(t, "", authCookie.Value)
+	require.True(t, authCookie.HttpOnly)
 }
 
 // ---------------------------------------------------------------------------
@@ -396,9 +370,7 @@ func TestFindOrCreateUser_FoundBySubject(t *testing.T) {
 
 	user, err := h.findOrCreateUser(t.Context(), "known-sub", "subject@example.com", "Subject User")
 	require.NoError(t, err, "findOrCreateUser")
-	if user.ID != existing.ID {
-		t.Errorf("expected user ID %q (found by subject), got %q", existing.ID, user.ID)
-	}
+	require.Equal(t, existing.ID, user.ID)
 }
 
 func TestFindOrCreateUser_FoundByEmail_LinksSubject(t *testing.T) {
@@ -411,16 +383,12 @@ func TestFindOrCreateUser_FoundByEmail_LinksSubject(t *testing.T) {
 	// findOrCreateUser should find the user by email and link the new OIDC subject.
 	user, err := h.findOrCreateUser(t.Context(), "new-oidc-sub", "emailmatch@example.com", "Email User")
 	require.NoError(t, err, "findOrCreateUser")
-	if user.ID != existing.ID {
-		t.Errorf("expected user ID %q (found by email), got %q", existing.ID, user.ID)
-	}
+	require.Equal(t, existing.ID, user.ID)
 
 	// The OIDC subject should now be linked to the existing user.
 	linked, err := h.DB.GetUserByOIDCSubject(t.Context(), "new-oidc-sub")
 	require.NoError(t, err, "GetUserByOIDCSubject after link")
-	if linked.ID != existing.ID {
-		t.Errorf("OIDC subject not linked to the correct user: expected %q, got %q", existing.ID, linked.ID)
-	}
+	require.Equal(t, existing.ID, linked.ID)
 }
 
 func TestFindOrCreateUser_CreatesNewUser(t *testing.T) {
@@ -429,17 +397,11 @@ func TestFindOrCreateUser_CreatesNewUser(t *testing.T) {
 	user, err := h.findOrCreateUser(t.Context(), "brand-new-sub", "brandnew@example.com", "Brand New User")
 	require.NoError(t, err, "findOrCreateUser")
 
-	if user.Email != "brandnew@example.com" {
-		t.Errorf("expected email %q, got %q", "brandnew@example.com", user.Email)
-	}
-	if user.Name != "Brand New User" {
-		t.Errorf("expected name %q, got %q", "Brand New User", user.Name)
-	}
+	require.Equal(t, "brandnew@example.com", user.Email)
+	require.Equal(t, "Brand New User", user.Name)
 
 	// Confirm the user is retrievable from the DB by OIDC subject.
 	found, err := h.DB.GetUserByOIDCSubject(t.Context(), "brand-new-sub")
 	require.NoError(t, err, "GetUserByOIDCSubject")
-	if found.ID != user.ID {
-		t.Errorf("DB lookup returned ID %q, expected %q", found.ID, user.ID)
-	}
+	require.Equal(t, user.ID, found.ID)
 }

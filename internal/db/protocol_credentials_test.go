@@ -37,26 +37,14 @@ func TestScanProtocolCredential_HappyPath(t *testing.T) {
 	cred, err := scanProtocolCredential(row)
 	require.NoError(t, err, "scanProtocolCredential")
 
-	if cred.ID != "cred-1" {
-		t.Errorf("ID = %q, want %q", cred.ID, "cred-1")
-	}
-	if cred.UserID != "user-1" {
-		t.Errorf("UserID = %q, want %q", cred.UserID, "user-1")
-	}
-	if cred.Username != "reader" {
-		t.Errorf("Username = %q, want %q", cred.Username, "reader")
-	}
-	if cred.PasswordHash != "hash" {
-		t.Errorf("PasswordHash = %q, want %q", cred.PasswordHash, "hash")
-	}
+	require.Equal(t, "cred-1", cred.ID)
+	require.Equal(t, "user-1", cred.UserID)
+	require.Equal(t, "reader", cred.Username)
+	require.Equal(t, "hash", cred.PasswordHash)
 	wantCreatedAt := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	if !cred.CreatedAt.Time.Equal(wantCreatedAt) {
-		t.Errorf("CreatedAt = %q, want %q", cred.CreatedAt.Time.Format(time.RFC3339), wantCreatedAt.Format(time.RFC3339))
-	}
+	require.True(t, cred.CreatedAt.Time.Equal(wantCreatedAt))
 	wantUpdatedAt := time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC)
-	if !cred.UpdatedAt.Time.Equal(wantUpdatedAt) {
-		t.Errorf("UpdatedAt = %q, want %q", cred.UpdatedAt.Time.Format(time.RFC3339), wantUpdatedAt.Format(time.RFC3339))
-	}
+	require.True(t, cred.UpdatedAt.Time.Equal(wantUpdatedAt))
 }
 
 func TestScanProtocolCredential_PropagatesNoRowsError(t *testing.T) {

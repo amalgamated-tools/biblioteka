@@ -13,12 +13,8 @@ func TestListBooksPaginated_Empty(t *testing.T) {
 
 	books, total, err := d.ListBooksPaginated(t.Context(), 10, 0)
 	require.NoError(t, err, "ListBooksPaginated()")
-	if total != 0 {
-		t.Errorf("total = %d, want 0", total)
-	}
-	if len(books) != 0 {
-		t.Errorf("len(books) = %d, want 0", len(books))
-	}
+	require.Equal(t, 0, total)
+	require.Len(t, books, 0)
 }
 
 func TestListBooksPaginated_OrdersByTitle(t *testing.T) {
@@ -31,19 +27,11 @@ func TestListBooksPaginated_OrdersByTitle(t *testing.T) {
 
 	books, total, err := d.ListBooksPaginated(t.Context(), 10, 0)
 	require.NoError(t, err, "ListBooksPaginated()")
-	if total != 3 {
-		t.Errorf("total = %d, want 3", total)
-	}
+	require.Equal(t, 3, total)
 	require.Len(t, books, 3)
-	if books[0].Title != "Apple" {
-		t.Errorf("books[0].Title = %q, want Apple", books[0].Title)
-	}
-	if books[1].Title != "Mango" {
-		t.Errorf("books[1].Title = %q, want Mango", books[1].Title)
-	}
-	if books[2].Title != "Zebra" {
-		t.Errorf("books[2].Title = %q, want Zebra", books[2].Title)
-	}
+	require.Equal(t, "Apple", books[0].Title)
+	require.Equal(t, "Mango", books[1].Title)
+	require.Equal(t, "Zebra", books[2].Title)
 }
 
 func TestListBooksPaginated_FirstPage(t *testing.T) {
@@ -56,16 +44,10 @@ func TestListBooksPaginated_FirstPage(t *testing.T) {
 
 	page1, total, err := d.ListBooksPaginated(t.Context(), 2, 0)
 	require.NoError(t, err, "ListBooksPaginated(limit=2, offset=0)")
-	if total != 5 {
-		t.Errorf("total = %d, want 5", total)
-	}
+	require.Equal(t, 5, total)
 	require.Len(t, page1, 2)
-	if page1[0].Title != "A" {
-		t.Errorf("page1[0].Title = %q, want A", page1[0].Title)
-	}
-	if page1[1].Title != "B" {
-		t.Errorf("page1[1].Title = %q, want B", page1[1].Title)
-	}
+	require.Equal(t, "A", page1[0].Title)
+	require.Equal(t, "B", page1[1].Title)
 }
 
 func TestListBooksPaginated_SecondPage(t *testing.T) {
@@ -78,13 +60,9 @@ func TestListBooksPaginated_SecondPage(t *testing.T) {
 
 	page2, total, err := d.ListBooksPaginated(t.Context(), 2, 2)
 	require.NoError(t, err, "ListBooksPaginated(limit=2, offset=2)")
-	if total != 5 {
-		t.Errorf("total = %d, want 5", total)
-	}
+	require.Equal(t, 5, total)
 	require.Len(t, page2, 2)
-	if page2[0].Title != "C" {
-		t.Errorf("page2[0].Title = %q, want C", page2[0].Title)
-	}
+	require.Equal(t, "C", page2[0].Title)
 }
 
 // When offset is beyond the last row the window function returns zero rows,
@@ -98,12 +76,8 @@ func TestListBooksPaginated_OffsetBeyondTotal(t *testing.T) {
 
 	books, total, err := d.ListBooksPaginated(t.Context(), 10, 100)
 	require.NoError(t, err, "ListBooksPaginated(offset=100)")
-	if total != 1 {
-		t.Errorf("total = %d, want 1", total)
-	}
-	if len(books) != 0 {
-		t.Errorf("len(books) = %d, want 0", len(books))
-	}
+	require.Equal(t, 1, total)
+	require.Len(t, books, 0)
 }
 
 // ---- ListRecentBooks ----
@@ -113,12 +87,8 @@ func TestListRecentBooks_Empty(t *testing.T) {
 
 	books, total, err := d.ListRecentBooks(t.Context(), 10, 0)
 	require.NoError(t, err, "ListRecentBooks()")
-	if total != 0 {
-		t.Errorf("total = %d, want 0", total)
-	}
-	if len(books) != 0 {
-		t.Errorf("len(books) = %d, want 0", len(books))
-	}
+	require.Equal(t, 0, total)
+	require.Len(t, books, 0)
 }
 
 func TestListRecentBooks_Paginated(t *testing.T) {
@@ -131,16 +101,12 @@ func TestListRecentBooks_Paginated(t *testing.T) {
 
 	page1, total, err := d.ListRecentBooks(t.Context(), 2, 0)
 	require.NoError(t, err, "ListRecentBooks(limit=2, offset=0)")
-	if total != 5 {
-		t.Errorf("total = %d, want 5", total)
-	}
+	require.Equal(t, 5, total)
 	require.Len(t, page1, 2)
 
 	page2, total2, err := d.ListRecentBooks(t.Context(), 2, 2)
 	require.NoError(t, err, "ListRecentBooks(limit=2, offset=2)")
-	if total2 != 5 {
-		t.Errorf("page2 total = %d, want 5", total2)
-	}
+	require.Equal(t, 5, total2)
 	require.Len(t, page2, 2)
 }
 
@@ -152,12 +118,8 @@ func TestListRecentBooks_OffsetBeyondTotal(t *testing.T) {
 
 	books, total, err := d.ListRecentBooks(t.Context(), 10, 50)
 	require.NoError(t, err, "ListRecentBooks(offset=50)")
-	if total != 1 {
-		t.Errorf("total = %d, want 1", total)
-	}
-	if len(books) != 0 {
-		t.Errorf("len(books) = %d, want 0", len(books))
-	}
+	require.Equal(t, 1, total)
+	require.Len(t, books, 0)
 }
 
 // ---- ListBooksByAuthor ----
@@ -170,9 +132,7 @@ func TestListBooksByAuthor_Empty(t *testing.T) {
 
 	books, err := d.ListBooksByAuthor(t.Context(), author.ID)
 	require.NoError(t, err, "ListBooksByAuthor()")
-	if len(books) != 0 {
-		t.Errorf("len(books) = %d, want 0", len(books))
-	}
+	require.Len(t, books, 0)
 }
 
 func TestListBooksByAuthor_ReturnsMatchingBooks(t *testing.T) {
@@ -201,12 +161,8 @@ func TestListBooksByAuthor_ReturnsMatchingBooks(t *testing.T) {
 	require.NoError(t, err, "ListBooksByAuthor()")
 	require.Len(t, books, 2)
 	// Ordered by title: "It" before "The Gunslinger".
-	if books[0].Title != "It" {
-		t.Errorf("books[0].Title = %q, want It", books[0].Title)
-	}
-	if books[1].Title != "The Gunslinger" {
-		t.Errorf("books[1].Title = %q, want The Gunslinger", books[1].Title)
-	}
+	require.Equal(t, "It", books[0].Title)
+	require.Equal(t, "The Gunslinger", books[1].Title)
 }
 
 func TestListBooksByAuthorPaginated(t *testing.T) {
@@ -224,23 +180,15 @@ func TestListBooksByAuthorPaginated(t *testing.T) {
 
 	page1, total, err := d.ListBooksByAuthorPaginated(t.Context(), author.ID, 2, 0)
 	require.NoError(t, err, "ListBooksByAuthorPaginated(page1)")
-	if total != 4 {
-		t.Errorf("total = %d, want 4", total)
-	}
+	require.Equal(t, 4, total)
 	require.Len(t, page1, 2)
-	if page1[0].Title != "Book A" {
-		t.Errorf("page1[0].Title = %q, want Book A", page1[0].Title)
-	}
+	require.Equal(t, "Book A", page1[0].Title)
 
 	page2, total2, err := d.ListBooksByAuthorPaginated(t.Context(), author.ID, 2, 2)
 	require.NoError(t, err, "ListBooksByAuthorPaginated(page2)")
-	if total2 != 4 {
-		t.Errorf("page2 total = %d, want 4", total2)
-	}
+	require.Equal(t, 4, total2)
 	require.Len(t, page2, 2)
-	if page2[0].Title != "Book C" {
-		t.Errorf("page2[0].Title = %q, want Book C", page2[0].Title)
-	}
+	require.Equal(t, "Book C", page2[0].Title)
 }
 
 func TestListBooksByAuthorPaginated_OffsetBeyondTotal(t *testing.T) {
@@ -255,10 +203,6 @@ func TestListBooksByAuthorPaginated_OffsetBeyondTotal(t *testing.T) {
 
 	books, total, err := d.ListBooksByAuthorPaginated(t.Context(), author.ID, 10, 50)
 	require.NoError(t, err, "ListBooksByAuthorPaginated(offset=50)")
-	if total != 1 {
-		t.Errorf("total = %d, want 1", total)
-	}
-	if len(books) != 0 {
-		t.Errorf("len(books) = %d, want 0", len(books))
-	}
+	require.Equal(t, 1, total)
+	require.Len(t, books, 0)
 }

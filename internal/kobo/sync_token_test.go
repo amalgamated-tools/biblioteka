@@ -3,32 +3,27 @@ package kobo
 import (
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseSyncToken_Empty(t *testing.T) {
 	tok := ParseSyncToken("")
-	if !tok.BooksLastModified.IsZero() || !tok.ReadingStateLastModified.IsZero() {
-		t.Error("expected zero values for empty token")
-	}
+	require.True(t, tok.BooksLastModified.IsZero())
+	require.True(t, tok.ReadingStateLastModified.IsZero())
 }
 
 func TestParseSyncToken_Garbage(t *testing.T) {
 	tok := ParseSyncToken("not-base64!!!")
-	if !tok.BooksLastModified.IsZero() {
-		t.Error("expected zero BooksLastModified for garbage token")
-	}
+	require.True(t, tok.BooksLastModified.IsZero())
 }
 
 func TestSyncTokenRoundTrip_Zero(t *testing.T) {
 	tok := SyncToken{}
 	encoded := EncodeSyncToken(tok)
 	decoded := ParseSyncToken(encoded)
-	if !decoded.BooksLastModified.IsZero() {
-		t.Errorf("BooksLastModified: got %v, want zero", decoded.BooksLastModified)
-	}
-	if !decoded.ReadingStateLastModified.IsZero() {
-		t.Errorf("ReadingStateLastModified: got %v, want zero", decoded.ReadingStateLastModified)
-	}
+	require.True(t, decoded.BooksLastModified.IsZero())
+	require.True(t, decoded.ReadingStateLastModified.IsZero())
 }
 
 func TestSyncTokenRoundTrip_NonZero(t *testing.T) {
@@ -40,26 +35,16 @@ func TestSyncTokenRoundTrip_NonZero(t *testing.T) {
 	}
 	encoded := EncodeSyncToken(tok)
 	decoded := ParseSyncToken(encoded)
-	if !decoded.BooksLastModified.Equal(tok.BooksLastModified) {
-		t.Errorf("BooksLastModified: got %v, want %v", decoded.BooksLastModified, tok.BooksLastModified)
-	}
-	if decoded.BooksLastID != tok.BooksLastID {
-		t.Errorf("BooksLastID: got %q, want %q", decoded.BooksLastID, tok.BooksLastID)
-	}
-	if !decoded.ReadingStateLastModified.Equal(tok.ReadingStateLastModified) {
-		t.Errorf("ReadingStateLastModified: got %v, want %v", decoded.ReadingStateLastModified, tok.ReadingStateLastModified)
-	}
+	require.True(t, decoded.BooksLastModified.Equal(tok.BooksLastModified))
+	require.Equal(t, tok.BooksLastID, decoded.BooksLastID)
+	require.True(t, decoded.ReadingStateLastModified.Equal(tok.ReadingStateLastModified))
 }
 
 func TestEncodeSyncToken_ProducesBase64(t *testing.T) {
 	tok := SyncToken{BooksLastModified: time.Now().UTC()}
 	encoded := EncodeSyncToken(tok)
-	if encoded == "" {
-		t.Error("expected non-empty encoded token")
-	}
+	require.NotEqual(t, "", encoded)
 	// Must be decodeable back to the same token.
 	decoded := ParseSyncToken(encoded)
-	if decoded.BooksLastModified.IsZero() {
-		t.Error("expected non-zero BooksLastModified after round-trip")
-	}
+	require.False(t, decoded.BooksLastModified.IsZero())
 }

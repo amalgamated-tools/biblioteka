@@ -28,12 +28,8 @@ func TestHandleAuth_RefreshEndpoint(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
-	if resp["AccessToken"] == nil || resp["AccessToken"] == "" {
-		t.Error("expected non-empty AccessToken in refresh response")
-	}
-	if resp["RefreshToken"] == nil || resp["RefreshToken"] == "" {
-		t.Error("expected non-empty RefreshToken in refresh response")
-	}
+	require.NotEmpty(t, resp["AccessToken"], "expected non-empty AccessToken in refresh response")
+	require.NotEmpty(t, resp["RefreshToken"], "expected non-empty RefreshToken in refresh response")
 }
 
 // TestHandleAuth_ExchangeEndpoint verifies that HandleAuth handles the
@@ -71,9 +67,8 @@ func TestHandleAuth_NilBody(t *testing.T) {
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	// When no body is provided, UserKey should be the zero value.
-	if _, ok := resp["UserKey"]; !ok {
-		t.Error("expected UserKey field in response even when body is nil")
-	}
+	_, ok := resp["UserKey"]
+	require.True(t, ok, "expected UserKey field in response even when body is nil")
 }
 
 // TestHandleAuth_TokenType verifies that the response always contains the
@@ -93,9 +88,7 @@ func TestHandleAuth_TokenType(t *testing.T) {
 
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
-	if resp["TokenType"] != "Bearer" {
-		t.Errorf("TokenType = %v, want Bearer", resp["TokenType"])
-	}
+	require.Equal(t, "Bearer", resp["TokenType"])
 }
 
 // TestHandleAuth_TrackingIDFormat verifies that TrackingId is a UUID-like string.
@@ -114,9 +107,7 @@ func TestHandleAuth_TrackingIDFormat(t *testing.T) {
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	trackingID, _ := resp["TrackingId"].(string)
-	if len(trackingID) == 0 {
-		t.Error("expected non-empty TrackingId")
-	}
+	require.NotEmpty(t, trackingID)
 	// UUID format has 4 hyphens: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 	hyphenCount := 0
 	for _, c := range trackingID {
@@ -124,9 +115,7 @@ func TestHandleAuth_TrackingIDFormat(t *testing.T) {
 			hyphenCount++
 		}
 	}
-	if hyphenCount != 4 {
-		t.Errorf("TrackingId %q does not look like a UUID (expected 4 hyphens, got %d)", trackingID, hyphenCount)
-	}
+	require.Equal(t, 4, hyphenCount)
 }
 
 // TestHandleAuth_InvalidJSONBody verifies that HandleAuth tolerates an invalid
@@ -145,9 +134,7 @@ func TestHandleAuth_InvalidJSONBody(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	// HandleAuth tolerates decode errors; should still return 200.
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 // TestKoboRandomUUID_IsUnique verifies that successive calls to koboRandomUUID
@@ -159,9 +146,7 @@ func TestKoboRandomUUID_IsUnique(t *testing.T) {
 	for range 10 {
 		id, err := koboRandomUUID()
 		require.NoError(t, err, "koboRandomUUID() error")
-		if seen[id] {
-			t.Errorf("koboRandomUUID() returned duplicate value %q", id)
-		}
+		require.False(t, seen[id], "koboRandomUUID() returned duplicate value %q", id)
 		seen[id] = true
 	}
 }
@@ -185,7 +170,5 @@ func TestHandleAuth_DirectHandler(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
-	if resp["UserKey"] != "direct-key" {
-		t.Errorf("UserKey = %v, want direct-key", resp["UserKey"])
-	}
+	require.Equal(t, "direct-key", resp["UserKey"])
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -35,9 +34,10 @@ func TestValidateField(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			err := validateField(context.Background(), tt.fieldName, tt.value)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("validateField(%q, %q) error = %v, wantErr %v",
-					tt.fieldName, tt.value, err, tt.wantErr)
+			if tt.wantErr {
+				require.Error(t, err, "validateField(%q, %q) should return error", tt.fieldName, tt.value)
+			} else {
+				require.NoError(t, err, "validateField(%q, %q) should not return error", tt.fieldName, tt.value)
 			}
 		})
 	}
@@ -51,9 +51,7 @@ func TestValidateField_ErrorContainsFieldName(t *testing.T) {
 	err := validateField(context.Background(), "my_special_field", "")
 	require.Error(t, err, "expected error, got nil")
 	errStr := err.Error()
-	if !strings.Contains(errStr, "my_special_field") {
-		t.Errorf("error message %q should contain field name %q", errStr, "my_special_field")
-	}
+	require.Contains(t, errStr, "my_special_field")
 }
 
 // TestValidatePayload verifies that validatePayload correctly validates all
@@ -107,9 +105,7 @@ func TestValidatePayload(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			err := validatePayload(context.Background(), tt.payload)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("validatePayload() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			require.Equal(t, tt.wantErr, (err != nil))
 		})
 	}
 }
@@ -135,9 +131,8 @@ func TestReorganizedCandidatePaths_BookPerFolder(t *testing.T) {
 	// The candidate should be under libraryRoot/Author/Title/
 	rel, err := filepath.Rel(dir, candidates[0])
 	require.NoError(t, err, "filepath.Rel")
-	if rel == "" || rel == "." {
-		t.Errorf("expected candidate path to be a subdirectory, got %q", rel)
-	}
+	require.NotEmpty(t, rel)
+	require.NotEqual(t, ".", rel, "expected candidate path to be a subdirectory")
 }
 
 // TestReorganizedCandidatePaths_BookPerFolder_MissingAuthor verifies that
@@ -157,9 +152,7 @@ func TestReorganizedCandidatePaths_BookPerFolder_MissingAuthor(t *testing.T) {
 
 	candidates := reorganizedCandidatePaths(context.Background(), p, pathInfo, db.LibraryOrganizationBookPerFolder)
 
-	if len(candidates) != 0 {
-		t.Errorf("expected 0 candidates, got %d: %v", len(candidates), candidates)
-	}
+	require.Len(t, candidates, 0)
 }
 
 // TestReorganizedCandidatePaths_BookPerFolder_MissingTitle verifies that
@@ -179,9 +172,7 @@ func TestReorganizedCandidatePaths_BookPerFolder_MissingTitle(t *testing.T) {
 
 	candidates := reorganizedCandidatePaths(context.Background(), p, pathInfo, db.LibraryOrganizationBookPerFolder)
 
-	if len(candidates) != 0 {
-		t.Errorf("expected 0 candidates, got %d: %v", len(candidates), candidates)
-	}
+	require.Len(t, candidates, 0)
 }
 
 // TestReorganizedCandidatePaths_BookPerFile verifies that BookPerFile returns a
@@ -203,9 +194,7 @@ func TestReorganizedCandidatePaths_BookPerFile(t *testing.T) {
 	require.Len(t, candidates, 1)
 	// Flat layout: libraryRoot/Author/filename
 	expected := filepath.Join(dir, "Terry Pratchett", "book.epub")
-	if candidates[0] != expected {
-		t.Errorf("expected candidate %q, got %q", expected, candidates[0])
-	}
+	require.Equal(t, expected, candidates[0])
 }
 
 // TestReorganizedCandidatePaths_BookPerFile_MissingAuthor verifies that
@@ -222,9 +211,7 @@ func TestReorganizedCandidatePaths_BookPerFile_MissingAuthor(t *testing.T) {
 
 	candidates := reorganizedCandidatePaths(context.Background(), p, pathInfo, db.LibraryOrganizationBookPerFile)
 
-	if len(candidates) != 0 {
-		t.Errorf("expected 0 candidates, got %d: %v", len(candidates), candidates)
-	}
+	require.Len(t, candidates, 0)
 }
 
 // TestReorganizedCandidatePaths_NoneOrganization verifies that unknown or
@@ -246,9 +233,7 @@ func TestReorganizedCandidatePaths_NoneOrganization(t *testing.T) {
 		t.Run("org="+orgType, func(t *testing.T) {
 			t.Parallel()
 			candidates := reorganizedCandidatePaths(context.Background(), p, pathInfo, orgType)
-			if len(candidates) != 0 {
-				t.Errorf("expected 0 candidates for org %q, got %d: %v", orgType, len(candidates), candidates)
-			}
+			require.Len(t, candidates, 0)
 		})
 	}
 }
@@ -274,9 +259,7 @@ func TestReorganizedCandidatePaths_EmptyLibraryRoot(t *testing.T) {
 			// reorganizedCandidatePaths must not add empty strings.
 			candidates := reorganizedCandidatePaths(context.Background(), p, pathInfo, orgType)
 			for _, c := range candidates {
-				if c == "" {
-					t.Errorf("got empty string candidate for org %q", orgType)
-				}
+				require.NotEqual(t, "", c)
 			}
 		})
 	}
@@ -310,9 +293,7 @@ func TestReorganizedCandidatePaths_NoDuplicates(t *testing.T) {
 
 	seen := make(map[string]bool)
 	for _, c := range candidates {
-		if seen[c] {
-			t.Errorf("duplicate candidate path %q", c)
-		}
+		require.False(t, seen[c], "duplicate candidate path %q", c)
 		seen[c] = true
 	}
 }

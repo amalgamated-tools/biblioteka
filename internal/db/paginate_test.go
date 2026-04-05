@@ -21,33 +21,24 @@ func TestListAll_EmptyTable(t *testing.T) {
 
 	results, err := listAll(t.Context(), d, authorListQuery{}, scanAuthor)
 	require.NoError(t, err, "listAll(authors, empty) error")
-	if len(results) != 0 {
-		t.Errorf("len = %d, want 0", len(results))
-	}
+	require.Len(t, results, 0)
 }
 
 func TestListAll_WithData(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, name := range []string{"Zoe Author", "Alice Author", "Midge Author"} {
-		if _, err := d.CreateAuthor(t.Context(), name, nil, nil, nil, nil); err != nil {
-			require.NoError(t, err, "CreateAuthor(%q)", name)
-		}
+		_, err := d.CreateAuthor(t.Context(), name, nil, nil, nil, nil)
+		require.NoError(t, err, "CreateAuthor(%q)", name)
 	}
 
 	results, err := listAll(t.Context(), d, authorListQuery{}, scanAuthor)
 	require.NoError(t, err, "listAll(authors) error")
 	require.Len(t, results, 3)
 	// Alphabetical order: Alice, Midge, Zoe.
-	if results[0].Name != "Alice Author" {
-		t.Errorf("results[0].Name = %q, want Alice Author", results[0].Name)
-	}
-	if results[1].Name != "Midge Author" {
-		t.Errorf("results[1].Name = %q, want Midge Author", results[1].Name)
-	}
-	if results[2].Name != "Zoe Author" {
-		t.Errorf("results[2].Name = %q, want Zoe Author", results[2].Name)
-	}
+	require.Equal(t, "Alice Author", results[0].Name)
+	require.Equal(t, "Midge Author", results[1].Name)
+	require.Equal(t, "Zoe Author", results[2].Name)
 }
 
 func TestListAll_InvalidTableRejected(t *testing.T) {
@@ -66,98 +57,70 @@ func TestListPaginated_EmptyTable(t *testing.T) {
 
 	results, total, err := listPaginated(t.Context(), d, authorListQuery{}, 10, 0, scanAuthor)
 	require.NoError(t, err, "listPaginated(empty) error")
-	if total != 0 {
-		t.Errorf("total = %d, want 0", total)
-	}
-	if len(results) != 0 {
-		t.Errorf("len = %d, want 0", len(results))
-	}
+	require.Equal(t, 0, total)
+	require.Len(t, results, 0)
 	// Must return an empty non-nil slice.
-	if results == nil {
-		t.Error("results = nil, want empty slice")
-	}
+	require.NotNil(t, results)
 }
 
 func TestListPaginated_FirstPage(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, name := range []string{"Author A", "Author B", "Author C", "Author D", "Author E"} {
-		if _, err := d.CreateAuthor(t.Context(), name, nil, nil, nil, nil); err != nil {
-			require.NoError(t, err, "CreateAuthor(%q)", name)
-		}
+		_, err := d.CreateAuthor(t.Context(), name, nil, nil, nil, nil)
+		require.NoError(t, err, "CreateAuthor(%q)", name)
 	}
 
 	results, total, err := listPaginated(t.Context(), d, authorListQuery{}, 2, 0, scanAuthor)
 	require.NoError(t, err, "listPaginated(page1) error")
-	if total != 5 {
-		t.Errorf("total = %d, want 5", total)
-	}
+	require.Equal(t, 5, total)
 	require.Len(t, results, 2)
-	if results[0].Name != "Author A" {
-		t.Errorf("results[0].Name = %q, want Author A", results[0].Name)
-	}
+	require.Equal(t, "Author A", results[0].Name)
 }
 
 func TestListPaginated_SecondPage(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, name := range []string{"Author A", "Author B", "Author C", "Author D", "Author E"} {
-		if _, err := d.CreateAuthor(t.Context(), name, nil, nil, nil, nil); err != nil {
-			require.NoError(t, err, "CreateAuthor(%q)", name)
-		}
+		_, err := d.CreateAuthor(t.Context(), name, nil, nil, nil, nil)
+		require.NoError(t, err, "CreateAuthor(%q)", name)
 	}
 
 	results, total, err := listPaginated(t.Context(), d, authorListQuery{}, 2, 2, scanAuthor)
 	require.NoError(t, err, "listPaginated(page2) error")
-	if total != 5 {
-		t.Errorf("total = %d, want 5", total)
-	}
+	require.Equal(t, 5, total)
 	require.Len(t, results, 2)
-	if results[0].Name != "Author C" {
-		t.Errorf("results[0].Name = %q, want Author C", results[0].Name)
-	}
+	require.Equal(t, "Author C", results[0].Name)
 }
 
 func TestListPaginated_NegativeOffsetClampedToZero(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, name := range []string{"Author X", "Author Y"} {
-		if _, err := d.CreateAuthor(t.Context(), name, nil, nil, nil, nil); err != nil {
-			require.NoError(t, err, "CreateAuthor(%q)", name)
-		}
+		_, err := d.CreateAuthor(t.Context(), name, nil, nil, nil, nil)
+		require.NoError(t, err, "CreateAuthor(%q)", name)
 	}
 
 	results, total, err := listPaginated(t.Context(), d, authorListQuery{}, 10, -5, scanAuthor)
 	require.NoError(t, err, "listPaginated(offset=-5) error")
-	if total != 2 {
-		t.Errorf("total = %d, want 2", total)
-	}
+	require.Equal(t, 2, total)
 	// Negative offset clamped to 0 → both rows returned.
-	if len(results) != 2 {
-		t.Errorf("len = %d, want 2 (negative offset treated as 0)", len(results))
-	}
+	require.Len(t, results, 2)
 }
 
 func TestListPaginated_ZeroLimitReturnsTotal(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, name := range []string{"Alpha", "Beta"} {
-		if _, err := d.CreateAuthor(t.Context(), name, nil, nil, nil, nil); err != nil {
-			require.NoError(t, err, "CreateAuthor(%q)", name)
-		}
+		_, err := d.CreateAuthor(t.Context(), name, nil, nil, nil, nil)
+		require.NoError(t, err, "CreateAuthor(%q)", name)
 	}
 
 	results, total, err := listPaginated(t.Context(), d, authorListQuery{}, 0, 0, scanAuthor)
 	require.NoError(t, err, "listPaginated(limit=0) error")
-	if total != 2 {
-		t.Errorf("total = %d, want 2", total)
-	}
-	if len(results) != 0 {
-		t.Errorf("len = %d, want 0 for limit=0", len(results))
-	}
-	if results == nil {
-		t.Error("results = nil, want empty slice")
-	}
+	require.Equal(t, 2, total)
+	require.Len(t, results, 0)
+	require.NotNil(t, results)
 }
 
 func TestListPaginated_InvalidTableRejected(t *testing.T) {

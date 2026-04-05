@@ -30,9 +30,7 @@ func TestOPDSCredentials_MethodNotAllowed(t *testing.T) {
 
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestOPDSCredentials_GetNotFound(t *testing.T) {
@@ -44,9 +42,7 @@ func TestOPDSCredentials_GetNotFound(t *testing.T) {
 
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestOPDSCredentials_PutSuccess(t *testing.T) {
@@ -59,14 +55,10 @@ func TestOPDSCredentials_PutSuccess(t *testing.T) {
 
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp credentialResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Username != "myreader" {
-		t.Errorf("username = %q, want %q", resp.Username, "myreader")
-	}
+	require.Equal(t, "myreader", resp.Username)
 }
 
 func TestOPDSCredentials_GetAfterPut(t *testing.T) {
@@ -87,14 +79,10 @@ func TestOPDSCredentials_GetAfterPut(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("GET status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp credentialResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Username != "myreader" {
-		t.Errorf("username = %q, want %q", resp.Username, "myreader")
-	}
+	require.Equal(t, "myreader", resp.Username)
 }
 
 func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
@@ -116,14 +104,10 @@ func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("second PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp credentialResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Username != "newname" {
-		t.Errorf("username = %q, want %q", resp.Username, "newname")
-	}
+	require.Equal(t, "newname", resp.Username)
 }
 
 func TestOPDSCredentials_PutEmptyUsername(t *testing.T) {
@@ -136,9 +120,7 @@ func TestOPDSCredentials_PutEmptyUsername(t *testing.T) {
 
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestOPDSCredentials_PutShortPassword(t *testing.T) {
@@ -151,9 +133,7 @@ func TestOPDSCredentials_PutShortPassword(t *testing.T) {
 
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestOPDSCredentials_PutUsernameTooLong(t *testing.T) {
@@ -167,9 +147,7 @@ func TestOPDSCredentials_PutUsernameTooLong(t *testing.T) {
 
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestOPDSCredentials_PutInvalidJSON(t *testing.T) {
@@ -181,9 +159,7 @@ func TestOPDSCredentials_PutInvalidJSON(t *testing.T) {
 
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestOPDSCredentials_PutUsernameLowercased(t *testing.T) {
@@ -196,14 +172,10 @@ func TestOPDSCredentials_PutUsernameLowercased(t *testing.T) {
 
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp credentialResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Username != "myreader" {
-		t.Errorf("username = %q, want %q (should be lowercased)", resp.Username, "myreader")
-	}
+	require.Equal(t, "myreader", resp.Username)
 }
 
 func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
@@ -232,9 +204,7 @@ func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusConflict {
-		t.Errorf("user2 PUT status = %d, want %d; body: %s", w.Code, http.StatusConflict, w.Body.String())
-	}
+	require.Equal(t, http.StatusConflict, w.Code)
 }
 
 func TestOPDSCredentials_DeleteSuccess(t *testing.T) {
@@ -255,9 +225,7 @@ func TestOPDSCredentials_DeleteSuccess(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusNoContent {
-		t.Errorf("DELETE status = %d, want %d; body: %s", w.Code, http.StatusNoContent, w.Body.String())
-	}
+	require.Equal(t, http.StatusNoContent, w.Code)
 
 	// Verify they're gone.
 	r = httptest.NewRequest(http.MethodGet, "/api/opds/credentials", nil)
@@ -265,9 +233,7 @@ func TestOPDSCredentials_DeleteSuccess(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("GET after DELETE status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestOPDSCredentials_DeleteNotFound(t *testing.T) {
@@ -279,9 +245,7 @@ func TestOPDSCredentials_DeleteNotFound(t *testing.T) {
 
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestOPDSCredentials_PutUsernameTrimmed(t *testing.T) {
@@ -294,12 +258,8 @@ func TestOPDSCredentials_PutUsernameTrimmed(t *testing.T) {
 
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp credentialResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Username != "spacey" {
-		t.Errorf("username = %q, want %q (should be trimmed and lowercased)", resp.Username, "spacey")
-	}
+	require.Equal(t, "spacey", resp.Username)
 }
