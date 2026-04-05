@@ -25,6 +25,13 @@ env:
   # GHCR requires lowercase image names
   IMAGE_NAME: ${{ github.repository }}
 
+# Cancel an in-progress build when a newer push arrives on the same ref.
+# Release events are never cancelled — the image must be published before
+# release consumers can pull it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
+
 jobs:
   build:
     runs-on: ubuntu-latest

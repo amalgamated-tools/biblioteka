@@ -43,7 +43,10 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     name: E2E Tests
-    timeout-minutes: 45
+    # The full job (build frontend + Go binary + Playwright install + tests)
+    # completes in ~10-15 minutes with warm caches. 30 minutes gives a 2×
+    # safety margin while still catching hung runners much earlier than 45.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
