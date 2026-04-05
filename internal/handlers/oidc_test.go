@@ -126,9 +126,7 @@ func TestOIDCCreateLinkNonce_Success(t *testing.T) {
 	}
 
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode response")
 	if body["nonce"] == "" {
 		require.Fail(t, "expected non-empty nonce in response")
 	}
@@ -158,9 +156,7 @@ func TestOIDCCreateLinkNonce_StoresNonce(t *testing.T) {
 	h.CreateLinkNonce(w, r)
 
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode response")
 	nonce := body["nonce"]
 
 	h.linkNoncesMu.Lock()
@@ -667,9 +663,7 @@ func TestOIDCCallback_EmailVerifiedFalse(t *testing.T) {
 		require.Failf(t, "failed", "expected status 401, got %d; body: %s", w.Code, w.Body.String())
 	}
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
 	if body["error"] != "OIDC email must be verified by the identity provider" {
 		t.Errorf("unexpected error message: %q", body["error"])
 	}

@@ -133,9 +133,7 @@ func TestContextWithUserID(t *testing.T) {
 func assertJSONError(t *testing.T, body []byte, wantMsg string) {
 	t.Helper()
 	var resp map[string]string
-	if err := json.Unmarshal(body, &resp); err != nil {
-		require.NoError(t, err, "failed to unmarshal response body")
-	}
+	require.NoError(t, json.Unmarshal(body, &resp), "failed to unmarshal response body")
 	if resp["error"] != wantMsg {
 		t.Errorf("error message = %q, want %q", resp["error"], wantMsg)
 	}

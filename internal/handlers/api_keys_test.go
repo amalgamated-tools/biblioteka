@@ -38,9 +38,7 @@ func TestCreateAPIKey_Success(t *testing.T) {
 	}
 
 	var resp apiKeyCreateResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Key == "" {
 		t.Error("expected non-empty key in response")
 	}
@@ -103,9 +101,7 @@ func TestListAPIKeys_Empty(t *testing.T) {
 	}
 
 	var dtos []apiKeyDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	if len(dtos) != 0 {
 		t.Errorf("len = %d, want 0", len(dtos))
 	}
@@ -138,9 +134,7 @@ func TestListAPIKeys_AfterCreate(t *testing.T) {
 	}
 
 	var dtos []apiKeyDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	if len(dtos) != 2 {
 		t.Errorf("len = %d, want 2", len(dtos))
 	}
@@ -175,9 +169,7 @@ func TestListAPIKeys_UserScoped(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var dtos []apiKeyDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		require.NoError(t, err, "unmarshal list response")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal list response")
 	if len(dtos) != 0 {
 		t.Errorf("user2 should see 0 keys, got %d", len(dtos))
 	}
@@ -194,9 +186,7 @@ func TestDeleteAPIKey_Success(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var created apiKeyCreateResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		require.Failf(t, "failed", "unmarshal create response: %v; body: %s", err, w.Body.String())
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal create response; body: %s", w.Body.String())
 
 	// Delete it.
 	r = httptest.NewRequest(http.MethodDelete, "/api/api-keys/"+created.ID, nil)
@@ -215,9 +205,7 @@ func TestDeleteAPIKey_Success(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var remaining []apiKeyDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &remaining); err != nil {
-		require.Failf(t, "failed", "unmarshal list response: %v; body: %s", err, w.Body.String())
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &remaining), "unmarshal list response; body: %s", w.Body.String())
 	if len(remaining) != 0 {
 		t.Errorf("expected 0 keys after delete, got %d", len(remaining))
 	}
@@ -253,9 +241,7 @@ func TestDeleteAPIKey_OtherUserCannotDelete(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var created apiKeyCreateResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		require.NoError(t, err, "failed to unmarshal response body")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "failed to unmarshal response body")
 
 	// Try to delete as user2.
 	r = httptest.NewRequest(http.MethodDelete, "/api/api-keys/"+created.ID, nil)
@@ -307,9 +293,7 @@ func TestDeleteAPIKey_AuditLog(t *testing.T) {
 	h.HandleAPIKeys(w, r)
 
 	var created apiKeyCreateResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		require.Failf(t, "failed", "unmarshal create response: %v; body: %s", err, w.Body.String())
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal create response; body: %s", w.Body.String())
 
 	r = httptest.NewRequest(http.MethodDelete, "/api/api-keys/"+created.ID, nil)
 	r = withUserID(r, userID)

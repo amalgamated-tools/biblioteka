@@ -34,14 +34,10 @@ func TestSetBookAuthors_ClearAll(t *testing.T) {
 	author, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor()")
 
-	if err := d.SetBookAuthors(t.Context(), book.ID, []string{author.ID}); err != nil {
-		require.NoError(t, err, "SetBookAuthors(set)")
-	}
+	require.NoError(t, d.SetBookAuthors(t.Context(), book.ID, []string{author.ID}), "SetBookAuthors(set)")
 
 	// Clear by passing an empty slice.
-	if err := d.SetBookAuthors(t.Context(), book.ID, []string{}); err != nil {
-		require.NoError(t, err, "SetBookAuthors(clear)")
-	}
+	require.NoError(t, d.SetBookAuthors(t.Context(), book.ID, []string{}), "SetBookAuthors(clear)")
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookAuthors() error")
@@ -59,9 +55,7 @@ func TestSetBookAuthors_DeduplicatesIDs(t *testing.T) {
 	require.NoError(t, err, "CreateAuthor()")
 
 	// Pass the same author ID three times.
-	if err := d.SetBookAuthors(t.Context(), book.ID, []string{author.ID, author.ID, author.ID}); err != nil {
-		require.NoError(t, err, "SetBookAuthors() with duplicates error")
-	}
+	require.NoError(t, d.SetBookAuthors(t.Context(), book.ID, []string{author.ID, author.ID, author.ID}), "SetBookAuthors() with duplicates error")
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookAuthors() error")
@@ -95,14 +89,10 @@ func TestSetBookSeries_ClearAll(t *testing.T) {
 	s, err := d.CreateSeries(t.Context(), "Dark Tower", nil, nil, nil)
 	require.NoError(t, err, "CreateSeries()")
 
-	if err := d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{{SeriesID: s.ID}}); err != nil {
-		require.NoError(t, err, "SetBookSeries(set)")
-	}
+	require.NoError(t, d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{{SeriesID: s.ID}}), "SetBookSeries(set)")
 
 	// Clear by passing empty slice.
-	if err := d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{}); err != nil {
-		require.NoError(t, err, "SetBookSeries(clear)")
-	}
+	require.NoError(t, d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{}), "SetBookSeries(clear)")
 
 	entries, err := d.GetBookSeries(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookSeries() error")
@@ -124,9 +114,7 @@ func TestSetBookSeries_DeduplicatesLastPositionWins(t *testing.T) {
 		{SeriesID: s.ID, Position: new(1.0)},
 		{SeriesID: s.ID, Position: new(99.0)},
 	}
-	if err := d.SetBookSeries(t.Context(), book.ID, entries); err != nil {
-		require.NoError(t, err, "SetBookSeries() with duplicates error")
-	}
+	require.NoError(t, d.SetBookSeries(t.Context(), book.ID, entries), "SetBookSeries() with duplicates error")
 
 	got, err := d.GetBookSeries(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookSeries() error")

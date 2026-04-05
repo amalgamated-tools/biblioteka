@@ -394,9 +394,7 @@ func TestExtractMetadata_PDF(t *testing.T) {
 func TestExtractMetadata_InvalidFile(t *testing.T) {
 	dir := t.TempDir()
 	badPath := filepath.Join(dir, "bad.epub")
-	if err := os.WriteFile(badPath, []byte("not a real epub"), 0o644); err != nil {
-		require.NoError(t, err, "write test file")
-	}
+	require.NoError(t, os.WriteFile(badPath, []byte("not a real epub"), 0o644), "write test file")
 
 	ext := requireExifTool(t)
 	defer ext.Close(t.Context())

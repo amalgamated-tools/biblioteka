@@ -36,9 +36,7 @@ func TestCreateBook_Handler(t *testing.T) {
 	}
 
 	var dto bookDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.Title != "The Gunslinger" {
 		t.Errorf("title = %q, want %q", dto.Title, "The Gunslinger")
 	}
@@ -89,9 +87,7 @@ func TestListBooks_Handler(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
 	}
@@ -129,9 +125,7 @@ func TestListBooks_InvalidLimitOffset_NonInt(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
@@ -169,9 +163,7 @@ func TestListBooks_NegativeLimitOffset(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
@@ -217,9 +209,7 @@ func TestListBooks_MaxLimitClamping(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
@@ -258,9 +248,7 @@ func TestListBooks_Search_MatchesTitle(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Books) != 1 {
 		t.Errorf("len = %d, want 1", len(resp.Books))
 	}
@@ -290,9 +278,7 @@ func TestListBooks_Search_NoResults(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Books) != 0 {
 		t.Errorf("len = %d, want 0", len(resp.Books))
 	}
@@ -323,9 +309,7 @@ func TestListBooks_EmptyQuery_ReturnsAll(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
 	}
@@ -356,9 +340,7 @@ func TestListBooks_WhitespaceOnlyQuery_ReturnsAll(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
 	}
@@ -429,9 +411,7 @@ func TestDeleteBook_NotFound(t *testing.T) {
 	}
 
 	var resp errorResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Error != "book not found" {
 		t.Errorf("error = %q, want %q", resp.Error, "book not found")
 	}
@@ -469,9 +449,7 @@ func TestBookAuthors_Handler(t *testing.T) {
 	}
 
 	var authors []authorDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &authors); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &authors), "unmarshal")
 	if len(authors) != 1 {
 		require.Failf(t, "failed", "len = %d, want 1", len(authors))
 	}
@@ -514,9 +492,7 @@ func TestBookSeries_Handler(t *testing.T) {
 	}
 
 	var entries []bookSeriesEntryDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &entries); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &entries), "unmarshal")
 	if len(entries) != 1 {
 		require.Failf(t, "failed", "len = %d, want 1", len(entries))
 	}
@@ -560,9 +536,7 @@ func TestBookFiles_Handler(t *testing.T) {
 	}
 
 	var files []bookFileDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &files); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &files), "unmarshal")
 	if len(files) != 1 {
 		require.Failf(t, "failed", "len = %d, want 1", len(files))
 	}

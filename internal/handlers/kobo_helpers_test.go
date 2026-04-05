@@ -47,9 +47,7 @@ func TestEncodeKoboSyncToken_IsValidBase64JSON(t *testing.T) {
 	raw, err := base64.StdEncoding.DecodeString(encoded)
 	require.NoError(t, err, "not valid base64")
 	var payload map[string]any
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		require.NoError(t, err, "not valid JSON")
-	}
+	require.NoError(t, json.Unmarshal(raw, &payload), "not valid JSON")
 	if payload["version"] != "1-0-0" {
 		t.Errorf("version = %v, want 1-0-0", payload["version"])
 	}

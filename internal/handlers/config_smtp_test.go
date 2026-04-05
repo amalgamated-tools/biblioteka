@@ -30,9 +30,7 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 	h.HandleConfigStatus(w, r)
 
 	var resp configStatusResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.SMTPConfigured {
 		t.Error("expected SMTPConfigured=false when only host is set")
 	}
@@ -45,9 +43,7 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.HandleConfigStatus(w, r)
 
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if !resp.SMTPConfigured {
 		t.Error("expected SMTPConfigured=true when host and from are set")
 	}
@@ -68,9 +64,7 @@ func TestHandleGetSMTPConfig_AdminNoSettings(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp smtpConfigResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Host != "" {
 		t.Errorf("Host = %q, want empty", resp.Host)
 	}
@@ -102,9 +96,7 @@ func TestHandleGetSMTPConfig_AdminWithSettings(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp smtpConfigResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Host != "smtp.example.com" {
 		t.Errorf("Host = %q, want %q", resp.Host, "smtp.example.com")
 	}
@@ -155,9 +147,7 @@ func TestHandleGetSMTPConfig_EnvOverride(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp smtpConfigResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Host != "env-smtp.example.com" {
 		t.Errorf("Host = %q, want %q", resp.Host, "env-smtp.example.com")
 	}
@@ -340,9 +330,7 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 		{Key: smtp.SettingKeyTLS, Value: "starttls"},
 	}
 	for _, setting := range existing {
-		if err := h.DB.SetSetting(ctx, setting.Key, setting.Value); err != nil {
-			require.NoError(t, err, "SetSetting(%s)", setting.Key)
-		}
+		require.NoError(t, h.DB.SetSetting(ctx, setting.Key, setting.Value), "SetSetting(%s)", setting.Key)
 	}
 
 	if _, err := h.DB.ExecContext(ctx, fmt.Sprintf(`

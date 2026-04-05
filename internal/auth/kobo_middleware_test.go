@@ -71,9 +71,7 @@ func TestKoboTokenAuthMiddleware_InvalidToken(t *testing.T) {
 	}
 
 	var body map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
-		require.NoError(t, err, "response is not valid JSON")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body), "response is not valid JSON")
 }
 
 func TestKoboTokenAuthMiddleware_EmptyToken(t *testing.T) {

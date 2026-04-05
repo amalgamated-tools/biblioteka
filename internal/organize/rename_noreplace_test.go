@@ -13,13 +13,9 @@ func TestRenameNoReplace_Success(t *testing.T) {
 	oldPath := filepath.Join(dir, "old.txt")
 	newPath := filepath.Join(dir, "new.txt")
 
-	if err := os.WriteFile(oldPath, []byte("hello"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(oldPath, []byte("hello"), 0o644), "write file")
 
-	if err := renameNoReplace(t.Context(), oldPath, newPath); err != nil {
-		require.NoError(t, err, "renameNoReplace")
-	}
+	require.NoError(t, renameNoReplace(t.Context(), oldPath, newPath), "renameNoReplace")
 
 	// New file should exist with correct content.
 	content, err := os.ReadFile(newPath)
@@ -39,12 +35,8 @@ func TestRenameNoReplace_DestinationExists(t *testing.T) {
 	oldPath := filepath.Join(dir, "old.txt")
 	newPath := filepath.Join(dir, "new.txt")
 
-	if err := os.WriteFile(oldPath, []byte("new content"), 0o644); err != nil {
-		require.NoError(t, err, "write old file")
-	}
-	if err := os.WriteFile(newPath, []byte("existing"), 0o644); err != nil {
-		require.NoError(t, err, "write new file")
-	}
+	require.NoError(t, os.WriteFile(oldPath, []byte("new content"), 0o644), "write old file")
+	require.NoError(t, os.WriteFile(newPath, []byte("existing"), 0o644), "write new file")
 
 	err := renameNoReplace(t.Context(), oldPath, newPath)
 	require.ErrorIs(t, err, os.ErrExist)

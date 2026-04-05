@@ -180,9 +180,7 @@ func TestServeCover_ExternalURL(t *testing.T) {
 
 func TestServeCover_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	if err := h.DB.Close(); err != nil {
-		require.NoError(t, err, "close db")
-	}
+	require.NoError(t, h.DB.Close(), "close db")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/covers/someid", nil)
 	w := httptest.NewRecorder()

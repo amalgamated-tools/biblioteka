@@ -37,9 +37,7 @@ func TestGetBookFile_Handler(t *testing.T) {
 	}
 
 	var dto bookFileDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.FileName != "gunslinger.epub" {
 		t.Errorf("file_name = %q, want %q", dto.FileName, "gunslinger.epub")
 	}

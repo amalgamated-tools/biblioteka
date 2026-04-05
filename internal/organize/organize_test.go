@@ -13,9 +13,7 @@ func TestReorganizeFile_MovesToAuthorTitle(t *testing.T) {
 
 	// Create a flat file in root.
 	srcPath := filepath.Join(root, "test.epub")
-	if err := os.WriteFile(srcPath, []byte("epub content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(srcPath, []byte("epub content"), 0o644), "write file")
 
 	newPath, err := ReorganizeFile(t.Context(), srcPath, root, "Jane Austen", "Pride and Prejudice")
 	require.NoError(t, err, "reorganize")
@@ -41,13 +39,9 @@ func TestReorganizeFile_MovesToAuthorTitle(t *testing.T) {
 func TestReorganizeFile_AlreadyInPlace(t *testing.T) {
 	root := t.TempDir()
 	targetDir := filepath.Join(root, "Jane Austen", "Pride and Prejudice")
-	if err := os.MkdirAll(targetDir, 0o755); err != nil {
-		require.NoError(t, err, "mkdir")
-	}
+	require.NoError(t, os.MkdirAll(targetDir, 0o755), "mkdir")
 	filePath := filepath.Join(targetDir, "book.epub")
-	if err := os.WriteFile(filePath, []byte("content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(filePath, []byte("content"), 0o644), "write file")
 
 	newPath, err := ReorganizeFile(t.Context(), filePath, root, "Jane Austen", "Pride and Prejudice")
 	require.NoError(t, err, "reorganize")
@@ -59,9 +53,7 @@ func TestReorganizeFile_AlreadyInPlace(t *testing.T) {
 func TestReorganizeFile_EmptyAuthorOrTitle(t *testing.T) {
 	root := t.TempDir()
 	filePath := filepath.Join(root, "book.epub")
-	if err := os.WriteFile(filePath, []byte("content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(filePath, []byte("content"), 0o644), "write file")
 
 	newPath, err := ReorganizeFile(t.Context(), filePath, root, "", "Title")
 	require.NoError(t, err, "reorganize")
@@ -81,13 +73,9 @@ func TestReorganizeFile_CleansEmptySourceDirs(t *testing.T) {
 
 	// Create file in a nested dir that should be cleaned up after move.
 	srcDir := filepath.Join(root, "OldAuthor", "OldTitle")
-	if err := os.MkdirAll(srcDir, 0o755); err != nil {
-		require.NoError(t, err, "mkdir")
-	}
+	require.NoError(t, os.MkdirAll(srcDir, 0o755), "mkdir")
 	srcPath := filepath.Join(srcDir, "book.epub")
-	if err := os.WriteFile(srcPath, []byte("content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(srcPath, []byte("content"), 0o644), "write file")
 
 	_, err := ReorganizeFile(t.Context(), srcPath, root, "NewAuthor", "NewTitle")
 	require.NoError(t, err, "reorganize")
@@ -102,9 +90,7 @@ func TestReorganizeFileFlat_MovesToAuthor(t *testing.T) {
 	root := t.TempDir()
 
 	srcPath := filepath.Join(root, "test.epub")
-	if err := os.WriteFile(srcPath, []byte("epub content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(srcPath, []byte("epub content"), 0o644), "write file")
 
 	newPath, err := ReorganizeFileFlat(t.Context(), srcPath, root, "Jane Austen")
 	require.NoError(t, err, "reorganize flat")
@@ -128,13 +114,9 @@ func TestReorganizeFileFlat_MovesToAuthor(t *testing.T) {
 func TestReorganizeFileFlat_AlreadyInPlace(t *testing.T) {
 	root := t.TempDir()
 	targetDir := filepath.Join(root, "Jane Austen")
-	if err := os.MkdirAll(targetDir, 0o755); err != nil {
-		require.NoError(t, err, "mkdir")
-	}
+	require.NoError(t, os.MkdirAll(targetDir, 0o755), "mkdir")
 	filePath := filepath.Join(targetDir, "book.epub")
-	if err := os.WriteFile(filePath, []byte("content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(filePath, []byte("content"), 0o644), "write file")
 
 	newPath, err := ReorganizeFileFlat(t.Context(), filePath, root, "Jane Austen")
 	require.NoError(t, err, "reorganize flat")
@@ -146,9 +128,7 @@ func TestReorganizeFileFlat_AlreadyInPlace(t *testing.T) {
 func TestReorganizeFileFlat_EmptyAuthor(t *testing.T) {
 	root := t.TempDir()
 	filePath := filepath.Join(root, "book.epub")
-	if err := os.WriteFile(filePath, []byte("content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(filePath, []byte("content"), 0o644), "write file")
 
 	newPath, err := ReorganizeFileFlat(t.Context(), filePath, root, "")
 	require.NoError(t, err, "reorganize flat")
@@ -161,13 +141,9 @@ func TestReorganizeFileFlat_CleansEmptySourceDirs(t *testing.T) {
 	root := t.TempDir()
 
 	srcDir := filepath.Join(root, "OldAuthor", "OldTitle")
-	if err := os.MkdirAll(srcDir, 0o755); err != nil {
-		require.NoError(t, err, "mkdir")
-	}
+	require.NoError(t, os.MkdirAll(srcDir, 0o755), "mkdir")
 	srcPath := filepath.Join(srcDir, "book.epub")
-	if err := os.WriteFile(srcPath, []byte("content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(srcPath, []byte("content"), 0o644), "write file")
 
 	_, err := ReorganizeFileFlat(t.Context(), srcPath, root, "NewAuthor")
 	require.NoError(t, err, "reorganize flat")
@@ -193,21 +169,15 @@ func TestTargetPathFlat(t *testing.T) {
 func TestReorganizeFileFlat_TargetExists(t *testing.T) {
 	root := t.TempDir()
 	authorDir := filepath.Join(root, "Jane Austen")
-	if err := os.MkdirAll(authorDir, 0o755); err != nil {
-		require.NoError(t, err, "mkdir")
-	}
+	require.NoError(t, os.MkdirAll(authorDir, 0o755), "mkdir")
 
 	// Create the target file first.
 	existingPath := filepath.Join(authorDir, "book.epub")
-	if err := os.WriteFile(existingPath, []byte("existing"), 0o644); err != nil {
-		require.NoError(t, err, "write existing")
-	}
+	require.NoError(t, os.WriteFile(existingPath, []byte("existing"), 0o644), "write existing")
 
 	// Create source file with the same name at root.
 	srcPath := filepath.Join(root, "book.epub")
-	if err := os.WriteFile(srcPath, []byte("new content"), 0o644); err != nil {
-		require.NoError(t, err, "write source")
-	}
+	require.NoError(t, os.WriteFile(srcPath, []byte("new content"), 0o644), "write source")
 
 	_, err := ReorganizeFileFlat(t.Context(), srcPath, root, "Jane Austen")
 	require.Error(t, err, "expected error when target file already exists")
@@ -221,19 +191,13 @@ func TestReorganizeFileFlat_TargetExists(t *testing.T) {
 func TestReorganizeFile_TargetExists(t *testing.T) {
 	root := t.TempDir()
 	targetDir := filepath.Join(root, "Author", "Title")
-	if err := os.MkdirAll(targetDir, 0o755); err != nil {
-		require.NoError(t, err, "mkdir")
-	}
+	require.NoError(t, os.MkdirAll(targetDir, 0o755), "mkdir")
 
 	existingPath := filepath.Join(targetDir, "book.epub")
-	if err := os.WriteFile(existingPath, []byte("existing"), 0o644); err != nil {
-		require.NoError(t, err, "write existing")
-	}
+	require.NoError(t, os.WriteFile(existingPath, []byte("existing"), 0o644), "write existing")
 
 	srcPath := filepath.Join(root, "book.epub")
-	if err := os.WriteFile(srcPath, []byte("new content"), 0o644); err != nil {
-		require.NoError(t, err, "write source")
-	}
+	require.NoError(t, os.WriteFile(srcPath, []byte("new content"), 0o644), "write source")
 
 	_, err := ReorganizeFile(t.Context(), srcPath, root, "Author", "Title")
 	require.Error(t, err, "expected error when target file already exists")
@@ -246,9 +210,7 @@ func TestReorganizeFile_TargetExists(t *testing.T) {
 func TestReorganizeFileFlat_SanitizedAuthorEmpty(t *testing.T) {
 	root := t.TempDir()
 	srcPath := filepath.Join(root, "book.epub")
-	if err := os.WriteFile(srcPath, []byte("content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(srcPath, []byte("content"), 0o644), "write file")
 
 	// Author that sanitizes to empty (only dots and special chars).
 	newPath, err := ReorganizeFileFlat(t.Context(), srcPath, root, "...")
@@ -261,9 +223,7 @@ func TestReorganizeFileFlat_SanitizedAuthorEmpty(t *testing.T) {
 func TestReorganizeFile_SanitizedFieldsEmpty(t *testing.T) {
 	root := t.TempDir()
 	srcPath := filepath.Join(root, "book.epub")
-	if err := os.WriteFile(srcPath, []byte("content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(srcPath, []byte("content"), 0o644), "write file")
 
 	// Author sanitizes to empty.
 	newPath, err := ReorganizeFile(t.Context(), srcPath, root, "...", "Title")

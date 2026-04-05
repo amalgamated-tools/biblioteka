@@ -176,9 +176,7 @@ func TestRemoveBookFromLibrary(t *testing.T) {
 	require.NoError(t, err, "CreateLibrary() error")
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook() error")
-	if err := d.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-		require.NoError(t, err, "AddBookToLibrary() error")
-	}
+	require.NoError(t, d.AddBookToLibrary(t.Context(), lib.ID, book.ID), "AddBookToLibrary() error")
 
 	err = d.RemoveBookFromLibrary(t.Context(), lib.ID, book.ID)
 	require.NoError(t, err, "RemoveBookFromLibrary() error")
@@ -220,9 +218,7 @@ func TestSetBookAuthors_Replace(t *testing.T) {
 	a2, err := d.CreateAuthor(t.Context(), "Peter Straub", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor() for Peter Straub error")
 
-	if err := d.SetBookAuthors(t.Context(), book.ID, []string{a1.ID}); err != nil {
-		require.NoError(t, err, "SetBookAuthors() initial error")
-	}
+	require.NoError(t, d.SetBookAuthors(t.Context(), book.ID, []string{a1.ID}), "SetBookAuthors() initial error")
 
 	err = d.SetBookAuthors(t.Context(), book.ID, []string{a2.ID})
 	require.NoError(t, err, "SetBookAuthors() replace error")
@@ -295,12 +291,8 @@ func TestGetAuthorsForBooks(t *testing.T) {
 		require.Fail(t, "CreateAuthor() for author2 returned nil author")
 	}
 
-	if err := d.SetBookAuthors(t.Context(), book1.ID, []string{author2.ID, author1.ID}); err != nil {
-		require.NoError(t, err, "SetBookAuthors() for book1 error")
-	}
-	if err := d.SetBookAuthors(t.Context(), book2.ID, []string{author1.ID}); err != nil {
-		require.NoError(t, err, "SetBookAuthors() for book2 error")
-	}
+	require.NoError(t, d.SetBookAuthors(t.Context(), book1.ID, []string{author2.ID, author1.ID}), "SetBookAuthors() for book1 error")
+	require.NoError(t, d.SetBookAuthors(t.Context(), book2.ID, []string{author1.ID}), "SetBookAuthors() for book2 error")
 
 	got, err := d.GetAuthorsForBooks(t.Context(), []string{book1.ID, book2.ID})
 	require.NoError(t, err, "GetAuthorsForBooks() error")
@@ -332,16 +324,10 @@ func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 	s, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	require.NoError(t, err, "CreateSeries() error")
 
-	if err := d.SetBookAuthors(t.Context(), book.ID, []string{a.ID}); err != nil {
-		require.NoError(t, err, "SetBookAuthors() error")
-	}
-	if err := d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.1)}}); err != nil {
-		require.NoError(t, err, "SetBookSeries() error")
-	}
+	require.NoError(t, d.SetBookAuthors(t.Context(), book.ID, []string{a.ID}), "SetBookAuthors() error")
+	require.NoError(t, d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.1)}}), "SetBookSeries() error")
 
-	if err := d.DeleteBook(t.Context(), book.ID); err != nil {
-		require.NoError(t, err, "DeleteBook() error")
-	}
+	require.NoError(t, d.DeleteBook(t.Context(), book.ID), "DeleteBook() error")
 
 	// Author and series should still exist (only join table entries are cascaded)
 	_, err = d.GetAuthor(t.Context(), a.ID)
@@ -457,13 +443,9 @@ func TestDeleteLibrary_DoesNotDeleteBook(t *testing.T) {
 	require.NoError(t, err, "CreateLibrary() error")
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook() error")
-	if err := d.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-		require.NoError(t, err, "AddBookToLibrary() error")
-	}
+	require.NoError(t, d.AddBookToLibrary(t.Context(), lib.ID, book.ID), "AddBookToLibrary() error")
 
-	if err := d.DeleteLibrary(t.Context(), lib.ID); err != nil {
-		require.NoError(t, err, "DeleteLibrary() error")
-	}
+	require.NoError(t, d.DeleteLibrary(t.Context(), lib.ID), "DeleteLibrary() error")
 
 	// Book should still exist
 	found, err := d.GetBook(t.Context(), book.ID)

@@ -112,9 +112,7 @@ func TestKOSyncCredential_Delete(t *testing.T) {
 	_, err := d.UpsertKOSyncCredential(ctx, user.ID, "delme", "hash")
 	require.NoError(t, err, "upsert")
 
-	if err := d.DeleteKOSyncCredential(ctx, user.ID); err != nil {
-		require.NoError(t, err, "DeleteKOSyncCredential")
-	}
+	require.NoError(t, d.DeleteKOSyncCredential(ctx, user.ID), "DeleteKOSyncCredential")
 
 	_, err = d.GetKOSyncCredentialByUserID(ctx, user.ID)
 	if err != sql.ErrNoRows {

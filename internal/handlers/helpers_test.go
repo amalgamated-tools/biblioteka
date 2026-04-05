@@ -36,9 +36,7 @@ func Test_WriteJSON(t *testing.T) {
 		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
 	}
 	var result map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		require.NoError(t, err, "failed to unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
 	if result["key"] != "value" {
 		t.Errorf("key = %q, want %q", result["key"], "value")
 	}
@@ -55,9 +53,7 @@ func Test_WriteError(t *testing.T) {
 		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
 	}
 	var result map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		require.NoError(t, err, "failed to unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
 	if result["error"] != "something went wrong" {
 		t.Errorf("error = %q, want %q", result["error"], "something went wrong")
 	}
@@ -96,9 +92,7 @@ func Test_ValidateName(t *testing.T) {
 				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
 			}
 			var result map[string]string
-			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-				require.NoError(t, err, "failed to unmarshal")
-			}
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
 			if result["error"] != "name is required" {
 				t.Errorf("error = %q, want %q", result["error"], "name is required")
 			}
@@ -274,9 +268,7 @@ func Test_HandleNameErr(t *testing.T) {
 				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
 			}
 			var result map[string]string
-			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-				require.NoError(t, err, "failed to unmarshal")
-			}
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
 			if result["error"] != tt.wantErrMsg {
 				t.Errorf("error = %q, want %q", result["error"], tt.wantErrMsg)
 			}
@@ -339,9 +331,7 @@ func Test_HandleDBErr(t *testing.T) {
 				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
 			}
 			var result map[string]string
-			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-				require.NoError(t, err, "failed to unmarshal")
-			}
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
 			if result["error"] != tt.wantMsg {
 				t.Errorf("error = %q, want %q", result["error"], tt.wantMsg)
 			}
@@ -473,9 +463,7 @@ func Test_HandleUpdateErr(t *testing.T) {
 				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
 			}
 			var result map[string]string
-			if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-				require.NoError(t, err, "failed to unmarshal")
-			}
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
 			if result["error"] != tt.wantErrMsg {
 				t.Errorf("error = %q, want %q", result["error"], tt.wantErrMsg)
 			}
@@ -508,9 +496,7 @@ func Test_ListEntities(t *testing.T) {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 		}
 		var result map[string]string
-		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-			require.NoError(t, err, "failed to unmarshal")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
 		if result["error"] != "failed to list widgets" {
 			t.Errorf("error = %q, want %q", result["error"], "failed to list widgets")
 		}
@@ -529,9 +515,7 @@ func Test_ListEntities(t *testing.T) {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 		}
 		var dtos []dto
-		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			require.NoError(t, err, "failed to unmarshal")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
 		if len(dtos) != 2 {
 			require.Failf(t, "failed", "len = %d, want 2", len(dtos))
 		}
@@ -556,9 +540,7 @@ func Test_ListEntities(t *testing.T) {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 		}
 		var dtos []dto
-		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			require.NoError(t, err, "failed to unmarshal")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
 		if len(dtos) != 0 {
 			t.Errorf("len = %d, want 0", len(dtos))
 		}
@@ -671,9 +653,7 @@ func Test_ListUserEntities(t *testing.T) {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 		}
 		var result map[string]string
-		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-			require.NoError(t, err, "failed to unmarshal")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
 		if result["error"] != "failed to list tokens" {
 			t.Errorf("error = %q, want %q", result["error"], "failed to list tokens")
 		}
@@ -713,9 +693,7 @@ func Test_ListUserEntities(t *testing.T) {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 		}
 		var dtos []dto
-		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			require.NoError(t, err, "failed to unmarshal")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
 		if len(dtos) != 0 {
 			t.Errorf("len = %d, want 0", len(dtos))
 		}
@@ -735,9 +713,7 @@ func Test_ListUserEntities(t *testing.T) {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 		}
 		var dtos []dto
-		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			require.NoError(t, err, "failed to unmarshal")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
 		if len(dtos) != 2 {
 			require.Failf(t, "failed", "len = %d, want 2", len(dtos))
 		}
@@ -840,9 +816,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 			t.Errorf("Cache-Control = %q, want %q", cc, "no-store")
 		}
 		var resp tokenResp
-		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-			require.NoError(t, err, "unmarshal")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 		if resp.Token != "secret" {
 			t.Errorf("token = %q, want %q", resp.Token, "secret")
 		}
@@ -908,9 +882,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 		}
 		var result map[string]string
-		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-			require.NoError(t, err, "unmarshal")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "unmarshal")
 		if result["error"] != "failed to generate widget" {
 			t.Errorf("error = %q, want %q", result["error"], "failed to generate widget")
 		}

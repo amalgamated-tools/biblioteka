@@ -84,9 +84,7 @@ func TestKoboTokenCreate_Success(t *testing.T) {
 	}
 
 	var tok map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &tok); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &tok), "unmarshal")
 	if tok["token"] == "" || tok["token"] == nil {
 		t.Error("expected non-empty token in response")
 	}
@@ -124,9 +122,7 @@ func TestKoboTokenList_Empty(t *testing.T) {
 	}
 
 	var list []any
-	if err := json.Unmarshal(w.Body.Bytes(), &list); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &list), "unmarshal")
 	if len(list) != 0 {
 		t.Errorf("expected empty list, got %d items", len(list))
 	}
@@ -171,9 +167,7 @@ func TestKoboTokenDelete_Success(t *testing.T) {
 	h.HandleKoboTokens(listW, listReq)
 
 	var tokens []any
-	if err := json.Unmarshal(listW.Body.Bytes(), &tokens); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(listW.Body.Bytes(), &tokens), "unmarshal")
 	if len(tokens) != 0 {
 		t.Errorf("expected 0 tokens after delete, got %d", len(tokens))
 	}
@@ -220,9 +214,7 @@ func createTestKoboTokenID(t *testing.T, h *KoboHandler, userID string) string {
 		require.Failf(t, "failed", "create token failed: %s", wCreate.Body.String())
 	}
 	var tok map[string]any
-	if err := json.Unmarshal(wCreate.Body.Bytes(), &tok); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(wCreate.Body.Bytes(), &tok), "unmarshal")
 	id, ok := tok["id"].(string)
 	if !ok || id == "" {
 		require.Fail(t, "expected non-empty id in token response")

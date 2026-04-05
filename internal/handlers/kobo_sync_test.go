@@ -47,9 +47,7 @@ func TestHandleSync_PageSizeLimit(t *testing.T) {
 		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var results []any
-	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
-		require.NoError(t, err, "decode")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
 	if len(results) > kobo.SyncPageSize {
 		t.Errorf("expected at most %d sync results, got %d", kobo.SyncPageSize, len(results))
 	}
@@ -96,7 +94,5 @@ func TestHandleSync_NonGETMethodReturnsEmpty(t *testing.T) {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var results []any
-	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode response")
 }

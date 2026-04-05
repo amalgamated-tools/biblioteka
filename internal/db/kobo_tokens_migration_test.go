@@ -63,9 +63,7 @@ func TestBackfillKoboTokenHashes_NothingToBackfill(t *testing.T) {
 	}
 
 	// backfillKoboTokenHashes should be a no-op.
-	if err := backfillKoboTokenHashes(t.Context(), d); err != nil {
-		require.NoError(t, err, "backfillKoboTokenHashes() error")
-	}
+	require.NoError(t, backfillKoboTokenHashes(t.Context(), d), "backfillKoboTokenHashes() error")
 
 	got, err := d.GetKoboTokenByHash(t.Context(), "pre-hashed-value")
 	require.NoError(t, err, "GetKoboTokenByHash() after backfill error")
@@ -88,9 +86,7 @@ func TestBackfillKoboTokenHashes_BackfillsNullHash(t *testing.T) {
 	).Scan(&tokenID)
 	require.NoError(t, err, "manual insert legacy token")
 
-	if err := backfillKoboTokenHashes(t.Context(), d); err != nil {
-		require.NoError(t, err, "backfillKoboTokenHashes() error")
-	}
+	require.NoError(t, backfillKoboTokenHashes(t.Context(), d), "backfillKoboTokenHashes() error")
 
 	// Verify the token can now be found by its computed hash.
 	hash := expectedHash(rawToken)
@@ -113,9 +109,7 @@ func TestBackfillKoboTokenHashes_SkipsEmptyToken(t *testing.T) {
 	).Scan(&tokenID)
 	require.NoError(t, err, "manual insert empty-token row")
 
-	if err := backfillKoboTokenHashes(t.Context(), d); err != nil {
-		require.NoError(t, err, "backfillKoboTokenHashes() error")
-	}
+	require.NoError(t, backfillKoboTokenHashes(t.Context(), d), "backfillKoboTokenHashes() error")
 
 	// The row should still have an empty token_hash since the token was empty.
 	var gotHash string

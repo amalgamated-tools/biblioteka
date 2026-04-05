@@ -30,9 +30,7 @@ func TestGetBookSeries_Empty(t *testing.T) {
 	}
 
 	var entries []bookSeriesEntryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &entries); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
 	if len(entries) != 0 {
 		t.Errorf("len = %d, want 0", len(entries))
 	}
@@ -47,9 +45,7 @@ func TestGetBookSeries_WithEntries(t *testing.T) {
 	require.NoError(t, err, "create series")
 
 	pos := 1.0
-	if err := h.DB.SetBookSeries(t.Context(), b.ID, []db.BookSeriesInput{{SeriesID: s.ID, Position: &pos}}); err != nil {
-		require.NoError(t, err, "set book series")
-	}
+	require.NoError(t, h.DB.SetBookSeries(t.Context(), b.ID, []db.BookSeriesInput{{SeriesID: s.ID, Position: &pos}}), "set book series")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID+"/series", nil)
 	r = withUserID(r, userID)
@@ -62,9 +58,7 @@ func TestGetBookSeries_WithEntries(t *testing.T) {
 	}
 
 	var entries []bookSeriesEntryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &entries); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
 	if len(entries) != 1 {
 		require.Failf(t, "failed", "len = %d, want 1", len(entries))
 	}
@@ -99,9 +93,7 @@ func TestPutBookSeries_Success(t *testing.T) {
 	}
 
 	var entries []bookSeriesEntryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &entries); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
 	if len(entries) != 1 {
 		require.Failf(t, "failed", "len = %d, want 1", len(entries))
 	}
@@ -152,9 +144,7 @@ func TestPutBookSeries_ClearsExisting(t *testing.T) {
 	}
 
 	var entries []bookSeriesEntryDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &entries); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &entries), "unmarshal")
 	if len(entries) != 1 {
 		t.Errorf("len = %d, want 1 after replacement", len(entries))
 	}
@@ -212,9 +202,7 @@ func TestPutBookSeries_EmptyEntries(t *testing.T) {
 	}
 
 	var entries []bookSeriesEntryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &entries); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
 	if len(entries) != 0 {
 		t.Errorf("len = %d, want 0", len(entries))
 	}

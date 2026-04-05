@@ -67,9 +67,7 @@ func TestKOSyncCredentials_Put_Success(t *testing.T) {
 	}
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "decode response")
 	if resp.Username != "myreader" {
 		t.Errorf("Username = %q, want %q", resp.Username, "myreader")
 	}
@@ -90,9 +88,7 @@ func TestKOSyncCredentials_Put_LowercasesUsername(t *testing.T) {
 	}
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "decode response")
 	if resp.Username != "myreader" {
 		t.Errorf("Username = %q, want %q (should be lowercase)", resp.Username, "myreader")
 	}
@@ -167,9 +163,7 @@ func TestKOSyncCredentials_Get_AfterPut(t *testing.T) {
 	}
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "decode GET response")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "decode GET response")
 	if resp.Username != "myreader" {
 		t.Errorf("Username = %q, want %q", resp.Username, "myreader")
 	}
@@ -293,9 +287,7 @@ func TestKOSyncUserAuth_Success(t *testing.T) {
 	}
 
 	var resp map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "decode response")
 	if resp["authorized"] != "OK" {
 		t.Errorf("authorized = %q, want %q", resp["authorized"], "OK")
 	}
@@ -329,9 +321,7 @@ func TestKOSyncProgress_Put_Success(t *testing.T) {
 	}
 
 	var resp kosyncProgressResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "decode response")
 	if resp.Document != "abc123" {
 		t.Errorf("Document = %q, want %q", resp.Document, "abc123")
 	}
@@ -418,9 +408,7 @@ func TestKOSyncProgress_Get_Success(t *testing.T) {
 	}
 
 	var resp kosyncProgressResponse
-	if err := json.Unmarshal(wGet.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "decode GET response")
-	}
+	require.NoError(t, json.Unmarshal(wGet.Body.Bytes(), &resp), "decode GET response")
 	if resp.Document != "doc42" {
 		t.Errorf("Document = %q, want %q", resp.Document, "doc42")
 	}

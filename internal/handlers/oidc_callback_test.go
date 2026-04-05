@@ -197,9 +197,7 @@ func TestOIDCCallback_MissingIDToken(t *testing.T) {
 		require.Failf(t, "failed", "expected status 401, got %d; body: %s", w.Code, w.Body.String())
 	}
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
 	if body["error"] != "missing id_token in response" {
 		t.Errorf("unexpected error message: %q", body["error"])
 	}
@@ -222,9 +220,7 @@ func TestOIDCCallback_MissingSub(t *testing.T) {
 		require.Failf(t, "failed", "expected status 400, got %d; body: %s", w.Code, w.Body.String())
 	}
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
 	if body["error"] != "sub claim is required" {
 		t.Errorf("unexpected error message: %q", body["error"])
 	}
@@ -247,9 +243,7 @@ func TestOIDCCallback_MissingEmail(t *testing.T) {
 		require.Failf(t, "failed", "expected status 400, got %d; body: %s", w.Code, w.Body.String())
 	}
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&body), "decode body")
 	if body["error"] != "email claim is required" {
 		t.Errorf("unexpected error message: %q", body["error"])
 	}

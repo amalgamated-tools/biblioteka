@@ -165,9 +165,7 @@ func TestGetCredential_Success(t *testing.T) {
 	}
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Username != "myuser" {
 		t.Errorf("username = %q, want %q", resp.Username, "myuser")
 	}
@@ -295,9 +293,7 @@ func TestUpsertCredential_Success(t *testing.T) {
 	}
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Username != "myuser" {
 		t.Errorf("username = %q, want %q", resp.Username, "myuser")
 	}
@@ -319,9 +315,7 @@ func TestUpsertCredential_UsernameNormalized(t *testing.T) {
 	}
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Username != "myuser" {
 		t.Errorf("username = %q, want lowercase trimmed %q", resp.Username, "myuser")
 	}

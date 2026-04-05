@@ -148,9 +148,7 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "My Cool Book.pdf")
 	// Create an empty file so the path exists (extraction will fail but that's OK)
-	if err := os.WriteFile(path, []byte("not a real pdf"), 0o644); err != nil {
-		require.NoError(t, err, "write test file")
-	}
+	require.NoError(t, os.WriteFile(path, []byte("not a real pdf"), 0o644), "write test file")
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
 		Path:     path,
@@ -179,9 +177,7 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "noext")
-	if err := os.WriteFile(path, []byte("content"), 0o644); err != nil {
-		require.NoError(t, err, "write test file")
-	}
+	require.NoError(t, os.WriteFile(path, []byte("content"), 0o644), "write test file")
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
 		Path:     path,
@@ -322,9 +318,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	// Create a file that isn't a valid EPUB — extraction will fail
 	dir := t.TempDir()
 	path := filepath.Join(dir, "broken.epub")
-	if err := os.WriteFile(path, []byte("not a valid epub"), 0o644); err != nil {
-		require.NoError(t, err, "write broken.epub")
-	}
+	require.NoError(t, os.WriteFile(path, []byte("not a valid epub"), 0o644), "write broken.epub")
 
 	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
 		Path:     path,
@@ -596,9 +590,7 @@ func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.
 	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
 	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
 
-	if err := os.MkdirAll(filepath.Dir(reorganizedPath), 0o755); err != nil {
-		require.NoError(t, err, "mkdir reorganized dir")
-	}
+	require.NoError(t, os.MkdirAll(filepath.Dir(reorganizedPath), 0o755), "mkdir reorganized dir")
 	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
 	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
@@ -640,9 +632,7 @@ func TestProcessBookFile_ContinuesFromFlatReorganizedPathWhenSourceMoved(t *test
 	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
 	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "F. Scott Fitzgerald - The Great Gatsby.epub")
 
-	if err := os.MkdirAll(filepath.Dir(reorganizedPath), 0o755); err != nil {
-		require.NoError(t, err, "mkdir reorganized dir")
-	}
+	require.NoError(t, os.MkdirAll(filepath.Dir(reorganizedPath), 0o755), "mkdir reorganized dir")
 	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
 	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
@@ -685,12 +675,8 @@ func TestProcessBookFile_FlatRecoveryDoesNotUseFolderCandidate(t *testing.T) {
 	flatPath := filepath.Join(root, "F. Scott Fitzgerald", "F. Scott Fitzgerald - The Great Gatsby.epub")
 	folderPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
 
-	if err := os.MkdirAll(filepath.Dir(flatPath), 0o755); err != nil {
-		require.NoError(t, err, "mkdir flat dir")
-	}
-	if err := os.MkdirAll(filepath.Dir(folderPath), 0o755); err != nil {
-		require.NoError(t, err, "mkdir folder dir")
-	}
+	require.NoError(t, os.MkdirAll(filepath.Dir(flatPath), 0o755), "mkdir flat dir")
+	require.NoError(t, os.MkdirAll(filepath.Dir(folderPath), 0o755), "mkdir folder dir")
 	testutils.MakeTestEPUB(t, flatPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 	testutils.MakeTestEPUB(t, folderPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
@@ -734,9 +720,7 @@ func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
 	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
 
 	// Create the file at the reorganized location only (source is "missing").
-	if err := os.MkdirAll(filepath.Dir(reorganizedPath), 0o755); err != nil {
-		require.NoError(t, err, "mkdir reorganized dir")
-	}
+	require.NoError(t, os.MkdirAll(filepath.Dir(reorganizedPath), 0o755), "mkdir reorganized dir")
 	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
 	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)

@@ -43,9 +43,7 @@ func TestHandleBookMetadata_CoverURLIncluded(t *testing.T) {
 		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var results []map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
-		require.NoError(t, err, "decode")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
 	if len(results) != 1 {
 		require.Failf(t, "failed", "expected 1 result, got %d", len(results))
 	}
@@ -86,9 +84,7 @@ func TestHandleBookMetadata_MultipleEntitlementsEachHaveMetadata(t *testing.T) {
 		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var results []map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
-		require.NoError(t, err, "decode")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
 	if len(results) != 1 {
 		require.Failf(t, "failed", "expected 1 result, got %d", len(results))
 	}
@@ -120,9 +116,7 @@ func TestHandleBookMetadata_ContainsEntitlementID(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	var results []map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&results); err != nil {
-		require.NoError(t, err, "decode")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
 	if len(results) < 1 {
 		require.Fail(t, "expected at least 1 result")
 	}

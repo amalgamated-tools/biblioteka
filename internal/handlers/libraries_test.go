@@ -51,9 +51,7 @@ func setupLibraryHandler(t *testing.T) (*LibraryHandler, string, string) {
 
 	admin, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
 	require.NoError(t, err, "create admin")
-	if err := d.SetAdmin(t.Context(), admin.ID, true); err != nil {
-		require.NoError(t, err, "set admin role")
-	}
+	require.NoError(t, d.SetAdmin(t.Context(), admin.ID, true), "set admin role")
 	regular, err := d.CreateUser(t.Context(), "Regular", "regular@example.com", "password1")
 	require.NoError(t, err, "create regular user")
 	return h, admin.ID, regular.ID
@@ -79,9 +77,7 @@ func TestCreateLibrary_ValidPath(t *testing.T) {
 	}
 
 	var dto libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.Name != "Books" {
 		t.Errorf("name = %q, want %q", dto.Name, "Books")
 	}
@@ -109,9 +105,7 @@ func TestCreateLibrary_NonexistentPath(t *testing.T) {
 	}
 
 	var resp map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if msg := resp["error"]; msg == "" {
 		t.Error("expected error message in response")
 	}
@@ -122,9 +116,7 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "not-a-dir.txt")
-	if err := os.WriteFile(filePath, []byte("hello"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(filePath, []byte("hello"), 0o644), "write file")
 
 	body := mustMarshal(t, libraryRequest{
 		Name:  "Books",
@@ -142,9 +134,7 @@ func TestCreateLibrary_PathIsFile(t *testing.T) {
 	}
 
 	var resp map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if msg := resp["error"]; msg != "path is not a folder: "+filePath {
 		t.Errorf("error = %q, want 'path is not a folder: %s'", msg, filePath)
 	}
@@ -198,9 +188,7 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
 	var p jobs.ScanLibraryPayload
-	if err := json.Unmarshal(mock.jobs[0].Payload, &p); err != nil {
-		require.NoError(t, err, "unmarshal payload")
-	}
+	require.NoError(t, json.Unmarshal(mock.jobs[0].Payload, &p), "unmarshal payload")
 	if len(p.Paths) != 1 || p.Paths[0] != dir {
 		t.Errorf("job paths = %v, want [%s]", p.Paths, dir)
 	}
@@ -235,9 +223,7 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
 	var p jobs.ScanLibraryPayload
-	if err := json.Unmarshal(mock.jobs[0].Payload, &p); err != nil {
-		require.NoError(t, err, "unmarshal payload")
-	}
+	require.NoError(t, json.Unmarshal(mock.jobs[0].Payload, &p), "unmarshal payload")
 	if len(p.Paths) != 2 {
 		require.Failf(t, "failed", "job paths count = %d, want 2", len(p.Paths))
 	}
@@ -305,16 +291,12 @@ func TestListLibraryBooks_Success(t *testing.T) {
 		require.Failf(t, "failed", "create library: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var lib libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		require.NoError(t, err, "unmarshal library")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// Create a book and link it to the library.
 	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
-	if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-		require.NoError(t, err, "add book to library")
-	}
+	require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book to library")
 
 	// List books for the library.
 	r2 := httptest.NewRequest(http.MethodGet, "/api/libraries/"+lib.ID+"/books", nil)
@@ -327,9 +309,7 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal books")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 	if len(resp.Books) != 1 {
 		require.Failf(t, "failed", "books count = %d, want 1", len(resp.Books))
 	}
@@ -355,9 +335,7 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 		require.Failf(t, "failed", "create library: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var lib libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		require.NoError(t, err, "unmarshal library")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// Create multiple books and link them to the library.
 	const totalBooks = 3
@@ -365,9 +343,7 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 		title := fmt.Sprintf("Book %d", i+1)
 		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		require.NoError(t, err, "create book %d", i+1)
-		if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-			require.NoError(t, err, "add book %d to library", i+1)
-		}
+		require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book %d to library", i+1)
 	}
 
 	// Request a paginated slice of books.
@@ -381,9 +357,7 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal books")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 
 	if resp.Total != totalBooks {
 		require.Failf(t, "failed", "total = %d, want %d", resp.Total, totalBooks)
@@ -407,9 +381,7 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 		require.Failf(t, "failed", "create library: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var lib libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		require.NoError(t, err, "unmarshal library")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// Create multiple books and link them to the library.
 	const totalBooks = 3
@@ -417,9 +389,7 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 		title := fmt.Sprintf("Invalid Book %d", i+1)
 		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		require.NoError(t, err, "create book %d", i+1)
-		if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-			require.NoError(t, err, "add book %d to library", i+1)
-		}
+		require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book %d to library", i+1)
 	}
 
 	// Use negative values that should be validated/clamped by the handler.
@@ -433,9 +403,7 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal books")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 
 	if resp.Total != totalBooks {
 		require.Failf(t, "failed", "total = %d, want %d", resp.Total, totalBooks)
@@ -459,9 +427,7 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 		require.Failf(t, "failed", "create library: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var lib libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		require.NoError(t, err, "unmarshal library")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// Create several books and link them to the library.
 	const totalBooks = 10
@@ -469,9 +435,7 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 		title := fmt.Sprintf("Clamped Book %d", i+1)
 		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		require.NoError(t, err, "create book %d", i+1)
-		if err := h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID); err != nil {
-			require.NoError(t, err, "add book %d to library", i+1)
-		}
+		require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book %d to library", i+1)
 	}
 
 	// Request with an excessively large limit to ensure it is clamped internally.
@@ -485,9 +449,7 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal books")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 
 	if resp.Total != totalBooks {
 		require.Failf(t, "failed", "total = %d, want %d", resp.Total, totalBooks)
@@ -524,9 +486,7 @@ func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
 		require.Failf(t, "failed", "create library: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var lib libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &lib); err != nil {
-		require.NoError(t, err, "unmarshal library")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// POST to /books sub-resource should be method not allowed.
 	r2 := httptest.NewRequest(http.MethodPost, "/api/libraries/"+lib.ID+"/books", nil)
@@ -558,9 +518,7 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 	}
 
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		require.NoError(t, err, "unmarshal created")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal created")
 
 	// Update with an invalid path.
 	updateBody := mustMarshal(t, libraryRequest{
@@ -599,9 +557,7 @@ func TestUpdateLibrary_ValidPath(t *testing.T) {
 	}
 
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal")
 
 	// Update to dir2.
 	updateBody := mustMarshal(t, libraryRequest{
@@ -653,9 +609,7 @@ func TestUpdateLibrary_NonAdminForbidden(t *testing.T) {
 		require.Failf(t, "failed", "setup: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal")
 
 	// Attempt update as regular user.
 	updateBody := mustMarshal(t, libraryRequest{Name: "Updated", Paths: []string{dir}})
@@ -684,9 +638,7 @@ func TestDeleteLibrary_NonAdminForbidden(t *testing.T) {
 		require.Failf(t, "failed", "setup: status = %d; body: %s", w.Code, w.Body.String())
 	}
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal")
 
 	// Attempt delete as regular user.
 	r2 := httptest.NewRequest(http.MethodDelete, "/api/libraries/"+created.ID, nil)
@@ -714,9 +666,7 @@ func TestDeleteLibrary_NotFound(t *testing.T) {
 	}
 
 	var resp errorResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Error != "library not found" {
 		t.Errorf("error = %q, want %q", resp.Error, "library not found")
 	}
@@ -757,9 +707,7 @@ func TestCreateLibrary_InvalidOrganizationType(t *testing.T) {
 	}
 
 	var resp map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if msg := resp["error"]; msg == "" {
 		t.Error("expected error message about organization_type")
 	}
@@ -788,9 +736,7 @@ func TestCreateLibrary_ValidOrganizationTypes(t *testing.T) {
 			}
 
 			var dto libraryDTO
-			if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-				require.NoError(t, err, "unmarshal")
-			}
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 			if dto.OrganizationType != orgType {
 				t.Errorf("organization_type = %q, want %q", dto.OrganizationType, orgType)
 			}
@@ -819,9 +765,7 @@ func TestCreateLibrary_EmptyOrganizationTypeDefaultsToBookPerFolder(t *testing.T
 	}
 
 	var dto libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.OrganizationType != db.LibraryOrganizationBookPerFolder {
 		t.Errorf("organization_type = %q, want %q", dto.OrganizationType, db.LibraryOrganizationBookPerFolder)
 	}
@@ -845,9 +789,7 @@ func TestUpdateLibrary_InvalidOrganizationType(t *testing.T) {
 	}
 
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		require.NoError(t, err, "unmarshal created")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal created")
 
 	updateBody := mustMarshal(t, libraryRequest{
 		Name:             "Books",
@@ -884,9 +826,7 @@ func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T)
 	}
 
 	var created libraryDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
-		require.NoError(t, err, "unmarshal created")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal created")
 
 	updateBody := mustMarshal(t, libraryRequest{
 		Name:  "Books Updated",
@@ -903,9 +843,7 @@ func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T)
 	}
 
 	var updated libraryDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &updated); err != nil {
-		require.NoError(t, err, "unmarshal updated")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &updated), "unmarshal updated")
 	if updated.OrganizationType != db.LibraryOrganizationNone {
 		t.Errorf("organization_type = %q, want %q", updated.OrganizationType, db.LibraryOrganizationNone)
 	}

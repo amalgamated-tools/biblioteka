@@ -28,9 +28,7 @@ func TestGetBookAuthors_Empty(t *testing.T) {
 	}
 
 	var dtos []authorDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	if len(dtos) != 0 {
 		t.Errorf("len = %d, want 0", len(dtos))
 	}
@@ -45,9 +43,7 @@ func TestGetBookAuthors_WithAuthors(t *testing.T) {
 	require.NoError(t, err, "create author")
 	a2, err := h.DB.CreateAuthor(t.Context(), "Another Author", nil, nil, nil, nil)
 	require.NoError(t, err, "create author 2")
-	if err := h.DB.SetBookAuthors(t.Context(), b.ID, []string{a1.ID, a2.ID}); err != nil {
-		require.NoError(t, err, "set book authors")
-	}
+	require.NoError(t, h.DB.SetBookAuthors(t.Context(), b.ID, []string{a1.ID, a2.ID}), "set book authors")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID+"/authors", nil)
 	r = withUserID(r, userID)
@@ -60,9 +56,7 @@ func TestGetBookAuthors_WithAuthors(t *testing.T) {
 	}
 
 	var dtos []authorDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	if len(dtos) != 2 {
 		t.Errorf("len = %d, want 2", len(dtos))
 	}
@@ -88,9 +82,7 @@ func TestPutBookAuthors_Success(t *testing.T) {
 	}
 
 	var dtos []authorDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	if len(dtos) != 1 {
 		require.Failf(t, "failed", "len = %d, want 1", len(dtos))
 	}
@@ -131,9 +123,7 @@ func TestPutBookAuthors_ClearsExisting(t *testing.T) {
 	}
 
 	var dtos []authorDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &dtos); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &dtos), "unmarshal")
 	if len(dtos) != 1 {
 		t.Errorf("len = %d, want 1 after replacement", len(dtos))
 	}
@@ -191,9 +181,7 @@ func TestPutBookAuthors_EmptyList(t *testing.T) {
 	}
 
 	var dtos []authorDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	if len(dtos) != 0 {
 		t.Errorf("len = %d, want 0", len(dtos))
 	}

@@ -26,9 +26,7 @@ func TestHandleGetOIDCConfig_AdminNoSettings(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp oidcConfigResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.IssuerURL != "" {
 		t.Errorf("IssuerURL = %q, want empty", resp.IssuerURL)
 	}
@@ -56,9 +54,7 @@ func TestHandleGetOIDCConfig_AdminWithSettings(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp oidcConfigResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.IssuerURL != "https://auth.example.com" {
 		t.Errorf("IssuerURL = %q, want %q", resp.IssuerURL, "https://auth.example.com")
 	}

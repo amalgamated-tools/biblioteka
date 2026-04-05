@@ -25,9 +25,7 @@ func TestWriteOPF_AllFields(t *testing.T) {
 		CoverMediaType: "image/jpeg",
 	}
 
-	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		require.NoError(t, err, "WriteOPF")
-	}
+	require.NoError(t, WriteOPF(t.Context(), dir, data, ""), "WriteOPF")
 
 	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
 	require.NoError(t, err, "read metadata.opf")
@@ -67,9 +65,7 @@ func TestWriteOPF_MinimalData(t *testing.T) {
 		Title: "Untitled",
 	}
 
-	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		require.NoError(t, err, "WriteOPF")
-	}
+	require.NoError(t, WriteOPF(t.Context(), dir, data, ""), "WriteOPF")
 
 	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
 	require.NoError(t, err, "read metadata.opf")
@@ -115,15 +111,11 @@ func TestWriteOPF_UUIDIsDeterministic(t *testing.T) {
 		Author: "Author A",
 	}
 
-	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		require.NoError(t, err, "first WriteOPF")
-	}
+	require.NoError(t, WriteOPF(t.Context(), dir, data, ""), "first WriteOPF")
 	first, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
 	require.NoError(t, err, "read first metadata.opf")
 
-	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		require.NoError(t, err, "second WriteOPF")
-	}
+	require.NoError(t, WriteOPF(t.Context(), dir, data, ""), "second WriteOPF")
 	second, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
 	require.NoError(t, err, "read second metadata.opf")
 
@@ -144,9 +136,7 @@ func TestWriteOPF_NoCover(t *testing.T) {
 		Title: "Test Book",
 	}
 
-	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		require.NoError(t, err, "WriteOPF")
-	}
+	require.NoError(t, WriteOPF(t.Context(), dir, data, ""), "WriteOPF")
 
 	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
 	require.NoError(t, err, "read metadata.opf")
@@ -172,9 +162,7 @@ func TestWriteOPF_PNGCover(t *testing.T) {
 		CoverMediaType: "image/png",
 	}
 
-	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		require.NoError(t, err, "WriteOPF")
-	}
+	require.NoError(t, WriteOPF(t.Context(), dir, data, ""), "WriteOPF")
 
 	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
 	require.NoError(t, err, "read metadata.opf")
@@ -199,9 +187,7 @@ func TestWriteOPF_XMLSpecialChars(t *testing.T) {
 		Description: `A "special" <description> with & chars`,
 	}
 
-	if err := WriteOPF(t.Context(), dir, data, ""); err != nil {
-		require.NoError(t, err, "WriteOPF")
-	}
+	require.NoError(t, WriteOPF(t.Context(), dir, data, ""), "WriteOPF")
 
 	content, err := os.ReadFile(filepath.Join(dir, "metadata.opf"))
 	require.NoError(t, err, "read metadata.opf")
@@ -245,9 +231,7 @@ func TestWriteOPF_CustomBaseName(t *testing.T) {
 	}
 
 	baseName := "Alice's Adventures in Wonderland by Lewis Carroll"
-	if err := WriteOPF(t.Context(), dir, data, baseName); err != nil {
-		require.NoError(t, err, "WriteOPF")
-	}
+	require.NoError(t, WriteOPF(t.Context(), dir, data, baseName), "WriteOPF")
 
 	expectedFile := baseName + ".opf"
 	if _, err := os.Stat(filepath.Join(dir, expectedFile)); err != nil {

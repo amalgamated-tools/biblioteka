@@ -11,9 +11,7 @@ import (
 func TestMustGenerateDummyBcryptHash(t *testing.T) {
 	hash := mustGenerateDummyBcryptHash("dummy-secret", "test")
 
-	if err := bcrypt.CompareHashAndPassword(hash, []byte("dummy-secret")); err != nil {
-		require.NoError(t, err, "generated hash did not match original secret")
-	}
+	require.NoError(t, bcrypt.CompareHashAndPassword(hash, []byte("dummy-secret")), "generated hash did not match original secret")
 	if err := bcrypt.CompareHashAndPassword(hash, []byte("other-secret")); err == nil {
 		require.Fail(t, "generated hash unexpectedly matched different secret")
 	}

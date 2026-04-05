@@ -33,9 +33,7 @@ func TestBookResult_JSONRoundTrip(t *testing.T) {
 	require.NoError(t, err, "json.Marshal() error")
 
 	var decoded BookResult
-	if err := json.Unmarshal(data, &decoded); err != nil {
-		require.NoError(t, err, "json.Unmarshal() error")
-	}
+	require.NoError(t, json.Unmarshal(data, &decoded), "json.Unmarshal() error")
 
 	if decoded.WorkID != original.WorkID {
 		t.Errorf("WorkID = %q, want %q", decoded.WorkID, original.WorkID)
@@ -69,9 +67,7 @@ func TestBookResult_JSONFieldNames(t *testing.T) {
 	require.NoError(t, err, "json.Marshal() error")
 
 	var raw map[string]any
-	if err := json.Unmarshal(data, &raw); err != nil {
-		require.NoError(t, err, "json.Unmarshal() error")
-	}
+	require.NoError(t, json.Unmarshal(data, &raw), "json.Unmarshal() error")
 
 	// Verify snake_case JSON keys.
 	if _, ok := raw["work_id"]; !ok {

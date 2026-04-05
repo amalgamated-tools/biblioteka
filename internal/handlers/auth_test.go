@@ -57,9 +57,7 @@ func TestSignup_Success(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
 	}
 	var resp authResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Token == "" {
 		t.Error("expected non-empty token")
 	}
@@ -176,9 +174,7 @@ func TestLogin_Success(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 	var resp authResponse
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal")
 	if resp.Token == "" {
 		t.Error("expected non-empty token")
 	}
@@ -265,9 +261,7 @@ func TestMe_Success(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
 	}
 	var resp userDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal")
 	if resp.Email != "dave@example.com" {
 		t.Errorf("email = %q, want %q", resp.Email, "dave@example.com")
 	}

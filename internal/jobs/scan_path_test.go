@@ -55,28 +55,20 @@ func TestScanPathHandler(t *testing.T) {
 	}
 
 	for name := range testFiles {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte("test content"), 0o644); err != nil {
-			require.NoError(t, err, "write file %s", name)
-		}
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("test content"), 0o644), "write file %s", name)
 	}
 
 	// Create a subdirectory with another book
 	subdir := filepath.Join(dir, "subdir")
-	if err := os.MkdirAll(subdir, 0o755); err != nil {
-		require.NoError(t, err, "mkdir")
-	}
-	if err := os.WriteFile(filepath.Join(subdir, "Nested.pdf"), []byte("nested content"), 0o644); err != nil {
-		require.NoError(t, err, "write nested file")
-	}
+	require.NoError(t, os.MkdirAll(subdir, 0o755), "mkdir")
+	require.NoError(t, os.WriteFile(filepath.Join(subdir, "Nested.pdf"), []byte("nested content"), 0o644), "write nested file")
 
 	// Run the handler
 	handler := NewScanPathHandler(mock)
 	payload, err := json.Marshal(ScanPathPayload{Path: dir})
 	require.NoError(t, err, "marshal payload")
 
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	// 6 matching files: My Book.epub, Another Book.mobi, Third Book.pdf, Kindle Book.azw3, UPPERCASE.EPUB, MixedCase.Mobi
 	// Plus 1 nested: Nested.pdf = 7 total
@@ -129,9 +121,7 @@ func TestScanPathHandler_EmptyDirectory(t *testing.T) {
 	payload, err := json.Marshal(ScanPathPayload{Path: dir})
 	require.NoError(t, err, "marshal")
 
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	if len(mock.jobs) != 0 {
 		t.Errorf("expected 0 enqueued jobs, got %d", len(mock.jobs))
