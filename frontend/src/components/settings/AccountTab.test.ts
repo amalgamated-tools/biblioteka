@@ -36,7 +36,11 @@ vi.mock("lucide-svelte", () => ({
 
 import AccountTab from "./AccountTab.svelte";
 import { authStore } from "../../stores/auth.svelte";
-import { changePassword, createOidcLinkNonce, updateProfile } from "../../lib/api";
+import {
+  changePassword,
+  createOidcLinkNonce,
+  updateProfile,
+} from "../../lib/api";
 
 describe("AccountTab email display", () => {
   afterEach(() => {

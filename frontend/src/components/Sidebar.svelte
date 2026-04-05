@@ -76,7 +76,9 @@
       </div>
       <div>
         <p class="text-lg font-display font-bold tracking-tight">biblioteka</p>
-        <p class="text-xs text-ink-400 truncate">{authStore.user?.name || authStore.user?.email}</p>
+        <p class="text-xs text-ink-400 truncate">
+          {authStore.user?.name || authStore.user?.email}
+        </p>
       </div>
     </div>
   </div>
