@@ -30,12 +30,8 @@ func TestHandleAuditLogs_AdminSuccess(t *testing.T) {
 
 	// Seed a couple of audit log entries.
 	ctx := t.Context()
-	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-1", nil); err != nil {
-		require.NoError(t, err, "create audit log")
-	}
-	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionLibraryCreated, "library", "lib-1", nil); err != nil {
-		require.NoError(t, err, "create audit log")
-	}
+	require.NoError(t, h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-1", nil), "create audit log")
+	require.NoError(t, h.DB.CreateAuditLog(ctx, adminID, db.AuditActionLibraryCreated, "library", "lib-1", nil), "create audit log")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs", nil)
 	r = withUserID(r, adminID)
@@ -48,9 +44,7 @@ func TestHandleAuditLogs_AdminSuccess(t *testing.T) {
 	}
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	// CreateUser itself may generate audit entries; just verify we got at least 2 from our inserts.
 	if len(resp.Entries) < 2 {
 		t.Errorf("expected at least 2 entries, got %d", len(resp.Entries))
@@ -102,9 +96,7 @@ func TestHandleAuditLogs_DefaultPagination(t *testing.T) {
 	}
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Limit != 50 {
 		t.Errorf("limit = %d, want 50", resp.Limit)
 	}
@@ -127,9 +119,7 @@ func TestHandleAuditLogs_CustomPagination(t *testing.T) {
 	}
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Limit != 10 {
 		t.Errorf("limit = %d, want 10", resp.Limit)
 	}
@@ -152,9 +142,7 @@ func TestHandleAuditLogs_LimitCappedAtMax(t *testing.T) {
 	}
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Limit != 200 {
 		t.Errorf("limit = %d, want 200 (max)", resp.Limit)
 	}
@@ -218,9 +206,7 @@ func TestHandleAuditLogs_EmptyList(t *testing.T) {
 	}
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Entries) != 0 {
 		t.Errorf("expected 0 entries, got %d", len(resp.Entries))
 	}
@@ -231,9 +217,7 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 
 	meta := map[string]any{"title": "Go Programming", "isbn": "978-0-123"}
 	ctx := t.Context()
-	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-meta-1", meta); err != nil {
-		require.NoError(t, err, "create audit log with metadata")
-	}
+	require.NoError(t, h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-meta-1", meta), "create audit log with metadata")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs", nil)
 	r = withUserID(r, adminID)
@@ -246,9 +230,7 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 	}
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 
 	// Find the entry we inserted with metadata.
 	var found bool
@@ -259,9 +241,7 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 				require.Fail(t, "expected metadata to be non-nil")
 			}
 			var m map[string]any
-			if err := json.Unmarshal(e.Metadata, &m); err != nil {
-				require.NoError(t, err, "unmarshal metadata")
-			}
+			require.NoError(t, json.Unmarshal(e.Metadata, &m), "unmarshal metadata")
 			if m["title"] != "Go Programming" {
 				t.Errorf("metadata title = %v, want %q", m["title"], "Go Programming")
 			}
@@ -332,9 +312,7 @@ func TestToAuditLogDTO_ValidMetadata(t *testing.T) {
 	}
 
 	var m map[string]any
-	if err := json.Unmarshal(dto.Metadata, &m); err != nil {
-		require.NoError(t, err, "unmarshal metadata")
-	}
+	require.NoError(t, json.Unmarshal(dto.Metadata, &m), "unmarshal metadata")
 	if m["title"] != "Test Book" {
 		t.Errorf("metadata title = %v, want %q", m["title"], "Test Book")
 	}

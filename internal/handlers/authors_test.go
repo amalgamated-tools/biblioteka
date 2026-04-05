@@ -34,9 +34,7 @@ func TestCreateAuthor_Handler(t *testing.T) {
 	}
 
 	var dto authorDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.Name != "Stephen King" {
 		t.Errorf("name = %q, want %q", dto.Name, "Stephen King")
 	}
@@ -130,9 +128,7 @@ func TestListAuthors_Handler(t *testing.T) {
 	}
 
 	var dtos []authorDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	if len(dtos) != 2 {
 		t.Errorf("len = %d, want 2", len(dtos))
 	}
@@ -200,9 +196,7 @@ func TestDeleteAuthor_NotFound(t *testing.T) {
 	}
 
 	var resp errorResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Error != "author not found" {
 		t.Errorf("error = %q, want %q", resp.Error, "author not found")
 	}
@@ -219,12 +213,8 @@ func TestListAuthorBooks_Handler(t *testing.T) {
 	b2, err := h.DB.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
 
-	if err := h.DB.SetBookAuthors(t.Context(), b1.ID, []string{a.ID}); err != nil {
-		require.NoError(t, err, "set book authors")
-	}
-	if err := h.DB.SetBookAuthors(t.Context(), b2.ID, []string{a.ID}); err != nil {
-		require.NoError(t, err, "set book authors")
-	}
+	require.NoError(t, h.DB.SetBookAuthors(t.Context(), b1.ID, []string{a.ID}), "set book authors")
+	require.NoError(t, h.DB.SetBookAuthors(t.Context(), b2.ID, []string{a.ID}), "set book authors")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID+"/books", nil)
 	r = withUserID(r, userID)
@@ -237,9 +227,7 @@ func TestListAuthorBooks_Handler(t *testing.T) {
 	}
 
 	var result bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "unmarshal")
 	if result.Total != 2 {
 		t.Errorf("total = %d, want 2", result.Total)
 	}
@@ -279,9 +267,7 @@ func TestListAuthorBooks_Empty(t *testing.T) {
 	}
 
 	var result bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "unmarshal")
 	if result.Total != 0 {
 		t.Errorf("total = %d, want 0", result.Total)
 	}

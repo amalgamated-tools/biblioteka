@@ -67,9 +67,7 @@ func TestHandleHealth_GET(t *testing.T) {
 	}
 
 	var body healthResponse
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	if body.Status != "ok" {
 		require.Failf(t, "failed", "expected status ok, got %q", body.Status)
 	}
@@ -107,9 +105,7 @@ func TestHandleHealth_POST(t *testing.T) {
 	}
 
 	var body map[string]string
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	if body["error"] != "method not allowed" {
 		require.Failf(t, "failed", "expected error 'method not allowed', got %q", body["error"])
 	}
@@ -131,9 +127,7 @@ func TestHandleVersion_GET(t *testing.T) {
 	}
 
 	var body versionResponse
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	if body.Version != "1.2.3" {
 		require.Failf(t, "failed", "expected version 1.2.3, got %q", body.Version)
 	}
@@ -171,9 +165,7 @@ func TestHandleVersion_POST(t *testing.T) {
 	}
 
 	var body map[string]string
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	if body["error"] != "method not allowed" {
 		require.Failf(t, "failed", "expected error 'method not allowed', got %q", body["error"])
 	}
@@ -191,9 +183,7 @@ func TestHandleVersion_EmptyVersion(t *testing.T) {
 	}
 
 	var body versionResponse
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	if body.Version != "" {
 		require.Failf(t, "failed", "expected empty version, got %q", body.Version)
 	}
@@ -215,9 +205,7 @@ func TestHandleOIDCEnabled_NotConfigured(t *testing.T) {
 	}
 
 	var body oidcEnabledResponse
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	if body.Enabled {
 		require.Fail(t, "expected enabled=false when oidcHandler is nil")
 	}
@@ -237,9 +225,7 @@ func TestHandleOIDCEnabled_Configured(t *testing.T) {
 	}
 
 	var body oidcEnabledResponse
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	if !body.Enabled {
 		require.Fail(t, "expected enabled=true when oidcHandler is non-nil")
 	}
@@ -262,9 +248,7 @@ func TestHandleOIDCEnabled_MethodNotAllowed(t *testing.T) {
 	}
 
 	var body map[string]string
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	if body["error"] != "method not allowed" {
 		require.Failf(t, "failed", "expected error 'method not allowed', got %q", body["error"])
 	}
@@ -342,9 +326,7 @@ func TestOIDCRoute_NotConfigured(t *testing.T) {
 	}
 
 	var body map[string]string
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		require.NoError(t, err, "decode body")
-	}
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	if body["error"] != "OIDC not configured" {
 		require.Failf(t, "failed", "expected error 'OIDC not configured', got %q", body["error"])
 	}

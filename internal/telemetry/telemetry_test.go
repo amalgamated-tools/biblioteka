@@ -90,9 +90,7 @@ func TestPayload_Fields(t *testing.T) {
 	data, err := json.Marshal(p)
 	require.NoError(t, err, "marshal payload")
 	var m map[string]any
-	if err := json.Unmarshal(data, &m); err != nil {
-		require.NoError(t, err, "unmarshal payload")
-	}
+	require.NoError(t, json.Unmarshal(data, &m), "unmarshal payload")
 
 	expectedKeys := []string{"application", "install_id", "version", "os", "arch", "timestamp"}
 	for _, key := range expectedKeys {

@@ -88,9 +88,7 @@ func TestRegister(t *testing.T) {
 	})
 
 	task := asynq.NewTask("test:register", []byte(`{"hello":"world"}`))
-	if err := w.mux.ProcessTask(t.Context(), task); err != nil {
-		require.NoError(t, err, "ProcessTask")
-	}
+	require.NoError(t, w.mux.ProcessTask(t.Context(), task), "ProcessTask")
 
 	if !called {
 		t.Error("expected handler to be called, but it was not")
@@ -132,9 +130,7 @@ func TestRegister_NilPayload(t *testing.T) {
 	})
 
 	task := asynq.NewTask("test:nil-payload", nil)
-	if err := w.mux.ProcessTask(t.Context(), task); err != nil {
-		require.NoError(t, err, "ProcessTask")
-	}
+	require.NoError(t, w.mux.ProcessTask(t.Context(), task), "ProcessTask")
 	if !called {
 		t.Error("expected handler to be called")
 	}
@@ -189,12 +185,8 @@ func TestRegisterSchedule_DistinctIDs(t *testing.T) {
 	}
 
 	// Verify both handlers are actually wired up.
-	if err := w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-a", nil)); err != nil {
-		require.NoError(t, err, "ProcessTask for multi-a")
-	}
-	if err := w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-b", nil)); err != nil {
-		require.NoError(t, err, "ProcessTask for multi-b")
-	}
+	require.NoError(t, w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-a", nil)), "ProcessTask for multi-a")
+	require.NoError(t, w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-b", nil)), "ProcessTask for multi-b")
 	if !called1 {
 		t.Error("handler for test:multi-a was not called")
 	}

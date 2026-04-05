@@ -173,9 +173,7 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	require.NoError(t, err, "create book")
 	author, err := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "create author")
-	if err := h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}); err != nil {
-		require.NoError(t, err, "set book authors")
-	}
+	require.NoError(t, h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}), "set book authors")
 	_, err = h.DB.CreateBookFile(ctx, book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 	require.NoError(t, err, "create book file")
 
@@ -303,9 +301,7 @@ func TestAuthorBooks(t *testing.T) {
 	require.NoError(t, err, "create author")
 	book, err := h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
-	if err := h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}); err != nil {
-		require.NoError(t, err, "set book authors")
-	}
+	require.NoError(t, h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}), "set book authors")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors/"+author.ID, nil)
 	w := httptest.NewRecorder()
@@ -400,9 +396,7 @@ func TestSeriesBooks(t *testing.T) {
 	book, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
 	pos := 1.0
-	if err := h.DB.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}}); err != nil {
-		require.NoError(t, err, "set book series")
-	}
+	require.NoError(t, h.DB.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}}), "set book series")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series/"+series.ID, nil)
 	w := httptest.NewRecorder()
@@ -573,9 +567,7 @@ func TestDownload_Success(t *testing.T) {
 	// Create a temp file to serve.
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.epub")
-	if err := os.WriteFile(filePath, []byte("fake epub content"), 0o644); err != nil {
-		require.NoError(t, err, "write temp file")
-	}
+	require.NoError(t, os.WriteFile(filePath, []byte("fake epub content"), 0o644), "write temp file")
 
 	bf, err := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 17, nil, filePath)
 	require.NoError(t, err, "create book file")
@@ -637,9 +629,7 @@ func TestDownload_UnknownFileType(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.xyz")
-	if err := os.WriteFile(filePath, []byte("data"), 0o644); err != nil {
-		require.NoError(t, err, "write temp file")
-	}
+	require.NoError(t, os.WriteFile(filePath, []byte("data"), 0o644), "write temp file")
 
 	bf, err := h.DB.CreateBookFile(ctx, book.ID, "xyz", "test.xyz", 4, nil, filePath)
 	require.NoError(t, err, "create book file")

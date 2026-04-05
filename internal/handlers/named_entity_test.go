@@ -96,9 +96,7 @@ func TestCreateNamedEntity_Success(t *testing.T) {
 	}
 
 	var dto testEntityDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.Name != "My Widget" {
 		t.Errorf("name = %q, want %q", dto.Name, "My Widget")
 	}
@@ -239,9 +237,7 @@ func TestGetNamedEntity_Success(t *testing.T) {
 	}
 
 	var dto testEntityDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.Name != "Existing Widget" {
 		t.Errorf("name = %q, want %q", dto.Name, "Existing Widget")
 	}
@@ -333,9 +329,7 @@ func TestUpdateNamedEntity_Success(t *testing.T) {
 	}
 
 	var dto testEntityDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.Name != "Updated Widget" {
 		t.Errorf("name = %q, want %q", dto.Name, "Updated Widget")
 	}

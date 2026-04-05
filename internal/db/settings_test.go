@@ -10,9 +10,7 @@ import (
 func TestSetAndGetSetting(t *testing.T) {
 	d := newTestDB(t)
 
-	if err := d.SetSetting(t.Context(), "theme", "dark"); err != nil {
-		require.NoError(t, err, "SetSetting() error")
-	}
+	require.NoError(t, d.SetSetting(t.Context(), "theme", "dark"), "SetSetting() error")
 
 	val, err := d.GetSetting(t.Context(), "theme")
 	require.NoError(t, err, "GetSetting() error")
@@ -33,12 +31,8 @@ func TestGetSetting_NotFound(t *testing.T) {
 func TestSetSetting_Upsert(t *testing.T) {
 	d := newTestDB(t)
 
-	if err := d.SetSetting(t.Context(), "color", "blue"); err != nil {
-		require.NoError(t, err, "SetSetting() for blue error")
-	}
-	if err := d.SetSetting(t.Context(), "color", "red"); err != nil {
-		require.NoError(t, err, "SetSetting() for red error")
-	}
+	require.NoError(t, d.SetSetting(t.Context(), "color", "blue"), "SetSetting() for blue error")
+	require.NoError(t, d.SetSetting(t.Context(), "color", "red"), "SetSetting() for red error")
 
 	val, err := d.GetSetting(t.Context(), "color")
 	require.NoError(t, err, "GetSetting() error")

@@ -41,9 +41,7 @@ func TestKoboTokenList_WithTokens(t *testing.T) {
 	}
 
 	var tokens []map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&tokens); err != nil {
-		require.NoError(t, err, "decode list response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&tokens), "decode list response")
 	if len(tokens) != 2 {
 		t.Errorf("expected 2 tokens, got %d", len(tokens))
 	}
@@ -66,9 +64,7 @@ func TestKoboTokenCreate_ResponseContainsToken(t *testing.T) {
 		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusCreated)
 	}
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode create response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode create response")
 	token, _ := resp["token"].(string)
 	if len(token) == 0 {
 		t.Error("expected non-empty token in creation response")
@@ -114,9 +110,7 @@ func TestKoboTokenCreate_NameTrimmed(t *testing.T) {
 		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusCreated)
 	}
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode create response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode create response")
 	name, _ := resp["name"].(string)
 	if name != "My Device" {
 		t.Errorf("name = %q, want %q (should be trimmed)", name, "My Device")
@@ -142,9 +136,7 @@ func TestKoboTokenDelete_UserIsolation(t *testing.T) {
 		require.Failf(t, "failed", "create token: status = %d, want %d", w.Code, http.StatusCreated)
 	}
 	var created map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&created); err != nil {
-		require.NoError(t, err, "decode create response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&created), "decode create response")
 	tokenID, _ := created["id"].(string)
 
 	// Attempt to delete user1's token as user2.

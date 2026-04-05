@@ -120,9 +120,7 @@ func TestLinkOIDCSubject(t *testing.T) {
 	user, err := d.CreateUser(t.Context(), "Frank", "frank@example.com", "pw")
 	require.NoError(t, err, "CreateUser() error")
 
-	if err := d.LinkOIDCSubject(t.Context(), user.ID, "oidc-sub-frank"); err != nil {
-		require.NoError(t, err, "LinkOIDCSubject() error")
-	}
+	require.NoError(t, d.LinkOIDCSubject(t.Context(), user.ID, "oidc-sub-frank"), "LinkOIDCSubject() error")
 
 	found, err := d.GetUserByOIDCSubject(t.Context(), "oidc-sub-frank")
 	require.NoError(t, err, "GetUserByOIDCSubject() error")
@@ -146,9 +144,7 @@ func TestUpdatePassword(t *testing.T) {
 	user, err := d.CreateUser(t.Context(), "Grace", "grace@example.com", "oldhash")
 	require.NoError(t, err, "CreateUser() error")
 
-	if err := d.UpdatePassword(t.Context(), user.ID, "newhash"); err != nil {
-		require.NoError(t, err, "UpdatePassword() error")
-	}
+	require.NoError(t, d.UpdatePassword(t.Context(), user.ID, "newhash"), "UpdatePassword() error")
 
 	found, err := d.GetUserByEmail(t.Context(), "grace@example.com")
 	require.NoError(t, err, "GetUserByEmail() error")
@@ -229,9 +225,7 @@ func TestSetAdmin(t *testing.T) {
 	require.NoError(t, err, "CreateUser() for Second error")
 
 	// Promote second user
-	if err := d.SetAdmin(t.Context(), u2.ID, true); err != nil {
-		require.NoError(t, err, "SetAdmin(true) error")
-	}
+	require.NoError(t, d.SetAdmin(t.Context(), u2.ID, true), "SetAdmin(true) error")
 
 	isAdmin, err := d.IsAdmin(t.Context(), u2.ID)
 	require.NoError(t, err, "IsAdmin() after promotion error")
@@ -240,9 +234,7 @@ func TestSetAdmin(t *testing.T) {
 	}
 
 	// Demote second user
-	if err := d.SetAdmin(t.Context(), u2.ID, false); err != nil {
-		require.NoError(t, err, "SetAdmin(false) error")
-	}
+	require.NoError(t, d.SetAdmin(t.Context(), u2.ID, false), "SetAdmin(false) error")
 
 	isAdmin, err = d.IsAdmin(t.Context(), u2.ID)
 	require.NoError(t, err, "IsAdmin() after demotion error")

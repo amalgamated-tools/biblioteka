@@ -43,9 +43,7 @@ func TestHandleConfigStatus_Success(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp configStatusResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.OIDCConfigured {
 		t.Error("expected OIDCConfigured=false")
 	}
@@ -67,9 +65,7 @@ func TestHandleConfigStatus_RegularUser(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp configStatusResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.IsAdmin {
 		t.Error("expected IsAdmin=false for regular user")
 	}
@@ -86,9 +82,7 @@ func TestHandleConfigStatus_WhenConfigured(t *testing.T) {
 	h.HandleConfigStatus(w, r)
 
 	var resp configStatusResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if !resp.OIDCConfigured {
 		t.Error("expected OIDCConfigured=true")
 	}

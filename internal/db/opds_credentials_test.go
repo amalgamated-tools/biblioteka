@@ -110,9 +110,7 @@ func TestOPDSCredential_Delete(t *testing.T) {
 	_, err := d.UpsertOPDSCredential(ctx, user.ID, "delme", "hash")
 	require.NoError(t, err, "upsert")
 
-	if err := d.DeleteOPDSCredential(ctx, user.ID); err != nil {
-		require.NoError(t, err, "DeleteOPDSCredential")
-	}
+	require.NoError(t, d.DeleteOPDSCredential(ctx, user.ID), "DeleteOPDSCredential")
 
 	_, err = d.GetOPDSCredentialByUserID(ctx, user.ID)
 	if err != sql.ErrNoRows {

@@ -130,9 +130,7 @@ func TestDeleteBook_CascadeFiles(t *testing.T) {
 		require.Fail(t, "CreateBookFile() returned nil book file")
 	}
 
-	if err := d.DeleteBook(t.Context(), book.ID); err != nil {
-		require.NoError(t, err, "DeleteBook() error")
-	}
+	require.NoError(t, d.DeleteBook(t.Context(), book.ID), "DeleteBook() error")
 
 	_, err = d.GetBookFile(t.Context(), bf.ID)
 	if err != sql.ErrNoRows {

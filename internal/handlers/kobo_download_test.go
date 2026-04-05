@@ -161,9 +161,7 @@ func TestHandleDownload_Success(t *testing.T) {
 	if _, err := f.Write(content); err != nil {
 		require.NoError(t, err, "write temp file")
 	}
-	if err := f.Close(); err != nil {
-		require.NoError(t, err, "close temp file")
-	}
+	require.NoError(t, f.Close(), "close temp file")
 
 	book, err := h.DB.CreateBook(t.Context(), "Download Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
@@ -199,9 +197,7 @@ func TestHandleDownload_CaseInsensitiveFormat(t *testing.T) {
 
 	dir := t.TempDir()
 	bookFile := filepath.Join(dir, "sample.epub")
-	if err := os.WriteFile(bookFile, []byte("epub content"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(bookFile, []byte("epub content"), 0o644), "write file")
 
 	book, _, err := d.CreateBookWithFile(
 		t.Context(),
@@ -230,9 +226,7 @@ func TestHandleDownload_ContentDispositionHeader(t *testing.T) {
 
 	dir := t.TempDir()
 	bookFile := filepath.Join(dir, "my-book.epub")
-	if err := os.WriteFile(bookFile, []byte("epub data"), 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(bookFile, []byte("epub data"), 0o644), "write file")
 
 	book, _, err := d.CreateBookWithFile(
 		t.Context(),
@@ -268,9 +262,7 @@ func TestHandleDownload_ReturnsFileContents(t *testing.T) {
 	dir := t.TempDir()
 	fileContent := []byte("epub file content here")
 	bookFile := filepath.Join(dir, "content.epub")
-	if err := os.WriteFile(bookFile, fileContent, 0o644); err != nil {
-		require.NoError(t, err, "write file")
-	}
+	require.NoError(t, os.WriteFile(bookFile, fileContent, 0o644), "write file")
 
 	book, _, err := d.CreateBookWithFile(
 		t.Context(),

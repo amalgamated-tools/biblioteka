@@ -39,9 +39,7 @@ func TestHandleListUsers_AdminSuccess(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var users []adminUserDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &users); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &users), "unmarshal")
 	if len(users) != 2 {
 		t.Errorf("expected 2 users, got %d", len(users))
 	}
@@ -85,9 +83,7 @@ func TestHandleListUsers_ResponseContainsAdminFlag(t *testing.T) {
 	h.HandleListUsers(w, r)
 
 	var users []adminUserDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &users); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &users), "unmarshal")
 
 	var foundAdmin, foundRegular bool
 	for _, u := range users {
@@ -134,9 +130,7 @@ func TestHandleListUsers_OIDCLinkedField(t *testing.T) {
 	}
 
 	var users []adminUserDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &users); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &users), "unmarshal")
 
 	for _, u := range users {
 		switch u.ID {

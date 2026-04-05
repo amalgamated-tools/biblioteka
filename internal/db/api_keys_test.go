@@ -128,9 +128,7 @@ func TestDeleteAPIKey(t *testing.T) {
 	created, err := d.CreateAPIKey(t.Context(), user.ID, "Delete Me", "hashDel", "prefDel")
 	require.NoError(t, err, "CreateAPIKey() error")
 
-	if err := d.DeleteAPIKey(t.Context(), created.ID, user.ID); err != nil {
-		require.NoError(t, err, "DeleteAPIKey() error")
-	}
+	require.NoError(t, d.DeleteAPIKey(t.Context(), created.ID, user.ID), "DeleteAPIKey() error")
 
 	// Should be gone.
 	_, err = d.GetAPIKey(t.Context(), created.ID, user.ID)
@@ -211,9 +209,7 @@ func TestTouchAPIKeyLastUsed(t *testing.T) {
 		require.Fail(t, "LastUsedAt should be nil initially")
 	}
 
-	if err := d.TouchAPIKeyLastUsed(t.Context(), created.ID); err != nil {
-		require.NoError(t, err, "TouchAPIKeyLastUsed() error")
-	}
+	require.NoError(t, d.TouchAPIKeyLastUsed(t.Context(), created.ID), "TouchAPIKeyLastUsed() error")
 
 	// Re-fetch and verify last_used_at is now set.
 	got, err := d.GetAPIKey(t.Context(), created.ID, user.ID)

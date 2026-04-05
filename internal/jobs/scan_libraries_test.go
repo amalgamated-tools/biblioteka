@@ -48,9 +48,7 @@ func TestScanLibrariesHandler(t *testing.T) {
 	}
 
 	handler := NewScanLibrariesHandler(lister, enq)
-	if err := handler(t.Context(), nil); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), nil), "handler")
 
 	// Expect 2 scan:library jobs (lib1 and lib2; lib3 is not monitored)
 	if got := len(enq.jobs); got != 2 {
@@ -90,9 +88,7 @@ func TestScanLibrariesHandler_NoMonitoredLibraries(t *testing.T) {
 	}
 
 	handler := NewScanLibrariesHandler(lister, enq)
-	if err := handler(t.Context(), nil); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), nil), "handler")
 
 	if len(enq.jobs) != 0 {
 		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
@@ -104,9 +100,7 @@ func TestScanLibrariesHandler_EmptyLibraryList(t *testing.T) {
 	lister := &mockLibraryLister{libraries: nil}
 
 	handler := NewScanLibrariesHandler(lister, enq)
-	if err := handler(t.Context(), nil); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), nil), "handler")
 
 	if len(enq.jobs) != 0 {
 		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
@@ -143,9 +137,7 @@ func TestScanLibrariesHandler_InvalidPaths(t *testing.T) {
 	}
 
 	handler := NewScanLibrariesHandler(lister, enq)
-	if err := handler(t.Context(), nil); err != nil {
-		require.NoError(t, err, "handler should not fail on one bad library")
-	}
+	require.NoError(t, handler(t.Context(), nil), "handler should not fail on one bad library")
 
 	// Only the good library should produce a job
 	if got := len(enq.jobs); got != 1 {
@@ -168,7 +160,5 @@ func TestScanLibrariesHandler_EnqueueError(t *testing.T) {
 
 	handler := NewScanLibrariesHandler(lister, enq)
 	// Enqueue errors should be logged but not cause the handler to fail
-	if err := handler(t.Context(), nil); err != nil {
-		require.NoError(t, err, "handler should not fail on enqueue errors")
-	}
+	require.NoError(t, handler(t.Context(), nil), "handler should not fail on enqueue errors")
 }

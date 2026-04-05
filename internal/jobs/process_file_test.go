@@ -58,9 +58,7 @@ func TestProcessFileHandler(t *testing.T) {
 	})
 	require.NoError(t, err, "marshal")
 
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
@@ -130,9 +128,7 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 	})
 	require.NoError(t, err, "marshal")
 
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
@@ -198,9 +194,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	// Set up: Author/Title.epub structure in a temp dir simulating a library root.
 	root := t.TempDir()
 	authorDir := filepath.Join(root, "F. Scott Fitzgerald")
-	if err := os.MkdirAll(authorDir, 0o755); err != nil {
-		require.NoError(t, err, "mkdir")
-	}
+	require.NoError(t, os.MkdirAll(authorDir, 0o755), "mkdir")
 	epubPath := filepath.Join(authorDir, "The Great Gatsby.epub")
 	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
@@ -214,9 +208,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	})
 	require.NoError(t, err, "marshal")
 
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	// Verify book was created.
 	books, err := database.ListBooks(t.Context())
@@ -253,9 +245,7 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 	// Set up: Author/Series/N. Title.epub
 	root := t.TempDir()
 	seriesDir := filepath.Join(root, "Alexander McCall Smith", "No. 1 Ladies' Detective Agency")
-	if err := os.MkdirAll(seriesDir, 0o755); err != nil {
-		require.NoError(t, err, "mkdir")
-	}
+	require.NoError(t, os.MkdirAll(seriesDir, 0o755), "mkdir")
 	epubPath := filepath.Join(seriesDir, "10. Tea Time for the Traditionally Built (2009).epub")
 	testutils.MakeTestEPUB(t, epubPath, "", "", "")
 
@@ -268,9 +258,7 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 	})
 	require.NoError(t, err, "marshal")
 
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
@@ -321,14 +309,10 @@ func TestProcessFileHandler_DuplicateSkipped(t *testing.T) {
 	require.NoError(t, err, "marshal")
 
 	// Process once.
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "first handler call")
-	}
+	require.NoError(t, handler(t.Context(), payload), "first handler call")
 
 	// Process again — should be skipped (no error, no duplicate book).
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "second handler call")
-	}
+	require.NoError(t, handler(t.Context(), payload), "second handler call")
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")

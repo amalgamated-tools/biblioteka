@@ -206,15 +206,9 @@ func TestListBooksByAuthor_ReturnsMatchingBooks(t *testing.T) {
 	b3, err := d.CreateBook(t.Context(), "Harry Potter", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook(b3)")
 
-	if err := d.SetBookAuthors(t.Context(), b1.ID, []string{author.ID}); err != nil {
-		require.NoError(t, err, "SetBookAuthors(b1)")
-	}
-	if err := d.SetBookAuthors(t.Context(), b2.ID, []string{author.ID}); err != nil {
-		require.NoError(t, err, "SetBookAuthors(b2)")
-	}
-	if err := d.SetBookAuthors(t.Context(), b3.ID, []string{other.ID}); err != nil {
-		require.NoError(t, err, "SetBookAuthors(b3)")
-	}
+	require.NoError(t, d.SetBookAuthors(t.Context(), b1.ID, []string{author.ID}), "SetBookAuthors(b1)")
+	require.NoError(t, d.SetBookAuthors(t.Context(), b2.ID, []string{author.ID}), "SetBookAuthors(b2)")
+	require.NoError(t, d.SetBookAuthors(t.Context(), b3.ID, []string{other.ID}), "SetBookAuthors(b3)")
 
 	books, err := d.ListBooksByAuthor(t.Context(), author.ID)
 	require.NoError(t, err, "ListBooksByAuthor() error")
@@ -239,9 +233,7 @@ func TestListBooksByAuthorPaginated(t *testing.T) {
 	for _, title := range []string{"Book A", "Book B", "Book C", "Book D"} {
 		b, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		require.NoError(t, err, "CreateBook(%q)", title)
-		if err := d.SetBookAuthors(t.Context(), b.ID, []string{author.ID}); err != nil {
-			require.NoError(t, err, "SetBookAuthors(%q)", title)
-		}
+		require.NoError(t, d.SetBookAuthors(t.Context(), b.ID, []string{author.ID}), "SetBookAuthors(%q)", title)
 	}
 
 	page1, total, err := d.ListBooksByAuthorPaginated(t.Context(), author.ID, 2, 0)
@@ -276,9 +268,7 @@ func TestListBooksByAuthorPaginated_OffsetBeyondTotal(t *testing.T) {
 	require.NoError(t, err, "CreateAuthor()")
 	b, err := d.CreateBook(t.Context(), "One Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook()")
-	if err := d.SetBookAuthors(t.Context(), b.ID, []string{author.ID}); err != nil {
-		require.NoError(t, err, "SetBookAuthors()")
-	}
+	require.NoError(t, d.SetBookAuthors(t.Context(), b.ID, []string{author.ID}), "SetBookAuthors()")
 
 	books, total, err := d.ListBooksByAuthorPaginated(t.Context(), author.ID, 10, 50)
 	require.NoError(t, err, "ListBooksByAuthorPaginated(offset=50) error")
@@ -319,15 +309,9 @@ func TestListBooksBySeries_OrderedByPosition(t *testing.T) {
 	require.NoError(t, err, "CreateBook(b3)")
 
 	// Assign series entries out of order.
-	if err := d.SetBookSeries(t.Context(), b1.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.0)}}); err != nil {
-		require.NoError(t, err, "SetBookSeries(b1)")
-	}
-	if err := d.SetBookSeries(t.Context(), b3.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(3.0)}}); err != nil {
-		require.NoError(t, err, "SetBookSeries(b3)")
-	}
-	if err := d.SetBookSeries(t.Context(), b2.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(2.0)}}); err != nil {
-		require.NoError(t, err, "SetBookSeries(b2)")
-	}
+	require.NoError(t, d.SetBookSeries(t.Context(), b1.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.0)}}), "SetBookSeries(b1)")
+	require.NoError(t, d.SetBookSeries(t.Context(), b3.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(3.0)}}), "SetBookSeries(b3)")
+	require.NoError(t, d.SetBookSeries(t.Context(), b2.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(2.0)}}), "SetBookSeries(b2)")
 
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
 	require.NoError(t, err, "ListBooksBySeries() error")
@@ -360,12 +344,8 @@ func TestListBooksBySeries_NullPositionSorting(t *testing.T) {
 	b2, err := d.CreateBook(t.Context(), "Unpositioned", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook(unpositioned)")
 
-	if err := d.SetBookSeries(t.Context(), b2.ID, []BookSeriesInput{{SeriesID: s.ID, Position: nil}}); err != nil {
-		require.NoError(t, err, "SetBookSeries(b2 nil position)")
-	}
-	if err := d.SetBookSeries(t.Context(), b1.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.0)}}); err != nil {
-		require.NoError(t, err, "SetBookSeries(b1 pos 1)")
-	}
+	require.NoError(t, d.SetBookSeries(t.Context(), b2.ID, []BookSeriesInput{{SeriesID: s.ID, Position: nil}}), "SetBookSeries(b2 nil position)")
+	require.NoError(t, d.SetBookSeries(t.Context(), b1.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.0)}}), "SetBookSeries(b1 pos 1)")
 
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
 	require.NoError(t, err, "ListBooksBySeries() error")
@@ -393,9 +373,7 @@ func TestListBooksBySeriesPaginated(t *testing.T) {
 		b, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		require.NoError(t, err, "CreateBook(%q)", title)
 		pos := float64(i + 1)
-		if err := d.SetBookSeries(t.Context(), b.ID, []BookSeriesInput{{SeriesID: s.ID, Position: &pos}}); err != nil {
-			require.NoError(t, err, "SetBookSeries(%q)", title)
-		}
+		require.NoError(t, d.SetBookSeries(t.Context(), b.ID, []BookSeriesInput{{SeriesID: s.ID, Position: &pos}}), "SetBookSeries(%q)", title)
 	}
 
 	page1, total, err := d.ListBooksBySeriesPaginated(t.Context(), s.ID, 2, 0)
@@ -418,9 +396,7 @@ func TestListBooksBySeriesPaginated_OffsetBeyondTotal(t *testing.T) {
 	require.NoError(t, err, "CreateSeries()")
 	b, err := d.CreateBook(t.Context(), "One Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook()")
-	if err := d.SetBookSeries(t.Context(), b.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.0)}}); err != nil {
-		require.NoError(t, err, "SetBookSeries()")
-	}
+	require.NoError(t, d.SetBookSeries(t.Context(), b.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.0)}}), "SetBookSeries()")
 
 	books, total, err := d.ListBooksBySeriesPaginated(t.Context(), s.ID, 10, 50)
 	require.NoError(t, err, "ListBooksBySeriesPaginated(offset=50) error")

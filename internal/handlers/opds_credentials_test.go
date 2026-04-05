@@ -63,9 +63,7 @@ func TestOPDSCredentials_PutSuccess(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Username != "myreader" {
 		t.Errorf("username = %q, want %q", resp.Username, "myreader")
 	}
@@ -95,9 +93,7 @@ func TestOPDSCredentials_GetAfterPut(t *testing.T) {
 		t.Errorf("GET status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Username != "myreader" {
 		t.Errorf("username = %q, want %q", resp.Username, "myreader")
 	}
@@ -128,9 +124,7 @@ func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
 		t.Errorf("second PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Username != "newname" {
 		t.Errorf("username = %q, want %q", resp.Username, "newname")
 	}
@@ -210,9 +204,7 @@ func TestOPDSCredentials_PutUsernameLowercased(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Username != "myreader" {
 		t.Errorf("username = %q, want %q (should be lowercased)", resp.Username, "myreader")
 	}
@@ -314,9 +306,7 @@ func TestOPDSCredentials_PutUsernameTrimmed(t *testing.T) {
 		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Username != "spacey" {
 		t.Errorf("username = %q, want %q (should be trimmed and lowercased)", resp.Username, "spacey")
 	}

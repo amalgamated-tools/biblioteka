@@ -29,9 +29,7 @@ func TestHandleAuth_RefreshEndpoint(t *testing.T) {
 		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	if resp["AccessToken"] == nil || resp["AccessToken"] == "" {
 		t.Error("expected non-empty AccessToken in refresh response")
 	}
@@ -77,9 +75,7 @@ func TestHandleAuth_NilBody(t *testing.T) {
 		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	// When no body is provided, UserKey should be the zero value.
 	if _, ok := resp["UserKey"]; !ok {
 		t.Error("expected UserKey field in response even when body is nil")
@@ -102,9 +98,7 @@ func TestHandleAuth_TokenType(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	if resp["TokenType"] != "Bearer" {
 		t.Errorf("TokenType = %v, want Bearer", resp["TokenType"])
 	}
@@ -124,9 +118,7 @@ func TestHandleAuth_TrackingIDFormat(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode response")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode response")
 	trackingID, _ := resp["TrackingId"].(string)
 	if len(trackingID) == 0 {
 		t.Error("expected non-empty TrackingId")
@@ -200,9 +192,7 @@ func TestHandleAuth_DirectHandler(t *testing.T) {
 		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	if resp["UserKey"] != "direct-key" {
 		t.Errorf("UserKey = %v, want direct-key", resp["UserKey"])
 	}

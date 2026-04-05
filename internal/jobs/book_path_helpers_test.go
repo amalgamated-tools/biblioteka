@@ -298,9 +298,7 @@ func TestReorganizedCandidatePaths_NoDuplicates(t *testing.T) {
 	author := "Author Name"
 	title := "Book Title"
 	organizedDir := filepath.Join(dir, author, title)
-	if err := os.MkdirAll(organizedDir, 0o750); err != nil {
-		require.NoError(t, err, "mkdir")
-	}
+	require.NoError(t, os.MkdirAll(organizedDir, 0o750), "mkdir")
 	filePath := filepath.Join(organizedDir, "book.epub")
 
 	p := ProcessFilePayload{

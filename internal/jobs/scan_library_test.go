@@ -45,9 +45,7 @@ func TestScanLibraryHandler(t *testing.T) {
 		Paths:     []string{"/books/fiction", "/books/scifi"},
 	})
 	require.NoError(t, err, "marshal")
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	if got := len(enq.jobs); got != 2 {
 		require.Failf(t, "failed", "expected 2 enqueued jobs, got %d", got)
@@ -57,9 +55,7 @@ func TestScanLibraryHandler(t *testing.T) {
 			t.Errorf("job[%d] name = %q, want %q", i, enq.jobs[i].Name, JobScanPath)
 		}
 		var p ScanPathPayload
-		if err := json.Unmarshal(enq.jobs[i].Payload, &p); err != nil {
-			require.NoError(t, err, "unmarshal job[%d]", i)
-		}
+		require.NoError(t, json.Unmarshal(enq.jobs[i].Payload, &p), "unmarshal job[%d]", i)
 		if p.Path != want {
 			t.Errorf("job[%d] path = %q, want %q", i, p.Path, want)
 		}
@@ -72,9 +68,7 @@ func TestScanLibraryHandler_EmptyPaths(t *testing.T) {
 
 	payload, err := json.Marshal(ScanLibraryPayload{LibraryID: "lib1"})
 	require.NoError(t, err, "marshal")
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "handler")
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler")
 
 	if len(enq.jobs) != 0 {
 		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
@@ -90,9 +84,7 @@ func TestScanLibraryHandler_EnqueueError(t *testing.T) {
 		Paths:     []string{"/books/fiction", "/books/scifi"},
 	})
 	require.NoError(t, err, "marshal")
-	if err := handler(t.Context(), payload); err != nil {
-		require.NoError(t, err, "handler should not fail on enqueue errors")
-	}
+	require.NoError(t, handler(t.Context(), payload), "handler should not fail on enqueue errors")
 
 	if len(enq.jobs) != 0 {
 		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))

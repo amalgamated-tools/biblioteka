@@ -28,9 +28,7 @@ func TestGetBookFiles_Empty(t *testing.T) {
 	}
 
 	var files []bookFileDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &files); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &files), "unmarshal")
 	if len(files) != 0 {
 		t.Errorf("len = %d, want 0", len(files))
 	}
@@ -56,9 +54,7 @@ func TestGetBookFiles_WithFiles(t *testing.T) {
 	}
 
 	var files []bookFileDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &files); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &files), "unmarshal")
 	if len(files) != 1 {
 		require.Failf(t, "failed", "len = %d, want 1", len(files))
 	}
@@ -90,9 +86,7 @@ func TestPostBookFiles_Success(t *testing.T) {
 	}
 
 	var dto bookFileDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.FileName != "gunslinger.epub" {
 		t.Errorf("file_name = %q, want %q", dto.FileName, "gunslinger.epub")
 	}

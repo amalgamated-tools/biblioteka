@@ -28,9 +28,7 @@ func TestHandleInit_DeviceAuthKey(t *testing.T) {
 		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
 	}
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	resources, ok := resp["Resources"].(map[string]any)
 	if !ok {
 		require.Fail(t, "expected Resources object in response")
@@ -58,9 +56,7 @@ func TestHandleInit_ImageHostKey(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	resources, _ := resp["Resources"].(map[string]any)
 	imageHost, _ := resources["image_host"].(string)
 	if imageHost == "" {
@@ -86,9 +82,7 @@ func TestHandleInit_LibrarySyncURL(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	resources, _ := resp["Resources"].(map[string]any)
 	librarySync, _ := resources["library_sync"].(string)
 	if !strings.Contains(librarySync, tokenValue) {
@@ -111,9 +105,7 @@ func TestHandleInit_ConfigurationDataKey(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	resources, _ := resp["Resources"].(map[string]any)
 
 	if resources["configuration_data"] == nil {
@@ -139,9 +131,7 @@ func TestHandleInit_BlackstoneHeaderKey(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	var resp map[string]any
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		require.NoError(t, err, "decode")
-	}
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	resources, _ := resp["Resources"].(map[string]any)
 	blackstone, ok := resources["blackstone_header"].(map[string]any)
 	if !ok {

@@ -186,9 +186,7 @@ func TestDeleteKoboToken(t *testing.T) {
 	created, err := d.CreateKoboToken(t.Context(), user.ID, "Delete Me", "hash-del")
 	require.NoError(t, err, "CreateKoboToken()")
 
-	if err := d.DeleteKoboToken(t.Context(), created.ID, user.ID); err != nil {
-		require.NoError(t, err, "DeleteKoboToken() error")
-	}
+	require.NoError(t, d.DeleteKoboToken(t.Context(), created.ID, user.ID), "DeleteKoboToken() error")
 
 	_, err = d.GetKoboToken(t.Context(), created.ID, user.ID)
 	if !errors.Is(err, sql.ErrNoRows) {

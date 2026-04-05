@@ -110,9 +110,7 @@ func TestWriteCover_OverwritesExisting(t *testing.T) {
 	coverPath := filepath.Join(dir, "cover.jpg")
 
 	// Write an initial file.
-	if err := os.WriteFile(coverPath, []byte("old"), 0o644); err != nil {
-		require.NoError(t, err, "setup")
-	}
+	require.NoError(t, os.WriteFile(coverPath, []byte("old"), 0o644), "setup")
 
 	imageData := []byte{0xFF, 0xD8}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
@@ -131,9 +129,7 @@ func TestWriteCover_RemovesStaleFormats(t *testing.T) {
 	dir := t.TempDir()
 
 	for _, ext := range []string{".jpg", ".png"} {
-		if err := os.WriteFile(filepath.Join(dir, "cover"+ext), []byte("old"), 0o644); err != nil {
-			require.NoError(t, err, "setup %s", ext)
-		}
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "cover"+ext), []byte("old"), 0o644), "setup %s", ext)
 	}
 
 	imageData := []byte{0x52, 0x49, 0x46, 0x46}
@@ -178,9 +174,7 @@ func TestWriteCover_CustomBaseName_RemovesStaleFormats(t *testing.T) {
 	stem := "My Book"
 
 	// Pre-create stale files.
-	if err := os.WriteFile(filepath.Join(dir, stem+".png"), []byte("old"), 0o644); err != nil {
-		require.NoError(t, err, "setup")
-	}
+	require.NoError(t, os.WriteFile(filepath.Join(dir, stem+".png"), []byte("old"), 0o644), "setup")
 
 	imageData := []byte{0xFF, 0xD8}
 	encoded := base64.StdEncoding.EncodeToString(imageData)

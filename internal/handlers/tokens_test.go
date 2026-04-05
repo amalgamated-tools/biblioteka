@@ -51,9 +51,7 @@ func TestHandleTokenCreate_Success(t *testing.T) {
 	}
 
 	var resp map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp["name"] != "My Token" {
 		t.Errorf("name = %q, want %q", resp["name"], "My Token")
 	}
@@ -160,9 +158,7 @@ func TestHandleTokenCreate_GenericCreateError(t *testing.T) {
 	}
 
 	var resp errorResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	// Generic error should use the default "failed to create <resource>" message.
 	if resp.Error != "failed to create test token" {
 		t.Errorf("error = %q, want %q", resp.Error, "failed to create test token")
@@ -190,9 +186,7 @@ func TestHandleTokenCreate_TokenErrorMessage(t *testing.T) {
 	}
 
 	var resp errorResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		require.NoError(t, err, "unmarshal")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	// tokenError.message should be used instead of the generic message.
 	if resp.Error != "failed to generate secure token" {
 		t.Errorf("error = %q, want %q", resp.Error, "failed to generate secure token")
