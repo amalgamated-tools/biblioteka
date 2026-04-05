@@ -260,7 +260,8 @@ func newCachingAdminChecker(delegate AdminChecker, ttl time.Duration) AdminCheck
 
 // IsAdmin reports whether the given user has admin privileges. Results are
 // cached for a short TTL to avoid repeated database lookups on busy admin
-// endpoints. The cache is process-local and is evicted when entries expire.
+// endpoints. The cache is process-local; expired entries are lazily evicted
+// when the cache exceeds a size threshold.
 func (c *cachingAdminChecker) IsAdmin(ctx context.Context, userID string) (bool, error) {
 	// Fast path: check cache under read lock.
 	now := time.Now()
