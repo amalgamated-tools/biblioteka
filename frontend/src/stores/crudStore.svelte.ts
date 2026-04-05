@@ -9,6 +9,7 @@ export class CrudStore<T extends { id: string }, TInput> {
   items: T[] = $state.raw([]);
   loading = $state(false);
   loaded = $state(false);
+  error: string | null = $state(null);
 
   private readonly ops: CrudOps<T, TInput>;
 
@@ -19,12 +20,13 @@ export class CrudStore<T extends { id: string }, TInput> {
   async load(): Promise<void> {
     if (this.loading || this.loaded) return;
     this.loading = true;
+    this.error = null;
     try {
       const data = await this.ops.list();
       this.items = data;
       this.loaded = true;
-    } catch {
-      // Silently fail — individual pages can handle errors
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : "Failed to load";
     } finally {
       this.loading = false;
     }
