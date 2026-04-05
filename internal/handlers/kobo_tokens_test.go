@@ -38,9 +38,7 @@ func TestKoboTokenList_WithTokens(t *testing.T) {
 
 	var tokens []map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&tokens), "decode list response")
-	if len(tokens) != 2 {
-		t.Errorf("expected 2 tokens, got %d", len(tokens))
-	}
+	require.Len(t, tokens, 2)
 }
 
 // TestKoboTokenCreate_ResponseContainsToken verifies that the creation response
@@ -60,9 +58,7 @@ func TestKoboTokenCreate_ResponseContainsToken(t *testing.T) {
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode create response")
 	token, _ := resp["token"].(string)
-	if len(token) == 0 {
-		t.Error("expected non-empty token in creation response")
-	}
+	require.NotEmpty(t, token)
 }
 
 // TestKoboTokenCreate_NameTooLong verifies that names longer than the max token
@@ -82,9 +78,7 @@ func TestKoboTokenCreate_NameTooLong(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleKoboTokens(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d for name too long", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 // TestKoboTokenCreate_NameTrimmed verifies that leading/trailing whitespace
@@ -104,9 +98,7 @@ func TestKoboTokenCreate_NameTrimmed(t *testing.T) {
 	var resp map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode create response")
 	name, _ := resp["name"].(string)
-	if name != "My Device" {
-		t.Errorf("name = %q, want %q (should be trimmed)", name, "My Device")
-	}
+	require.Equal(t, "My Device", name)
 }
 
 // TestKoboTokenDelete_UserIsolation verifies that a user cannot delete another
@@ -135,7 +127,5 @@ func TestKoboTokenDelete_UserIsolation(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleKoboToken(w2, r2)
 
-	if w2.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d (user isolation)", w2.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w2.Code)
 }

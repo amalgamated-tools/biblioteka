@@ -42,9 +42,7 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusBadRequest, w2.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w2.Code)
 }
 
 func TestUpdateLibrary_ValidPath(t *testing.T) {
@@ -79,9 +77,7 @@ func TestUpdateLibrary_ValidPath(t *testing.T) {
 
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 }
 
 func TestUpdateLibrary_NonAdminForbidden(t *testing.T) {
@@ -106,9 +102,7 @@ func TestUpdateLibrary_NonAdminForbidden(t *testing.T) {
 
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusForbidden, w2.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w2.Code)
 }
 
 func TestDeleteLibrary_NonAdminForbidden(t *testing.T) {
@@ -132,9 +126,7 @@ func TestDeleteLibrary_NonAdminForbidden(t *testing.T) {
 
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusForbidden, w2.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w2.Code)
 }
 
 func TestDeleteLibrary_NotFound(t *testing.T) {
@@ -146,15 +138,11 @@ func TestDeleteLibrary_NotFound(t *testing.T) {
 
 	h.HandleLibrary(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 
 	var resp errorResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Error != "library not found" {
-		t.Errorf("error = %q, want %q", resp.Error, "library not found")
-	}
+	require.Equal(t, "library not found", resp.Error)
 }
 
 func TestUpdateLibrary_InvalidOrganizationType(t *testing.T) {
@@ -186,9 +174,7 @@ func TestUpdateLibrary_InvalidOrganizationType(t *testing.T) {
 
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusBadRequest, w2.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w2.Code)
 }
 
 func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T) {
@@ -224,7 +210,5 @@ func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T)
 
 	var updated libraryDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &updated), "unmarshal updated")
-	if updated.OrganizationType != db.LibraryOrganizationNone {
-		t.Errorf("organization_type = %q, want %q", updated.OrganizationType, db.LibraryOrganizationNone)
-	}
+	require.Equal(t, db.LibraryOrganizationNone, updated.OrganizationType)
 }

@@ -96,9 +96,7 @@ func TestCollectRows_HappyPath(t *testing.T) {
 	require.Len(t, items, 3)
 	want := []sample{{"Bob", 25}, {"Alice", 30}, {"Carol", 40}}
 	for i, w := range want {
-		if items[i] != w {
-			t.Errorf("items[%d] = %+v, want %+v", i, items[i], w)
-		}
+		require.Equal(t, w, items[i])
 	}
 }
 
@@ -186,9 +184,8 @@ func TestCollectRows_PropagatesRowsErr(t *testing.T) {
 	require.NoError(t, err)
 	// Insert a large batch to prevent the driver from buffering everything.
 	for range 10000 {
-		if _, err = d.Exec(`INSERT INTO t VALUES ('x', 1)`); err != nil {
-			require.NoError(t, err)
-		}
+		_, err = d.Exec(`INSERT INTO t VALUES ('x', 1)`)
+		require.NoError(t, err)
 	}
 
 	ctx, cancel := context.WithCancel(t.Context())

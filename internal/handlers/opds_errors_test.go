@@ -21,12 +21,9 @@ func TestAllBooks_DBError(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.AcqContentType)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.AcqContentType, ct)
 	// Response must still be valid XML (OPDS error feed)
 	parseOPDSFeed(t, w.Body.Bytes())
 }
@@ -39,12 +36,9 @@ func TestRecentBooks_DBError(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.AcqContentType)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.AcqContentType, ct)
 	parseOPDSFeed(t, w.Body.Bytes())
 }
 
@@ -56,12 +50,9 @@ func TestAuthorsFeed_DBError(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.NavContentType)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.NavContentType, ct)
 	parseOPDSFeed(t, w.Body.Bytes())
 }
 
@@ -73,12 +64,9 @@ func TestSeriesFeed_DBError(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.NavContentType)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.NavContentType, ct)
 	parseOPDSFeed(t, w.Body.Bytes())
 }
 
@@ -90,12 +78,9 @@ func TestSearch_DBError(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
-	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
-		t.Errorf("Content-Type = %q, want %q", ct, opdspkg.AcqContentType)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.AcqContentType, ct)
 	parseOPDSFeed(t, w.Body.Bytes())
 }
 
@@ -116,13 +101,7 @@ func TestBookEntries_AuthorLoadError(t *testing.T) {
 
 	// Should still return entries, just without authors or download links.
 	require.Len(t, entries, 1)
-	if entries[0].Title != "Test Book" {
-		t.Errorf("title = %q, want %q", entries[0].Title, "Test Book")
-	}
-	if len(entries[0].Authors) != 0 {
-		t.Errorf("authors = %v, want empty (batch load failed)", entries[0].Authors)
-	}
-	if len(entries[0].Links) != 0 {
-		t.Errorf("links = %v, want empty (batch load failed)", entries[0].Links)
-	}
+	require.Equal(t, "Test Book", entries[0].Title)
+	require.Len(t, entries[0].Authors, 0)
+	require.Len(t, entries[0].Links, 0)
 }

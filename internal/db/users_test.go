@@ -12,24 +12,12 @@ func TestCreateUser(t *testing.T) {
 
 	user, err := d.CreateUser(t.Context(), "Alice", "alice@example.com", "hashedpw")
 	require.NoError(t, err, "CreateUser() error")
-	if user.ID == "" {
-		t.Error("CreateUser() returned empty ID")
-	}
-	if user.Name != "Alice" {
-		t.Errorf("Name = %q, want %q", user.Name, "Alice")
-	}
-	if user.Email != "alice@example.com" {
-		t.Errorf("Email = %q, want %q", user.Email, "alice@example.com")
-	}
-	if user.PasswordHash != "hashedpw" {
-		t.Errorf("PasswordHash = %q, want %q", user.PasswordHash, "hashedpw")
-	}
-	if user.CreatedAt.IsZero() {
-		t.Error("CreatedAt is zero")
-	}
-	if !user.IsAdmin {
-		t.Error("first user should be admin")
-	}
+	require.NotEqual(t, "", user.ID)
+	require.Equal(t, "Alice", user.Name)
+	require.Equal(t, "alice@example.com", user.Email)
+	require.Equal(t, "hashedpw", user.PasswordHash)
+	require.False(t, user.CreatedAt.IsZero())
+	require.True(t, user.IsAdmin)
 }
 
 func TestCreateUser_DuplicateEmail(t *testing.T) {
@@ -39,9 +27,7 @@ func TestCreateUser_DuplicateEmail(t *testing.T) {
 	require.NoError(t, err, "first CreateUser() error")
 
 	_, err = d.CreateUser(t.Context(), "Alice2", "alice@example.com", "pw2")
-	if err != ErrEmailExists {
-		t.Errorf("expected ErrEmailExists, got %v", err)
-	}
+	require.Equal(t, ErrEmailExists, err)
 }
 
 func TestGetUserByEmail(t *testing.T) {
@@ -52,18 +38,14 @@ func TestGetUserByEmail(t *testing.T) {
 
 	found, err := d.GetUserByEmail(t.Context(), "bob@example.com")
 	require.NoError(t, err, "GetUserByEmail() error")
-	if found.ID != created.ID {
-		t.Errorf("ID = %q, want %q", found.ID, created.ID)
-	}
+	require.Equal(t, created.ID, found.ID)
 }
 
 func TestGetUserByEmail_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetUserByEmail(t.Context(), "nobody@example.com")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestGetUserByID(t *testing.T) {
@@ -74,18 +56,14 @@ func TestGetUserByID(t *testing.T) {
 
 	found, err := d.GetUserByID(t.Context(), created.ID)
 	require.NoError(t, err, "GetUserByID() error")
-	if found.Email != "carol@example.com" {
-		t.Errorf("Email = %q, want %q", found.Email, "carol@example.com")
-	}
+	require.Equal(t, "carol@example.com", found.Email)
 }
 
 func TestGetUserByID_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetUserByID(t.Context(), "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestCreateOIDCUser(t *testing.T) {
@@ -93,12 +71,9 @@ func TestCreateOIDCUser(t *testing.T) {
 
 	user, err := d.CreateOIDCUser(t.Context(), "Dave", "dave@example.com", "oidc-sub-123")
 	require.NoError(t, err, "CreateOIDCUser() error")
-	if user.OIDCSubject == nil || *user.OIDCSubject != "oidc-sub-123" {
-		t.Errorf("OIDCSubject = %v, want %q", user.OIDCSubject, "oidc-sub-123")
-	}
-	if user.PasswordHash != "" {
-		t.Errorf("PasswordHash should be empty for OIDC users, got %q", user.PasswordHash)
-	}
+	require.NotNil(t, user.OIDCSubject)
+	require.Equal(t, "oidc-sub-123", *user.OIDCSubject)
+	require.Equal(t, "", user.PasswordHash)
 }
 
 func TestGetUserByOIDCSubject(t *testing.T) {
@@ -109,9 +84,7 @@ func TestGetUserByOIDCSubject(t *testing.T) {
 
 	found, err := d.GetUserByOIDCSubject(t.Context(), "oidc-sub-eve")
 	require.NoError(t, err, "GetUserByOIDCSubject() error")
-	if found.ID != created.ID {
-		t.Errorf("ID = %q, want %q", found.ID, created.ID)
-	}
+	require.Equal(t, created.ID, found.ID)
 }
 
 func TestLinkOIDCSubject(t *testing.T) {
@@ -124,18 +97,14 @@ func TestLinkOIDCSubject(t *testing.T) {
 
 	found, err := d.GetUserByOIDCSubject(t.Context(), "oidc-sub-frank")
 	require.NoError(t, err, "GetUserByOIDCSubject() error")
-	if found.ID != user.ID {
-		t.Errorf("ID after linking = %q, want %q", found.ID, user.ID)
-	}
+	require.Equal(t, user.ID, found.ID)
 }
 
 func TestLinkOIDCSubject_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.LinkOIDCSubject(t.Context(), "nonexistent-id", "some-subject")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestUpdatePassword(t *testing.T) {
@@ -148,18 +117,14 @@ func TestUpdatePassword(t *testing.T) {
 
 	found, err := d.GetUserByEmail(t.Context(), "grace@example.com")
 	require.NoError(t, err, "GetUserByEmail() error")
-	if found.PasswordHash != "newhash" {
-		t.Errorf("PasswordHash = %q, want %q", found.PasswordHash, "newhash")
-	}
+	require.Equal(t, "newhash", found.PasswordHash)
 }
 
 func TestUpdatePassword_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.UpdatePassword(t.Context(), "nonexistent-id", "hash")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestCreateUser_SecondUserNotAdmin(t *testing.T) {
@@ -170,12 +135,8 @@ func TestCreateUser_SecondUserNotAdmin(t *testing.T) {
 	u2, err := d.CreateUser(t.Context(), "Second", "second@example.com", "pw")
 	require.NoError(t, err, "CreateUser() for Second error")
 
-	if !u1.IsAdmin {
-		t.Error("first user should be admin")
-	}
-	if u2.IsAdmin {
-		t.Error("second user should not be admin")
-	}
+	require.True(t, u1.IsAdmin)
+	require.False(t, u2.IsAdmin)
 }
 
 func TestCreateOIDCUser_FirstUserIsAdmin(t *testing.T) {
@@ -183,15 +144,11 @@ func TestCreateOIDCUser_FirstUserIsAdmin(t *testing.T) {
 
 	user, err := d.CreateOIDCUser(t.Context(), "First", "first@example.com", "oidc-sub-1")
 	require.NoError(t, err, "CreateOIDCUser() error")
-	if !user.IsAdmin {
-		t.Error("first OIDC user should be admin")
-	}
+	require.True(t, user.IsAdmin)
 
 	u2, err := d.CreateOIDCUser(t.Context(), "Second", "second@example.com", "oidc-sub-2")
 	require.NoError(t, err, "CreateOIDCUser() for Second error")
-	if u2.IsAdmin {
-		t.Error("second OIDC user should not be admin")
-	}
+	require.False(t, u2.IsAdmin)
 }
 
 func TestIsAdmin(t *testing.T) {
@@ -204,23 +161,18 @@ func TestIsAdmin(t *testing.T) {
 
 	isAdmin, err := d.IsAdmin(t.Context(), u1.ID)
 	require.NoError(t, err, "IsAdmin() error")
-	if !isAdmin {
-		t.Error("first user should be admin")
-	}
+	require.True(t, isAdmin)
 
 	isAdmin2, err := d.IsAdmin(t.Context(), u2.ID)
 	require.NoError(t, err, "IsAdmin() for second user error")
-	if isAdmin2 {
-		t.Error("second user should not be admin")
-	}
+	require.False(t, isAdmin2)
 }
 
 func TestSetAdmin(t *testing.T) {
 	d := newTestDB(t)
 
-	if _, err := d.CreateUser(t.Context(), "First", "first@example.com", "pw"); err != nil {
-		require.NoError(t, err, "CreateUser() for First error")
-	}
+	_, err := d.CreateUser(t.Context(), "First", "first@example.com", "pw")
+	require.NoError(t, err, "CreateUser() for First error")
 	u2, err := d.CreateUser(t.Context(), "Second", "second@example.com", "pw")
 	require.NoError(t, err, "CreateUser() for Second error")
 
@@ -229,54 +181,39 @@ func TestSetAdmin(t *testing.T) {
 
 	isAdmin, err := d.IsAdmin(t.Context(), u2.ID)
 	require.NoError(t, err, "IsAdmin() after promotion error")
-	if !isAdmin {
-		t.Error("second user should be admin after promotion")
-	}
+	require.True(t, isAdmin)
 
 	// Demote second user
 	require.NoError(t, d.SetAdmin(t.Context(), u2.ID, false), "SetAdmin(false) error")
 
 	isAdmin, err = d.IsAdmin(t.Context(), u2.ID)
 	require.NoError(t, err, "IsAdmin() after demotion error")
-	if isAdmin {
-		t.Error("second user should not be admin after demotion")
-	}
+	require.False(t, isAdmin)
 }
 
 func TestSetAdmin_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.SetAdmin(t.Context(), "nonexistent-id", true)
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestListUsers(t *testing.T) {
 	d := newTestDB(t)
 
-	if _, err := d.CreateUser(t.Context(), "Alice", "alice@example.com", "pw"); err != nil {
-		require.NoError(t, err, "CreateUser() for Alice error")
-	}
-	if _, err := d.CreateUser(t.Context(), "Bob", "bob@example.com", "pw"); err != nil {
-		require.NoError(t, err, "CreateUser() for Bob error")
-	}
-	if _, err := d.CreateUser(t.Context(), "Carol", "carol@example.com", "pw"); err != nil {
-		require.NoError(t, err, "CreateUser() for Carol error")
-	}
+	_, err := d.CreateUser(t.Context(), "Alice", "alice@example.com", "pw")
+	require.NoError(t, err, "CreateUser() for Alice error")
+	_, err = d.CreateUser(t.Context(), "Bob", "bob@example.com", "pw")
+	require.NoError(t, err, "CreateUser() for Bob error")
+	_, err = d.CreateUser(t.Context(), "Carol", "carol@example.com", "pw")
+	require.NoError(t, err, "CreateUser() for Carol error")
 
 	users, err := d.ListUsers(t.Context())
 	require.NoError(t, err, "ListUsers() error")
 	require.Len(t, users, 3)
-	if users[0].Name != "Alice" {
-		t.Errorf("first user Name = %q, want %q", users[0].Name, "Alice")
-	}
-	if !users[0].IsAdmin {
-		t.Error("first user should be admin")
-	}
-	if users[1].IsAdmin {
-		t.Error("second user should not be admin")
-	}
+	require.Equal(t, "Alice", users[0].Name)
+	require.True(t, users[0].IsAdmin)
+	require.False(t, users[1].IsAdmin, "second user should not be admin")
 }
 
 func TestListUsersEmptyTable(t *testing.T) {
@@ -284,10 +221,6 @@ func TestListUsersEmptyTable(t *testing.T) {
 
 	users, err := d.ListUsers(t.Context())
 	require.NoError(t, err, "ListUsers() error")
-	if len(users) != 0 {
-		t.Errorf("len(users) = %d, want 0", len(users))
-	}
-	if users == nil {
-		t.Error("users = nil, want empty slice")
-	}
+	require.Len(t, users, 0)
+	require.NotNil(t, users)
 }

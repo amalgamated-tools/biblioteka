@@ -1,9 +1,10 @@
 package db
 
 import (
-	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRemoveInlineComments(t *testing.T) {
@@ -62,9 +63,7 @@ func TestRemoveInlineComments(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := removeInlineComments(tt.input)
-			if result != tt.expected {
-				t.Errorf("removeInlineComments() = %q, want %q", result, tt.expected)
-			}
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -147,18 +146,7 @@ CREATE INDEX IF NOT EXISTS goqite_queue_priority_created_idx ON goqite (queue, p
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := splitStatements(tt.input)
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("splitStatements() = %v, want %v", result, tt.expected)
-				for i := range result {
-					if i < len(tt.expected) {
-						if result[i] != tt.expected[i] {
-							t.Errorf("  [%d] got %q, want %q", i, result[i], tt.expected[i])
-						}
-					} else {
-						t.Errorf("  [%d] got %q (extra)", i, result[i])
-					}
-				}
-			}
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -216,9 +204,7 @@ DROP TABLE users;`,
 			result := extractUpSQL(tt.input)
 			result = strings.TrimSpace(result)
 			expected := strings.TrimSpace(tt.expected)
-			if result != expected {
-				t.Errorf("extractUpSQL() = %q, want %q", result, expected)
-			}
+			require.Equal(t, expected, result)
 		})
 	}
 }

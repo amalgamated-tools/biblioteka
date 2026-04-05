@@ -29,9 +29,7 @@ func TestGetBookSeries_Empty(t *testing.T) {
 
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
-	if len(entries) != 0 {
-		t.Errorf("len = %d, want 0", len(entries))
-	}
+	require.Len(t, entries, 0)
 }
 
 func TestGetBookSeries_WithEntries(t *testing.T) {
@@ -56,12 +54,9 @@ func TestGetBookSeries_WithEntries(t *testing.T) {
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
 	require.Len(t, entries, 1)
-	if entries[0].Series.Name != "The Dark Tower" {
-		t.Errorf("series name = %q, want %q", entries[0].Series.Name, "The Dark Tower")
-	}
-	if entries[0].Position == nil || *entries[0].Position != 1.0 {
-		t.Errorf("position = %v, want 1.0", entries[0].Position)
-	}
+	require.Equal(t, "The Dark Tower", entries[0].Series.Name)
+	require.NotNil(t, entries[0].Position)
+	require.Equal(t, 1.0, *entries[0].Position)
 }
 
 func TestPutBookSeries_Success(t *testing.T) {
@@ -87,9 +82,7 @@ func TestPutBookSeries_Success(t *testing.T) {
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
 	require.Len(t, entries, 1)
-	if entries[0].Series.Name != "The Dark Tower" {
-		t.Errorf("series name = %q, want %q", entries[0].Series.Name, "The Dark Tower")
-	}
+	require.Equal(t, "The Dark Tower", entries[0].Series.Name)
 }
 
 func TestPutBookSeries_ClearsExisting(t *testing.T) {
@@ -131,9 +124,7 @@ func TestPutBookSeries_ClearsExisting(t *testing.T) {
 
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &entries), "unmarshal")
-	if len(entries) != 1 {
-		t.Errorf("len = %d, want 1 after replacement", len(entries))
-	}
+	require.Len(t, entries, 1)
 }
 
 func TestPutBookSeries_InvalidJSON(t *testing.T) {
@@ -148,9 +139,7 @@ func TestPutBookSeries_InvalidJSON(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestBookSeries_MethodNotAllowed(t *testing.T) {
@@ -165,9 +154,7 @@ func TestBookSeries_MethodNotAllowed(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestPutBookSeries_EmptyEntries(t *testing.T) {
@@ -187,7 +174,5 @@ func TestPutBookSeries_EmptyEntries(t *testing.T) {
 
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
-	if len(entries) != 0 {
-		t.Errorf("len = %d, want 0", len(entries))
-	}
+	require.Len(t, entries, 0)
 }

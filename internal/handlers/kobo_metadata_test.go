@@ -43,13 +43,10 @@ func TestHandleBookMetadata_CoverURLIncluded(t *testing.T) {
 	var results []map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
 	require.Len(t, results, 1)
-	if results[0]["Title"] != "Cover URL Book" {
-		t.Errorf("Title = %v, want Cover URL Book", results[0]["Title"])
-	}
+	require.Equal(t, "Cover URL Book", results[0]["Title"])
 	coverImageID, ok := results[0]["CoverImageId"].(string)
-	if !ok || coverImageID == "" {
-		t.Errorf("CoverImageId = %v, want non-empty string", results[0]["CoverImageId"])
-	}
+	require.True(t, ok, "CoverImageId should be a string")
+	require.NotEmpty(t, coverImageID)
 }
 
 // TestHandleBookMetadata_MultipleEntitlementsEachHaveMetadata verifies that
@@ -80,9 +77,7 @@ func TestHandleBookMetadata_MultipleEntitlementsEachHaveMetadata(t *testing.T) {
 	var results []map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
 	require.Len(t, results, 1)
-	if results[0]["Title"] != "Book Alpha" {
-		t.Errorf("Title = %v, want Book Alpha", results[0]["Title"])
-	}
+	require.Equal(t, "Book Alpha", results[0]["Title"])
 }
 
 // TestHandleBookMetadata_ContainsEntitlementID verifies that the metadata
@@ -110,12 +105,8 @@ func TestHandleBookMetadata_ContainsEntitlementID(t *testing.T) {
 	var results []map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
 	require.NotEmpty(t, results)
-	if results[0]["Title"] != "Entitlement Book" {
-		t.Errorf("Title = %v, want Entitlement Book", results[0]["Title"])
-	}
-	if results[0]["EntitlementId"] != book.ID {
-		t.Errorf("EntitlementId = %v, want %v", results[0]["EntitlementId"], book.ID)
-	}
+	require.Equal(t, "Entitlement Book", results[0]["Title"])
+	require.Equal(t, book.ID, results[0]["EntitlementId"])
 }
 
 // TestHandleBookMetadata_EmptyBookID verifies that a non-existent book ID
@@ -132,7 +123,5 @@ func TestHandleBookMetadata_EmptyBookID(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d for nonexistent book", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }

@@ -27,9 +27,7 @@ func TestGetBookAuthors_Empty(t *testing.T) {
 
 	var dtos []authorDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
-	if len(dtos) != 0 {
-		t.Errorf("len = %d, want 0", len(dtos))
-	}
+	require.Len(t, dtos, 0)
 }
 
 func TestGetBookAuthors_WithAuthors(t *testing.T) {
@@ -53,9 +51,7 @@ func TestGetBookAuthors_WithAuthors(t *testing.T) {
 
 	var dtos []authorDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
-	if len(dtos) != 2 {
-		t.Errorf("len = %d, want 2", len(dtos))
-	}
+	require.Len(t, dtos, 2)
 }
 
 func TestPutBookAuthors_Success(t *testing.T) {
@@ -78,9 +74,7 @@ func TestPutBookAuthors_Success(t *testing.T) {
 	var dtos []authorDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
 	require.Len(t, dtos, 1)
-	if dtos[0].Name != "Stephen King" {
-		t.Errorf("name = %q, want %q", dtos[0].Name, "Stephen King")
-	}
+	require.Equal(t, "Stephen King", dtos[0].Name)
 }
 
 func TestPutBookAuthors_ClearsExisting(t *testing.T) {
@@ -112,9 +106,7 @@ func TestPutBookAuthors_ClearsExisting(t *testing.T) {
 
 	var dtos []authorDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &dtos), "unmarshal")
-	if len(dtos) != 1 {
-		t.Errorf("len = %d, want 1 after replacement", len(dtos))
-	}
+	require.Len(t, dtos, 1)
 }
 
 func TestPutBookAuthors_InvalidJSON(t *testing.T) {
@@ -129,9 +121,7 @@ func TestPutBookAuthors_InvalidJSON(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestBookAuthors_MethodNotAllowed(t *testing.T) {
@@ -146,9 +136,7 @@ func TestBookAuthors_MethodNotAllowed(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestPutBookAuthors_EmptyList(t *testing.T) {
@@ -168,7 +156,5 @@ func TestPutBookAuthors_EmptyList(t *testing.T) {
 
 	var dtos []authorDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
-	if len(dtos) != 0 {
-		t.Errorf("len = %d, want 0", len(dtos))
-	}
+	require.Len(t, dtos, 0)
 }

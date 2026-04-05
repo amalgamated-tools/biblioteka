@@ -2,6 +2,8 @@ package goodreads
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidISBN10CheckDigit(t *testing.T) {
@@ -28,9 +30,7 @@ func TestValidISBN10CheckDigit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := ValidISBN10CheckDigit(tt.isbn)
-			if got != tt.valid {
-				t.Errorf("ValidISBN10CheckDigit(%q) = %v, want %v", tt.isbn, got, tt.valid)
-			}
+			require.Equal(t, tt.valid, got)
 		})
 	}
 }
@@ -57,9 +57,7 @@ func TestValidISBN13CheckDigit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := ValidISBN13CheckDigit(tt.isbn)
-			if got != tt.valid {
-				t.Errorf("ValidISBN13CheckDigit(%q) = %v, want %v", tt.isbn, got, tt.valid)
-			}
+			require.Equal(t, tt.valid, got)
 		})
 	}
 }

@@ -53,9 +53,7 @@ func TestScanDirectory_EmptyDirectory(t *testing.T) {
 
 	enqueuer.mu.Lock()
 	defer enqueuer.mu.Unlock()
-	if len(enqueuer.jobs) != 0 {
-		t.Errorf("expected 0 jobs, got %d", len(enqueuer.jobs))
-	}
+	require.Len(t, enqueuer.jobs, 0)
 }
 
 // TestScanDirectory_SupportedExtensions verifies that EPUB, MOBI, PDF, and
@@ -86,19 +84,12 @@ func TestScanDirectory_SupportedExtensions(t *testing.T) {
 	jobs := enqueuer.jobs
 	enqueuer.mu.Unlock()
 
-	if len(jobs) != len(supported) {
-		t.Errorf("expected %d jobs, got %d", len(supported), len(jobs))
-	}
+	require.Len(t, jobs, len(supported))
 
 	for _, job := range jobs {
 		wantType, ok := supported[filepath.Base(job.Payload.Path)]
-		if !ok {
-			t.Errorf("unexpected file enqueued: %q", job.Payload.Path)
-			continue
-		}
-		if job.Payload.FileType != wantType {
-			t.Errorf("file %q: FileType = %q, want %q", job.Payload.Path, job.Payload.FileType, wantType)
-		}
+		require.True(t, ok, "unexpected file enqueued: %q", job.Payload.Path)
+		require.Equal(t, wantType, job.Payload.FileType)
 	}
 }
 
@@ -120,9 +111,7 @@ func TestScanDirectory_CaseInsensitiveExtensions(t *testing.T) {
 	count := len(enqueuer.jobs)
 	enqueuer.mu.Unlock()
 
-	if count != len(files) {
-		t.Errorf("expected %d jobs for uppercase extensions, got %d", len(files), count)
-	}
+	require.Equal(t, len(files), count)
 }
 
 // TestScanDirectory_RecursiveWalk verifies that files in subdirectories are
@@ -150,9 +139,7 @@ func TestScanDirectory_RecursiveWalk(t *testing.T) {
 	count := len(enqueuer.jobs)
 	enqueuer.mu.Unlock()
 
-	if count != len(files) {
-		t.Errorf("expected %d jobs, got %d", len(files), count)
-	}
+	require.Equal(t, len(files), count)
 }
 
 // TestScanDirectory_EnqueueError verifies that enqueue errors are swallowed
@@ -193,18 +180,10 @@ func TestScanDirectory_PayloadFields(t *testing.T) {
 
 	require.Len(t, jobs, 1)
 	p := jobs[0].Payload
-	if p.FileName != "my-novel.epub" {
-		t.Errorf("FileName = %q, want %q", p.FileName, "my-novel.epub")
-	}
-	if p.FileType != "epub" {
-		t.Errorf("FileType = %q, want %q", p.FileType, "epub")
-	}
-	if p.Path == "" {
-		t.Error("Path should not be empty")
-	}
-	if p.LibraryID != "lib-123" {
-		t.Errorf("LibraryID = %q, want %q", p.LibraryID, "lib-123")
-	}
+	require.Equal(t, "my-novel.epub", p.FileName)
+	require.Equal(t, "epub", p.FileType)
+	require.NotEqual(t, "", p.Path)
+	require.Equal(t, "lib-123", p.LibraryID)
 }
 
 // TestScanDirectory_ContextCancellation verifies that ScanDirectory respects

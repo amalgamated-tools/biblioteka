@@ -39,12 +39,8 @@ func TestAdminMiddleware_NoToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 	assertJSONError(t, w.Body.Bytes(), "authentication required")
 }
 
@@ -64,12 +60,8 @@ func TestAdminMiddleware_InvalidToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
 
@@ -92,12 +84,8 @@ func TestAdminMiddleware_NonAdminUser(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called for non-admin")
-	}
-	if w.Code != http.StatusForbidden {
-		t.Errorf("expected status %d, got %d", http.StatusForbidden, w.Code)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusForbidden, w.Code)
 	assertJSONError(t, w.Body.Bytes(), "admin access required")
 }
 
@@ -120,12 +108,8 @@ func TestAdminMiddleware_AdminUser(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "admin-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "admin-user")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "admin-user", gotUserID)
 }
 
 func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
@@ -147,12 +131,8 @@ func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "admin-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "admin-user")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "admin-user", gotUserID)
 }
 
 func TestAdminMiddleware_CheckerError(t *testing.T) {
@@ -174,11 +154,7 @@ func TestAdminMiddleware_CheckerError(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called on checker error")
-	}
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 	assertJSONError(t, w.Body.Bytes(), "failed to verify permissions")
 }

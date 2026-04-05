@@ -21,32 +21,20 @@ func TestOPDSCredential_UpsertAndGet(t *testing.T) {
 
 	cred, err := d.UpsertOPDSCredential(ctx, user.ID, "alice", "hashval")
 	require.NoError(t, err, "UpsertOPDSCredential")
-	if cred.ID == "" {
-		t.Error("cred.ID is empty")
-	}
-	if cred.UserID != user.ID {
-		t.Errorf("UserID = %q, want %q", cred.UserID, user.ID)
-	}
-	if cred.Username != "alice" {
-		t.Errorf("Username = %q, want %q", cred.Username, "alice")
-	}
-	if cred.PasswordHash != "hashval" {
-		t.Errorf("PasswordHash = %q, want %q", cred.PasswordHash, "hashval")
-	}
+	require.NotEqual(t, "", cred.ID)
+	require.Equal(t, user.ID, cred.UserID)
+	require.Equal(t, "alice", cred.Username)
+	require.Equal(t, "hashval", cred.PasswordHash)
 
 	// Fetch by userID
 	fetched, err := d.GetOPDSCredentialByUserID(ctx, user.ID)
 	require.NoError(t, err, "GetOPDSCredentialByUserID")
-	if fetched.Username != "alice" {
-		t.Errorf("fetched Username = %q, want %q", fetched.Username, "alice")
-	}
+	require.Equal(t, "alice", fetched.Username)
 
 	// Fetch by username (lowercase, as the middleware always lowercases before calling)
 	fetched2, err := d.GetOPDSCredentialByUsername(ctx, "alice")
 	require.NoError(t, err, "GetOPDSCredentialByUsername")
-	if fetched2.UserID != user.ID {
-		t.Errorf("fetched2 UserID = %q, want %q", fetched2.UserID, user.ID)
-	}
+	require.Equal(t, user.ID, fetched2.UserID)
 }
 
 func TestOPDSCredential_Upsert_UpdatesExisting(t *testing.T) {
@@ -59,12 +47,8 @@ func TestOPDSCredential_Upsert_UpdatesExisting(t *testing.T) {
 
 	updated, err := d.UpsertOPDSCredential(ctx, user.ID, "bob2", "hash2")
 	require.NoError(t, err, "second upsert")
-	if updated.Username != "bob2" {
-		t.Errorf("updated Username = %q, want %q", updated.Username, "bob2")
-	}
-	if updated.PasswordHash != "hash2" {
-		t.Errorf("updated PasswordHash = %q, want %q", updated.PasswordHash, "hash2")
-	}
+	require.Equal(t, "bob2", updated.Username)
+	require.Equal(t, "hash2", updated.PasswordHash)
 }
 
 func TestOPDSCredential_UsernameConflict(t *testing.T) {
@@ -77,9 +61,7 @@ func TestOPDSCredential_UsernameConflict(t *testing.T) {
 	require.NoError(t, err, "first upsert")
 
 	_, err = d.UpsertOPDSCredential(ctx, user2.ID, "shared", "hash2")
-	if err != ErrOPDSUsernameExists {
-		t.Errorf("expected ErrOPDSUsernameExists, got %v", err)
-	}
+	require.Equal(t, ErrOPDSUsernameExists, err)
 }
 
 func TestOPDSCredential_GetByUserID_NotFound(t *testing.T) {
@@ -87,9 +69,7 @@ func TestOPDSCredential_GetByUserID_NotFound(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.GetOPDSCredentialByUserID(ctx, "nonexistent")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestOPDSCredential_GetByUsername_NotFound(t *testing.T) {
@@ -97,9 +77,7 @@ func TestOPDSCredential_GetByUsername_NotFound(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.GetOPDSCredentialByUsername(ctx, "nobody")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestOPDSCredential_Delete(t *testing.T) {
@@ -113,9 +91,7 @@ func TestOPDSCredential_Delete(t *testing.T) {
 	require.NoError(t, d.DeleteOPDSCredential(ctx, user.ID), "DeleteOPDSCredential")
 
 	_, err = d.GetOPDSCredentialByUserID(ctx, user.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }
 
 func TestOPDSCredential_Delete_NotFound(t *testing.T) {
@@ -123,7 +99,5 @@ func TestOPDSCredential_Delete_NotFound(t *testing.T) {
 	ctx := t.Context()
 
 	err := d.DeleteOPDSCredential(ctx, "nonexistent")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.Equal(t, sql.ErrNoRows, err)
 }

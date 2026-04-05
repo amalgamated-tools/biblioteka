@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,9 +24,8 @@ func TestNormalizeUsername(t *testing.T) {
 		{"MixedCase", "mixedcase"},
 	}
 	for _, tt := range tests {
-		if got := NormalizeUsername(tt.input); got != tt.want {
-			t.Errorf("NormalizeUsername(%q) = %q, want %q", tt.input, got, tt.want)
-		}
+		got := NormalizeUsername(tt.input)
+		require.Equal(t, tt.want, got)
 	}
 }
 
@@ -50,12 +48,8 @@ func TestLookupByUsername_Found(t *testing.T) {
 
 	userID, hash, err := lookup(t.Context(), "alice")
 	require.NoError(t, err)
-	if userID != "user-1" {
-		t.Errorf("userID = %q, want %q", userID, "user-1")
-	}
-	if hash != "hash-1" {
-		t.Errorf("hash = %q, want %q", hash, "hash-1")
-	}
+	require.Equal(t, "user-1", userID)
+	require.Equal(t, "hash-1", hash)
 }
 
 func TestLookupByUsername_NotFound(t *testing.T) {
@@ -77,15 +71,10 @@ func TestJSONErrorWriter(t *testing.T) {
 	w := httptest.NewRecorder()
 	writer(w, r)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
-	if ct := w.Header().Get("Content-Type"); ct != "application/json" {
-		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
-	}
-	if !strings.Contains(w.Body.String(), "test error") {
-		t.Errorf("body = %q, want it to contain %q", w.Body.String(), "test error")
-	}
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, "application/json", ct)
+	require.Contains(t, w.Body.String(), "test error")
 }
 
 func TestJSONErrorWriter_ServiceUnavailable(t *testing.T) {
@@ -95,10 +84,6 @@ func TestJSONErrorWriter_ServiceUnavailable(t *testing.T) {
 	w := httptest.NewRecorder()
 	writer(w, r)
 
-	if w.Code != http.StatusServiceUnavailable {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusServiceUnavailable)
-	}
-	if !strings.Contains(w.Body.String(), "Service temporarily unavailable") {
-		t.Errorf("body = %q, want it to contain the message", w.Body.String())
-	}
+	require.Equal(t, http.StatusServiceUnavailable, w.Code)
+	require.Contains(t, w.Body.String(), "Service temporarily unavailable")
 }

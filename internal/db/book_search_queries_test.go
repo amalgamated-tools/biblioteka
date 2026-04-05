@@ -16,12 +16,8 @@ func TestSearchBooks_NoMatch(t *testing.T) {
 
 	books, total, err := d.SearchBooks(t.Context(), "Asimov", 10, 0)
 	require.NoError(t, err, "SearchBooks() error")
-	if total != 0 {
-		t.Errorf("total = %d, want 0", total)
-	}
-	if len(books) != 0 {
-		t.Errorf("len(books) = %d, want 0", len(books))
-	}
+	require.Equal(t, 0, total)
+	require.Len(t, books, 0)
 }
 
 func TestSearchBooks_MatchesByTitle(t *testing.T) {
@@ -38,12 +34,8 @@ func TestSearchBooks_MatchesByTitle(t *testing.T) {
 
 	books, total, err := d.SearchBooks(t.Context(), "Foundation", 10, 0)
 	require.NoError(t, err, "SearchBooks() error")
-	if total != 2 {
-		t.Errorf("total = %d, want 2", total)
-	}
-	if len(books) != 2 {
-		t.Errorf("len(books) = %d, want 2", len(books))
-	}
+	require.Equal(t, 2, total)
+	require.Len(t, books, 2)
 }
 
 func TestSearchBooks_MatchesByDescription(t *testing.T) {
@@ -58,13 +50,9 @@ func TestSearchBooks_MatchesByDescription(t *testing.T) {
 
 	books, total, err := d.SearchBooks(t.Context(), "desert planet", 10, 0)
 	require.NoError(t, err, "SearchBooks() error")
-	if total != 1 {
-		t.Errorf("total = %d, want 1", total)
-	}
+	require.Equal(t, 1, total)
 	require.Len(t, books, 1)
-	if books[0].Title != "Dune" {
-		t.Errorf("books[0].Title = %q, want Dune", books[0].Title)
-	}
+	require.Equal(t, "Dune", books[0].Title)
 }
 
 func TestSearchBooks_CaseInsensitive(t *testing.T) {
@@ -76,12 +64,8 @@ func TestSearchBooks_CaseInsensitive(t *testing.T) {
 	for _, q := range []string{"foundation", "FOUNDATION", "Foundation", "fOuNdAtIoN"} {
 		books, total, err := d.SearchBooks(t.Context(), q, 10, 0)
 		require.NoError(t, err, "SearchBooks(%q) error", q)
-		if total != 1 {
-			t.Errorf("SearchBooks(%q) total = %d, want 1", q, total)
-		}
-		if len(books) != 1 {
-			t.Errorf("SearchBooks(%q) len = %d, want 1", q, len(books))
-		}
+		require.Equal(t, 1, total)
+		require.Len(t, books, 1)
 	}
 }
 
@@ -97,15 +81,9 @@ func TestSearchBooks_SpecialCharacterEscaping(t *testing.T) {
 	// Searching for "%" as a literal character should find exactly one book.
 	books, total, err := d.SearchBooks(t.Context(), "%", 10, 0)
 	require.NoError(t, err, "SearchBooks(%%) error")
-	if total != 1 {
-		t.Errorf("SearchBooks(%%) total = %d, want 1", total)
-	}
-	if len(books) != 1 {
-		t.Errorf("SearchBooks(%%) len = %d, want 1", len(books))
-	}
-	if books[0].Title != "100% Pure Fiction" {
-		t.Errorf("books[0].Title = %q, want 100%% Pure Fiction", books[0].Title)
-	}
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+	require.Equal(t, "100% Pure Fiction", books[0].Title)
 }
 
 func TestSearchBooks_UnderscoreEscaping(t *testing.T) {
@@ -120,9 +98,7 @@ func TestSearchBooks_UnderscoreEscaping(t *testing.T) {
 	// Searching for literal underscore should find only the one with "_".
 	books, _, err := d.SearchBooks(t.Context(), "hello_world", 10, 0)
 	require.NoError(t, err, "SearchBooks(hello_world) error")
-	if len(books) != 1 {
-		t.Errorf("len(books) = %d, want 1 (literal underscore)", len(books))
-	}
+	require.Len(t, books, 1)
 }
 
 func TestSearchBooks_BackslashEscaping(t *testing.T) {
@@ -136,9 +112,7 @@ func TestSearchBooks_BackslashEscaping(t *testing.T) {
 
 	books, _, err := d.SearchBooks(t.Context(), `\`, 10, 0)
 	require.NoError(t, err, "SearchBooks(backslash) error")
-	if len(books) != 1 {
-		t.Errorf("len(books) = %d, want 1 (literal backslash)", len(books))
-	}
+	require.Len(t, books, 1)
 }
 
 func TestSearchBooks_Paginated(t *testing.T) {
@@ -151,23 +125,15 @@ func TestSearchBooks_Paginated(t *testing.T) {
 
 	page1, total, err := d.SearchBooks(t.Context(), "Foundation", 2, 0)
 	require.NoError(t, err, "SearchBooks(page1) error")
-	if total != 4 {
-		t.Errorf("total = %d, want 4", total)
-	}
+	require.Equal(t, 4, total)
 	require.Len(t, page1, 2)
-	if page1[0].Title != "Abc Foundation" {
-		t.Errorf("page1[0].Title = %q, want Abc Foundation", page1[0].Title)
-	}
+	require.Equal(t, "Abc Foundation", page1[0].Title)
 
 	page2, total2, err := d.SearchBooks(t.Context(), "Foundation", 2, 2)
 	require.NoError(t, err, "SearchBooks(page2) error")
-	if total2 != 4 {
-		t.Errorf("page2 total = %d, want 4", total2)
-	}
+	require.Equal(t, 4, total2)
 	require.Len(t, page2, 2)
-	if page2[0].Title != "Ghi Foundation" {
-		t.Errorf("page2[0].Title = %q, want Ghi Foundation", page2[0].Title)
-	}
+	require.Equal(t, "Ghi Foundation", page2[0].Title)
 }
 
 func TestSearchBooks_OffsetBeyondTotal(t *testing.T) {
@@ -178,10 +144,6 @@ func TestSearchBooks_OffsetBeyondTotal(t *testing.T) {
 
 	books, total, err := d.SearchBooks(t.Context(), "Searchable", 10, 50)
 	require.NoError(t, err, "SearchBooks(offset=50) error")
-	if total != 1 {
-		t.Errorf("total = %d, want 1", total)
-	}
-	if len(books) != 0 {
-		t.Errorf("len(books) = %d, want 0", len(books))
-	}
+	require.Equal(t, 1, total)
+	require.Len(t, books, 0)
 }

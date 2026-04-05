@@ -27,9 +27,7 @@ func TestGetBookFiles_Empty(t *testing.T) {
 
 	var files []bookFileDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &files), "unmarshal")
-	if len(files) != 0 {
-		t.Errorf("len = %d, want 0", len(files))
-	}
+	require.Len(t, files, 0)
 }
 
 func TestGetBookFiles_WithFiles(t *testing.T) {
@@ -37,9 +35,8 @@ func TestGetBookFiles_WithFiles(t *testing.T) {
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
-	if _, err := h.DB.CreateBookFile(t.Context(), b.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub"); err != nil {
-		require.NoError(t, err, "create book file")
-	}
+	_, err = h.DB.CreateBookFile(t.Context(), b.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID+"/files", nil)
 	r = withUserID(r, userID)
@@ -52,9 +49,7 @@ func TestGetBookFiles_WithFiles(t *testing.T) {
 	var files []bookFileDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &files), "unmarshal")
 	require.Len(t, files, 1)
-	if files[0].FileName != "gunslinger.epub" {
-		t.Errorf("file_name = %q, want %q", files[0].FileName, "gunslinger.epub")
-	}
+	require.Equal(t, "gunslinger.epub", files[0].FileName)
 }
 
 func TestPostBookFiles_Success(t *testing.T) {
@@ -79,18 +74,10 @@ func TestPostBookFiles_Success(t *testing.T) {
 
 	var dto bookFileDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
-	if dto.FileName != "gunslinger.epub" {
-		t.Errorf("file_name = %q, want %q", dto.FileName, "gunslinger.epub")
-	}
-	if dto.FileType != "epub" {
-		t.Errorf("file_type = %q, want %q", dto.FileType, "epub")
-	}
-	if dto.FileSize != 2048 {
-		t.Errorf("file_size = %d, want 2048", dto.FileSize)
-	}
-	if dto.BookID != b.ID {
-		t.Errorf("book_id = %q, want %q", dto.BookID, b.ID)
-	}
+	require.Equal(t, "gunslinger.epub", dto.FileName)
+	require.Equal(t, "epub", dto.FileType)
+	require.Equal(t, int64(2048), dto.FileSize)
+	require.Equal(t, b.ID, dto.BookID)
 }
 
 func TestPostBookFiles_MissingFileType(t *testing.T) {
@@ -109,9 +96,7 @@ func TestPostBookFiles_MissingFileType(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestPostBookFiles_MissingFileName(t *testing.T) {
@@ -130,9 +115,7 @@ func TestPostBookFiles_MissingFileName(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestPostBookFiles_MissingFilePath(t *testing.T) {
@@ -151,9 +134,7 @@ func TestPostBookFiles_MissingFilePath(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestPostBookFiles_InvalidJSON(t *testing.T) {
@@ -168,9 +149,7 @@ func TestPostBookFiles_InvalidJSON(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestBookFiles_MethodNotAllowed(t *testing.T) {
@@ -185,9 +164,7 @@ func TestBookFiles_MethodNotAllowed(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestPostBookFiles_AuditLog(t *testing.T) {
@@ -219,7 +196,5 @@ func TestPostBookFiles_AuditLog(t *testing.T) {
 			break
 		}
 	}
-	if !found {
-		t.Error("expected audit log entry with action book_file.created")
-	}
+	require.True(t, found)
 }

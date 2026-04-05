@@ -93,9 +93,8 @@ func TestWriteCover_OverwritesExisting(t *testing.T) {
 
 	imageData := []byte{0xFF, 0xD8}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
-	if _, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded, ""); err != nil {
-		require.NoError(t, err, "WriteCover")
-	}
+	_, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded, "")
+	require.NoError(t, err, "WriteCover")
 
 	written, err := os.ReadFile(coverPath)
 	require.NoError(t, err, "read cover.jpg")
@@ -111,15 +110,14 @@ func TestWriteCover_RemovesStaleFormats(t *testing.T) {
 
 	imageData := []byte{0x52, 0x49, 0x46, 0x46}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
-	if _, _, err := WriteCover(dir, "data:image/webp;base64,"+encoded, ""); err != nil {
-		require.NoError(t, err, "WriteCover")
-	}
+	_, _, err := WriteCover(dir, "data:image/webp;base64,"+encoded, "")
+	require.NoError(t, err, "WriteCover")
 
 	for _, ext := range []string{".jpg", ".png"} {
-		_, err := os.Stat(filepath.Join(dir, "cover"+ext))
+		_, err = os.Stat(filepath.Join(dir, "cover"+ext))
 		require.True(t, os.IsNotExist(err), "cover%s should have been removed", ext)
 	}
-	_, err := os.Stat(filepath.Join(dir, "cover.webp"))
+	_, err = os.Stat(filepath.Join(dir, "cover.webp"))
 	require.NoError(t, err, "cover.webp not found")
 }
 
@@ -149,11 +147,10 @@ func TestWriteCover_CustomBaseName_RemovesStaleFormats(t *testing.T) {
 
 	imageData := []byte{0xFF, 0xD8}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
-	if _, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded, stem); err != nil {
-		require.NoError(t, err, "WriteCover")
-	}
+	_, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded, stem)
+	require.NoError(t, err, "WriteCover")
 
-	_, err := os.Stat(filepath.Join(dir, stem+".png"))
+	_, err = os.Stat(filepath.Join(dir, stem+".png"))
 	require.True(t, os.IsNotExist(err), "%s.png should have been removed", stem)
 	_, err = os.Stat(filepath.Join(dir, stem+".jpg"))
 	require.NoError(t, err, "%s.jpg not found", stem)
