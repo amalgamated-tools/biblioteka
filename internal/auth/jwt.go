@@ -18,6 +18,7 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
+// Sentinel errors returned by JWTManager.ValidateToken and the auth middleware.
 var (
 	ErrInvalidToken = errors.New("invalid token")
 	ErrExpiredToken = errors.New("token expired")

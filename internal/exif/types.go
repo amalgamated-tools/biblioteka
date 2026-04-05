@@ -42,6 +42,8 @@ type ExifToolOutput struct {
 	Extras map[string]string
 }
 
+// ISBN returns the best available ISBN for this output, preferring ISBN-13
+// over ISBN-10. Returns an empty string when neither is set.
 func (e *ExifToolOutput) ISBN() string {
 	if e.ISBN13 != "" {
 		return e.ISBN13
@@ -52,6 +54,9 @@ func (e *ExifToolOutput) ISBN() string {
 	return ""
 }
 
+// SetISBN sets the appropriate ISBN field based on the length of isbn:
+// 13-digit values populate ISBN13, 10-digit values populate ISBN10, and an
+// empty string clears both fields. Values of any other length are ignored.
 func (e *ExifToolOutput) SetISBN(isbn string) {
 	switch len(isbn) {
 	case 0:
