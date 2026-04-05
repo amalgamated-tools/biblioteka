@@ -56,9 +56,7 @@ func Test_ListEntities(t *testing.T) {
 		}
 		var dtos []dto
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
-		if len(dtos) != 2 {
-			t.Fatalf("len = %d, want 2", len(dtos))
-		}
+		require.Len(t, dtos, 2, "len(dtos)")
 		if dtos[0].Label != "Alpha" {
 			t.Errorf("dtos[0].Label = %q, want %q", dtos[0].Label, "Alpha")
 		}
@@ -102,9 +100,7 @@ func Test_MapSlice(t *testing.T) {
 	t.Run("converts elements", func(t *testing.T) {
 		items := []entity{{ID: 1, Name: "Alpha"}, {ID: 2, Name: "Beta"}}
 		result := mapSlice(items, toDTO)
-		if len(result) != 2 {
-			t.Fatalf("len = %d, want 2", len(result))
-		}
+		require.Len(t, result, 2, "len(result)")
 		if result[0].Label != "Alpha" {
 			t.Errorf("result[0].Label = %q, want %q", result[0].Label, "Alpha")
 		}
@@ -115,9 +111,7 @@ func Test_MapSlice(t *testing.T) {
 
 	t.Run("empty input returns empty slice", func(t *testing.T) {
 		result := mapSlice([]entity{}, toDTO)
-		if result == nil {
-			t.Fatal("result is nil, want non-nil empty slice")
-		}
+		require.NotNil(t, result, "result should not be nil")
 		if len(result) != 0 {
 			t.Errorf("len = %d, want 0", len(result))
 		}
@@ -125,9 +119,7 @@ func Test_MapSlice(t *testing.T) {
 
 	t.Run("nil input returns empty slice", func(t *testing.T) {
 		result := mapSlice(nil, toDTO)
-		if result == nil {
-			t.Fatal("result is nil, want non-nil empty slice")
-		}
+		require.NotNil(t, result, "result should not be nil")
 		if len(result) != 0 {
 			t.Errorf("len = %d, want 0", len(result))
 		}
@@ -221,9 +213,7 @@ func Test_ListUserEntities(t *testing.T) {
 		}
 		var dtos []dto
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
-		if len(dtos) != 2 {
-			t.Fatalf("len = %d, want 2", len(dtos))
-		}
+		require.Len(t, dtos, 2, "len(dtos)")
 		if dtos[0].Label != "Alpha" {
 			t.Errorf("dtos[0].Label = %q, want %q", dtos[0].Label, "Alpha")
 		}
