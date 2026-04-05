@@ -230,9 +230,7 @@ func TestSwaggerSecurityHeaders_SetsHeaders(t *testing.T) {
 	}
 	for header, want := range checks {
 		got := rec.Header().Get(header)
-		if got != want {
-			t.Errorf("header %s: expected %q, got %q", header, want, got)
-		}
+		require.Equal(t, want, got, "header %s", header)
 	}
 }
 
@@ -249,13 +247,9 @@ func TestSwaggerSecurityHeaders_CrossOrigin(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 
 	vary := rec.Header().Get("Vary")
-	if vary != "Origin" {
-		t.Errorf("expected Vary: Origin, got %q", vary)
-	}
+	require.Equal(t, "Origin", vary)
 
-	if acao := rec.Header().Get("Access-Control-Allow-Origin"); acao != "" {
-		t.Errorf("expected no Access-Control-Allow-Origin header, got %q", acao)
-	}
+	require.Equal(t, "", rec.Header().Get("Access-Control-Allow-Origin"))
 }
 
 // ---------------------------------------------------------------------------

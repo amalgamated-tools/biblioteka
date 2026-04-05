@@ -20,14 +20,11 @@ func TestRenameNoReplace_Success(t *testing.T) {
 	// New file should exist with correct content.
 	content, err := os.ReadFile(newPath)
 	require.NoError(t, err, "read new file")
-	if string(content) != "hello" {
-		t.Errorf("expected content %q, got %q", "hello", string(content))
-	}
+	require.Equal(t, "hello", string(content))
 
 	// Old file should be gone.
-	if _, err := os.Stat(oldPath); !os.IsNotExist(err) {
-		t.Errorf("expected old file to be removed, got err: %v", err)
-	}
+	_, err = os.Stat(oldPath)
+	require.True(t, os.IsNotExist(err), "expected old file to be removed")
 }
 
 func TestRenameNoReplace_DestinationExists(t *testing.T) {
@@ -44,14 +41,11 @@ func TestRenameNoReplace_DestinationExists(t *testing.T) {
 	// Existing destination should be unchanged.
 	content, err := os.ReadFile(newPath)
 	require.NoError(t, err, "read existing file")
-	if string(content) != "existing" {
-		t.Errorf("expected destination unchanged %q, got %q", "existing", string(content))
-	}
+	require.Equal(t, "existing", string(content))
 
 	// Source should still exist.
-	if _, err := os.Stat(oldPath); err != nil {
-		t.Errorf("expected source file to still exist: %v", err)
-	}
+	_, err = os.Stat(oldPath)
+	require.NoError(t, err, "expected source file to still exist")
 }
 
 func TestRenameNoReplace_SourceMissing(t *testing.T) {
