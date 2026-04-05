@@ -63,7 +63,7 @@ func TestKOSyncCredential_UsernameConflict(t *testing.T) {
 	require.NoError(t, err, "first upsert")
 
 	_, err = d.UpsertKOSyncCredential(ctx, user2.ID, "shared", "hash2")
-	require.Equal(t, ErrKOSyncUsernameExists, err)
+	require.ErrorIs(t, err, ErrKOSyncUsernameExists)
 }
 
 func TestKOSyncCredential_GetByUserID_NotFound(t *testing.T) {

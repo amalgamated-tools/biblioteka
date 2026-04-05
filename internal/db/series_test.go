@@ -47,7 +47,7 @@ func TestCreateSeries_DuplicateName(t *testing.T) {
 	require.NoError(t, err, "first CreateSeries() error")
 
 	_, err = d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
-	require.Equal(t, ErrSeriesNameExists, err)
+	require.ErrorIs(t, err, ErrSeriesNameExists)
 }
 
 func TestCreateSeries_DuplicateNameCaseInsensitive(t *testing.T) {
@@ -57,7 +57,7 @@ func TestCreateSeries_DuplicateNameCaseInsensitive(t *testing.T) {
 	require.NoError(t, err, "first CreateSeries() error")
 
 	_, err = d.CreateSeries(t.Context(), "mistborn", nil, nil, nil)
-	require.Equal(t, ErrSeriesNameExists, err)
+	require.ErrorIs(t, err, ErrSeriesNameExists)
 }
 
 func TestCreateSeries_BlankName(t *testing.T) {
@@ -65,7 +65,7 @@ func TestCreateSeries_BlankName(t *testing.T) {
 
 	for _, name := range []string{"", " ", "  \t  "} {
 		_, err := d.CreateSeries(t.Context(), name, nil, nil, nil)
-		require.Equal(t, ErrInvalidSeriesName, err)
+		require.ErrorIs(t, err, ErrInvalidSeriesName)
 	}
 }
 
@@ -77,7 +77,7 @@ func TestUpdateSeries_BlankName(t *testing.T) {
 
 	for _, name := range []string{"", " ", "  \t  "} {
 		_, err = d.UpdateSeries(t.Context(), s.ID, name, nil, nil, nil)
-		require.Equal(t, ErrInvalidSeriesName, err)
+		require.ErrorIs(t, err, ErrInvalidSeriesName)
 	}
 }
 
@@ -86,7 +86,7 @@ func TestFindOrCreateSeries_BlankName(t *testing.T) {
 
 	for _, name := range []string{"", " ", "  \t  "} {
 		_, err := d.FindOrCreateSeries(t.Context(), name)
-		require.Equal(t, ErrInvalidSeriesName, err)
+		require.ErrorIs(t, err, ErrInvalidSeriesName)
 	}
 }
 
@@ -178,7 +178,7 @@ func TestUpdateSeries_DuplicateName(t *testing.T) {
 	require.NoError(t, err, "CreateSeries() for Dark Tower error")
 
 	_, err = d.UpdateSeries(t.Context(), s2.ID, "The Dark Tower", nil, nil, nil)
-	require.Equal(t, ErrSeriesNameExists, err)
+	require.ErrorIs(t, err, ErrSeriesNameExists)
 }
 
 func TestUpdateSeries_DuplicateNameCaseInsensitive(t *testing.T) {
@@ -190,7 +190,7 @@ func TestUpdateSeries_DuplicateNameCaseInsensitive(t *testing.T) {
 	require.NoError(t, err, "CreateSeries() for The Dark Tower error")
 
 	_, err = d.UpdateSeries(t.Context(), s2.ID, "mistborn", nil, nil, nil)
-	require.Equal(t, ErrSeriesNameExists, err)
+	require.ErrorIs(t, err, ErrSeriesNameExists)
 }
 
 func TestFindOrCreateSeries_CaseInsensitive(t *testing.T) {

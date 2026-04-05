@@ -28,7 +28,7 @@ func TestCreateLibrary_DuplicateName(t *testing.T) {
 	require.NoError(t, err, "first CreateLibrary() error")
 
 	_, err = d.CreateLibrary(t.Context(), "Fiction", `["/mnt/books/other"]`, LibraryOrganizationBookPerFolder, false)
-	require.Equal(t, ErrLibraryNameExists, err)
+	require.ErrorIs(t, err, ErrLibraryNameExists)
 }
 
 func TestGetLibrary(t *testing.T) {
@@ -87,7 +87,7 @@ func TestUpdateLibrary_DuplicateName(t *testing.T) {
 	require.NoError(t, err, "CreateLibrary() for Non-Fiction error")
 
 	_, err = d.UpdateLibrary(t.Context(), lib2.ID, "Fiction", `["/mnt/nonfiction"]`, LibraryOrganizationBookPerFolder, false)
-	require.Equal(t, ErrLibraryNameExists, err)
+	require.ErrorIs(t, err, ErrLibraryNameExists)
 }
 
 func TestDeleteLibrary(t *testing.T) {

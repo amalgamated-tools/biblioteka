@@ -132,6 +132,7 @@ func TestReorganizedCandidatePaths_BookPerFolder(t *testing.T) {
 	rel, err := filepath.Rel(dir, candidates[0])
 	require.NoError(t, err, "filepath.Rel")
 	require.NotEmpty(t, rel)
+	require.NotEqual(t, ".", rel, "expected candidate path to be a subdirectory")
 }
 
 // TestReorganizedCandidatePaths_BookPerFolder_MissingAuthor verifies that
