@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
-import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
+import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/svelte";
 import { tick } from "svelte";
 
 vi.mock("../stores/libraries.svelte", () => ({
@@ -16,6 +16,10 @@ vi.mock("../stores/router.svelte", () => ({
   },
 }));
 
+vi.mock("../lib/api", () => ({
+  listBooks: vi.fn().mockResolvedValue({ books: [], total: 0, limit: 1, offset: 0 }),
+}));
+
 vi.mock("lucide-svelte", () => ({
   LayoutDashboard: () => {},
   Library: () => {},
@@ -26,11 +30,18 @@ vi.mock("lucide-svelte", () => ({
 import Dashboard from "./Dashboard.svelte";
 import { libraryStore } from "../stores/libraries.svelte";
 import { routerStore } from "../stores/router.svelte";
+import { listBooks } from "../lib/api";
 
 describe("Dashboard", () => {
   beforeEach(() => {
     vi.mocked(libraryStore).loaded = false;
     vi.mocked(libraryStore).libraries = [];
+    vi.mocked(listBooks).mockResolvedValue({
+      books: [],
+      total: 0,
+      limit: 1,
+      offset: 0,
+    });
   });
 
   afterEach(() => {
@@ -97,7 +108,7 @@ describe("Dashboard", () => {
 
     expect(screen.getByText("Total Books")).toBeInTheDocument();
     expect(screen.getByText("Libraries")).toBeInTheDocument();
-    expect(screen.getByText("Currently Reading")).toBeInTheDocument();
+    expect(screen.queryByText("Currently Reading")).toBeNull();
   });
 
   it("does not show the onboarding card when libraries exist", async () => {
@@ -138,13 +149,12 @@ describe("Dashboard", () => {
     const terms = screen.getAllByRole("term");
     const definitions = screen.getAllByRole("definition");
 
-    expect(terms).toHaveLength(3);
-    expect(definitions).toHaveLength(3);
+    expect(terms).toHaveLength(2);
+    expect(definitions).toHaveLength(2);
 
     const termTexts = terms.map((el) => el.textContent?.trim());
     expect(termTexts).toContain("Total Books");
     expect(termTexts).toContain("Libraries");
-    expect(termTexts).toContain("Currently Reading");
   });
 
   it("shows the library count in the stats grid", async () => {
@@ -184,5 +194,54 @@ describe("Dashboard", () => {
     await tick();
 
     expect(libraryStore.load).toHaveBeenCalled();
+  });
+
+  it("shows loading placeholder while total books is being fetched", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [
+      {
+        id: "lib-1",
+        name: "Fiction",
+        paths: [],
+        organization_type: "book_per_folder",
+        monitored: false,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    // Never resolves, so totalBooks stays null → "…"
+    vi.mocked(listBooks).mockReturnValue(new Promise(() => {}));
+    render(Dashboard);
+    await tick();
+
+    expect(screen.getByText("…")).toBeInTheDocument();
+  });
+
+  it("shows the real total books count after fetching", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [
+      {
+        id: "lib-1",
+        name: "Fiction",
+        paths: [],
+        organization_type: "book_per_folder",
+        monitored: false,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    vi.mocked(listBooks).mockResolvedValue({
+      books: [],
+      total: 500,
+      limit: 1,
+      offset: 0,
+    });
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(screen.getByText("500")).toBeInTheDocument();
+    });
+
+    expect(listBooks).toHaveBeenCalledWith(1, 0);
   });
 });
