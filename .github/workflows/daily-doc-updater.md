@@ -252,4 +252,14 @@ This PR updates the documentation based on features merged in the last 24 hours.
 - Always read the documentation instructions before making changes
 - Focus on user-facing features and changes that affect the developer experience
 
-Good luck! Your documentation updates help keep our project accessible and up-to-date.
+## Volume Threshold Alert
+
+If you are about to create **12 or more PRs in a single run**, stop and emit a warning before proceeding:
+
+```
+⚠️ THRESHOLD ALERT: This run would create 12+ PRs.
+Consider batching related documentation changes into fewer PRs,
+or limiting the scope of this run to the highest-priority updates only.
+```
+
+Batch related changes wherever possible — for example, group all API endpoint documentation into one PR rather than one PR per endpoint. If the number cannot be reduced below 12, proceed but include the alert text in each PR description.
