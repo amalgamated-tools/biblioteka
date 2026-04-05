@@ -214,7 +214,7 @@ Fetches Goodreads metadata for a newly imported book and stores the result as a 
 
 When no match is found, the job exits cleanly with no record created. A failed Goodreads API call at one strategy level is logged at `WARN` level, and the job falls through to the next strategy rather than failing immediately.
 
-The resulting `goodreads_metadata` record stores Goodreads book identifiers (Goodreads ID, ASIN, ISBN, ISBN-13, work ID, and legacy integer IDs), author information (name, Goodreads author ID, legacy author ID, and profile image URL), language, and cover image URL. The `description` field is not populated (Goodreads does not return it via the search/lookup APIs used). The user must review and apply the record via the metadata review UI before any data is merged into the book record.
+The resulting `goodreads_metadata` record stores the Goodreads book title, identifiers (Goodreads ID, ASIN, ISBN, ISBN-13, work ID, and legacy integer IDs), author information (name, Goodreads author ID, legacy author ID, and profile image URL), language, and cover image URL. The `description` field is not populated (Goodreads does not return it via the search/lookup APIs used). The `hardcover_id`, `google_books_id`, `publication_date`, and `publisher` fields are also left unpopulated — the Goodreads search/lookup APIs used do not surface them. The user must review and apply the record via the metadata review UI before any data is merged into the book record.
 
 **Failure handling:** if the Goodreads client call or the database write fails, the error is returned and asynq retries the job up to `DefaultMaxRetry` (5) times with exponential back-off. A failed enrichment never blocks or modifies the book record already committed by `POST /api/books`.
 
