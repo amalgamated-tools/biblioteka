@@ -1517,8 +1517,8 @@ Add `aria-hidden="true"` to the icon element to remove it from the accessibility
   Books
 </h1>
 
-<!-- Empty-state illustration (purely decorative standalone — no adjacent text,
-     no information conveyed): aria-hidden suppresses the unlabelled image node -->
+<!-- Standalone decorative illustration (purely decorative exemption, WCAG 1.1.1):
+     no adjacent text; icon adds no information, so it can be hidden entirely. -->
 <Library class="w-16 h-16 text-ink-300" aria-hidden="true" />
 ```
 
