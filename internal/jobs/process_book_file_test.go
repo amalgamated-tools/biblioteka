@@ -32,7 +32,7 @@ func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
 	epubInfo, err := os.Stat(epubPath)
 	require.NoError(t, err, "stat epub")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "epub3-with-cover.epub",
 		FileType: "epub",
@@ -54,7 +54,7 @@ func TestProcessBookFile_NilDatabase(t *testing.T) {
 	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	err = ProcessBookFile(t.Context(), nil, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), nil, ext, nil, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
 		FileName: "test.epub",
 		FileType: "epub",
@@ -65,7 +65,7 @@ func TestProcessBookFile_NilDatabase(t *testing.T) {
 func TestProcessBookFile_NilExtractor(t *testing.T) {
 	database := newTestDB(t)
 
-	err := ProcessBookFile(t.Context(), database, nil, ProcessFilePayload{
+	err := ProcessBookFile(t.Context(), database, nil, nil, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
 		FileName: "test.epub",
 		FileType: "epub",
@@ -79,7 +79,7 @@ func TestProcessBookFile_EmptyPath(t *testing.T) {
 	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     "",
 		FileName: "test.epub",
 		FileType: "epub",
@@ -93,7 +93,7 @@ func TestProcessBookFile_WhitespacePath(t *testing.T) {
 	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     "   ",
 		FileName: "test.epub",
 		FileType: "epub",
@@ -107,7 +107,7 @@ func TestProcessBookFile_EmptyFileName(t *testing.T) {
 	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
 		FileName: "",
 		FileType: "epub",
@@ -121,7 +121,7 @@ func TestProcessBookFile_EmptyFileType(t *testing.T) {
 	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
 		FileName: "test.epub",
 		FileType: "",
@@ -142,7 +142,7 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	err = os.WriteFile(path, []byte("not a real pdf"), 0o644)
 	require.NoError(t, err, "write test file")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     path,
 		FileName: "My Cool Book.pdf",
 		FileType: "pdf",
@@ -170,7 +170,7 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 	err = os.WriteFile(path, []byte("content"), 0o644)
 	require.NoError(t, err, "write test file")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     path,
 		FileName: "noext",
 		FileType: "pdf",
@@ -201,7 +201,7 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 	epubPath := filepath.Join(dir, "gatsby.epub")
 	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "gatsby.epub",
 		FileType: "epub",
@@ -239,7 +239,7 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 		CoverImageHref: "images/cover.jpg",
 		CoverMediaType: "image/jpeg",
 	})
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "cover.epub",
 		FileType: "epub",
@@ -267,7 +267,7 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 	// Empty creator means no author in metadata
 	testutils.MakeTestEPUB(t, epubPath, "Anonymous Work", "", "some-id-123")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "noauthor.epub",
 		FileType: "epub",
@@ -303,7 +303,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	err = os.WriteFile(path, []byte("not a valid epub"), 0o644)
 	require.NoError(t, err, "write broken.epub")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     path,
 		FileName: "broken.epub",
 		FileType: "epub",
@@ -330,7 +330,7 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 	epubPath := filepath.Join(dir, "isbn10.epub")
 	testutils.MakeTestEPUB(t, epubPath, "ISBN10 Book", "Author", "isbn:0-306-40615-2")
 
-	err = ProcessBookFile(t.Context(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "isbn10.epub",
 		FileType: "epub",

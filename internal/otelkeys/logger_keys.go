@@ -74,6 +74,7 @@ const (
 	LibraryRoot         string = "library_root"
 	Limit               string = "limit"
 	Line                string = "line"
+	LookupStrategy      string = "lookup_strategy"
 	MediaType           string = "media_type"
 	MetaContent         string = "meta_content"
 	MetaName            string = "meta_name"
