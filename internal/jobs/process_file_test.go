@@ -59,40 +59,28 @@ func TestProcessFileHandler(t *testing.T) {
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
-	if books[0].Title != "The Great Gatsby" {
-		t.Errorf("expected title %q, got %q", "The Great Gatsby", books[0].Title)
-	}
+	require.Equal(t, "The Great Gatsby", books[0].Title)
 
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
 	require.Len(t, files, 1)
-	if files[0].FileType != "epub" {
-		t.Errorf("expected file type %q, got %q", "epub", files[0].FileType)
-	}
-	if files[0].FilePath != epubPath {
-		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
-	}
-	if files[0].FileSize != 1024 {
-		t.Errorf("expected file size 1024, got %d", files[0].FileSize)
-	}
+	require.Equal(t, "epub", files[0].FileType)
+	require.Equal(t, epubPath, files[0].FilePath)
+	require.Equal(t, int64(1024), files[0].FileSize)
 
 	// Verify author was created and associated with the book
 	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book authors")
 	require.Len(t, authors, 1)
-	if authors[0].Name != "F. Scott Fitzgerald" {
-		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", authors[0].Name)
-	}
+	require.Equal(t, "F. Scott Fitzgerald", authors[0].Name)
 
 	// Verify ISBN13 was extracted and normalized
-	if books[0].ISBN13 == nil || *books[0].ISBN13 != "9780743273565" {
-		t.Errorf("expected ISBN13 %q, got %v", "9780743273565", books[0].ISBN13)
-	}
+	require.NotNil(t, books[0].ISBN13)
+	require.Equal(t, "9780743273565", *books[0].ISBN13)
 
 	// Verify language was extracted from EPUB metadata
-	if books[0].Language == nil || *books[0].Language != "en" {
-		t.Errorf("expected language %q, got %v", "en", books[0].Language)
-	}
+	require.NotNil(t, books[0].Language)
+	require.Equal(t, "en", *books[0].Language)
 }
 
 func TestProcessFileHandler_MetadataFields(t *testing.T) {
@@ -125,32 +113,23 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 	require.Len(t, books, 1)
 	book := books[0]
 
-	if book.Title != "Dune" {
-		t.Errorf("expected title %q, got %q", "Dune", book.Title)
-	}
-	if book.Description == nil || *book.Description != "A science fiction masterpiece" {
-		t.Errorf("expected description %q, got %v", "A science fiction masterpiece", book.Description)
-	}
-	if book.Publisher == nil || *book.Publisher != "Chilton Books" {
-		t.Errorf("expected publisher %q, got %v", "Chilton Books", book.Publisher)
-	}
-	if book.PublicationDate == nil || *book.PublicationDate != "1965-08-01" {
-		t.Errorf("expected publication_date %q, got %v", "1965-08-01", book.PublicationDate)
-	}
-	if book.Language == nil || *book.Language != "en" {
-		t.Errorf("expected language %q, got %v", "en", book.Language)
-	}
-	if book.ISBN13 == nil || *book.ISBN13 != "9780441172719" {
-		t.Errorf("expected ISBN13 %q, got %v", "9780441172719", book.ISBN13)
-	}
+	require.Equal(t, "Dune", book.Title)
+	require.NotNil(t, book.Description)
+	require.Equal(t, "A science fiction masterpiece", *book.Description)
+	require.NotNil(t, book.Publisher)
+	require.Equal(t, "Chilton Books", *book.Publisher)
+	require.NotNil(t, book.PublicationDate)
+	require.Equal(t, "1965-08-01", *book.PublicationDate)
+	require.NotNil(t, book.Language)
+	require.Equal(t, "en", *book.Language)
+	require.NotNil(t, book.ISBN13)
+	require.Equal(t, "9780441172719", *book.ISBN13)
 
 	// Verify author creation and association
 	authors, err := database.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "get book authors")
 	require.Len(t, authors, 1)
-	if authors[0].Name != "Frank Herbert" {
-		t.Errorf("expected author %q, got %q", "Frank Herbert", authors[0].Name)
-	}
+	require.Equal(t, "Frank Herbert", authors[0].Name)
 }
 
 func TestProcessFileHandler_EmptyPath(t *testing.T) {
@@ -205,9 +184,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book authors")
 	require.Len(t, authors, 1)
-	if authors[0].Name != "F. Scott Fitzgerald" {
-		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", authors[0].Name)
-	}
+	require.Equal(t, "F. Scott Fitzgerald", authors[0].Name)
 
 	// Verify book was added to library.
 	libBooks, err := database.ListBooksByLibrary(t.Context(), lib.ID)
@@ -248,20 +225,15 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 	seriesEntries, err := database.GetBookSeries(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book series")
 	require.Len(t, seriesEntries, 1)
-	if seriesEntries[0].Series.Name != "No. 1 Ladies' Detective Agency" {
-		t.Errorf("expected series %q, got %q", "No. 1 Ladies' Detective Agency", seriesEntries[0].Series.Name)
-	}
-	if seriesEntries[0].Position == nil || *seriesEntries[0].Position != 10 {
-		t.Errorf("expected series position 10, got %v", seriesEntries[0].Position)
-	}
+	require.Equal(t, "No. 1 Ladies' Detective Agency", seriesEntries[0].Series.Name)
+	require.NotNil(t, seriesEntries[0].Position)
+	require.Equal(t, float64(10), *seriesEntries[0].Position)
 
 	// Verify author was linked from directory.
 	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book authors")
 	require.Len(t, authors, 1)
-	if authors[0].Name != "Alexander McCall Smith" {
-		t.Errorf("expected author %q, got %q", "Alexander McCall Smith", authors[0].Name)
-	}
+	require.Equal(t, "Alexander McCall Smith", authors[0].Name)
 }
 
 func TestProcessFileHandler_DuplicateSkipped(t *testing.T) {
@@ -290,7 +262,5 @@ func TestProcessFileHandler_DuplicateSkipped(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		t.Errorf("expected 1 book after duplicate processing, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 }

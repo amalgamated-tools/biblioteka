@@ -32,10 +32,8 @@ func TestKoboFormatForFileType(t *testing.T) {
 	}
 	for _, tc := range cases {
 		got, ok := kobo.FormatForFileType(tc.input)
-		if ok != tc.ok || got != tc.want {
-			t.Errorf("kobo.FormatForFileType(%q) = (%q, %v), want (%q, %v)",
-				tc.input, got, ok, tc.want, tc.ok)
-		}
+		require.Equal(t, tc.ok, ok, "kobo.FormatForFileType(%q) ok", tc.input)
+		require.Equal(t, tc.want, got, "kobo.FormatForFileType(%q)", tc.input)
 	}
 }
 
@@ -48,9 +46,7 @@ func TestEncodeKoboSyncToken_IsValidBase64JSON(t *testing.T) {
 	require.NoError(t, err, "not valid base64")
 	var payload map[string]any
 	require.NoError(t, json.Unmarshal(raw, &payload), "not valid JSON")
-	if payload["version"] != "1-0-0" {
-		t.Errorf("version = %v, want 1-0-0", payload["version"])
-	}
+	require.Equal(t, "1-0-0", payload["version"])
 }
 
 // ---- koboRandomUUID ----
@@ -60,9 +56,7 @@ func TestKoboRandomUUID_Format(t *testing.T) {
 	require.NoError(t, err, "koboRandomUUID")
 	// UUID v4 format: 8-4-4-4-12 hex chars
 	re := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
-	if !re.MatchString(uuid) {
-		t.Errorf("UUID %q does not match v4 pattern", uuid)
-	}
+	require.True(t, re.MatchString(uuid), "UUID %q does not match v4 pattern", uuid)
 }
 
 // ---- kobo.BookMetadata with series ----
@@ -83,12 +77,8 @@ func TestKoboBookMetadata_WithSeries(t *testing.T) {
 
 	seriesMeta := meta.Series
 	require.NotNil(t, seriesMeta)
-	if seriesMeta.Name != seriesName {
-		t.Errorf("Series.Name = %v, want %q", seriesMeta.Name, seriesName)
-	}
-	if seriesMeta.Number != int(1) {
-		t.Errorf("Series.Number = %v, want 1", seriesMeta.Number)
-	}
+	require.Equal(t, seriesName, seriesMeta.Name)
+	require.Equal(t, int(1), seriesMeta.Number)
 }
 
 // ---- kobo.SyncToken with BooksLastID ----
@@ -101,7 +91,5 @@ func TestKoboSyncTokenRoundTrip_WithBooksLastID(t *testing.T) {
 	}
 	encoded := kobo.EncodeSyncToken(tok)
 	decoded := kobo.ParseSyncToken(encoded)
-	if decoded.BooksLastID != tok.BooksLastID {
-		t.Errorf("BooksLastID: got %q, want %q", decoded.BooksLastID, tok.BooksLastID)
-	}
+	require.Equal(t, tok.BooksLastID, decoded.BooksLastID)
 }

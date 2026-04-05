@@ -30,18 +30,10 @@ func newTestWorker(t *testing.T) *Worker {
 // given a syntactically valid Redis URL.
 func TestNew_ValidURL(t *testing.T) {
 	w := newTestWorker(t)
-	if w.client == nil {
-		t.Error("client is nil")
-	}
-	if w.mux == nil {
-		t.Error("mux is nil")
-	}
-	if w.scheduler == nil {
-		t.Error("scheduler is nil")
-	}
-	if w.redisOpt == nil {
-		t.Error("redisOpt is nil")
-	}
+	require.NotNil(t, w.client, "client")
+	require.NotNil(t, w.mux, "mux")
+	require.NotNil(t, w.scheduler, "scheduler")
+	require.NotNil(t, w.redisOpt, "redisOpt")
 }
 
 // TestNew_InvalidURL verifies that New returns an error for a non-Redis URI.
@@ -67,9 +59,7 @@ func TestNew_WrongScheme(t *testing.T) {
 // created during construction.
 func TestRedisConnOpt(t *testing.T) {
 	w := newTestWorker(t)
-	if w.RedisConnOpt() == nil {
-		t.Error("RedisConnOpt returned nil")
-	}
+	require.NotNil(t, w.RedisConnOpt(), "RedisConnOpt returned nil")
 }
 
 // TestRegister verifies that Register stores a handler in the mux and that the
@@ -90,12 +80,8 @@ func TestRegister(t *testing.T) {
 	task := asynq.NewTask("test:register", []byte(`{"hello":"world"}`))
 	require.NoError(t, w.mux.ProcessTask(t.Context(), task), "ProcessTask")
 
-	if !called {
-		t.Error("expected handler to be called, but it was not")
-	}
-	if string(gotPayload) != `{"hello":"world"}` {
-		t.Errorf("handler received payload %q, want %q", gotPayload, `{"hello":"world"}`)
-	}
+	require.True(t, called, "expected handler to be called")
+	require.Equal(t, `{"hello":"world"}`, string(gotPayload), "handler payload")
 }
 
 // TestRegister_HandlerError verifies that an error returned by a registered
@@ -110,9 +96,7 @@ func TestRegister_HandlerError(t *testing.T) {
 
 	task := asynq.NewTask("test:fail", nil)
 	err := w.mux.ProcessTask(t.Context(), task)
-	if !errors.Is(err, sentinel) {
-		t.Errorf("ProcessTask returned %v, want %v", err, sentinel)
-	}
+	require.ErrorIs(t, err, sentinel, "ProcessTask error")
 }
 
 // TestRegister_NilPayload verifies that a handler registered via Register
@@ -123,17 +107,13 @@ func TestRegister_NilPayload(t *testing.T) {
 	var called bool
 	w.Register(t.Context(), "test:nil-payload", func(_ context.Context, payload []byte) error {
 		called = true
-		if payload != nil && len(payload) != 0 {
-			t.Errorf("handler received payload %q, want nil or empty", payload)
-		}
+		require.True(t, payload == nil || len(payload) == 0, "handler received payload %q, want nil or empty", payload)
 		return nil
 	})
 
 	task := asynq.NewTask("test:nil-payload", nil)
 	require.NoError(t, w.mux.ProcessTask(t.Context(), task), "ProcessTask")
-	if !called {
-		t.Error("expected handler to be called")
-	}
+	require.True(t, called, "expected handler to be called")
 }
 
 // TestRegisterSchedule verifies that a valid cron expression and
@@ -143,9 +123,7 @@ func TestRegisterSchedule(t *testing.T) {
 
 	entryID, err := w.RegisterSchedule("@every 1m", "test:sched", map[string]string{"k": "v"})
 	require.NoError(t, err, "RegisterSchedule")
-	if entryID == "" {
-		t.Error("expected non-empty entry ID")
-	}
+	require.NotEmpty(t, entryID, "expected non-empty entry ID")
 }
 
 // TestRegisterSchedule_NilPayload verifies that nil is accepted as a payload
@@ -155,9 +133,7 @@ func TestRegisterSchedule_NilPayload(t *testing.T) {
 
 	entryID, err := w.RegisterSchedule("@every 1h", "test:sched-nil", nil)
 	require.NoError(t, err, "RegisterSchedule with nil payload")
-	if entryID == "" {
-		t.Error("expected non-empty entry ID for nil payload")
-	}
+	require.NotEmpty(t, entryID, "expected non-empty entry ID for nil payload")
 }
 
 // TestRegisterSchedule_DistinctIDs verifies that separate schedules for
@@ -180,19 +156,13 @@ func TestRegisterSchedule_DistinctIDs(t *testing.T) {
 	require.NoError(t, err, "first RegisterSchedule")
 	id2, err := w.RegisterSchedule("@every 2m", "test:multi-b", nil)
 	require.NoError(t, err, "second RegisterSchedule")
-	if id1 == id2 {
-		t.Errorf("expected distinct entry IDs, got %q for both", id1)
-	}
+	require.NotEqual(t, id1, id2, "expected distinct entry IDs")
 
 	// Verify both handlers are actually wired up.
 	require.NoError(t, w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-a", nil)), "ProcessTask for multi-a")
 	require.NoError(t, w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-b", nil)), "ProcessTask for multi-b")
-	if !called1 {
-		t.Error("handler for test:multi-a was not called")
-	}
-	if !called2 {
-		t.Error("handler for test:multi-b was not called")
-	}
+	require.True(t, called1, "handler for test:multi-a was not called")
+	require.True(t, called2, "handler for test:multi-b was not called")
 }
 
 // TestRegisterSchedule_InvalidCronspec verifies that an unparseable cron

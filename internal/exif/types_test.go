@@ -2,6 +2,8 @@ package exif
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestExifToolOutput_ISBN_PrefersISBN13 verifies that ISBN() returns the
@@ -14,9 +16,7 @@ func TestExifToolOutput_ISBN_PrefersISBN13(t *testing.T) {
 		ISBN10: "123456789X",
 	}
 	got := out.ISBN()
-	if got != "9781234567890" {
-		t.Errorf("ISBN() = %q, want 9781234567890 (ISBN13 should take precedence)", got)
-	}
+	require.Equal(t, "9781234567890", got, "ISBN13 should take precedence")
 }
 
 // TestExifToolOutput_ISBN_FallsBackToISBN10 verifies that ISBN() returns
@@ -26,9 +26,7 @@ func TestExifToolOutput_ISBN_FallsBackToISBN10(t *testing.T) {
 
 	out := &ExifToolOutput{ISBN10: "123456789X"}
 	got := out.ISBN()
-	if got != "123456789X" {
-		t.Errorf("ISBN() = %q, want 123456789X", got)
-	}
+	require.Equal(t, "123456789X", got)
 }
 
 // TestExifToolOutput_ISBN_EmptyWhenNeither verifies that ISBN() returns an
@@ -38,9 +36,7 @@ func TestExifToolOutput_ISBN_EmptyWhenNeither(t *testing.T) {
 
 	out := &ExifToolOutput{}
 	got := out.ISBN()
-	if got != "" {
-		t.Errorf("ISBN() = %q, want empty string", got)
-	}
+	require.Equal(t, "", got)
 }
 
 // TestExifToolOutput_SetISBN_13Digit verifies that SetISBN with a 13-digit
@@ -50,12 +46,8 @@ func TestExifToolOutput_SetISBN_13Digit(t *testing.T) {
 
 	out := &ExifToolOutput{ISBN10: "123456789X"}
 	out.SetISBN("9781234567890")
-	if out.ISBN13 != "9781234567890" {
-		t.Errorf("ISBN13 = %q, want 9781234567890", out.ISBN13)
-	}
-	if out.ISBN10 != "" {
-		t.Errorf("ISBN10 = %q, want empty (should be cleared)", out.ISBN10)
-	}
+	require.Equal(t, "9781234567890", out.ISBN13)
+	require.Equal(t, "", out.ISBN10, "should be cleared")
 }
 
 // TestExifToolOutput_SetISBN_10Digit verifies that SetISBN with a 10-digit
@@ -65,12 +57,8 @@ func TestExifToolOutput_SetISBN_10Digit(t *testing.T) {
 
 	out := &ExifToolOutput{ISBN13: "9781234567890"}
 	out.SetISBN("123456789X")
-	if out.ISBN10 != "123456789X" {
-		t.Errorf("ISBN10 = %q, want 123456789X", out.ISBN10)
-	}
-	if out.ISBN13 != "" {
-		t.Errorf("ISBN13 = %q, want empty (should be cleared)", out.ISBN13)
-	}
+	require.Equal(t, "123456789X", out.ISBN10)
+	require.Equal(t, "", out.ISBN13, "should be cleared")
 }
 
 // TestExifToolOutput_SetISBN_EmptyClears verifies that SetISBN("") clears
@@ -83,10 +71,8 @@ func TestExifToolOutput_SetISBN_EmptyClears(t *testing.T) {
 		ISBN10: "123456789X",
 	}
 	out.SetISBN("")
-	if out.ISBN13 != "" || out.ISBN10 != "" {
-		t.Errorf("expected both ISBN fields to be cleared, got ISBN13=%q ISBN10=%q",
-			out.ISBN13, out.ISBN10)
-	}
+	require.Equal(t, "", out.ISBN13)
+	require.Equal(t, "", out.ISBN10)
 }
 
 // TestExifToolOutput_SetISBN_UnknownLengthIsNoop verifies that SetISBN with
@@ -99,10 +85,8 @@ func TestExifToolOutput_SetISBN_UnknownLengthIsNoop(t *testing.T) {
 		ISBN10: "123456789X",
 	}
 	out.SetISBN("12345") // 5-character value — should not change anything
-	if out.ISBN13 != "9781234567890" || out.ISBN10 != "123456789X" {
-		t.Errorf("SetISBN with unknown length changed ISBN fields: ISBN13=%q ISBN10=%q",
-			out.ISBN13, out.ISBN10)
-	}
+	require.Equal(t, "9781234567890", out.ISBN13)
+	require.Equal(t, "123456789X", out.ISBN10)
 }
 
 // TestExifToolOutput_SetISBN_RoundTrip verifies that SetISBN followed by
@@ -124,9 +108,7 @@ func TestExifToolOutput_SetISBN_RoundTrip(t *testing.T) {
 			out := &ExifToolOutput{}
 			out.SetISBN(tt.input)
 			got := out.ISBN()
-			if got != tt.input {
-				t.Errorf("round-trip: SetISBN(%q) then ISBN() = %q, want %q", tt.input, got, tt.input)
-			}
+			require.Equal(t, tt.input, got, "round-trip: SetISBN(%q) then ISBN()", tt.input)
 		})
 	}
 }

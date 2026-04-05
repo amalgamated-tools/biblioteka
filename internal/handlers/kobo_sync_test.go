@@ -46,9 +46,7 @@ func TestHandleSync_PageSizeLimit(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	var results []any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
-	if len(results) > kobo.SyncPageSize {
-		t.Errorf("expected at most %d sync results, got %d", kobo.SyncPageSize, len(results))
-	}
+	require.LessOrEqual(t, len(results), kobo.SyncPageSize)
 }
 
 // TestHandleSync_BooksLastModifiedHeader verifies that the response includes
@@ -66,9 +64,7 @@ func TestHandleSync_BooksLastModifiedHeader(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if w.Header().Get("x-kobo-synctoken") == "" {
-		t.Error("expected x-kobo-synctoken header in sync response")
-	}
+	require.NotEmpty(t, w.Header().Get("x-kobo-synctoken"), "expected x-kobo-synctoken header")
 }
 
 // TestHandleSync_NonGETMethodReturnsEmpty verifies that non-GET methods on the
@@ -86,9 +82,7 @@ func TestHandleSync_NonGETMethodReturnsEmpty(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	// The handler does not restrict by method; it returns 200 with an empty sync response.
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var results []any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode response")
 }

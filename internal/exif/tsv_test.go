@@ -9,9 +9,7 @@ import (
 func TestParseTSV_EmptyInput(t *testing.T) {
 	out, err := ParseTSV(t.Context(), "", "epub")
 	require.NoError(t, err, "ParseTSV should not return an error")
-	if len(out.Identifiers) != 0 {
-		t.Errorf("expected 0 identifiers, got %d", len(out.Identifiers))
-	}
+	require.Empty(t, out.Identifiers)
 }
 
 func TestParseTSV_IdentifierWithoutScheme(t *testing.T) {
