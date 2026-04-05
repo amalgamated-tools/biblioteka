@@ -205,8 +205,8 @@ Fetches Goodreads metadata for a newly imported book and stores the result as a 
 
 | Priority | Strategy | Condition |
 |----------|-----------|-----------|
-| 1 (highest) | ISBN-13 lookup | `books.isbn_13` is non-empty |
-| 2 | ISBN-10 lookup | `books.isbn_10` is non-empty |
+| 1 (highest) | ISBN-13 lookup | `books.isbn13` is non-empty |
+| 2 | ISBN-10 lookup | `books.isbn10` is non-empty |
 | 3 | ASIN lookup | `books.asin` is non-empty |
 | 4 | Goodreads ID lookup | `books.goodreads_id` is non-empty |
 | 5 (lowest) | Title search | `books.title` is non-empty |
