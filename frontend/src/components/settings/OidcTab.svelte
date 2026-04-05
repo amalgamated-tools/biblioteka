@@ -2,6 +2,7 @@
   import { onDestroy } from "svelte";
   import { setOidcConfig } from "../../lib/api";
   import { required, validate } from "../../lib/validation";
+  import { SuccessTimerState } from "../../lib/successTimer.svelte";
   import { Shield } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -39,23 +40,20 @@
   // svelte-ignore state_referenced_locally
   let oidcRedirectUri = $state(initialRedirectUri);
   let oidcError: string | null = $state(null);
-  let oidcSuccess = $state(false);
   let oidcLoading = $state(false);
-  let successTimer: ReturnType<typeof setTimeout> | undefined;
+  const successTimer = new SuccessTimerState();
 
   let submitLabel = $derived.by(() => {
     if (oidcLoading) return "Saving...";
     return oidcConfigured ? "Update Configuration" : "Save Configuration";
   });
 
-  onDestroy(() => {
-    if (successTimer) clearTimeout(successTimer);
-  });
+  onDestroy(() => successTimer.clear());
 
   async function handleOidcSave(e: SubmitEvent) {
     e.preventDefault();
     oidcError = null;
-    oidcSuccess = false;
+    successTimer.clear();
 
     oidcError =
       validate(oidcIssuerUrl, [required("Issuer URL is required")]) ??
@@ -75,7 +73,6 @@
         client_secret: oidcClientSecret.trim(),
         redirect_uri: oidcRedirectUri.trim(),
       });
-      oidcSuccess = true;
       oidcConfigured = true;
       oidcClientSecret = "";
       onOidcSaved({
@@ -84,7 +81,7 @@
         clientId: oidcClientId.trim(),
         redirectUri: oidcRedirectUri.trim(),
       });
-      successTimer = setTimeout(() => (oidcSuccess = false), 3000);
+      successTimer.show();
     } catch (err) {
       oidcError =
         err instanceof Error
@@ -234,7 +231,7 @@
         <AlertBanner variant="error">{oidcError}</AlertBanner>
       {/if}
 
-      {#if oidcSuccess}
+      {#if successTimer.visible}
         <AlertBanner variant="success"
           >OIDC configuration saved successfully</AlertBanner
         >
