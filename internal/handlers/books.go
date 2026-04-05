@@ -18,9 +18,7 @@ import (
 // BookHandler holds dependencies for book endpoints.
 type BookHandler struct {
 	DB       *db.DB
-	Enqueuer interface {
-		Enqueue(ctx context.Context, name string, payload any) (string, error)
-	}
+	Enqueuer jobs.Enqueuer
 }
 
 type bookRequest struct {
@@ -359,6 +357,8 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	logAudit(r.Context(), h.DB, userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title})
 
+	writeJSON(r.Context(), w, http.StatusCreated, dto)
+
 	if h.Enqueuer != nil {
 		enqueueCtx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 10*time.Second)
 		defer cancel()
@@ -366,14 +366,12 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 			BookID: b.ID,
 			UserID: userID,
 		}); err != nil {
-			slog.ErrorContext(r.Context(), "failed to enqueue enrich:goodreads job",
+			slog.WarnContext(r.Context(), "failed to enqueue enrich:goodreads job",
 				slog.String(otelkeys.BookID, b.ID),
 				slog.Any(otelkeys.Error, err),
 			)
 		}
 	}
-
-	writeJSON(r.Context(), w, http.StatusCreated, dto)
 }
 
 // getBook godoc
