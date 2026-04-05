@@ -1,32 +1,33 @@
 # Shared Alerts — Cross-Orchestrator Coordination
-**Last updated:** 2026-04-05T02:15Z by agent-performance-analyzer
+**Last updated:** 2026-04-05T23:44Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### 🔴 CRITICAL: daily-team-evolution-insights NOT COMPILED (Day 2)
-- **Status**: Persistent — was flagged 2026-04-04, still unresolved 2026-04-05
-- **Impact**: Workflow will not execute at all until compiled
-- **Action needed**: Run `agenticworkflows-compile` on this workflow
+### 🔴 CRITICAL: daily-doc-updater PR Volume Escalation + Duplicates (Day 3)
+- **Pattern**: 0 (Mar 31) → 8 (Apr 3) → 16 (Apr 4) → 18+ (Apr 5, +3 confirmed duplicates)
+- **Duplicates today**: #1376/#1378 (same title), #1308/#1352 (icon aria-hidden), #1308/#1311 (api.test.ts)
+- **Action needed**: Add deduplication check + cap PRs per run (suggest max 8)
+- **Raised by**: agent-performance-analyzer (escalated from Medium Apr 4)
+
+### 🟠 HIGH: 6 Uncompiled Workflows
+- **Workflows**: artifacts-summary, commit-changes-analyzer, duplicate-code-detector, grumpy-reviewer, pr-nitpick-reviewer, weekly-repo-map
+- **Impact**: These workflows will not execute until compiled
+- **Action needed**: Run agenticworkflows-compile on each
 - **Raised by**: agent-performance-analyzer
 
-### 🟡 MEDIUM: daily-doc-updater PR Volume Spike
-- **Pattern**: 0 (Mar 31) → 8 PRs (Apr 3) → 16 PRs (Apr 4, doubled)
-- **Risk**: PR fatigue for human reviewers; potential over-creation
-- **Monitor**: If Apr 5 exceeds 16 PRs, escalate to critical
-- **Raised by**: agent-performance-analyzer
-
-### 🟡 MEDIUM: ci-coach Perpetual No-Op Loop
-- **Pattern**: Runs #31, #32, #33, #34 — all no action needed (4 consecutive)
-- **Context**: All 5 prior optimization PRs (#802, #820, #915, #981, #1007) fully applied
+### 🟡 MEDIUM: ci-coach Perpetual No-Op Loop (6 consecutive runs)
+- **Pattern**: Runs #31–#36 — all no action needed
+- **Context**: All CI optimization opportunities exhausted
 - **Recommendation**: Reduce schedule from daily to weekly
 - **Raised by**: agent-performance-analyzer
 
-### 🟢 LOW: issue-triage Double-Fire on Same Issue
-- **Instance**: Issue #1248 triaged twice in ~30 min on Apr 4
-- **Cause**: Likely edited-issue event firing multiple times
-- **Impact**: Minimal (noop both times, no duplicates created)
-- **Watch**: Look for pattern recurrence
+### 🟡 MEDIUM: daily-workflow-updater Permanent Failure
+- **Issue**: gh CLI not installed/authenticated in agent environment
+- **Impact**: Workflow reports noop but never actually runs; wasted compute
+- **Recommendation**: Disable or fix environment; remove from daily schedule
 - **Raised by**: agent-performance-analyzer
 
 ## Resolved Alerts
-- (none yet — all active alerts from today)
+### ✅ RESOLVED: daily-team-evolution-insights NOW COMPILED
+- Was critical for 2 days (Apr 3, Apr 4); compiled successfully 2026-04-05
+- Resolved by: agent-performance-analyzer (compiled during this run)
