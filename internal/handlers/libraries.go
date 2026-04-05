@@ -333,44 +333,12 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 //	@Failure		500		{object}	errorResponse
 //	@Router			/libraries/{id}/books [get]
 func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request, id string) {
-	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
-
-	slog.DebugContext(r.Context(), "listing library books",
+	listParentBooks(w, r, id,
 		slog.String(otelkeys.LibraryID, id),
-		slog.Int(otelkeys.Limit, limit),
-		slog.Int(otelkeys.Offset, offset),
+		h.DB.ListBooksByLibraryPaginated,
+		h.DB.GetLibrary,
+		"library",
 	)
-
-	books, total, err := h.DB.ListBooksByLibraryPaginated(r.Context(), id, limit, offset)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list library books",
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list library books")
-		return
-	}
-
-	// If no books found, check whether the library actually exists.
-	if total == 0 {
-		_, err := h.DB.GetLibrary(r.Context(), id)
-		if handleDBErr(r.Context(), w, err, "library") {
-			return
-		}
-	}
-
-	slog.DebugContext(r.Context(), "library books listed", slog.Int(otelkeys.Count, len(books)))
-
-	dtos := make([]bookSummaryDTO, 0, len(books))
-	for i := range books {
-		dtos = append(dtos, toBookSummaryDTO(&books[i]))
-	}
-
-	writeJSON(r.Context(), w, http.StatusOK, bookListDTO{
-		Books:  dtos,
-		Total:  total,
-		Limit:  limit,
-		Offset: offset,
-	})
 }
 
 func validatePaths(paths []string) error {
