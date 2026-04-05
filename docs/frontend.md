@@ -51,7 +51,7 @@ frontend/
     lib/
       actions.ts              Svelte action utilities (`autofocusFirstButton`)
       api.ts                  Barrel re-export; re-exports every symbol from `api/` sub-modules
-      api.test.ts             API client unit tests; imports from the barrel and exercises each sub-module through it
+      api.test.ts             API client unit tests; imports from the barrel and covers core, auth, config, admin, and credentials sub-modules
       api/                    Domain-specific API sub-modules
         core.ts               Token storage, `ApiError`, `request`, `getVersion`
         auth.ts               `signup`, `login`, `logout`, `getMe`, OIDC helpers, `changePassword`
@@ -571,8 +571,8 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
    // frontend/src/lib/api/books.ts
    import { request } from "./core";
 
-   export function archiveBook(id: string): Promise<void> {
-     return request<void>("POST", `/api/books/${id}/archive`);
+   export async function archiveBook(id: string): Promise<void> {
+     await request<void>("POST", `/api/books/${id}/archive`);
    }
    ```
 
@@ -2051,7 +2051,7 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `api.test.ts`
 
-`frontend/src/lib/api.test.ts` exercises the centralised API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and exercise each sub-module through it. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into nine `describe` blocks:
+`frontend/src/lib/api.test.ts` exercises the centralised API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and cover the core, auth, config, admin, and credentials sub-modules. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into nine `describe` blocks:
 
 **`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying `localStorage` read/write semantics, including the edge case of an empty string being treated as "no token".
 
