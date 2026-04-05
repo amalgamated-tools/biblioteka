@@ -25,6 +25,11 @@ safe-outputs:
     labels: [automation, workflow-optimization]
     draft: false
     if-no-changes: "ignore"
+    protected-files: allowed
+    allowed-files:
+      - .github/workflows/*.md
+      - .github/workflows/*.lock.yml
+      - .github/workflows/shared/*.md
 
 tools:
   agentic-workflows:
