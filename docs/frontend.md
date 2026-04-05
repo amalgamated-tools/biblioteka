@@ -571,8 +571,8 @@ Never inline types directly in `.svelte` component files or `*.svelte.ts` store 
    // frontend/src/lib/api/books.ts
    import { request } from "./core";
 
-   export function archiveBook(id: string): Promise<void> {
-     return request<void>("POST", `/api/books/${id}/archive`);
+   export async function archiveBook(id: string): Promise<void> {
+     return request("POST", `/api/books/${id}/archive`);
    }
    ```
 
