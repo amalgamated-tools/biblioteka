@@ -159,12 +159,12 @@
       {/if}
     </div>
 
-    {#if testMessageTimer.visible}
+    {#if testMessageTimer.visible && smtpTestMessage}
       <AlertBanner variant="success" class="mb-4">{smtpTestMessage}</AlertBanner
       >
     {/if}
 
-    {#if testErrorTimer.visible}
+    {#if testErrorTimer.visible && smtpTestError}
       <AlertBanner variant="error" class="mb-4">{smtpTestError}</AlertBanner>
     {/if}
 
