@@ -6,22 +6,23 @@ Biblioteka uses [asynq](https://github.com/hibiken/asynq), a Redis-backed task q
 
 ```
 ┌───────────────────────────┐        ┌───────────────┐
-│   HTTP Server             │        │    Redis       │
-│                           │        │                │
-│  POST /api/libraries ─────┼──────▶ │  "default"     │
-│  Scheduled (every 24 h) ──┼──────▶ │   queue        │
+│   HTTP Server             │        │    Redis      │
+│                           │        │               │
+│  POST /api/libraries ─────┼──────▶ │  "default"    │
+│  POST /api/books ─────────┼──────▶ │   queue       │
+│  Scheduled (every 24 h) ──┼──────▶ │               │
 └───────────────────────────┘        └───────┬───────┘
                                              │
-                                     ┌───────▼───────┐
-                                     │  asynq Worker  │
-                                     │  (4 goroutines)│
-                                     │                │
-                                     │  scan:libraries   │
-                                     │  scan:library     │
-                                     │  scan:path        │
-                                     │  process:file     │
-                                     │  enrich:goodreads │
-                                     └───────────────────┘
+                                     ┌───────▼───────────┐
+                                     │  asynq Worker      │
+                                     │  (4 goroutines)    │
+                                     │                    │
+                                     │  scan:libraries    │
+                                     │  scan:library      │
+                                     │  scan:path         │
+                                     │  process:file      │
+                                     │  enrich:goodreads  │
+                                     └────────────────────┘
 ```
 
 The HTTP server and the asynq worker can run in the same process (the default `all` mode) or as separate processes using the `-mode` flag. Both modes use the same Redis instance (via `REDIS_URL`) but create their own Redis connections. See [Run Modes](../README.md#run-modes) for details.
