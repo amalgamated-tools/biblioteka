@@ -3,11 +3,13 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 
 	"github.com/stretchr/testify/require"
 )
@@ -520,4 +522,62 @@ func TestBookFiles_Handler(t *testing.T) {
 	var files []bookFileDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &files), "unmarshal")
 	require.Len(t, files, 1)
+}
+
+func TestCreateBook_EnqueuesGoodreadsJob(t *testing.T) {
+	h, userID := setupBookHandler(t)
+	enq := &mockEnqueuer{}
+	h.Enqueuer = enq
+
+	body := mustMarshal(t, bookRequest{Title: "Project Hail Mary"})
+	r := httptest.NewRequest(http.MethodPost, "/api/books", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	require.Equal(t, http.StatusCreated, w.Code)
+
+	enq.mu.Lock()
+	defer enq.mu.Unlock()
+	require.Len(t, enq.jobs, 1, "expected exactly one enqueued job")
+	require.Equal(t, jobs.JobEnrichGoodreads, enq.jobs[0].Name)
+
+	var payload jobs.EnrichGoodreadsPayload
+	require.NoError(t, json.Unmarshal(enq.jobs[0].Payload, &payload))
+	require.NotEmpty(t, payload.BookID)
+	require.Equal(t, userID, payload.UserID)
+}
+
+func TestCreateBook_EnqueueFailureDoesNotFailRequest(t *testing.T) {
+	h, userID := setupBookHandler(t)
+	enq := &mockEnqueuer{err: fmt.Errorf("redis unavailable")}
+	h.Enqueuer = enq
+
+	body := mustMarshal(t, bookRequest{Title: "The Martian"})
+	r := httptest.NewRequest(http.MethodPost, "/api/books", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	require.Equal(t, http.StatusCreated, w.Code, "book creation should succeed even when enqueue fails")
+
+	var dto bookDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto))
+	require.Equal(t, "The Martian", dto.Title)
+}
+
+func TestCreateBook_NoEnqueuer(t *testing.T) {
+	h, userID := setupBookHandler(t)
+	// h.Enqueuer is nil by default
+
+	body := mustMarshal(t, bookRequest{Title: "Dune"})
+	r := httptest.NewRequest(http.MethodPost, "/api/books", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBooks(w, r)
+
+	require.Equal(t, http.StatusCreated, w.Code, "book creation should succeed without enqueuer")
 }

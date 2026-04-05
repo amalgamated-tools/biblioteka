@@ -22,12 +22,15 @@ type ProcessFilePayload struct {
 	FileSize    int64  `json:"file_size"`
 	LibraryID   string `json:"library_id,omitempty"`
 	LibraryRoot string `json:"library_root,omitempty"`
+	UserID      string `json:"user_id,omitempty"`
 }
 
 // NewProcessFileHandler returns a worker.Func that extracts metadata for a file
 // and then creates a book and book_file record for it. The extracted metadata
 // is used to populate the book fields (title, authors, series, etc.).
-func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(ctx context.Context, payload []byte) error {
+// The enqueuer is optional; when non-nil, a Goodreads enrichment job is
+// enqueued after a book record is successfully created.
+func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor, enqueuer Enqueuer) func(ctx context.Context, payload []byte) error {
 	if extractor == nil {
 		return func(ctx context.Context, payload []byte) error {
 			slog.ErrorContext(ctx, "process:file handler misconfigured: metadata extractor is nil")
@@ -52,6 +55,6 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 			slog.String(otelkeys.FileType, p.FileType),
 			slog.Int64(otelkeys.FileSize, p.FileSize),
 		)
-		return ProcessBookFile(ctx, database, extractor, p)
+		return ProcessBookFile(ctx, database, extractor, enqueuer, p)
 	}
 }

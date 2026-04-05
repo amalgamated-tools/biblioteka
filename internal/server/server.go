@@ -159,6 +159,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.authorHandler = &handlers.AuthorHandler{DB: s.DB}
 	s.seriesHandler = &handlers.SeriesHandler{DB: s.DB}
 	s.bookHandler = &handlers.BookHandler{DB: s.DB}
+	if s.Worker != nil {
+		s.bookHandler.Enqueuer = s.Worker
+	}
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}

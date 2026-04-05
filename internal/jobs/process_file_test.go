@@ -40,7 +40,7 @@ func TestProcessFileHandler(t *testing.T) {
 	extractor, err := metadata.NewExtractor(t.Context())
 	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
-	handler := NewProcessFileHandler(database, extractor)
+	handler := NewProcessFileHandler(database, extractor, nil)
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "test.epub")
 
@@ -88,7 +88,7 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 	extractor, err := metadata.NewExtractor(t.Context())
 	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
-	handler := NewProcessFileHandler(database, extractor)
+	handler := NewProcessFileHandler(database, extractor, nil)
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "rich.epub")
 
@@ -137,7 +137,7 @@ func TestProcessFileHandler_EmptyPath(t *testing.T) {
 	extractor, err := metadata.NewExtractor(t.Context())
 	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
-	handler := NewProcessFileHandler(database, extractor)
+	handler := NewProcessFileHandler(database, extractor, nil)
 
 	payload, err := json.Marshal(ProcessFilePayload{Path: ""})
 	require.NoError(t, err, "marshal")
@@ -150,7 +150,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	extractor, err := metadata.NewExtractor(t.Context())
 	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
-	handler := NewProcessFileHandler(database, extractor)
+	handler := NewProcessFileHandler(database, extractor, nil)
 
 	// Create a library to link the book to.
 	lib, err := database.CreateLibrary(t.Context(), "Fiction", `["/books"]`, db.LibraryOrganizationBookPerFolder, true)
@@ -197,7 +197,7 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 	extractor, err := metadata.NewExtractor(t.Context())
 	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
-	handler := NewProcessFileHandler(database, extractor)
+	handler := NewProcessFileHandler(database, extractor, nil)
 
 	// Set up: Author/Series/N. Title.epub
 	root := t.TempDir()
@@ -241,7 +241,7 @@ func TestProcessFileHandler_DuplicateSkipped(t *testing.T) {
 	extractor, err := metadata.NewExtractor(t.Context())
 	require.NoError(t, err, "failed to create metadata extractor")
 	defer extractor.Close(t.Context())
-	handler := NewProcessFileHandler(database, extractor)
+	handler := NewProcessFileHandler(database, extractor, nil)
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "test.epub")
 	testutils.MakeTestEPUB(t, epubPath, "Duplicate Book", "Author", "")
