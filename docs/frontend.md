@@ -338,10 +338,11 @@ Never call `fetch` directly from components or stores — always go through the 
 ### `ApiError` handling
 
 ```ts
+import * as api from "../lib/api";
 import { ApiError } from "../lib/api";
 
 try {
-  await api.login({ username, password });
+  await api.login(email, password);
 } catch (err) {
   if (err instanceof ApiError && err.status === 401) {
     // handle wrong credentials
