@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,6 +42,7 @@ func Test_ValidateName(t *testing.T) {
 }
 
 func Test_ValidatePassword(t *testing.T) {
+	wantMsg := fmt.Sprintf("password must be at least %d characters", minPasswordLength)
 	tests := []struct {
 		name      string
 		password  string
@@ -49,9 +51,9 @@ func Test_ValidatePassword(t *testing.T) {
 	}{
 		{"valid password", "secret123", true, ""},
 		{"exact minimum length", "123456", true, ""},
-		{"too short", "abc", false, "password must be at least 6 characters"},
-		{"empty", "", false, "password must be at least 6 characters"},
-		{"one char", "x", false, "password must be at least 6 characters"},
+		{"too short", "abc", false, wantMsg},
+		{"empty", "", false, wantMsg},
+		{"one char", "x", false, wantMsg},
 	}
 
 	for _, tt := range tests {
