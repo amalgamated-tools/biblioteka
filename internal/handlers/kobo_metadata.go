@@ -39,7 +39,7 @@ func (h *KoboHandler) HandleBookMetadata(w http.ResponseWriter, r *http.Request)
 	authors, err := h.DB.GetBookAuthors(r.Context(), bookID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to fetch authors for kobo metadata",
-			slog.String(otelkeys.ID, bookID),
+			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
@@ -48,7 +48,7 @@ func (h *KoboHandler) HandleBookMetadata(w http.ResponseWriter, r *http.Request)
 	files, err := h.DB.ListBookFiles(r.Context(), bookID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to fetch files for kobo metadata",
-			slog.String(otelkeys.ID, bookID),
+			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
@@ -57,7 +57,7 @@ func (h *KoboHandler) HandleBookMetadata(w http.ResponseWriter, r *http.Request)
 	series, err := h.DB.GetBookSeries(r.Context(), bookID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to fetch series for kobo metadata",
-			slog.String(otelkeys.ID, bookID),
+			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
