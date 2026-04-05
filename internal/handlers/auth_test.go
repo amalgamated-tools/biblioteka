@@ -229,6 +229,7 @@ func TestMe_Success(t *testing.T) {
 	var resp userDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal")
 	require.Equal(t, "dave@example.com", resp.Email)
+	require.Equal(t, "Dave", resp.Name)
 }
 
 func TestMe_UserNotFound(t *testing.T) {
@@ -456,5 +457,96 @@ func TestMe_EmptyUserID(t *testing.T) {
 	h.Me(w, r)
 
 	// GetUserByID("") returns sql.ErrNoRows which the handler maps to 404.
+	require.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestUpdateProfile_Success(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	// Sign up to create a user.
+	signupBody := `{"name":"Original Name","email":"profile@example.com","password":"secret123"}`
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
+	w := httptest.NewRecorder()
+	h.Signup(w, r)
+	var signupResp authResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &signupResp))
+	require.Equal(t, "Original Name", signupResp.User.Name)
+
+	// Update the display name.
+	updateBody := `{"name":"Updated Name"}`
+	r2 := httptest.NewRequest(http.MethodPut, "/api/auth/me", bytes.NewBufferString(updateBody))
+	r2 = withUserID(r2, signupResp.User.ID)
+	w2 := httptest.NewRecorder()
+	h.Me(w2, r2)
+
+	require.Equal(t, http.StatusOK, w2.Code, "body: %s", w2.Body.String())
+	var resp userDTO
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp))
+	require.Equal(t, "Updated Name", resp.Name)
+	require.Equal(t, "profile@example.com", resp.Email)
+
+	// Verify the name persisted via GET /api/auth/me.
+	r3 := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
+	r3 = withUserID(r3, signupResp.User.ID)
+	w3 := httptest.NewRecorder()
+	h.Me(w3, r3)
+
+	require.Equal(t, http.StatusOK, w3.Code)
+	var getResp userDTO
+	require.NoError(t, json.Unmarshal(w3.Body.Bytes(), &getResp))
+	require.Equal(t, "Updated Name", getResp.Name)
+}
+
+func TestUpdateProfile_EmptyName(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	signupBody := `{"name":"Alice","email":"alice2@example.com","password":"secret123"}`
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
+	w := httptest.NewRecorder()
+	h.Signup(w, r)
+	var signupResp authResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &signupResp))
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{"empty string", `{"name":""}`},
+		{"whitespace only", `{"name":"   "}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r2 := httptest.NewRequest(http.MethodPut, "/api/auth/me", bytes.NewBufferString(tt.body))
+			r2 = withUserID(r2, signupResp.User.ID)
+			w2 := httptest.NewRecorder()
+			h.Me(w2, r2)
+			require.Equal(t, http.StatusBadRequest, w2.Code)
+		})
+	}
+}
+
+func TestUpdateProfile_MethodNotAllowed(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/auth/me", nil)
+	w := httptest.NewRecorder()
+	h.Me(w, r)
+
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestUpdateProfile_UserNotFound(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	body := `{"name":"New Name"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/auth/me", bytes.NewBufferString(body))
+	r = withUserID(r, "nonexistent-id")
+	w := httptest.NewRecorder()
+	h.Me(w, r)
+
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
