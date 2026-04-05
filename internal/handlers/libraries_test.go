@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mockEnqueuer records all enqueued jobs for test assertions.
@@ -39,15 +41,9 @@ func setupLibraryHandler(t *testing.T) (*LibraryHandler, string, string) {
 	h := &LibraryHandler{DB: d}
 
 	admin, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create admin: %v", err)
-	}
-	if err := d.SetAdmin(t.Context(), admin.ID, true); err != nil {
-		t.Fatalf("set admin role: %v", err)
-	}
+	require.NoError(t, err, "create admin")
+	require.NoError(t, d.SetAdmin(t.Context(), admin.ID, true), "set admin role")
 	regular, err := d.CreateUser(t.Context(), "Regular", "regular@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create regular user: %v", err)
-	}
+	require.NoError(t, err, "create regular user")
 	return h, admin.ID, regular.ID
 }
