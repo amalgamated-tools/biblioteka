@@ -136,13 +136,9 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code, "status; body: %s", w.Body.String())
 
-	if len(mock.jobs) != 1 {
-		t.Fatalf("enqueued jobs = %d, want 1", len(mock.jobs))
-	}
+	require.Len(t, mock.jobs, 1, "enqueued jobs")
 	if mock.jobs[0].Name != jobs.JobScanLibrary {
 		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
@@ -171,21 +167,15 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code, "status; body: %s", w.Body.String())
 
-	if len(mock.jobs) != 1 {
-		t.Fatalf("enqueued jobs = %d, want 1", len(mock.jobs))
-	}
+	require.Len(t, mock.jobs, 1, "enqueued jobs")
 	if mock.jobs[0].Name != jobs.JobScanLibrary {
 		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
 	var p jobs.ScanLibraryPayload
 	require.NoError(t, json.Unmarshal(mock.jobs[0].Payload, &p), "unmarshal payload")
-	if len(p.Paths) != 2 {
-		t.Fatalf("job paths count = %d, want 2", len(p.Paths))
-	}
+	require.Len(t, p.Paths, 2, "job paths count")
 	for i, dir := range []string{dir1, dir2} {
 		if p.Paths[i] != dir {
 			t.Errorf("job paths[%d] = %q, want %q", i, p.Paths[i], dir)
