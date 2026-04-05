@@ -89,7 +89,7 @@ func TestGetAPIKey_WrongUser(t *testing.T) {
 	require.NoError(t, err, "CreateAPIKey() error")
 
 	_, err = d.GetAPIKey(t.Context(), created.ID, u2.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteAPIKey(t *testing.T) {
@@ -103,7 +103,7 @@ func TestDeleteAPIKey(t *testing.T) {
 
 	// Should be gone.
 	_, err = d.GetAPIKey(t.Context(), created.ID, user.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteAPIKey_NotFound(t *testing.T) {
@@ -111,7 +111,7 @@ func TestDeleteAPIKey_NotFound(t *testing.T) {
 	user := createTestUser(t, d)
 
 	err := d.DeleteAPIKey(t.Context(), "nonexistent", user.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteAPIKey_WrongUser(t *testing.T) {
@@ -125,7 +125,7 @@ func TestDeleteAPIKey_WrongUser(t *testing.T) {
 	require.NoError(t, err, "CreateAPIKey() error")
 
 	err = d.DeleteAPIKey(t.Context(), created.ID, u2.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 
 	// Key should still exist for original user.
 	_, err = d.GetAPIKey(t.Context(), created.ID, user1.ID)
@@ -153,7 +153,7 @@ func TestValidateAPIKey_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, _, err := d.ValidateAPIKey(t.Context(), "nonexistenthash")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestTouchAPIKeyLastUsed(t *testing.T) {
@@ -188,5 +188,5 @@ func TestGetAPIKeyByHash_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetAPIKeyByHash(t.Context(), "nosuchhash")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }

@@ -69,7 +69,7 @@ func TestOPDSCredential_GetByUserID_NotFound(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.GetOPDSCredentialByUserID(ctx, "nonexistent")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestOPDSCredential_GetByUsername_NotFound(t *testing.T) {
@@ -77,7 +77,7 @@ func TestOPDSCredential_GetByUsername_NotFound(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.GetOPDSCredentialByUsername(ctx, "nobody")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestOPDSCredential_Delete(t *testing.T) {
@@ -91,7 +91,7 @@ func TestOPDSCredential_Delete(t *testing.T) {
 	require.NoError(t, d.DeleteOPDSCredential(ctx, user.ID), "DeleteOPDSCredential")
 
 	_, err = d.GetOPDSCredentialByUserID(ctx, user.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestOPDSCredential_Delete_NotFound(t *testing.T) {
@@ -99,5 +99,5 @@ func TestOPDSCredential_Delete_NotFound(t *testing.T) {
 	ctx := t.Context()
 
 	err := d.DeleteOPDSCredential(ctx, "nonexistent")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }

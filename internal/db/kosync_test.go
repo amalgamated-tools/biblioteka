@@ -71,7 +71,7 @@ func TestKOSyncCredential_GetByUserID_NotFound(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.GetKOSyncCredentialByUserID(ctx, "nonexistent")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestKOSyncCredential_GetByUsername_NotFound(t *testing.T) {
@@ -79,7 +79,7 @@ func TestKOSyncCredential_GetByUsername_NotFound(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.GetKOSyncCredentialByUsername(ctx, "nobody")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestKOSyncCredential_Delete(t *testing.T) {
@@ -93,7 +93,7 @@ func TestKOSyncCredential_Delete(t *testing.T) {
 	require.NoError(t, d.DeleteKOSyncCredential(ctx, user.ID), "DeleteKOSyncCredential")
 
 	_, err = d.GetKOSyncCredentialByUserID(ctx, user.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestKOSyncCredential_Delete_NotFound(t *testing.T) {
@@ -101,7 +101,7 @@ func TestKOSyncCredential_Delete_NotFound(t *testing.T) {
 	ctx := t.Context()
 
 	err := d.DeleteKOSyncCredential(ctx, "nonexistent")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 // ---- ReadingProgress tests ----
@@ -150,7 +150,7 @@ func TestReadingProgress_GetNotFound(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := d.GetReadingProgress(ctx, user.ID, "missing-doc")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestReadingProgress_IsolatedByUser(t *testing.T) {
@@ -164,5 +164,5 @@ func TestReadingProgress_IsolatedByUser(t *testing.T) {
 
 	// user2 should see no progress for the same document
 	_, err = d.GetReadingProgress(ctx, user2.ID, "shared-doc")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }

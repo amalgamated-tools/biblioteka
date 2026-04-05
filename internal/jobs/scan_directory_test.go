@@ -167,12 +167,11 @@ func TestScanDirectory_PayloadFields(t *testing.T) {
 	require.NoError(t, os.WriteFile(bookPath, []byte("epub content"), 0o644), "write")
 
 	enqueuer := &mockEnqueuer{}
-	if err := ScanDirectory(context.Background(), enqueuer, ScanPathPayload{
+	err := ScanDirectory(context.Background(), enqueuer, ScanPathPayload{
 		Path:      dir,
 		LibraryID: "lib-123",
-	}); err != nil {
-		require.NoError(t, err, "ScanDirectory() error")
-	}
+	})
+	require.NoError(t, err, "ScanDirectory() error")
 
 	enqueuer.mu.Lock()
 	jobs := enqueuer.jobs

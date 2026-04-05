@@ -45,7 +45,7 @@ func TestGetUserByEmail_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetUserByEmail(t.Context(), "nobody@example.com")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestGetUserByID(t *testing.T) {
@@ -63,7 +63,7 @@ func TestGetUserByID_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetUserByID(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestCreateOIDCUser(t *testing.T) {
@@ -104,7 +104,7 @@ func TestLinkOIDCSubject_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.LinkOIDCSubject(t.Context(), "nonexistent-id", "some-subject")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestUpdatePassword(t *testing.T) {
@@ -124,7 +124,7 @@ func TestUpdatePassword_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.UpdatePassword(t.Context(), "nonexistent-id", "hash")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestCreateUser_SecondUserNotAdmin(t *testing.T) {
@@ -195,7 +195,7 @@ func TestSetAdmin_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.SetAdmin(t.Context(), "nonexistent-id", true)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListUsers(t *testing.T) {

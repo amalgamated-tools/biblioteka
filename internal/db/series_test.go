@@ -106,7 +106,7 @@ func TestGetSeries_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetSeries(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestGetSeriesByName(t *testing.T) {
@@ -128,7 +128,7 @@ func TestGetSeriesByName_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetSeriesByName(t.Context(), "Nonexistent Series")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListSeries(t *testing.T) {
@@ -226,14 +226,14 @@ func TestDeleteSeries(t *testing.T) {
 	require.NoError(t, err, "DeleteSeries() error")
 
 	_, err = d.GetSeries(t.Context(), s.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteSeries_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.DeleteSeries(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListSeriesPaginated(t *testing.T) {

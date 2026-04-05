@@ -48,7 +48,7 @@ func TestGetLibrary_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetLibrary(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListLibraries(t *testing.T) {
@@ -100,12 +100,12 @@ func TestDeleteLibrary(t *testing.T) {
 	require.NoError(t, err, "DeleteLibrary() error")
 
 	_, err = d.GetLibrary(t.Context(), lib.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteLibrary_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.DeleteLibrary(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }

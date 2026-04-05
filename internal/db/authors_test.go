@@ -97,7 +97,7 @@ func TestGetAuthor_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetAuthor(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestGetAuthorByName(t *testing.T) {
@@ -119,7 +119,7 @@ func TestGetAuthorByName_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetAuthorByName(t.Context(), "Nonexistent Author")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListAuthors(t *testing.T) {
@@ -191,14 +191,14 @@ func TestDeleteAuthor(t *testing.T) {
 	require.NoError(t, err, "DeleteAuthor() error")
 
 	_, err = d.GetAuthor(t.Context(), a.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteAuthor_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.DeleteAuthor(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListAuthorsPaginated(t *testing.T) {

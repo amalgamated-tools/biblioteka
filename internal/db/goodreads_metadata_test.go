@@ -66,7 +66,7 @@ func TestGetGoodreadsMetadata_NotFound(t *testing.T) {
 	require.NoError(t, err, "CreateUser() error")
 
 	_, err = d.GetGoodreadsMetadata(t.Context(), user.ID, "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestGetGoodreadsMetadata_WrongUser(t *testing.T) {
@@ -86,7 +86,7 @@ func TestGetGoodreadsMetadata_WrongUser(t *testing.T) {
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
 	_, err = d.GetGoodreadsMetadata(t.Context(), user2.ID, created.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListGoodreadsMetadataByUser(t *testing.T) {
@@ -219,7 +219,7 @@ func TestDeleteGoodreadsMetadata(t *testing.T) {
 	require.NoError(t, err, "DeleteGoodreadsMetadata() error")
 
 	_, err = d.GetGoodreadsMetadata(t.Context(), user.ID, created.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteGoodreadsMetadata_WrongUser(t *testing.T) {
@@ -239,7 +239,7 @@ func TestDeleteGoodreadsMetadata_WrongUser(t *testing.T) {
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
 	err = d.DeleteGoodreadsMetadata(t.Context(), user2.ID, created.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 
 	// Verify it still exists for the original user
 	_, err = d.GetGoodreadsMetadata(t.Context(), user1.ID, created.ID)

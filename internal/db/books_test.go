@@ -73,14 +73,14 @@ func TestDeleteBook(t *testing.T) {
 	require.NoError(t, err, "DeleteBook() error")
 
 	_, err = d.GetBook(t.Context(), b.ID)
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteBook_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.DeleteBook(t.Context(), "nonexistent-id")
-	require.Equal(t, sql.ErrNoRows, err)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestAddBookToLibrary(t *testing.T) {
