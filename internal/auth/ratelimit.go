@@ -41,11 +41,6 @@ func NewRateLimiter(rate float64, burst int) *RateLimiter {
 	return rl
 }
 
-// Stop shuts down the background cleanup goroutine.
-func (rl *RateLimiter) Stop() {
-	close(rl.done)
-}
-
 // allow checks whether the given key (IP) is allowed to proceed.
 func (rl *RateLimiter) allow(key string) bool {
 	rl.mu.Lock()
