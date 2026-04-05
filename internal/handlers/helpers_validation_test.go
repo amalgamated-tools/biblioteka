@@ -26,9 +26,7 @@ func Test_ValidateName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := validateName(t.Context(), w, tt.input)
-			if got != tt.wantValid {
-				t.Fatalf("validateName(%q) = %v, want %v", tt.input, got, tt.wantValid)
-			}
+			require.Equal(t, tt.wantValid, got, "validateName(%q)", tt.input)
 			if tt.wantValid {
 				if w.Code != http.StatusOK {
 					t.Errorf("expected no response written, but got status %d", w.Code)

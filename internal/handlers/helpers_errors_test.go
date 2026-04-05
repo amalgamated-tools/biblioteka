@@ -85,9 +85,7 @@ func Test_HandleNameErr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := handleNameErr(t.Context(), w, tt.err, errInvalid, errExists, tt.resourceArt)
-			if got != tt.wantHandled {
-				t.Fatalf("handleNameErr() = %v, want %v", got, tt.wantHandled)
-			}
+			require.Equal(t, tt.wantHandled, got, "handleNameErr()")
 			if !tt.wantHandled {
 				if w.Code != http.StatusOK {
 					t.Errorf("expected no response written, but got status %d", w.Code)
@@ -154,9 +152,7 @@ func Test_HandleDBErr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := handleDBErr(t.Context(), w, tt.err, tt.resource)
-			if got != tt.wantHandled {
-				t.Fatalf("handleDBErr() = %v, want %v", got, tt.wantHandled)
-			}
+			require.Equal(t, tt.wantHandled, got, "handleDBErr()")
 			if !tt.wantHandled {
 				return
 			}
@@ -253,9 +249,7 @@ func Test_HandleUpdateErr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := handleUpdateErr(t.Context(), w, tt.err, errInvalid, errExists, tt.resourceArt, tt.resource, tt.id)
-			if got != tt.wantHandled {
-				t.Fatalf("handleUpdateErr() = %v, want %v", got, tt.wantHandled)
-			}
+			require.Equal(t, tt.wantHandled, got, "handleUpdateErr()")
 			if !tt.wantHandled {
 				if w.Code != http.StatusOK {
 					t.Errorf("expected no response written, but got status %d", w.Code)
