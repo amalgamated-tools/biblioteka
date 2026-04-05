@@ -56,18 +56,14 @@ func TestCreateBookRecord_WithMetadata(t *testing.T) {
 	book, err := createBookRecord(t.Context(), database, "Metadata Book", meta, p, p.Path)
 	require.NoError(t, err, "createBookRecord() error")
 
-	if book.Description == nil || *book.Description != description {
-		t.Errorf("Description = %v, want %q", book.Description, description)
-	}
-	if book.PublicationDate == nil || *book.PublicationDate != "2024-01-01" {
-		t.Errorf("PublicationDate = %v, want 2024-01-01", book.PublicationDate)
-	}
-	if book.Publisher == nil || *book.Publisher != "Test Publisher" {
-		t.Errorf("Publisher = %v, want Test Publisher", book.Publisher)
-	}
-	if book.Language == nil || *book.Language != "en" {
-		t.Errorf("Language = %v, want en", book.Language)
-	}
+	require.NotNil(t, book.Description)
+	require.Equal(t, description, *book.Description)
+	require.NotNil(t, book.PublicationDate)
+	require.Equal(t, "2024-01-01", *book.PublicationDate)
+	require.NotNil(t, book.Publisher)
+	require.Equal(t, "Test Publisher", *book.Publisher)
+	require.NotNil(t, book.Language)
+	require.Equal(t, "en", *book.Language)
 }
 
 // TestCreateBookRecord_ISBN10 verifies that a 10-digit ISBN is stored as isbn10.
@@ -89,9 +85,8 @@ func TestCreateBookRecord_ISBN10(t *testing.T) {
 	book, err := createBookRecord(t.Context(), database, "ISBN10 Book", meta, p, p.Path)
 	require.NoError(t, err, "createBookRecord() error")
 
-	if book.ISBN10 == nil || *book.ISBN10 != "123456789X" {
-		t.Errorf("ISBN10 = %v, want 123456789X", book.ISBN10)
-	}
+	require.NotNil(t, book.ISBN10)
+	require.Equal(t, "123456789X", *book.ISBN10)
 }
 
 // TestLinkBookAssociations_Author verifies that an author is created and

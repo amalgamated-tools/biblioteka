@@ -36,19 +36,13 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 	require.Equal(t, 1, len(resp.Books), "books count")
-	if resp.Books[0].Title != "The Gunslinger" {
-		t.Errorf("title = %q, want %q", resp.Books[0].Title, "The Gunslinger")
-	}
-	if resp.Total != 1 {
-		t.Errorf("total = %d, want 1", resp.Total)
-	}
+	require.Equal(t, "The Gunslinger", resp.Books[0].Title)
+	require.Equal(t, 1, resp.Total)
 }
 
 func TestListLibraryBooks_PaginationValid(t *testing.T) {
@@ -173,9 +167,7 @@ func TestListLibraryBooks_NotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibrary(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
@@ -198,9 +190,7 @@ func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusMethodNotAllowed, w2.Body.String())
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w2.Code)
 }
 
 func TestListLibraries_NonAdminAllowed(t *testing.T) {
@@ -212,7 +202,5 @@ func TestListLibraries_NonAdminAllowed(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }

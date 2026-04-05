@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/amalgamated-tools/biblioteka/internal/exif"
 	"github.com/amalgamated-tools/biblioteka/internal/pathparser"
 )
@@ -82,10 +84,7 @@ func TestDeriveTitle(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := deriveTitle(context.Background(), tt.fileName, tt.fileType, tt.path)
-			if got != tt.want {
-				t.Errorf("deriveTitle(%q, %q, %q) = %q, want %q",
-					tt.fileName, tt.fileType, tt.path, got, tt.want)
-			}
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -189,12 +188,8 @@ func TestResolveAuthorAndTitle(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			gotAuthor, gotTitle := resolveAuthorAndTitle(tt.meta, tt.pathInfo, tt.currentTitle)
-			if gotAuthor != tt.wantAuthor {
-				t.Errorf("resolveAuthorAndTitle() author = %q, want %q", gotAuthor, tt.wantAuthor)
-			}
-			if gotTitle != tt.wantTitle {
-				t.Errorf("resolveAuthorAndTitle() title = %q, want %q", gotTitle, tt.wantTitle)
-			}
+			require.Equal(t, tt.wantAuthor, gotAuthor)
+			require.Equal(t, tt.wantTitle, gotTitle)
 		})
 	}
 }

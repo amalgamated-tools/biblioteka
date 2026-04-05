@@ -12,18 +12,11 @@ func TestCreateBook(t *testing.T) {
 
 	b, err := d.CreateBook(t.Context(), "The Gunslinger", new("The first book"), nil, new("1234567890"), nil, nil, nil, nil, new("1982-06-10"), new("Grant"), new("en"), nil)
 	require.NoError(t, err, "CreateBook() error")
-	if b.ID == "" {
-		t.Error("CreateBook() returned empty ID")
-	}
-	if b.Title != "The Gunslinger" {
-		t.Errorf("Title = %q, want %q", b.Title, "The Gunslinger")
-	}
-	if b.ISBN10 == nil || *b.ISBN10 != "1234567890" {
-		t.Errorf("ISBN10 = %v, want %q", b.ISBN10, "1234567890")
-	}
-	if b.CreatedAt.IsZero() {
-		t.Error("CreatedAt is zero")
-	}
+	require.NotEqual(t, "", b.ID)
+	require.Equal(t, "The Gunslinger", b.Title)
+	require.NotNil(t, b.ISBN10)
+	require.Equal(t, "1234567890", *b.ISBN10)
+	require.False(t, b.CreatedAt.IsZero())
 }
 
 func TestGetBook(t *testing.T) {
@@ -34,39 +27,29 @@ func TestGetBook(t *testing.T) {
 
 	found, err := d.GetBook(t.Context(), created.ID)
 	require.NoError(t, err, "GetBook() error")
-	if found.ID != created.ID {
-		t.Errorf("ID = %q, want %q", found.ID, created.ID)
-	}
-	if found.Title != "The Gunslinger" {
-		t.Errorf("Title = %q, want %q", found.Title, "The Gunslinger")
-	}
+	require.Equal(t, created.ID, found.ID)
+	require.Equal(t, "The Gunslinger", found.Title)
 }
 
 func TestGetBook_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetBook(t.Context(), "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListBooks(t *testing.T) {
 	d := newTestDB(t)
 
-	if _, err := d.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "CreateBook() for A Game of Thrones error")
-	}
-	if _, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		require.NoError(t, err, "CreateBook() for The Gunslinger error")
-	}
+	_, err := d.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "CreateBook() for A Game of Thrones error")
+	_, err = d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "CreateBook() for The Gunslinger error")
 
 	books, err := d.ListBooks(t.Context())
 	require.NoError(t, err, "ListBooks() error")
 	require.Len(t, books, 2)
-	if books[0].Title != "A Game of Thrones" {
-		t.Errorf("first book Title = %q, want %q", books[0].Title, "A Game of Thrones")
-	}
+	require.Equal(t, "A Game of Thrones", books[0].Title)
 }
 
 func TestUpdateBook(t *testing.T) {
@@ -77,9 +60,7 @@ func TestUpdateBook(t *testing.T) {
 
 	updated, err := d.UpdateBook(t.Context(), created.ID, "The Gunslinger", new("Revised edition"), nil, nil, nil, nil, nil, nil, nil, nil, new("en"), nil)
 	require.NoError(t, err, "UpdateBook() error")
-	if updated.Title != "The Gunslinger" {
-		t.Errorf("Title = %q, want %q", updated.Title, "The Gunslinger")
-	}
+	require.Equal(t, "The Gunslinger", updated.Title)
 }
 
 func TestDeleteBook(t *testing.T) {
@@ -92,18 +73,14 @@ func TestDeleteBook(t *testing.T) {
 	require.NoError(t, err, "DeleteBook() error")
 
 	_, err = d.GetBook(t.Context(), b.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteBook_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	err := d.DeleteBook(t.Context(), "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestAddBookToLibrary(t *testing.T) {
@@ -120,9 +97,7 @@ func TestAddBookToLibrary(t *testing.T) {
 	books, err := d.ListBooksByLibrary(t.Context(), lib.ID)
 	require.NoError(t, err, "ListBooksByLibrary() error")
 	require.Len(t, books, 1)
-	if books[0].ID != book.ID {
-		t.Errorf("book ID = %q, want %q", books[0].ID, book.ID)
-	}
+	require.Equal(t, book.ID, books[0].ID)
 }
 
 func TestListBooksByLibraryPaginated(t *testing.T) {
@@ -145,24 +120,14 @@ func TestListBooksByLibraryPaginated(t *testing.T) {
 
 	books, total, err := d.ListBooksByLibraryPaginated(t.Context(), lib.ID, 2, 0)
 	require.NoError(t, err, "ListBooksByLibraryPaginated() error")
-	if total != 3 {
-		t.Errorf("total = %d, want 3", total)
-	}
-	if len(books) != 2 {
-		t.Errorf("len(books) = %d, want 2", len(books))
-	}
-	if books[0].Title != "Alpha" {
-		t.Errorf("first book = %q, want Alpha", books[0].Title)
-	}
+	require.Equal(t, 3, total)
+	require.Len(t, books, 2)
+	require.Equal(t, "Alpha", books[0].Title)
 
 	books2, total2, err := d.ListBooksByLibraryPaginated(t.Context(), lib.ID, 2, 2)
 	require.NoError(t, err, "ListBooksByLibraryPaginated() page 2 error")
-	if total2 != 3 {
-		t.Errorf("total page 2 = %d, want 3", total2)
-	}
-	if len(books2) != 1 {
-		t.Errorf("len(books) page 2 = %d, want 1", len(books2))
-	}
+	require.Equal(t, 3, total2)
+	require.Len(t, books2, 1)
 }
 
 func TestRemoveBookFromLibrary(t *testing.T) {
@@ -179,9 +144,7 @@ func TestRemoveBookFromLibrary(t *testing.T) {
 
 	books, err := d.ListBooksByLibrary(t.Context(), lib.ID)
 	require.NoError(t, err, "ListBooksByLibrary() error")
-	if len(books) != 0 {
-		t.Errorf("ListBooksByLibrary() returned %d, want 0", len(books))
-	}
+	require.Len(t, books, 0)
 }
 
 func TestSetBookAuthors(t *testing.T) {
@@ -220,9 +183,7 @@ func TestSetBookAuthors_Replace(t *testing.T) {
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookAuthors() error")
 	require.Len(t, authors, 1)
-	if authors[0].ID != a2.ID {
-		t.Errorf("author ID = %q, want %q", authors[0].ID, a2.ID)
-	}
+	require.Equal(t, a2.ID, authors[0].ID)
 }
 
 func TestSetBookSeries(t *testing.T) {
@@ -242,12 +203,9 @@ func TestSetBookSeries(t *testing.T) {
 	entries, err := d.GetBookSeries(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookSeries() error")
 	require.Len(t, entries, 1)
-	if entries[0].Series.ID != s.ID {
-		t.Errorf("series ID = %q, want %q", entries[0].Series.ID, s.ID)
-	}
-	if entries[0].Position == nil || *(entries[0].Position) != 1.0 {
-		t.Errorf("Position = %v, want 1.0", entries[0].Position)
-	}
+	require.Equal(t, s.ID, entries[0].Series.ID)
+	require.NotNil(t, entries[0].Position)
+	require.Equal(t, 1.0, *(entries[0].Position))
 }
 
 func TestGetAuthorsForBooks(t *testing.T) {
@@ -280,12 +238,9 @@ func TestGetAuthorsForBooks(t *testing.T) {
 	for _, author := range got[book1.ID] {
 		seen[author.ID] = true
 	}
-	if !seen[author1.ID] || !seen[author2.ID] {
-		t.Errorf("authors for book1 = %+v, want IDs %q and %q", got[book1.ID], author1.ID, author2.ID)
-	}
-	if len(got[book2.ID]) != 1 || got[book2.ID][0].ID != author1.ID {
-		t.Errorf("authors for book2 = %+v, want [%s]", got[book2.ID], author1.ID)
-	}
+	require.True(t, seen[author1.ID] || !seen[author2.ID])
+	require.Len(t, got[book2.ID], 1)
+	require.Equal(t, author1.ID, got[book2.ID][0].ID)
 }
 
 func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
@@ -305,13 +260,9 @@ func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 
 	// Author and series should still exist (only join table entries are cascaded)
 	_, err = d.GetAuthor(t.Context(), a.ID)
-	if err != nil {
-		t.Errorf("author should still exist after book delete, got: %v", err)
-	}
+	require.NoError(t, err)
 	_, err = d.GetSeries(t.Context(), s.ID)
-	if err != nil {
-		t.Errorf("series should still exist after book delete, got: %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestCreateBookWithFile(t *testing.T) {
@@ -336,43 +287,24 @@ func TestCreateBookWithFile(t *testing.T) {
 		"/books/the-gunslinger.epub",
 	)
 	require.NoError(t, err, "CreateBookWithFile() error")
-	if b.ID == "" {
-		t.Error("book ID is empty")
-	}
-	if b.Title != "The Gunslinger" {
-		t.Errorf("Title = %q, want %q", b.Title, "The Gunslinger")
-	}
-	if b.Description == nil || *b.Description != "The first book of the Dark Tower series" {
-		t.Errorf("Description = %v, want %q", b.Description, "The first book of the Dark Tower series")
-	}
-	if b.ISBN10 == nil || *b.ISBN10 != "1234567890" {
-		t.Errorf("ISBN10 = %v, want %q", b.ISBN10, "1234567890")
-	}
-	if b.Publisher == nil || *b.Publisher != "Grant" {
-		t.Errorf("Publisher = %v, want %q", b.Publisher, "Grant")
-	}
-	if b.PublicationDate == nil || *b.PublicationDate != "1982-06-10" {
-		t.Errorf("PublicationDate = %v, want %q", b.PublicationDate, "1982-06-10")
-	}
-	if b.Language == nil || *b.Language != "en" {
-		t.Errorf("Language = %v, want %q", b.Language, "en")
-	}
+	require.NotEqual(t, "", b.ID)
+	require.Equal(t, "The Gunslinger", b.Title)
+	require.NotNil(t, b.Description)
+	require.Equal(t, "The first book of the Dark Tower series", *b.Description)
+	require.NotNil(t, b.ISBN10)
+	require.Equal(t, "1234567890", *b.ISBN10)
+	require.NotNil(t, b.Publisher)
+	require.Equal(t, "Grant", *b.Publisher)
+	require.NotNil(t, b.PublicationDate)
+	require.Equal(t, "1982-06-10", *b.PublicationDate)
+	require.NotNil(t, b.Language)
+	require.Equal(t, "en", *b.Language)
 
-	if bf.BookID != b.ID {
-		t.Errorf("BookFile.BookID = %q, want %q", bf.BookID, b.ID)
-	}
-	if bf.FileType != "epub" {
-		t.Errorf("FileType = %q, want %q", bf.FileType, "epub")
-	}
-	if bf.FileName != "the-gunslinger.epub" {
-		t.Errorf("FileName = %q, want %q", bf.FileName, "the-gunslinger.epub")
-	}
-	if bf.FileSize != 4096 {
-		t.Errorf("FileSize = %d, want 4096", bf.FileSize)
-	}
-	if bf.FilePath != "/books/the-gunslinger.epub" {
-		t.Errorf("FilePath = %q, want %q", bf.FilePath, "/books/the-gunslinger.epub")
-	}
+	require.Equal(t, b.ID, bf.BookID)
+	require.Equal(t, "epub", bf.FileType)
+	require.Equal(t, "the-gunslinger.epub", bf.FileName)
+	require.Equal(t, int64(4096), bf.FileSize)
+	require.Equal(t, "/books/the-gunslinger.epub", bf.FilePath)
 }
 
 func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
@@ -405,9 +337,7 @@ func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
 	// Verify no book was committed
 	books, err := d.ListBooks(t.Context())
 	require.NoError(t, err, "ListBooks() error")
-	if len(books) != 0 {
-		t.Errorf("expected 0 books after rollback, got %d", len(books))
-	}
+	require.Len(t, books, 0)
 }
 
 func TestDeleteLibrary_DoesNotDeleteBook(t *testing.T) {
@@ -424,7 +354,5 @@ func TestDeleteLibrary_DoesNotDeleteBook(t *testing.T) {
 	// Book should still exist
 	found, err := d.GetBook(t.Context(), book.ID)
 	require.NoError(t, err, "book should still exist after library delete, got")
-	if found.ID != book.ID {
-		t.Errorf("book ID = %q, want %q", found.ID, book.ID)
-	}
+	require.Equal(t, book.ID, found.ID)
 }

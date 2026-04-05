@@ -22,17 +22,11 @@ func TestHandleGetOIDCConfig_AdminNoSettings(t *testing.T) {
 
 	h.HandleGetOIDCConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp oidcConfigResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.IssuerURL != "" {
-		t.Errorf("IssuerURL = %q, want empty", resp.IssuerURL)
-	}
-	if resp.ClientSecretSet {
-		t.Error("ClientSecretSet should be false when no secret is stored")
-	}
+	require.Equal(t, "", resp.IssuerURL)
+	require.False(t, resp.ClientSecretSet)
 }
 
 func TestHandleGetOIDCConfig_AdminWithSettings(t *testing.T) {
@@ -50,23 +44,13 @@ func TestHandleGetOIDCConfig_AdminWithSettings(t *testing.T) {
 
 	h.HandleGetOIDCConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp oidcConfigResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.IssuerURL != "https://auth.example.com" {
-		t.Errorf("IssuerURL = %q, want %q", resp.IssuerURL, "https://auth.example.com")
-	}
-	if resp.ClientID != "my-client-id" {
-		t.Errorf("ClientID = %q, want %q", resp.ClientID, "my-client-id")
-	}
-	if !resp.ClientSecretSet {
-		t.Error("ClientSecretSet should be true when secret is stored")
-	}
-	if resp.RedirectURI != "https://app.example.com/callback" {
-		t.Errorf("RedirectURI = %q, want %q", resp.RedirectURI, "https://app.example.com/callback")
-	}
+	require.Equal(t, "https://auth.example.com", resp.IssuerURL)
+	require.Equal(t, "my-client-id", resp.ClientID)
+	require.True(t, resp.ClientSecretSet)
+	require.Equal(t, "https://app.example.com/callback", resp.RedirectURI)
 }
 
 func TestHandleGetOIDCConfig_NonAdminForbidden(t *testing.T) {
@@ -78,9 +62,7 @@ func TestHandleGetOIDCConfig_NonAdminForbidden(t *testing.T) {
 
 	h.HandleGetOIDCConfig(w, r)
 
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w.Code)
 }
 
 // --- HandleSetOIDCConfig ---
@@ -95,9 +77,7 @@ func TestHandleSetOIDCConfig_NonAdminForbidden(t *testing.T) {
 
 	h.HandleSetOIDCConfig(w, r)
 
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestHandleSetOIDCConfig_MissingIssuerURL(t *testing.T) {
@@ -110,9 +90,7 @@ func TestHandleSetOIDCConfig_MissingIssuerURL(t *testing.T) {
 
 	h.HandleSetOIDCConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetOIDCConfig_MissingClientID(t *testing.T) {
@@ -125,9 +103,7 @@ func TestHandleSetOIDCConfig_MissingClientID(t *testing.T) {
 
 	h.HandleSetOIDCConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetOIDCConfig_MissingRedirectURI(t *testing.T) {
@@ -140,9 +116,7 @@ func TestHandleSetOIDCConfig_MissingRedirectURI(t *testing.T) {
 
 	h.HandleSetOIDCConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetOIDCConfig_MissingSecretNoExisting(t *testing.T) {
@@ -156,9 +130,7 @@ func TestHandleSetOIDCConfig_MissingSecretNoExisting(t *testing.T) {
 
 	h.HandleSetOIDCConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetOIDCConfig_InvalidJSON(t *testing.T) {
@@ -170,9 +142,7 @@ func TestHandleSetOIDCConfig_InvalidJSON(t *testing.T) {
 
 	h.HandleSetOIDCConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetOIDCConfig_ProviderDiscoveryFailure(t *testing.T) {
@@ -186,9 +156,7 @@ func TestHandleSetOIDCConfig_ProviderDiscoveryFailure(t *testing.T) {
 
 	h.HandleSetOIDCConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetOIDCConfig_ValidProviderSavesSettings(t *testing.T) {
@@ -223,26 +191,18 @@ func TestHandleSetOIDCConfig_ValidProviderSavesSettings(t *testing.T) {
 
 	h.HandleSetOIDCConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Verify settings were persisted
 	issuerURL, err := h.DB.GetSetting(t.Context(), settingOIDCIssuerURL)
 	require.NoError(t, err, "GetSetting(issuer_url) error")
-	if issuerURL != oidcServer.URL {
-		t.Errorf("saved issuer_url = %q, want %q", issuerURL, oidcServer.URL)
-	}
+	require.Equal(t, oidcServer.URL, issuerURL)
 
 	clientID, err := h.DB.GetSetting(t.Context(), settingOIDCClientID)
 	require.NoError(t, err, "GetSetting(client_id) error")
-	if clientID != "my-client" {
-		t.Errorf("saved client_id = %q, want %q", clientID, "my-client")
-	}
+	require.Equal(t, "my-client", clientID)
 
-	if !callbackCalled {
-		t.Error("expected OnOIDCConfigSet callback to be called")
-	}
+	require.True(t, callbackCalled)
 }
 
 func TestHandleSetOIDCConfig_PreservesExistingSecret(t *testing.T) {
@@ -275,16 +235,12 @@ func TestHandleSetOIDCConfig_PreservesExistingSecret(t *testing.T) {
 
 	h.HandleSetOIDCConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// The stored secret should still be the original one
 	secret, err := h.DB.GetSetting(t.Context(), settingOIDCClientSecret)
 	require.NoError(t, err, "GetSetting(client_secret)")
-	if secret != "existing-secret" {
-		t.Errorf("client_secret = %q, want %q", secret, "existing-secret")
-	}
+	require.Equal(t, "existing-secret", secret)
 }
 
 // --- HandleOIDCConfig (dispatch) ---
@@ -299,9 +255,7 @@ func TestHandleOIDCConfig_DispatchGet(t *testing.T) {
 	h.HandleOIDCConfig(w, r)
 
 	// GET dispatches to HandleGetOIDCConfig; admin user → 200
-	if w.Code != http.StatusOK {
-		t.Errorf("GET dispatch: status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestHandleOIDCConfig_DispatchMethodNotAllowed(t *testing.T) {
@@ -313,7 +267,5 @@ func TestHandleOIDCConfig_DispatchMethodNotAllowed(t *testing.T) {
 
 	h.HandleOIDCConfig(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }

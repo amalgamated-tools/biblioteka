@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -45,9 +44,7 @@ func TestHandleCoverImage_BookNotFound(t *testing.T) {
 
 	h.HandleCoverImage(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestHandleCoverImage_NoCover(t *testing.T) {
@@ -60,9 +57,7 @@ func TestHandleCoverImage_NoCover(t *testing.T) {
 
 	h.HandleCoverImage(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestHandleCoverImage_ExternalURL(t *testing.T) {
@@ -76,12 +71,9 @@ func TestHandleCoverImage_ExternalURL(t *testing.T) {
 
 	h.HandleCoverImage(w, r)
 
-	if w.Code != http.StatusTemporaryRedirect {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusTemporaryRedirect)
-	}
-	if loc := w.Header().Get("Location"); loc != externalURL {
-		t.Errorf("Location = %q, want %q", loc, externalURL)
-	}
+	require.Equal(t, http.StatusTemporaryRedirect, w.Code)
+	loc := w.Header().Get("Location")
+	require.Equal(t, externalURL, loc)
 }
 
 func TestHandleCoverImage_EmptyBookID(t *testing.T) {
@@ -92,9 +84,7 @@ func TestHandleCoverImage_EmptyBookID(t *testing.T) {
 
 	h.HandleCoverImage(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 // ---- HandleDownload ----
@@ -108,9 +98,7 @@ func TestHandleDownload_MissingSegments(t *testing.T) {
 
 	h.HandleDownload(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleDownload_FormatNotFound(t *testing.T) {
@@ -123,9 +111,7 @@ func TestHandleDownload_FormatNotFound(t *testing.T) {
 
 	h.HandleDownload(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestHandleDownload_FileNotFoundOnDisk(t *testing.T) {
@@ -141,9 +127,7 @@ func TestHandleDownload_FileNotFoundOnDisk(t *testing.T) {
 
 	h.HandleDownload(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestHandleDownload_Success(t *testing.T) {
@@ -153,9 +137,8 @@ func TestHandleDownload_Success(t *testing.T) {
 	f, err := os.CreateTemp(t.TempDir(), "test-*.epub")
 	require.NoError(t, err, "create temp file")
 	content := []byte("fake epub content")
-	if _, err := f.Write(content); err != nil {
-		require.NoError(t, err, "write temp file")
-	}
+	_, err = f.Write(content)
+	require.NoError(t, err, "write temp file")
 	require.NoError(t, f.Close(), "close temp file")
 
 	book, err := h.DB.CreateBook(t.Context(), "Download Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
@@ -169,13 +152,9 @@ func TestHandleDownload_Success(t *testing.T) {
 	h.HandleDownload(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if !bytes.Equal(w.Body.Bytes(), content) {
-		t.Errorf("body = %q, want %q", w.Body.Bytes(), content)
-	}
+	require.True(t, bytes.Equal(w.Body.Bytes(), content))
 	cd := w.Header().Get("Content-Disposition")
-	if !strings.Contains(cd, "test.epub") {
-		t.Errorf("Content-Disposition = %q, want filename=test.epub", cd)
-	}
+	require.Contains(t, cd, "test.epub")
 }
 
 // ---- HandleDownload case-insensitive and edge cases ----
@@ -204,9 +183,7 @@ func TestHandleDownload_CaseInsensitiveFormat(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleDownload(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d for uppercase format", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 // TestHandleDownload_ContentDispositionHeader verifies that the response
@@ -234,12 +211,8 @@ func TestHandleDownload_ContentDispositionHeader(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 	cd := w.Header().Get("Content-Disposition")
-	if !strings.Contains(cd, "my-book.epub") {
-		t.Errorf("Content-Disposition %q should contain filename my-book.epub", cd)
-	}
-	if !strings.Contains(cd, "attachment") {
-		t.Errorf("Content-Disposition %q should be attachment", cd)
-	}
+	require.Contains(t, cd, "my-book.epub")
+	require.Contains(t, cd, "attachment")
 }
 
 // TestHandleDownload_ReturnsFileContents verifies that the response body
@@ -267,9 +240,7 @@ func TestHandleDownload_ReturnsFileContents(t *testing.T) {
 	h.HandleDownload(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if got := w.Body.Bytes(); string(got) != string(fileContent) {
-		t.Errorf("body = %q, want %q", got, fileContent)
-	}
+	require.Equal(t, string(fileContent), w.Body.String())
 }
 
 // TestHandleDownload_EmptyFormat verifies that a URL with an empty format
@@ -285,9 +256,7 @@ func TestHandleDownload_EmptyFormat(t *testing.T) {
 	h.HandleDownload(w, r)
 
 	// Should return bad request or not found for empty format.
-	if w.Code == http.StatusOK {
-		t.Errorf("status = 200, want non-200 for empty format")
-	}
+	require.NotEqual(t, http.StatusOK, w.Code)
 }
 
 // ---- kobo.DownloadURLs helper ----
@@ -302,18 +271,10 @@ func TestKoboDownloadURLs_FiltersUnsupportedFormats(t *testing.T) {
 	require.Len(t, urls, 2)
 	formats := make(map[string]bool)
 	for _, u := range urls {
-		if u.Format == "" {
-			t.Error("expected non-empty Format in download URL")
-		}
+		require.NotEqual(t, "", u.Format)
 		formats[u.Format] = true
-		if u.URL == "" {
-			t.Error("expected non-empty URL in download URL")
-		}
+		require.NotEqual(t, "", u.URL)
 	}
-	if !formats["EPUB3"] {
-		t.Error("expected EPUB3 format in download URLs")
-	}
-	if !formats["PDF"] {
-		t.Error("expected PDF format in download URLs")
-	}
+	require.True(t, formats["EPUB3"])
+	require.True(t, formats["PDF"])
 }

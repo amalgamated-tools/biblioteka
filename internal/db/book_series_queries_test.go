@@ -16,9 +16,7 @@ func TestListBooksBySeries_Empty(t *testing.T) {
 
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
 	require.NoError(t, err, "ListBooksBySeries() error")
-	if len(books) != 0 {
-		t.Errorf("len(books) = %d, want 0", len(books))
-	}
+	require.Len(t, books, 0)
 }
 
 func TestListBooksBySeries_OrderedByPosition(t *testing.T) {
@@ -42,15 +40,9 @@ func TestListBooksBySeries_OrderedByPosition(t *testing.T) {
 	books, err := d.ListBooksBySeries(t.Context(), s.ID)
 	require.NoError(t, err, "ListBooksBySeries() error")
 	require.Len(t, books, 3, "len(books)")
-	if books[0].ID != b1.ID {
-		t.Errorf("books[0] = %q, want book 1 (%q)", books[0].Title, b1.Title)
-	}
-	if books[1].ID != b2.ID {
-		t.Errorf("books[1] = %q, want book 2 (%q)", books[1].Title, b2.Title)
-	}
-	if books[2].ID != b3.ID {
-		t.Errorf("books[2] = %q, want book 3 (%q)", books[2].Title, b3.Title)
-	}
+	require.Equal(t, b1.ID, books[0].ID)
+	require.Equal(t, b2.ID, books[1].ID)
+	require.Equal(t, b3.ID, books[2].ID)
 }
 
 // TestListBooksBySeries_NullPositionSorting verifies that books with NULL
@@ -77,12 +69,8 @@ func TestListBooksBySeries_NullPositionSorting(t *testing.T) {
 	// Both books must appear; collect the IDs to verify without relying on
 	// dialect-specific NULL ordering.
 	ids := map[string]bool{books[0].ID: true, books[1].ID: true}
-	if !ids[b1.ID] {
-		t.Errorf("positioned book %q not found in results", b1.Title)
-	}
-	if !ids[b2.ID] {
-		t.Errorf("unpositioned book %q not found in results", b2.Title)
-	}
+	require.True(t, ids[b1.ID])
+	require.True(t, ids[b2.ID])
 }
 
 func TestListBooksBySeriesPaginated(t *testing.T) {
@@ -100,13 +88,9 @@ func TestListBooksBySeriesPaginated(t *testing.T) {
 
 	page1, total, err := d.ListBooksBySeriesPaginated(t.Context(), s.ID, 2, 0)
 	require.NoError(t, err, "ListBooksBySeriesPaginated(page1) error")
-	if total != 4 {
-		t.Errorf("total = %d, want 4", total)
-	}
+	require.Equal(t, 4, total)
 	require.Len(t, page1, 2, "len(page1)")
-	if page1[0].Title != "Book One" {
-		t.Errorf("page1[0].Title = %q, want Book One", page1[0].Title)
-	}
+	require.Equal(t, "Book One", page1[0].Title)
 }
 
 func TestListBooksBySeriesPaginated_OffsetBeyondTotal(t *testing.T) {
@@ -120,10 +104,6 @@ func TestListBooksBySeriesPaginated_OffsetBeyondTotal(t *testing.T) {
 
 	books, total, err := d.ListBooksBySeriesPaginated(t.Context(), s.ID, 10, 50)
 	require.NoError(t, err, "ListBooksBySeriesPaginated(offset=50) error")
-	if total != 1 {
-		t.Errorf("total = %d, want 1", total)
-	}
-	if len(books) != 0 {
-		t.Errorf("len(books) = %d, want 0", len(books))
-	}
+	require.Equal(t, 1, total)
+	require.Len(t, books, 0)
 }

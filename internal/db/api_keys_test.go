@@ -22,27 +22,13 @@ func TestCreateAPIKey(t *testing.T) {
 
 	key, err := d.CreateAPIKey(t.Context(), user.ID, "CI Pipeline", "hash123", "bib_abcd")
 	require.NoError(t, err, "CreateAPIKey() error")
-	if key.ID == "" {
-		t.Error("expected non-empty ID")
-	}
-	if key.UserID != user.ID {
-		t.Errorf("UserID = %q, want %q", key.UserID, user.ID)
-	}
-	if key.Name != "CI Pipeline" {
-		t.Errorf("Name = %q, want %q", key.Name, "CI Pipeline")
-	}
-	if key.KeyHash != "hash123" {
-		t.Errorf("KeyHash = %q, want %q", key.KeyHash, "hash123")
-	}
-	if key.KeyPrefix != "bib_abcd" {
-		t.Errorf("KeyPrefix = %q, want %q", key.KeyPrefix, "bib_abcd")
-	}
-	if key.LastUsedAt != nil {
-		t.Errorf("LastUsedAt = %v, want nil", key.LastUsedAt)
-	}
-	if key.CreatedAt.IsZero() {
-		t.Error("CreatedAt is zero")
-	}
+	require.NotEqual(t, "", key.ID)
+	require.Equal(t, user.ID, key.UserID)
+	require.Equal(t, "CI Pipeline", key.Name)
+	require.Equal(t, "hash123", key.KeyHash)
+	require.Equal(t, "bib_abcd", key.KeyPrefix)
+	require.Nil(t, key.LastUsedAt)
+	require.False(t, key.CreatedAt.IsZero())
 }
 
 func TestListAPIKeys_Empty(t *testing.T) {
@@ -51,9 +37,7 @@ func TestListAPIKeys_Empty(t *testing.T) {
 
 	keys, err := d.ListAPIKeys(t.Context(), user.ID)
 	require.NoError(t, err, "ListAPIKeys() error")
-	if len(keys) != 0 {
-		t.Errorf("len = %d, want 0", len(keys))
-	}
+	require.Len(t, keys, 0)
 }
 
 func TestListAPIKeys_ReturnsUserKeysOnly(t *testing.T) {
@@ -64,28 +48,21 @@ func TestListAPIKeys_ReturnsUserKeysOnly(t *testing.T) {
 	require.NoError(t, err, "create user2")
 
 	// Create keys for both users.
-	if _, err := d.CreateAPIKey(t.Context(), user1.ID, "Key A", "hashA", "prefixA"); err != nil {
-		require.NoError(t, err, "CreateAPIKey A")
-	}
-	if _, err := d.CreateAPIKey(t.Context(), user1.ID, "Key B", "hashB", "prefixB"); err != nil {
-		require.NoError(t, err, "CreateAPIKey B")
-	}
-	if _, err := d.CreateAPIKey(t.Context(), u2.ID, "Key C", "hashC", "prefixC"); err != nil {
-		require.NoError(t, err, "CreateAPIKey C")
-	}
+	_, err = d.CreateAPIKey(t.Context(), user1.ID, "Key A", "hashA", "prefixA")
+	require.NoError(t, err, "CreateAPIKey A")
+	_, err = d.CreateAPIKey(t.Context(), user1.ID, "Key B", "hashB", "prefixB")
+	require.NoError(t, err, "CreateAPIKey B")
+	_, err = d.CreateAPIKey(t.Context(), u2.ID, "Key C", "hashC", "prefixC")
+	require.NoError(t, err, "CreateAPIKey C")
 
 	keys, err := d.ListAPIKeys(t.Context(), user1.ID)
 	require.NoError(t, err, "ListAPIKeys() error")
-	if len(keys) != 2 {
-		t.Errorf("len = %d, want 2", len(keys))
-	}
+	require.Len(t, keys, 2)
 
 	// user2 should only see their own key.
 	keys2, err := d.ListAPIKeys(t.Context(), u2.ID)
 	require.NoError(t, err, "ListAPIKeys(user2) error")
-	if len(keys2) != 1 {
-		t.Errorf("user2 len = %d, want 1", len(keys2))
-	}
+	require.Len(t, keys2, 1)
 }
 
 func TestGetAPIKey(t *testing.T) {
@@ -97,12 +74,8 @@ func TestGetAPIKey(t *testing.T) {
 
 	got, err := d.GetAPIKey(t.Context(), created.ID, user.ID)
 	require.NoError(t, err, "GetAPIKey() error")
-	if got.ID != created.ID {
-		t.Errorf("ID = %q, want %q", got.ID, created.ID)
-	}
-	if got.Name != "Fetch Me" {
-		t.Errorf("Name = %q, want %q", got.Name, "Fetch Me")
-	}
+	require.Equal(t, created.ID, got.ID)
+	require.Equal(t, "Fetch Me", got.Name)
 }
 
 func TestGetAPIKey_WrongUser(t *testing.T) {
@@ -116,9 +89,7 @@ func TestGetAPIKey_WrongUser(t *testing.T) {
 	require.NoError(t, err, "CreateAPIKey() error")
 
 	_, err = d.GetAPIKey(t.Context(), created.ID, u2.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("err = %v, want sql.ErrNoRows", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteAPIKey(t *testing.T) {
@@ -132,9 +103,7 @@ func TestDeleteAPIKey(t *testing.T) {
 
 	// Should be gone.
 	_, err = d.GetAPIKey(t.Context(), created.ID, user.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("after delete: err = %v, want sql.ErrNoRows", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteAPIKey_NotFound(t *testing.T) {
@@ -142,9 +111,7 @@ func TestDeleteAPIKey_NotFound(t *testing.T) {
 	user := createTestUser(t, d)
 
 	err := d.DeleteAPIKey(t.Context(), "nonexistent", user.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("err = %v, want sql.ErrNoRows", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteAPIKey_WrongUser(t *testing.T) {
@@ -158,15 +125,11 @@ func TestDeleteAPIKey_WrongUser(t *testing.T) {
 	require.NoError(t, err, "CreateAPIKey() error")
 
 	err = d.DeleteAPIKey(t.Context(), created.ID, u2.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("err = %v, want sql.ErrNoRows", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 
 	// Key should still exist for original user.
 	_, err = d.GetAPIKey(t.Context(), created.ID, user1.ID)
-	if err != nil {
-		t.Errorf("key should still exist: %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestValidateAPIKey(t *testing.T) {
@@ -182,21 +145,15 @@ func TestValidateAPIKey(t *testing.T) {
 
 	userID, keyID, err := d.ValidateAPIKey(t.Context(), keyHash)
 	require.NoError(t, err, "ValidateAPIKey() error")
-	if userID != user.ID {
-		t.Errorf("userID = %q, want %q", userID, user.ID)
-	}
-	if keyID != created.ID {
-		t.Errorf("keyID = %q, want %q", keyID, created.ID)
-	}
+	require.Equal(t, user.ID, userID)
+	require.Equal(t, created.ID, keyID)
 }
 
 func TestValidateAPIKey_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, _, err := d.ValidateAPIKey(t.Context(), "nonexistenthash")
-	if err != sql.ErrNoRows {
-		t.Errorf("err = %v, want sql.ErrNoRows", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestTouchAPIKeyLastUsed(t *testing.T) {
@@ -212,9 +169,7 @@ func TestTouchAPIKeyLastUsed(t *testing.T) {
 	// Re-fetch and verify last_used_at is now set.
 	got, err := d.GetAPIKey(t.Context(), created.ID, user.ID)
 	require.NoError(t, err, "GetAPIKey() error")
-	if got.LastUsedAt == nil {
-		t.Error("LastUsedAt should be non-nil after touch")
-	}
+	require.NotNil(t, got.LastUsedAt)
 }
 
 func TestGetAPIKeyByHash(t *testing.T) {
@@ -226,16 +181,12 @@ func TestGetAPIKeyByHash(t *testing.T) {
 
 	got, err := d.GetAPIKeyByHash(t.Context(), "uniqueHash42")
 	require.NoError(t, err, "GetAPIKeyByHash() error")
-	if got.ID != created.ID {
-		t.Errorf("ID = %q, want %q", got.ID, created.ID)
-	}
+	require.Equal(t, created.ID, got.ID)
 }
 
 func TestGetAPIKeyByHash_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetAPIKeyByHash(t.Context(), "nosuchhash")
-	if err != sql.ErrNoRows {
-		t.Errorf("err = %v, want sql.ErrNoRows", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }

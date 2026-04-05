@@ -42,15 +42,9 @@ func TestKoboTokenAuthMiddleware_ValidToken(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if gotPath != "/v1/library/sync" {
-		t.Errorf("path = %q, want /v1/library/sync", gotPath)
-	}
-	if gotUserID != "user-1" {
-		t.Errorf("userID = %q, want user-1", gotUserID)
-	}
-	if gotToken != "abc123" {
-		t.Errorf("token = %q, want abc123", gotToken)
-	}
+	require.Equal(t, "/v1/library/sync", gotPath)
+	require.Equal(t, "user-1", gotUserID)
+	require.Equal(t, "abc123", gotToken)
 }
 
 func TestKoboTokenAuthMiddleware_InvalidToken(t *testing.T) {
@@ -102,7 +96,5 @@ func TestKoboTokenAuthMiddleware_TokenWithNoSubPath(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	if gotPath != "/" {
-		t.Errorf("path = %q, want /", gotPath)
-	}
+	require.Equal(t, "/", gotPath)
 }

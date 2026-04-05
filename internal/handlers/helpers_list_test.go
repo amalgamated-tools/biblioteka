@@ -32,14 +32,10 @@ func Test_ListEntities(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
 		listEntities(w, r, "widgets", listFn, toDTO)
 
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-		}
+		require.Equal(t, http.StatusInternalServerError, w.Code)
 		var result map[string]string
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
-		if result["error"] != "failed to list widgets" {
-			t.Errorf("error = %q, want %q", result["error"], "failed to list widgets")
-		}
+		require.Equal(t, "failed to list widgets", result["error"])
 	})
 
 	t.Run("success converts to DTOs", func(t *testing.T) {
@@ -51,18 +47,12 @@ func Test_ListEntities(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
 		listEntities(w, r, "widgets", listFn, toDTO)
 
-		if w.Code != http.StatusOK {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
 		var dtos []dto
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
 		require.Len(t, dtos, 2, "len(dtos)")
-		if dtos[0].Label != "Alpha" {
-			t.Errorf("dtos[0].Label = %q, want %q", dtos[0].Label, "Alpha")
-		}
-		if dtos[1].Label != "Beta" {
-			t.Errorf("dtos[1].Label = %q, want %q", dtos[1].Label, "Beta")
-		}
+		require.Equal(t, "Alpha", dtos[0].Label)
+		require.Equal(t, "Beta", dtos[1].Label)
 	})
 
 	t.Run("empty list returns empty array", func(t *testing.T) {
@@ -74,14 +64,10 @@ func Test_ListEntities(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
 		listEntities(w, r, "widgets", listFn, toDTO)
 
-		if w.Code != http.StatusOK {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
 		var dtos []dto
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
-		if len(dtos) != 0 {
-			t.Errorf("len = %d, want 0", len(dtos))
-		}
+		require.Len(t, dtos, 0)
 	})
 }
 
@@ -101,28 +87,20 @@ func Test_MapSlice(t *testing.T) {
 		items := []entity{{ID: 1, Name: "Alpha"}, {ID: 2, Name: "Beta"}}
 		result := mapSlice(items, toDTO)
 		require.Len(t, result, 2, "len(result)")
-		if result[0].Label != "Alpha" {
-			t.Errorf("result[0].Label = %q, want %q", result[0].Label, "Alpha")
-		}
-		if result[1].Label != "Beta" {
-			t.Errorf("result[1].Label = %q, want %q", result[1].Label, "Beta")
-		}
+		require.Equal(t, "Alpha", result[0].Label)
+		require.Equal(t, "Beta", result[1].Label)
 	})
 
 	t.Run("empty input returns empty slice", func(t *testing.T) {
 		result := mapSlice([]entity{}, toDTO)
 		require.NotNil(t, result, "result should not be nil")
-		if len(result) != 0 {
-			t.Errorf("len = %d, want 0", len(result))
-		}
+		require.Len(t, result, 0)
 	})
 
 	t.Run("nil input returns empty slice", func(t *testing.T) {
 		result := mapSlice(nil, toDTO)
 		require.NotNil(t, result, "result should not be nil")
-		if len(result) != 0 {
-			t.Errorf("len = %d, want 0", len(result))
-		}
+		require.Len(t, result, 0)
 	})
 }
 
@@ -148,14 +126,10 @@ func Test_ListUserEntities(t *testing.T) {
 		r = withUserID(r, "user-1")
 		listUserEntities(w, r, "tokens", listFn, toDTO)
 
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-		}
+		require.Equal(t, http.StatusInternalServerError, w.Code)
 		var result map[string]string
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
-		if result["error"] != "failed to list tokens" {
-			t.Errorf("error = %q, want %q", result["error"], "failed to list tokens")
-		}
+		require.Equal(t, "failed to list tokens", result["error"])
 	})
 
 	t.Run("passes user ID to list function", func(t *testing.T) {
@@ -170,12 +144,8 @@ func Test_ListUserEntities(t *testing.T) {
 		r = withUserID(r, "user-42")
 		listUserEntities(w, r, "tokens", listFn, toDTO)
 
-		if w.Code != http.StatusOK {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-		}
-		if capturedUserID != "user-42" {
-			t.Errorf("capturedUserID = %q, want %q", capturedUserID, "user-42")
-		}
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, "user-42", capturedUserID)
 	})
 
 	t.Run("nil slice returns empty JSON array", func(t *testing.T) {
@@ -188,14 +158,10 @@ func Test_ListUserEntities(t *testing.T) {
 		r = withUserID(r, "user-1")
 		listUserEntities(w, r, "tokens", listFn, toDTO)
 
-		if w.Code != http.StatusOK {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
 		var dtos []dto
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
-		if len(dtos) != 0 {
-			t.Errorf("len = %d, want 0", len(dtos))
-		}
+		require.Len(t, dtos, 0)
 	})
 
 	t.Run("success converts to DTOs", func(t *testing.T) {
@@ -208,17 +174,11 @@ func Test_ListUserEntities(t *testing.T) {
 		r = withUserID(r, "user-1")
 		listUserEntities(w, r, "tokens", listFn, toDTO)
 
-		if w.Code != http.StatusOK {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
 		var dtos []dto
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
 		require.Len(t, dtos, 2, "len(dtos)")
-		if dtos[0].Label != "Alpha" {
-			t.Errorf("dtos[0].Label = %q, want %q", dtos[0].Label, "Alpha")
-		}
-		if dtos[1].Label != "Beta" {
-			t.Errorf("dtos[1].Label = %q, want %q", dtos[1].Label, "Beta")
-		}
+		require.Equal(t, "Alpha", dtos[0].Label)
+		require.Equal(t, "Beta", dtos[1].Label)
 	})
 }

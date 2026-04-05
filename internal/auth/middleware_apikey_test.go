@@ -56,16 +56,11 @@ func TestMiddleware_ValidAPIKey(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "apikey-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "apikey-user")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "apikey-user", gotUserID)
 
-	if len(validator.touched) != 1 || validator.touched[0] != "key-1" {
-		t.Errorf("TouchAPIKeyLastUsed called with %v, want [key-1]", validator.touched)
-	}
+	require.Len(t, validator.touched, 1)
+	require.Equal(t, "key-1", validator.touched[0])
 }
 
 func TestMiddleware_InvalidAPIKey(t *testing.T) {
@@ -86,12 +81,8 @@ func TestMiddleware_InvalidAPIKey(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
 
@@ -117,12 +108,8 @@ func TestMiddleware_APIKeyViaCookieRejected(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called for API key via cookie")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
 }
 
@@ -149,10 +136,6 @@ func TestAdminMiddleware_ValidAPIKey(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "admin-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "admin-user")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "admin-user", gotUserID)
 }

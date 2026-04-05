@@ -20,9 +20,8 @@ func TestAllBooks_Pagination(t *testing.T) {
 
 	// Create enough books to have a second page (opdspkg.PageSize is 50).
 	for i := range 55 {
-		if _, err := h.DB.CreateBook(ctx, "Book "+padInt(i), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-			require.NoError(t, err, "create book %d", i)
-		}
+		_, err := h.DB.CreateBook(ctx, "Book "+padInt(i), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		require.NoError(t, err, "create book %d", i)
 	}
 
 	// Page 1: should have "next" link but no "previous" link.
@@ -33,15 +32,9 @@ func TestAllBooks_Pagination(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 50 {
-		t.Errorf("page 1: entries = %d, want 50", len(feed.Entries))
-	}
-	if findLink(feed.Links, opdspkg.RelNext) == nil {
-		t.Error("page 1: missing next link")
-	}
-	if findLink(feed.Links, opdspkg.RelPrevious) != nil {
-		t.Error("page 1: should not have previous link")
-	}
+	require.Len(t, feed.Entries, 50)
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelNext), "page 1: missing next link")
+	require.Nil(t, findLink(feed.Links, opdspkg.RelPrevious))
 
 	// Page 2: should have "previous" link but no "next" link.
 	r2 := httptest.NewRequest(http.MethodGet, "/opds/all?page=2", nil)
@@ -51,15 +44,9 @@ func TestAllBooks_Pagination(t *testing.T) {
 	require.Equal(t, http.StatusOK, w2.Code)
 
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
-	if len(feed2.Entries) != 5 {
-		t.Errorf("page 2: entries = %d, want 5", len(feed2.Entries))
-	}
-	if findLink(feed2.Links, opdspkg.RelPrevious) == nil {
-		t.Error("page 2: missing previous link")
-	}
-	if findLink(feed2.Links, opdspkg.RelNext) != nil {
-		t.Error("page 2: should not have next link")
-	}
+	require.Len(t, feed2.Entries, 5)
+	require.NotNil(t, findLink(feed2.Links, opdspkg.RelPrevious), "page 2: missing previous link")
+	require.Nil(t, findLink(feed2.Links, opdspkg.RelNext))
 }
 
 // --- X-Forwarded-Proto ---
@@ -77,9 +64,7 @@ func TestBaseURL_XForwardedProto(t *testing.T) {
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	selfLink := findLink(feed.Links, opdspkg.RelSelf)
 	require.NotNil(t, selfLink)
-	if !strings.HasPrefix(selfLink.Href, "https://") {
-		t.Errorf("self link = %q, want https:// prefix", selfLink.Href)
-	}
+	require.True(t, strings.HasPrefix(selfLink.Href, "https://"))
 }
 
 func TestBaseURL_InvalidXForwardedProto(t *testing.T) {
@@ -96,9 +81,7 @@ func TestBaseURL_InvalidXForwardedProto(t *testing.T) {
 	selfLink := findLink(feed.Links, opdspkg.RelSelf)
 	require.NotNil(t, selfLink)
 	// Should fallback to http, not use the injected value.
-	if strings.HasPrefix(selfLink.Href, "javascript:") {
-		t.Errorf("self link = %q, should not use injected proto", selfLink.Href)
-	}
+	require.False(t, strings.HasPrefix(selfLink.Href, "javascript:"))
 }
 
 // --- Helper unit tests ---
@@ -119,48 +102,30 @@ func TestParsePage(t *testing.T) {
 	for _, tt := range tests {
 		r := httptest.NewRequest(http.MethodGet, "/opds/all"+tt.query, nil)
 		got := parsePage(r)
-		if got != tt.want {
-			t.Errorf("parsePage(%q) = %d, want %d", tt.query, got, tt.want)
-		}
+		require.Equal(t, tt.want, got)
 	}
 }
 
 func TestPaginationLinks(t *testing.T) {
 	// Single page: no next or previous.
 	links := opdspkg.PaginationLinks("/opds/all", 1, 10, 50, opdspkg.AcqContentType)
-	if findLink(links, opdspkg.RelNext) != nil {
-		t.Error("single page: should not have next link")
-	}
-	if findLink(links, opdspkg.RelPrevious) != nil {
-		t.Error("single page: should not have previous link")
-	}
+	require.Nil(t, findLink(links, opdspkg.RelNext))
+	require.Nil(t, findLink(links, opdspkg.RelPrevious))
 
 	// First of multiple pages: next but no previous.
 	links = opdspkg.PaginationLinks("/opds/all", 1, 100, 50, opdspkg.AcqContentType)
-	if findLink(links, opdspkg.RelNext) == nil {
-		t.Error("first page: should have next link")
-	}
-	if findLink(links, opdspkg.RelPrevious) != nil {
-		t.Error("first page: should not have previous link")
-	}
+	require.NotNil(t, findLink(links, opdspkg.RelNext), "first page: should have next link")
+	require.Nil(t, findLink(links, opdspkg.RelPrevious))
 
 	// Middle page: both next and previous.
 	links = opdspkg.PaginationLinks("/opds/all", 2, 150, 50, opdspkg.AcqContentType)
-	if findLink(links, opdspkg.RelNext) == nil {
-		t.Error("middle page: should have next link")
-	}
-	if findLink(links, opdspkg.RelPrevious) == nil {
-		t.Error("middle page: should have previous link")
-	}
+	require.NotNil(t, findLink(links, opdspkg.RelNext), "middle page: should have next link")
+	require.NotNil(t, findLink(links, opdspkg.RelPrevious), "middle page: should have previous link")
 
 	// Last page: previous but no next.
 	links = opdspkg.PaginationLinks("/opds/all", 2, 100, 50, opdspkg.AcqContentType)
-	if findLink(links, opdspkg.RelNext) != nil {
-		t.Error("last page: should not have next link")
-	}
-	if findLink(links, opdspkg.RelPrevious) == nil {
-		t.Error("last page: should have previous link")
-	}
+	require.Nil(t, findLink(links, opdspkg.RelNext))
+	require.NotNil(t, findLink(links, opdspkg.RelPrevious), "last page: should have previous link")
 }
 
 func TestPaginationLinks_SearchURL(t *testing.T) {
@@ -168,12 +133,8 @@ func TestPaginationLinks_SearchURL(t *testing.T) {
 	links := opdspkg.PaginationLinks("/opds/search?q=test", 1, 100, 50, opdspkg.AcqContentType)
 	selfLink := findLink(links, opdspkg.RelSelf)
 	require.NotNil(t, selfLink)
-	if strings.Contains(selfLink.Href, "?q=test?page=") {
-		t.Errorf("self link has double '?': %q", selfLink.Href)
-	}
-	if !strings.Contains(selfLink.Href, "&page=") {
-		t.Errorf("self link should use '&' for page param: %q", selfLink.Href)
-	}
+	require.NotContains(t, selfLink.Href, "?q=test?page=")
+	require.Contains(t, selfLink.Href, "&page=")
 }
 
 // padInt zero-pads an integer to 3 digits for consistent sorting.
@@ -189,9 +150,8 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 
 	const totalAuthors = opdspkg.PageSize + 5
 	for i := range totalAuthors {
-		if _, err := h.DB.CreateAuthor(ctx, fmt.Sprintf("Author %03d", i), nil, nil, nil, nil); err != nil {
-			require.NoError(t, err, "create author %d", i)
-		}
+		_, err := h.DB.CreateAuthor(ctx, fmt.Sprintf("Author %03d", i), nil, nil, nil, nil)
+		require.NoError(t, err, "create author %d", i)
 	}
 
 	// Page 1: should have next link but no previous.
@@ -201,15 +161,9 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != opdspkg.PageSize {
-		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdspkg.PageSize)
-	}
-	if findLink(feed.Links, opdspkg.RelNext) == nil {
-		t.Error("page 1: missing next link")
-	}
-	if findLink(feed.Links, opdspkg.RelPrevious) != nil {
-		t.Error("page 1: should not have previous link")
-	}
+	require.Len(t, feed.Entries, opdspkg.PageSize)
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelNext), "page 1: missing next link")
+	require.Nil(t, findLink(feed.Links, opdspkg.RelPrevious))
 
 	// Page 2: should have previous link but no next.
 	r2 := httptest.NewRequest(http.MethodGet, "/opds/authors?page=2", nil)
@@ -218,15 +172,9 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w2.Code)
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
-	if len(feed2.Entries) != totalAuthors-opdspkg.PageSize {
-		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalAuthors-opdspkg.PageSize)
-	}
-	if findLink(feed2.Links, opdspkg.RelPrevious) == nil {
-		t.Error("page 2: missing previous link")
-	}
-	if findLink(feed2.Links, opdspkg.RelNext) != nil {
-		t.Error("page 2: should not have next link")
-	}
+	require.Len(t, feed2.Entries, totalAuthors-opdspkg.PageSize)
+	require.NotNil(t, findLink(feed2.Links, opdspkg.RelPrevious), "page 2: missing previous link")
+	require.Nil(t, findLink(feed2.Links, opdspkg.RelNext))
 }
 
 func TestSeriesFeed_Pagination(t *testing.T) {
@@ -235,9 +183,8 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 
 	const totalSeries = opdspkg.PageSize + 5
 	for i := range totalSeries {
-		if _, err := h.DB.CreateSeries(ctx, fmt.Sprintf("Series %03d", i), nil, nil, nil); err != nil {
-			require.NoError(t, err, "create series %d", i)
-		}
+		_, err := h.DB.CreateSeries(ctx, fmt.Sprintf("Series %03d", i), nil, nil, nil)
+		require.NoError(t, err, "create series %d", i)
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series?page=1", nil)
@@ -246,15 +193,9 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != opdspkg.PageSize {
-		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdspkg.PageSize)
-	}
-	if findLink(feed.Links, opdspkg.RelNext) == nil {
-		t.Error("page 1: missing next link")
-	}
-	if findLink(feed.Links, opdspkg.RelPrevious) != nil {
-		t.Error("page 1: should not have previous link")
-	}
+	require.Len(t, feed.Entries, opdspkg.PageSize)
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelNext), "page 1: missing next link")
+	require.Nil(t, findLink(feed.Links, opdspkg.RelPrevious))
 
 	// Page 2: should have previous link but no next.
 	r2 := httptest.NewRequest(http.MethodGet, "/opds/series?page=2", nil)
@@ -263,13 +204,7 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w2.Code)
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
-	if len(feed2.Entries) != totalSeries-opdspkg.PageSize {
-		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalSeries-opdspkg.PageSize)
-	}
-	if findLink(feed2.Links, opdspkg.RelPrevious) == nil {
-		t.Error("page 2: missing previous link")
-	}
-	if findLink(feed2.Links, opdspkg.RelNext) != nil {
-		t.Error("page 2: should not have next link")
-	}
+	require.Len(t, feed2.Entries, totalSeries-opdspkg.PageSize)
+	require.NotNil(t, findLink(feed2.Links, opdspkg.RelPrevious), "page 2: missing previous link")
+	require.Nil(t, findLink(feed2.Links, opdspkg.RelNext))
 }

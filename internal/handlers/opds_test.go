@@ -48,9 +48,7 @@ func TestHandleOPDS_MethodNotAllowed(t *testing.T) {
 		w := httptest.NewRecorder()
 		h.HandleOPDS(w, r)
 
-		if w.Code != http.StatusMethodNotAllowed {
-			t.Errorf("%s: status = %d, want %d", method, w.Code, http.StatusMethodNotAllowed)
-		}
+		require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 	}
 }
 
@@ -61,7 +59,5 @@ func TestHandleOPDS_UnknownPath(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }

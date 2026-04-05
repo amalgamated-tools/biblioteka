@@ -38,9 +38,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 		w := httptest.NewRecorder()
 		handleTokenCreate(ops, w, r)
 
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-		}
+		require.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
 	t.Run("create error yields 500", func(t *testing.T) {
@@ -64,16 +62,12 @@ func Test_HandleTokenCreate(t *testing.T) {
 		w := httptest.NewRecorder()
 		handleTokenCreate(ops, w, r)
 
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-		}
+		require.Equal(t, http.StatusInternalServerError, w.Code)
 
 		// Verify no audit log written on error.
 		logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
 		require.NoError(t, err, "list audit logs")
-		if len(logs) != 0 {
-			t.Errorf("expected no audit logs on error, got %d", len(logs))
-		}
+		require.Len(t, logs, 0)
 	})
 
 	t.Run("success returns 201 with no-store headers", func(t *testing.T) {
@@ -97,17 +91,12 @@ func Test_HandleTokenCreate(t *testing.T) {
 		w := httptest.NewRecorder()
 		handleTokenCreate(ops, w, r)
 
-		if w.Code != http.StatusCreated {
-			t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-		}
-		if cc := w.Header().Get("Cache-Control"); cc != "no-store" {
-			t.Errorf("Cache-Control = %q, want %q", cc, "no-store")
-		}
+		require.Equal(t, http.StatusCreated, w.Code)
+		cc := w.Header().Get("Cache-Control")
+		require.Equal(t, "no-store", cc)
 		var resp tokenResp
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-		if resp.Token != "secret" {
-			t.Errorf("token = %q, want %q", resp.Token, "secret")
-		}
+		require.Equal(t, "secret", resp.Token)
 	})
 
 	t.Run("success writes audit log", func(t *testing.T) {
@@ -138,9 +127,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 				break
 			}
 		}
-		if !found {
-			t.Error("expected audit log entry for created token")
-		}
+		require.True(t, found)
 	})
 
 	t.Run("tokenError returns specific message", func(t *testing.T) {
@@ -164,13 +151,9 @@ func Test_HandleTokenCreate(t *testing.T) {
 		w := httptest.NewRecorder()
 		handleTokenCreate(ops, w, r)
 
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-		}
+		require.Equal(t, http.StatusInternalServerError, w.Code)
 		var result map[string]string
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "unmarshal")
-		if result["error"] != "failed to generate widget" {
-			t.Errorf("error = %q, want %q", result["error"], "failed to generate widget")
-		}
+		require.Equal(t, "failed to generate widget", result["error"])
 	})
 }

@@ -37,17 +37,15 @@ func TestFindOrCreate_BlankNameReturnsErrInvalid(t *testing.T) {
 	for _, name := range []string{"", "   "} {
 		_, err := findOrCreate(t.Context(), name, "fake", trimNormalize, errFakeInvalid, errFakeExists,
 			func(_ context.Context, _ string) (*fakeEntity, error) {
-				t.Error("getByName should not be called for blank name")
+				require.Fail(t, "getByName should not be called for blank name")
 				return nil, nil
 			},
 			func(_ context.Context, _ string) (*fakeEntity, error) {
-				t.Error("create should not be called for blank name")
+				require.Fail(t, "create should not be called for blank name")
 				return nil, nil
 			},
 		)
-		if !errors.Is(err, errFakeInvalid) {
-			t.Errorf("findOrCreate(%q) = %v, want errFakeInvalid", name, err)
-		}
+		require.ErrorIs(t, err, errFakeInvalid)
 	}
 }
 
@@ -72,9 +70,7 @@ func TestFindOrCreate_CreatesNewEntity(t *testing.T) {
 	)
 	require.NoError(t, err, "findOrCreate() error")
 	require.NotNil(t, result)
-	if result.name != "newEntity" {
-		t.Errorf("result.name = %q, want newEntity", result.name)
-	}
+	require.Equal(t, "newEntity", result.name)
 }
 
 func TestFindOrCreate_ReturnsExistingEntity(t *testing.T) {
@@ -95,9 +91,7 @@ func TestFindOrCreate_ReturnsExistingEntity(t *testing.T) {
 		},
 	)
 	require.NoError(t, err, "findOrCreate() error")
-	if result != existing {
-		t.Errorf("findOrCreate() returned different entity, want original")
-	}
+	require.Equal(t, existing, result)
 }
 
 // TestFindOrCreate_RaceCondition simulates a concurrent insert: getByName
@@ -124,12 +118,8 @@ func TestFindOrCreate_RaceCondition(t *testing.T) {
 		},
 	)
 	require.NoError(t, err, "findOrCreate() error")
-	if result != winner {
-		t.Errorf("findOrCreate() did not return the race winner")
-	}
-	if callCount != 2 {
-		t.Errorf("getByName called %d times, want 2", callCount)
-	}
+	require.Equal(t, winner, result)
+	require.Equal(t, 2, callCount)
 }
 
 func TestFindOrCreate_PropagatesGetByNameError(t *testing.T) {
@@ -140,13 +130,11 @@ func TestFindOrCreate_PropagatesGetByNameError(t *testing.T) {
 			return nil, sentinel
 		},
 		func(_ context.Context, _ string) (*fakeEntity, error) {
-			t.Error("create should not be called when getByName returns non-ErrNoRows")
+			require.Fail(t, "create should not be called when getByName returns non-ErrNoRows")
 			return nil, nil
 		},
 	)
-	if !errors.Is(err, sentinel) {
-		t.Errorf("err = %v, want %v", err, sentinel)
-	}
+	require.ErrorIs(t, err, sentinel)
 }
 
 func TestFindOrCreate_PropagatesCreateError(t *testing.T) {
@@ -160,9 +148,7 @@ func TestFindOrCreate_PropagatesCreateError(t *testing.T) {
 			return nil, createErr
 		},
 	)
-	if !errors.Is(err, createErr) {
-		t.Errorf("err = %v, want %v", err, createErr)
-	}
+	require.ErrorIs(t, err, createErr)
 }
 
 // TestFindOrCreate_ViaFindOrCreateAuthor exercises the full code path through
@@ -173,14 +159,10 @@ func TestFindOrCreate_ViaFindOrCreateAuthor(t *testing.T) {
 	// First call creates.
 	a1, err := d.FindOrCreateAuthor(t.Context(), "Neil Gaiman")
 	require.NoError(t, err, "first FindOrCreateAuthor() error")
-	if a1.ID == "" {
-		t.Error("created author has empty ID")
-	}
+	require.NotEqual(t, "", a1.ID)
 
 	// Second call finds the same record.
 	a2, err := d.FindOrCreateAuthor(t.Context(), "Neil Gaiman")
 	require.NoError(t, err, "second FindOrCreateAuthor() error")
-	if a2.ID != a1.ID {
-		t.Errorf("IDs differ: %q vs %q", a2.ID, a1.ID)
-	}
+	require.Equal(t, a1.ID, a2.ID)
 }

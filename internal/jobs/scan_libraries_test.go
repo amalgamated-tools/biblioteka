@@ -58,22 +58,12 @@ func TestScanLibrariesHandler(t *testing.T) {
 		"lib2": {"/books/nonfiction"},
 	}
 	for _, j := range enq.jobs {
-		if j.Name != JobScanLibrary {
-			t.Errorf("expected job name %q, got %q", JobScanLibrary, j.Name)
-		}
+		require.Equal(t, JobScanLibrary, j.Name)
 		var p ScanLibraryPayload
-		if err := json.Unmarshal(j.Payload, &p); err != nil {
-			t.Errorf("unmarshal payload: %v", err)
-			continue
-		}
+		require.NoError(t, json.Unmarshal(j.Payload, &p), "unmarshal payload")
 		wantPaths, ok := wantJobs[p.LibraryID]
-		if !ok {
-			t.Errorf("unexpected library_id %q", p.LibraryID)
-			continue
-		}
-		if !slices.Equal(p.Paths, wantPaths) {
-			t.Errorf("library %q paths = %v, want %v", p.LibraryID, p.Paths, wantPaths)
-		}
+		require.True(t, ok, "unexpected library_id %q", p.LibraryID)
+		require.True(t, slices.Equal(p.Paths, wantPaths))
 	}
 }
 
@@ -88,9 +78,7 @@ func TestScanLibrariesHandler_NoMonitoredLibraries(t *testing.T) {
 	handler := NewScanLibrariesHandler(lister, enq)
 	require.NoError(t, handler(t.Context(), nil), "handler")
 
-	if len(enq.jobs) != 0 {
-		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
-	}
+	require.Len(t, enq.jobs, 0)
 }
 
 func TestScanLibrariesHandler_EmptyLibraryList(t *testing.T) {
@@ -100,9 +88,7 @@ func TestScanLibrariesHandler_EmptyLibraryList(t *testing.T) {
 	handler := NewScanLibrariesHandler(lister, enq)
 	require.NoError(t, handler(t.Context(), nil), "handler")
 
-	if len(enq.jobs) != 0 {
-		t.Errorf("expected 0 enqueued jobs, got %d", len(enq.jobs))
-	}
+	require.Len(t, enq.jobs, 0)
 }
 
 func TestScanLibrariesHandler_ListError(t *testing.T) {
@@ -136,9 +122,8 @@ func TestScanLibrariesHandler_InvalidPaths(t *testing.T) {
 	require.NoError(t, handler(t.Context(), nil), "handler should not fail on one bad library")
 
 	// Only the good library should produce a job
-	if got := len(enq.jobs); got != 1 {
-		t.Errorf("expected 1 enqueued job, got %d", got)
-	}
+	got := len(enq.jobs)
+	require.Equal(t, 1, got)
 }
 
 func TestScanLibrariesHandler_EnqueueError(t *testing.T) {

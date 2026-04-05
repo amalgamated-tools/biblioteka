@@ -19,9 +19,7 @@ func TestGetBookAuthors_Empty(t *testing.T) {
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookAuthors() error")
-	if len(authors) != 0 {
-		t.Errorf("len(authors) = %d, want 0", len(authors))
-	}
+	require.Len(t, authors, 0)
 }
 
 // ---- SetBookAuthors ----
@@ -41,9 +39,7 @@ func TestSetBookAuthors_ClearAll(t *testing.T) {
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookAuthors() error")
-	if len(authors) != 0 {
-		t.Errorf("len(authors) = %d, want 0 after clear", len(authors))
-	}
+	require.Len(t, authors, 0)
 }
 
 func TestSetBookAuthors_DeduplicatesIDs(t *testing.T) {
@@ -59,9 +55,7 @@ func TestSetBookAuthors_DeduplicatesIDs(t *testing.T) {
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookAuthors() error")
-	if len(authors) != 1 {
-		t.Errorf("len(authors) = %d, want 1 after deduplication", len(authors))
-	}
+	require.Len(t, authors, 1)
 }
 
 // ---- GetBookSeries ----
@@ -74,9 +68,7 @@ func TestGetBookSeries_Empty(t *testing.T) {
 
 	entries, err := d.GetBookSeries(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookSeries() error")
-	if len(entries) != 0 {
-		t.Errorf("len(entries) = %d, want 0", len(entries))
-	}
+	require.Len(t, entries, 0)
 }
 
 // ---- SetBookSeries ----
@@ -96,9 +88,7 @@ func TestSetBookSeries_ClearAll(t *testing.T) {
 
 	entries, err := d.GetBookSeries(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookSeries() error")
-	if len(entries) != 0 {
-		t.Errorf("len(entries) = %d, want 0 after clear", len(entries))
-	}
+	require.Len(t, entries, 0)
 }
 
 func TestSetBookSeries_DeduplicatesLastPositionWins(t *testing.T) {
@@ -121,9 +111,8 @@ func TestSetBookSeries_DeduplicatesLastPositionWins(t *testing.T) {
 	require.Len(t, got, 1)
 	// The implementation processes entries in reverse order so the last
 	// element (position 99) is the one that survives deduplication.
-	if got[0].Position == nil || *got[0].Position != 99.0 {
-		t.Errorf("position = %v, want 99.0 (last position wins)", got[0].Position)
-	}
+	require.NotNil(t, got[0].Position)
+	require.Equal(t, 99.0, *got[0].Position)
 }
 
 // ---- GetAuthorsForBooks ----
@@ -133,9 +122,7 @@ func TestGetAuthorsForBooks_EmptyInput(t *testing.T) {
 
 	result, err := d.GetAuthorsForBooks(t.Context(), []string{})
 	require.NoError(t, err, "GetAuthorsForBooks(empty) error")
-	if result != nil {
-		t.Errorf("result = %v, want nil for empty input", result)
-	}
+	require.Nil(t, result)
 }
 
 func TestGetAuthorsForBooks_NilInput(t *testing.T) {
@@ -143,9 +130,7 @@ func TestGetAuthorsForBooks_NilInput(t *testing.T) {
 
 	result, err := d.GetAuthorsForBooks(t.Context(), nil)
 	require.NoError(t, err, "GetAuthorsForBooks(nil) error")
-	if result != nil {
-		t.Errorf("result = %v, want nil for nil input", result)
-	}
+	require.Nil(t, result)
 }
 
 func TestGetAuthorsForBooks_BookWithNoAuthors(t *testing.T) {
@@ -157,7 +142,7 @@ func TestGetAuthorsForBooks_BookWithNoAuthors(t *testing.T) {
 	result, err := d.GetAuthorsForBooks(t.Context(), []string{book.ID})
 	require.NoError(t, err, "GetAuthorsForBooks() error")
 	// Map is returned but the key for this book should be absent.
-	if authors, ok := result[book.ID]; ok && len(authors) > 0 {
-		t.Errorf("expected no authors for book, got %d", len(authors))
+	if authors, ok := result[book.ID]; ok {
+		require.Empty(t, authors, "expected no authors for book")
 	}
 }

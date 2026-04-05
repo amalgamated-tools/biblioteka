@@ -35,14 +35,10 @@ func TestHandleListUsers_AdminSuccess(t *testing.T) {
 
 	h.HandleListUsers(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var users []adminUserDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &users), "unmarshal")
-	if len(users) != 2 {
-		t.Errorf("expected 2 users, got %d", len(users))
-	}
+	require.Len(t, users, 2)
 }
 
 func TestHandleListUsers_NonAdminForbidden(t *testing.T) {
@@ -54,9 +50,7 @@ func TestHandleListUsers_NonAdminForbidden(t *testing.T) {
 
 	h.HandleListUsers(w, r)
 
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestHandleListUsers_MethodNotAllowed(t *testing.T) {
@@ -68,9 +62,7 @@ func TestHandleListUsers_MethodNotAllowed(t *testing.T) {
 
 	h.HandleListUsers(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestHandleListUsers_ResponseContainsAdminFlag(t *testing.T) {
@@ -89,23 +81,15 @@ func TestHandleListUsers_ResponseContainsAdminFlag(t *testing.T) {
 	for _, u := range users {
 		if u.Email == "admin@example.com" {
 			foundAdmin = true
-			if !u.IsAdmin {
-				t.Error("admin user should have is_admin=true")
-			}
+			require.True(t, u.IsAdmin)
 		}
 		if u.Email == "regular@example.com" {
 			foundRegular = true
-			if u.IsAdmin {
-				t.Error("regular user should have is_admin=false")
-			}
+			require.False(t, u.IsAdmin)
 		}
 	}
-	if !foundAdmin {
-		t.Error("admin user not found in response")
-	}
-	if !foundRegular {
-		t.Error("regular user not found in response")
-	}
+	require.True(t, foundAdmin)
+	require.True(t, foundRegular)
 }
 
 func TestHandleListUsers_OIDCLinkedField(t *testing.T) {
@@ -133,13 +117,9 @@ func TestHandleListUsers_OIDCLinkedField(t *testing.T) {
 	for _, u := range users {
 		switch u.ID {
 		case local.ID:
-			if u.OIDCLinked {
-				t.Error("local user should have oidc_linked=false")
-			}
+			require.False(t, u.OIDCLinked)
 		case oidcUser.ID:
-			if !u.OIDCLinked {
-				t.Error("OIDC user should have oidc_linked=true")
-			}
+			require.True(t, u.OIDCLinked)
 		}
 	}
 }
@@ -156,15 +136,11 @@ func TestHandleSetAdmin_AdminPromotesUser(t *testing.T) {
 
 	h.HandleSetAdmin(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	isAdmin, err := h.DB.IsAdmin(t.Context(), regularID)
 	require.NoError(t, err, "IsAdmin() error")
-	if !isAdmin {
-		t.Error("regular user should now be admin")
-	}
+	require.True(t, isAdmin)
 }
 
 func TestHandleSetAdmin_AdminDemotesUser(t *testing.T) {
@@ -180,15 +156,11 @@ func TestHandleSetAdmin_AdminDemotesUser(t *testing.T) {
 
 	h.HandleSetAdmin(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	isAdmin, err := h.DB.IsAdmin(t.Context(), regularID)
 	require.NoError(t, err, "check admin")
-	if isAdmin {
-		t.Error("user should no longer be admin")
-	}
+	require.False(t, isAdmin)
 }
 
 func TestHandleSetAdmin_NonAdminForbidden(t *testing.T) {
@@ -201,9 +173,7 @@ func TestHandleSetAdmin_NonAdminForbidden(t *testing.T) {
 
 	h.HandleSetAdmin(w, r)
 
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestHandleSetAdmin_CannotChangeSelf(t *testing.T) {
@@ -216,9 +186,7 @@ func TestHandleSetAdmin_CannotChangeSelf(t *testing.T) {
 
 	h.HandleSetAdmin(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetAdmin_UserNotFound(t *testing.T) {
@@ -231,9 +199,7 @@ func TestHandleSetAdmin_UserNotFound(t *testing.T) {
 
 	h.HandleSetAdmin(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestHandleSetAdmin_InvalidBody(t *testing.T) {
@@ -245,9 +211,7 @@ func TestHandleSetAdmin_InvalidBody(t *testing.T) {
 
 	h.HandleSetAdmin(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetAdmin_MethodNotAllowed(t *testing.T) {
@@ -259,9 +223,7 @@ func TestHandleSetAdmin_MethodNotAllowed(t *testing.T) {
 
 	h.HandleSetAdmin(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestHandleSetAdmin_InvalidPath(t *testing.T) {
@@ -274,7 +236,5 @@ func TestHandleSetAdmin_InvalidPath(t *testing.T) {
 
 	h.HandleSetAdmin(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }

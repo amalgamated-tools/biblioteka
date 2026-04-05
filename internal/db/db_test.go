@@ -1,6 +1,10 @@
 package db
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestDialectOrderBy(t *testing.T) {
 	t.Parallel()
@@ -60,9 +64,7 @@ func TestDialectOrderBy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := tt.db.dialectOrderBy(tt.column, tt.direction)
-			if got != tt.want {
-				t.Errorf("dialectOrderBy(%q, %q) = %q, want %q", tt.column, tt.direction, got, tt.want)
-			}
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

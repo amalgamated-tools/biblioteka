@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/base64"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -69,9 +68,7 @@ func TestDataURLMIMEType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotMIME, gotOK := dataURLMIMEType(tt.input)
 			require.Equal(t, tt.wantOK, gotOK)
-			if gotMIME != tt.wantMIME {
-				t.Errorf("dataURLMIMEType(%q) mime = %q, want %q", tt.input, gotMIME, tt.wantMIME)
-			}
+			require.Equal(t, tt.wantMIME, gotMIME)
 		})
 	}
 }
@@ -167,9 +164,7 @@ func TestCoverMIMETypeExtended(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := coverMIMEType(tt.input)
-			if got != tt.want {
-				t.Errorf("coverMIMEType(%q) = %q, want %q", tt.input, got, tt.want)
-			}
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -181,28 +176,20 @@ func TestDecodeDataURL(t *testing.T) {
 
 		mime, got, err := decodeDataURL(encoded)
 		require.NoError(t, err)
-		if mime != "image/png" {
-			t.Errorf("mime = %q, want %q", mime, "image/png")
-		}
-		if string(got) != string(payload) {
-			t.Errorf("data = %q, want %q", got, payload)
-		}
+		require.Equal(t, "image/png", mime)
+		require.Equal(t, string(payload), string(got))
 	})
 
 	t.Run("not a data URL returns ErrNotDataURL", func(t *testing.T) {
 		_, _, err := decodeDataURL("https://example.com/image.png")
 		require.Error(t, err, "expected error for non-data URL, got nil")
-		if !errors.Is(err, errNotDataURL) {
-			t.Errorf("want errNotDataURL, got %v", err)
-		}
+		require.ErrorIs(t, err, errNotDataURL)
 	})
 
 	t.Run("empty string returns ErrNotDataURL", func(t *testing.T) {
 		_, _, err := decodeDataURL("")
 		require.Error(t, err, "expected error for empty string, got nil")
-		if !errors.Is(err, errNotDataURL) {
-			t.Errorf("want errNotDataURL, got %v", err)
-		}
+		require.ErrorIs(t, err, errNotDataURL)
 	})
 
 	t.Run("valid base64 JPEG data URL", func(t *testing.T) {
@@ -211,12 +198,8 @@ func TestDecodeDataURL(t *testing.T) {
 
 		mime, got, err := decodeDataURL(encoded)
 		require.NoError(t, err)
-		if mime != "image/jpeg" {
-			t.Errorf("mime = %q, want %q", mime, "image/jpeg")
-		}
-		if len(got) != len(payload) {
-			t.Errorf("decoded len = %d, want %d", len(got), len(payload))
-		}
+		require.Equal(t, "image/jpeg", mime)
+		require.Len(t, got, len(payload))
 	})
 
 	t.Run("invalid base64 payload returns error", func(t *testing.T) {

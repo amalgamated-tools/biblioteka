@@ -14,18 +14,14 @@ func TestSetAndGetSetting(t *testing.T) {
 
 	val, err := d.GetSetting(t.Context(), "theme")
 	require.NoError(t, err, "GetSetting() error")
-	if val != "dark" {
-		t.Errorf("GetSetting() = %q, want %q", val, "dark")
-	}
+	require.Equal(t, "dark", val)
 }
 
 func TestGetSetting_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
 	_, err := d.GetSetting(t.Context(), "nonexistent")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestSetSetting_Upsert(t *testing.T) {
@@ -36,7 +32,5 @@ func TestSetSetting_Upsert(t *testing.T) {
 
 	val, err := d.GetSetting(t.Context(), "color")
 	require.NoError(t, err, "GetSetting() error")
-	if val != "red" {
-		t.Errorf("GetSetting() = %q, want %q after upsert", val, "red")
-	}
+	require.Equal(t, "red", val)
 }

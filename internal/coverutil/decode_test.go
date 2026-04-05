@@ -2,7 +2,6 @@ package coverutil
 
 import (
 	"encoding/base64"
-	"errors"
 	"strings"
 	"testing"
 
@@ -16,12 +15,8 @@ func TestDecodeDataURL_ValidPNG(t *testing.T) {
 
 	mimeType, decoded, err := DecodeDataURL(raw)
 	require.NoError(t, err)
-	if mimeType != "image/png" {
-		t.Errorf("mimeType = %q, want %q", mimeType, "image/png")
-	}
-	if len(decoded) != len(data) {
-		t.Errorf("decoded length = %d, want %d", len(decoded), len(data))
-	}
+	require.Equal(t, "image/png", mimeType)
+	require.Len(t, decoded, len(data))
 }
 
 func TestDecodeDataURL_ValidJPEG(t *testing.T) {
@@ -31,26 +26,18 @@ func TestDecodeDataURL_ValidJPEG(t *testing.T) {
 
 	mimeType, decoded, err := DecodeDataURL(raw)
 	require.NoError(t, err)
-	if mimeType != "image/jpeg" {
-		t.Errorf("mimeType = %q, want %q", mimeType, "image/jpeg")
-	}
-	if len(decoded) != len(data) {
-		t.Errorf("decoded length = %d, want %d", len(decoded), len(data))
-	}
+	require.Equal(t, "image/jpeg", mimeType)
+	require.Len(t, decoded, len(data))
 }
 
 func TestDecodeDataURL_NotDataURL(t *testing.T) {
 	_, _, err := DecodeDataURL("https://example.com/image.jpg")
-	if !errors.Is(err, ErrNotDataURL) {
-		t.Errorf("err = %v, want ErrNotDataURL", err)
-	}
+	require.ErrorIs(t, err, ErrNotDataURL)
 }
 
 func TestDecodeDataURL_EmptyString(t *testing.T) {
 	_, _, err := DecodeDataURL("")
-	if !errors.Is(err, ErrNotDataURL) {
-		t.Errorf("err = %v, want ErrNotDataURL", err)
-	}
+	require.ErrorIs(t, err, ErrNotDataURL)
 }
 
 func TestDecodeDataURL_UnsupportedEncoding(t *testing.T) {
@@ -65,9 +52,7 @@ func TestDecodeDataURL_EmptyMIME(t *testing.T) {
 
 	mimeType, _, err := DecodeDataURL(raw)
 	require.NoError(t, err)
-	if mimeType != "text/plain;charset=US-ASCII" {
-		t.Errorf("mimeType = %q, want %q", mimeType, "text/plain;charset=US-ASCII")
-	}
+	require.Equal(t, "text/plain;charset=US-ASCII", mimeType)
 }
 
 func TestDecodeDataURL_InvalidBase64(t *testing.T) {
