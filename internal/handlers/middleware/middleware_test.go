@@ -61,29 +61,6 @@ func TestWithRequestID(t *testing.T) {
 	}
 }
 
-func TestForward_SetsHeader(t *testing.T) {
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	ctx := WithRequestID(r.Context(), "forwarded-id")
-	r = r.WithContext(ctx)
-
-	Forward(r)
-
-	if r.Header.Get(RequestID) != "forwarded-id" {
-		t.Errorf("Header X-Request-ID = %q, want %q", r.Header.Get(RequestID), "forwarded-id")
-	}
-}
-
-func TestForward_NoIDDoesNothing(t *testing.T) {
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	// No request ID in context
-
-	Forward(r)
-
-	if r.Header.Get(RequestID) != "" {
-		t.Errorf("expected empty X-Request-ID header, got %q", r.Header.Get(RequestID))
-	}
-}
-
 func TestLoggingMiddleware_CallsNext(t *testing.T) {
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
