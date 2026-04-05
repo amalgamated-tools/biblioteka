@@ -65,7 +65,7 @@ func TestCreateAuthor_DuplicateName(t *testing.T) {
 	require.NoError(t, err, "first CreateAuthor() error")
 
 	_, err = d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	require.Equal(t, ErrAuthorNameExists, err)
+	require.ErrorIs(t, err, ErrAuthorNameExists)
 }
 
 func TestCreateAuthor_DuplicateNameCaseInsensitive(t *testing.T) {
@@ -77,7 +77,7 @@ func TestCreateAuthor_DuplicateNameCaseInsensitive(t *testing.T) {
 	cases := []string{"jane austen", "JANE AUSTEN", "Jane AUSTEN", "jAnE aUsTeN"}
 	for _, name := range cases {
 		_, err = d.CreateAuthor(t.Context(), name, nil, nil, nil, nil)
-		require.Equal(t, ErrAuthorNameExists, err)
+		require.ErrorIs(t, err, ErrAuthorNameExists)
 	}
 }
 
@@ -178,7 +178,7 @@ func TestUpdateAuthor_DuplicateName(t *testing.T) {
 	require.NoError(t, err, "CreateAuthor() error")
 
 	_, err = d.UpdateAuthor(t.Context(), a2.ID, "Stephen King", nil, nil, nil, nil)
-	require.Equal(t, ErrAuthorNameExists, err)
+	require.ErrorIs(t, err, ErrAuthorNameExists)
 }
 
 func TestDeleteAuthor(t *testing.T) {
@@ -263,7 +263,7 @@ func TestFindOrCreateAuthor_BlankName(t *testing.T) {
 
 	for _, name := range []string{"", " ", "  \t  "} {
 		_, err := d.FindOrCreateAuthor(t.Context(), name)
-		require.Equal(t, ErrInvalidAuthorName, err)
+		require.ErrorIs(t, err, ErrInvalidAuthorName)
 	}
 }
 

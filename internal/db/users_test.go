@@ -27,7 +27,7 @@ func TestCreateUser_DuplicateEmail(t *testing.T) {
 	require.NoError(t, err, "first CreateUser() error")
 
 	_, err = d.CreateUser(t.Context(), "Alice2", "alice@example.com", "pw2")
-	require.Equal(t, ErrEmailExists, err)
+	require.ErrorIs(t, err, ErrEmailExists)
 }
 
 func TestGetUserByEmail(t *testing.T) {

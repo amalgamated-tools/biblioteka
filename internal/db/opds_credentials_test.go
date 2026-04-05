@@ -61,7 +61,7 @@ func TestOPDSCredential_UsernameConflict(t *testing.T) {
 	require.NoError(t, err, "first upsert")
 
 	_, err = d.UpsertOPDSCredential(ctx, user2.ID, "shared", "hash2")
-	require.Equal(t, ErrOPDSUsernameExists, err)
+	require.ErrorIs(t, err, ErrOPDSUsernameExists)
 }
 
 func TestOPDSCredential_GetByUserID_NotFound(t *testing.T) {

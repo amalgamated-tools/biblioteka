@@ -81,4 +81,5 @@ func TestRemoveInlineComments_StripsOutsideDollarQuotes(t *testing.T) {
 
 	require.NotContains(t, result, "outside comment")
 	require.Contains(t, result, "SELECT 1")
+	require.Contains(t, result, "SELECT 2")
 }
