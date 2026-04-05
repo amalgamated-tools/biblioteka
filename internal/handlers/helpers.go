@@ -128,12 +128,14 @@ func writeError(ctx context.Context, w http.ResponseWriter, status int, message 
 const minPasswordLength = 6
 
 // validatePassword checks that a password meets the minimum length requirement.
-// Returns an error message if invalid, or an empty string if valid.
-func validatePassword(password string) string {
+// On failure it writes a 400 error response and returns false, so callers can
+// simply return.
+func validatePassword(ctx context.Context, w http.ResponseWriter, password string) bool {
 	if len(password) < minPasswordLength {
-		return "password must be at least 6 characters"
+		writeError(ctx, w, http.StatusBadRequest, "password must be at least 6 characters")
+		return false
 	}
-	return ""
+	return true
 }
 
 // extractPathID extracts a single resource ID from a URL path by stripping the
