@@ -37,8 +37,8 @@ tools:
 
 timeout-minutes: 15
 
-features:
-  copilot-requests: true
+# features:
+#   copilot-requests: true
 source: github/gh-aw/.github/workflows/daily-workflow-updater.md@e2db3a4a4d844e8337b59db4bf5c1d8f9458778d
 ---
 
