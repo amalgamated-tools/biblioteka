@@ -64,7 +64,7 @@ func (d *DB) CreateSeries(ctx context.Context, name string, goodreadsID, hardcov
 
 // GetSeries retrieves a series by its UUID. Returns sql.ErrNoRows if not found.
 func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
-	slog.DebugContext(ctx, "db: fetching series", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: fetching series", slog.String(otelkeys.SeriesID, id))
 	return scanSeries(d.QueryRowContext(ctx,
 		`SELECT `+seriesColumns+` FROM series WHERE id = $1`,
 		id,
