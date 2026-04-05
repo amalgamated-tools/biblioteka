@@ -133,7 +133,7 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 
 	slog.DebugContext(r.Context(), "saving SMTP config",
 		slog.String(otelkeys.Address, host),
-		slog.String(otelkeys.Email, params.From),
+		slog.String(otelkeys.Email, params.FromHeader),
 	)
 
 	_, port, _ := net.SplitHostPort(params.Addr)
@@ -142,7 +142,7 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		{Key: smtp.SettingKeyPort, Value: port},
 		{Key: smtp.SettingKeyUsername, Value: username},
 		{Key: smtp.SettingKeyPassword, Value: password},
-		{Key: smtp.SettingKeyFrom, Value: params.From},
+		{Key: smtp.SettingKeyFrom, Value: params.FromHeader},
 		{Key: smtp.SettingKeyTLS, Value: params.TLS},
 	}); err != nil {
 		slog.ErrorContext(r.Context(), "failed to save SMTP configuration", slog.Any(otelkeys.Error, err))
@@ -152,7 +152,7 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionSMTPConfigUpdated, "config", "smtp", map[string]any{
 		"host": host,
-		"from": params.From,
+		"from": params.FromHeader,
 	})
 
 	msg := "SMTP configuration saved successfully"
@@ -236,7 +236,7 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 	to := user.Email
 	msg := fmt.Sprintf(
 		"From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s",
-		params.From,
+		params.FromHeader,
 		to,
 		"Biblioteka SMTP Test",
 		"This is a test email from Biblioteka to confirm your SMTP settings are working correctly.",
