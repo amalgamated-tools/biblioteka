@@ -95,7 +95,7 @@
       <div
         class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl mb-4 shadow-lg shadow-accent-500/20 dark:shadow-accent-500/10"
       >
-        <BookCheck class="w-8 h-8 text-white" />
+        <BookCheck class="w-8 h-8 text-white" aria-hidden="true" />
       </div>
       <h1
         class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mb-2"

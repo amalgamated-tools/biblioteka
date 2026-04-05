@@ -206,6 +206,7 @@
       {:else}
         <BookOpen
           class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4"
+          aria-hidden="true"
         />
         <p class="text-ink-400 dark:text-ink-400 text-lg">No books yet.</p>
         <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
@@ -230,7 +231,7 @@
         aria-label="Grid view"
         aria-pressed={viewMode === "grid"}
       >
-        <LayoutGrid class="w-4 h-4" />
+        <LayoutGrid class="w-4 h-4" aria-hidden="true" />
       </button>
       <button
         onclick={() => (viewMode = "table")}
@@ -241,7 +242,7 @@
         aria-label="Table view"
         aria-pressed={viewMode === "table"}
       >
-        <List class="w-4 h-4" />
+        <List class="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   </div>
@@ -297,6 +298,7 @@
                     >
                       <BookOpen
                         class="w-4 h-4 text-ink-300 dark:text-ink-600"
+                        aria-hidden="true"
                       />
                     </div>
                   {/if}
@@ -341,7 +343,7 @@
           ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
           : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
       >
-        <ChevronLeft class="w-4 h-4" />
+        <ChevronLeft class="w-4 h-4" aria-hidden="true" />
         Previous
       </button>
       <span class="text-sm text-ink-500 dark:text-ink-400">
@@ -356,7 +358,7 @@
           : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
       >
         Next
-        <ChevronRight class="w-4 h-4" />
+        <ChevronRight class="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   {/if}

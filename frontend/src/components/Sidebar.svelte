@@ -72,7 +72,7 @@
       <div
         class="w-10 h-10 bg-gradient-to-br from-accent-500 to-accent-700 rounded-xl flex items-center justify-center shadow-lg shadow-accent-700/20"
       >
-        <BookCheck class="w-5 h-5 text-white" />
+        <BookCheck class="w-5 h-5 text-white" aria-hidden="true" />
       </div>
       <div>
         <p class="text-lg font-display font-bold tracking-tight">biblioteka</p>
@@ -103,7 +103,7 @@
             : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
           onclick={onClose}
         >
-          <LayoutDashboard class="w-5 h-5" />
+          <LayoutDashboard class="w-5 h-5" aria-hidden="true" />
           Dashboard
         </a>
         {#if libraryStore.libraries.length > 0}
@@ -116,7 +116,7 @@
               : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
             onclick={onClose}
           >
-            <BookOpen class="w-5 h-5" />
+            <BookOpen class="w-5 h-5" aria-hidden="true" />
             All Books
           </a>
         {/if}
@@ -158,6 +158,7 @@
             >
               <Library
                 class="w-4 h-4 flex-shrink-0 text-ink-500 group-hover:text-accent-400 transition-colors"
+                aria-hidden="true"
               />
               <span class="truncate flex-1 text-left">{lib.name}</span>
             </a>
@@ -167,7 +168,7 @@
               aria-label={`Library settings for ${lib.name}`}
               onclick={onClose}
             >
-              <Settings2 class="w-3.5 h-3.5" />
+              <Settings2 class="w-3.5 h-3.5" aria-hidden="true" />
             </a>
           </div>
         {/each}
@@ -186,7 +187,7 @@
             : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
           onclick={onClose}
         >
-          <SettingsIcon class="w-5 h-5" />
+          <SettingsIcon class="w-5 h-5" aria-hidden="true" />
           Settings
         </a>
       </div>
@@ -204,7 +205,7 @@
       onclick={handleLogout}
       class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-ink-400 hover:bg-ink-800/70 hover:text-white transition-all"
     >
-      <LogOut class="w-5 h-5" />
+      <LogOut class="w-5 h-5" aria-hidden="true" />
       Logout
     </button>
   </div>
