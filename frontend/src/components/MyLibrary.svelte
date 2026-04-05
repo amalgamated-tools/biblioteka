@@ -7,7 +7,10 @@
     <div
       class="w-10 h-10 bg-accent-100 dark:bg-accent-800/20 rounded-xl flex items-center justify-center"
     >
-      <Library class="w-5 h-5 text-accent-600 dark:text-accent-400" aria-hidden="true" />
+      <Library
+        class="w-5 h-5 text-accent-600 dark:text-accent-400"
+        aria-hidden="true"
+      />
     </div>
     <h1
       class="text-3xl font-display font-bold text-ink-900 dark:text-cream-100"
@@ -20,7 +23,10 @@
     class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"
   >
     <div class="text-center py-8">
-      <Library class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4" aria-hidden="true" />
+      <Library
+        class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4"
+        aria-hidden="true"
+      />
       <p class="text-ink-400 dark:text-ink-400 text-lg">
         Your personal library is empty.
       </p>

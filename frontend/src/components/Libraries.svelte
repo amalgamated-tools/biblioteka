@@ -59,7 +59,10 @@
     <div
       class="flex flex-col items-center justify-center py-24 animate-fade-in"
     >
-      <LibraryIcon class="w-16 h-16 text-ink-200 dark:text-ink-700 mb-6" aria-hidden="true" />
+      <LibraryIcon
+        class="w-16 h-16 text-ink-200 dark:text-ink-700 mb-6"
+        aria-hidden="true"
+      />
       {#if libraryStore.libraries.length === 0}
         <button
           onclick={() => routerStore.navigate("libraries/new")}
