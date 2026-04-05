@@ -43,7 +43,7 @@ type SendParams struct {
 	From string
 	// FromHeader is the formatted address for use in the RFC 5322 "From:" message
 	// header. It equals From when no display name is configured, or takes the form
-	// "Display Name <addr>" when a display name is present.
+	// "\"Display Name\" <addr>" when a display name is present.
 	FromHeader string
 	TLS        string
 	Auth       netsmtp.Auth
