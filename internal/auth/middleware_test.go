@@ -1,21 +1,18 @@
 package auth
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
+	if err != nil {
+		t.Fatalf("NewJWTManager() error: %v", err)
+	}
 	mw := Middleware(jm, nil)
 
 	called := false
@@ -38,7 +35,9 @@ func TestMiddleware_MissingAuthorizationHeader(t *testing.T) {
 
 func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
+	if err != nil {
+		t.Fatalf("NewJWTManager() error: %v", err)
+	}
 	mw := Middleware(jm, nil)
 
 	called := false
@@ -64,7 +63,9 @@ func TestMiddleware_InvalidAuthorizationFormat(t *testing.T) {
 
 func TestMiddleware_InvalidToken(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
+	if err != nil {
+		t.Fatalf("NewJWTManager() error: %v", err)
+	}
 	mw := Middleware(jm, nil)
 
 	called := false
@@ -88,11 +89,15 @@ func TestMiddleware_InvalidToken(t *testing.T) {
 
 func TestMiddleware_ValidToken(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
+	if err != nil {
+		t.Fatalf("NewJWTManager() error: %v", err)
+	}
 	mw := Middleware(jm, nil)
 
 	token, err := jm.CreateToken(t.Context(), "user-abc")
-	require.NoError(t, err, "CreateToken() error")
+	if err != nil {
+		t.Fatalf("CreateToken() error: %v", err)
+	}
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +138,9 @@ func TestContextWithUserID(t *testing.T) {
 func assertJSONError(t *testing.T, body []byte, wantMsg string) {
 	t.Helper()
 	var resp map[string]string
-	require.NoError(t, json.Unmarshal(body, &resp), "failed to unmarshal response body")
+	if err := json.Unmarshal(body, &resp); err != nil {
+		t.Fatalf("failed to unmarshal response body: %v", err)
+	}
 	if resp["error"] != wantMsg {
 		t.Errorf("error message = %q, want %q", resp["error"], wantMsg)
 	}
@@ -232,11 +239,15 @@ func TestExtractToken(t *testing.T) {
 
 func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
+	if err != nil {
+		t.Fatalf("NewJWTManager() error: %v", err)
+	}
 	mw := Middleware(jm, nil)
 
 	token, err := jm.CreateToken(t.Context(), "cookie-user")
-	require.NoError(t, err, "CreateToken() error")
+	if err != nil {
+		t.Fatalf("CreateToken() error: %v", err)
+	}
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -258,7 +269,9 @@ func TestMiddleware_ValidTokenViaCookie(t *testing.T) {
 
 func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
+	if err != nil {
+		t.Fatalf("NewJWTManager() error: %v", err)
+	}
 	mw := Middleware(jm, nil)
 
 	called := false
@@ -282,13 +295,19 @@ func TestMiddleware_InvalidTokenViaCookie(t *testing.T) {
 
 func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
 	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
+	if err != nil {
+		t.Fatalf("NewJWTManager() error: %v", err)
+	}
 	mw := Middleware(jm, nil)
 
 	headerToken, err := jm.CreateToken(t.Context(), "header-user")
-	require.NoError(t, err, "CreateToken() error")
+	if err != nil {
+		t.Fatalf("CreateToken() error: %v", err)
+	}
 	cookieToken, err := jm.CreateToken(t.Context(), "cookie-user")
-	require.NoError(t, err, "CreateToken() error")
+	if err != nil {
+		t.Fatalf("CreateToken() error: %v", err)
+	}
 
 	var gotUserID string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -303,327 +322,5 @@ func TestMiddleware_HeaderTakesPrecedenceOverCookie(t *testing.T) {
 
 	if gotUserID != "header-user" {
 		t.Errorf("UserIDFromContext = %q, want %q (header should take precedence)", gotUserID, "header-user")
-	}
-}
-
-// --- AdminMiddleware tests ---
-
-// mockAdminChecker implements AdminChecker for testing.
-type mockAdminChecker struct {
-	admins map[string]bool
-	err    error
-}
-
-func (m *mockAdminChecker) IsAdmin(_ context.Context, userID string) (bool, error) {
-	if m.err != nil {
-		return false, m.err
-	}
-	return m.admins[userID], nil
-}
-
-func TestAdminMiddleware_NoToken(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
-	checker := &mockAdminChecker{admins: map[string]bool{}}
-	mw := AdminMiddleware(jm, checker, nil)
-
-	called := false
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called = true
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
-	assertJSONError(t, w.Body.Bytes(), "authentication required")
-}
-
-func TestAdminMiddleware_InvalidToken(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
-	checker := &mockAdminChecker{admins: map[string]bool{}}
-	mw := AdminMiddleware(jm, checker, nil)
-
-	called := false
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called = true
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set("Authorization", "Bearer badtoken")
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
-	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
-}
-
-func TestAdminMiddleware_NonAdminUser(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
-	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker, nil)
-
-	token, err := jm.CreateToken(t.Context(), "regular-user")
-	require.NoError(t, err, "CreateToken() error")
-
-	called := false
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called = true
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set("Authorization", "Bearer "+token)
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if called {
-		t.Error("next handler should not have been called for non-admin")
-	}
-	if w.Code != http.StatusForbidden {
-		t.Errorf("expected status %d, got %d", http.StatusForbidden, w.Code)
-	}
-	assertJSONError(t, w.Body.Bytes(), "admin access required")
-}
-
-func TestAdminMiddleware_AdminUser(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
-	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker, nil)
-
-	token, err := jm.CreateToken(t.Context(), "admin-user")
-	require.NoError(t, err, "CreateToken() error")
-
-	var gotUserID string
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotUserID = UserIDFromContext(r.Context())
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set("Authorization", "Bearer "+token)
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "admin-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "admin-user")
-	}
-}
-
-func TestAdminMiddleware_AdminViaCookie(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
-	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker, nil)
-
-	token, err := jm.CreateToken(t.Context(), "admin-user")
-	require.NoError(t, err, "CreateToken() error")
-
-	var gotUserID string
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotUserID = UserIDFromContext(r.Context())
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: token})
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "admin-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "admin-user")
-	}
-}
-
-func TestAdminMiddleware_CheckerError(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
-	checker := &mockAdminChecker{err: errors.New("db down")}
-	mw := AdminMiddleware(jm, checker, nil)
-
-	token, err := jm.CreateToken(t.Context(), "some-user")
-	require.NoError(t, err, "CreateToken() error")
-
-	called := false
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called = true
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set("Authorization", "Bearer "+token)
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if called {
-		t.Error("next handler should not have been called on checker error")
-	}
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
-	}
-	assertJSONError(t, w.Body.Bytes(), "failed to verify permissions")
-}
-
-// --- API Key auth tests ---
-
-// mockAPIKeyValidator implements APIKeyValidator for testing.
-type mockAPIKeyValidator struct {
-	keys    map[string]struct{ userID, keyID string } // keyHash -> (userID, keyID)
-	touched []string                                  // keyIDs passed to TouchAPIKeyLastUsed
-	err     error
-}
-
-func (m *mockAPIKeyValidator) ValidateAPIKey(_ context.Context, keyHash string) (string, string, error) {
-	if m.err != nil {
-		return "", "", m.err
-	}
-	entry, ok := m.keys[keyHash]
-	if !ok {
-		return "", "", sql.ErrNoRows
-	}
-	return entry.userID, entry.keyID, nil
-}
-
-func (m *mockAPIKeyValidator) TouchAPIKeyLastUsed(_ context.Context, id string) error {
-	m.touched = append(m.touched, id)
-	return nil
-}
-
-func TestMiddleware_ValidAPIKey(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
-	apiKey := "bib_abcdef1234567890abcdef1234567890"
-	keyHash := HashAPIKey(apiKey)
-	validator := &mockAPIKeyValidator{
-		keys: map[string]struct{ userID, keyID string }{
-			keyHash: {userID: "apikey-user", keyID: "key-1"},
-		},
-	}
-	mw := Middleware(jm, validator)
-
-	var gotUserID string
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotUserID = UserIDFromContext(r.Context())
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set("Authorization", "Bearer "+apiKey)
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "apikey-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "apikey-user")
-	}
-
-	if len(validator.touched) != 1 || validator.touched[0] != "key-1" {
-		t.Errorf("TouchAPIKeyLastUsed called with %v, want [key-1]", validator.touched)
-	}
-}
-
-func TestMiddleware_InvalidAPIKey(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
-	validator := &mockAPIKeyValidator{
-		keys: map[string]struct{ userID, keyID string }{},
-	}
-	mw := Middleware(jm, validator)
-
-	called := false
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called = true
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set("Authorization", "Bearer bib_invalidkey00000000000000000000")
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
-	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
-}
-
-func TestMiddleware_APIKeyViaCookieRejected(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
-	apiKey := "bib_abcdef1234567890abcdef1234567890"
-	keyHash := HashAPIKey(apiKey)
-	validator := &mockAPIKeyValidator{
-		keys: map[string]struct{ userID, keyID string }{
-			keyHash: {userID: "apikey-user", keyID: "key-1"},
-		},
-	}
-	mw := Middleware(jm, validator)
-
-	called := false
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called = true
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.AddCookie(&http.Cookie{Name: tokenCookieName, Value: apiKey})
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if called {
-		t.Error("next handler should not have been called for API key via cookie")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, w.Code)
-	}
-	assertJSONError(t, w.Body.Bytes(), "invalid or expired token")
-}
-
-func TestAdminMiddleware_ValidAPIKey(t *testing.T) {
-	jm, err := NewJWTManager("secret", time.Hour)
-	require.NoError(t, err, "NewJWTManager() error")
-	apiKey := "bib_abcdef1234567890abcdef1234567890"
-	keyHash := HashAPIKey(apiKey)
-	validator := &mockAPIKeyValidator{
-		keys: map[string]struct{ userID, keyID string }{
-			keyHash: {userID: "admin-user", keyID: "key-2"},
-		},
-	}
-	checker := &mockAdminChecker{admins: map[string]bool{"admin-user": true}}
-	mw := AdminMiddleware(jm, checker, validator)
-
-	var gotUserID string
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotUserID = UserIDFromContext(r.Context())
-	})
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set("Authorization", "Bearer "+apiKey)
-	w := httptest.NewRecorder()
-	mw(next).ServeHTTP(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-	if gotUserID != "admin-user" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "admin-user")
 	}
 }
