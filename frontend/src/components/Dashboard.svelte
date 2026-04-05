@@ -61,38 +61,44 @@
       <div
         class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all"
       >
-        <p class="text-sm font-medium text-ink-400 dark:text-ink-400">
-          Total Books
-        </p>
-        <p
-          class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mt-2"
-        >
-          0
-        </p>
+        <dl class="flex flex-col gap-2">
+          <dt class="text-sm font-medium text-ink-400 dark:text-ink-400">
+            Total Books
+          </dt>
+          <dd
+            class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 m-0"
+          >
+            0
+          </dd>
+        </dl>
       </div>
       <div
         class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all"
       >
-        <p class="text-sm font-medium text-ink-400 dark:text-ink-400">
-          Libraries
-        </p>
-        <p
-          class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mt-2"
-        >
-          {libraryStore.libraries.length}
-        </p>
+        <dl class="flex flex-col gap-2">
+          <dt class="text-sm font-medium text-ink-400 dark:text-ink-400">
+            Libraries
+          </dt>
+          <dd
+            class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 m-0"
+          >
+            {libraryStore.libraries.length}
+          </dd>
+        </dl>
       </div>
       <div
         class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all"
       >
-        <p class="text-sm font-medium text-ink-400 dark:text-ink-400">
-          Currently Reading
-        </p>
-        <p
-          class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mt-2"
-        >
-          0
-        </p>
+        <dl class="flex flex-col gap-2">
+          <dt class="text-sm font-medium text-ink-400 dark:text-ink-400">
+            Currently Reading
+          </dt>
+          <dd
+            class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 m-0"
+          >
+            0
+          </dd>
+        </dl>
       </div>
     </div>
 
