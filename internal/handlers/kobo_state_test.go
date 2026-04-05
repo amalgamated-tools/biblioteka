@@ -72,9 +72,7 @@ func TestHandleBookState_ReadingProgressPercentage(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleBookState(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
 	if !strings.Contains(body, "Reading") {
 		t.Errorf("expected Reading status in response, got: %s", body)
@@ -108,7 +106,5 @@ func TestHandleBookState_UserIsolation(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleBookState(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }

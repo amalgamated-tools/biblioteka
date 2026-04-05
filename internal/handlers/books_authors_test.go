@@ -23,9 +23,7 @@ func TestGetBookAuthors_Empty(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dtos []authorDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
@@ -51,9 +49,7 @@ func TestGetBookAuthors_WithAuthors(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dtos []authorDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
@@ -77,15 +73,11 @@ func TestPutBookAuthors_Success(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dtos []authorDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
-	if len(dtos) != 1 {
-		require.Failf(t, "failed", "len = %d, want 1", len(dtos))
-	}
+	require.Len(t, dtos, 1)
 	if dtos[0].Name != "Stephen King" {
 		t.Errorf("name = %q, want %q", dtos[0].Name, "Stephen King")
 	}
@@ -107,9 +99,7 @@ func TestPutBookAuthors_ClearsExisting(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleBookRoutes(w, r)
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "initial PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Replace with just one author.
 	body2 := mustMarshal(t, setBookAuthorsRequest{AuthorIDs: []string{a1.ID}})
@@ -118,9 +108,7 @@ func TestPutBookAuthors_ClearsExisting(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleBookRoutes(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		require.Failf(t, "failed", "replace PUT status = %d; body: %s", w2.Code, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var dtos []authorDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &dtos), "unmarshal")
@@ -176,9 +164,7 @@ func TestPutBookAuthors_EmptyList(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dtos []authorDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")

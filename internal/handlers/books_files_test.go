@@ -23,9 +23,7 @@ func TestGetBookFiles_Empty(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var files []bookFileDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &files), "unmarshal")
@@ -49,15 +47,11 @@ func TestGetBookFiles_WithFiles(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var files []bookFileDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &files), "unmarshal")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "len = %d, want 1", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FileName != "gunslinger.epub" {
 		t.Errorf("file_name = %q, want %q", files[0].FileName, "gunslinger.epub")
 	}
@@ -81,9 +75,7 @@ func TestPostBookFiles_Success(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var dto bookFileDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
@@ -215,9 +207,7 @@ func TestPostBookFiles_AuditLog(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
 	require.NoError(t, err, "list audit logs")

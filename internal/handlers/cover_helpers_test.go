@@ -68,9 +68,7 @@ func TestDataURLMIMEType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotMIME, gotOK := dataURLMIMEType(tt.input)
-			if gotOK != tt.wantOK {
-				require.Failf(t, "failed", "dataURLMIMEType(%q) ok = %v, want %v", tt.input, gotOK, tt.wantOK)
-			}
+			require.Equal(t, tt.wantOK, gotOK)
 			if gotMIME != tt.wantMIME {
 				t.Errorf("dataURLMIMEType(%q) mime = %q, want %q", tt.input, gotMIME, tt.wantMIME)
 			}

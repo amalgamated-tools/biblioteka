@@ -131,9 +131,7 @@ func TestReorganizedCandidatePaths_BookPerFolder(t *testing.T) {
 
 	candidates := reorganizedCandidatePaths(context.Background(), p, pathInfo, db.LibraryOrganizationBookPerFolder)
 
-	if len(candidates) != 1 {
-		require.Failf(t, "failed", "expected 1 candidate, got %d: %v", len(candidates), candidates)
-	}
+	require.Len(t, candidates, 1)
 	// The candidate should be under libraryRoot/Author/Title/
 	rel, err := filepath.Rel(dir, candidates[0])
 	require.NoError(t, err, "filepath.Rel")
@@ -202,9 +200,7 @@ func TestReorganizedCandidatePaths_BookPerFile(t *testing.T) {
 
 	candidates := reorganizedCandidatePaths(context.Background(), p, pathInfo, db.LibraryOrganizationBookPerFile)
 
-	if len(candidates) != 1 {
-		require.Failf(t, "failed", "expected 1 candidate, got %d: %v", len(candidates), candidates)
-	}
+	require.Len(t, candidates, 1)
 	// Flat layout: libraryRoot/Author/filename
 	expected := filepath.Join(dir, "Terry Pratchett", "book.epub")
 	if candidates[0] != expected {

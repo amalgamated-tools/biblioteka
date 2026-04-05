@@ -120,9 +120,7 @@ func TestListBooks_InvalidLimitOffset_NonInt(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -158,9 +156,7 @@ func TestListBooks_NegativeLimitOffset(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -204,9 +200,7 @@ func TestListBooks_MaxLimitClamping(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -243,9 +237,7 @@ func TestListBooks_Search_MatchesTitle(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -273,9 +265,7 @@ func TestListBooks_Search_NoResults(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -304,9 +294,7 @@ func TestListBooks_EmptyQuery_ReturnsAll(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -335,9 +323,7 @@ func TestListBooks_WhitespaceOnlyQuery_ReturnsAll(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -450,9 +436,7 @@ func TestBookAuthors_Handler(t *testing.T) {
 
 	var authors []authorDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &authors), "unmarshal")
-	if len(authors) != 1 {
-		require.Failf(t, "failed", "len = %d, want 1", len(authors))
-	}
+	require.Len(t, authors, 1)
 	if authors[0].Name != "Stephen King" {
 		t.Errorf("name = %q, want %q", authors[0].Name, "Stephen King")
 	}
@@ -493,9 +477,7 @@ func TestBookSeries_Handler(t *testing.T) {
 
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &entries), "unmarshal")
-	if len(entries) != 1 {
-		require.Failf(t, "failed", "len = %d, want 1", len(entries))
-	}
+	require.Len(t, entries, 1)
 	if entries[0].Series.Name != "The Dark Tower" {
 		t.Errorf("series name = %q, want %q", entries[0].Series.Name, "The Dark Tower")
 	}
@@ -537,7 +519,5 @@ func TestBookFiles_Handler(t *testing.T) {
 
 	var files []bookFileDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &files), "unmarshal")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "len = %d, want 1", len(files))
-	}
+	require.Len(t, files, 1)
 }

@@ -77,16 +77,10 @@ func TestEPUB3CoverImport_EndToEnd(t *testing.T) {
 	// Verify the cover is associated with the imported book.
 	books, err := d.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	book := books[0]
-	if book.CoverImageURL == nil {
-		require.Fail(t, "expected cover image URL to be set, got nil")
-	}
-	if !strings.HasPrefix(*book.CoverImageURL, "data:image/png;base64,") {
-		require.Failf(t, "failed", "expected PNG data URL cover, got %q", *book.CoverImageURL)
-	}
+	require.NotNil(t, book.CoverImageURL)
+	require.True(t, strings.HasPrefix(*book.CoverImageURL, "data:image/png;base64,"))
 
 	// Verify the decoded cover bytes match the original image.
 	b64 := strings.TrimPrefix(*book.CoverImageURL, "data:image/png;base64,")
@@ -101,9 +95,7 @@ func TestEPUB3CoverImport_EndToEnd(t *testing.T) {
 	w := httptest.NewRecorder()
 	koboH.HandleCoverImage(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "HandleCoverImage status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	ct := w.Header().Get("Content-Type")
 	if !strings.HasPrefix(ct, "image/png") {
 		t.Errorf("Content-Type = %q, want image/png", ct)

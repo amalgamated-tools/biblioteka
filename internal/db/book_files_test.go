@@ -12,15 +12,11 @@ func TestCreateBookFile(t *testing.T) {
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook() error")
-	if book == nil {
-		require.Fail(t, "CreateBook() returned nil book")
-	}
+	require.NotNil(t, book)
 
 	bf, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024000, new("abc123hash"), "/books/gunslinger.epub")
 	require.NoError(t, err, "CreateBookFile() error")
-	if bf == nil {
-		require.Fail(t, "CreateBookFile() returned nil book file")
-	}
+	require.NotNil(t, bf)
 	if bf.ID == "" {
 		t.Error("CreateBookFile() returned empty ID")
 	}
@@ -82,9 +78,7 @@ func TestListBookFiles(t *testing.T) {
 
 	files, err := d.ListBookFiles(t.Context(), book.ID)
 	require.NoError(t, err, "ListBookFiles() error")
-	if len(files) != 2 {
-		require.Failf(t, "failed", "ListBookFiles() returned %d, want 2", len(files))
-	}
+	require.Len(t, files, 2)
 	if files[0].FileName != "gunslinger.epub" {
 		t.Errorf("first file FileName = %q, want %q", files[0].FileName, "gunslinger.epub")
 	}
@@ -121,14 +115,10 @@ func TestDeleteBook_CascadeFiles(t *testing.T) {
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook() error")
-	if book == nil {
-		require.Fail(t, "CreateBook() returned nil book")
-	}
+	require.NotNil(t, book)
 	bf, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 	require.NoError(t, err, "CreateBookFile() error")
-	if bf == nil {
-		require.Fail(t, "CreateBookFile() returned nil book file")
-	}
+	require.NotNil(t, bf)
 
 	require.NoError(t, d.DeleteBook(t.Context(), book.ID), "DeleteBook() error")
 
@@ -143,14 +133,10 @@ func TestGetFilesForBooks(t *testing.T) {
 
 	book1, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook() for book1 error")
-	if book1 == nil {
-		require.Fail(t, "CreateBook() returned nil book1")
-	}
+	require.NotNil(t, book1)
 	book2, err := d.CreateBook(t.Context(), "Wizard and Glass", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook() for book2 error")
-	if book2 == nil {
-		require.Fail(t, "CreateBook() returned nil book2")
-	}
+	require.NotNil(t, book2)
 
 	if _, err = d.CreateBookFile(t.Context(), book1.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub"); err != nil {
 		require.NoError(t, err, "CreateBookFile() for book1 epub error")
@@ -164,12 +150,8 @@ func TestGetFilesForBooks(t *testing.T) {
 
 	got, err := d.GetFilesForBooks(t.Context(), []string{book1.ID, book2.ID})
 	require.NoError(t, err, "GetFilesForBooks() error")
-	if len(got) != 2 {
-		require.Failf(t, "failed", "GetFilesForBooks() returned %d book entries, want 2", len(got))
-	}
-	if len(got[book1.ID]) != 2 {
-		require.Failf(t, "failed", "GetFilesForBooks()[book1] returned %d files, want 2", len(got[book1.ID]))
-	}
+	require.Len(t, got, 2)
+	require.Len(t, got[book1.ID], 2)
 	if got[book1.ID][0].FileName != "gunslinger.epub" {
 		t.Errorf("first file for book1 = %q, want %q", got[book1.ID][0].FileName, "gunslinger.epub")
 	}

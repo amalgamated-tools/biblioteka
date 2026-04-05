@@ -82,9 +82,7 @@ func TestKoboBookMetadata_WithSeries(t *testing.T) {
 	meta := kobo.BookMetadata(book, nil, series, nil)
 
 	seriesMeta := meta.Series
-	if seriesMeta == nil {
-		require.Fail(t, "expected Series in metadata")
-	}
+	require.NotNil(t, seriesMeta)
 	if seriesMeta.Name != seriesName {
 		t.Errorf("Series.Name = %v, want %q", seriesMeta.Name, seriesName)
 	}

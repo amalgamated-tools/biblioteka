@@ -71,9 +71,7 @@ func TestFindOrCreate_CreatesNewEntity(t *testing.T) {
 		},
 	)
 	require.NoError(t, err, "findOrCreate() error")
-	if result == nil {
-		require.Fail(t, "findOrCreate() returned nil")
-	}
+	require.NotNil(t, result)
 	if result.name != "newEntity" {
 		t.Errorf("result.name = %q, want newEntity", result.name)
 	}

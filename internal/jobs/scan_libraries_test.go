@@ -51,9 +51,7 @@ func TestScanLibrariesHandler(t *testing.T) {
 	require.NoError(t, handler(t.Context(), nil), "handler")
 
 	// Expect 2 scan:library jobs (lib1 and lib2; lib3 is not monitored)
-	if got := len(enq.jobs); got != 2 {
-		require.Failf(t, "failed", "expected 2 enqueued jobs, got %d", got)
-	}
+	require.Len(t, enq.jobs, 2)
 
 	wantJobs := map[string][]string{
 		"lib1": {"/books/fiction", "/books/scifi"},
@@ -112,9 +110,7 @@ func TestScanLibrariesHandler_ListError(t *testing.T) {
 	lister := &mockLibraryLister{err: errors.New("db error")}
 
 	handler := NewScanLibrariesHandler(lister, enq)
-	if err := handler(t.Context(), nil); err == nil {
-		require.Fail(t, "expected error when ListLibraries fails")
-	}
+	require.Error(t, handler(t.Context(), nil))
 }
 
 func TestScanLibrariesHandler_InvalidPaths(t *testing.T) {

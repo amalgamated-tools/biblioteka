@@ -63,9 +63,7 @@ func TestListBooks(t *testing.T) {
 
 	books, err := d.ListBooks(t.Context())
 	require.NoError(t, err, "ListBooks() error")
-	if len(books) != 2 {
-		require.Failf(t, "failed", "ListBooks() returned %d, want 2", len(books))
-	}
+	require.Len(t, books, 2)
 	if books[0].Title != "A Game of Thrones" {
 		t.Errorf("first book Title = %q, want %q", books[0].Title, "A Game of Thrones")
 	}
@@ -121,9 +119,7 @@ func TestAddBookToLibrary(t *testing.T) {
 
 	books, err := d.ListBooksByLibrary(t.Context(), lib.ID)
 	require.NoError(t, err, "ListBooksByLibrary() error")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "ListBooksByLibrary() returned %d, want 1", len(books))
-	}
+	require.Len(t, books, 1)
 	if books[0].ID != book.ID {
 		t.Errorf("book ID = %q, want %q", books[0].ID, book.ID)
 	}
@@ -203,9 +199,7 @@ func TestSetBookAuthors(t *testing.T) {
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookAuthors() error")
-	if len(authors) != 2 {
-		require.Failf(t, "failed", "GetBookAuthors() returned %d, want 2", len(authors))
-	}
+	require.Len(t, authors, 2)
 }
 
 func TestSetBookAuthors_Replace(t *testing.T) {
@@ -225,9 +219,7 @@ func TestSetBookAuthors_Replace(t *testing.T) {
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookAuthors() error")
-	if len(authors) != 1 {
-		require.Failf(t, "failed", "GetBookAuthors() returned %d, want 1", len(authors))
-	}
+	require.Len(t, authors, 1)
 	if authors[0].ID != a2.ID {
 		t.Errorf("author ID = %q, want %q", authors[0].ID, a2.ID)
 	}
@@ -238,24 +230,18 @@ func TestSetBookSeries(t *testing.T) {
 
 	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook() error")
-	if book == nil {
-		require.Fail(t, "CreateBook() returned nil book")
-	}
+	require.NotNil(t, book)
 
 	s, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	require.NoError(t, err, "CreateSeries() error")
-	if s == nil {
-		require.Fail(t, "CreateSeries() returned nil series")
-	}
+	require.NotNil(t, s)
 
 	err = d.SetBookSeries(t.Context(), book.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(float64(1))}})
 	require.NoError(t, err, "SetBookSeries() error")
 
 	entries, err := d.GetBookSeries(t.Context(), book.ID)
 	require.NoError(t, err, "GetBookSeries() error")
-	if len(entries) != 1 {
-		require.Failf(t, "failed", "GetBookSeries() returned %d, want 1", len(entries))
-	}
+	require.Len(t, entries, 1)
 	if entries[0].Series.ID != s.ID {
 		t.Errorf("series ID = %q, want %q", entries[0].Series.ID, s.ID)
 	}
@@ -269,39 +255,27 @@ func TestGetAuthorsForBooks(t *testing.T) {
 
 	book1, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook() for book1 error")
-	if book1 == nil {
-		require.Fail(t, "CreateBook() for book1 returned nil book")
-	}
+	require.NotNil(t, book1)
 
 	book2, err := d.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "CreateBook() for book2 error")
-	if book2 == nil {
-		require.Fail(t, "CreateBook() for book2 returned nil book")
-	}
+	require.NotNil(t, book2)
 
 	author1, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor() for author1 error")
-	if author1 == nil {
-		require.Fail(t, "CreateAuthor() for author1 returned nil author")
-	}
+	require.NotNil(t, author1)
 
 	author2, err := d.CreateAuthor(t.Context(), "Robin Furth", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor() for author2 error")
-	if author2 == nil {
-		require.Fail(t, "CreateAuthor() for author2 returned nil author")
-	}
+	require.NotNil(t, author2)
 
 	require.NoError(t, d.SetBookAuthors(t.Context(), book1.ID, []string{author2.ID, author1.ID}), "SetBookAuthors() for book1 error")
 	require.NoError(t, d.SetBookAuthors(t.Context(), book2.ID, []string{author1.ID}), "SetBookAuthors() for book2 error")
 
 	got, err := d.GetAuthorsForBooks(t.Context(), []string{book1.ID, book2.ID})
 	require.NoError(t, err, "GetAuthorsForBooks() error")
-	if len(got) != 2 {
-		require.Failf(t, "failed", "GetAuthorsForBooks() returned %d book entries, want 2", len(got))
-	}
-	if len(got[book1.ID]) != 2 {
-		require.Failf(t, "failed", "GetAuthorsForBooks()[book1] returned %d authors, want 2", len(got[book1.ID]))
-	}
+	require.Len(t, got, 2)
+	require.Len(t, got[book1.ID], 2)
 	seen := map[string]bool{}
 	for _, author := range got[book1.ID] {
 		seen[author.ID] = true

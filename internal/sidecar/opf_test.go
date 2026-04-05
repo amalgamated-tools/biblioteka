@@ -99,9 +99,7 @@ func TestWriteOPF_EmptyTitle(t *testing.T) {
 	dir := t.TempDir()
 	data := OPFData{}
 
-	if err := WriteOPF(t.Context(), dir, data, ""); err == nil {
-		require.Fail(t, "expected error when title is empty")
-	}
+	require.Error(t, WriteOPF(t.Context(), dir, data, ""))
 }
 
 func TestWriteOPF_UUIDIsDeterministic(t *testing.T) {
@@ -122,9 +120,8 @@ func TestWriteOPF_UUIDIsDeterministic(t *testing.T) {
 	uuidRe := regexp.MustCompile(`urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 	uuid1 := uuidRe.FindString(string(first))
 	uuid2 := uuidRe.FindString(string(second))
-	if uuid1 == "" || uuid2 == "" {
-		require.Failf(t, "failed", "expected UUIDs in both OPF files, got %q and %q", uuid1, uuid2)
-	}
+	require.NotEmpty(t, uuid1)
+	require.NotEmpty(t, uuid2)
 	if uuid1 != uuid2 {
 		t.Errorf("UUID changed between calls: %q vs %q", uuid1, uuid2)
 	}
@@ -247,7 +244,5 @@ func TestWriteOPF_InvalidBaseName(t *testing.T) {
 	dir := t.TempDir()
 	data := OPFData{Title: "Unsafe"}
 
-	if err := WriteOPF(t.Context(), dir, data, "../escape"); err == nil {
-		require.Fail(t, "expected error for invalid base name")
-	}
+	require.Error(t, WriteOPF(t.Context(), dir, data, "../escape"))
 }

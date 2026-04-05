@@ -94,9 +94,7 @@ func TestSearch_Success(t *testing.T) {
 	results, err := client.Search(t.Context(), "project hail mary")
 	require.NoError(t, err)
 
-	if len(results) != 1 {
-		require.Failf(t, "failed", "expected 1 result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 
 	r := results[0]
 	if r.WorkID != "kca://work/amzn1.gr.work.v1.abc123" {
@@ -260,9 +258,7 @@ func Test_SearchByISBN(t *testing.T) {
 
 	results, err := client.SearchByISBN(t.Context(), response.GetBookByLegacyId.Work.BestBook.Details.Isbn)
 	require.NoError(t, err, "failed to search by ISBN")
-	if len(results) != 1 {
-		require.Failf(t, "failed", "expected 1 result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 
 	r := results[0]
 	expected, err := loadBookResult(t.Context(), response.GetBookByLegacyId.Work)
@@ -343,9 +339,7 @@ func TestParseISBNSearchResponse_Success(t *testing.T) {
 
 	results, err := client.parseISBNSearchResponse(t.Context(), AutoComplete)
 	require.NoError(t, err)
-	if len(results) != 1 {
-		require.Failf(t, "failed", "expected 1 result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 
 	r := results[0]
 	expected, err := loadBookResult(t.Context(), response.GetBookByLegacyId.Work)
@@ -442,9 +436,7 @@ func TestParseISBNSearchResponse_OptionalFieldsMissing(t *testing.T) {
 	body := `[{"bookId": "123", "workId": "456", "title": "Minimal Book"}]`
 	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
-	if len(results) != 1 {
-		require.Failf(t, "failed", "expected 1 result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 
 	r := results[0]
 	if r.BookTitle != "Minimal Book" {
@@ -479,9 +471,7 @@ func TestParseISBNSearchResponse_MultipleResults(t *testing.T) {
 	]`
 	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
-	if len(results) != 2 {
-		require.Failf(t, "failed", "expected 2 results, got %d", len(results))
-	}
+	require.Len(t, results, 2)
 	if results[0].BookTitle != "Book One" {
 		t.Errorf("results[0].BookTitle = %q, want %q", results[0].BookTitle, "Book One")
 	}
@@ -503,9 +493,7 @@ func TestParseISBNSearchResponse_SkipsInvalidEntriesKeepsValid(t *testing.T) {
 	]`
 	results, err := noResponseClient().parseISBNSearchResponse(t.Context(), []byte(body))
 	require.NoError(t, err)
-	if len(results) != 1 {
-		require.Failf(t, "failed", "expected 1 result (skipping invalid), got %d", len(results))
-	}
+	require.Len(t, results, 1)
 	if results[0].BookTitle != "Valid Entry" {
 		t.Errorf("BookTitle = %q, want %q", results[0].BookTitle, "Valid Entry")
 	}

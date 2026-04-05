@@ -43,9 +43,7 @@ func TestRespondBookSubResource(t *testing.T) {
 		}
 		var dtos []fakeItemDTO
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
-		if len(dtos) != 2 {
-			require.Failf(t, "failed", "len = %d, want 2", len(dtos))
-		}
+		require.Len(t, dtos, 2)
 		if dtos[0].Name != "Alpha" {
 			t.Errorf("dtos[0].Name = %q, want %q", dtos[0].Name, "Alpha")
 		}

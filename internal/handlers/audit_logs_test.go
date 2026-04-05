@@ -91,9 +91,7 @@ func TestHandleAuditLogs_DefaultPagination(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -114,9 +112,7 @@ func TestHandleAuditLogs_CustomPagination(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -137,9 +133,7 @@ func TestHandleAuditLogs_LimitCappedAtMax(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -201,9 +195,7 @@ func TestHandleAuditLogs_EmptyList(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -225,9 +217,7 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
@@ -237,9 +227,7 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 	for _, e := range resp.Entries {
 		if e.EntityID == "book-meta-1" {
 			found = true
-			if e.Metadata == nil {
-				require.Fail(t, "expected metadata to be non-nil")
-			}
+			require.NotNil(t, e.Metadata)
 			var m map[string]any
 			require.NoError(t, json.Unmarshal(e.Metadata, &m), "unmarshal metadata")
 			if m["title"] != "Go Programming" {
@@ -307,9 +295,7 @@ func TestToAuditLogDTO_ValidMetadata(t *testing.T) {
 
 	dto := toAuditLogDTO(entry)
 
-	if dto.Metadata == nil {
-		require.Fail(t, "Metadata should not be nil")
-	}
+	require.NotNil(t, dto.Metadata)
 
 	var m map[string]any
 	require.NoError(t, json.Unmarshal(dto.Metadata, &m), "unmarshal metadata")

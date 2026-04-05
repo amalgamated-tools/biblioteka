@@ -38,9 +38,7 @@ func TestScanDirectory_NotADirectory(t *testing.T) {
 	_ = f.Close()
 
 	scanErr := ScanDirectory(context.Background(), &mockEnqueuer{}, ScanPathPayload{Path: f.Name()})
-	if scanErr == nil {
-		require.Fail(t, "expected error for file path, not directory")
-	}
+	require.NotNil(t, scanErr)
 }
 
 // TestScanDirectory_EmptyDirectory verifies that an empty directory produces
@@ -193,9 +191,7 @@ func TestScanDirectory_PayloadFields(t *testing.T) {
 	jobs := enqueuer.jobs
 	enqueuer.mu.Unlock()
 
-	if len(jobs) != 1 {
-		require.Failf(t, "failed", "expected 1 job, got %d", len(jobs))
-	}
+	require.Len(t, jobs, 1)
 	p := jobs[0].Payload
 	if p.FileName != "my-novel.epub" {
 		t.Errorf("FileName = %q, want %q", p.FileName, "my-novel.epub")

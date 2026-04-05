@@ -161,9 +161,7 @@ func TestListAuthors(t *testing.T) {
 
 	authors, err := d.ListAuthors(t.Context())
 	require.NoError(t, err, "ListAuthors() error")
-	if len(authors) != 2 {
-		require.Failf(t, "failed", "ListAuthors() returned %d, want 2", len(authors))
-	}
+	require.Len(t, authors, 2)
 	if authors[0].Name != "Brandon Sanderson" {
 		t.Errorf("first author Name = %q, want %q", authors[0].Name, "Brandon Sanderson")
 	}
@@ -264,9 +262,7 @@ func TestListAuthorsPaginated(t *testing.T) {
 	if total != 4 {
 		t.Errorf("total = %d, want 4", total)
 	}
-	if len(page1) != 2 {
-		require.Failf(t, "failed", "len(page1) = %d, want 2", len(page1))
-	}
+	require.Len(t, page1, 2)
 	if page1[0].Name != "Brandon Sanderson" {
 		t.Errorf("page1[0].Name = %q, want %q", page1[0].Name, "Brandon Sanderson")
 	}
@@ -280,9 +276,7 @@ func TestListAuthorsPaginated(t *testing.T) {
 	if total2 != 4 {
 		t.Errorf("page 2 total = %d, want 4", total2)
 	}
-	if len(page2) != 2 {
-		require.Failf(t, "failed", "len(page2) = %d, want 2", len(page2))
-	}
+	require.Len(t, page2, 2)
 	if page2[0].Name != "Stephen King" {
 		t.Errorf("page2[0].Name = %q, want %q", page2[0].Name, "Stephen King")
 	}

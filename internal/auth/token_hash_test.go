@@ -36,15 +36,9 @@ func TestHashHighEntropyTokenWrappers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := hashHighEntropyToken(tt.token); got != tt.want {
-				require.Failf(t, "failed", "hashHighEntropyToken(%q) = %q, want %q", tt.token, got, tt.want)
-			}
-			if got := HashAPIKey(tt.token); got != tt.want {
-				require.Failf(t, "failed", "HashAPIKey(%q) = %q, want %q", tt.token, got, tt.want)
-			}
-			if got := HashKoboToken(tt.token); got != tt.want {
-				require.Failf(t, "failed", "HashKoboToken(%q) = %q, want %q", tt.token, got, tt.want)
-			}
+			require.Equal(t, tt.want, hashHighEntropyToken(tt.token))
+			require.Equal(t, tt.want, HashAPIKey(tt.token))
+			require.Equal(t, tt.want, HashKoboToken(tt.token))
 		})
 	}
 }

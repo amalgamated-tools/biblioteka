@@ -133,9 +133,7 @@ func TestListGoodreadsMetadataByUser(t *testing.T) {
 
 	results, err := d.ListGoodreadsMetadataByUser(t.Context(), user.ID, 50, 0)
 	require.NoError(t, err, "ListGoodreadsMetadataByUser() error")
-	if len(results) != 2 {
-		require.Failf(t, "failed", "expected 2 results, got %d", len(results))
-	}
+	require.Len(t, results, 2)
 }
 
 func TestListGoodreadsMetadataByStatus(t *testing.T) {
@@ -167,18 +165,14 @@ func TestListGoodreadsMetadataByStatus(t *testing.T) {
 
 	pending, err := d.ListGoodreadsMetadataByStatus(t.Context(), user.ID, GoodreadsMetadataStatusPending, 50, 0)
 	require.NoError(t, err, "ListGoodreadsMetadataByStatus() error")
-	if len(pending) != 1 {
-		require.Failf(t, "failed", "expected 1 pending, got %d", len(pending))
-	}
+	require.Len(t, pending, 1)
 	if pending[0].Title == nil || *pending[0].Title != title2 {
 		t.Errorf("Title = %v, want %q", pending[0].Title, title2)
 	}
 
 	applied, err := d.ListGoodreadsMetadataByStatus(t.Context(), user.ID, GoodreadsMetadataStatusApplied, 50, 0)
 	require.NoError(t, err, "ListGoodreadsMetadataByStatus() error")
-	if len(applied) != 1 {
-		require.Failf(t, "failed", "expected 1 applied, got %d", len(applied))
-	}
+	require.Len(t, applied, 1)
 }
 
 func TestUpdateGoodreadsMetadataStatus(t *testing.T) {

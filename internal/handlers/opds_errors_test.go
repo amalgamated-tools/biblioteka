@@ -115,9 +115,7 @@ func TestBookEntries_AuthorLoadError(t *testing.T) {
 	entries := h.bookEntries(ctx, books, "http://example.com/opds")
 
 	// Should still return entries, just without authors or download links.
-	if len(entries) != 1 {
-		require.Failf(t, "failed", "entries = %d, want 1", len(entries))
-	}
+	require.Len(t, entries, 1)
 	if entries[0].Title != "Test Book" {
 		t.Errorf("title = %q, want %q", entries[0].Title, "Test Book")
 	}

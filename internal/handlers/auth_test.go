@@ -21,11 +21,11 @@ func newTestDB(t *testing.T) *db.DB {
 	t.Helper()
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err, "newTestDB: open")
-	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
-		_ = sqlDB.Close()
-		require.NoError(t, err, "newTestDB: migrations")
-	}
 	t.Cleanup(func() { _ = sqlDB.Close() })
+
+	err = db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite)
+	require.NoError(t, err, "newTestDB: migrations")
+
 	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
 }
 
@@ -114,9 +114,7 @@ func TestSignup_DuplicateEmail(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "first signup failed: %s", w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	// Second signup with same email should fail
 	r2 := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
@@ -161,9 +159,7 @@ func TestLogin_Success(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "signup failed: %s", w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	loginBody := `{"email":"bob@example.com","password":"secret123"}`
 	r2 := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
@@ -420,9 +416,7 @@ func assertAuthCookie(t *testing.T, w *httptest.ResponseRecorder, wantValue bool
 			break
 		}
 	}
-	if found == nil {
-		require.Fail(t, "expected Set-Cookie header for auth cookie, but none found")
-	}
+	require.NotNil(t, found)
 	if wantValue && found.Value == "" {
 		t.Error("expected non-empty cookie value")
 	}
@@ -448,9 +442,7 @@ func TestSignup_SetsCookie(t *testing.T) {
 
 	h.Signup(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	assertAuthCookie(t, w, true)
 }
 
@@ -463,18 +455,14 @@ func TestLogin_SetsCookie(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "signup failed: %s", w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	loginBody := `{"email":"cookielogin@example.com","password":"secret123"}`
 	r2 := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
 	w2 := httptest.NewRecorder()
 	h.Login(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 	assertAuthCookie(t, w2, true)
 }
 
@@ -487,9 +475,7 @@ func TestLogout_ClearsCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Logout(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	cookies := w.Result().Cookies()
 	var found *http.Cookie
@@ -499,9 +485,7 @@ func TestLogout_ClearsCookie(t *testing.T) {
 			break
 		}
 	}
-	if found == nil {
-		require.Fail(t, "expected Set-Cookie header for auth cookie on logout, but none found")
-	}
+	require.NotNil(t, found)
 	if found.MaxAge != -1 {
 		t.Errorf("MaxAge = %d, want -1 (cookie deletion)", found.MaxAge)
 	}

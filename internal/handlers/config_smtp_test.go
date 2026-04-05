@@ -356,9 +356,7 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusInternalServerError, w.Body.String())
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 
 	for _, setting := range existing {
 		value, err := h.DB.GetSetting(ctx, setting.Key)

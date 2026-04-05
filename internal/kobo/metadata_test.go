@@ -44,9 +44,7 @@ func TestDownloadURLs_OnlySupportedFormats(t *testing.T) {
 		{ID: "f3", FileType: "mobi", FileSize: 200},
 	}
 	urls := DownloadURLs("https://host", "tok", "book1", files)
-	if len(urls) != 2 {
-		require.Failf(t, "failed", "len = %d, want 2", len(urls))
-	}
+	require.Len(t, urls, 2)
 	if urls[0].Format != "EPUB3" {
 		t.Errorf("first format = %v, want EPUB3", urls[0].Format)
 	}
@@ -58,9 +56,7 @@ func TestDownloadURLs_OnlySupportedFormats(t *testing.T) {
 func TestDownloadURLs_URLContainsToken(t *testing.T) {
 	files := []db.BookFile{{ID: "f1", FileType: "epub"}}
 	urls := DownloadURLs("https://host", "mytoken", "book1", files)
-	if len(urls) != 1 {
-		require.Failf(t, "failed", "len = %d, want 1", len(urls))
-	}
+	require.Len(t, urls, 1)
 	if !strings.Contains(urls[0].URL, "mytoken") {
 		t.Errorf("URL %q does not contain token", urls[0].URL)
 	}
@@ -110,9 +106,7 @@ func TestBookMetadata_Series(t *testing.T) {
 	}
 	meta := BookMetadata(book, nil, series, nil)
 
-	if meta.Series == nil {
-		require.Fail(t, "Series not in metadata")
-	}
+	require.NotNil(t, meta.Series)
 	if meta.Series.Name != "My Series" {
 		t.Errorf("Series.Name = %v", meta.Series.Name)
 	}

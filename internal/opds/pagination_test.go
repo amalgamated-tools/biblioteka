@@ -8,9 +8,7 @@ import (
 
 func TestPaginationLinks_FirstPage(t *testing.T) {
 	links := PaginationLinks("https://example.com/opds/all", 1, 100, 50, NavContentType)
-	if len(links) != 2 {
-		require.Failf(t, "failed", "len = %d, want 2 (self + next)", len(links))
-	}
+	require.Len(t, links, 2)
 	if links[0].Rel != RelSelf {
 		t.Errorf("links[0].Rel = %q, want %q", links[0].Rel, RelSelf)
 	}
@@ -21,9 +19,7 @@ func TestPaginationLinks_FirstPage(t *testing.T) {
 
 func TestPaginationLinks_LastPage(t *testing.T) {
 	links := PaginationLinks("https://example.com/opds/all", 2, 100, 50, NavContentType)
-	if len(links) != 2 {
-		require.Failf(t, "failed", "len = %d, want 2 (self + previous)", len(links))
-	}
+	require.Len(t, links, 2)
 	if links[0].Rel != RelSelf {
 		t.Errorf("links[0].Rel = %q, want self", links[0].Rel)
 	}
@@ -34,23 +30,17 @@ func TestPaginationLinks_LastPage(t *testing.T) {
 
 func TestPaginationLinks_MiddlePage(t *testing.T) {
 	links := PaginationLinks("https://example.com/opds/all", 2, 150, 50, AcqContentType)
-	if len(links) != 3 {
-		require.Failf(t, "failed", "len = %d, want 3 (self + previous + next)", len(links))
-	}
+	require.Len(t, links, 3)
 }
 
 func TestPaginationLinks_SinglePage(t *testing.T) {
 	links := PaginationLinks("https://example.com/opds/all", 1, 10, 50, AcqContentType)
-	if len(links) != 1 {
-		require.Failf(t, "failed", "len = %d, want 1 (self only)", len(links))
-	}
+	require.Len(t, links, 1)
 }
 
 func TestPaginationLinks_URLWithExistingQuery(t *testing.T) {
 	links := PaginationLinks("https://example.com/opds/search?q=foo", 1, 100, 50, AcqContentType)
-	if len(links) < 1 {
-		require.Fail(t, "expected at least one link")
-	}
+	require.NotEmpty(t, links)
 	// separator must be & not ? since the URL already has a query string
 	if got := links[0].Href; got != "https://example.com/opds/search?q=foo&page=1" {
 		t.Errorf("Href = %q", got)

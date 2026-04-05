@@ -79,9 +79,7 @@ func TestOPDSCredentials_GetAfterPut(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "PUT status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Now GET them.
 	r = httptest.NewRequest(http.MethodGet, "/api/opds/credentials", nil)
@@ -109,9 +107,7 @@ func TestOPDSCredentials_PutUpdateExisting(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "first PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Update with new username.
 	body = mustMarshal(t, credentialRequest{Username: "newname", Password: "secret456"})
@@ -227,9 +223,7 @@ func TestOPDSCredentials_PutDuplicateUsername(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "user1 PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// User2 tries to use the same username.
 	body = mustMarshal(t, credentialRequest{Username: "reader", Password: "secret456"})
@@ -253,9 +247,7 @@ func TestOPDSCredentials_DeleteSuccess(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDSCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Delete them.
 	r = httptest.NewRequest(http.MethodDelete, "/api/opds/credentials", nil)

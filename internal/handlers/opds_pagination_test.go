@@ -30,9 +30,7 @@ func TestAllBooks_Pagination(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "page 1: status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 50 {
@@ -50,9 +48,7 @@ func TestAllBooks_Pagination(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleOPDS(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		require.Failf(t, "failed", "page 2: status = %d, want %d", w2.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
 	if len(feed2.Entries) != 5 {
@@ -76,15 +72,11 @@ func TestBaseURL_XForwardedProto(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	selfLink := findLink(feed.Links, opdspkg.RelSelf)
-	if selfLink == nil {
-		require.Fail(t, "missing self link")
-	}
+	require.NotNil(t, selfLink)
 	if !strings.HasPrefix(selfLink.Href, "https://") {
 		t.Errorf("self link = %q, want https:// prefix", selfLink.Href)
 	}
@@ -98,15 +90,11 @@ func TestBaseURL_InvalidXForwardedProto(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	selfLink := findLink(feed.Links, opdspkg.RelSelf)
-	if selfLink == nil {
-		require.Fail(t, "missing self link")
-	}
+	require.NotNil(t, selfLink)
 	// Should fallback to http, not use the injected value.
 	if strings.HasPrefix(selfLink.Href, "javascript:") {
 		t.Errorf("self link = %q, should not use injected proto", selfLink.Href)
@@ -179,9 +167,7 @@ func TestPaginationLinks_SearchURL(t *testing.T) {
 	// URLs with existing query params should use "&" not "?" for page param.
 	links := opdspkg.PaginationLinks("/opds/search?q=test", 1, 100, 50, opdspkg.AcqContentType)
 	selfLink := findLink(links, opdspkg.RelSelf)
-	if selfLink == nil {
-		require.Fail(t, "missing self link")
-	}
+	require.NotNil(t, selfLink)
 	if strings.Contains(selfLink.Href, "?q=test?page=") {
 		t.Errorf("self link has double '?': %q", selfLink.Href)
 	}
@@ -213,9 +199,7 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "page 1: status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != opdspkg.PageSize {
 		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdspkg.PageSize)
@@ -232,9 +216,7 @@ func TestAuthorsFeed_Pagination(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleOPDS(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		require.Failf(t, "failed", "page 2: status = %d, want %d", w2.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
 	if len(feed2.Entries) != totalAuthors-opdspkg.PageSize {
 		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalAuthors-opdspkg.PageSize)
@@ -262,9 +244,7 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "page 1: status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != opdspkg.PageSize {
 		t.Errorf("page 1: entries = %d, want %d", len(feed.Entries), opdspkg.PageSize)
@@ -281,9 +261,7 @@ func TestSeriesFeed_Pagination(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleOPDS(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		require.Failf(t, "failed", "page 2: status = %d, want %d", w2.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
 	if len(feed2.Entries) != totalSeries-opdspkg.PageSize {
 		t.Errorf("page 2: entries = %d, want %d", len(feed2.Entries), totalSeries-opdspkg.PageSize)

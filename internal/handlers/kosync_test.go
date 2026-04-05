@@ -149,9 +149,7 @@ func TestKOSyncCredentials_Get_AfterPut(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w, r)
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Fetch
 	r2 := httptest.NewRequest(http.MethodGet, "/api/kosync/credentials", nil)
@@ -178,9 +176,7 @@ func TestKOSyncCredentials_Delete(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w, r)
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Delete
 	r2 := httptest.NewRequest(http.MethodDelete, "/api/kosync/credentials", nil)
@@ -230,9 +226,7 @@ func TestKOSyncCredentials_UsernameConflict(t *testing.T) {
 	r = withUserID(r, user1.ID)
 	w := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w, r)
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "user1 PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// user2 tries to claim "shared"
 	r2 := httptest.NewRequest(http.MethodPut, "/api/kosync/credentials", bytes.NewBufferString(body))
@@ -393,9 +387,7 @@ func TestKOSyncProgress_Get_Success(t *testing.T) {
 	rPut = withUserID(rPut, userID)
 	wPut := httptest.NewRecorder()
 	h.HandleKOSyncProgress(wPut, rPut)
-	if wPut.Code != http.StatusOK {
-		require.Failf(t, "failed", "PUT status = %d; body: %s", wPut.Code, wPut.Body.String())
-	}
+	require.Equal(t, http.StatusOK, wPut.Code)
 
 	// Now GET
 	rGet := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/syncs/progress/%s", "doc42"), nil)
@@ -474,9 +466,7 @@ func TestKOSyncProgress_IsolatedByUser(t *testing.T) {
 	rPut = withUserID(rPut, user1.ID)
 	wPut := httptest.NewRecorder()
 	h.HandleKOSyncProgress(wPut, rPut)
-	if wPut.Code != http.StatusOK {
-		require.Failf(t, "failed", "user1 PUT status = %d", wPut.Code)
-	}
+	require.Equal(t, http.StatusOK, wPut.Code)
 
 	// user2 cannot see user1's progress
 	rGet := httptest.NewRequest(http.MethodGet, "/api/syncs/progress/shared-doc", nil)

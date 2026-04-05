@@ -76,9 +76,7 @@ func Test_ValidateName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := validateName(t.Context(), w, tt.input)
-			if got != tt.wantValid {
-				require.Failf(t, "failed", "validateName(%q) = %v, want %v", tt.input, got, tt.wantValid)
-			}
+			require.Equal(t, tt.wantValid, got)
 			if tt.wantValid {
 				if w.Code != http.StatusOK {
 					t.Errorf("expected no response written, but got status %d", w.Code)
@@ -252,9 +250,7 @@ func Test_HandleNameErr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := handleNameErr(t.Context(), w, tt.err, errInvalid, errExists, tt.resourceArt)
-			if got != tt.wantHandled {
-				require.Failf(t, "failed", "handleNameErr() = %v, want %v", got, tt.wantHandled)
-			}
+			require.Equal(t, tt.wantHandled, got)
 			if !tt.wantHandled {
 				if w.Code != http.StatusOK {
 					t.Errorf("expected no response written, but got status %d", w.Code)
@@ -321,9 +317,7 @@ func Test_HandleDBErr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := handleDBErr(t.Context(), w, tt.err, tt.resource)
-			if got != tt.wantHandled {
-				require.Failf(t, "failed", "handleDBErr() = %v, want %v", got, tt.wantHandled)
-			}
+			require.Equal(t, tt.wantHandled, got)
 			if !tt.wantHandled {
 				return
 			}
@@ -346,9 +340,7 @@ func Test_LogAudit(t *testing.T) {
 
 	logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
 	require.NoError(t, err, "list audit logs")
-	if len(logs) != 1 {
-		require.Failf(t, "failed", "len(logs) = %d, want 1", len(logs))
-	}
+	require.Len(t, logs, 1)
 	if logs[0].UserID == nil || *logs[0].UserID != "user-42" {
 		t.Errorf("user id = %v, want %q", logs[0].UserID, "user-42")
 	}
@@ -361,9 +353,7 @@ func Test_LogAudit(t *testing.T) {
 	if logs[0].EntityID != "book-1" {
 		t.Errorf("entity id = %q, want %q", logs[0].EntityID, "book-1")
 	}
-	if logs[0].Metadata == nil {
-		require.Fail(t, "metadata = nil, want JSON metadata")
-	}
+	require.NotNil(t, logs[0].Metadata)
 }
 
 func Test_HandleUpdateErr(t *testing.T) {
@@ -447,9 +437,7 @@ func Test_HandleUpdateErr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			got := handleUpdateErr(t.Context(), w, tt.err, errInvalid, errExists, tt.resourceArt, tt.resource, tt.id)
-			if got != tt.wantHandled {
-				require.Failf(t, "failed", "handleUpdateErr() = %v, want %v", got, tt.wantHandled)
-			}
+			require.Equal(t, tt.wantHandled, got)
 			if !tt.wantHandled {
 				if w.Code != http.StatusOK {
 					t.Errorf("expected no response written, but got status %d", w.Code)
@@ -516,9 +504,7 @@ func Test_ListEntities(t *testing.T) {
 		}
 		var dtos []dto
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
-		if len(dtos) != 2 {
-			require.Failf(t, "failed", "len = %d, want 2", len(dtos))
-		}
+		require.Len(t, dtos, 2)
 		if dtos[0].Label != "Alpha" {
 			t.Errorf("dtos[0].Label = %q, want %q", dtos[0].Label, "Alpha")
 		}
@@ -562,9 +548,7 @@ func Test_MapSlice(t *testing.T) {
 	t.Run("converts elements", func(t *testing.T) {
 		items := []entity{{ID: 1, Name: "Alpha"}, {ID: 2, Name: "Beta"}}
 		result := mapSlice(items, toDTO)
-		if len(result) != 2 {
-			require.Failf(t, "failed", "len = %d, want 2", len(result))
-		}
+		require.Len(t, result, 2)
 		if result[0].Label != "Alpha" {
 			t.Errorf("result[0].Label = %q, want %q", result[0].Label, "Alpha")
 		}
@@ -575,9 +559,7 @@ func Test_MapSlice(t *testing.T) {
 
 	t.Run("empty input returns empty slice", func(t *testing.T) {
 		result := mapSlice([]entity{}, toDTO)
-		if result == nil {
-			require.Fail(t, "result is nil, want non-nil empty slice")
-		}
+		require.NotNil(t, result)
 		if len(result) != 0 {
 			t.Errorf("len = %d, want 0", len(result))
 		}
@@ -585,9 +567,7 @@ func Test_MapSlice(t *testing.T) {
 
 	t.Run("nil input returns empty slice", func(t *testing.T) {
 		result := mapSlice(nil, toDTO)
-		if result == nil {
-			require.Fail(t, "result is nil, want non-nil empty slice")
-		}
+		require.NotNil(t, result)
 		if len(result) != 0 {
 			t.Errorf("len = %d, want 0", len(result))
 		}
@@ -714,9 +694,7 @@ func Test_ListUserEntities(t *testing.T) {
 		}
 		var dtos []dto
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "failed to unmarshal")
-		if len(dtos) != 2 {
-			require.Failf(t, "failed", "len = %d, want 2", len(dtos))
-		}
+		require.Len(t, dtos, 2)
 		if dtos[0].Label != "Alpha" {
 			t.Errorf("dtos[0].Label = %q, want %q", dtos[0].Label, "Alpha")
 		}
@@ -839,9 +817,7 @@ func Test_HandleTokenCreate(t *testing.T) {
 		w := httptest.NewRecorder()
 		handleTokenCreate(ops, w, r)
 
-		if w.Code != http.StatusCreated {
-			require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusCreated)
-		}
+		require.Equal(t, http.StatusCreated, w.Code)
 
 		logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
 		require.NoError(t, err, "list audit logs")

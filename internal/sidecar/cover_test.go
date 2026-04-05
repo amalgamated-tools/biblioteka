@@ -31,9 +31,7 @@ func TestWriteCover_ValidDataURL(t *testing.T) {
 		t.Errorf("cover.jpg size = %d, want %d", len(written), len(imageData))
 	}
 	for i := range imageData {
-		if written[i] != imageData[i] {
-			require.Failf(t, "failed", "cover.jpg byte %d = %x, want %x", i, written[i], imageData[i])
-		}
+		require.Equal(t, imageData[i], written[i])
 	}
 }
 

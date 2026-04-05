@@ -177,13 +177,9 @@ func TestCreateLibrary_EnqueuesScanJobs(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
-	if len(mock.jobs) != 1 {
-		require.Failf(t, "failed", "enqueued jobs = %d, want 1", len(mock.jobs))
-	}
+	require.Len(t, mock.jobs, 1)
 	if mock.jobs[0].Name != jobs.JobScanLibrary {
 		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
@@ -212,21 +208,15 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
-	if len(mock.jobs) != 1 {
-		require.Failf(t, "failed", "enqueued jobs = %d, want 1", len(mock.jobs))
-	}
+	require.Len(t, mock.jobs, 1)
 	if mock.jobs[0].Name != jobs.JobScanLibrary {
 		t.Errorf("job name = %q, want %q", mock.jobs[0].Name, jobs.JobScanLibrary)
 	}
 	var p jobs.ScanLibraryPayload
 	require.NoError(t, json.Unmarshal(mock.jobs[0].Payload, &p), "unmarshal payload")
-	if len(p.Paths) != 2 {
-		require.Failf(t, "failed", "job paths count = %d, want 2", len(p.Paths))
-	}
+	require.Len(t, p.Paths, 2)
 	for i, dir := range []string{dir1, dir2} {
 		if p.Paths[i] != dir {
 			t.Errorf("job paths[%d] = %q, want %q", i, p.Paths[i], dir)
@@ -287,9 +277,7 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "create library: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var lib libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
@@ -310,9 +298,7 @@ func TestListLibraryBooks_Success(t *testing.T) {
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
-	if len(resp.Books) != 1 {
-		require.Failf(t, "failed", "books count = %d, want 1", len(resp.Books))
-	}
+	require.Len(t, resp.Books, 1)
 	if resp.Books[0].Title != "The Gunslinger" {
 		t.Errorf("title = %q, want %q", resp.Books[0].Title, "The Gunslinger")
 	}
@@ -331,9 +317,7 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "create library: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var lib libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
@@ -352,19 +336,14 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 
-	if resp.Total != totalBooks {
-		require.Failf(t, "failed", "total = %d, want %d", resp.Total, totalBooks)
-	}
-	if len(resp.Books) == 0 || len(resp.Books) > 2 {
-		require.Failf(t, "failed", "books count = %d, want between 1 and 2", len(resp.Books))
-	}
+	require.Equal(t, totalBooks, resp.Total)
+	require.NotEmpty(t, resp.Books)
+	require.LessOrEqual(t, len(resp.Books), 2)
 }
 
 func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
@@ -377,9 +356,7 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "create library: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var lib libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
@@ -398,19 +375,13 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 
-	if resp.Total != totalBooks {
-		require.Failf(t, "failed", "total = %d, want %d", resp.Total, totalBooks)
-	}
-	if len(resp.Books) == 0 {
-		require.Failf(t, "failed", "books count = %d, want > 0", len(resp.Books))
-	}
+	require.Equal(t, totalBooks, resp.Total)
+	require.NotEmpty(t, resp.Books)
 }
 
 func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
@@ -423,9 +394,7 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "create library: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var lib libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
@@ -444,19 +413,13 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var resp bookListDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal books")
 
-	if resp.Total != totalBooks {
-		require.Failf(t, "failed", "total = %d, want %d", resp.Total, totalBooks)
-	}
-	if len(resp.Books) != totalBooks {
-		require.Failf(t, "failed", "books count = %d, want %d", len(resp.Books), totalBooks)
-	}
+	require.Equal(t, totalBooks, resp.Total)
+	require.Equal(t, totalBooks, len(resp.Books))
 }
 
 func TestListLibraryBooks_NotFound(t *testing.T) {
@@ -482,9 +445,7 @@ func TestListLibraryBooks_MethodNotAllowed(t *testing.T) {
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "create library: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var lib libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
@@ -513,9 +474,7 @@ func TestUpdateLibrary_NonexistentPath(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var created libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal created")
@@ -552,9 +511,7 @@ func TestUpdateLibrary_ValidPath(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var created libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal")
@@ -605,9 +562,7 @@ func TestUpdateLibrary_NonAdminForbidden(t *testing.T) {
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "setup: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var created libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal")
 
@@ -634,9 +589,7 @@ func TestDeleteLibrary_NonAdminForbidden(t *testing.T) {
 	r = withUserID(r, adminID)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "setup: status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var created libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal")
 
@@ -784,9 +737,7 @@ func TestUpdateLibrary_InvalidOrganizationType(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var created libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal created")
@@ -821,9 +772,7 @@ func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T)
 	w := httptest.NewRecorder()
 	h.HandleLibraries(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "setup: status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var created libraryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &created), "unmarshal created")
@@ -838,9 +787,7 @@ func TestUpdateLibrary_EmptyOrganizationTypePreservesExistingValue(t *testing.T)
 
 	h.HandleLibrary(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var updated libraryDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &updated), "unmarshal updated")

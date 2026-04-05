@@ -91,9 +91,7 @@ func TestExtractMetadata_EPUBCoverImage(t *testing.T) {
 	meta, err := ext.ExtractMetadata(t.Context(), epubPath)
 	require.NoError(t, err, "extract")
 
-	if !strings.HasPrefix(meta.CoverImageURL, "data:image/png;base64,") {
-		require.Failf(t, "failed", "expected PNG data URL, got %q", meta.CoverImageURL)
-	}
+	require.True(t, strings.HasPrefix(meta.CoverImageURL, "data:image/png;base64,"))
 
 	b64 := strings.TrimPrefix(meta.CoverImageURL, "data:image/png;base64,")
 	imgBytes, err := base64.StdEncoding.DecodeString(b64)

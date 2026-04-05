@@ -20,22 +20,18 @@ func newTestDB(t *testing.T) *db.DB {
 
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err, "open")
+	t.Cleanup(func() { _ = sqlDB.Close() })
 
-	if _, err := sqlDB.Exec(`
+	_, err = sqlDB.Exec(`
 		PRAGMA journal_mode = WAL;
 		PRAGMA synchronous = NORMAL;
 		PRAGMA foreign_keys = ON;
-	`); err != nil {
-		_ = sqlDB.Close()
-		require.NoError(t, err, "pragmas")
-	}
+	`)
+	require.NoError(t, err, "pragmas")
 
-	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
-		_ = sqlDB.Close()
-		require.NoError(t, err, "migrations")
-	}
+	err = db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite)
+	require.NoError(t, err, "migrations")
 
-	t.Cleanup(func() { _ = sqlDB.Close() })
 	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
 }
 
@@ -62,18 +58,14 @@ func TestProcessFileHandler(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	if books[0].Title != "The Great Gatsby" {
 		t.Errorf("expected title %q, got %q", "The Great Gatsby", books[0].Title)
 	}
 
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
-	if len(files) != 1 {
-		require.Failf(t, "failed", "expected 1 file, got %d", len(files))
-	}
+	require.Len(t, files, 1)
 	if files[0].FileType != "epub" {
 		t.Errorf("expected file type %q, got %q", "epub", files[0].FileType)
 	}
@@ -87,9 +79,7 @@ func TestProcessFileHandler(t *testing.T) {
 	// Verify author was created and associated with the book
 	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book authors")
-	if len(authors) != 1 {
-		require.Failf(t, "failed", "expected 1 author, got %d", len(authors))
-	}
+	require.Len(t, authors, 1)
 	if authors[0].Name != "F. Scott Fitzgerald" {
 		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", authors[0].Name)
 	}
@@ -132,9 +122,7 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 	book := books[0]
 
 	if book.Title != "Dune" {
@@ -159,9 +147,7 @@ func TestProcessFileHandler_MetadataFields(t *testing.T) {
 	// Verify author creation and association
 	authors, err := database.GetBookAuthors(t.Context(), book.ID)
 	require.NoError(t, err, "get book authors")
-	if len(authors) != 1 {
-		require.Failf(t, "failed", "expected 1 author, got %d", len(authors))
-	}
+	require.Len(t, authors, 1)
 	if authors[0].Name != "Frank Herbert" {
 		t.Errorf("expected author %q, got %q", "Frank Herbert", authors[0].Name)
 	}
@@ -213,16 +199,12 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	// Verify book was created.
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 
 	// Verify author was linked.
 	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book authors")
-	if len(authors) != 1 {
-		require.Failf(t, "failed", "expected 1 author, got %d", len(authors))
-	}
+	require.Len(t, authors, 1)
 	if authors[0].Name != "F. Scott Fitzgerald" {
 		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", authors[0].Name)
 	}
@@ -230,9 +212,7 @@ func TestProcessFileHandler_AuthorAndLibraryLinking(t *testing.T) {
 	// Verify book was added to library.
 	libBooks, err := database.ListBooksByLibrary(t.Context(), lib.ID)
 	require.NoError(t, err, "list library books")
-	if len(libBooks) != 1 {
-		require.Failf(t, "failed", "expected 1 library book, got %d", len(libBooks))
-	}
+	require.Len(t, libBooks, 1)
 }
 
 func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
@@ -262,16 +242,12 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
-	if len(books) != 1 {
-		require.Failf(t, "failed", "expected 1 book, got %d", len(books))
-	}
+	require.Len(t, books, 1)
 
 	// Verify series was linked.
 	seriesEntries, err := database.GetBookSeries(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book series")
-	if len(seriesEntries) != 1 {
-		require.Failf(t, "failed", "expected 1 series entry, got %d", len(seriesEntries))
-	}
+	require.Len(t, seriesEntries, 1)
 	if seriesEntries[0].Series.Name != "No. 1 Ladies' Detective Agency" {
 		t.Errorf("expected series %q, got %q", "No. 1 Ladies' Detective Agency", seriesEntries[0].Series.Name)
 	}
@@ -282,9 +258,7 @@ func TestProcessFileHandler_SeriesFromPath(t *testing.T) {
 	// Verify author was linked from directory.
 	authors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book authors")
-	if len(authors) != 1 {
-		require.Failf(t, "failed", "expected 1 author, got %d", len(authors))
-	}
+	require.Len(t, authors, 1)
 	if authors[0].Name != "Alexander McCall Smith" {
 		t.Errorf("expected author %q, got %q", "Alexander McCall Smith", authors[0].Name)
 	}

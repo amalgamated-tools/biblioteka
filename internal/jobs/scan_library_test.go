@@ -47,9 +47,7 @@ func TestScanLibraryHandler(t *testing.T) {
 	require.NoError(t, err, "marshal")
 	require.NoError(t, handler(t.Context(), payload), "handler")
 
-	if got := len(enq.jobs); got != 2 {
-		require.Failf(t, "failed", "expected 2 enqueued jobs, got %d", got)
-	}
+	require.Len(t, enq.jobs, 2)
 	for i, want := range []string{"/books/fiction", "/books/scifi"} {
 		if enq.jobs[i].Name != JobScanPath {
 			t.Errorf("job[%d] name = %q, want %q", i, enq.jobs[i].Name, JobScanPath)
@@ -97,16 +95,12 @@ func TestScanLibraryHandler_MissingLibraryID(t *testing.T) {
 
 	payload, err := json.Marshal(ScanLibraryPayload{Paths: []string{"/books/fiction"}})
 	require.NoError(t, err, "marshal")
-	if err := handler(t.Context(), payload); err == nil {
-		require.Fail(t, "expected error when library_id is missing")
-	}
+	require.Error(t, handler(t.Context(), payload))
 }
 
 func TestScanLibraryHandler_InvalidPayload(t *testing.T) {
 	enq := &genericMockEnqueuer{}
 	handler := NewScanLibraryHandler(enq)
 
-	if err := handler(t.Context(), []byte("not json")); err == nil {
-		require.Fail(t, "expected error for invalid payload")
-	}
+	require.Error(t, handler(t.Context(), []byte("not json")))
 }

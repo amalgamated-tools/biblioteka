@@ -79,9 +79,7 @@ func TestKoboTokenCreate_Success(t *testing.T) {
 
 	h.HandleKoboTokens(w, r)
 
-	if w.Code != http.StatusCreated {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var tok map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &tok), "unmarshal")
@@ -117,9 +115,7 @@ func TestKoboTokenList_Empty(t *testing.T) {
 
 	h.HandleKoboTokens(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var list []any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &list), "unmarshal")
@@ -210,14 +206,11 @@ func createTestKoboTokenID(t *testing.T, h *KoboHandler, userID string) string {
 	rCreate = withUserID(rCreate, userID)
 	wCreate := httptest.NewRecorder()
 	h.HandleKoboTokens(wCreate, rCreate)
-	if wCreate.Code != http.StatusCreated {
-		require.Failf(t, "failed", "create token failed: %s", wCreate.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, wCreate.Code)
 	var tok map[string]any
 	require.NoError(t, json.Unmarshal(wCreate.Body.Bytes(), &tok), "unmarshal")
 	id, ok := tok["id"].(string)
-	if !ok || id == "" {
-		require.Fail(t, "expected non-empty id in token response")
-	}
+	require.True(t, ok)
+	require.NotEmpty(t, id)
 	return id
 }

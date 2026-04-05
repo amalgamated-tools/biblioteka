@@ -48,9 +48,7 @@ func createTestKoboToken(t *testing.T, h *KoboHandler, userID string) string {
 	rCreate = withUserID(rCreate, userID)
 	wCreate := httptest.NewRecorder()
 	h.HandleKoboTokens(wCreate, rCreate)
-	if wCreate.Code != http.StatusCreated {
-		require.Failf(t, "failed", "create token failed: %s", wCreate.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, wCreate.Code)
 	var tok map[string]any
 	require.NoError(t, json.Unmarshal(wCreate.Body.Bytes(), &tok), "unmarshal token response")
 	return tok["token"].(string)
@@ -81,9 +79,7 @@ func TestHandleKobo_Init(t *testing.T) {
 
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != "application/json; charset=utf-8" {
 		t.Errorf("Content-Type = %q, want application/json; charset=utf-8", ct)
 	}
@@ -94,9 +90,7 @@ func TestHandleKobo_Init(t *testing.T) {
 	var resp map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	resources, ok := resp["Resources"].(map[string]any)
-	if !ok {
-		require.Fail(t, "expected Resources object in response")
-	}
+	require.True(t, ok)
 	if resources["library_sync"] == nil {
 		t.Error("expected library_sync in Resources")
 	}
@@ -113,9 +107,7 @@ func TestHandleKobo_Sync_EmptyLibrary(t *testing.T) {
 
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var results []any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results), "unmarshal")
@@ -142,9 +134,7 @@ func TestHandleKobo_Auth_Stub(t *testing.T) {
 
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal auth response")
 	if resp["AccessToken"] == nil || resp["AccessToken"] == "" {
@@ -189,14 +179,10 @@ func TestHandleKobo_BookMetadata_Success(t *testing.T) {
 
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var results []map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results), "unmarshal")
-	if len(results) != 1 {
-		require.Failf(t, "failed", "expected 1 metadata result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 	if results[0]["Title"] != "Metadata Test" {
 		t.Errorf("Title = %v, want 'Metadata Test'", results[0]["Title"])
 	}
@@ -218,15 +204,11 @@ func TestHandleKobo_BookMetadata_NonGET(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	// Non-GET returns 200 with empty array per protocol spec.
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var metadata []any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &metadata), "unmarshal; body: %s", w.Body.String())
-	if len(metadata) != 0 {
-		require.Failf(t, "failed", "expected empty JSON array, got %d items; body: %s", len(metadata), w.Body.String())
-	}
+	require.Len(t, metadata, 0)
 }
 
 // ---- HandleBookState (via device handler) ----
@@ -245,18 +227,12 @@ func TestHandleKobo_BookState_GetDefault(t *testing.T) {
 
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var states []map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &states), "unmarshal")
-	if len(states) != 1 {
-		require.Failf(t, "failed", "expected 1 state, got %d", len(states))
-	}
+	require.Len(t, states, 1)
 	statusInfo, ok := states[0]["StatusInfo"].(map[string]any)
-	if !ok {
-		require.Failf(t, "failed", "StatusInfo is not a map: %v", states[0]["StatusInfo"])
-	}
+	require.True(t, ok)
 	if statusInfo["Status"] != "ReadyToRead" {
 		t.Errorf("Status = %v, want 'ReadyToRead'", statusInfo["Status"])
 	}
@@ -306,9 +282,7 @@ func TestHandleKobo_BookState_Update_Success(t *testing.T) {
 
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp["RequestResult"] != "Success" {
@@ -322,13 +296,10 @@ func TestHandleKobo_BookState_Update_Success(t *testing.T) {
 	handler.ServeHTTP(getW, getR)
 
 	var states []map[string]any
-	if err := json.Unmarshal(getW.Body.Bytes(), &states); err != nil || len(states) == 0 {
-		require.Failf(t, "failed", "re-fetch state failed: err=%v, count=%d", err, len(states))
-	}
+	require.NoError(t, json.Unmarshal(getW.Body.Bytes(), &states), "unmarshal states")
+	require.NotEmpty(t, states)
 	bm, ok := states[0]["CurrentBookmark"].(map[string]any)
-	if !ok {
-		require.Failf(t, "failed", "CurrentBookmark is not a map: %v", states[0]["CurrentBookmark"])
-	}
+	require.True(t, ok)
 	if bm["ProgressPercent"] != 42.5 {
 		t.Errorf("persisted ProgressPercent = %v, want 42.5", bm["ProgressPercent"])
 	}
@@ -392,25 +363,17 @@ func TestHandleKobo_BookState_GetExisting(t *testing.T) {
 
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var states []map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &states), "unmarshal")
-	if len(states) != 1 {
-		require.Failf(t, "failed", "expected 1 state, got %d", len(states))
-	}
+	require.Len(t, states, 1)
 	statusInfo, ok := states[0]["StatusInfo"].(map[string]any)
-	if !ok {
-		require.Failf(t, "failed", "StatusInfo is not a map: %v", states[0]["StatusInfo"])
-	}
+	require.True(t, ok)
 	if statusInfo["Status"] != "Finished" {
 		t.Errorf("Status = %v, want 'Finished'", statusInfo["Status"])
 	}
 	bookmark, ok := states[0]["CurrentBookmark"].(map[string]any)
-	if !ok {
-		require.Failf(t, "failed", "CurrentBookmark is not a map: %v", states[0]["CurrentBookmark"])
-	}
+	require.True(t, ok)
 	if bookmark["ProgressPercent"] != 75.0 {
 		t.Errorf("ProgressPercent = %v, want 75.0", bookmark["ProgressPercent"])
 	}
@@ -435,15 +398,11 @@ func TestHandleKobo_Sync_WithBooks(t *testing.T) {
 
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var results []map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results), "unmarshal")
-	if len(results) != 1 {
-		require.Failf(t, "failed", "expected 1 sync result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 	if results[0]["NewEntitlement"] == nil && results[0]["ChangedEntitlement"] == nil {
 		t.Error("expected NewEntitlement or ChangedEntitlement in sync result")
 	}
@@ -455,13 +414,9 @@ func TestHandleKobo_Sync_WithBooks(t *testing.T) {
 	} else if ce, ok := results[0]["ChangedEntitlement"].(map[string]any); ok {
 		entitlement = ce
 	}
-	if entitlement == nil {
-		require.Fail(t, "no entitlement in sync result")
-	}
+	require.NotNil(t, entitlement)
 	bm, ok := entitlement["BookMetadata"].(map[string]any)
-	if !ok {
-		require.Fail(t, "expected BookMetadata in entitlement")
-	}
+	require.True(t, ok)
 	if bm["RevisionId"] != book.ID {
 		t.Errorf("BookMetadata.RevisionId = %v, want %v", bm["RevisionId"], book.ID)
 	}
@@ -483,9 +438,7 @@ func TestHandleKobo_Sync_SkipsBookWithoutFiles(t *testing.T) {
 
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var results []map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results), "unmarshal")
 	if len(results) != 0 {
@@ -517,15 +470,11 @@ func TestHandleKobo_Sync_WithReadingState(t *testing.T) {
 
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var results []map[string]any
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &results), "unmarshal")
-	if len(results) != 1 {
-		require.Failf(t, "failed", "expected 1 sync result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 
 	// The entitlement should include the reading state.
 	var entitlement map[string]any
@@ -534,27 +483,17 @@ func TestHandleKobo_Sync_WithReadingState(t *testing.T) {
 	} else if ce, ok := results[0]["ChangedEntitlement"].(map[string]any); ok {
 		entitlement = ce
 	}
-	if entitlement == nil {
-		require.Fail(t, "no entitlement in sync result")
-	}
-	if entitlement["ReadingState"] == nil {
-		require.Fail(t, "expected ReadingState in sync result for book with reading state")
-	}
+	require.NotNil(t, entitlement)
+	require.NotNil(t, entitlement["ReadingState"])
 	rs, ok := entitlement["ReadingState"].(map[string]any)
-	if !ok {
-		require.Fail(t, "ReadingState is not a map")
-	}
+	require.True(t, ok)
 	rsStatusInfo, ok := rs["StatusInfo"].(map[string]any)
-	if !ok {
-		require.Fail(t, "ReadingState StatusInfo is not a map")
-	}
+	require.True(t, ok)
 	if rsStatusInfo["Status"] != "Reading" {
 		t.Errorf("ReadingState status = %v, want Reading", rsStatusInfo["Status"])
 	}
 	rsBm, ok := rs["CurrentBookmark"].(map[string]any)
-	if !ok {
-		require.Fail(t, "ReadingState CurrentBookmark is not a map")
-	}
+	require.True(t, ok)
 	if rsBm["ProgressPercent"] != 50.0 {
 		t.Errorf("ProgressPercent = %v, want 50.0", rsBm["ProgressPercent"])
 	}

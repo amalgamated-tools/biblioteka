@@ -25,22 +25,18 @@ func newTestDB(t *testing.T) *db.DB {
 
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err, "newTestDB: open")
+	t.Cleanup(func() { _ = sqlDB.Close() })
 
-	if _, err := sqlDB.Exec(`
+	_, err = sqlDB.Exec(`
 		PRAGMA journal_mode = WAL;
 		PRAGMA synchronous = NORMAL;
 		PRAGMA foreign_keys = ON;
-	`); err != nil {
-		_ = sqlDB.Close()
-		require.NoError(t, err, "newTestDB: pragmas")
-	}
+	`)
+	require.NoError(t, err, "newTestDB: pragmas")
 
-	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
-		_ = sqlDB.Close()
-		require.NoError(t, err, "newTestDB: migrations")
-	}
+	err = db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite)
+	require.NoError(t, err, "newTestDB: migrations")
 
-	t.Cleanup(func() { _ = sqlDB.Close() })
 	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
 }
 
@@ -62,18 +58,13 @@ func TestHandleHealth_GET(t *testing.T) {
 
 	s.handleHealth(rec, req)
 
-	if rec.Code != http.StatusOK {
-		require.Failf(t, "failed", "expected status 200, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusOK, rec.Code)
 
 	var body healthResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
-	if body.Status != "ok" {
-		require.Failf(t, "failed", "expected status ok, got %q", body.Status)
-	}
-	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
-		require.Failf(t, "failed", "expected Content-Type application/json, got %q", ct)
-	}
+	require.Equal(t, "ok", body.Status)
+	ct := rec.Header().Get("Content-Type")
+	require.Equal(t, "application/json", ct)
 }
 
 func TestHandleHealth_HEAD(t *testing.T) {
@@ -83,9 +74,7 @@ func TestHandleHealth_HEAD(t *testing.T) {
 
 	s.handleHealth(rec, req)
 
-	if rec.Code != http.StatusOK {
-		require.Failf(t, "failed", "expected status 200, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusOK, rec.Code)
 }
 
 func TestHandleHealth_POST(t *testing.T) {
@@ -95,20 +84,14 @@ func TestHandleHealth_POST(t *testing.T) {
 
 	s.handleHealth(rec, req)
 
-	if rec.Code != http.StatusMethodNotAllowed {
-		require.Failf(t, "failed", "expected status 405, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 
 	allow := rec.Header().Get("Allow")
-	if allow == "" {
-		require.Fail(t, "expected Allow header to be set")
-	}
+	require.NotEmpty(t, allow)
 
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
-	if body["error"] != "method not allowed" {
-		require.Failf(t, "failed", "expected error 'method not allowed', got %q", body["error"])
-	}
+	require.Equal(t, "method not allowed", body["error"])
 }
 
 // ---------------------------------------------------------------------------
@@ -122,18 +105,13 @@ func TestHandleVersion_GET(t *testing.T) {
 
 	s.handleVersion(rec, req)
 
-	if rec.Code != http.StatusOK {
-		require.Failf(t, "failed", "expected status 200, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusOK, rec.Code)
 
 	var body versionResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
-	if body.Version != "1.2.3" {
-		require.Failf(t, "failed", "expected version 1.2.3, got %q", body.Version)
-	}
-	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
-		require.Failf(t, "failed", "expected Content-Type application/json, got %q", ct)
-	}
+	require.Equal(t, "1.2.3", body.Version)
+	ct := rec.Header().Get("Content-Type")
+	require.Equal(t, "application/json", ct)
 }
 
 func TestHandleVersion_HEAD(t *testing.T) {
@@ -143,9 +121,7 @@ func TestHandleVersion_HEAD(t *testing.T) {
 
 	s.handleVersion(rec, req)
 
-	if rec.Code != http.StatusOK {
-		require.Failf(t, "failed", "expected status 200, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusOK, rec.Code)
 }
 
 func TestHandleVersion_POST(t *testing.T) {
@@ -155,20 +131,14 @@ func TestHandleVersion_POST(t *testing.T) {
 
 	s.handleVersion(rec, req)
 
-	if rec.Code != http.StatusMethodNotAllowed {
-		require.Failf(t, "failed", "expected status 405, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 
 	allow := rec.Header().Get("Allow")
-	if allow == "" {
-		require.Fail(t, "expected Allow header to be set")
-	}
+	require.NotEmpty(t, allow)
 
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
-	if body["error"] != "method not allowed" {
-		require.Failf(t, "failed", "expected error 'method not allowed', got %q", body["error"])
-	}
+	require.Equal(t, "method not allowed", body["error"])
 }
 
 func TestHandleVersion_EmptyVersion(t *testing.T) {
@@ -178,15 +148,11 @@ func TestHandleVersion_EmptyVersion(t *testing.T) {
 
 	s.handleVersion(rec, req)
 
-	if rec.Code != http.StatusOK {
-		require.Failf(t, "failed", "expected status 200, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusOK, rec.Code)
 
 	var body versionResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
-	if body.Version != "" {
-		require.Failf(t, "failed", "expected empty version, got %q", body.Version)
-	}
+	require.Equal(t, "", body.Version)
 }
 
 // ---------------------------------------------------------------------------
@@ -200,15 +166,11 @@ func TestHandleOIDCEnabled_NotConfigured(t *testing.T) {
 
 	s.handleOIDCEnabled(rec, req)
 
-	if rec.Code != http.StatusOK {
-		require.Failf(t, "failed", "expected status 200, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusOK, rec.Code)
 
 	var body oidcEnabledResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
-	if body.Enabled {
-		require.Fail(t, "expected enabled=false when oidcHandler is nil")
-	}
+	require.False(t, body.Enabled)
 }
 
 func TestHandleOIDCEnabled_Configured(t *testing.T) {
@@ -220,15 +182,11 @@ func TestHandleOIDCEnabled_Configured(t *testing.T) {
 
 	s.handleOIDCEnabled(rec, req)
 
-	if rec.Code != http.StatusOK {
-		require.Failf(t, "failed", "expected status 200, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusOK, rec.Code)
 
 	var body oidcEnabledResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
-	if !body.Enabled {
-		require.Fail(t, "expected enabled=true when oidcHandler is non-nil")
-	}
+	require.True(t, body.Enabled)
 }
 
 func TestHandleOIDCEnabled_MethodNotAllowed(t *testing.T) {
@@ -238,20 +196,14 @@ func TestHandleOIDCEnabled_MethodNotAllowed(t *testing.T) {
 
 	s.handleOIDCEnabled(rec, req)
 
-	if rec.Code != http.StatusMethodNotAllowed {
-		require.Failf(t, "failed", "expected status 405, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 
 	allow := rec.Header().Get("Allow")
-	if allow == "" {
-		require.Fail(t, "expected Allow header to be set")
-	}
+	require.NotEmpty(t, allow)
 
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
-	if body["error"] != "method not allowed" {
-		require.Failf(t, "failed", "expected error 'method not allowed', got %q", body["error"])
-	}
+	require.Equal(t, "method not allowed", body["error"])
 }
 
 // ---------------------------------------------------------------------------
@@ -269,9 +221,7 @@ func TestSwaggerSecurityHeaders_SetsHeaders(t *testing.T) {
 
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		require.Failf(t, "failed", "expected status 200, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusOK, rec.Code)
 
 	checks := map[string]string{
 		"Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;",
@@ -321,19 +271,15 @@ func TestOIDCRoute_NotConfigured(t *testing.T) {
 
 	handler(rec, req)
 
-	if rec.Code != http.StatusNotFound {
-		require.Failf(t, "failed", "expected status 404, got %d", rec.Code)
-	}
+	require.Equal(t, http.StatusNotFound, rec.Code)
 
 	var body map[string]string
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
-	if body["error"] != "OIDC not configured" {
-		require.Failf(t, "failed", "expected error 'OIDC not configured', got %q", body["error"])
-	}
+	require.Equal(t, "OIDC not configured", body["error"])
 
-	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
-		require.Failf(t, "failed", "expected Content-Type application/json, got %q", ct)
-	}
+	ct := rec.Header().Get("Content-Type")
+
+	require.Equal(t, "application/json", ct)
 }
 
 func TestOIDCRoute_Configured(t *testing.T) {
@@ -353,12 +299,8 @@ func TestOIDCRoute_Configured(t *testing.T) {
 
 	handler(rec, req)
 
-	if !called {
-		require.Fail(t, "expected the OIDC handler function to be called")
-	}
-	if rec.Code != http.StatusOK {
-		require.Failf(t, "failed", "expected status 200, got %d", rec.Code)
-	}
+	require.True(t, called)
+	require.Equal(t, http.StatusOK, rec.Code)
 }
 
 // ---------------------------------------------------------------------------
@@ -372,12 +314,8 @@ func TestNewServer_DefaultPort(t *testing.T) {
 	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm))
 	require.NoError(t, err, "NewServer")
 
-	if s.port != 8080 {
-		require.Failf(t, "failed", "expected default port 8080, got %d", s.port)
-	}
-	if s.Address != "0.0.0.0:8080" {
-		require.Failf(t, "failed", "expected address 0.0.0.0:8080, got %s", s.Address)
-	}
+	require.Equal(t, 8080, s.port)
+	require.Equal(t, "0.0.0.0:8080", s.Address)
 }
 
 func TestNewServer_WithPort(t *testing.T) {
@@ -387,12 +325,8 @@ func TestNewServer_WithPort(t *testing.T) {
 	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm), WithPort(9090))
 	require.NoError(t, err, "NewServer")
 
-	if s.port != 9090 {
-		require.Failf(t, "failed", "expected port 9090, got %d", s.port)
-	}
-	if s.Address != "0.0.0.0:9090" {
-		require.Failf(t, "failed", "expected address 0.0.0.0:9090, got %s", s.Address)
-	}
+	require.Equal(t, 9090, s.port)
+	require.Equal(t, "0.0.0.0:9090", s.Address)
 }
 
 func TestNewServer_WithDB(t *testing.T) {
@@ -402,9 +336,7 @@ func TestNewServer_WithDB(t *testing.T) {
 	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm))
 	require.NoError(t, err, "NewServer")
 
-	if s.DB != d {
-		require.Fail(t, "expected DB to be the injected test database")
-	}
+	require.Equal(t, d, s.DB)
 }
 
 func TestNewServer_WithJWTManager(t *testing.T) {
@@ -414,7 +346,5 @@ func TestNewServer_WithJWTManager(t *testing.T) {
 	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm))
 	require.NoError(t, err, "NewServer")
 
-	if s.JWT != jm {
-		require.Fail(t, "expected JWT to be the injected test JWT manager")
-	}
+	require.Equal(t, jm, s.JWT)
 }

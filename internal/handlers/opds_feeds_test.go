@@ -23,9 +23,7 @@ func TestRootFeed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
 		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
 	}
@@ -36,9 +34,7 @@ func TestRootFeed(t *testing.T) {
 	}
 
 	// Root feed has 4 navigation entries.
-	if len(feed.Entries) != 4 {
-		require.Failf(t, "failed", "entries = %d, want 4", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 4)
 	titles := []string{"All Books", "Recent Books", "Authors", "Series"}
 	for i, want := range titles {
 		if feed.Entries[i].Title != want {
@@ -91,9 +87,7 @@ func TestAllBooks_Empty(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != opdspkg.AcqContentType {
 		t.Errorf("content-type = %q, want %q", ct, opdspkg.AcqContentType)
 	}
@@ -122,9 +116,7 @@ func TestAllBooks_WithBooks(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 2 {
@@ -149,17 +141,11 @@ func TestAllBooks_WithDescription(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 1 {
-		require.Failf(t, "failed", "entries = %d, want 1", len(feed.Entries))
-	}
-	if feed.Entries[0].Content == nil {
-		require.Fail(t, "expected content, got nil")
-	}
+	require.Len(t, feed.Entries, 1)
+	require.NotNil(t, feed.Entries[0].Content)
 	if feed.Entries[0].Content.Value != "A great book" {
 		t.Errorf("content = %q, want %q", feed.Entries[0].Content.Value, "A great book")
 	}
@@ -181,14 +167,10 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
-	if len(feed.Entries) != 1 {
-		require.Failf(t, "failed", "entries = %d, want 1", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 1)
 
 	entry := feed.Entries[0]
 	if len(entry.Authors) != 1 || entry.Authors[0].Name != "Stephen King" {
@@ -196,9 +178,7 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	}
 
 	acqLink := findLink(entry.Links, opdspkg.RelAcquisition)
-	if acqLink == nil {
-		require.Fail(t, "missing acquisition link")
-	}
+	require.NotNil(t, acqLink)
 	if acqLink.Type != "application/epub+zip" {
 		t.Errorf("acquisition type = %q, want %q", acqLink.Type, "application/epub+zip")
 	}
@@ -221,9 +201,7 @@ func TestRecentBooks(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if feed.Title != "Recent Books" {
@@ -243,9 +221,7 @@ func TestAuthorsFeed_Empty(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
 		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
 	}
@@ -274,9 +250,7 @@ func TestAuthorsFeed_WithAuthors(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 2 {
@@ -307,17 +281,13 @@ func TestAuthorBooks(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if feed.Title != "Books by Stephen King" {
 		t.Errorf("title = %q, want %q", feed.Title, "Books by Stephen King")
 	}
-	if len(feed.Entries) != 1 {
-		require.Failf(t, "failed", "entries = %d, want 1", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 1)
 	if feed.Entries[0].Title != "The Shining" {
 		t.Errorf("entry title = %q, want %q", feed.Entries[0].Title, "The Shining")
 	}
@@ -347,9 +317,7 @@ func TestSeriesFeed_Empty(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != opdspkg.NavContentType {
 		t.Errorf("content-type = %q, want %q", ct, opdspkg.NavContentType)
 	}
@@ -375,9 +343,7 @@ func TestSeriesFeed_WithSeries(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 2 {
@@ -402,17 +368,13 @@ func TestSeriesBooks(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if feed.Title != "The Dark Tower" {
 		t.Errorf("title = %q, want %q", feed.Title, "The Dark Tower")
 	}
-	if len(feed.Entries) != 1 {
-		require.Failf(t, "failed", "entries = %d, want 1", len(feed.Entries))
-	}
+	require.Len(t, feed.Entries, 1)
 	if feed.Entries[0].Title != "The Gunslinger" {
 		t.Errorf("entry title = %q, want %q", feed.Entries[0].Title, "The Gunslinger")
 	}
@@ -453,9 +415,7 @@ func TestSearch_WithResults(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 2 {
@@ -473,9 +433,7 @@ func TestSearch_NoResults(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 0 {
@@ -499,9 +457,7 @@ func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	if len(feed.Entries) != 1 {
@@ -516,15 +472,11 @@ func TestSearch_URLEncodesQueryInLinks(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	selfLink := findLink(feed.Links, opdspkg.RelSelf)
-	if selfLink == nil {
-		require.Fail(t, "missing self link")
-	}
+	require.NotNil(t, selfLink)
 	// The query should be URL-encoded in the self link.
 	if strings.Contains(selfLink.Href, "q=foo bar") {
 		t.Errorf("self link has unencoded query: %q", selfLink.Href)
@@ -540,9 +492,7 @@ func TestOpenSearchDescription(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != opdspkg.SearchType {
 		t.Errorf("content-type = %q, want %q", ct, opdspkg.SearchType)
 	}
@@ -576,9 +526,7 @@ func TestDownload_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != "application/epub+zip" {
 		t.Errorf("content-type = %q, want %q", ct, "application/epub+zip")
 	}
@@ -638,9 +586,7 @@ func TestDownload_UnknownFileType(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	if ct := w.Header().Get("Content-Type"); ct != "application/octet-stream" {
 		t.Errorf("content-type = %q, want %q", ct, "application/octet-stream")
 	}

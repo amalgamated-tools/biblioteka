@@ -39,14 +39,10 @@ func TestHandleBookMetadata_CoverURLIncluded(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var results []map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
-	if len(results) != 1 {
-		require.Failf(t, "failed", "expected 1 result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 	if results[0]["Title"] != "Cover URL Book" {
 		t.Errorf("Title = %v, want Cover URL Book", results[0]["Title"])
 	}
@@ -80,14 +76,10 @@ func TestHandleBookMetadata_MultipleEntitlementsEachHaveMetadata(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var results []map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
-	if len(results) != 1 {
-		require.Failf(t, "failed", "expected 1 result, got %d", len(results))
-	}
+	require.Len(t, results, 1)
 	if results[0]["Title"] != "Book Alpha" {
 		t.Errorf("Title = %v, want Book Alpha", results[0]["Title"])
 	}
@@ -117,9 +109,7 @@ func TestHandleBookMetadata_ContainsEntitlementID(t *testing.T) {
 
 	var results []map[string]any
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
-	if len(results) < 1 {
-		require.Fail(t, "expected at least 1 result")
-	}
+	require.NotEmpty(t, results)
 	if results[0]["Title"] != "Entitlement Book" {
 		t.Errorf("Title = %v, want Entitlement Book", results[0]["Title"])
 	}

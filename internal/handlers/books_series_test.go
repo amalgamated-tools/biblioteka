@@ -25,9 +25,7 @@ func TestGetBookSeries_Empty(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
@@ -53,15 +51,11 @@ func TestGetBookSeries_WithEntries(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
-	if len(entries) != 1 {
-		require.Failf(t, "failed", "len = %d, want 1", len(entries))
-	}
+	require.Len(t, entries, 1)
 	if entries[0].Series.Name != "The Dark Tower" {
 		t.Errorf("series name = %q, want %q", entries[0].Series.Name, "The Dark Tower")
 	}
@@ -88,15 +82,11 @@ func TestPutBookSeries_Success(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
-	if len(entries) != 1 {
-		require.Failf(t, "failed", "len = %d, want 1", len(entries))
-	}
+	require.Len(t, entries, 1)
 	if entries[0].Series.Name != "The Dark Tower" {
 		t.Errorf("series name = %q, want %q", entries[0].Series.Name, "The Dark Tower")
 	}
@@ -126,9 +116,7 @@ func TestPutBookSeries_ClearsExisting(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleBookRoutes(w, r)
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "initial PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Replace with just one series.
 	body2 := mustMarshal(t, setBookSeriesRequest{
@@ -139,9 +127,7 @@ func TestPutBookSeries_ClearsExisting(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleBookRoutes(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		require.Failf(t, "failed", "replace PUT status = %d; body: %s", w2.Code, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &entries), "unmarshal")
@@ -197,9 +183,7 @@ func TestPutBookSeries_EmptyEntries(t *testing.T) {
 
 	h.HandleBookRoutes(w, r)
 
-	if w.Code != http.StatusOK {
-		require.Failf(t, "failed", "status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var entries []bookSeriesEntryDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &entries), "unmarshal")
