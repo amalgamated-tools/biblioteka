@@ -2,6 +2,8 @@ package db
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateAuditLog(t *testing.T) {
@@ -9,20 +11,12 @@ func TestCreateAuditLog(t *testing.T) {
 	ctx := t.Context()
 
 	err := d.CreateAuditLog(ctx, "user1", AuditActionLibraryCreated, "library", "lib1", map[string]any{"name": "Fiction"})
-	if err != nil {
-		t.Fatalf("CreateAuditLog() error: %v", err)
-	}
+	require.NoError(t, err, "CreateAuditLog() error")
 
 	entries, total, err := d.ListAuditLogs(ctx, 10, 0)
-	if err != nil {
-		t.Fatalf("ListAuditLogs() error: %v", err)
-	}
-	if total != 1 {
-		t.Fatalf("total = %d, want 1", total)
-	}
-	if len(entries) != 1 {
-		t.Fatalf("len(entries) = %d, want 1", len(entries))
-	}
+	require.NoError(t, err, "ListAuditLogs() error")
+	require.Equal(t, 1, total)
+	require.Len(t, entries, 1)
 
 	e := entries[0]
 	if e.ID == "" {
@@ -54,17 +48,11 @@ func TestCreateAuditLog_SystemAction(t *testing.T) {
 
 	// Empty userID → NULL user_id in DB.
 	err := d.CreateAuditLog(ctx, "", AuditActionBookCreated, "book", "book1", nil)
-	if err != nil {
-		t.Fatalf("CreateAuditLog() error: %v", err)
-	}
+	require.NoError(t, err, "CreateAuditLog() error")
 
 	entries, _, err := d.ListAuditLogs(ctx, 10, 0)
-	if err != nil {
-		t.Fatalf("ListAuditLogs() error: %v", err)
-	}
-	if len(entries) == 0 {
-		t.Fatal("expected at least one entry")
-	}
+	require.NoError(t, err, "ListAuditLogs() error")
+	require.NotEmpty(t, entries)
 	if entries[0].UserID != nil {
 		t.Errorf("UserID = %v, want nil", entries[0].UserID)
 	}
@@ -80,23 +68,15 @@ func TestListAuditLogs_Pagination(t *testing.T) {
 	for i := range 5 {
 		_ = i
 		err := d.CreateAuditLog(ctx, "user1", AuditActionBookCreated, "book", "book-x", nil)
-		if err != nil {
-			t.Fatalf("CreateAuditLog() error: %v", err)
-		}
+		require.NoError(t, err, "CreateAuditLog() error")
 	}
 
 	_, total, err := d.ListAuditLogs(ctx, 10, 0)
-	if err != nil {
-		t.Fatalf("ListAuditLogs() error: %v", err)
-	}
-	if total != 5 {
-		t.Fatalf("total = %d, want 5", total)
-	}
+	require.NoError(t, err, "ListAuditLogs() error")
+	require.Equal(t, 5, total)
 
 	entries, total2, err := d.ListAuditLogs(ctx, 2, 0)
-	if err != nil {
-		t.Fatalf("ListAuditLogs() page1 error: %v", err)
-	}
+	require.NoError(t, err, "ListAuditLogs() page1 error")
 	if total2 != 5 {
 		t.Errorf("total2 = %d, want 5", total2)
 	}
@@ -105,17 +85,13 @@ func TestListAuditLogs_Pagination(t *testing.T) {
 	}
 
 	entries2, _, err := d.ListAuditLogs(ctx, 2, 2)
-	if err != nil {
-		t.Fatalf("ListAuditLogs() page2 error: %v", err)
-	}
+	require.NoError(t, err, "ListAuditLogs() page2 error")
 	if len(entries2) != 2 {
 		t.Errorf("page2 len = %d, want 2", len(entries2))
 	}
 
 	entries3, _, err := d.ListAuditLogs(ctx, 2, 4)
-	if err != nil {
-		t.Fatalf("ListAuditLogs() page3 error: %v", err)
-	}
+	require.NoError(t, err, "ListAuditLogs() page3 error")
 	if len(entries3) != 1 {
 		t.Errorf("page3 len = %d, want 1", len(entries3))
 	}
@@ -126,9 +102,7 @@ func TestListAuditLogs_Empty(t *testing.T) {
 	ctx := t.Context()
 
 	entries, total, err := d.ListAuditLogs(ctx, 10, 0)
-	if err != nil {
-		t.Fatalf("ListAuditLogs() error: %v", err)
-	}
+	require.NoError(t, err, "ListAuditLogs() error")
 	if total != 0 {
 		t.Errorf("total = %d, want 0", total)
 	}

@@ -7,15 +7,15 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
+
+	"github.com/stretchr/testify/require"
 )
 
 // --- DB error paths (opds_feeds.go) ---
 
 func TestAllBooks_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	if err := h.DB.Close(); err != nil {
-		t.Fatalf("close db: %v", err)
-	}
+	require.NoError(t, h.DB.Close(), "close db")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
@@ -33,9 +33,7 @@ func TestAllBooks_DBError(t *testing.T) {
 
 func TestRecentBooks_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	if err := h.DB.Close(); err != nil {
-		t.Fatalf("close db: %v", err)
-	}
+	require.NoError(t, h.DB.Close(), "close db")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/recent", nil)
 	w := httptest.NewRecorder()
@@ -52,9 +50,7 @@ func TestRecentBooks_DBError(t *testing.T) {
 
 func TestAuthorsFeed_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	if err := h.DB.Close(); err != nil {
-		t.Fatalf("close db: %v", err)
-	}
+	require.NoError(t, h.DB.Close(), "close db")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/authors", nil)
 	w := httptest.NewRecorder()
@@ -71,9 +67,7 @@ func TestAuthorsFeed_DBError(t *testing.T) {
 
 func TestSeriesFeed_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	if err := h.DB.Close(); err != nil {
-		t.Fatalf("close db: %v", err)
-	}
+	require.NoError(t, h.DB.Close(), "close db")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/series", nil)
 	w := httptest.NewRecorder()
@@ -90,9 +84,7 @@ func TestSeriesFeed_DBError(t *testing.T) {
 
 func TestSearch_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
-	if err := h.DB.Close(); err != nil {
-		t.Fatalf("close db: %v", err)
-	}
+	require.NoError(t, h.DB.Close(), "close db")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=test", nil)
 	w := httptest.NewRecorder()
@@ -114,22 +106,16 @@ func TestBookEntries_AuthorLoadError(t *testing.T) {
 	ctx := t.Context()
 
 	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	// Close DB so batch author/file loads fail.
-	if err := h.DB.Close(); err != nil {
-		t.Fatalf("close db: %v", err)
-	}
+	require.NoError(t, h.DB.Close(), "close db")
 
 	books := []db.Book{*book}
 	entries := h.bookEntries(ctx, books, "http://example.com/opds")
 
 	// Should still return entries, just without authors or download links.
-	if len(entries) != 1 {
-		t.Fatalf("entries = %d, want 1", len(entries))
-	}
+	require.Len(t, entries, 1)
 	if entries[0].Title != "Test Book" {
 		t.Errorf("title = %q, want %q", entries[0].Title, "Test Book")
 	}

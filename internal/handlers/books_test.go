@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setupBookHandler(t *testing.T) (*BookHandler, string) {
@@ -15,9 +17,7 @@ func setupBookHandler(t *testing.T) (*BookHandler, string) {
 	d := newTestDB(t)
 	h := &BookHandler{DB: d}
 	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 	return h, user.ID
 }
 
@@ -36,9 +36,7 @@ func TestCreateBook_Handler(t *testing.T) {
 	}
 
 	var dto bookDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
 	if dto.Title != "The Gunslinger" {
 		t.Errorf("title = %q, want %q", dto.Title, "The Gunslinger")
 	}
@@ -72,10 +70,10 @@ func TestListBooks_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 	if _, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books", nil)
@@ -89,9 +87,7 @@ func TestListBooks_Handler(t *testing.T) {
 	}
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
 	}
@@ -111,10 +107,10 @@ func TestListBooks_InvalidLimitOffset_NonInt(t *testing.T) {
 
 	// Seed some data
 	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 	if _, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	// Provide non-integer limit/offset; handler should fall back to defaults.
@@ -124,14 +120,10 @@ func TestListBooks_InvalidLimitOffset_NonInt(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
@@ -152,10 +144,10 @@ func TestListBooks_NegativeLimitOffset(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 	if _, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books?limit=-5&offset=-10", nil)
@@ -164,14 +156,10 @@ func TestListBooks_NegativeLimitOffset(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
@@ -199,10 +187,10 @@ func TestListBooks_MaxLimitClamping(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 	if _, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	// Request an absurdly large limit; handler should clamp to a maximum.
@@ -212,14 +200,10 @@ func TestListBooks_MaxLimitClamping(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
@@ -241,10 +225,10 @@ func TestListBooks_Search_MatchesTitle(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 	if _, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books?query=Gunslinger", nil)
@@ -253,14 +237,10 @@ func TestListBooks_Search_MatchesTitle(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Books) != 1 {
 		t.Errorf("len = %d, want 1", len(resp.Books))
 	}
@@ -276,7 +256,7 @@ func TestListBooks_Search_NoResults(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books?query=nonexistent", nil)
@@ -285,14 +265,10 @@ func TestListBooks_Search_NoResults(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Books) != 0 {
 		t.Errorf("len = %d, want 0", len(resp.Books))
 	}
@@ -305,10 +281,10 @@ func TestListBooks_EmptyQuery_ReturnsAll(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 	if _, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	// Empty query string should behave like no query (list all).
@@ -318,14 +294,10 @@ func TestListBooks_EmptyQuery_ReturnsAll(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
 	}
@@ -338,10 +310,10 @@ func TestListBooks_WhitespaceOnlyQuery_ReturnsAll(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	if _, err := h.DB.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 	if _, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); err != nil {
-		t.Fatalf("create book: %v", err)
+		require.NoError(t, err, "create book")
 	}
 
 	// Whitespace-only query should behave like no query (list all).
@@ -351,14 +323,10 @@ func TestListBooks_WhitespaceOnlyQuery_ReturnsAll(t *testing.T) {
 
 	h.HandleBooks(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp bookListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if len(resp.Books) != 2 {
 		t.Errorf("len = %d, want 2", len(resp.Books))
 	}
@@ -371,9 +339,7 @@ func TestGetBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID, nil)
 	r = withUserID(r, userID)
@@ -404,9 +370,7 @@ func TestDeleteBook_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/books/"+b.ID, nil)
 	r = withUserID(r, userID)
@@ -433,9 +397,7 @@ func TestDeleteBook_NotFound(t *testing.T) {
 	}
 
 	var resp errorResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	if resp.Error != "book not found" {
 		t.Errorf("error = %q, want %q", resp.Error, "book not found")
 	}
@@ -445,13 +407,9 @@ func TestBookAuthors_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	require.NoError(t, err, "create author")
 
 	// Set authors
 	body := mustMarshal(t, map[string][]string{"author_ids": {a.ID}})
@@ -477,12 +435,8 @@ func TestBookAuthors_Handler(t *testing.T) {
 	}
 
 	var authors []authorDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &authors); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if len(authors) != 1 {
-		t.Fatalf("len = %d, want 1", len(authors))
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &authors), "unmarshal")
+	require.Len(t, authors, 1)
 	if authors[0].Name != "Stephen King" {
 		t.Errorf("name = %q, want %q", authors[0].Name, "Stephen King")
 	}
@@ -492,13 +446,9 @@ func TestBookSeries_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create series: %v", err)
-	}
+	require.NoError(t, err, "create series")
 
 	pos := 1.0
 	body := mustMarshal(t, map[string][]db.BookSeriesInput{
@@ -526,12 +476,8 @@ func TestBookSeries_Handler(t *testing.T) {
 	}
 
 	var entries []bookSeriesEntryDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &entries); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if len(entries) != 1 {
-		t.Fatalf("len = %d, want 1", len(entries))
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &entries), "unmarshal")
+	require.Len(t, entries, 1)
 	if entries[0].Series.Name != "The Dark Tower" {
 		t.Errorf("series name = %q, want %q", entries[0].Series.Name, "The Dark Tower")
 	}
@@ -541,9 +487,7 @@ func TestBookFiles_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	// Create a file
 	body := mustMarshal(t, map[string]any{
@@ -574,10 +518,6 @@ func TestBookFiles_Handler(t *testing.T) {
 	}
 
 	var files []bookFileDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &files); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if len(files) != 1 {
-		t.Fatalf("len = %d, want 1", len(files))
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &files), "unmarshal")
+	require.Len(t, files, 1)
 }

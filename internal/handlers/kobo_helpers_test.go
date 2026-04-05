@@ -9,6 +9,8 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/kobo"
+
+	"github.com/stretchr/testify/require"
 )
 
 // ---- Kobo format mapping ----
@@ -43,13 +45,9 @@ func TestEncodeKoboSyncToken_IsValidBase64JSON(t *testing.T) {
 	tok := kobo.SyncToken{BooksLastModified: time.Now()}
 	encoded := kobo.EncodeSyncToken(tok)
 	raw, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		t.Fatalf("not valid base64: %v", err)
-	}
+	require.NoError(t, err, "not valid base64")
 	var payload map[string]any
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		t.Fatalf("not valid JSON: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(raw, &payload), "not valid JSON")
 	if payload["version"] != "1-0-0" {
 		t.Errorf("version = %v, want 1-0-0", payload["version"])
 	}
@@ -59,9 +57,7 @@ func TestEncodeKoboSyncToken_IsValidBase64JSON(t *testing.T) {
 
 func TestKoboRandomUUID_Format(t *testing.T) {
 	uuid, err := koboRandomUUID()
-	if err != nil {
-		t.Fatalf("koboRandomUUID: %v", err)
-	}
+	require.NoError(t, err, "koboRandomUUID")
 	// UUID v4 format: 8-4-4-4-12 hex chars
 	re := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 	if !re.MatchString(uuid) {
@@ -76,23 +72,17 @@ func TestKoboBookMetadata_WithSeries(t *testing.T) {
 
 	seriesName := "The Dark Tower"
 	s, err := h.DB.CreateSeries(t.Context(), seriesName, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create series: %v", err)
-	}
+	require.NoError(t, err, "create series")
 
 	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create book: %v", err)
-	}
+	require.NoError(t, err, "create book")
 
 	pos := 1.0
 	series := []db.BookSeriesEntry{{Series: *s, Position: &pos}}
 	meta := kobo.BookMetadata(book, nil, series, nil)
 
 	seriesMeta := meta.Series
-	if seriesMeta == nil {
-		t.Fatal("expected Series in metadata")
-	}
+	require.NotNil(t, seriesMeta)
 	if seriesMeta.Name != seriesName {
 		t.Errorf("Series.Name = %v, want %q", seriesMeta.Name, seriesName)
 	}

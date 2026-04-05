@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestToCredentialEntity(t *testing.T) {
@@ -60,9 +62,7 @@ func TestCredentialGetAdapter_Success(t *testing.T) {
 
 	adapted := credGetAdapter(fakeFn)
 	entity, err := adapted(t.Context(), "user-1")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if entity.ID != "cred-1" {
 		t.Errorf("ID = %q, want %q", entity.ID, "cred-1")
 	}
@@ -97,9 +97,7 @@ func TestCredentialUpsertAdapter_Success(t *testing.T) {
 
 	adapted := credUpsertAdapter(fakeFn)
 	entity, err := adapted(t.Context(), "user-1", "alice", "hash")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if entity.ID != "cred-2" {
 		t.Errorf("ID = %q, want %q", entity.ID, "cred-2")
 	}
@@ -127,9 +125,7 @@ func TestConvertCredResult_Success(t *testing.T) {
 	}
 
 	got, err := convertCredResult(cred, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if got.ID != "id-1" || got.Username != "alice" {
 		t.Errorf("got %+v, want ID=id-1 Username=alice", got)
 	}
@@ -138,9 +134,7 @@ func TestConvertCredResult_Success(t *testing.T) {
 func TestConvertCredResult_Error(t *testing.T) {
 	sentinel := errors.New("db failure")
 	got, err := convertCredResult[*db.ProtocolCredential](nil, sentinel)
-	if !errors.Is(err, sentinel) {
-		t.Fatalf("err = %v, want %v", err, sentinel)
-	}
+	require.ErrorIs(t, err, sentinel)
 	if got != (credentialEntity{}) {
 		t.Errorf("got %+v, want zero value", got)
 	}
