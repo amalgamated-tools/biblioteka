@@ -206,7 +206,7 @@
       </div>
     </div>
 
-    <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
       Configure SMTP settings to enable email notifications from Biblioteka.
     </p>
 
@@ -296,7 +296,7 @@
           {#if smtpPasswordSet}
             <p
               id="smtp-password-hint"
-              class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+              class="text-xs text-ink-500 dark:text-ink-300 mt-1"
             >
               Leave blank to keep the existing password
             </p>
@@ -322,7 +322,7 @@
         />
         <p
           id="smtp-from-hint"
-          class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+          class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
           The email address that outgoing messages will be sent from
         </p>
