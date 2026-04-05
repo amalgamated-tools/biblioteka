@@ -942,6 +942,7 @@ If no associated books are found (`total: 0`), Biblioteka first checks whether t
 | Status | Meaning |
 |--------|---------|
 | `404` | Author not found when no books are associated with the given ID and the author does not exist |
+| `500` | Unexpected server error |
 
 ---
 
@@ -1058,6 +1059,7 @@ If no associated books are found (`total: 0`), Biblioteka first checks whether t
 | Status | Meaning |
 |--------|---------|
 | `404` | Series not found when no books are associated with the given ID and the series does not exist |
+| `500` | Unexpected server error |
 
 ---
 
