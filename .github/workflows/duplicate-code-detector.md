@@ -205,6 +205,16 @@ For each distinct duplication pattern found, create a separate issue using this 
 - [ ] Update tests
 - [ ] Verify no functionality broken
 
+## Resolution Tracking
+
+When this issue is resolved, close it using **Close as completed** (not "Close as not planned").
+The [Duplicate Code Issue Closure Tracker](/.github/workflows/duplicate-code-closure-tracker.yml)
+workflow will automatically apply the `auto-closed: fixed` label, which feeds the resolution-rate
+dashboard for this detector.
+
+If the duplication is intentional or not worth refactoring, close with **Close as not planned**
+instead — the tracker will apply `auto-closed: wontfix`.
+
 ## Analysis Metadata
 
 - **Analyzed Files**: [count]
