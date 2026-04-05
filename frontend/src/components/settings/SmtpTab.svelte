@@ -161,7 +161,7 @@
       <h2
         class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 flex items-center gap-2"
       >
-        <Send class="w-5 h-5 text-accent-600" />
+        <Send class="w-5 h-5 text-accent-600" aria-hidden="true" />
         Email / SMTP Configuration
       </h2>
       {#if smtpConfigured}
@@ -170,7 +170,7 @@
           disabled={smtpTestLoading}
           class="inline-flex items-center gap-2 px-4 py-2 text-sm"
         >
-          <Mail class="w-4 h-4" />
+          <Mail class="w-4 h-4" aria-hidden="true" />
           {smtpTestLoading ? "Sending..." : "Send Test Email"}
         </Button>
       {/if}
