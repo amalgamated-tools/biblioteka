@@ -21,7 +21,10 @@
     <div
       class="w-10 h-10 bg-accent-100 dark:bg-accent-800/20 rounded-xl flex items-center justify-center"
     >
-      <LayoutDashboard class="w-5 h-5 text-accent-600 dark:text-accent-400" aria-hidden="true" />
+      <LayoutDashboard
+        class="w-5 h-5 text-accent-600 dark:text-accent-400"
+        aria-hidden="true"
+      />
     </div>
     <h1
       class="text-3xl font-display font-bold text-ink-900 dark:text-cream-100"
@@ -38,7 +41,10 @@
         <div
           class="w-14 h-14 bg-gradient-to-br from-accent-100 to-accent-200 dark:from-accent-800/30 dark:to-accent-700/20 rounded-2xl flex items-center justify-center flex-shrink-0"
         >
-          <Library class="w-7 h-7 text-accent-600 dark:text-accent-400" aria-hidden="true" />
+          <Library
+            class="w-7 h-7 text-accent-600 dark:text-accent-400"
+            aria-hidden="true"
+          />
         </div>
         <div>
           <h2
