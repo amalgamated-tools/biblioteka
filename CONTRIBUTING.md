@@ -812,7 +812,7 @@ These workflows are triggered manually by posting a slash command in a PR or iss
 | Slash command | Where | What it does |
 |---|---|---|
 | `/grumpy` | PR comment or review comment | Performs a critical code review focused on edge cases, potential bugs, and code quality. Posts up to 5 inline review comments. |
-| `/nit` | PR comment, review comment, or issue comment | Performs a detailed nitpick review focused on style, naming, and best practices that linters miss. Posts up to 10 inline review comments and publishes a summary report as a GitHub Discussion. |
+| `/nit` | PR comment or review comment | Performs a detailed nitpick review focused on style, naming, and best practices that linters miss. Posts up to 10 inline review comments and publishes a summary report as a GitHub Discussion. |
 | `/q` | Issue or PR comment | Answers questions about the codebase, analyzes agentic workflow performance, and can open pull requests with workflow optimizations. Also triggered by a 🚀 reaction on a comment. |
 
 ### On-demand workflows
