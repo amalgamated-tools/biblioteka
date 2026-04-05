@@ -109,7 +109,7 @@
 
     <div class="mb-4">
       <div class="flex items-center gap-2 text-sm">
-        <span class="text-ink-500">Status:</span>
+        <span class="text-ink-500 dark:text-ink-300">Status:</span>
         {#if oidcConfigured}
           <span
             class="inline-flex items-center gap-1.5 text-success-700 dark:text-green-400 bg-success-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full font-medium"
