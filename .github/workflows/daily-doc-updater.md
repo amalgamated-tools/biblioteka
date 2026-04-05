@@ -252,14 +252,15 @@ This PR updates the documentation based on features merged in the last 24 hours.
 - Always read the documentation instructions before making changes
 - Focus on user-facing features and changes that affect the developer experience
 
-## Volume Threshold Alert
+## Per-Run Volume Guard
 
-If you are about to create **12 or more PRs in a single run**, stop and emit a warning before proceeding:
+Before making any API calls, estimate how many PRs this run will produce. If you estimate **12 or more PRs from this single run**, apply the per-run guard first:
+
+1. **Batch related changes** — group all API endpoint documentation into one PR rather than one PR per endpoint.
+2. If batching still leaves 12+ PRs, emit the following warning in each PR description and proceed:
 
 ```
-⚠️ THRESHOLD ALERT: This run would create 12+ PRs.
-Consider batching related documentation changes into fewer PRs,
-or limiting the scope of this run to the highest-priority updates only.
+⚠️ PER-RUN THRESHOLD: This run produced 12+ PRs after batching.
 ```
 
-Batch related changes wherever possible — for example, group all API endpoint documentation into one PR rather than one PR per endpoint. If the number cannot be reduced below 12, proceed but include the alert text in each PR description.
+> **Note**: This per-run estimate is separate from the cumulative daily count checked in Step 6. Step 6 tracks the total number of `docs(daily):` PRs opened across *all* runs today and raises a GitHub alert issue when that total reaches 12. This guard catches a single run that is unusually large *before* the daily count is consulted.
