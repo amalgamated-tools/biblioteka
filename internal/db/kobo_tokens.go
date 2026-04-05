@@ -30,10 +30,9 @@ func (d *DB) CreateKoboToken(ctx context.Context, userID, name, tokenHash string
 		slog.String(otelkeys.UserID, userID),
 		slog.String(otelkeys.Name, name),
 	)
-	// Store the hash in the legacy token column to avoid persisting raw secrets.
 	return scanKoboToken(d.QueryRowContext(ctx,
-		`INSERT INTO kobo_tokens (user_id, name, token, token_hash) VALUES ($1, $2, $3, $4) RETURNING `+koboTokenColumns,
-		userID, name, tokenHash, tokenHash,
+		`INSERT INTO kobo_tokens (user_id, name, token_hash) VALUES ($1, $2, $3) RETURNING `+koboTokenColumns,
+		userID, name, tokenHash,
 	))
 }
 
