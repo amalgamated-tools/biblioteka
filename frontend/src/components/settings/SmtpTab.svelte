@@ -7,7 +7,7 @@
     testSmtpConfig,
   } from "../../lib/api";
   import { required, validate } from "../../lib/validation";
-  import { SuccessTimerState } from "../../lib/successTimer.svelte";
+  import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
   import { Mail, Send } from "lucide-svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
@@ -37,8 +37,8 @@
   let smtpTestMessage: string | null = $state(null);
   let smtpTestError: string | null = $state(null);
 
-  const testMessageTimer = new SuccessTimerState(5000);
-  const testErrorTimer = new SuccessTimerState(5000);
+  const testMessageTimer = new AutoDismissTimer(5000);
+  const testErrorTimer = new AutoDismissTimer(5000);
 
   let smtpSubmitLabel = $derived.by(() => {
     if (smtpLoading) return "Saving...";
