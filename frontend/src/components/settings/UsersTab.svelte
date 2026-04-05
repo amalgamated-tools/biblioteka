@@ -70,12 +70,12 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <Users class="w-5 h-5 text-accent-600" />
+      <Users class="w-5 h-5 text-accent-600" aria-hidden="true" />
       User Management
     </h2>
 
     {#if usersLoading}
-      <p class="text-ink-400 dark:text-ink-400">Loading users...</p>
+      <p class="text-ink-500 dark:text-ink-300">Loading users...</p>
     {:else if usersError}
       <AlertBanner variant="error">{usersError}</AlertBanner>
     {:else}
@@ -83,7 +83,7 @@
         <table class="w-full text-sm">
           <thead>
             <tr
-              class="text-left text-ink-400 dark:text-ink-400 border-b border-ink-100 dark:border-ink-800"
+              class="text-left text-ink-500 dark:text-ink-300 border-b border-ink-100 dark:border-ink-800"
             >
               <th scope="col" class="pb-3 font-medium">Name</th>
               <th scope="col" class="pb-3 font-medium">Email</th>
@@ -100,12 +100,12 @@
                 <td class="py-3 text-ink-900 dark:text-cream-100 font-medium"
                   >{u.name}</td
                 >
-                <td class="py-3 text-ink-500 dark:text-ink-400">{u.email}</td>
+                <td class="py-3 text-ink-500 dark:text-ink-300">{u.email}</td>
                 <td class="py-3">
                   <span
                     class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {u.oidc_linked
                       ? 'bg-accent-50 text-accent-700 dark:bg-accent-800/20 dark:text-accent-400'
-                      : 'bg-ink-50 text-ink-500 dark:bg-ink-800 dark:text-ink-400'}"
+                      : 'bg-ink-50 text-ink-500 dark:bg-ink-800 dark:text-ink-300'}"
                   >
                     {u.oidc_linked ? "OIDC/SSO" : "Local"}
                   </span>
@@ -126,13 +126,13 @@
                         : `Grant admin role to ${u.name || u.email}`}
                       class="px-3 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 {u.is_admin
                         ? 'bg-success-50 text-success-700 hover:bg-danger-50 hover:text-danger-700 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-danger-700/10 dark:hover:text-red-400'
-                        : 'bg-ink-50 text-ink-500 hover:bg-success-50 hover:text-success-700 dark:bg-ink-800 dark:text-ink-400 dark:hover:bg-green-900/20 dark:hover:text-green-400'}"
+                        : 'bg-ink-50 text-ink-500 hover:bg-success-50 hover:text-success-700 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-green-900/20 dark:hover:text-green-400'}"
                     >
                       {u.is_admin ? "Admin" : "User"}
                     </button>
                   {/if}
                 </td>
-                <td class="py-3 text-ink-400 dark:text-ink-500"
+                <td class="py-3 text-ink-500 dark:text-ink-300"
                   >{new Date(u.created_at).toLocaleDateString()}</td
                 >
               </tr>

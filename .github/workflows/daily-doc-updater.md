@@ -26,6 +26,11 @@ safe-outputs:
     reviewers: [copilot]
     draft: false
     auto-merge: true
+  create-issue:
+    labels: [documentation, automation]
+    max: 1
+  add-comment:
+    max: 1
 
 tools:
   cache-memory: true
@@ -148,7 +153,35 @@ For each missing or incomplete feature documentation:
    - Use similar examples
    - Match the level of detail
 
-### 6. Create Pull Request
+### 6. Volume Check (Threshold Alert)
+
+Before creating a pull request, check how many PRs the daily-doc-updater has already opened today:
+
+1. **Count today's PRs** — use `search_pull_requests` with a query like:
+   `repo:${{ github.repository }} is:pr in:title "docs(daily):" label:automation label:documentation created:>=YYYY-MM-DD` (replace YYYY-MM-DD with today's date in UTC)
+
+2. **If the count is ≥ 12**, raise a threshold alert:
+   - First, **check for an existing alert issue** for today by searching:
+     `repo:${{ github.repository }} is:issue is:open label:automation label:documentation "daily-doc-updater volume alert" in:title created:>=YYYY-MM-DD` (replace YYYY-MM-DD with today's date in UTC)
+   - **If an existing alert issue is found**, use the `add_comment` safe-outputs MCP tool to add a comment with the updated count.
+   - **If no existing alert issue is found**, use the `create_issue` safe-outputs MCP tool to create a GitHub issue titled `⚠️ daily-doc-updater volume alert: ≥12 PRs opened today (YYYY-MM-DD)` with body:
+     ```
+     The daily-doc-updater has opened 12 or more pull requests today, which exceeds the monitoring threshold.
+
+     **Action required**: Review whether the PR volume is expected.
+     - If the daily count reaches ≥ 16, consider adding a `max_prs_per_run` guard or batching small doc changes into a single PR.
+     - The alert threshold is 12 PRs/day (early warning); the critical threshold is 16 PRs/day (requires intervention).
+
+     Today's count: <replace with the actual count from search_pull_requests>
+     Alert threshold: 12
+     Critical threshold: 16
+     ```
+   - Label the issue `documentation` and `automation`.
+   - Continue and create the PR as usual (the alert is informational, not a blocker).
+
+3. **If the count is < 12**, proceed to create the pull request normally.
+
+### 7. Create Pull Request
 
 If you made any documentation changes:
 
@@ -193,7 +226,7 @@ This PR updates the documentation based on features merged in the last 24 hours.
 [Any additional notes or features that need manual review]
 ```
 
-### 7. Handle Edge Cases
+### 8. Handle Edge Cases
 
 - **No recent changes**: If there are no merged PRs in the last 24 hours, exit gracefully without creating a PR
 - **Already documented**: If all features are already documented, exit gracefully

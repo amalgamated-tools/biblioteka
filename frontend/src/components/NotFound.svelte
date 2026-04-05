@@ -14,7 +14,7 @@
   >
     Page Not Found
   </h1>
-  <p class="text-ink-400 dark:text-ink-500 mb-8">
+  <p class="text-ink-500 dark:text-ink-300 mb-8">
     The page you are looking for does not exist.
   </p>
   <button
