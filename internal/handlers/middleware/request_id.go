@@ -57,12 +57,3 @@ func GetRequestID(ctx context.Context) string {
 func WithRequestID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, ctxRequestIDKey, id)
 }
-
-// Forward is a request hook that looks for X-Request-Id in the incoming context and adds it to r's headers.
-func Forward(r *http.Request) {
-	ctx := r.Context()
-
-	if reqID := GetRequestID(ctx); reqID != "" {
-		r.Header.Set(RequestID, reqID)
-	}
-}
