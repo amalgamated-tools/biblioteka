@@ -72,24 +72,13 @@ func TestScanPathHandler(t *testing.T) {
 
 	// 6 matching files: My Book.epub, Another Book.mobi, Third Book.pdf, Kindle Book.azw3, UPPERCASE.EPUB, MixedCase.Mobi
 	// Plus 1 nested: Nested.pdf = 7 total
-	if got := len(mock.jobs); got != 7 {
-		t.Errorf("expected 7 enqueued jobs, got %d", got)
-		for _, j := range mock.jobs {
-			t.Logf("  job: %s %s", j.Name, j.Payload.FileName)
-		}
-	}
+	require.Len(t, mock.jobs, 7)
 
 	// Verify all enqueued jobs target the process:file job
 	for _, j := range mock.jobs {
-		if j.Name != JobProcessFile {
-			t.Errorf("expected job name %q, got %q", JobProcessFile, j.Name)
-		}
-		if j.Payload.Path == "" {
-			t.Error("enqueued job has empty path")
-		}
-		if j.Payload.FileType == "" {
-			t.Error("enqueued job has empty file type")
-		}
+		require.Equal(t, JobProcessFile, j.Name)
+		require.NotEmpty(t, j.Payload.Path, "enqueued job has empty path")
+		require.NotEmpty(t, j.Payload.FileType, "enqueued job has empty file type")
 	}
 }
 
@@ -123,7 +112,5 @@ func TestScanPathHandler_EmptyDirectory(t *testing.T) {
 
 	require.NoError(t, handler(t.Context(), payload), "handler")
 
-	if len(mock.jobs) != 0 {
-		t.Errorf("expected 0 enqueued jobs, got %d", len(mock.jobs))
-	}
+	require.Empty(t, mock.jobs)
 }

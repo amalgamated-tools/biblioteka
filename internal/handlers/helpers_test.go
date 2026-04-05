@@ -23,34 +23,22 @@ func Test_WriteJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	writeJSON(t.Context(), w, http.StatusOK, map[string]string{"key": "value"})
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if ct := w.Header().Get("Content-Type"); ct != "application/json" {
-		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "application/json", w.Header().Get("Content-Type"))
 	var result map[string]string
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
-	if result["key"] != "value" {
-		t.Errorf("key = %q, want %q", result["key"], "value")
-	}
+	require.Equal(t, "value", result["key"])
 }
 
 func Test_WriteError(t *testing.T) {
 	w := httptest.NewRecorder()
 	writeError(t.Context(), w, http.StatusBadRequest, "something went wrong")
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
-	if ct := w.Header().Get("Content-Type"); ct != "application/json" {
-		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Equal(t, "application/json", w.Header().Get("Content-Type"))
 	var result map[string]string
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
-	if result["error"] != "something went wrong" {
-		t.Errorf("error = %q, want %q", result["error"], "something went wrong")
-	}
+	require.Equal(t, "something went wrong", result["error"])
 }
 
 func Test_LogAudit(t *testing.T) {
@@ -61,18 +49,11 @@ func Test_LogAudit(t *testing.T) {
 	logs, _, err := d.ListAuditLogs(t.Context(), 10, 0)
 	require.NoError(t, err, "list audit logs")
 	require.Len(t, logs, 1)
-	if logs[0].UserID == nil || *logs[0].UserID != "user-42" {
-		t.Errorf("user id = %v, want %q", logs[0].UserID, "user-42")
-	}
-	if logs[0].Action != db.AuditActionBookCreated {
-		t.Errorf("action = %q, want %q", logs[0].Action, db.AuditActionBookCreated)
-	}
-	if logs[0].EntityType != "book" {
-		t.Errorf("entity type = %q, want %q", logs[0].EntityType, "book")
-	}
-	if logs[0].EntityID != "book-1" {
-		t.Errorf("entity id = %q, want %q", logs[0].EntityID, "book-1")
-	}
+	require.NotNil(t, logs[0].UserID)
+	require.Equal(t, "user-42", *logs[0].UserID)
+	require.Equal(t, db.AuditActionBookCreated, logs[0].Action)
+	require.Equal(t, "book", logs[0].EntityType)
+	require.Equal(t, "book-1", logs[0].EntityID)
 	require.NotNil(t, logs[0].Metadata, "metadata = nil, want JSON metadata")
 }
 
@@ -102,9 +83,8 @@ func TestRequestScheme(t *testing.T) {
 			if tt.header != "" {
 				r.Header.Set("X-Forwarded-Proto", tt.header)
 			}
-			if got := requestScheme(r); got != tt.want {
-				t.Errorf("requestScheme() = %q, want %q", got, tt.want)
-			}
+			got := requestScheme(r)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

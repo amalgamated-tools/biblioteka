@@ -12,9 +12,7 @@ func TestHandleWriteMetadataResponse_Success(t *testing.T) {
 	t.Parallel()
 
 	err := handleWriteMetadataResponse("  1 image files updated\n")
-	if err != nil {
-		t.Errorf("handleWriteMetadataResponse() unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 }
 
 // TestHandleWriteMetadataResponse_ErrorMessage verifies that a non-success
@@ -24,9 +22,7 @@ func TestHandleWriteMetadataResponse_ErrorMessage(t *testing.T) {
 
 	err := handleWriteMetadataResponse("  Error writing file\n")
 	require.Error(t, err, "expected error for non-success response")
-	if err.Error() == "" {
-		t.Error("expected non-empty error message")
-	}
+	require.NotEmpty(t, err.Error())
 }
 
 // TestHandleWriteMetadataResponse_PartialMatch verifies that a partial match
@@ -36,9 +32,7 @@ func TestHandleWriteMetadataResponse_PartialMatch(t *testing.T) {
 
 	// Not ending with the success token.
 	err := handleWriteMetadataResponse("image files updated")
-	if err == nil {
-		t.Error("expected error for partial success token")
-	}
+	require.Error(t, err, "expected error for partial success token")
 }
 
 // TestToString_StringPassthrough verifies that a string value passes through
@@ -47,9 +41,7 @@ func TestToString_StringPassthrough(t *testing.T) {
 	t.Parallel()
 
 	got := toString("hello world")
-	if got != "hello world" {
-		t.Errorf("toString(%q) = %q, want %q", "hello world", got, "hello world")
-	}
+	require.Equal(t, "hello world", got)
 }
 
 // TestToString_Float64 verifies that a float64 is converted correctly.
@@ -57,9 +49,7 @@ func TestToString_Float64(t *testing.T) {
 	t.Parallel()
 
 	got := toString(float64(3.14))
-	if got != "3.14" {
-		t.Errorf("toString(3.14) = %q, want 3.14", got)
-	}
+	require.Equal(t, "3.14", got)
 }
 
 // TestToString_Int64 verifies that an int64 is converted correctly.
@@ -67,9 +57,7 @@ func TestToString_Int64(t *testing.T) {
 	t.Parallel()
 
 	got := toString(int64(42))
-	if got != "42" {
-		t.Errorf("toString(42) = %q, want 42", got)
-	}
+	require.Equal(t, "42", got)
 }
 
 // TestToString_Float64WholeNumber verifies that a whole-number float64 is
@@ -78,9 +66,7 @@ func TestToString_Float64WholeNumber(t *testing.T) {
 	t.Parallel()
 
 	got := toString(float64(7))
-	if got != "7" {
-		t.Errorf("toString(float64(7)) = %q, want 7", got)
-	}
+	require.Equal(t, "7", got)
 }
 
 // TestEmptyFileMetadata verifies that EmptyFileMetadata creates a struct with
@@ -89,9 +75,7 @@ func TestEmptyFileMetadata(t *testing.T) {
 	t.Parallel()
 
 	fm := EmptyFileMetadata()
-	if fm.Fields == nil {
-		t.Error("expected non-nil Fields map in EmptyFileMetadata()")
-	}
+	require.NotNil(t, fm.Fields, "expected non-nil Fields map in EmptyFileMetadata()")
 }
 
 // TestFileMetadataSetStringAndGetStrings verifies the round-trip: set a string
@@ -104,9 +88,8 @@ func TestFileMetadataSetStringAndGetStrings(t *testing.T) {
 
 	vals, err := fm.GetStrings("Title")
 	require.NoError(t, err, "GetStrings() error")
-	if len(vals) != 1 || vals[0] != "My Test Title" {
-		t.Errorf("GetStrings(Title) = %v, want [My Test Title]", vals)
-	}
+	require.Len(t, vals, 1)
+	require.Equal(t, "My Test Title", vals[0])
 }
 
 // TestFileMetadataGetStrings_KeyNotFound verifies that GetStrings returns
@@ -116,10 +99,7 @@ func TestFileMetadataGetStrings_KeyNotFound(t *testing.T) {
 
 	fm := EmptyFileMetadata()
 	_, err := fm.GetStrings("NonExistentKey")
-	require.Error(t, err, "expected ErrKeyNotFound for missing key")
-	if err != ErrKeyNotFound {
-		t.Errorf("err = %v, want ErrKeyNotFound", err)
-	}
+	require.ErrorIs(t, err, ErrKeyNotFound)
 }
 
 // TestFileMetadataSetString_MultipleFields verifies that multiple fields can
@@ -132,12 +112,12 @@ func TestFileMetadataSetString_MultipleFields(t *testing.T) {
 	fm.SetString("Title", "Great Book")
 
 	authors, err := fm.GetStrings("Author")
-	if err != nil || len(authors) != 1 || authors[0] != "Jane Doe" {
-		t.Errorf("GetStrings(Author) = %v, %v, want [Jane Doe], nil", authors, err)
-	}
+	require.NoError(t, err)
+	require.Len(t, authors, 1)
+	require.Equal(t, "Jane Doe", authors[0])
 
 	titles, err := fm.GetStrings("Title")
-	if err != nil || len(titles) != 1 || titles[0] != "Great Book" {
-		t.Errorf("GetStrings(Title) = %v, %v, want [Great Book], nil", titles, err)
-	}
+	require.NoError(t, err)
+	require.Len(t, titles, 1)
+	require.Equal(t, "Great Book", titles[0])
 }

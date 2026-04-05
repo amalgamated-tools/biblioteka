@@ -22,9 +22,7 @@ func TestIsLoopbackHost(t *testing.T) {
 	}
 	for _, tc := range cases {
 		got := IsLoopbackHost(tc.host)
-		if got != tc.want {
-			t.Errorf("IsLoopbackHost(%q) = %v, want %v", tc.host, got, tc.want)
-		}
+		require.Equal(t, tc.want, got, "IsLoopbackHost(%q)", tc.host)
 	}
 }
 
@@ -44,38 +42,32 @@ func TestValidateHost(t *testing.T) {
 	}
 	for _, tc := range cases {
 		err := ValidateHost(tc.host)
-		if (err != nil) != tc.wantErr {
-			t.Errorf("ValidateHost(%q) error = %v, wantErr %v", tc.host, err, tc.wantErr)
+		if tc.wantErr {
+			require.Error(t, err, "ValidateHost(%q)", tc.host)
+		} else {
+			require.NoError(t, err, "ValidateHost(%q)", tc.host)
 		}
 	}
 }
 
 func TestValidateForSend_MissingHost(t *testing.T) {
 	_, err := ValidateForSend(Config{From: "from@example.com"})
-	if err == nil {
-		t.Error("expected error for missing host")
-	}
+	require.Error(t, err, "expected error for missing host")
 }
 
 func TestValidateForSend_MissingFrom(t *testing.T) {
 	_, err := ValidateForSend(Config{Host: "smtp.example.com"})
-	if err == nil {
-		t.Error("expected error for missing from")
-	}
+	require.Error(t, err, "expected error for missing from")
 }
 
 func TestValidateForSend_InvalidPort(t *testing.T) {
 	_, err := ValidateForSend(Config{Host: "smtp.example.com", From: "from@example.com", Port: "99999"})
-	if err == nil {
-		t.Error("expected error for invalid port")
-	}
+	require.Error(t, err, "expected error for invalid port")
 }
 
 func TestValidateForSend_InvalidTLS(t *testing.T) {
 	_, err := ValidateForSend(Config{Host: "smtp.example.com", From: "from@example.com", TLS: "invalid"})
-	if err == nil {
-		t.Error("expected error for invalid TLS mode")
-	}
+	require.Error(t, err, "expected error for invalid TLS mode")
 }
 
 func TestValidateForSend_UsernameWithoutPassword(t *testing.T) {
@@ -86,9 +78,7 @@ func TestValidateForSend_UsernameWithoutPassword(t *testing.T) {
 		Password: "",
 		TLS:      "starttls",
 	})
-	if err == nil {
-		t.Error("expected error for username without password")
-	}
+	require.Error(t, err, "expected error for username without password")
 }
 
 func TestValidateForSend_PlaintextAuthOnRemote(t *testing.T) {
@@ -99,9 +89,7 @@ func TestValidateForSend_PlaintextAuthOnRemote(t *testing.T) {
 		Password: "pass",
 		TLS:      "none",
 	})
-	if err == nil {
-		t.Error("expected error for plaintext auth on non-loopback host")
-	}
+	require.Error(t, err, "expected error for plaintext auth on non-loopback host")
 }
 
 func TestValidateForSend_PlaintextAuthOnLoopback(t *testing.T) {
@@ -113,9 +101,7 @@ func TestValidateForSend_PlaintextAuthOnLoopback(t *testing.T) {
 		TLS:      "none",
 	})
 	require.NoError(t, err)
-	if params.Auth == nil {
-		t.Error("expected non-nil Auth for username+password")
-	}
+	require.NotNil(t, params.Auth, "expected non-nil Auth for username+password")
 }
 
 func TestValidateForSend_Valid(t *testing.T) {
@@ -126,15 +112,9 @@ func TestValidateForSend_Valid(t *testing.T) {
 		TLS:  "starttls",
 	})
 	require.NoError(t, err)
-	if params.Addr != "smtp.example.com:587" {
-		t.Errorf("Addr = %q, want %q", params.Addr, "smtp.example.com:587")
-	}
-	if params.From != "noreply@example.com" {
-		t.Errorf("From = %q, want %q", params.From, "noreply@example.com")
-	}
-	if params.TLS != "starttls" {
-		t.Errorf("TLS = %q, want %q", params.TLS, "starttls")
-	}
+	require.Equal(t, "smtp.example.com:587", params.Addr, "Addr")
+	require.Equal(t, "noreply@example.com", params.From, "From")
+	require.Equal(t, "starttls", params.TLS, "TLS")
 }
 
 func TestValidateForSend_DefaultPort(t *testing.T) {
@@ -144,9 +124,7 @@ func TestValidateForSend_DefaultPort(t *testing.T) {
 		TLS:  "starttls",
 	})
 	require.NoError(t, err)
-	if params.Addr != "smtp.example.com:587" {
-		t.Errorf("Addr = %q, want %q", params.Addr, "smtp.example.com:587")
-	}
+	require.Equal(t, "smtp.example.com:587", params.Addr, "Addr")
 }
 
 func TestValidateForSend_FromWithDisplayName(t *testing.T) {
@@ -155,9 +133,7 @@ func TestValidateForSend_FromWithDisplayName(t *testing.T) {
 		From: "Display Name <from@example.com>",
 		TLS:  "starttls",
 	})
-	if err == nil {
-		t.Error("expected error for from address with display name")
-	}
+	require.Error(t, err, "expected error for from address with display name")
 }
 
 func TestResolveConfig_EnvOverride(t *testing.T) {
@@ -172,18 +148,10 @@ func TestResolveConfig_EnvOverride(t *testing.T) {
 		return "", nil
 	})
 
-	if !cfg.EnvOverride {
-		t.Error("expected EnvOverride=true")
-	}
-	if cfg.Host != "env.smtp.example.com" {
-		t.Errorf("Host = %q", cfg.Host)
-	}
-	if cfg.Port != "2525" {
-		t.Errorf("Port = %q", cfg.Port)
-	}
-	if cfg.TLS != "tls" {
-		t.Errorf("TLS = %q", cfg.TLS)
-	}
+	require.True(t, cfg.EnvOverride, "expected EnvOverride=true")
+	require.Equal(t, "env.smtp.example.com", cfg.Host, "Host")
+	require.Equal(t, "2525", cfg.Port, "Port")
+	require.Equal(t, "tls", cfg.TLS, "TLS")
 }
 
 func TestResolveConfig_EnvDefaults(t *testing.T) {
@@ -195,12 +163,8 @@ func TestResolveConfig_EnvDefaults(t *testing.T) {
 		return "", nil
 	})
 
-	if cfg.Port != "587" {
-		t.Errorf("default Port = %q, want 587", cfg.Port)
-	}
-	if cfg.TLS != "starttls" {
-		t.Errorf("default TLS = %q, want starttls", cfg.TLS)
-	}
+	require.Equal(t, "587", cfg.Port, "default Port")
+	require.Equal(t, "starttls", cfg.TLS, "default TLS")
 }
 
 func TestResolveConfig_DBFallback(t *testing.T) {
@@ -219,13 +183,7 @@ func TestResolveConfig_DBFallback(t *testing.T) {
 		return settings[key], nil
 	})
 
-	if cfg.EnvOverride {
-		t.Error("expected EnvOverride=false")
-	}
-	if cfg.Host != "db.smtp.example.com" {
-		t.Errorf("Host = %q", cfg.Host)
-	}
-	if cfg.TLS != "tls" {
-		t.Errorf("TLS = %q", cfg.TLS)
-	}
+	require.False(t, cfg.EnvOverride, "expected EnvOverride=false")
+	require.Equal(t, "db.smtp.example.com", cfg.Host, "Host")
+	require.Equal(t, "tls", cfg.TLS, "TLS")
 }

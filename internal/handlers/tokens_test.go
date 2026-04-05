@@ -41,18 +41,12 @@ func TestHandleTokenCreate_Success(t *testing.T) {
 	require.Equal(t, http.StatusCreated, w.Code)
 
 	// Verify cache-prevention headers are set.
-	if cc := w.Header().Get("Cache-Control"); cc != "no-store" {
-		t.Errorf("Cache-Control = %q, want %q", cc, "no-store")
-	}
-	if pragma := w.Header().Get("Pragma"); pragma != "no-cache" {
-		t.Errorf("Pragma = %q, want %q", pragma, "no-cache")
-	}
+	require.Equal(t, "no-store", w.Header().Get("Cache-Control"))
+	require.Equal(t, "no-cache", w.Header().Get("Pragma"))
 
 	var resp map[string]string
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp["name"] != "My Token" {
-		t.Errorf("name = %q, want %q", resp["name"], "My Token")
-	}
+	require.Equal(t, "My Token", resp["name"])
 }
 
 func TestHandleTokenCreate_NameTrimmed(t *testing.T) {
@@ -71,9 +65,7 @@ func TestHandleTokenCreate_NameTrimmed(t *testing.T) {
 	handleTokenCreate(ops, w, r)
 
 	require.Equal(t, http.StatusCreated, w.Code)
-	if capturedName != "padded name" {
-		t.Errorf("create received name %q, want trimmed %q", capturedName, "padded name")
-	}
+	require.Equal(t, "padded name", capturedName)
 }
 
 func TestHandleTokenCreate_EmptyName(t *testing.T) {
@@ -86,9 +78,7 @@ func TestHandleTokenCreate_EmptyName(t *testing.T) {
 
 	handleTokenCreate(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleTokenCreate_WhitespaceOnlyName(t *testing.T) {
@@ -101,9 +91,7 @@ func TestHandleTokenCreate_WhitespaceOnlyName(t *testing.T) {
 
 	handleTokenCreate(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleTokenCreate_NameTooLong(t *testing.T) {
@@ -117,9 +105,7 @@ func TestHandleTokenCreate_NameTooLong(t *testing.T) {
 
 	handleTokenCreate(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleTokenCreate_InvalidJSON(t *testing.T) {
@@ -131,9 +117,7 @@ func TestHandleTokenCreate_InvalidJSON(t *testing.T) {
 
 	handleTokenCreate(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleTokenCreate_GenericCreateError(t *testing.T) {
@@ -149,16 +133,12 @@ func TestHandleTokenCreate_GenericCreateError(t *testing.T) {
 
 	handleTokenCreate(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 
 	var resp errorResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	// Generic error should use the default "failed to create <resource>" message.
-	if resp.Error != "failed to create test token" {
-		t.Errorf("error = %q, want %q", resp.Error, "failed to create test token")
-	}
+	require.Equal(t, "failed to create test token", resp.Error)
 }
 
 func TestHandleTokenCreate_TokenErrorMessage(t *testing.T) {
@@ -177,16 +157,12 @@ func TestHandleTokenCreate_TokenErrorMessage(t *testing.T) {
 
 	handleTokenCreate(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 
 	var resp errorResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	// tokenError.message should be used instead of the generic message.
-	if resp.Error != "failed to generate secure token" {
-		t.Errorf("error = %q, want %q", resp.Error, "failed to generate secure token")
-	}
+	require.Equal(t, "failed to generate secure token", resp.Error)
 }
 
 func TestHandleTokenCreate_AuditLog(t *testing.T) {
@@ -221,7 +197,7 @@ func TestHandleTokenCreate_AuditLog(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Error("expected audit log entry was not found")
+		require.Fail(t, "expected audit log entry was not found")
 	}
 }
 
@@ -229,10 +205,6 @@ func TestTokenError_ErrorAndUnwrap(t *testing.T) {
 	inner := errors.New("inner cause")
 	te := &tokenError{err: inner, message: "client-facing message"}
 
-	if te.Error() != inner.Error() {
-		t.Errorf("Error() = %q, want %q", te.Error(), inner.Error())
-	}
-	if !errors.Is(te, inner) {
-		t.Error("errors.Is(te, inner) = false, want true")
-	}
+	require.Equal(t, inner.Error(), te.Error())
+	require.ErrorIs(t, te, inner)
 }

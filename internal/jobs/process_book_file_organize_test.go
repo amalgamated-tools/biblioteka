@@ -42,7 +42,7 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 
 	// Verify the original file was moved.
 	if _, err := os.Stat(epubPath); !os.IsNotExist(err) {
-		t.Error("expected original file to be removed after reorganization")
+		require.Fail(t, "expected original file to be removed after reorganization")
 	}
 
 	// Verify the file was moved to the expected Author/Title/ structure.
@@ -57,9 +57,7 @@ func TestProcessBookFile_OrganizeFiles(t *testing.T) {
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
 	require.Len(t, files, 1)
-	if files[0].FilePath != expectedPath {
-		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
-	}
+	require.Equal(t, expectedPath, files[0].FilePath)
 }
 
 func TestProcessBookFile_OrganizeFiles_BookPerFile(t *testing.T) {
@@ -98,9 +96,7 @@ func TestProcessBookFile_OrganizeFiles_BookPerFile(t *testing.T) {
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
 	require.Len(t, files, 1)
-	if files[0].FilePath != expectedPath {
-		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
-	}
+	require.Equal(t, expectedPath, files[0].FilePath)
 }
 
 func TestProcessBookFile_OrganizeFiles_None(t *testing.T) {
@@ -137,9 +133,7 @@ func TestProcessBookFile_OrganizeFiles_None(t *testing.T) {
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
 	require.Len(t, files, 1)
-	if files[0].FilePath != epubPath {
-		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
-	}
+	require.Equal(t, epubPath, files[0].FilePath)
 }
 
 func TestProcessBookFile_NonExistentLibrarySkipsOrganization(t *testing.T) {
@@ -174,9 +168,7 @@ func TestProcessBookFile_NonExistentLibrarySkipsOrganization(t *testing.T) {
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
 	require.Len(t, files, 1)
-	if files[0].FilePath != epubPath {
-		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
-	}
+	require.Equal(t, epubPath, files[0].FilePath)
 }
 
 func TestProcessBookFile_NoLibraryIDSkipsOrganization(t *testing.T) {
@@ -237,9 +229,7 @@ func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
 	require.Len(t, files, 1)
-	if files[0].FilePath != reorganizedPath {
-		t.Errorf("expected file path %q, got %q", reorganizedPath, files[0].FilePath)
-	}
+	require.Equal(t, reorganizedPath, files[0].FilePath)
 }
 
 func TestProcessBookFile_ContinuesFromFlatReorganizedPathWhenSourceMoved(t *testing.T) {
@@ -275,9 +265,7 @@ func TestProcessBookFile_ContinuesFromFlatReorganizedPathWhenSourceMoved(t *test
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
 	require.Len(t, files, 1)
-	if files[0].FilePath != reorganizedPath {
-		t.Errorf("expected file path %q, got %q", reorganizedPath, files[0].FilePath)
-	}
+	require.Equal(t, reorganizedPath, files[0].FilePath)
 }
 
 func TestProcessBookFile_FlatRecoveryDoesNotUseFolderCandidate(t *testing.T) {
@@ -316,9 +304,7 @@ func TestProcessBookFile_FlatRecoveryDoesNotUseFolderCandidate(t *testing.T) {
 	files, err := database.ListBookFiles(t.Context(), books[0].ID)
 	require.NoError(t, err, "list book files")
 	require.Len(t, files, 1)
-	if files[0].FilePath != flatPath {
-		t.Errorf("expected file path %q, got %q", flatPath, files[0].FilePath)
-	}
+	require.Equal(t, flatPath, files[0].FilePath)
 }
 
 func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {

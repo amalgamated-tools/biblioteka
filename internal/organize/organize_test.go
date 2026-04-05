@@ -19,21 +19,16 @@ func TestReorganizeFile_MovesToAuthorTitle(t *testing.T) {
 	require.NoError(t, err, "reorganize")
 
 	expected := filepath.Join(root, "Jane Austen", "Pride and Prejudice", "test.epub")
-	if newPath != expected {
-		t.Errorf("expected path %q, got %q", expected, newPath)
-	}
+	require.Equal(t, expected, newPath)
 
 	// Verify file exists at new location.
 	content, err := os.ReadFile(newPath)
 	require.NoError(t, err, "read new file")
-	if string(content) != "epub content" {
-		t.Errorf("content mismatch: %q", string(content))
-	}
+	require.Equal(t, "epub content", string(content))
 
 	// Verify original is gone.
-	if _, err := os.Stat(srcPath); !os.IsNotExist(err) {
-		t.Errorf("expected original file to be gone, err: %v", err)
-	}
+	_, err = os.Stat(srcPath)
+	require.True(t, os.IsNotExist(err), "expected original file to be gone")
 }
 
 func TestReorganizeFile_AlreadyInPlace(t *testing.T) {
@@ -45,9 +40,7 @@ func TestReorganizeFile_AlreadyInPlace(t *testing.T) {
 
 	newPath, err := ReorganizeFile(t.Context(), filePath, root, "Jane Austen", "Pride and Prejudice")
 	require.NoError(t, err, "reorganize")
-	if newPath != filePath {
-		t.Errorf("expected same path %q, got %q", filePath, newPath)
-	}
+	require.Equal(t, filePath, newPath)
 }
 
 func TestReorganizeFile_EmptyAuthorOrTitle(t *testing.T) {
@@ -57,15 +50,11 @@ func TestReorganizeFile_EmptyAuthorOrTitle(t *testing.T) {
 
 	newPath, err := ReorganizeFile(t.Context(), filePath, root, "", "Title")
 	require.NoError(t, err, "reorganize")
-	if newPath != filePath {
-		t.Errorf("expected unchanged path for empty author")
-	}
+	require.Equal(t, filePath, newPath)
 
 	newPath, err = ReorganizeFile(t.Context(), filePath, root, "Author", "")
 	require.NoError(t, err, "reorganize")
-	if newPath != filePath {
-		t.Errorf("expected unchanged path for empty title")
-	}
+	require.Equal(t, filePath, newPath)
 }
 
 func TestReorganizeFile_CleansEmptySourceDirs(t *testing.T) {
@@ -81,9 +70,8 @@ func TestReorganizeFile_CleansEmptySourceDirs(t *testing.T) {
 	require.NoError(t, err, "reorganize")
 
 	// Both OldTitle/ and OldAuthor/ should be removed (empty).
-	if _, err := os.Stat(filepath.Join(root, "OldAuthor")); !os.IsNotExist(err) {
-		t.Errorf("expected OldAuthor dir to be cleaned up")
-	}
+	_, err = os.Stat(filepath.Join(root, "OldAuthor"))
+	require.True(t, os.IsNotExist(err), "expected OldAuthor dir to be cleaned up")
 }
 
 func TestReorganizeFileFlat_MovesToAuthor(t *testing.T) {
@@ -96,19 +84,14 @@ func TestReorganizeFileFlat_MovesToAuthor(t *testing.T) {
 	require.NoError(t, err, "reorganize flat")
 
 	expected := filepath.Join(root, "Jane Austen", "test.epub")
-	if newPath != expected {
-		t.Errorf("expected path %q, got %q", expected, newPath)
-	}
+	require.Equal(t, expected, newPath)
 
 	content, err := os.ReadFile(newPath)
 	require.NoError(t, err, "read new file")
-	if string(content) != "epub content" {
-		t.Errorf("content mismatch: %q", string(content))
-	}
+	require.Equal(t, "epub content", string(content))
 
-	if _, err := os.Stat(srcPath); !os.IsNotExist(err) {
-		t.Errorf("expected original file to be gone, err: %v", err)
-	}
+	_, err = os.Stat(srcPath)
+	require.True(t, os.IsNotExist(err), "expected original file to be gone")
 }
 
 func TestReorganizeFileFlat_AlreadyInPlace(t *testing.T) {
@@ -120,9 +103,7 @@ func TestReorganizeFileFlat_AlreadyInPlace(t *testing.T) {
 
 	newPath, err := ReorganizeFileFlat(t.Context(), filePath, root, "Jane Austen")
 	require.NoError(t, err, "reorganize flat")
-	if newPath != filePath {
-		t.Errorf("expected same path %q, got %q", filePath, newPath)
-	}
+	require.Equal(t, filePath, newPath)
 }
 
 func TestReorganizeFileFlat_EmptyAuthor(t *testing.T) {
@@ -132,9 +113,7 @@ func TestReorganizeFileFlat_EmptyAuthor(t *testing.T) {
 
 	newPath, err := ReorganizeFileFlat(t.Context(), filePath, root, "")
 	require.NoError(t, err, "reorganize flat")
-	if newPath != filePath {
-		t.Errorf("expected unchanged path for empty author")
-	}
+	require.Equal(t, filePath, newPath)
 }
 
 func TestReorganizeFileFlat_CleansEmptySourceDirs(t *testing.T) {
@@ -148,22 +127,17 @@ func TestReorganizeFileFlat_CleansEmptySourceDirs(t *testing.T) {
 	_, err := ReorganizeFileFlat(t.Context(), srcPath, root, "NewAuthor")
 	require.NoError(t, err, "reorganize flat")
 
-	if _, err := os.Stat(filepath.Join(root, "OldAuthor")); !os.IsNotExist(err) {
-		t.Errorf("expected OldAuthor dir to be cleaned up")
-	}
+	_, err = os.Stat(filepath.Join(root, "OldAuthor"))
+	require.True(t, os.IsNotExist(err), "expected OldAuthor dir to be cleaned up")
 }
 
 func TestTargetPathFlat(t *testing.T) {
 	result := TargetPathFlat(t.Context(), "/lib/book.epub", "/lib", "Jane Austen")
 	expected := filepath.Join("/lib", "Jane Austen", "book.epub")
-	if result != expected {
-		t.Errorf("expected %q, got %q", expected, result)
-	}
+	require.Equal(t, expected, result)
 
 	// Empty author returns empty string.
-	if got := TargetPathFlat(t.Context(), "/lib/book.epub", "/lib", ""); got != "" {
-		t.Errorf("expected empty for empty author, got %q", got)
-	}
+	require.Equal(t, "", TargetPathFlat(t.Context(), "/lib/book.epub", "/lib", ""))
 }
 
 func TestReorganizeFileFlat_TargetExists(t *testing.T) {
@@ -183,9 +157,8 @@ func TestReorganizeFileFlat_TargetExists(t *testing.T) {
 	require.Error(t, err, "expected error when target file already exists")
 
 	// Original file should still exist.
-	if _, err := os.Stat(srcPath); err != nil {
-		t.Errorf("expected original file to still exist: %v", err)
-	}
+	_, err = os.Stat(srcPath)
+	require.NoError(t, err, "expected original file to still exist")
 }
 
 func TestReorganizeFile_TargetExists(t *testing.T) {
@@ -202,9 +175,8 @@ func TestReorganizeFile_TargetExists(t *testing.T) {
 	_, err := ReorganizeFile(t.Context(), srcPath, root, "Author", "Title")
 	require.Error(t, err, "expected error when target file already exists")
 
-	if _, err := os.Stat(srcPath); err != nil {
-		t.Errorf("expected original file to still exist: %v", err)
-	}
+	_, err = os.Stat(srcPath)
+	require.NoError(t, err, "expected original file to still exist")
 }
 
 func TestReorganizeFileFlat_SanitizedAuthorEmpty(t *testing.T) {
@@ -215,9 +187,7 @@ func TestReorganizeFileFlat_SanitizedAuthorEmpty(t *testing.T) {
 	// Author that sanitizes to empty (only dots and special chars).
 	newPath, err := ReorganizeFileFlat(t.Context(), srcPath, root, "...")
 	require.NoError(t, err, "reorganize flat")
-	if newPath != srcPath {
-		t.Errorf("expected unchanged path for sanitized-to-empty author, got %q", newPath)
-	}
+	require.Equal(t, srcPath, newPath)
 }
 
 func TestReorganizeFile_SanitizedFieldsEmpty(t *testing.T) {
@@ -228,29 +198,19 @@ func TestReorganizeFile_SanitizedFieldsEmpty(t *testing.T) {
 	// Author sanitizes to empty.
 	newPath, err := ReorganizeFile(t.Context(), srcPath, root, "...", "Title")
 	require.NoError(t, err, "reorganize")
-	if newPath != srcPath {
-		t.Errorf("expected unchanged path for sanitized-to-empty author")
-	}
+	require.Equal(t, srcPath, newPath)
 
 	// Title sanitizes to empty.
 	newPath, err = ReorganizeFile(t.Context(), srcPath, root, "Author", "...")
 	require.NoError(t, err, "reorganize")
-	if newPath != srcPath {
-		t.Errorf("expected unchanged path for sanitized-to-empty title")
-	}
+	require.Equal(t, srcPath, newPath)
 }
 
 func TestTargetPathFlat_SanitizedEmpty(t *testing.T) {
-	if got := TargetPathFlat(t.Context(), "/lib/book.epub", "/lib", "..."); got != "" {
-		t.Errorf("expected empty for sanitized-to-empty author, got %q", got)
-	}
+	require.Equal(t, "", TargetPathFlat(t.Context(), "/lib/book.epub", "/lib", "..."))
 }
 
 func TestTargetPath_SanitizedEmpty(t *testing.T) {
-	if got := TargetPath(t.Context(), "/lib/book.epub", "/lib", "...", "Title"); got != "" {
-		t.Errorf("expected empty for sanitized-to-empty author, got %q", got)
-	}
-	if got := TargetPath(t.Context(), "/lib/book.epub", "/lib", "Author", "..."); got != "" {
-		t.Errorf("expected empty for sanitized-to-empty title, got %q", got)
-	}
+	require.Equal(t, "", TargetPath(t.Context(), "/lib/book.epub", "/lib", "...", "Title"))
+	require.Equal(t, "", TargetPath(t.Context(), "/lib/book.epub", "/lib", "Author", "..."))
 }
