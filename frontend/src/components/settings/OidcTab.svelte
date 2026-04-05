@@ -103,13 +103,13 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <Shield class="w-5 h-5 text-accent-600" />
+      <Shield class="w-5 h-5 text-accent-600" aria-hidden="true" />
       OIDC / Single Sign-On
     </h2>
 
     <div class="mb-4">
       <div class="flex items-center gap-2 text-sm">
-        <span class="text-ink-500">Status:</span>
+        <span class="text-ink-500 dark:text-ink-300">Status:</span>
         {#if oidcConfigured}
           <span
             class="inline-flex items-center gap-1.5 text-success-700 dark:text-green-400 bg-success-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full font-medium"
@@ -128,7 +128,7 @@
       </div>
     </div>
 
-    <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
       Configure an OpenID Connect (OIDC) provider to enable Single Sign-On.
       Users will be able to log in using your identity provider.
     </p>
@@ -152,7 +152,7 @@
         />
         <p
           id="oidc-issuer-url-hint"
-          class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+          class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
           The OIDC provider's issuer URL (must support
           .well-known/openid-configuration)
@@ -199,7 +199,7 @@
         {#if oidcConfigured}
           <p
             id="oidc-client-secret-hint"
-            class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+            class="text-xs text-ink-500 dark:text-ink-300 mt-1"
           >
             Leave blank to keep the existing secret
           </p>
@@ -224,7 +224,7 @@
         />
         <p
           id="oidc-redirect-uri-hint"
-          class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+          class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
           Must match the redirect URI registered with your OIDC provider
         </p>

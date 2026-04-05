@@ -85,10 +85,10 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-2 flex items-center gap-2"
     >
-      <BookOpen class="w-5 h-5 text-accent-600" />
+      <BookOpen class="w-5 h-5 text-accent-600" aria-hidden="true" />
       Kobo Sync
     </h2>
-    <p class="text-sm text-ink-500 dark:text-ink-400 mb-6">
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-6">
       Sync your library to a Kobo e-reader. Create a token below, then set the
       <strong>API endpoint</strong> in your Kobo's
       <code class="px-1 py-0.5 bg-ink-100 dark:bg-ink-800 rounded text-xs"
@@ -122,9 +122,9 @@
     {/if}
 
     {#if tokenList.loading}
-      <p class="text-ink-400 dark:text-ink-400">Loading Kobo tokens...</p>
+      <p class="text-ink-500 dark:text-ink-300">Loading Kobo tokens...</p>
     {:else if tokenList.items.length === 0}
-      <p class="text-sm text-ink-400 dark:text-ink-500">
+      <p class="text-sm text-ink-500 dark:text-ink-300">
         No Kobo tokens yet. Create one above to get started.
       </p>
     {:else}
@@ -140,7 +140,7 @@
                 >{token.name}</span
               >
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="text-xs text-ink-400 dark:text-ink-500"
+                <span class="text-xs text-ink-500 dark:text-ink-300"
                   >Created {new Date(
                     token.created_at,
                   ).toLocaleDateString()}</span
@@ -159,7 +159,7 @@
                     aria-label={`Delete token ${token.name} (created ${new Date(token.created_at).toLocaleDateString()})`}
                     class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                   >
-                    <Trash2 class="w-3.5 h-3.5" />
+                    <Trash2 class="w-3.5 h-3.5" aria-hidden="true" />
                     Delete
                   </button>
                 {/if}
@@ -183,12 +183,12 @@
                     ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
                     : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
                 >
-                  <Copy class="w-4 h-4" />
+                  <Copy class="w-4 h-4" aria-hidden="true" />
                   {tokenList.copy.copiedId === token.id ? "Copied" : "Copy"}
                 </button>
               {:else}
                 <div
-                  class="flex-1 px-3 py-2 bg-ink-50 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 rounded-lg text-xs text-ink-500 dark:text-ink-400"
+                  class="flex-1 px-3 py-2 bg-ink-50 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 rounded-lg text-xs text-ink-500 dark:text-ink-300"
                 >
                   Token hidden. Create a new token to get a fresh sync URL.
                 </div>
@@ -216,7 +216,7 @@
   </div>
 
   <div
-    class="border-t border-ink-100 dark:border-ink-800 pt-4 text-sm text-ink-500 dark:text-ink-400 space-y-2"
+    class="border-t border-ink-100 dark:border-ink-800 pt-4 text-sm text-ink-500 dark:text-ink-300 space-y-2"
   >
     <p class="font-medium text-ink-700 dark:text-ink-300">Setup instructions</p>
     <ol class="list-decimal list-inside space-y-1">

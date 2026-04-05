@@ -81,7 +81,7 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <Mail class="w-5 h-5 text-accent-600" />
+      <Mail class="w-5 h-5 text-accent-600" aria-hidden="true" />
       Account Information
     </h2>
     <div class="space-y-4">
@@ -102,7 +102,7 @@
         />
         <p
           id="email-display-hint"
-          class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+          class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
           Contact support to change your email address
         </p>
@@ -117,7 +117,7 @@
       <h2
         class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
       >
-        <Link class="w-5 h-5 text-accent-600" />
+        <Link class="w-5 h-5 text-accent-600" aria-hidden="true" />
         Single Sign-On
       </h2>
       {#if authStore.user?.oidc_linked}
@@ -129,7 +129,7 @@
             SSO Connected
           </span>
         </div>
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-2">
+        <p class="text-xs text-ink-500 dark:text-ink-300 mt-2">
           Your account is linked to your SSO provider. You can log in with
           either your password or SSO.
         </p>
@@ -139,7 +139,7 @@
             >{authStore.oidcLinkError}</AlertBanner
           >
         {/if}
-        <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
+        <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
           Link your account to the SSO provider to enable single sign-on login.
         </p>
         <Button
@@ -147,7 +147,7 @@
           disabled={linkSsoLoading}
           class="inline-flex items-center gap-2 px-4 py-2.5"
         >
-          <Link class="w-4 h-4" />
+          <Link class="w-4 h-4" aria-hidden="true" />
           {linkSsoLoading ? "Redirecting..." : "Link SSO Account"}
         </Button>
       {/if}
@@ -160,7 +160,7 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <Lock class="w-5 h-5 text-accent-600" />
+      <Lock class="w-5 h-5 text-accent-600" aria-hidden="true" />
       Change Password
     </h2>
     <form onsubmit={handlePasswordChange} class="space-y-4">

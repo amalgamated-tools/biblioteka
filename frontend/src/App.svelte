@@ -81,7 +81,7 @@
       </div>
       <p
         role="status"
-        class="text-ink-400 dark:text-ink-300 font-body text-sm tracking-wide"
+        class="text-ink-500 dark:text-ink-300 font-body text-sm tracking-wide"
       >
         Loading your library…
       </p>
@@ -123,7 +123,7 @@
         class="p-1.5 rounded-lg text-ink-500 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
         aria-label="Open menu"
       >
-        <Menu class="w-6 h-6" />
+        <Menu class="w-6 h-6" aria-hidden="true" />
       </button>
       <span
         class="text-lg font-display font-bold text-ink-900 dark:text-cream-100"

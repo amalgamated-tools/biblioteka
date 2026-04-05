@@ -280,8 +280,7 @@ func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, lastID
 		if err != nil {
 			return nil, err
 		}
-		defer rows.Close()
-		return scanBookRows(rows)
+		return collectRows(rows, scanBook)
 	}
 
 	var sinceParam any
@@ -302,26 +301,7 @@ func (d *DB) ListBooksModifiedSince(ctx context.Context, since time.Time, lastID
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	return scanBookRows(rows)
-}
-
-type bookRowScanner interface {
-	Next() bool
-	Scan(...any) error
-	Err() error
-}
-
-func scanBookRows(rows bookRowScanner) ([]Book, error) {
-	var books []Book
-	for rows.Next() {
-		b, err := scanBook(rows)
-		if err != nil {
-			return nil, err
-		}
-		books = append(books, *b)
-	}
-	return books, rows.Err()
+	return collectRows(rows, scanBook)
 }
 
 // GetSeriesForBooks returns series entries (with position) grouped by book ID for the given book IDs.

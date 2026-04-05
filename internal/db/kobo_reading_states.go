@@ -96,8 +96,7 @@ func (d *DB) ListKoboReadingStatesSince(ctx context.Context, userID string, sinc
 		if err != nil {
 			return nil, fmt.Errorf("query kobo reading states: %w", err)
 		}
-		defer rows.Close()
-		states, err := scanKoboReadingStateRows(rows)
+		states, err := collectRows(rows, scanKoboReadingState)
 		if err != nil {
 			return nil, fmt.Errorf("scan kobo reading states: %w", err)
 		}
@@ -119,8 +118,7 @@ func (d *DB) ListKoboReadingStatesSince(ctx context.Context, userID string, sinc
 	if err != nil {
 		return nil, fmt.Errorf("query kobo reading states since: %w", err)
 	}
-	defer rows.Close()
-	states, err := scanKoboReadingStateRows(rows)
+	states, err := collectRows(rows, scanKoboReadingState)
 	if err != nil {
 		return nil, fmt.Errorf("scan kobo reading states since: %w", err)
 	}
@@ -168,9 +166,8 @@ func (d *DB) GetReadingStatesForBooks(ctx context.Context, userID string, bookID
 	if err != nil {
 		return nil, fmt.Errorf("query reading states for books: %w", err)
 	}
-	defer rows.Close()
 
-	states, err := scanKoboReadingStateRows(rows)
+	states, err := collectRows(rows, scanKoboReadingState)
 	if err != nil {
 		return nil, fmt.Errorf("scan reading states for books: %w", err)
 	}
@@ -180,25 +177,4 @@ func (d *DB) GetReadingStatesForBooks(ctx context.Context, userID string, bookID
 		result[states[i].BookID] = &states[i]
 	}
 	return result, nil
-}
-
-type koboReadingStateScanner interface {
-	Next() bool
-	Scan(...any) error
-	Err() error
-}
-
-func scanKoboReadingStateRows(rows koboReadingStateScanner) ([]KoboReadingState, error) {
-	var states []KoboReadingState
-	for rows.Next() {
-		s, err := scanKoboReadingState(rows)
-		if err != nil {
-			return nil, fmt.Errorf("scan kobo reading state row: %w", err)
-		}
-		states = append(states, *s)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate kobo reading state rows: %w", err)
-	}
-	return states, nil
 }
