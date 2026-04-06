@@ -247,75 +247,75 @@
           aria-labelledby="signup-tab"
           hidden={isLogin}
         >
-        <form onsubmit={handleSubmit} class="space-y-4">
-          <div>
-            <label
-              for="signup-name"
-              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-            >
-              Name
-            </label>
-            <TextInput
-              id="signup-name"
-              type="text"
-              bind:value={name}
-              autocomplete="name"
-              class="w-full py-3"
-              placeholder="Your name"
+          <form onsubmit={handleSubmit} class="space-y-4">
+            <div>
+              <label
+                for="signup-name"
+                class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+              >
+                Name
+              </label>
+              <TextInput
+                id="signup-name"
+                type="text"
+                bind:value={name}
+                autocomplete="name"
+                class="w-full py-3"
+                placeholder="Your name"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label
+                for="signup-email"
+                class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+              >
+                Email
+              </label>
+              <TextInput
+                id="signup-email"
+                type="email"
+                bind:value={email}
+                autocomplete="email"
+                class="w-full py-3"
+                placeholder="you@example.com"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label
+                for="signup-password"
+                class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+              >
+                Password
+              </label>
+              <TextInput
+                id="signup-password"
+                type="password"
+                bind:value={password}
+                autocomplete="new-password"
+                class="w-full py-3"
+                placeholder="••••••••"
+                disabled={loading}
+              />
+            </div>
+
+            {#if error && !isLogin}
+              <AlertBanner variant="error" testId="auth-error" role="alert"
+                >{error}</AlertBanner
+              >
+            {/if}
+
+            <Button
+              type="submit"
               disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label
-              for="signup-email"
-              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+              class="w-full py-3 px-4 active:scale-[0.98]"
             >
-              Email
-            </label>
-            <TextInput
-              id="signup-email"
-              type="email"
-              bind:value={email}
-              autocomplete="email"
-              class="w-full py-3"
-              placeholder="you@example.com"
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label
-              for="signup-password"
-              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-            >
-              Password
-            </label>
-            <TextInput
-              id="signup-password"
-              type="password"
-              bind:value={password}
-              autocomplete="new-password"
-              class="w-full py-3"
-              placeholder="••••••••"
-              disabled={loading}
-            />
-          </div>
-
-          {#if error && !isLogin}
-            <AlertBanner variant="error" testId="auth-error" role="alert"
-              >{error}</AlertBanner
-            >
-          {/if}
-
-          <Button
-            type="submit"
-            disabled={loading}
-            class="w-full py-3 px-4 active:scale-[0.98]"
-          >
-            {loading ? "Processing..." : "Create Account"}
-          </Button>
-        </form>
+              {loading ? "Processing..." : "Create Account"}
+            </Button>
+          </form>
         </div>
       {/if}
     </div>
