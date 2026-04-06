@@ -63,12 +63,9 @@ func (libraryListQuery) orderBy(d *DB) string {
 
 // scanLibrary scans a library row into a Library struct.
 func scanLibrary(row interface{ Scan(...any) error }) (*Library, error) {
-	var lib Library
-	err := row.Scan(&lib.ID, &lib.Name, &lib.Paths, &lib.OrganizationType, &lib.Monitored, &lib.CreatedAt, &lib.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &lib, nil
+	return scanRow(row, func(lib *Library) []any {
+		return []any{&lib.ID, &lib.Name, &lib.Paths, &lib.OrganizationType, &lib.Monitored, &lib.CreatedAt, &lib.UpdatedAt}
+	})
 }
 
 // CreateLibrary inserts a new library and returns it.
