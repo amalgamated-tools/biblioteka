@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.8.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.7.0...v0.8.0) (2026-04-06)
+
+
+### Features
+
+* **auth:** expose name in userDTO and add PUT /api/auth/me profile update ([#1373](https://github.com/amalgamated-tools/biblioteka/issues/1373)) ([cb99ca4](https://github.com/amalgamated-tools/biblioteka/commit/cb99ca4a7881b72a73e0dbac72c585bebaadbe24))
+* **workflows:** add cross-agent awareness to doc automation workflows ([#1394](https://github.com/amalgamated-tools/biblioteka/issues/1394)) ([f86d3c8](https://github.com/amalgamated-tools/biblioteka/commit/f86d3c807cb11c55221796292c0197af231f38f8))
+* **workflows:** add daily security review workflow ([#1362](https://github.com/amalgamated-tools/biblioteka/issues/1362)) ([ad5dd3b](https://github.com/amalgamated-tools/biblioteka/commit/ad5dd3b39e433b8a8a090ebe1cfe4e40c0322c5c))
+
+
+### Bug Fixes
+
+* **accessibility:** prefers-reduced-motion, aria-live on loading state, and contrast fixes ([#1400](https://github.com/amalgamated-tools/biblioteka/issues/1400)) ([7df554f](https://github.com/amalgamated-tools/biblioteka/commit/7df554fb67ae629e73552f41ab4bbfb410562854))
+* **accessibility:** raise icon-only button contrast to meet WCAG 1.4.11 (3:1) ([#1401](https://github.com/amalgamated-tools/biblioteka/issues/1401)) ([09e6469](https://github.com/amalgamated-tools/biblioteka/commit/09e64697e78a65a1b75a156f889f7412e2ff8ff3))
+* address daily nitpick review findings ([#1396](https://github.com/amalgamated-tools/biblioteka/issues/1396)) ([ebd1725](https://github.com/amalgamated-tools/biblioteka/commit/ebd17256d46bf30f99ed5ffcfa6a293139d469b7))
+* **code-simplifier:** refactor(db): apply scanRow/collectRows helpers to book_files and libraries ([#1404](https://github.com/amalgamated-tools/biblioteka/issues/1404)) ([ca8f248](https://github.com/amalgamated-tools/biblioteka/commit/ca8f248f9ce0408757c03293c62e6057012e5e57))
+* **daily-doc-updater:** add deduplication, 8-PR hard cap, and 48h lookback window ([#1385](https://github.com/amalgamated-tools/biblioteka/issues/1385)) ([c2cbfce](https://github.com/amalgamated-tools/biblioteka/commit/c2cbfcee5e54496506ff78c1a35c90a2acc650f7))
+* **dashboard:** replace hardcoded zero stats with real data ([#1372](https://github.com/amalgamated-tools/biblioteka/issues/1372)) ([4599740](https://github.com/amalgamated-tools/biblioteka/commit/45997403e7d48ca0428e8181690cacd80062f18b))
+* **db:** use errors.New for ErrInvalidGoodreadsMetadataStatus sentinel ([#1365](https://github.com/amalgamated-tools/biblioteka/issues/1365)) ([10bdfd4](https://github.com/amalgamated-tools/biblioteka/commit/10bdfd46e3b5c0820ac71004a08333efbf82bc8e))
+* **logging:** replace generic otelkeys.ID with specific entity keys in db and handler layers ([#1364](https://github.com/amalgamated-tools/biblioteka/issues/1364)) ([55138c6](https://github.com/amalgamated-tools/biblioteka/commit/55138c66c3d3b62df36d7bcbdbf9484609fb6dd4))
+* normalize error handling in goodreads_metadata and validatePassword ([#1367](https://github.com/amalgamated-tools/biblioteka/issues/1367)) ([1e372ca](https://github.com/amalgamated-tools/biblioteka/commit/1e372ca2e96bda95c2d620db6e76591192b226ad))
+* **smtp:** accept From addresses with display names ([#1371](https://github.com/amalgamated-tools/biblioteka/issues/1371)) ([8107391](https://github.com/amalgamated-tools/biblioteka/commit/810739133d80a8a5d74b77a63e8fb02df6580dc5))
+* **stores:** expose error state in CrudStore.load() ([#1370](https://github.com/amalgamated-tools/biblioteka/issues/1370)) ([c2e3ffe](https://github.com/amalgamated-tools/biblioteka/commit/c2e3ffe096676ddca0d7370df3550fb43deea61d))
+
 ## [0.7.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.6.1...v0.7.0) (2026-04-05)
 
 
