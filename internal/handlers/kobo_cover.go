@@ -97,5 +97,13 @@ func (h *KoboHandler) HandleCoverImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !isSafeCoverRedirectURL(*book.CoverImageURL) {
+		slog.WarnContext(r.Context(), "unsafe cover image URL scheme rejected",
+			slog.String(otelkeys.BookID, bookID),
+			slog.String(otelkeys.URL, *book.CoverImageURL),
+		)
+		http.NotFound(w, r)
+		return
+	}
 	http.Redirect(w, r, *book.CoverImageURL, http.StatusTemporaryRedirect)
 }

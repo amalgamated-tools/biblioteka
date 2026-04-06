@@ -14,6 +14,7 @@ import {
   updateSeries,
   deleteSeries,
   listSeriesBooks,
+  clearToken,
 } from "../api";
 import type { Series, PaginatedBooks } from "../../types";
 import {
@@ -42,7 +43,7 @@ const fakeSeries: Series = {
 };
 
 beforeEach(() => {
-  localStorage.clear();
+  clearToken();
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
 });
