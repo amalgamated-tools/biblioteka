@@ -21,6 +21,7 @@ import {
   createBookFile,
   getBookFile,
   deleteBookFile,
+  clearToken,
 } from "../api";
 import type {
   Author,
@@ -105,7 +106,7 @@ const fakeBookFile: BookFile = {
 };
 
 beforeEach(() => {
-  localStorage.clear();
+  clearToken();
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
 });
