@@ -372,7 +372,7 @@ Named sync tokens that authenticate a Kobo e-reader device. Each token grants ac
 | `id`         | TEXT    | NOT NULL | auto-gen | Primary key                                              |
 | `user_id`    | TEXT    | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE                        |
 | `name`       | TEXT    | NOT NULL | —        | Human-readable label (max 100 chars)                    |
-| `token_hash` | TEXT    | NULL     | NULL     | SHA-256 hex digest of the raw token; `NULL` only on pre-migration rows (always set for new tokens) |
+| `token_hash` | TEXT    | NOT NULL | —        | SHA-256 hex digest of the raw token                                                                |
 | `created_at` | DATETIME| NOT NULL | `now()`  | When the token was created                               |
 
 **Indexes:**
@@ -548,7 +548,6 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `audit_logs.go` | `AuditLog` struct; `CreateAuditLog`, `ListAuditLogs` |
 | `goodreads_metadata.go` | `GoodreadsMetadata` struct; `CreateGoodreadsMetadata`, `GetGoodreadsMetadata`, `ListGoodreadsMetadataByUser`, `ListGoodreadsMetadataByStatus`, `UpdateGoodreadsMetadataStatus`, `DeleteGoodreadsMetadata` |
 | `paginate.go` | Two internal generic helpers sharing the `listQuery` interface and `allowedListTables` allowlist: `listAll[T]` — full-table SELECT with no limit; used by `ListAuthors`, `ListSeries`, `ListLibraries`; `listPaginated[T]` — issues a `COUNT(*)` then a paginated SELECT; used by `ListAuthorsPaginated` and `ListSeriesPaginated`. Both validate table names against the allowlist to prevent SQL injection |
-| `kobo_tokens_migration.go` | `backfillKoboTokenHashes`: one-time data migration that populates the `token_hash` column from existing plain `token` values; called during startup when the column is present but hashes are absent |
 | `sql_parser.go` | Internal helpers for parsing embedded SQL migration files |
 
 > The `books.go` split (PR [#318](https://github.com/amalgamated-tools/biblioteka/pull/318)) separated a previously oversized `books.go` file into the four focused files above (`books.go`, `book_queries.go`, `book_relations.go`, `book_files.go`). The public API surface of the `*DB` receiver is unchanged.
