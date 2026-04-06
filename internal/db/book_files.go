@@ -55,7 +55,7 @@ func (d *DB) CreateBookFile(ctx context.Context, bookID, fileType, fileName stri
 
 // GetBookFile returns a book file by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetBookFile(ctx context.Context, id string) (*BookFile, error) {
-	slog.DebugContext(ctx, "db: fetching book file", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: fetching book file", slog.String(otelkeys.BookFileID, id))
 	return scanBookFile(d.QueryRowContext(ctx,
 		`SELECT `+bookFileColumns+` FROM book_files WHERE id = $1`,
 		id,
@@ -97,7 +97,7 @@ func (d *DB) GetBookFileByPath(ctx context.Context, filePath string) (*BookFile,
 
 // DeleteBookFile removes a book file by ID.
 func (d *DB) DeleteBookFile(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "db: deleting book file", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: deleting book file", slog.String(otelkeys.BookFileID, id))
 	return d.execAffected(ctx, `DELETE FROM book_files WHERE id = $1`, id)
 }
 
