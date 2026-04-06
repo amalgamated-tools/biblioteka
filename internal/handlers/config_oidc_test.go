@@ -300,6 +300,7 @@ func TestHandleSetOIDCConfig_ProviderDiscoveryFailure(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 	// Bypass URL validation so we reach the oidc.NewProvider call.
 	h.IssuerURLValidator = noopIssuerURLValidator
+	h.OIDCHTTPClient = http.DefaultClient
 
 	// Use an unreachable/invalid issuer URL; oidc.NewProvider will fail
 	body := `{"issuer_url":"https://invalid.example.invalid","client_id":"id","client_secret":"secret","redirect_uri":"https://app/cb"}`
@@ -314,9 +315,10 @@ func TestHandleSetOIDCConfig_ProviderDiscoveryFailure(t *testing.T) {
 
 func TestHandleSetOIDCConfig_ValidProviderSavesSettings(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
-	// Bypass URL validation: this test exercises settings persistence and the
-	// OnOIDCConfigSet callback, not SSRF protection (covered by validateOIDCIssuerURL tests).
+	// Bypass URL validation and SSRF-safe client: this test exercises settings
+	// persistence and the OnOIDCConfigSet callback, not SSRF protection.
 	h.IssuerURLValidator = noopIssuerURLValidator
+	h.OIDCHTTPClient = http.DefaultClient
 
 	// Serve a minimal OIDC discovery document from a test HTTP server.
 	oidcServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -363,9 +365,10 @@ func TestHandleSetOIDCConfig_ValidProviderSavesSettings(t *testing.T) {
 
 func TestHandleSetOIDCConfig_PreservesExistingSecret(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
-	// Bypass URL validation: this test exercises secret-preservation logic, not
-	// SSRF protection (covered by validateOIDCIssuerURL tests).
+	// Bypass URL validation and SSRF-safe client: this test exercises
+	// secret-preservation logic, not SSRF protection.
 	h.IssuerURLValidator = noopIssuerURLValidator
+	h.OIDCHTTPClient = http.DefaultClient
 
 	// Pre-store a secret
 	_ = h.DB.SetSetting(t.Context(), settingOIDCClientSecret, "existing-secret")
