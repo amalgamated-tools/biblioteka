@@ -191,6 +191,14 @@ func (h *OPDSHandler) serveCover(w http.ResponseWriter, r *http.Request, bookID 
 		return
 	}
 
+	if !isSafeCoverRedirectURL(*book.CoverImageURL) {
+		slog.WarnContext(ctx, "OPDS: unsafe cover image URL scheme rejected",
+			slog.String(otelkeys.BookID, bookID),
+			slog.String(otelkeys.URL, *book.CoverImageURL),
+		)
+		http.NotFound(w, r)
+		return
+	}
 	http.Redirect(w, r, *book.CoverImageURL, http.StatusTemporaryRedirect)
 }
 

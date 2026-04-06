@@ -103,3 +103,58 @@ func TestHandleCoverImage_MissingPathSegments(t *testing.T) {
 
 	require.NotEqual(t, http.StatusOK, w.Code)
 }
+
+// TestHandleCoverImage_HTTPSRedirect verifies that an https:// cover URL
+// results in a redirect to that URL.
+func TestHandleCoverImage_HTTPSRedirect(t *testing.T) {
+	t.Parallel()
+
+	h, _ := setupKoboHandler(t)
+
+	coverURL := "https://example.com/cover.jpg"
+	book, err := h.DB.CreateBook(
+		context.Background(),
+		"External Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		&coverURL,
+	)
+	require.NoError(t, err, "create book")
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+	w := httptest.NewRecorder()
+	h.HandleCoverImage(w, r)
+
+	require.Equal(t, http.StatusTemporaryRedirect, w.Code)
+	require.Equal(t, coverURL, w.Header().Get("Location"))
+}
+
+// TestHandleCoverImage_UnsafeCoverURL verifies that non-https URLs are rejected
+// with 404 to prevent open redirect attacks.
+func TestHandleCoverImage_UnsafeCoverURL(t *testing.T) {
+	t.Parallel()
+
+	for _, unsafeURL := range []string{
+		"http://evil.com/cover.jpg",
+		"//evil.com/cover.jpg",
+		"javascript:alert(1)",
+		"ftp://example.com/cover.jpg",
+	} {
+		unsafeURL := unsafeURL
+		t.Run(unsafeURL, func(t *testing.T) {
+			t.Parallel()
+
+			h, _ := setupKoboHandler(t)
+			book, err := h.DB.CreateBook(
+				context.Background(),
+				"Unsafe Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+				&unsafeURL,
+			)
+			require.NoError(t, err, "create book")
+
+			r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+			w := httptest.NewRecorder()
+			h.HandleCoverImage(w, r)
+
+			require.Equal(t, http.StatusNotFound, w.Code)
+		})
+	}
+}

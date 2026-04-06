@@ -146,6 +146,32 @@ func TestServeCover_ExternalURL(t *testing.T) {
 	require.Equal(t, coverURL, location)
 }
 
+// TestServeCover_UnsafeExternalURL verifies that non-https URLs are rejected
+// with 404 to prevent open redirect attacks.
+func TestServeCover_UnsafeExternalURL(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := t.Context()
+
+	for _, unsafeURL := range []string{
+		"http://evil.com/cover.jpg",
+		"//evil.com/cover.jpg",
+		"javascript:alert(1)",
+		"ftp://example.com/cover.jpg",
+	} {
+		unsafeURL := unsafeURL
+		t.Run(unsafeURL, func(t *testing.T) {
+			book, err := h.DB.CreateBook(ctx, "Unsafe Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &unsafeURL)
+			require.NoError(t, err, "create book")
+
+			r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
+			w := httptest.NewRecorder()
+			h.HandleOPDS(w, r)
+
+			require.Equal(t, http.StatusNotFound, w.Code)
+		})
+	}
+}
+
 func TestServeCover_DBError(t *testing.T) {
 	h := setupOPDSHandler(t)
 	require.NoError(t, h.DB.Close(), "close db")
