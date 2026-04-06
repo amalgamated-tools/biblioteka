@@ -123,6 +123,37 @@ func TestListPaginated_ZeroLimitReturnsTotal(t *testing.T) {
 	require.NotNil(t, results)
 }
 
+// ---- countFallback ----
+
+func TestCountFallback_OffsetExceeded(t *testing.T) {
+	d := newTestDB(t)
+	_, err := d.CreateBook(t.Context(), "Only Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err)
+
+	var total int
+	err = countFallback(t.Context(), d, &total, 0, 10, `SELECT COUNT(*) FROM books`)
+	require.NoError(t, err)
+	require.Equal(t, 1, total, "countFallback should report the actual total when offset exceeds row count")
+}
+
+func TestCountFallback_NoOpWhenRowsReturned(t *testing.T) {
+	d := newTestDB(t)
+	var total int
+	// rowCount > 0 — fallback must not fire, total stays 0
+	err := countFallback(t.Context(), d, &total, 3, 0, `SELECT COUNT(*) FROM books`)
+	require.NoError(t, err)
+	require.Equal(t, 0, total, "countFallback should be a no-op when rows were returned")
+}
+
+func TestCountFallback_NoOpWhenOffsetIsZero(t *testing.T) {
+	d := newTestDB(t)
+	var total int
+	// rowCount == 0 AND offset == 0 — empty table, fallback must not fire
+	err := countFallback(t.Context(), d, &total, 0, 0, `SELECT COUNT(*) FROM books`)
+	require.NoError(t, err)
+	require.Equal(t, 0, total, "countFallback should be a no-op when offset is zero")
+}
+
 func TestListPaginated_InvalidTableRejected(t *testing.T) {
 	d := newTestDB(t)
 
