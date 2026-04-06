@@ -43,6 +43,9 @@
     }
     try {
       signupEnabled = await getSignupEnabled();
+      if (!signupEnabled) {
+        isLogin = true;
+      }
     } catch {
       // Assume signup is enabled if the check fails
     }
@@ -237,12 +240,13 @@
         </form>
       </div>
 
-      <div
-        id="signup-panel"
-        role="tabpanel"
-        aria-labelledby="signup-tab"
-        hidden={isLogin || !signupEnabled}
-      >
+      {#if signupEnabled}
+        <div
+          id="signup-panel"
+          role="tabpanel"
+          aria-labelledby="signup-tab"
+          hidden={isLogin}
+        >
         <form onsubmit={handleSubmit} class="space-y-4">
           <div>
             <label
@@ -312,7 +316,8 @@
             {loading ? "Processing..." : "Create Account"}
           </Button>
         </form>
-      </div>
+        </div>
+      {/if}
     </div>
   </main>
 </div>
