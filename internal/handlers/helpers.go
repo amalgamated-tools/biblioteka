@@ -229,7 +229,7 @@ func handleUpdateErr(ctx context.Context, w http.ResponseWriter, err, errInvalid
 		return true
 	}
 	slog.ErrorContext(ctx, "failed to update "+resource,
-		slog.String(otelkeys.ID, id),
+		slog.String(otelkeys.EntityID, id),
 		slog.Any(otelkeys.Error, err),
 	)
 	writeError(ctx, w, http.StatusInternalServerError, "failed to update "+resource)
