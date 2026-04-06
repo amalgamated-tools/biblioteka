@@ -14,6 +14,7 @@ vi.mock("../stores/auth.svelte", () => ({
 
 vi.mock("../lib/api", () => ({
   getOidcEnabled: vi.fn().mockResolvedValue(false),
+  getSignupEnabled: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock("lucide-svelte", () => ({ BookCheck: () => {} }));
