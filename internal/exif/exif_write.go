@@ -95,7 +95,6 @@ func (e *Exiftool) WriteMetadata(ctx context.Context, fileMetadata []FileMetadat
 					return
 				}
 				for _, str := range strTab {
-					// TODO: support writing an empty string via '^='
 					if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+str); err != nil {
 						slog.WarnContext(
 							ctx,

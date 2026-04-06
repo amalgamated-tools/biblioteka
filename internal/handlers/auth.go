@@ -132,8 +132,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := validatePassword(req.Password); msg != "" {
-		writeError(r.Context(), w, http.StatusBadRequest, msg)
+	if !validatePassword(r.Context(), w, req.Password) {
 		return
 	}
 
@@ -381,8 +380,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := validatePassword(req.NewPassword); msg != "" {
-		writeError(r.Context(), w, http.StatusBadRequest, msg)
+	if !validatePassword(r.Context(), w, req.NewPassword) {
 		return
 	}
 

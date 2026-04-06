@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -145,14 +146,14 @@ func (d *DB) ListGoodreadsMetadataByStatus(ctx context.Context, userID, status s
 }
 
 // ErrInvalidGoodreadsMetadataStatus is returned when an invalid status is passed.
-var ErrInvalidGoodreadsMetadataStatus = fmt.Errorf("db: invalid goodreads_metadata status")
+var ErrInvalidGoodreadsMetadataStatus = errors.New("db: invalid goodreads_metadata status")
 
 // UpdateGoodreadsMetadataStatus updates the status of a goodreads_metadata row for the given user.
 func (d *DB) UpdateGoodreadsMetadataStatus(ctx context.Context, userID, id, status string) (*GoodreadsMetadata, error) {
 	switch status {
 	case GoodreadsMetadataStatusPending, GoodreadsMetadataStatusApplied, GoodreadsMetadataStatusRejected:
 	default:
-		return nil, fmt.Errorf("%w: %q", ErrInvalidGoodreadsMetadataStatus, status)
+		return nil, fmt.Errorf("invalid goodreads_metadata status %q: %w", status, ErrInvalidGoodreadsMetadataStatus)
 	}
 	slog.DebugContext(ctx, "db: updating goodreads metadata status",
 		slog.String(otelkeys.GoodreadsMetadataID, id),
