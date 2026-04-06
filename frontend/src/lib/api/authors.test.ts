@@ -16,19 +16,19 @@ import {
   listAuthorBooks,
 } from "../api";
 import type { Author, PaginatedBooks } from "../../types";
+import {
+  mockFetchResponse as _mockFetchResponse,
+  mockNoContentResponse as _mockNoContentResponse,
+} from "./testUtils";
 
 let fetchMock: Mock;
 
 function mockFetchResponse(body: unknown, status = 200) {
-  const response = {
-    ok: status >= 200 && status < 300,
-    status,
-    statusText: status === 200 ? "OK" : "Error",
-    headers: new Headers({ "content-type": "application/json" }),
-    json: vi.fn().mockResolvedValue(body),
-    text: vi.fn().mockResolvedValue(JSON.stringify(body)),
-  } as unknown as Response;
-  fetchMock.mockResolvedValue(response);
+  _mockFetchResponse(fetchMock, body, status);
+}
+
+function mockNoContentResponse() {
+  _mockNoContentResponse(fetchMock);
 }
 
 const fakeAuthor: Author = {
@@ -110,15 +110,7 @@ describe("Authors API", () => {
 
   describe("deleteAuthor", () => {
     it("sends DELETE /api/authors/:id", async () => {
-      const resp = {
-        ok: true,
-        status: 204,
-        statusText: "No Content",
-        headers: new Headers(),
-        json: vi.fn(),
-        text: vi.fn(),
-      } as unknown as Response;
-      fetchMock.mockResolvedValue(resp);
+      mockNoContentResponse();
 
       const result = await deleteAuthor("a1");
 
