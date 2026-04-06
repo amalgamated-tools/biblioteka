@@ -19,6 +19,7 @@
 
   function handleTabKeydown(event: KeyboardEvent) {
     if (loading) return;
+    if (!signupEnabled) return;
     if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
       event.preventDefault();
       isLogin = !isLogin;
