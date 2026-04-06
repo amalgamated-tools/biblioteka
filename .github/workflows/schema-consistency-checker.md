@@ -356,6 +356,22 @@ cat > /tmp/gh-aw/cache-memory/strategies.json << 'EOF'
 EOF
 ```
 
+### Step 5b: Cross-Agent Awareness Check
+
+Before creating the discussion report, query for any **open** pull requests from sibling documentation automation agents. This provides maintainers with full context: inconsistencies reported here may already be addressed (or in progress) via a concurrent documentation PR.
+
+Search for open sibling agent PRs:
+```
+repo:${{ github.repository }} is:pr is:open label:documentation label:automation
+```
+
+For each open PR found, note:
+- The PR number and title
+- Which documentation files it modifies (check the PR body for filenames like `docs/api-reference.md`)
+- Whether any of this checker's findings are likely covered by that PR
+
+Include the results as a dedicated **"Open Sibling Agent PRs"** section in the discussion report (see report format below). If no open sibling PRs exist, record `None`.
+
 ### Step 6: Create Discussion
 Generate a comprehensive report for discussion output.
 
@@ -393,6 +409,10 @@ Create a well-structured discussion report:
 ## Nullable Handling Issues
 
 [List fields where null/optional semantics differ between Go and TypeScript]
+
+## Open Sibling Agent PRs
+
+[List any open PRs from sibling automation agents (update-docs, daily-doc-updater) with label:documentation label:automation. For each PR, note the PR number, title, and which docs files it touches. Mention if any of this report's findings appear to be already addressed by a sibling PR. If none: "None."]
 
 ## Recommendations
 
