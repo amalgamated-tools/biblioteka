@@ -485,7 +485,7 @@ Always call `clear()` from `onDestroy` to prevent timer leaks when the component
 {/if}
 ```
 
-Use `AutoDismissTimer` whenever a component shows a transient success or informational message that should disappear automatically. Do **not** inline `setTimeout` calls in components to manage visibility state — they cannot be cancelled on unmount and cannot be driven by Svelte reactivity.
+Use `AutoDismissTimer` whenever a component shows a transient success or informational message that should disappear automatically. Avoid inlining `setTimeout` calls in components for this pattern, because they are easy to duplicate and easy to forget to clean up; prefer `AutoDismissTimer` for consistency and safe cancellation via `clear()`.
 
 ### `tokenList.svelte.ts`
 
