@@ -69,7 +69,7 @@ func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id
 //	@Failure		500	{object}	errorResponse
 //	@Router			/book-files/{id} [delete]
 func (h *BookFileHandler) deleteBookFile(w http.ResponseWriter, r *http.Request, id string) {
-	deleteResource(h.DB, w, r, id, "book file", otelkeys.BookFileID,
+	deleteResource(h.DB, w, r, id, "book file", "book_file", otelkeys.BookFileID,
 		h.DB.GetBookFile, h.DB.DeleteBookFile,
 		db.AuditActionBookFileDeleted,
 		func(bf *db.BookFile) map[string]any {
