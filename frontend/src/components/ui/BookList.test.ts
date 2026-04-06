@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, cleanup } from "@testing-library/svelte";
+import { render, screen, cleanup } from "@testing-library/svelte";
 import { tick } from "svelte";
 import type { PaginatedBooks } from "../../types";
 import BookList from "./BookList.svelte";
@@ -43,6 +43,19 @@ const fakeBooks: PaginatedBooks = {
   limit: 24,
   offset: 0,
 };
+
+describe("BookList loading state", () => {
+  afterEach(() => cleanup());
+
+  it("exposes 'Loading books...' via role='status' while loading", () => {
+    // fetchBooks never resolves, so the component stays in the loading state
+    const fetchBooks = vi.fn().mockReturnValue(new Promise(() => {}));
+    render(BookList, { props: { fetchBooks } });
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Loading books...");
+  });
+});
 
 describe("BookList empty state", () => {
   afterEach(() => cleanup());

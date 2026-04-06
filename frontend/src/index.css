@@ -130,6 +130,10 @@ html {
   animation: scale-in 0.3s ease-out both;
 }
 
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
 /* Stagger children */
 .stagger > * {
   animation: fade-in-up 0.4s ease-out both;
@@ -161,4 +165,18 @@ html {
 }
 .dark .bg-texture::before {
   opacity: 0.015;
+}
+
+/* Respect user preference to reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
