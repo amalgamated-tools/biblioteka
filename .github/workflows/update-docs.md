@@ -121,6 +121,21 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
    - If a PR has been stuck after multiple retry attempts, add a comment explaining the blocker and leave it for maintainer review.
    - Note: only one PR branch push is permitted per run; address the next PR on the subsequent workflow trigger.
 
+8. **Cross-Agent Awareness Check**
+
+   Before creating any new documentation PR, check whether a sibling automation agent has already opened a PR for the same files. This prevents two agents from creating overlapping PRs for the same documentation.
+
+   Search for open PRs from the `daily-doc-updater` sibling workflow:
+   ```
+   repo:${{ github.repository }} is:pr is:open label:documentation label:automation "docs(daily):" in:title
+   ```
+
+   For each documentation file you intend to change, scan the body and title of the open sibling PRs for the filename (e.g., `api-reference.md`, `kobo.md`). If a sibling PR that already covers the same file is found:
+   - **Skip** creating a separate PR for that file and log: `SIBLING SKIP [file]: open sibling PR #N from daily-doc-updater already covers this file`
+   - If the sibling PR covers only some of the needed changes, note the sibling PR number in your own PR description so reviewers can coordinate.
+
+   Apply this check to every candidate file before proceeding to PR creation.
+
 ### Output Requirements
 
 - **Create Draft Pull Requests**: When documentation needs updates, create focused draft pull requests with clear descriptions. Pull request titles **must** use a semantic [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) style that passes the `amannn/action-semantic-pull-request` check. For this workflow, titles must be of the form `docs: <short description>` (e.g., `docs(api): update authentication endpoint reference`).
