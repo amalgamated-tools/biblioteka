@@ -23,6 +23,7 @@ The response includes a short-lived JWT and a `biblioteka_token` HttpOnly sessio
   "token": "<jwt>",
   "user": {
     "id": "<id>",
+    "name": "Alice",
     "email": "alice@example.com",
     "oidc_linked": false,
     "is_admin": true
@@ -48,6 +49,19 @@ curl http://localhost:8080/api/books \
 ```
 
 Browser clients receive the token in both the JSON body and as an HttpOnly `SameSite=Strict` cookie (`biblioteka_token`). The cookie is used automatically for browser-based access to protected server-side paths such as `/asynqmon/`.
+
+### Update profile
+
+Change your display name:
+
+```bash
+curl -X PUT http://localhost:8080/api/auth/me \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice Wonderland"}'
+```
+
+Returns the updated user object.
 
 ### Change password
 
