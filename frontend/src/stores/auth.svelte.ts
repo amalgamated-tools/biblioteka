@@ -26,12 +26,14 @@ class AuthStore {
       window.history.replaceState({}, "", window.location.pathname);
     }
 
-    // Always attempt to load the current user. Auth may come from a
-    // localStorage token (normal login/signup) or an HttpOnly cookie (OIDC).
+    // Always attempt to load the current user. Auth may come from an
+    // in-memory token (normal login/signup within the current session) or
+    // an HttpOnly cookie (OIDC login, or any request after a page reload
+    // when the in-memory token has been cleared).
     try {
       this.user = await api.getMe();
     } catch (err) {
-      // Only clear the localStorage token on auth rejection (401/404).
+      // Only clear the in-memory token on auth rejection (401/404).
       // Transient failures (network errors, 5xx) should not discard a
       // potentially valid token.
       if (

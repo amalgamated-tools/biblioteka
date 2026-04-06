@@ -427,8 +427,9 @@ func TestDownload_Success(t *testing.T) {
 	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
 
-	// Create a temp file to serve.
+	// Create a temp file to serve and register it as a library root.
 	tmpDir := t.TempDir()
+	registerTestLibrary(t, h.DB, tmpDir)
 	filePath := filepath.Join(tmpDir, "test.epub")
 	require.NoError(t, os.WriteFile(filePath, []byte("fake epub content"), 0o644), "write temp file")
 
@@ -461,9 +462,12 @@ func TestDownload_FileMissing(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
+	tmpDir := t.TempDir()
+	registerTestLibrary(t, h.DB, tmpDir)
+
 	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
-	bf, err := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 100, nil, "/nonexistent/path.epub")
+	bf, err := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 100, nil, filepath.Join(tmpDir, "nonexistent.epub"))
 	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/download/"+bf.ID, nil)
@@ -481,6 +485,7 @@ func TestDownload_UnknownFileType(t *testing.T) {
 	require.NoError(t, err, "create book")
 
 	tmpDir := t.TempDir()
+	registerTestLibrary(t, h.DB, tmpDir)
 	filePath := filepath.Join(tmpDir, "test.xyz")
 	require.NoError(t, os.WriteFile(filePath, []byte("data"), 0o644), "write temp file")
 
