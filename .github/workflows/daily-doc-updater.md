@@ -128,10 +128,22 @@ Use `search_pull_requests` with a query like:
 `repo:${{ github.repository }} is:pr is:merged merged:>=YYYY-MM-DDTHH:MM:SSZ label:documentation label:automation in:title "docs"`
 (Replace `YYYY-MM-DDTHH:MM:SSZ` with the UTC timestamp 48 hours ago, computed as: current UTC time minus 48 hours, formatted as `2006-01-02T15:04:05Z`. For example, if now is `2026-04-06T10:00:00Z`, use `2026-04-04T10:00:00Z`.)
 
-For each candidate file, check the merged PR list for a PR whose **title contains the filename** (e.g., `kobo.md`, `frontend.md`) **or** whose title prefix matches `docs(daily):` (the standardized prefix for this workflow). Match as a case-insensitive substring. If a merged doc PR for that file is found within 48 hours:
+For each candidate file, check the merged PR list for a PR whose **title contains the filename** (e.g., `kobo.md`, `frontend.md`) **or** whose title prefix matches `docs(daily):` (the standardized prefix for this workflow) **or** `docs:` (the prefix used by the `update-docs` sibling workflow). Match as a case-insensitive substring. If a merged doc PR for that file is found within 48 hours:
 - **Skip** that file and log: `LOOKBACK SKIP [file]: merged doc PR #N found within 48 hours`
 
-Only proceed with files that do **not** have a recently merged doc PR.
+#### 4b. Cross-Agent Awareness: Skip Files with Open Sibling PRs
+
+In addition to the merged-PR lookback, check whether a **sibling automation agent** has an **open** PR for the same file. This prevents `daily-doc-updater` and the `update-docs` workflow from creating overlapping PRs simultaneously.
+
+Search for open PRs from the `update-docs` sibling workflow:
+```
+repo:${{ github.repository }} is:pr is:open label:documentation label:automation "docs" in:title
+```
+
+Exclude PRs whose title starts with `docs(daily):` (those belong to this workflow). For each remaining open PR, check whether the PR body or title mentions the same documentation file you intend to update (e.g., `api-reference.md`, `kobo.md`). If a sibling PR already covers the file:
+- **Skip** that file and log: `SIBLING SKIP [file]: open sibling PR #N from update-docs already covers this file`
+
+Only proceed with files that do **not** have a recently merged doc PR (4a) **and** do **not** have an open sibling PR (4b).
 
 ### 5. Update Documentation
 
@@ -179,6 +191,8 @@ For each documentation change you plan to create a PR for, use the standardized 
 - **If no matching open PR is found**: proceed with this change.
 
 Apply this check to every candidate PR before proceeding to the cap check below, and use the same `docs(daily): <summary>` format consistently in any related lookback searches and PR-title guidance.
+
+> **Note**: The cross-agent sibling PR check in Step 4b already filters files that the `update-docs` workflow is actively covering. Step 6a focuses on deduplication of this workflow's own `docs(daily):` PRs.
 
 #### 6b. Per-Run Hard Cap (8 PRs)
 
