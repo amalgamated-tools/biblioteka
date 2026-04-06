@@ -102,7 +102,7 @@ func (d *DB) CreateBookWithFile(ctx context.Context, title string, description, 
 
 // GetBook returns a book by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetBook(ctx context.Context, id string) (*Book, error) {
-	slog.DebugContext(ctx, "db: fetching book", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: fetching book", slog.String(otelkeys.BookID, id))
 	return scanBook(d.QueryRowContext(ctx,
 		`SELECT `+bookColumns+` FROM books WHERE id = $1`,
 		id,
@@ -205,7 +205,7 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 // UpdateBook updates a book's fields and returns the updated book.
 func (d *DB) UpdateBook(ctx context.Context, id, title string, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL *string) (*Book, error) {
 	slog.DebugContext(ctx, "db: updating book",
-		slog.String(otelkeys.ID, id),
+		slog.String(otelkeys.BookID, id),
 		slog.String(otelkeys.Title, title),
 	)
 	b, err := scanBook(d.QueryRowContext(ctx,
@@ -220,7 +220,7 @@ func (d *DB) UpdateBook(ctx context.Context, id, title string, description, asin
 
 // DeleteBook removes a book by ID.
 func (d *DB) DeleteBook(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "db: deleting book", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: deleting book", slog.String(otelkeys.BookID, id))
 	return d.execAffected(ctx, `DELETE FROM books WHERE id = $1`, id)
 }
 

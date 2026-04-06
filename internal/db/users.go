@@ -109,7 +109,7 @@ func (d *DB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 
 // GetUserByID returns a user by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
-	slog.DebugContext(ctx, "db: fetching user by ID", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: fetching user by ID", slog.String(otelkeys.UserID, id))
 	return scanUser(d.QueryRowContext(ctx,
 		`SELECT `+userColumns+` FROM users WHERE id = $1`,
 		id,

@@ -53,7 +53,7 @@ func namedEntityUpdate[T any](
 		return nil, errInvalid
 	}
 	slog.DebugContext(ctx, "db: updating "+entityLabel,
-		slog.String(otelkeys.ID, id),
+		slog.String(otelkeys.EntityID, id),
 		slog.String(otelkeys.Name, name),
 	)
 	result, err := updateFn(ctx, id, name)

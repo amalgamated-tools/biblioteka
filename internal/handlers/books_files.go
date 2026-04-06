@@ -23,13 +23,7 @@ import (
 //	@Failure		500	{object}	errorResponse
 //	@Router			/books/{id}/files [get]
 func (h *BookHandler) getBookFiles(w http.ResponseWriter, r *http.Request, bookID string) {
-	files, err := h.DB.ListBookFiles(r.Context(), bookID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to list book files", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to list book files")
-		return
-	}
-	writeJSON(r.Context(), w, http.StatusOK, mapSlice(files, toBookFileDTO))
+	respondBookSubResource(r.Context(), w, bookID, h.DB.ListBookFiles, toBookFileDTO, "book files")
 }
 
 // createBookFileRequest is the request body for creating a book file.
