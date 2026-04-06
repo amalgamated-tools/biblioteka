@@ -144,7 +144,7 @@ func getCredential(ops credentialOps, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get "+ops.protocol+" credentials", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to get protocol credentials", slog.String(otelkeys.Protocol, ops.protocol), slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to get credentials")
 		return
 	}
@@ -186,7 +186,7 @@ func upsertCredential(ops credentialOps, w http.ResponseWriter, r *http.Request)
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(toHash), bcrypt.DefaultCost)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to hash "+ops.protocol+" password", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to hash protocol password", slog.String(otelkeys.Protocol, ops.protocol), slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to create credentials")
 		return
 	}
@@ -197,7 +197,7 @@ func upsertCredential(ops credentialOps, w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to upsert "+ops.protocol+" credentials", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to upsert protocol credentials", slog.String(otelkeys.Protocol, ops.protocol), slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to create credentials")
 		return
 	}
@@ -224,7 +224,7 @@ func deleteCredential(ops credentialOps, w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get "+ops.protocol+" credentials for deletion", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to get protocol credentials for deletion", slog.String(otelkeys.Protocol, ops.protocol), slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to delete credentials")
 		return
 	}
@@ -234,7 +234,7 @@ func deleteCredential(ops credentialOps, w http.ResponseWriter, r *http.Request)
 			writeError(ctx, w, http.StatusNotFound, "no "+ops.protocol+" credentials configured")
 			return
 		}
-		slog.ErrorContext(ctx, "failed to delete "+ops.protocol+" credentials", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to delete protocol credentials", slog.String(otelkeys.Protocol, ops.protocol), slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to delete credentials")
 		return
 	}

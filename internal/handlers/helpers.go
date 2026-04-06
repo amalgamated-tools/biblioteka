@@ -228,7 +228,8 @@ func handleUpdateErr(ctx context.Context, w http.ResponseWriter, err, errInvalid
 	if handleNameErr(ctx, w, err, errInvalid, errExists, resourceArticle) {
 		return true
 	}
-	slog.ErrorContext(ctx, "failed to update "+resource,
+	slog.ErrorContext(ctx, "failed to update entity",
+		slog.String(otelkeys.Resource, resource),
 		slog.String(otelkeys.EntityID, id),
 		slog.Any(otelkeys.Error, err),
 	)
@@ -261,16 +262,16 @@ func listUserEntities[T any, DTO any](
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
 
-	slog.DebugContext(ctx, "listing "+resource)
+	slog.DebugContext(ctx, "listing entities", slog.String(otelkeys.Resource, resource))
 
 	entities, err := list(ctx, userID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to list "+resource, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to list entities", slog.String(otelkeys.Resource, resource), slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+resource)
 		return
 	}
 
-	slog.DebugContext(ctx, resource+" listed", slog.Int(otelkeys.Count, len(entities)))
+	slog.DebugContext(ctx, "entities listed", slog.String(otelkeys.Resource, resource), slog.Int(otelkeys.Count, len(entities)))
 
 	writeJSON(ctx, w, http.StatusOK, mapSlice(entities, toDTO))
 }
@@ -286,16 +287,16 @@ func listEntities[T any, DTO any](
 	toDTO func(*T) DTO,
 ) {
 	ctx := r.Context()
-	slog.DebugContext(ctx, "listing "+resource)
+	slog.DebugContext(ctx, "listing entities", slog.String(otelkeys.Resource, resource))
 
 	entities, err := list(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to list "+resource, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to list entities", slog.String(otelkeys.Resource, resource), slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+resource)
 		return
 	}
 
-	slog.DebugContext(ctx, resource+" listed", slog.Int(otelkeys.Count, len(entities)))
+	slog.DebugContext(ctx, "entities listed", slog.String(otelkeys.Resource, resource), slog.Int(otelkeys.Count, len(entities)))
 
 	writeJSON(ctx, w, http.StatusOK, mapSlice(entities, toDTO))
 }
@@ -321,7 +322,7 @@ func deleteResourceCore[T any](
 	auditMeta func(T) map[string]any,
 ) {
 	ctx := r.Context()
-	slog.DebugContext(ctx, "deleting "+resource, slog.String(idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+	slog.DebugContext(ctx, "deleting resource", slog.String(otelkeys.Resource, resource), slog.String(idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 
 	entity, err := get(ctx)
 	if err != nil {
@@ -329,7 +330,7 @@ func deleteResourceCore[T any](
 			writeError(ctx, w, http.StatusNotFound, resource+" not found")
 			return
 		}
-		slog.ErrorContext(ctx, "failed to get "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+		slog.ErrorContext(ctx, "failed to get resource", slog.String(otelkeys.Resource, resource), slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
 		return
 	}
@@ -339,7 +340,7 @@ func deleteResourceCore[T any](
 			writeError(ctx, w, http.StatusNotFound, resource+" not found")
 			return
 		}
-		slog.ErrorContext(ctx, "failed to delete "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+		slog.ErrorContext(ctx, "failed to delete resource", slog.String(otelkeys.Resource, resource), slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
 		return
 	}

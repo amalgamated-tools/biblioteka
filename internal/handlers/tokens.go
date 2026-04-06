@@ -68,7 +68,7 @@ func handleTokenCreate(ops tokenOps, w http.ResponseWriter, r *http.Request) {
 		if errors.As(err, &te) {
 			msg = te.message
 		}
-		slog.ErrorContext(ctx, msg, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to create token", slog.String(otelkeys.Resource, ops.resource), slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, msg)
 		return
 	}

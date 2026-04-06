@@ -91,6 +91,7 @@ const (
 	PathsEnqueued       string = "paths_enqueued"
 	Port                string = "port"
 	Properties          string = "properties"
+	Protocol            string = "protocol"
 	Query               string = "query"
 	Reason              string = "reason"
 	RedirectURI         string = "redirect_uri"
