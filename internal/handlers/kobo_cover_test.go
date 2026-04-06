@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
@@ -26,7 +25,7 @@ func TestHandleCoverImage_JPEGDataURL(t *testing.T) {
 	pngBytes := testutils.TinyPNG()
 	jpegDataURL := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(pngBytes)
 	book, err := h.DB.CreateBook(
-		context.Background(),
+		t.Context(),
 		"JPEG Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		&jpegDataURL,
 	)
@@ -51,7 +50,7 @@ func TestHandleCoverImage_PNGDataURL(t *testing.T) {
 	pngBytes := testutils.TinyPNG()
 	pngDataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
 	book, err := h.DB.CreateBook(
-		context.Background(),
+		t.Context(),
 		"PNG Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		&pngDataURL,
 	)
@@ -76,7 +75,7 @@ func TestHandleCoverImage_InvalidDataURL(t *testing.T) {
 	// Malformed data URL: not valid base64.
 	badURL := "data:image/png;base64,!notvalidbase64!"
 	book, err := h.DB.CreateBook(
-		context.Background(),
+		t.Context(),
 		"Bad Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		&badURL,
 	)
@@ -113,7 +112,7 @@ func TestHandleCoverImage_HTTPSRedirect(t *testing.T) {
 
 	coverURL := "https://example.com/cover.jpg"
 	book, err := h.DB.CreateBook(
-		context.Background(),
+		t.Context(),
 		"External Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		&coverURL,
 	)
@@ -132,21 +131,23 @@ func TestHandleCoverImage_HTTPSRedirect(t *testing.T) {
 func TestHandleCoverImage_UnsafeCoverURL(t *testing.T) {
 	t.Parallel()
 
-	for _, unsafeURL := range []string{
-		"http://evil.com/cover.jpg",
-		"//evil.com/cover.jpg",
-		"javascript:alert(1)",
-		"ftp://example.com/cover.jpg",
+	for _, tc := range []struct {
+		name string
+		url  string
+	}{
+		{name: "http", url: "http://evil.com/cover.jpg"},
+		{name: "protocol-relative", url: "//evil.com/cover.jpg"},
+		{name: "javascript", url: "javascript:alert(1)"},
+		{name: "ftp", url: "ftp://example.com/cover.jpg"},
 	} {
-		unsafeURL := unsafeURL
-		t.Run(unsafeURL, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			h, _ := setupKoboHandler(t)
 			book, err := h.DB.CreateBook(
-				context.Background(),
+				t.Context(),
 				"Unsafe Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-				&unsafeURL,
+				&tc.url,
 			)
 			require.NoError(t, err, "create book")
 
