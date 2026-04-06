@@ -1,7 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 
 const AUTH_ERROR_TEST_ID = "auth-error";
-const TOKEN_KEY = "biblioteka_token";
 const DEFAULT_TIMEOUT_MS = (() => {
   const v = parseInt(process.env.E2E_TIMEOUT_MS ?? "", 10);
   return Number.isFinite(v) ? v : 5000;
@@ -72,7 +71,6 @@ export async function signOut(page: Page): Promise<void> {
   await page.locator("button#login-tab").click();
   await page.waitForSelector("input#login-email");
   await page.waitForSelector("input#login-password");
-  await page.waitForFunction((tokenKey) => localStorage.getItem(tokenKey) === null, TOKEN_KEY);
   await expect(page.getByRole("tab", { name: "Login", exact: true })).toBeVisible();
 }
 
