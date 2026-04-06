@@ -10,4 +10,5 @@ type AuthHandler struct {
 	DB            *db.DB
 	JWT           *auth.JWTManager
 	SecureCookies bool
+	DisableSignup bool
 }

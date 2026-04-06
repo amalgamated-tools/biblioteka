@@ -30,6 +30,11 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.DisableSignup {
+		writeError(r.Context(), w, http.StatusForbidden, "signup is disabled")
+		return
+	}
+
 	var req signupRequest
 	if !decodeJSON(r, w, &req) {
 		return
