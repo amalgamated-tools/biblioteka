@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type Mock,
+} from "vitest";
 import {
   listBooks,
   getBook,
@@ -14,7 +22,14 @@ import {
   getBookFile,
   deleteBookFile,
 } from "../api";
-import type { Author, Book, BookFile, BookSeriesEntry, PaginatedBooks, Series } from "../../types";
+import type {
+  Author,
+  Book,
+  BookFile,
+  BookSeriesEntry,
+  PaginatedBooks,
+  Series,
+} from "../../types";
 
 let fetchMock: Mock;
 

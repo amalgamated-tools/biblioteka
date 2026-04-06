@@ -129,9 +129,9 @@ describe("author store", () => {
       authorStore.authors = [fakeAuthor];
       vi.mocked(api.updateAuthor).mockRejectedValue(new Error("not found"));
 
-      await expect(
-        authorStore.edit("a1", { name: "Bad" }),
-      ).rejects.toThrow("not found");
+      await expect(authorStore.edit("a1", { name: "Bad" })).rejects.toThrow(
+        "not found",
+      );
       expect(authorStore.authors).toEqual([fakeAuthor]);
     });
   });

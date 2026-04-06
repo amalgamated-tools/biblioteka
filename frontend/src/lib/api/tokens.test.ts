@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type Mock,
+} from "vitest";
 import {
   listAPIKeys,
   createAPIKey,
@@ -7,7 +15,12 @@ import {
   createKoboToken,
   deleteKoboToken,
 } from "../api";
-import type { APIKey, APIKeyCreateResponse, KoboToken, KoboTokenCreateResponse } from "../../types";
+import type {
+  APIKey,
+  APIKeyCreateResponse,
+  KoboToken,
+  KoboTokenCreateResponse,
+} from "../../types";
 
 let fetchMock: Mock;
 

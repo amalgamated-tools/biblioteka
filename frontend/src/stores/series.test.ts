@@ -128,9 +128,9 @@ describe("series store", () => {
       seriesStore.series = [fakeSeries];
       vi.mocked(api.updateSeries).mockRejectedValue(new Error("not found"));
 
-      await expect(
-        seriesStore.edit("s1", { name: "Bad" }),
-      ).rejects.toThrow("not found");
+      await expect(seriesStore.edit("s1", { name: "Bad" })).rejects.toThrow(
+        "not found",
+      );
       expect(seriesStore.series).toEqual([fakeSeries]);
     });
   });
