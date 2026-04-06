@@ -24,12 +24,9 @@ type BookFile struct {
 const bookFileColumns = `id, book_id, file_type, file_name, file_size, file_hash, file_path, created_at, updated_at`
 
 func scanBookFile(row interface{ Scan(...any) error }) (*BookFile, error) {
-	var bf BookFile
-	err := row.Scan(&bf.ID, &bf.BookID, &bf.FileType, &bf.FileName, &bf.FileSize, &bf.FileHash, &bf.FilePath, &bf.CreatedAt, &bf.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &bf, nil
+	return scanRow(row, func(bf *BookFile) []any {
+		return []any{&bf.ID, &bf.BookID, &bf.FileType, &bf.FileName, &bf.FileSize, &bf.FileHash, &bf.FilePath, &bf.CreatedAt, &bf.UpdatedAt}
+	})
 }
 
 // bookFileColumnsWithPrefix returns book_files columns with a table alias prefix.
@@ -73,17 +70,7 @@ func (d *DB) ListBookFiles(ctx context.Context, bookID string) ([]BookFile, erro
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var files []BookFile
-	for rows.Next() {
-		bf, err := scanBookFile(rows)
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, *bf)
-	}
-	return files, rows.Err()
+	return collectRows(rows, scanBookFile)
 }
 
 // GetBookFileByPath returns a book file by its file path, or sql.ErrNoRows if not found.
