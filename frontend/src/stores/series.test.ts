@@ -75,4 +75,84 @@ describe("series store", () => {
       expect(seriesStore.series).toEqual([]);
     });
   });
+
+  describe("add", () => {
+    it("appends the created series to the store", async () => {
+      vi.mocked(api.createSeries).mockResolvedValue(fakeSeries);
+
+      const result = await seriesStore.add({ name: "Test Series" });
+
+      expect(api.createSeries).toHaveBeenCalledWith({ name: "Test Series" });
+      expect(result).toEqual(fakeSeries);
+      expect(seriesStore.series).toEqual([fakeSeries]);
+    });
+
+    it("appends to existing series", async () => {
+      const fakeSeries2: Series = { ...fakeSeries, id: "s2", name: "Second" };
+      seriesStore.series = [fakeSeries];
+      vi.mocked(api.createSeries).mockResolvedValue(fakeSeries2);
+
+      await seriesStore.add({ name: "Second" });
+
+      expect(seriesStore.series).toEqual([fakeSeries, fakeSeries2]);
+    });
+
+    it("propagates errors and leaves series unchanged", async () => {
+      seriesStore.series = [fakeSeries];
+      vi.mocked(api.createSeries).mockRejectedValue(new Error("conflict"));
+
+      await expect(seriesStore.add({ name: "Bad" })).rejects.toThrow(
+        "conflict",
+      );
+      expect(seriesStore.series).toEqual([fakeSeries]);
+    });
+  });
+
+  describe("edit", () => {
+    it("replaces the updated series in the store", async () => {
+      const updated: Series = { ...fakeSeries, name: "Updated Series" };
+      const fakeSeries2: Series = { ...fakeSeries, id: "s2", name: "Second" };
+      seriesStore.series = [fakeSeries, fakeSeries2];
+      vi.mocked(api.updateSeries).mockResolvedValue(updated);
+
+      const result = await seriesStore.edit("s1", { name: "Updated Series" });
+
+      expect(api.updateSeries).toHaveBeenCalledWith("s1", {
+        name: "Updated Series",
+      });
+      expect(result).toEqual(updated);
+      expect(seriesStore.series).toEqual([updated, fakeSeries2]);
+    });
+
+    it("propagates errors and leaves series unchanged", async () => {
+      seriesStore.series = [fakeSeries];
+      vi.mocked(api.updateSeries).mockRejectedValue(new Error("not found"));
+
+      await expect(seriesStore.edit("s1", { name: "Bad" })).rejects.toThrow(
+        "not found",
+      );
+      expect(seriesStore.series).toEqual([fakeSeries]);
+    });
+  });
+
+  describe("remove", () => {
+    it("removes the series from the store", async () => {
+      const fakeSeries2: Series = { ...fakeSeries, id: "s2", name: "Second" };
+      seriesStore.series = [fakeSeries, fakeSeries2];
+      vi.mocked(api.deleteSeries).mockResolvedValue(undefined);
+
+      await seriesStore.remove("s1");
+
+      expect(api.deleteSeries).toHaveBeenCalledWith("s1");
+      expect(seriesStore.series).toEqual([fakeSeries2]);
+    });
+
+    it("propagates errors and leaves series unchanged", async () => {
+      seriesStore.series = [fakeSeries];
+      vi.mocked(api.deleteSeries).mockRejectedValue(new Error("server error"));
+
+      await expect(seriesStore.remove("s1")).rejects.toThrow("server error");
+      expect(seriesStore.series).toEqual([fakeSeries]);
+    });
+  });
 });
