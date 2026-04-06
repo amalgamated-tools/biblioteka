@@ -235,6 +235,7 @@ func (s *Server) Run(ctx context.Context) error {
 		middleware.RequestIDHandler,
 		otel.TraceMiddleware,
 		middleware.LoggingMiddleware,
+		middleware.SecurityHeadersMiddleware,
 	).Then(s.mux)
 
 	s.httpServer = &http.Server{
