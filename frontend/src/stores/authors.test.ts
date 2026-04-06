@@ -76,4 +76,84 @@ describe("author store", () => {
       expect(authorStore.authors).toEqual([]);
     });
   });
+
+  describe("add", () => {
+    it("appends the created author to the store", async () => {
+      vi.mocked(api.createAuthor).mockResolvedValue(fakeAuthor);
+
+      const result = await authorStore.add({ name: "Test Author" });
+
+      expect(api.createAuthor).toHaveBeenCalledWith({ name: "Test Author" });
+      expect(result).toEqual(fakeAuthor);
+      expect(authorStore.authors).toEqual([fakeAuthor]);
+    });
+
+    it("appends to existing authors", async () => {
+      const fakeAuthor2: Author = { ...fakeAuthor, id: "a2", name: "Second" };
+      authorStore.authors = [fakeAuthor];
+      vi.mocked(api.createAuthor).mockResolvedValue(fakeAuthor2);
+
+      await authorStore.add({ name: "Second" });
+
+      expect(authorStore.authors).toEqual([fakeAuthor, fakeAuthor2]);
+    });
+
+    it("propagates errors and leaves authors unchanged", async () => {
+      authorStore.authors = [fakeAuthor];
+      vi.mocked(api.createAuthor).mockRejectedValue(new Error("conflict"));
+
+      await expect(authorStore.add({ name: "Bad" })).rejects.toThrow(
+        "conflict",
+      );
+      expect(authorStore.authors).toEqual([fakeAuthor]);
+    });
+  });
+
+  describe("edit", () => {
+    it("replaces the updated author in the store", async () => {
+      const updated: Author = { ...fakeAuthor, name: "Updated Author" };
+      const fakeAuthor2: Author = { ...fakeAuthor, id: "a2", name: "Second" };
+      authorStore.authors = [fakeAuthor, fakeAuthor2];
+      vi.mocked(api.updateAuthor).mockResolvedValue(updated);
+
+      const result = await authorStore.edit("a1", { name: "Updated Author" });
+
+      expect(api.updateAuthor).toHaveBeenCalledWith("a1", {
+        name: "Updated Author",
+      });
+      expect(result).toEqual(updated);
+      expect(authorStore.authors).toEqual([updated, fakeAuthor2]);
+    });
+
+    it("propagates errors and leaves authors unchanged", async () => {
+      authorStore.authors = [fakeAuthor];
+      vi.mocked(api.updateAuthor).mockRejectedValue(new Error("not found"));
+
+      await expect(
+        authorStore.edit("a1", { name: "Bad" }),
+      ).rejects.toThrow("not found");
+      expect(authorStore.authors).toEqual([fakeAuthor]);
+    });
+  });
+
+  describe("remove", () => {
+    it("removes the author from the store", async () => {
+      const fakeAuthor2: Author = { ...fakeAuthor, id: "a2", name: "Second" };
+      authorStore.authors = [fakeAuthor, fakeAuthor2];
+      vi.mocked(api.deleteAuthor).mockResolvedValue(undefined);
+
+      await authorStore.remove("a1");
+
+      expect(api.deleteAuthor).toHaveBeenCalledWith("a1");
+      expect(authorStore.authors).toEqual([fakeAuthor2]);
+    });
+
+    it("propagates errors and leaves authors unchanged", async () => {
+      authorStore.authors = [fakeAuthor];
+      vi.mocked(api.deleteAuthor).mockRejectedValue(new Error("server error"));
+
+      await expect(authorStore.remove("a1")).rejects.toThrow("server error");
+      expect(authorStore.authors).toEqual([fakeAuthor]);
+    });
+  });
 });
