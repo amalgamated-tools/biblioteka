@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,22 +42,34 @@ func Test_ValidateName(t *testing.T) {
 }
 
 func Test_ValidatePassword(t *testing.T) {
+	wantMsg := fmt.Sprintf("password must be at least %d characters", minPasswordLength)
 	tests := []struct {
-		name     string
-		password string
-		wantMsg  string
+		name      string
+		password  string
+		wantValid bool
+		wantMsg   string
 	}{
-		{"valid password", "secret123", ""},
-		{"exact minimum length", "123456", ""},
-		{"too short", "abc", "password must be at least 6 characters"},
-		{"empty", "", "password must be at least 6 characters"},
-		{"one char", "x", "password must be at least 6 characters"},
+		{"valid password", "secret123", true, ""},
+		{"exact minimum length", "123456", true, ""},
+		{"too short", "abc", false, wantMsg},
+		{"empty", "", false, wantMsg},
+		{"one char", "x", false, wantMsg},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := validatePassword(tt.password)
-			require.Equal(t, tt.wantMsg, got)
+			w := httptest.NewRecorder()
+			got := validatePassword(t.Context(), w, tt.password)
+			require.Equal(t, tt.wantValid, got, "validatePassword(%q)", tt.password)
+			if tt.wantValid {
+				require.Equal(t, http.StatusOK, w.Code)
+				require.Equal(t, 0, w.Body.Len())
+				return
+			}
+			require.Equal(t, http.StatusBadRequest, w.Code)
+			var result map[string]string
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
+			require.Equal(t, tt.wantMsg, result["error"])
 		})
 	}
 }
