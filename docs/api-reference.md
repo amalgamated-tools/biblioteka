@@ -151,7 +151,7 @@ Authenticate with email and password.
 | `400 Bad Request` | Missing fields |
 | `401 Unauthorized` | Invalid credentials or OIDC-only account |
 | `429 Too Many Requests` | Rate limit exceeded |
-| `500 Internal Server Error` | Database error |
+| `500 Internal Server Error` | Internal server error (for example, database or token creation failure) |
 
 **Response body (`200`):** Same shape as signup response above.
 
@@ -224,7 +224,7 @@ Change the authenticated user's password. Not supported for OIDC-only accounts.
 | `200 OK` | Password updated |
 | `400 Bad Request` | Missing fields, invalid password, or OIDC-only account |
 | `401 Unauthorized` | Missing or invalid JWT, current password is incorrect, or user no longer exists |
-| `500 Internal Server Error` | Database error |
+| `500 Internal Server Error` | Internal server error (for example, database or password hashing failure) |
 
 ---
 
