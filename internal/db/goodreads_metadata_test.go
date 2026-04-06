@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -26,30 +25,18 @@ func TestCreateGoodreadsMetadata(t *testing.T) {
 		&bookLegacyID, nil, nil,
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
-	if gm.ID == "" {
-		t.Error("ID is empty")
-	}
-	if gm.UserID != user.ID {
-		t.Errorf("UserID = %q, want %q", gm.UserID, user.ID)
-	}
-	if gm.Status != GoodreadsMetadataStatusPending {
-		t.Errorf("Status = %q, want %q", gm.Status, GoodreadsMetadataStatusPending)
-	}
-	if gm.Title == nil || *gm.Title != title {
-		t.Errorf("Title = %v, want %q", gm.Title, title)
-	}
-	if gm.AuthorName == nil || *gm.AuthorName != authorName {
-		t.Errorf("AuthorName = %v, want %q", gm.AuthorName, authorName)
-	}
-	if gm.ISBN13 == nil || *gm.ISBN13 != isbn13 {
-		t.Errorf("ISBN13 = %v, want %q", gm.ISBN13, isbn13)
-	}
-	if gm.GoodreadsBookLegacyID == nil || *gm.GoodreadsBookLegacyID != bookLegacyID {
-		t.Errorf("GoodreadsBookLegacyID = %v, want %d", gm.GoodreadsBookLegacyID, bookLegacyID)
-	}
-	if gm.CreatedAt.IsZero() {
-		t.Error("CreatedAt is zero")
-	}
+	require.NotEqual(t, "", gm.ID)
+	require.Equal(t, user.ID, gm.UserID)
+	require.Equal(t, GoodreadsMetadataStatusPending, gm.Status)
+	require.NotNil(t, gm.Title)
+	require.Equal(t, title, *gm.Title)
+	require.NotNil(t, gm.AuthorName)
+	require.Equal(t, authorName, *gm.AuthorName)
+	require.NotNil(t, gm.ISBN13)
+	require.Equal(t, isbn13, *gm.ISBN13)
+	require.NotNil(t, gm.GoodreadsBookLegacyID)
+	require.Equal(t, bookLegacyID, *gm.GoodreadsBookLegacyID)
+	require.False(t, gm.CreatedAt.IsZero())
 }
 
 func TestGetGoodreadsMetadata(t *testing.T) {
@@ -68,12 +55,9 @@ func TestGetGoodreadsMetadata(t *testing.T) {
 
 	found, err := d.GetGoodreadsMetadata(t.Context(), user.ID, created.ID)
 	require.NoError(t, err, "GetGoodreadsMetadata() error")
-	if found.ID != created.ID {
-		t.Errorf("ID = %q, want %q", found.ID, created.ID)
-	}
-	if found.Title == nil || *found.Title != title {
-		t.Errorf("Title = %v, want %q", found.Title, title)
-	}
+	require.Equal(t, created.ID, found.ID)
+	require.NotNil(t, found.Title)
+	require.Equal(t, title, *found.Title)
 }
 
 func TestGetGoodreadsMetadata_NotFound(t *testing.T) {
@@ -82,9 +66,7 @@ func TestGetGoodreadsMetadata_NotFound(t *testing.T) {
 	require.NoError(t, err, "CreateUser() error")
 
 	_, err = d.GetGoodreadsMetadata(t.Context(), user.ID, "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestGetGoodreadsMetadata_WrongUser(t *testing.T) {
@@ -104,9 +86,7 @@ func TestGetGoodreadsMetadata_WrongUser(t *testing.T) {
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
 	_, err = d.GetGoodreadsMetadata(t.Context(), user2.ID, created.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows for wrong user, got %v", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListGoodreadsMetadataByUser(t *testing.T) {
@@ -166,9 +146,8 @@ func TestListGoodreadsMetadataByStatus(t *testing.T) {
 	pending, err := d.ListGoodreadsMetadataByStatus(t.Context(), user.ID, GoodreadsMetadataStatusPending, 50, 0)
 	require.NoError(t, err, "ListGoodreadsMetadataByStatus() error")
 	require.Len(t, pending, 1)
-	if pending[0].Title == nil || *pending[0].Title != title2 {
-		t.Errorf("Title = %v, want %q", pending[0].Title, title2)
-	}
+	require.NotNil(t, pending[0].Title)
+	require.Equal(t, title2, *pending[0].Title)
 
 	applied, err := d.ListGoodreadsMetadataByStatus(t.Context(), user.ID, GoodreadsMetadataStatusApplied, 50, 0)
 	require.NoError(t, err, "ListGoodreadsMetadataByStatus() error")
@@ -191,9 +170,7 @@ func TestUpdateGoodreadsMetadataStatus(t *testing.T) {
 
 	updated, err := d.UpdateGoodreadsMetadataStatus(t.Context(), user.ID, created.ID, GoodreadsMetadataStatusRejected)
 	require.NoError(t, err, "UpdateGoodreadsMetadataStatus() error")
-	if updated.Status != GoodreadsMetadataStatusRejected {
-		t.Errorf("Status = %q, want %q", updated.Status, GoodreadsMetadataStatusRejected)
-	}
+	require.Equal(t, GoodreadsMetadataStatusRejected, updated.Status)
 
 	// Attempt to set an invalid status and ensure it fails without changing the row.
 	_, err = d.UpdateGoodreadsMetadataStatus(t.Context(), user.ID, created.ID, "invalid")
@@ -202,9 +179,7 @@ func TestUpdateGoodreadsMetadataStatus(t *testing.T) {
 	// Verify that the status in the database remains unchanged after the failed update.
 	fetched, err := d.GetGoodreadsMetadata(t.Context(), user.ID, created.ID)
 	require.NoError(t, err, "GetGoodreadsMetadata() error after invalid status update")
-	if fetched.Status != updated.Status {
-		t.Errorf("Status changed after invalid status update: got %q, want %q", fetched.Status, updated.Status)
-	}
+	require.Equal(t, updated.Status, fetched.Status)
 }
 
 func TestUpdateGoodreadsMetadataStatus_InvalidStatus(t *testing.T) {
@@ -223,9 +198,7 @@ func TestUpdateGoodreadsMetadataStatus_InvalidStatus(t *testing.T) {
 
 	_, err = d.UpdateGoodreadsMetadataStatus(t.Context(), user.ID, created.ID, "oops")
 	require.Error(t, err, "expected error for invalid status, got nil")
-	if !errors.Is(err, ErrInvalidGoodreadsMetadataStatus) {
-		t.Errorf("expected ErrInvalidGoodreadsMetadataStatus, got %v", err)
-	}
+	require.ErrorIs(t, err, ErrInvalidGoodreadsMetadataStatus)
 }
 
 func TestDeleteGoodreadsMetadata(t *testing.T) {
@@ -246,9 +219,7 @@ func TestDeleteGoodreadsMetadata(t *testing.T) {
 	require.NoError(t, err, "DeleteGoodreadsMetadata() error")
 
 	_, err = d.GetGoodreadsMetadata(t.Context(), user.ID, created.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteGoodreadsMetadata_WrongUser(t *testing.T) {
@@ -268,15 +239,11 @@ func TestDeleteGoodreadsMetadata_WrongUser(t *testing.T) {
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
 	err = d.DeleteGoodreadsMetadata(t.Context(), user2.ID, created.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows for wrong user, got %v", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 
 	// Verify it still exists for the original user
 	_, err = d.GetGoodreadsMetadata(t.Context(), user1.ID, created.ID)
-	if err != nil {
-		t.Errorf("expected row to still exist for original user, got %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestCreateGoodreadsMetadata_WithBookID(t *testing.T) {
@@ -295,7 +262,6 @@ func TestCreateGoodreadsMetadata_WithBookID(t *testing.T) {
 		nil, nil, nil,
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
-	if gm.BookID == nil || *gm.BookID != book.ID {
-		t.Errorf("BookID = %v, want %q", gm.BookID, book.ID)
-	}
+	require.NotNil(t, gm.BookID)
+	require.Equal(t, book.ID, *gm.BookID)
 }

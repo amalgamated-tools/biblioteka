@@ -153,7 +153,7 @@ func (d *DB) UpdateGoodreadsMetadataStatus(ctx context.Context, userID, id, stat
 	switch status {
 	case GoodreadsMetadataStatusPending, GoodreadsMetadataStatusApplied, GoodreadsMetadataStatusRejected:
 	default:
-		return nil, fmt.Errorf("%w: %q", ErrInvalidGoodreadsMetadataStatus, status)
+		return nil, fmt.Errorf("invalid goodreads_metadata status %q: %w", status, ErrInvalidGoodreadsMetadataStatus)
 	}
 	slog.DebugContext(ctx, "db: updating goodreads metadata status",
 		slog.String(otelkeys.GoodreadsMetadataID, id),

@@ -35,21 +35,11 @@ func TestBookResult_JSONRoundTrip(t *testing.T) {
 	var decoded BookResult
 	require.NoError(t, json.Unmarshal(data, &decoded), "json.Unmarshal() error")
 
-	if decoded.WorkID != original.WorkID {
-		t.Errorf("WorkID = %q, want %q", decoded.WorkID, original.WorkID)
-	}
-	if decoded.BookTitle != original.BookTitle {
-		t.Errorf("BookTitle = %q, want %q", decoded.BookTitle, original.BookTitle)
-	}
-	if decoded.AuthorName != original.AuthorName {
-		t.Errorf("AuthorName = %q, want %q", decoded.AuthorName, original.AuthorName)
-	}
-	if decoded.BookISBN13 != original.BookISBN13 {
-		t.Errorf("BookISBN13 = %q, want %q", decoded.BookISBN13, original.BookISBN13)
-	}
-	if decoded.BookLegacyID != original.BookLegacyID {
-		t.Errorf("BookLegacyID = %d, want %d", decoded.BookLegacyID, original.BookLegacyID)
-	}
+	require.Equal(t, original.WorkID, decoded.WorkID)
+	require.Equal(t, original.BookTitle, decoded.BookTitle)
+	require.Equal(t, original.AuthorName, decoded.AuthorName)
+	require.Equal(t, original.BookISBN13, decoded.BookISBN13)
+	require.Equal(t, original.BookLegacyID, decoded.BookLegacyID)
 }
 
 // TestBookResult_JSONFieldNames verifies that the JSON field names use
@@ -70,15 +60,12 @@ func TestBookResult_JSONFieldNames(t *testing.T) {
 	require.NoError(t, json.Unmarshal(data, &raw), "json.Unmarshal() error")
 
 	// Verify snake_case JSON keys.
-	if _, ok := raw["work_id"]; !ok {
-		t.Error("expected work_id JSON field")
-	}
-	if _, ok := raw["book_title"]; !ok {
-		t.Error("expected book_title JSON field")
-	}
-	if _, ok := raw["author_name"]; !ok {
-		t.Error("expected author_name JSON field")
-	}
+	_, ok := raw["work_id"]
+	require.True(t, ok, "expected work_id JSON field")
+	_, ok = raw["book_title"]
+	require.True(t, ok, "expected book_title JSON field")
+	_, ok = raw["author_name"]
+	require.True(t, ok, "expected author_name JSON field")
 }
 
 // TestBookResult_ZeroValue verifies that the zero value of BookResult is
@@ -89,7 +76,5 @@ func TestBookResult_ZeroValue(t *testing.T) {
 	var br BookResult
 	data, err := json.Marshal(br)
 	require.NoError(t, err, "json.Marshal() error for zero value")
-	if len(data) == 0 {
-		t.Error("expected non-empty JSON for zero value BookResult")
-	}
+	require.NotEmpty(t, data)
 }

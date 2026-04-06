@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -32,9 +31,7 @@ func TestHandleInit_DeviceAuthKey(t *testing.T) {
 
 	// device_auth URL should contain the token value to allow per-device routing.
 	deviceAuth, _ := resources["device_auth"].(string)
-	if !strings.Contains(deviceAuth, tokenValue) {
-		t.Errorf("device_auth %q should contain token value %q", deviceAuth, tokenValue)
-	}
+	require.Contains(t, deviceAuth, tokenValue)
 }
 
 // TestHandleInit_ImageHostKey verifies that HandleInit includes an image_host
@@ -55,12 +52,8 @@ func TestHandleInit_ImageHostKey(t *testing.T) {
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	resources, _ := resp["Resources"].(map[string]any)
 	imageHost, _ := resources["image_host"].(string)
-	if imageHost == "" {
-		t.Error("expected non-empty image_host in Resources")
-	}
-	if !strings.Contains(imageHost, "testhost.local") {
-		t.Errorf("image_host %q should contain request host testhost.local", imageHost)
-	}
+	require.NotEqual(t, "", imageHost)
+	require.Contains(t, imageHost, "testhost.local")
 }
 
 // TestHandleInit_LibrarySyncURL verifies that the library_sync URL includes
@@ -81,9 +74,7 @@ func TestHandleInit_LibrarySyncURL(t *testing.T) {
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	resources, _ := resp["Resources"].(map[string]any)
 	librarySync, _ := resources["library_sync"].(string)
-	if !strings.Contains(librarySync, tokenValue) {
-		t.Errorf("library_sync %q should contain token value %q", librarySync, tokenValue)
-	}
+	require.Contains(t, librarySync, tokenValue)
 }
 
 // TestHandleInit_ConfigurationDataKey verifies that the configuration_data
@@ -104,12 +95,8 @@ func TestHandleInit_ConfigurationDataKey(t *testing.T) {
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp), "decode")
 	resources, _ := resp["Resources"].(map[string]any)
 
-	if resources["configuration_data"] == nil {
-		t.Error("expected configuration_data in Resources")
-	}
-	if resources["account_page"] == nil {
-		t.Error("expected account_page in Resources")
-	}
+	require.NotNil(t, resources["configuration_data"])
+	require.NotNil(t, resources["account_page"])
 }
 
 // TestHandleInit_BlackstoneHeaderKey verifies that the blackstone_header field
@@ -131,7 +118,6 @@ func TestHandleInit_BlackstoneHeaderKey(t *testing.T) {
 	resources, _ := resp["Resources"].(map[string]any)
 	blackstone, ok := resources["blackstone_header"].(map[string]any)
 	require.True(t, ok)
-	if blackstone["key"] == nil || blackstone["value"] == nil {
-		t.Error("expected key and value in blackstone_header")
-	}
+	require.NotNil(t, blackstone["key"], "expected key in blackstone_header")
+	require.NotNil(t, blackstone["value"], "expected value in blackstone_header")
 }

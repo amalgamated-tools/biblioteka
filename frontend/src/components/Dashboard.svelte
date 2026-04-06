@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { LayoutDashboard, Library, Plus, ArrowRight } from "lucide-svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { routerStore } from "../stores/router.svelte";
+  import { listBooks } from "../lib/api";
+
+  let totalBooks = $state<number | null>(null);
 
   $effect(() => {
     if (!libraryStore.loaded) {
@@ -9,10 +13,23 @@
     }
   });
 
+  onMount(() => {
+    listBooks(1, 0)
+      .then((data) => {
+        totalBooks = data.total;
+      })
+      .catch((err) => {
+        console.error("Failed to fetch total books count:", err);
+        totalBooks = 0;
+      });
+  });
+
   const stats = $derived([
-    { label: "Total Books", value: 0 },
+    {
+      label: "Total Books",
+      value: totalBooks === null ? "…" : totalBooks,
+    },
     { label: "Libraries", value: libraryStore.libraries.length },
-    { label: "Currently Reading", value: 0 },
   ]);
 </script>
 
@@ -69,7 +86,7 @@
       </div>
     </div>
   {:else}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 stagger">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 stagger">
       {#each stats as { label, value } (label)}
         <div
           class="group bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 hover:shadow-md hover:border-accent-200 dark:hover:border-accent-800/30 transition-all"

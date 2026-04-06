@@ -19,13 +19,11 @@ func TestNamedEntityCreate_BlankNameReturnsErrInvalid(t *testing.T) {
 	for _, name := range []string{"", "   "} {
 		_, err := namedEntityCreate(t.Context(), "fake", name, trimNormalize, errFakeInvalid, errFakeExists,
 			func(_ context.Context, _ string) (*fakeEntity, error) {
-				t.Error("insertFn should not be called for blank name")
+				require.Fail(t, "insertFn should not be called for blank name")
 				return nil, nil
 			},
 		)
-		if !errors.Is(err, errFakeInvalid) {
-			t.Errorf("namedEntityCreate(%q) = %v, want errFakeInvalid", name, err)
-		}
+		require.ErrorIs(t, err, errFakeInvalid)
 	}
 }
 
@@ -37,9 +35,7 @@ func TestNamedEntityCreate_Success(t *testing.T) {
 		},
 	)
 	require.NoError(t, err, "namedEntityCreate() error")
-	if got.name != want.name {
-		t.Errorf("result.name = %q, want %q", got.name, want.name)
-	}
+	require.Equal(t, want.name, got.name)
 }
 
 func TestNamedEntityCreate_UniqueViolationReturnsErrExists(t *testing.T) {
@@ -48,9 +44,7 @@ func TestNamedEntityCreate_UniqueViolationReturnsErrExists(t *testing.T) {
 			return nil, fmt.Errorf("UNIQUE constraint failed: fakes.name")
 		},
 	)
-	if !errors.Is(err, errFakeExists) {
-		t.Errorf("namedEntityCreate() = %v, want errFakeExists", err)
-	}
+	require.ErrorIs(t, err, errFakeExists)
 }
 
 func TestNamedEntityCreate_PropagatesNonConstraintError(t *testing.T) {
@@ -60,9 +54,7 @@ func TestNamedEntityCreate_PropagatesNonConstraintError(t *testing.T) {
 			return nil, sentinel
 		},
 	)
-	if !errors.Is(err, sentinel) {
-		t.Errorf("err = %v, want %v", err, sentinel)
-	}
+	require.ErrorIs(t, err, sentinel)
 }
 
 // --- namedEntityUpdate ---
@@ -71,29 +63,23 @@ func TestNamedEntityUpdate_BlankNameReturnsErrInvalid(t *testing.T) {
 	for _, name := range []string{"", "   "} {
 		_, err := namedEntityUpdate(t.Context(), "fake", "id-1", name, trimNormalize, errFakeInvalid, errFakeExists,
 			func(_ context.Context, _, _ string) (*fakeEntity, error) {
-				t.Error("updateFn should not be called for blank name")
+				require.Fail(t, "updateFn should not be called for blank name")
 				return nil, nil
 			},
 		)
-		if !errors.Is(err, errFakeInvalid) {
-			t.Errorf("namedEntityUpdate(%q) = %v, want errFakeInvalid", name, err)
-		}
+		require.ErrorIs(t, err, errFakeInvalid)
 	}
 }
 
 func TestNamedEntityUpdate_Success(t *testing.T) {
 	got, err := namedEntityUpdate(t.Context(), "fake", "id-1", "updated", identityNormalize, errFakeInvalid, errFakeExists,
 		func(_ context.Context, id, name string) (*fakeEntity, error) {
-			if id != "id-1" {
-				t.Errorf("updateFn id = %q, want %q", id, "id-1")
-			}
+			require.Equal(t, "id-1", id)
 			return &fakeEntity{name: name}, nil
 		},
 	)
 	require.NoError(t, err, "namedEntityUpdate() error")
-	if got.name != "updated" {
-		t.Errorf("result.name = %q, want %q", got.name, "updated")
-	}
+	require.Equal(t, "updated", got.name)
 }
 
 func TestNamedEntityUpdate_UniqueViolationReturnsErrExists(t *testing.T) {
@@ -102,9 +88,7 @@ func TestNamedEntityUpdate_UniqueViolationReturnsErrExists(t *testing.T) {
 			return nil, fmt.Errorf("UNIQUE constraint failed: fakes.name")
 		},
 	)
-	if !errors.Is(err, errFakeExists) {
-		t.Errorf("namedEntityUpdate() = %v, want errFakeExists", err)
-	}
+	require.ErrorIs(t, err, errFakeExists)
 }
 
 func TestNamedEntityUpdate_PropagatesNonConstraintError(t *testing.T) {
@@ -114,7 +98,5 @@ func TestNamedEntityUpdate_PropagatesNonConstraintError(t *testing.T) {
 			return nil, sentinel
 		},
 	)
-	if !errors.Is(err, sentinel) {
-		t.Errorf("err = %v, want %v", err, sentinel)
-	}
+	require.ErrorIs(t, err, sentinel)
 }

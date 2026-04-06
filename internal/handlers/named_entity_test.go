@@ -91,15 +91,11 @@ func TestCreateNamedEntity_Success(t *testing.T) {
 
 	createNamedEntity(ops, w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var dto testEntityDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
-	if dto.Name != "My Widget" {
-		t.Errorf("name = %q, want %q", dto.Name, "My Widget")
-	}
+	require.Equal(t, "My Widget", dto.Name)
 }
 
 func TestCreateNamedEntity_InvalidJSON(t *testing.T) {
@@ -111,9 +107,7 @@ func TestCreateNamedEntity_InvalidJSON(t *testing.T) {
 
 	createNamedEntity(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateNamedEntity_EmptyName(t *testing.T) {
@@ -126,9 +120,7 @@ func TestCreateNamedEntity_EmptyName(t *testing.T) {
 
 	createNamedEntity(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateNamedEntity_WhitespaceOnlyName(t *testing.T) {
@@ -141,9 +133,7 @@ func TestCreateNamedEntity_WhitespaceOnlyName(t *testing.T) {
 
 	createNamedEntity(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateNamedEntity_ErrInvalidName(t *testing.T) {
@@ -159,9 +149,7 @@ func TestCreateNamedEntity_ErrInvalidName(t *testing.T) {
 
 	createNamedEntity(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateNamedEntity_ErrNameExists(t *testing.T) {
@@ -177,9 +165,7 @@ func TestCreateNamedEntity_ErrNameExists(t *testing.T) {
 
 	createNamedEntity(ops, w, r)
 
-	if w.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusConflict, w.Body.String())
-	}
+	require.Equal(t, http.StatusConflict, w.Code)
 }
 
 func TestCreateNamedEntity_GenericCreateError(t *testing.T) {
@@ -195,9 +181,7 @@ func TestCreateNamedEntity_GenericCreateError(t *testing.T) {
 
 	createNamedEntity(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestCreateNamedEntity_NilEntityWithoutError(t *testing.T) {
@@ -213,9 +197,7 @@ func TestCreateNamedEntity_NilEntityWithoutError(t *testing.T) {
 
 	createNamedEntity(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 // ---- getNamedEntity ----
@@ -232,18 +214,12 @@ func TestGetNamedEntity_Success(t *testing.T) {
 
 	getNamedEntity(ops, w, r, "entity-1")
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dto testEntityDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
-	if dto.Name != "Existing Widget" {
-		t.Errorf("name = %q, want %q", dto.Name, "Existing Widget")
-	}
-	if dto.ID != "entity-1" {
-		t.Errorf("id = %q, want %q", dto.ID, "entity-1")
-	}
+	require.Equal(t, "Existing Widget", dto.Name)
+	require.Equal(t, "entity-1", dto.ID)
 }
 
 func TestGetNamedEntity_NotFound(t *testing.T) {
@@ -256,9 +232,7 @@ func TestGetNamedEntity_NotFound(t *testing.T) {
 
 	getNamedEntity(ops, w, r, "missing")
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestGetNamedEntity_WrappedNotFound(t *testing.T) {
@@ -273,9 +247,7 @@ func TestGetNamedEntity_WrappedNotFound(t *testing.T) {
 
 	getNamedEntity(ops, w, r, "missing")
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestGetNamedEntity_DBError(t *testing.T) {
@@ -290,9 +262,7 @@ func TestGetNamedEntity_DBError(t *testing.T) {
 
 	getNamedEntity(ops, w, r, "any")
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestGetNamedEntity_NilEntityWithoutError(t *testing.T) {
@@ -307,9 +277,7 @@ func TestGetNamedEntity_NilEntityWithoutError(t *testing.T) {
 
 	getNamedEntity(ops, w, r, "any")
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 // ---- updateNamedEntity ----
@@ -324,15 +292,11 @@ func TestUpdateNamedEntity_Success(t *testing.T) {
 
 	updateNamedEntity(ops, w, r, "entity-1")
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dto testEntityDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
-	if dto.Name != "Updated Widget" {
-		t.Errorf("name = %q, want %q", dto.Name, "Updated Widget")
-	}
+	require.Equal(t, "Updated Widget", dto.Name)
 }
 
 func TestUpdateNamedEntity_InvalidJSON(t *testing.T) {
@@ -344,9 +308,7 @@ func TestUpdateNamedEntity_InvalidJSON(t *testing.T) {
 
 	updateNamedEntity(ops, w, r, "entity-1")
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpdateNamedEntity_EmptyName(t *testing.T) {
@@ -359,9 +321,7 @@ func TestUpdateNamedEntity_EmptyName(t *testing.T) {
 
 	updateNamedEntity(ops, w, r, "entity-1")
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpdateNamedEntity_NotFound(t *testing.T) {
@@ -377,9 +337,7 @@ func TestUpdateNamedEntity_NotFound(t *testing.T) {
 
 	updateNamedEntity(ops, w, r, "missing")
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestUpdateNamedEntity_WrappedNotFound(t *testing.T) {
@@ -395,9 +353,7 @@ func TestUpdateNamedEntity_WrappedNotFound(t *testing.T) {
 
 	updateNamedEntity(ops, w, r, "missing")
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestUpdateNamedEntity_ErrInvalidName(t *testing.T) {
@@ -413,9 +369,7 @@ func TestUpdateNamedEntity_ErrInvalidName(t *testing.T) {
 
 	updateNamedEntity(ops, w, r, "entity-1")
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpdateNamedEntity_ErrNameExists(t *testing.T) {
@@ -431,9 +385,7 @@ func TestUpdateNamedEntity_ErrNameExists(t *testing.T) {
 
 	updateNamedEntity(ops, w, r, "entity-1")
 
-	if w.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusConflict, w.Body.String())
-	}
+	require.Equal(t, http.StatusConflict, w.Code)
 }
 
 func TestUpdateNamedEntity_GenericUpdateError(t *testing.T) {
@@ -449,9 +401,7 @@ func TestUpdateNamedEntity_GenericUpdateError(t *testing.T) {
 
 	updateNamedEntity(ops, w, r, "entity-1")
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestUpdateNamedEntity_NilEntityWithoutError(t *testing.T) {
@@ -467,7 +417,5 @@ func TestUpdateNamedEntity_NilEntityWithoutError(t *testing.T) {
 
 	updateNamedEntity(ops, w, r, "entity-1")
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }

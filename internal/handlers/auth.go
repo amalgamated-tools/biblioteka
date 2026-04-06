@@ -45,9 +45,24 @@ type authResponse struct {
 
 type userDTO struct {
 	ID         string `json:"id"`
+	Name       string `json:"name"`
 	Email      string `json:"email"`
 	OIDCLinked bool   `json:"oidc_linked"`
 	IsAdmin    bool   `json:"is_admin"`
+}
+
+func toUserDTO(u *db.User) userDTO {
+	return userDTO{
+		ID:         u.ID,
+		Name:       u.Name,
+		Email:      u.Email,
+		OIDCLinked: u.OIDCSubject != nil,
+		IsAdmin:    u.IsAdmin,
+	}
+}
+
+type updateProfileRequest struct {
+	Name string `json:"name"`
 }
 
 func redactEmail(email string) string {
@@ -117,8 +132,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := validatePassword(req.Password); msg != "" {
-		writeError(r.Context(), w, http.StatusBadRequest, msg)
+	if !validatePassword(r.Context(), w, req.Password) {
 		return
 	}
 
@@ -166,7 +180,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(r.Context(), w, http.StatusCreated, authResponse{
 		Token: token,
-		User:  userDTO{ID: user.ID, Email: user.Email, IsAdmin: user.IsAdmin},
+		User:  toUserDTO(user),
 	})
 }
 
@@ -239,14 +253,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	setAuthCookie(w, token, h.SecureCookies)
 	writeJSON(r.Context(), w, http.StatusOK, authResponse{
 		Token: token,
-		User:  userDTO{ID: user.ID, Email: user.Email, IsAdmin: user.IsAdmin},
+		User:  toUserDTO(user),
 	})
 }
 
 // Me godoc
 //
-//	@Summary		Get current user
-//	@Description	Returns the authenticated user's profile
+//	@Summary		Get or update current user
+//	@Description	GET returns the authenticated user's profile; PUT updates the display name
 //	@Tags			Auth
 //	@Produce		json
 //	@Security		BearerAuth
@@ -256,11 +270,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{object}	errorResponse
 //	@Router			/auth/me [get]
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		h.getMe(w, r)
+	case http.MethodPut:
+		h.updateProfile(w, r)
+	default:
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
-		return
 	}
+}
 
+func (h *AuthHandler) getMe(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	slog.DebugContext(r.Context(), "fetching current user", slog.String(otelkeys.UserID, userID))
 
@@ -278,7 +298,56 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(r.Context(), w, http.StatusOK, userDTO{ID: user.ID, Email: user.Email, OIDCLinked: user.OIDCSubject != nil, IsAdmin: user.IsAdmin})
+	writeJSON(r.Context(), w, http.StatusOK, toUserDTO(user))
+}
+
+// UpdateProfile godoc
+//
+//	@Summary		Update current user's profile
+//	@Description	Updates the authenticated user's display name
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			body	body		updateProfileRequest	true	"Update profile request"
+//	@Success		200		{object}	userDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/auth/me [put]
+func (h *AuthHandler) updateProfile(w http.ResponseWriter, r *http.Request) {
+	var req updateProfileRequest
+	if !decodeJSON(r, w, &req) {
+		return
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" {
+		writeError(r.Context(), w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	userID := auth.UserIDFromContext(r.Context())
+	slog.DebugContext(r.Context(), "updating user profile", slog.String(otelkeys.UserID, userID))
+
+	user, err := h.DB.UpdateName(r.Context(), userID, req.Name)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(r.Context(), w, http.StatusNotFound, "user not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to update user profile",
+			slog.Any(otelkeys.UserID, userID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update profile")
+		return
+	}
+
+	logAudit(r.Context(), h.DB, userID, db.AuditActionUserProfileUpdated, "user", userID, map[string]any{"name": user.Name})
+
+	writeJSON(r.Context(), w, http.StatusOK, toUserDTO(user))
 }
 
 // ChangePassword godoc
@@ -311,8 +380,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := validatePassword(req.NewPassword); msg != "" {
-		writeError(r.Context(), w, http.StatusBadRequest, msg)
+	if !validatePassword(r.Context(), w, req.NewPassword) {
 		return
 	}
 

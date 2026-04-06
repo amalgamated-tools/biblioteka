@@ -45,9 +45,7 @@ func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
 	require.NotNil(t, books[0].CoverImageURL, "expected EPUB3 book to have a cover image URL after import")
-	if !strings.HasPrefix(*books[0].CoverImageURL, "data:image/png;base64,") {
-		t.Errorf("expected cover image to be a PNG data URL, got %q", *books[0].CoverImageURL)
-	}
+	require.True(t, strings.HasPrefix(*books[0].CoverImageURL, "data:image/png;base64,"))
 }
 
 func TestProcessBookFile_NilDatabase(t *testing.T) {
@@ -155,9 +153,7 @@ func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
 	// Extension should be stripped since it matches fileType
-	if books[0].Title != "My Cool Book" {
-		t.Errorf("expected title %q, got %q", "My Cool Book", books[0].Title)
-	}
+	require.Equal(t, "My Cool Book", books[0].Title)
 }
 
 func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
@@ -183,9 +179,7 @@ func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
 	// No extension to strip, so title is the full filename
-	if books[0].Title != "noext" {
-		t.Errorf("expected title %q, got %q", "noext", books[0].Title)
-	}
+	require.Equal(t, "noext", books[0].Title)
 }
 
 func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
@@ -221,9 +215,7 @@ func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 	bookAuthors, err := database.GetBookAuthors(t.Context(), books[0].ID)
 	require.NoError(t, err, "get book authors")
 	require.Len(t, bookAuthors, 1, "expected 1 book author")
-	if bookAuthors[0].Name != "F. Scott Fitzgerald" {
-		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", bookAuthors[0].Name)
-	}
+	require.Equal(t, "F. Scott Fitzgerald", bookAuthors[0].Name)
 }
 
 func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
@@ -252,9 +244,7 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
 	require.NotNil(t, books[0].CoverImageURL, "expected embedded cover data URL")
-	if !strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,") {
-		t.Errorf("expected cover image to be a JPEG data URL, got %q", *books[0].CoverImageURL)
-	}
+	require.True(t, strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,"))
 }
 
 func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
@@ -279,17 +269,13 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 	// No author should be created
 	authors, err := database.ListAuthors(t.Context())
 	require.NoError(t, err, "list authors")
-	if len(authors) != 0 {
-		t.Errorf("expected 0 authors, got %d", len(authors))
-	}
+	require.Len(t, authors, 0)
 
 	// Book should still be created
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
-	if books[0].Title != "Anonymous Work" {
-		t.Errorf("expected title %q, got %q", "Anonymous Work", books[0].Title)
-	}
+	require.Equal(t, "Anonymous Work", books[0].Title)
 }
 
 func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
@@ -316,9 +302,7 @@ func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
-	if books[0].Title != "broken" {
-		t.Errorf("expected title %q, got %q", "broken", books[0].Title)
-	}
+	require.Equal(t, "broken", books[0].Title)
 }
 
 func TestProcessBookFile_ISBN10(t *testing.T) {
@@ -342,12 +326,9 @@ func TestProcessBookFile_ISBN10(t *testing.T) {
 	books, err := database.ListBooks(t.Context())
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
-	if books[0].ISBN10 == nil || *books[0].ISBN10 != "0306406152" {
-		t.Errorf("expected ISBN10 %q, got %v", "0306406152", books[0].ISBN10)
-	}
-	if books[0].ISBN13 != nil {
-		t.Errorf("expected ISBN13 nil, got %v", books[0].ISBN13)
-	}
+	require.NotNil(t, books[0].ISBN10)
+	require.Equal(t, "0306406152", *books[0].ISBN10)
+	require.Nil(t, books[0].ISBN13)
 }
 
 func TestProcessBookFile_EnqueuesGoodreadsWithUserID(t *testing.T) {

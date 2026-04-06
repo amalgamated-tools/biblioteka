@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseLimitOffset(t *testing.T) {
@@ -173,12 +175,8 @@ func TestParseLimitOffset(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			gotLimit, gotOffset := parseLimitOffset(r, tt.defaultLimit, tt.maxLimit)
-			if gotLimit != tt.wantLimit {
-				t.Errorf("limit = %d, want %d", gotLimit, tt.wantLimit)
-			}
-			if gotOffset != tt.wantOffset {
-				t.Errorf("offset = %d, want %d", gotOffset, tt.wantOffset)
-			}
+			require.Equal(t, tt.wantLimit, gotLimit)
+			require.Equal(t, tt.wantOffset, gotOffset)
 		})
 	}
 }

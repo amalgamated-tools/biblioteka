@@ -24,7 +24,7 @@ frontend/
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
       Books.svelte        Book listing and detail view; reads `initialOffset` from the URL hash query string (`#books?offset=48`) and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
-      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a three-card stats grid (Total Books [placeholder — hardcoded 0], Libraries, Currently Reading [placeholder — hardcoded 0]) plus a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
+      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries) plus a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); Total Books is fetched from the API via `listBooks(1, 0)` on mount and shows "…" while the request is in flight (falls back to `0` on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
@@ -95,6 +95,7 @@ export class CrudStore<T extends { id: string }, TInput> {
   items: T[] = $state.raw([]);
   loading = $state(false);
   loaded  = $state(false);
+  error: string | null = $state(null);
 
   private readonly ops: CrudOps<T, TInput>;
 
@@ -105,6 +106,31 @@ export class CrudStore<T extends { id: string }, TInput> {
   async edit(id: string, input: TInput):    Promise<T>    { … }
   async remove(id: string):                 Promise<void> { … }
 }
+```
+
+The `error` field is set when `load()` fails and cleared before each operation. If the rejection value is an `Error` instance, its `message` is used; otherwise the fallback string `"Failed to load"` is stored. Because `loaded` remains `false` after a failed `load()`, the idempotency guard allows a retry — callers can re-invoke `load()` after displaying the error and the store will attempt the fetch again.
+
+**Displaying load errors from a `CrudStore`-based store:**
+
+```svelte
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { authorStore } from "../stores/authors.svelte";
+
+  onMount(() => { authorStore.load(); });
+</script>
+
+{#if authorStore.error}
+  <p role="alert" class="text-danger-600">{authorStore.error}</p>
+{/if}
+
+{#if authorStore.loading}
+  <p>Loading…</p>
+{:else}
+  {#each authorStore.authors as author}
+    <p>{author.name}</p>
+  {/each}
+{/if}
 ```
 
 A concrete store extends `CrudStore` and passes the relevant API functions to the constructor:

@@ -53,17 +53,11 @@ func TestSignup_Success(t *testing.T) {
 
 	h.Signup(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var resp authResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Token == "" {
-		t.Error("expected non-empty token")
-	}
-	if resp.User.Email != "alice@example.com" {
-		t.Errorf("email = %q, want %q", resp.User.Email, "alice@example.com")
-	}
+	require.NotEqual(t, "", resp.Token)
+	require.Equal(t, "alice@example.com", resp.User.Email)
 }
 
 func TestSignup_MissingFields(t *testing.T) {
@@ -83,9 +77,7 @@ func TestSignup_MissingFields(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(tt.body))
 			w := httptest.NewRecorder()
 			h.Signup(w, r)
-			if w.Code != http.StatusBadRequest {
-				t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-			}
+			require.Equal(t, http.StatusBadRequest, w.Code)
 		})
 	}
 }
@@ -100,9 +92,7 @@ func TestSignup_ShortPassword(t *testing.T) {
 
 	h.Signup(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestSignup_DuplicateEmail(t *testing.T) {
@@ -120,9 +110,7 @@ func TestSignup_DuplicateEmail(t *testing.T) {
 	r2 := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
 	w2 := httptest.NewRecorder()
 	h.Signup(w2, r2)
-	if w2.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusConflict)
-	}
+	require.Equal(t, http.StatusConflict, w2.Code)
 }
 
 func TestSignup_InvalidBody(t *testing.T) {
@@ -133,9 +121,7 @@ func TestSignup_InvalidBody(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestSignup_MethodNotAllowed(t *testing.T) {
@@ -146,9 +132,7 @@ func TestSignup_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestLogin_Success(t *testing.T) {
@@ -166,14 +150,10 @@ func TestLogin_Success(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.Login(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 	var resp authResponse
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal")
-	if resp.Token == "" {
-		t.Error("expected non-empty token")
-	}
+	require.NotEqual(t, "", resp.Token)
 }
 
 func TestLogin_WrongPassword(t *testing.T) {
@@ -190,9 +170,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.Login(w2, r2)
 
-	if w2.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusUnauthorized)
-	}
+	require.Equal(t, http.StatusUnauthorized, w2.Code)
 }
 
 func TestLogin_UserNotFound(t *testing.T) {
@@ -204,9 +182,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Login(w, r)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
 func TestLogin_MissingFields(t *testing.T) {
@@ -218,9 +194,7 @@ func TestLogin_MissingFields(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Login(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestLogin_MethodNotAllowed(t *testing.T) {
@@ -231,9 +205,7 @@ func TestLogin_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Login(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestMe_Success(t *testing.T) {
@@ -253,14 +225,11 @@ func TestMe_Success(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.Me(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 	var resp userDTO
 	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "unmarshal")
-	if resp.Email != "dave@example.com" {
-		t.Errorf("email = %q, want %q", resp.Email, "dave@example.com")
-	}
+	require.Equal(t, "dave@example.com", resp.Email)
+	require.Equal(t, "Dave", resp.Name)
 }
 
 func TestMe_UserNotFound(t *testing.T) {
@@ -272,9 +241,7 @@ func TestMe_UserNotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Me(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestMe_MethodNotAllowed(t *testing.T) {
@@ -285,9 +252,7 @@ func TestMe_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Me(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestChangePassword_Success(t *testing.T) {
@@ -309,18 +274,14 @@ func TestChangePassword_Success(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.ChangePassword(w2, r2)
 
-	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	// Verify new password works at login
 	loginBody := `{"email":"eve@example.com","password":"newpassword1"}`
 	r3 := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
 	w3 := httptest.NewRecorder()
 	h.Login(w3, r3)
-	if w3.Code != http.StatusOK {
-		t.Errorf("login with new password: status = %d, want %d", w3.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w3.Code)
 }
 
 func TestChangePassword_WrongCurrentPassword(t *testing.T) {
@@ -340,9 +301,7 @@ func TestChangePassword_WrongCurrentPassword(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.ChangePassword(w2, r2)
 
-	if w2.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusUnauthorized)
-	}
+	require.Equal(t, http.StatusUnauthorized, w2.Code)
 }
 
 func TestChangePassword_ShortNewPassword(t *testing.T) {
@@ -362,9 +321,7 @@ func TestChangePassword_ShortNewPassword(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.ChangePassword(w2, r2)
 
-	if w2.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w2.Code)
 }
 
 func TestChangePassword_MissingFields(t *testing.T) {
@@ -384,9 +341,7 @@ func TestChangePassword_MissingFields(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.ChangePassword(w2, r2)
 
-	if w2.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w2.Code)
 }
 
 func TestChangePassword_MethodNotAllowed(t *testing.T) {
@@ -397,9 +352,7 @@ func TestChangePassword_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.ChangePassword(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 // --- Set-Cookie header assertions ---
@@ -417,18 +370,10 @@ func assertAuthCookie(t *testing.T, w *httptest.ResponseRecorder, wantValue bool
 		}
 	}
 	require.NotNil(t, found)
-	if wantValue && found.Value == "" {
-		t.Error("expected non-empty cookie value")
-	}
-	if found.HttpOnly != true {
-		t.Error("expected HttpOnly to be true")
-	}
-	if found.SameSite != http.SameSiteStrictMode {
-		t.Errorf("SameSite = %v, want StrictMode", found.SameSite)
-	}
-	if found.Path != "/" {
-		t.Errorf("Path = %q, want %q", found.Path, "/")
-	}
+	require.NotEmpty(t, found.Value)
+	require.Equal(t, true, found.HttpOnly)
+	require.Equal(t, http.SameSiteStrictMode, found.SameSite)
+	require.Equal(t, "/", found.Path)
 }
 
 func TestSignup_SetsCookie(t *testing.T) {
@@ -486,12 +431,8 @@ func TestLogout_ClearsCookie(t *testing.T) {
 		}
 	}
 	require.NotNil(t, found)
-	if found.MaxAge != -1 {
-		t.Errorf("MaxAge = %d, want -1 (cookie deletion)", found.MaxAge)
-	}
-	if found.Value != "" {
-		t.Errorf("cookie value = %q, want empty", found.Value)
-	}
+	require.Equal(t, -1, found.MaxAge)
+	require.Equal(t, "", found.Value)
 }
 
 func TestLogout_MethodNotAllowed(t *testing.T) {
@@ -502,9 +443,7 @@ func TestLogout_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Logout(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestMe_EmptyUserID(t *testing.T) {
@@ -518,7 +457,96 @@ func TestMe_EmptyUserID(t *testing.T) {
 	h.Me(w, r)
 
 	// GetUserByID("") returns sql.ErrNoRows which the handler maps to 404.
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	require.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestUpdateProfile_Success(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	// Sign up to create a user.
+	signupBody := `{"name":"Original Name","email":"profile@example.com","password":"secret123"}`
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
+	w := httptest.NewRecorder()
+	h.Signup(w, r)
+	var signupResp authResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &signupResp))
+	require.Equal(t, "Original Name", signupResp.User.Name)
+
+	// Update the display name.
+	updateBody := `{"name":"Updated Name"}`
+	r2 := httptest.NewRequest(http.MethodPut, "/api/auth/me", bytes.NewBufferString(updateBody))
+	r2 = withUserID(r2, signupResp.User.ID)
+	w2 := httptest.NewRecorder()
+	h.Me(w2, r2)
+
+	require.Equal(t, http.StatusOK, w2.Code, "body: %s", w2.Body.String())
+	var resp userDTO
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp))
+	require.Equal(t, "Updated Name", resp.Name)
+	require.Equal(t, "profile@example.com", resp.Email)
+
+	// Verify the name persisted via GET /api/auth/me.
+	r3 := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
+	r3 = withUserID(r3, signupResp.User.ID)
+	w3 := httptest.NewRecorder()
+	h.Me(w3, r3)
+
+	require.Equal(t, http.StatusOK, w3.Code)
+	var getResp userDTO
+	require.NoError(t, json.Unmarshal(w3.Body.Bytes(), &getResp))
+	require.Equal(t, "Updated Name", getResp.Name)
+}
+
+func TestUpdateProfile_EmptyName(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	signupBody := `{"name":"Alice","email":"alice2@example.com","password":"secret123"}`
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
+	w := httptest.NewRecorder()
+	h.Signup(w, r)
+	var signupResp authResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &signupResp))
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{"empty string", `{"name":""}`},
+		{"whitespace only", `{"name":"   "}`},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r2 := httptest.NewRequest(http.MethodPut, "/api/auth/me", bytes.NewBufferString(tt.body))
+			r2 = withUserID(r2, signupResp.User.ID)
+			w2 := httptest.NewRecorder()
+			h.Me(w2, r2)
+			require.Equal(t, http.StatusBadRequest, w2.Code)
+		})
+	}
+}
+
+func TestUpdateProfile_MethodNotAllowed(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/auth/me", nil)
+	w := httptest.NewRecorder()
+	h.Me(w, r)
+
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestUpdateProfile_UserNotFound(t *testing.T) {
+	d := newTestDB(t)
+	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+
+	body := `{"name":"New Name"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/auth/me", bytes.NewBufferString(body))
+	r = withUserID(r, "nonexistent-id")
+	w := httptest.NewRecorder()
+	h.Me(w, r)
+
+	require.Equal(t, http.StatusNotFound, w.Code)
 }

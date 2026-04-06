@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -28,45 +29,47 @@ func Test_ValidateName(t *testing.T) {
 			got := validateName(t.Context(), w, tt.input)
 			require.Equal(t, tt.wantValid, got, "validateName(%q)", tt.input)
 			if tt.wantValid {
-				if w.Code != http.StatusOK {
-					t.Errorf("expected no response written, but got status %d", w.Code)
-				}
-				if w.Body.Len() != 0 {
-					t.Errorf("expected empty body, but got %q", w.Body.String())
-				}
+				require.Equal(t, http.StatusOK, w.Code)
+				require.Equal(t, 0, w.Body.Len())
 				return
 			}
-			if w.Code != tt.wantCode {
-				t.Errorf("status = %d, want %d", w.Code, tt.wantCode)
-			}
+			require.Equal(t, tt.wantCode, w.Code)
 			var result map[string]string
 			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
-			if result["error"] != "name is required" {
-				t.Errorf("error = %q, want %q", result["error"], "name is required")
-			}
+			require.Equal(t, "name is required", result["error"])
 		})
 	}
 }
 
 func Test_ValidatePassword(t *testing.T) {
+	wantMsg := fmt.Sprintf("password must be at least %d characters", minPasswordLength)
 	tests := []struct {
-		name     string
-		password string
-		wantMsg  string
+		name      string
+		password  string
+		wantValid bool
+		wantMsg   string
 	}{
-		{"valid password", "secret123", ""},
-		{"exact minimum length", "123456", ""},
-		{"too short", "abc", "password must be at least 6 characters"},
-		{"empty", "", "password must be at least 6 characters"},
-		{"one char", "x", "password must be at least 6 characters"},
+		{"valid password", "secret123", true, ""},
+		{"exact minimum length", "123456", true, ""},
+		{"too short", "abc", false, wantMsg},
+		{"empty", "", false, wantMsg},
+		{"one char", "x", false, wantMsg},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := validatePassword(tt.password)
-			if got != tt.wantMsg {
-				t.Errorf("validatePassword(%q) = %q, want %q", tt.password, got, tt.wantMsg)
+			w := httptest.NewRecorder()
+			got := validatePassword(t.Context(), w, tt.password)
+			require.Equal(t, tt.wantValid, got, "validatePassword(%q)", tt.password)
+			if tt.wantValid {
+				require.Equal(t, http.StatusOK, w.Code)
+				require.Equal(t, 0, w.Body.Len())
+				return
 			}
+			require.Equal(t, http.StatusBadRequest, w.Code)
+			var result map[string]string
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "failed to unmarshal")
+			require.Equal(t, tt.wantMsg, result["error"])
 		})
 	}
 }
@@ -92,10 +95,9 @@ func Test_ExtractPathSegments(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotID, gotSub, gotOK := extractPathSegments(tt.path, tt.prefix)
-			if gotID != tt.wantID || gotSub != tt.wantSub || gotOK != tt.wantOK {
-				t.Errorf("extractPathSegments(%q, %q) = (%q, %q, %v), want (%q, %q, %v)",
-					tt.path, tt.prefix, gotID, gotSub, gotOK, tt.wantID, tt.wantSub, tt.wantOK)
-			}
+			require.Equal(t, tt.wantID, gotID)
+			require.Equal(t, tt.wantSub, gotSub)
+			require.Equal(t, tt.wantOK, gotOK)
 		})
 	}
 }
@@ -119,10 +121,8 @@ func Test_ExtractPathID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotID, gotOK := extractPathID(tt.path, tt.prefix)
-			if gotID != tt.wantID || gotOK != tt.wantOK {
-				t.Errorf("extractPathID(%q, %q) = (%q, %v), want (%q, %v)",
-					tt.path, tt.prefix, gotID, gotOK, tt.wantID, tt.wantOK)
-			}
+			require.Equal(t, tt.wantID, gotID)
+			require.Equal(t, tt.wantOK, gotOK)
 		})
 	}
 }

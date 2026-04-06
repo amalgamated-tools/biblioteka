@@ -122,6 +122,7 @@ Create a new user account. The first user to sign up automatically becomes an ad
   "token": "<jwt>",
   "user": {
     "id": "<id>",
+    "name": "Alice",
     "email": "alice@example.com",
     "oidc_linked": false,
     "is_admin": true
@@ -164,6 +165,7 @@ Return the currently authenticated user's profile.
 ```json
 {
   "id": "<id>",
+  "name": "Alice",
   "email": "alice@example.com",
   "oidc_linked": false,
   "is_admin": true
@@ -173,9 +175,33 @@ Return the currently authenticated user's profile.
 | Field         | Type    | Description |
 |---------------|---------|-------------|
 | `id`          | string  | Opaque user ID |
+| `name`        | string  | User's display name |
 | `email`       | string  | User's email address |
 | `oidc_linked` | boolean | `true` when the account has an OIDC/SSO identity linked; `false` for local-only accounts |
 | `is_admin`    | boolean | `true` when the user has admin privileges |
+
+---
+
+### `PUT /api/auth/me` 🔒
+
+Update the authenticated user's display name.
+
+**Request body:**
+
+| Field  | Type   | Required | Description |
+|--------|--------|----------|-------------|
+| `name` | string | ✓        | New display name (must be non-blank) |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Name updated; returns updated user object |
+| `400 Bad Request` | Missing or blank `name` |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Authenticated user no longer exists |
+
+**Response body (`200`):** Same shape as `GET /api/auth/me` above, with the updated `name`.
 
 ---
 
@@ -699,6 +725,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `kosync_credential.deleted` | `kosync_credential` | KOSync credentials removed via `DELETE /api/kosync/credentials` |
 | `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
+| `user.profile_updated` | `user`        | Display name changed via `PUT /api/auth/me` |
 | `smtp.config_updated`  | `config`      | SMTP settings saved via `PUT /api/config/smtp` |
 
 | Status | Description |

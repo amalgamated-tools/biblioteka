@@ -54,6 +54,7 @@ describe("auth store", () => {
       vi.mocked(api.hasToken).mockReturnValue(true);
       vi.mocked(api.getMe).mockResolvedValue({
         id: "1",
+        name: "Alice",
         email: "a@b.com",
         oidc_linked: false,
         is_admin: false,
@@ -63,6 +64,7 @@ describe("auth store", () => {
 
       expect(authStore.user).toEqual({
         id: "1",
+        name: "Alice",
         email: "a@b.com",
         oidc_linked: false,
         is_admin: false,
@@ -90,6 +92,7 @@ describe("auth store", () => {
         .mockRejectedValueOnce(new api.ApiError("unauthorized", 401))
         .mockResolvedValueOnce({
           id: "4",
+          name: "OIDC User",
           email: "oidc@b.com",
           oidc_linked: true,
           is_admin: false,
@@ -101,6 +104,7 @@ describe("auth store", () => {
       expect(api.getMe).toHaveBeenCalledTimes(2);
       expect(authStore.user).toEqual({
         id: "4",
+        name: "OIDC User",
         email: "oidc@b.com",
         oidc_linked: true,
         is_admin: false,
@@ -124,6 +128,7 @@ describe("auth store", () => {
       vi.mocked(api.hasToken).mockReturnValue(false);
       vi.mocked(api.getMe).mockResolvedValue({
         id: "3",
+        name: "Cookie User",
         email: "cookie@b.com",
         oidc_linked: true,
         is_admin: false,
@@ -134,6 +139,7 @@ describe("auth store", () => {
       expect(api.getMe).toHaveBeenCalledTimes(1);
       expect(authStore.user).toEqual({
         id: "3",
+        name: "Cookie User",
         email: "cookie@b.com",
         oidc_linked: true,
         is_admin: false,
@@ -155,6 +161,7 @@ describe("auth store", () => {
       vi.mocked(api.hasToken).mockReturnValue(false);
       vi.mocked(api.getMe).mockResolvedValue({
         id: "2",
+        name: "OIDC User",
         email: "oidc@b.com",
         oidc_linked: true,
         is_admin: false,
@@ -165,6 +172,7 @@ describe("auth store", () => {
       expect(api.getMe).toHaveBeenCalled();
       expect(authStore.user).toEqual({
         id: "2",
+        name: "OIDC User",
         email: "oidc@b.com",
         oidc_linked: true,
         is_admin: false,
@@ -218,6 +226,7 @@ describe("auth store", () => {
         token: "tok",
         user: {
           id: "1",
+          name: "Alice",
           email: "a@b.com",
           oidc_linked: false,
           is_admin: false,
@@ -229,6 +238,7 @@ describe("auth store", () => {
       expect(result.error).toBeNull();
       expect(authStore.user).toEqual({
         id: "1",
+        name: "Alice",
         email: "a@b.com",
         oidc_linked: false,
         is_admin: false,
@@ -250,7 +260,13 @@ describe("auth store", () => {
     it("returns no error on success and sets user", async () => {
       vi.mocked(api.signup).mockResolvedValue({
         token: "tok",
-        user: { id: "1", email: "a@b.com", oidc_linked: false, is_admin: true },
+        user: {
+          id: "1",
+          name: "Name",
+          email: "a@b.com",
+          oidc_linked: false,
+          is_admin: true,
+        },
       });
 
       const result = await authStore.signUp("Name", "a@b.com", "password");
@@ -258,6 +274,7 @@ describe("auth store", () => {
       expect(result.error).toBeNull();
       expect(authStore.user).toEqual({
         id: "1",
+        name: "Name",
         email: "a@b.com",
         oidc_linked: false,
         is_admin: true,
@@ -279,6 +296,7 @@ describe("auth store", () => {
       vi.mocked(api.logout).mockResolvedValue(undefined);
       authStore.user = {
         id: "1",
+        name: "Alice",
         email: "a@b.com",
         oidc_linked: false,
         is_admin: false,

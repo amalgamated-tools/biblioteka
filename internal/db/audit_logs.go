@@ -34,6 +34,7 @@ const (
 	AuditActionSeriesDeleted           = "series.deleted"
 	AuditActionSeriesUpdated           = "series.updated"
 	AuditActionSMTPConfigUpdated       = "smtp.config_updated"
+	AuditActionUserProfileUpdated      = "user.profile_updated"
 	AuditActionUserSignedUp            = "user.signed_up"
 )
 

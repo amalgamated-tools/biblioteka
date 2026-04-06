@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	netsmtp "net/smtp"
+	"strings"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -31,9 +32,7 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 
 	var resp configStatusResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.SMTPConfigured {
-		t.Error("expected SMTPConfigured=false when only host is set")
-	}
+	require.False(t, resp.SMTPConfigured)
 
 	// Set from → now configured
 	_ = h.DB.SetSetting(t.Context(), smtp.SettingKeyFrom, "noreply@example.com")
@@ -44,12 +43,25 @@ func TestHandleConfigStatus_SMTPConfigured(t *testing.T) {
 	h.HandleConfigStatus(w, r)
 
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if !resp.SMTPConfigured {
-		t.Error("expected SMTPConfigured=true when host and from are set")
-	}
+	require.True(t, resp.SMTPConfigured)
 }
 
-// --- HandleSMTPConfig (GET) ---
+func TestHandleConfigStatus_SMTPConfiguredWithDisplayName(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	// Set both host and a From address with a display name.
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyHost, "smtp.example.com"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyFrom, "\"My App\" <noreply@example.com>"))
+
+	r := httptest.NewRequest(http.MethodGet, "/api/config/status", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+	h.HandleConfigStatus(w, r)
+
+	var resp configStatusResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.True(t, resp.SMTPConfigured, "expected SMTPConfigured=true when From has a display name")
+}
 
 func TestHandleGetSMTPConfig_AdminNoSettings(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
@@ -60,20 +72,12 @@ func TestHandleGetSMTPConfig_AdminNoSettings(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp smtpConfigResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Host != "" {
-		t.Errorf("Host = %q, want empty", resp.Host)
-	}
-	if resp.PasswordSet {
-		t.Error("PasswordSet should be false when no password is stored")
-	}
-	if resp.EnvOverride {
-		t.Error("EnvOverride should be false when no env vars are set")
-	}
+	require.Equal(t, "", resp.Host)
+	require.False(t, resp.PasswordSet)
+	require.False(t, resp.EnvOverride)
 }
 
 func TestHandleGetSMTPConfig_AdminWithSettings(t *testing.T) {
@@ -92,29 +96,15 @@ func TestHandleGetSMTPConfig_AdminWithSettings(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp smtpConfigResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Host != "smtp.example.com" {
-		t.Errorf("Host = %q, want %q", resp.Host, "smtp.example.com")
-	}
-	if resp.Port != "465" {
-		t.Errorf("Port = %q, want %q", resp.Port, "465")
-	}
-	if resp.Username != "user@example.com" {
-		t.Errorf("Username = %q, want %q", resp.Username, "user@example.com")
-	}
-	if !resp.PasswordSet {
-		t.Error("PasswordSet should be true when password is stored")
-	}
-	if resp.From != "noreply@example.com" {
-		t.Errorf("From = %q, want %q", resp.From, "noreply@example.com")
-	}
-	if resp.TLS != "tls" {
-		t.Errorf("TLS = %q, want %q", resp.TLS, "tls")
-	}
+	require.Equal(t, "smtp.example.com", resp.Host)
+	require.Equal(t, "465", resp.Port)
+	require.Equal(t, "user@example.com", resp.Username)
+	require.True(t, resp.PasswordSet)
+	require.Equal(t, "noreply@example.com", resp.From)
+	require.Equal(t, "tls", resp.TLS)
 }
 
 func TestHandleGetSMTPConfig_NonAdminForbidden(t *testing.T) {
@@ -126,9 +116,7 @@ func TestHandleGetSMTPConfig_NonAdminForbidden(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestHandleGetSMTPConfig_EnvOverride(t *testing.T) {
@@ -143,20 +131,12 @@ func TestHandleGetSMTPConfig_EnvOverride(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp smtpConfigResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	if resp.Host != "env-smtp.example.com" {
-		t.Errorf("Host = %q, want %q", resp.Host, "env-smtp.example.com")
-	}
-	if resp.From != "env@example.com" {
-		t.Errorf("From = %q, want %q", resp.From, "env@example.com")
-	}
-	if !resp.EnvOverride {
-		t.Error("EnvOverride should be true when SMTP_HOST env var is set")
-	}
+	require.Equal(t, "env-smtp.example.com", resp.Host)
+	require.Equal(t, "env@example.com", resp.From)
+	require.True(t, resp.EnvOverride)
 }
 
 // --- HandleSMTPConfig (PUT) ---
@@ -171,9 +151,7 @@ func TestHandleSetSMTPConfig_NonAdminForbidden(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestHandleSetSMTPConfig_MissingHost(t *testing.T) {
@@ -186,9 +164,7 @@ func TestHandleSetSMTPConfig_MissingHost(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetSMTPConfig_MissingFrom(t *testing.T) {
@@ -201,9 +177,7 @@ func TestHandleSetSMTPConfig_MissingFrom(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetSMTPConfig_InvalidPort(t *testing.T) {
@@ -216,9 +190,7 @@ func TestHandleSetSMTPConfig_InvalidPort(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetSMTPConfig_InvalidTLS(t *testing.T) {
@@ -231,9 +203,7 @@ func TestHandleSetSMTPConfig_InvalidTLS(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetSMTPConfig_InvalidJSON(t *testing.T) {
@@ -245,9 +215,7 @@ func TestHandleSetSMTPConfig_InvalidJSON(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetSMTPConfig_Success(t *testing.T) {
@@ -260,34 +228,24 @@ func TestHandleSetSMTPConfig_Success(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Verify settings were persisted
 	host, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyHost)
 	require.NoError(t, err, "GetSetting(smtp_host) error")
-	if host != "smtp.example.com" {
-		t.Errorf("saved smtp_host = %q, want %q", host, "smtp.example.com")
-	}
+	require.Equal(t, "smtp.example.com", host)
 
 	from, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyFrom)
 	require.NoError(t, err, "GetSetting(smtp_from) error")
-	if from != "noreply@example.com" {
-		t.Errorf("saved smtp_from = %q, want %q", from, "noreply@example.com")
-	}
+	require.Equal(t, "noreply@example.com", from)
 
 	port, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPort)
 	require.NoError(t, err, "GetSetting(smtp_port) error")
-	if port != "465" {
-		t.Errorf("saved smtp_port = %q, want %q", port, "465")
-	}
+	require.Equal(t, "465", port)
 
 	pw, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPassword)
 	require.NoError(t, err, "GetSetting(smtp_password) error")
-	if pw != "secret" {
-		t.Errorf("saved smtp_password = %q, want %q", pw, "secret")
-	}
+	require.Equal(t, "secret", pw)
 }
 
 func TestHandleSetSMTPConfig_DefaultsPortAndTLS(t *testing.T) {
@@ -300,21 +258,15 @@ func TestHandleSetSMTPConfig_DefaultsPortAndTLS(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	port, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPort)
 	require.NoError(t, err, "get setting")
-	if port != "587" {
-		t.Errorf("default port = %q, want %q", port, "587")
-	}
+	require.Equal(t, "587", port)
 
 	tlsMode, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyTLS)
 	require.NoError(t, err, "get setting")
-	if tlsMode != "starttls" {
-		t.Errorf("default tls = %q, want %q", tlsMode, "starttls")
-	}
+	require.Equal(t, "starttls", tlsMode)
 }
 
 func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
@@ -344,9 +296,8 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 		require.NoError(t, err, "create trigger")
 	}
 	t.Cleanup(func() {
-		if _, err := h.DB.ExecContext(context.Background(), `DROP TRIGGER IF EXISTS test_settings_fail_smtp_username_update`); err != nil {
-			require.NoError(t, err, "drop trigger")
-		}
+		_, err := h.DB.ExecContext(context.Background(), `DROP TRIGGER IF EXISTS test_settings_fail_smtp_username_update`)
+		require.NoError(t, err, "drop trigger")
 	})
 
 	body := `{"host":"smtp.example.com","port":"465","username":"user@example.com","password":"secret","from":"noreply@example.com","tls":"tls"}`
@@ -361,9 +312,7 @@ func TestHandleSetSMTPConfig_RollsBackOnSaveError(t *testing.T) {
 	for _, setting := range existing {
 		value, err := h.DB.GetSetting(ctx, setting.Key)
 		require.NoError(t, err, "GetSetting(%s)", setting.Key)
-		if value != setting.Value {
-			t.Errorf("setting %s = %q, want %q after rollback", setting.Key, value, setting.Value)
-		}
+		require.Equal(t, setting.Value, value)
 	}
 }
 
@@ -378,9 +327,7 @@ func TestHandleSMTPConfig_DispatchMethodNotAllowed(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 // --- HandleSMTPTest ---
@@ -394,9 +341,7 @@ func TestHandleSMTPTest_NonAdminForbidden(t *testing.T) {
 
 	h.HandleSMTPTest(w, r)
 
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestHandleSMTPTest_MethodNotAllowed(t *testing.T) {
@@ -408,9 +353,7 @@ func TestHandleSMTPTest_MethodNotAllowed(t *testing.T) {
 
 	h.HandleSMTPTest(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestHandleSMTPTest_NotConfigured(t *testing.T) {
@@ -422,9 +365,7 @@ func TestHandleSMTPTest_NotConfigured(t *testing.T) {
 
 	h.HandleSMTPTest(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 // --- Password handling ---
@@ -444,15 +385,11 @@ func TestHandleSetSMTPConfig_PreservesExistingPassword(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	pw, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPassword)
 	require.NoError(t, err, "GetSetting(smtp_password)")
-	if pw != "existing-pw" {
-		t.Errorf("smtp_password = %q, want %q", pw, "existing-pw")
-	}
+	require.Equal(t, "existing-pw", pw)
 }
 
 func TestHandleSetSMTPConfig_UnauthenticatedSMTP(t *testing.T) {
@@ -466,9 +403,7 @@ func TestHandleSetSMTPConfig_UnauthenticatedSMTP(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestHandleSetSMTPConfig_UnauthenticatedSMTP_ClearsExistingPassword(t *testing.T) {
@@ -486,15 +421,11 @@ func TestHandleSetSMTPConfig_UnauthenticatedSMTP_ClearsExistingPassword(t *testi
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	pw, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPassword)
 	require.NoError(t, err, "GetSetting(smtp_password)")
-	if pw != "" {
-		t.Errorf("smtp_password = %q, want empty after switching to unauthenticated SMTP", pw)
-	}
+	require.Equal(t, "", pw)
 }
 
 func TestHandleSetSMTPConfig_UsernameWithoutPasswordFails(t *testing.T) {
@@ -508,9 +439,7 @@ func TestHandleSetSMTPConfig_UsernameWithoutPasswordFails(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetSMTPConfig_InvalidFromAddress(t *testing.T) {
@@ -523,15 +452,13 @@ func TestHandleSetSMTPConfig_InvalidFromAddress(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleSetSMTPConfig_FromWithDisplayName(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
-	// "Display Name <addr>" should be rejected — only bare email addresses allowed
+	// "Display Name <addr>" format should be accepted
 	body := `{"host":"smtp.example.com","from":"App <noreply@example.com>","password":"secret"}`
 	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
 	r = withUserID(r, adminID)
@@ -539,9 +466,11 @@ func TestHandleSetSMTPConfig_FromWithDisplayName(t *testing.T) {
 
 	h.HandleSMTPConfig(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code, "body: %s", w.Body.String())
+
+	from, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyFrom)
+	require.NoError(t, err)
+	require.Equal(t, `"App" <noreply@example.com>`, from, "stored smtp_from should be canonical form")
 }
 
 // --- HandleSMTPTest success path ---
@@ -568,15 +497,37 @@ func TestHandleSMTPTest_Success(t *testing.T) {
 
 	h.HandleSMTPTest(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "noreply@example.com", calledFrom)
+	require.Equal(t, "admin@example.com", calledTo)
+}
+
+func TestHandleSMTPTest_FromWithDisplayName(t *testing.T) {
+	h, adminID, _ := setupConfigHandler(t)
+
+	_ = h.DB.SetSetting(t.Context(), smtp.SettingKeyHost, "smtp.example.com")
+	_ = h.DB.SetSetting(t.Context(), smtp.SettingKeyPort, "587")
+	_ = h.DB.SetSetting(t.Context(), smtp.SettingKeyFrom, `"My App" <noreply@example.com>`)
+	_ = h.DB.SetSetting(t.Context(), smtp.SettingKeyTLS, "starttls")
+
+	var calledFrom string
+	var calledMsg []byte
+	h.SendMailFunc = func(_ context.Context, addr string, a netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
+		calledFrom = from
+		calledMsg = msg
+		return nil
 	}
-	if calledFrom != "noreply@example.com" {
-		t.Errorf("sendMail from = %q, want %q", calledFrom, "noreply@example.com")
-	}
-	if calledTo != "admin@example.com" {
-		t.Errorf("sendMail to = %q, want %q", calledTo, "admin@example.com")
-	}
+
+	r := httptest.NewRequest(http.MethodPost, "/api/config/smtp/test", nil)
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPTest(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code, "body: %s", w.Body.String())
+	require.Equal(t, "noreply@example.com", calledFrom, "envelope From should be bare address")
+	require.True(t, strings.Contains(string(calledMsg), `From: "My App" <noreply@example.com>`),
+		"message should contain display-name From header, got: %s", string(calledMsg))
 }
 
 func TestHandleSMTPTest_SendMailFailure(t *testing.T) {
@@ -597,7 +548,5 @@ func TestHandleSMTPTest_SendMailFailure(t *testing.T) {
 
 	h.HandleSMTPTest(w, r)
 
-	if w.Code != http.StatusBadGateway {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadGateway, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadGateway, w.Code)
 }

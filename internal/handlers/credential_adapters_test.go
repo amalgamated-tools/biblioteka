@@ -25,27 +25,18 @@ func TestToCredentialEntity(t *testing.T) {
 
 	entity := toCredentialEntity(c)
 
-	if entity.ID != "cred-123" {
-		t.Errorf("ID = %q, want %q", entity.ID, "cred-123")
-	}
-	if entity.Username != "alice" {
-		t.Errorf("Username = %q, want %q", entity.Username, "alice")
-	}
-	if entity.CreatedAt != now {
-		t.Errorf("CreatedAt = %v, want %v", entity.CreatedAt, now)
-	}
-	if entity.UpdatedAt != now {
-		t.Errorf("UpdatedAt = %v, want %v", entity.UpdatedAt, now)
-	}
+	require.Equal(t, "cred-123", entity.ID)
+	require.Equal(t, "alice", entity.Username)
+	require.Equal(t, now, entity.CreatedAt)
+	require.Equal(t, now, entity.UpdatedAt)
 	// credentialEntity deliberately excludes PasswordHash — verify the type
 	// has no such field by confirming the struct only carries safe fields.
 	// Since credentialEntity lacks a PasswordHash field, the conversion
 	// cannot leak the hash. This compile-time guarantee is the point; this
 	// assertion documents that intent.
 	type hasPasswordHash interface{ GetPasswordHash() string }
-	if _, ok := any(entity).(hasPasswordHash); ok {
-		t.Error("credentialEntity must not expose PasswordHash")
-	}
+	_, ok := any(entity).(hasPasswordHash)
+	require.False(t, ok, "credentialEntity must not expose PasswordHash")
 }
 
 func TestCredentialGetAdapter_Success(t *testing.T) {
@@ -63,12 +54,8 @@ func TestCredentialGetAdapter_Success(t *testing.T) {
 	adapted := credGetAdapter(fakeFn)
 	entity, err := adapted(t.Context(), "user-1")
 	require.NoError(t, err)
-	if entity.ID != "cred-1" {
-		t.Errorf("ID = %q, want %q", entity.ID, "cred-1")
-	}
-	if entity.Username != "testuser" {
-		t.Errorf("Username = %q, want %q", entity.Username, "testuser")
-	}
+	require.Equal(t, "cred-1", entity.ID)
+	require.Equal(t, "testuser", entity.Username)
 }
 
 func TestCredentialGetAdapter_Error(t *testing.T) {
@@ -78,9 +65,7 @@ func TestCredentialGetAdapter_Error(t *testing.T) {
 
 	adapted := credGetAdapter(fakeFn)
 	_, err := adapted(t.Context(), "user-1")
-	if !errors.Is(err, sql.ErrNoRows) {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestCredentialUpsertAdapter_Success(t *testing.T) {
@@ -98,12 +83,8 @@ func TestCredentialUpsertAdapter_Success(t *testing.T) {
 	adapted := credUpsertAdapter(fakeFn)
 	entity, err := adapted(t.Context(), "user-1", "alice", "hash")
 	require.NoError(t, err)
-	if entity.ID != "cred-2" {
-		t.Errorf("ID = %q, want %q", entity.ID, "cred-2")
-	}
-	if entity.Username != "alice" {
-		t.Errorf("Username = %q, want %q", entity.Username, "alice")
-	}
+	require.Equal(t, "cred-2", entity.ID)
+	require.Equal(t, "alice", entity.Username)
 }
 
 func TestCredentialUpsertAdapter_Error(t *testing.T) {
@@ -113,9 +94,7 @@ func TestCredentialUpsertAdapter_Error(t *testing.T) {
 
 	adapted := credUpsertAdapter(fakeFn)
 	_, err := adapted(t.Context(), "user-1", "alice", "hash")
-	if !errors.Is(err, sql.ErrNoRows) {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestConvertCredResult_Success(t *testing.T) {
@@ -126,16 +105,13 @@ func TestConvertCredResult_Success(t *testing.T) {
 
 	got, err := convertCredResult(cred, nil)
 	require.NoError(t, err)
-	if got.ID != "id-1" || got.Username != "alice" {
-		t.Errorf("got %+v, want ID=id-1 Username=alice", got)
-	}
+	require.Equal(t, "id-1", got.ID)
+	require.Equal(t, "alice", got.Username)
 }
 
 func TestConvertCredResult_Error(t *testing.T) {
 	sentinel := errors.New("db failure")
 	got, err := convertCredResult[*db.ProtocolCredential](nil, sentinel)
 	require.ErrorIs(t, err, sentinel)
-	if got != (credentialEntity{}) {
-		t.Errorf("got %+v, want zero value", got)
-	}
+	require.Equal(t, (credentialEntity{}), got)
 }

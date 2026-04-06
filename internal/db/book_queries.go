@@ -39,10 +39,8 @@ func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book,
 		return nil, 0, err
 	}
 
-	if len(books) == 0 && offset > 0 {
-		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books`).Scan(&total); err != nil {
-			return nil, 0, err
-		}
+	if err := countFallback(ctx, d, &total, len(books), offset, `SELECT COUNT(*) FROM books`); err != nil {
+		return nil, 0, err
 	}
 
 	return books, total, nil
@@ -79,10 +77,8 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 		return nil, 0, err
 	}
 
-	if len(books) == 0 && offset > 0 {
-		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books`).Scan(&total); err != nil {
-			return nil, 0, err
-		}
+	if err := countFallback(ctx, d, &total, len(books), offset, `SELECT COUNT(*) FROM books`); err != nil {
+		return nil, 0, err
 	}
 
 	return books, total, nil
@@ -144,13 +140,11 @@ func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, li
 		return nil, 0, err
 	}
 
-	if len(books) == 0 && offset > 0 {
-		if err := d.QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1`,
-			authorID,
-		).Scan(&total); err != nil {
-			return nil, 0, err
-		}
+	if err := countFallback(ctx, d, &total, len(books), offset,
+		`SELECT COUNT(*) FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1`,
+		authorID,
+	); err != nil {
+		return nil, 0, err
 	}
 
 	return books, total, nil
@@ -218,13 +212,11 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 		return nil, 0, err
 	}
 
-	if len(books) == 0 && offset > 0 {
-		if err := d.QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1`,
-			seriesID,
-		).Scan(&total); err != nil {
-			return nil, 0, err
-		}
+	if err := countFallback(ctx, d, &total, len(books), offset,
+		`SELECT COUNT(*) FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1`,
+		seriesID,
+	); err != nil {
+		return nil, 0, err
 	}
 
 	return books, total, nil
@@ -272,10 +264,10 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 		return nil, 0, err
 	}
 
-	if len(books) == 0 && offset > 0 {
-		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM books `+whereClause, likePattern).Scan(&total); err != nil {
-			return nil, 0, err
-		}
+	if err := countFallback(ctx, d, &total, len(books), offset,
+		`SELECT COUNT(*) FROM books `+whereClause, likePattern,
+	); err != nil {
+		return nil, 0, err
 	}
 
 	return books, total, nil

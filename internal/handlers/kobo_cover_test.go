@@ -38,9 +38,7 @@ func TestHandleCoverImage_JPEGDataURL(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 	ct := w.Header().Get("Content-Type")
-	if !strings.HasPrefix(ct, "image/") {
-		t.Errorf("Content-Type = %q, want image/* type", ct)
-	}
+	require.True(t, strings.HasPrefix(ct, "image/"))
 }
 
 // TestHandleCoverImage_PNGDataURL verifies that a PNG data URL cover is
@@ -65,9 +63,7 @@ func TestHandleCoverImage_PNGDataURL(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 	ct := w.Header().Get("Content-Type")
-	if !strings.HasPrefix(ct, "image/png") {
-		t.Errorf("Content-Type = %q, want image/png", ct)
-	}
+	require.True(t, strings.HasPrefix(ct, "image/png"))
 }
 
 // TestHandleCoverImage_InvalidDataURL verifies that a malformed data URL
@@ -91,9 +87,7 @@ func TestHandleCoverImage_InvalidDataURL(t *testing.T) {
 	h.HandleCoverImage(w, r)
 
 	// Should return an error status for invalid base64.
-	if w.Code == http.StatusOK {
-		t.Errorf("status = 200, want non-200 for invalid data URL")
-	}
+	require.NotEqual(t, http.StatusOK, w.Code)
 }
 
 // TestHandleCoverImage_MissingPathSegments verifies that an incomplete path
@@ -107,7 +101,5 @@ func TestHandleCoverImage_MissingPathSegments(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleCoverImage(w, r)
 
-	if w.Code == http.StatusOK {
-		t.Errorf("status = 200, want non-200 for missing path segments")
-	}
+	require.NotEqual(t, http.StatusOK, w.Code)
 }
