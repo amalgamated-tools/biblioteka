@@ -50,19 +50,6 @@ curl http://localhost:8080/api/books \
 
 Browser clients receive the token in both the JSON body and as an HttpOnly `SameSite=Strict` cookie (`biblioteka_token`). The cookie is used automatically for browser-based access to protected server-side paths such as `/asynqmon/`.
 
-### Update profile
-
-Change your display name:
-
-```bash
-curl -X PUT http://localhost:8080/api/auth/me \
-  -H "Authorization: Bearer <jwt>" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Alice Wonderland"}'
-```
-
-Returns the updated user object.
-
 ### Change password
 
 ```bash
@@ -262,6 +249,21 @@ After the flow completes you can log in via either your password or your SSO pro
 If a user signs in via OIDC and no existing account has that `sub` claim, the server looks up by `email`. If an account with that email exists **and the identity provider has set `email_verified: true`**, the OIDC subject is automatically linked to it. Otherwise, a new account is created.
 
 > **Why `email_verified` is required for auto-linking:** Automatically tying an OIDC identity to an existing account based on email alone would allow a malicious (or misconfigured) provider to hijack an account by presenting an unverified email address. The `email_verified` check ensures the provider has confirmed ownership of the address. The manual link flow (initiated from within an authenticated session) is exempt from this requirement because the user's identity has already been established.
+
+---
+
+## Update Profile
+
+Change your display name. This endpoint is protected by the generic `requireAuth` middleware and works for all authenticated sessions (local password login, OIDC/SSO via the `biblioteka_token` cookie, or Bearer JWT):
+
+```bash
+curl -X PUT http://localhost:8080/api/auth/me \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice Wonderland"}'
+```
+
+Returns the updated user object.
 
 ---
 
