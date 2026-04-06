@@ -53,12 +53,18 @@ func isPrivateIP(ip net.IP) bool {
 	return false
 }
 
+// dnsLookupTimeout is the maximum time allowed for a DNS lookup during
+// issuer URL validation.
+const dnsLookupTimeout = 2 * time.Second
+
 // validateOIDCIssuerURL rejects issuer URLs that could be exploited for
 // Server-Side Request Forgery (SSRF):
 //   - only the https scheme is permitted
+//   - userinfo (user:password) in the URL is rejected to prevent credential leakage
 //   - literal private/loopback/link-local IP addresses in the host are blocked
-//   - if the host is a DNS name, it is resolved and any private/loopback/
-//     link-local address in the result is also blocked
+//   - IPv6 literals with zone identifiers are rejected
+//   - if the host is a DNS name, it is resolved (with a bounded timeout) and any
+//     private/loopback/link-local address in the result is also blocked
 func validateOIDCIssuerURL(ctx context.Context, rawURL string) error {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -67,9 +73,18 @@ func validateOIDCIssuerURL(ctx context.Context, rawURL string) error {
 	if u.Scheme != "https" {
 		return errors.New("issuer_url must use the https scheme")
 	}
+	if u.User != nil {
+		return errors.New("issuer_url must not contain userinfo (credentials)")
+	}
 	host := u.Hostname()
 	if host == "" {
 		return errors.New("issuer_url must include a host")
+	}
+
+	// Reject IPv6 literals with zone identifiers (e.g. "fe80::1%lo0") which
+	// can bypass net.ParseIP and fall through to DNS resolution.
+	if strings.Contains(host, "%") {
+		return errors.New("issuer_url must not contain an IPv6 zone identifier")
 	}
 
 	// Block literal private/loopback/link-local IP addresses directly in the URL.
@@ -81,9 +96,11 @@ func validateOIDCIssuerURL(ctx context.Context, rawURL string) error {
 	}
 
 	// Resolve the hostname and block any private/loopback/link-local result.
-	// A DNS lookup failure is not treated as an error here; oidc.NewProvider
-	// will surface any connectivity problem with its own request.
-	addrs, err := net.DefaultResolver.LookupHost(ctx, host)
+	// Use a short timeout so a slow/hanging DNS server cannot block the
+	// request indefinitely.
+	dnsCtx, cancel := context.WithTimeout(ctx, dnsLookupTimeout)
+	defer cancel()
+	addrs, err := net.DefaultResolver.LookupHost(dnsCtx, host)
 	if err == nil {
 		for _, addr := range addrs {
 			if ip := net.ParseIP(addr); ip != nil && isPrivateIP(ip) {
@@ -92,6 +109,33 @@ func validateOIDCIssuerURL(ctx context.Context, rawURL string) error {
 		}
 	}
 	return nil
+}
+
+// ssrfSafeHTTPClient returns an *http.Client whose dialer validates that the
+// resolved IP address is not in a private/loopback/link-local range. This
+// prevents DNS rebinding attacks where a hostname passes the initial
+// validation but resolves to a private address at connect time.
+func ssrfSafeHTTPClient() *http.Client {
+	baseDialer := &net.Dialer{}
+	safeDialContext := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		host, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid address %q: %w", addr, err)
+		}
+		ips, err := net.DefaultResolver.LookupHost(ctx, host)
+		if err != nil {
+			return nil, err
+		}
+		for _, ipStr := range ips {
+			if ip := net.ParseIP(ipStr); ip != nil && isPrivateIP(ip) {
+				return nil, fmt.Errorf("refusing to connect to private address %s", ipStr)
+			}
+		}
+		return baseDialer.DialContext(ctx, network, net.JoinHostPort(host, port))
+	}
+	return &http.Client{
+		Transport: &http.Transport{DialContext: safeDialContext},
+	}
 }
 
 type oidcConfigResponse struct {
@@ -209,7 +253,10 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-	if _, err := oidc.NewProvider(ctx, issuerURL); err != nil {
+	// Use a safe HTTP client that validates resolved IPs at connect time to
+	// prevent DNS rebinding attacks (TOCTOU between validation and discovery).
+	safeCtx := oidc.ClientContext(ctx, ssrfSafeHTTPClient())
+	if _, err := oidc.NewProvider(safeCtx, issuerURL); err != nil {
 		slog.ErrorContext(ctx, "OIDC provider discovery failed",
 			slog.String(otelkeys.IssuerURL, issuerURL),
 			slog.Any(otelkeys.Error, err),

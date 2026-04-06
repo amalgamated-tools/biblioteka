@@ -90,6 +90,24 @@ func TestValidateOIDCIssuerURL_MissingHost(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestValidateOIDCIssuerURL_UserinfoRejected(t *testing.T) {
+	err := validateOIDCIssuerURL(t.Context(), "https://user:pass@issuer.example.com")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "userinfo")
+}
+
+func TestValidateOIDCIssuerURL_UserinfoUsernameOnlyRejected(t *testing.T) {
+	err := validateOIDCIssuerURL(t.Context(), "https://admin@issuer.example.com")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "userinfo")
+}
+
+func TestValidateOIDCIssuerURL_IPv6ZoneIDRejected(t *testing.T) {
+	err := validateOIDCIssuerURL(t.Context(), "https://[fe80::1%25lo0]")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "zone")
+}
+
 // --- HandleGetOIDCConfig ---
 
 func TestHandleGetOIDCConfig_AdminNoSettings(t *testing.T) {
