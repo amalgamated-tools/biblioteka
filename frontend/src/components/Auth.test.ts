@@ -20,6 +20,8 @@ vi.mock("../lib/api", () => ({
 vi.mock("lucide-svelte", () => ({ BookCheck: () => {} }));
 vi.mock("./ui/AlertBanner.svelte", () => ({ default: () => {} }));
 
+import { getSignupEnabled } from "../lib/api";
+
 import Auth from "./Auth.svelte";
 
 describe("Auth", () => {
@@ -87,5 +89,17 @@ describe("Auth", () => {
     const signupPanel = panels.find((p) => p.id === "signup-panel");
     expect(signupPanel).toBeDefined();
     expect(signupPanel!).not.toHaveAttribute("hidden");
+  });
+
+  it("hides the Sign Up tab when signup is disabled", async () => {
+    vi.mocked(getSignupEnabled).mockResolvedValueOnce(false);
+
+    render(Auth);
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("tab", { name: "Sign Up" })).toBeNull();
+    });
+
+    const loginTab = screen.getByRole("tab", { name: "Login" });
+    expect(loginTab).toBeInTheDocument();
   });
 });
