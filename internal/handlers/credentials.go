@@ -175,8 +175,7 @@ func upsertCredential(ops credentialOps, w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if msg := validatePassword(req.Password); msg != "" {
-		writeError(ctx, w, http.StatusBadRequest, msg)
+	if !validatePassword(ctx, w, req.Password) {
 		return
 	}
 
