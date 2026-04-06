@@ -98,6 +98,11 @@ func validateOIDCIssuerURL(ctx context.Context, rawURL string) error {
 	// Resolve the hostname and block any private/loopback/link-local result.
 	// Use a short timeout so a slow/hanging DNS server cannot block the
 	// request indefinitely.
+	//
+	// DNS errors (timeout, NXDOMAIN, etc.) are intentionally swallowed here
+	// (fail-open). This preserves availability: oidc.NewProvider will surface
+	// the connectivity problem with its own request, and the SSRF-safe dialer
+	// provides a second layer of defense at connect time.
 	dnsCtx, cancel := context.WithTimeout(ctx, dnsLookupTimeout)
 	defer cancel()
 	addrs, err := net.DefaultResolver.LookupHost(dnsCtx, host)
@@ -243,11 +248,6 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		clientSecret = existing
 	}
 
-	slog.DebugContext(r.Context(), "saving OIDC config",
-		slog.String(otelkeys.IssuerURL, issuerURL),
-		slog.String(otelkeys.RedirectURI, redirectURI),
-	)
-
 	// Validate the issuer URL to prevent SSRF attacks.
 	validator := h.IssuerURLValidator
 	if validator == nil {
@@ -257,6 +257,11 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	slog.DebugContext(r.Context(), "saving OIDC config",
+		slog.String(otelkeys.IssuerURL, issuerURL),
+		slog.String(otelkeys.RedirectURI, redirectURI),
+	)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
