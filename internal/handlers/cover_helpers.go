@@ -40,6 +40,18 @@ func decodeDataURL(raw string) (string, []byte, error) {
 	return coverutil.DecodeDataURL(raw)
 }
 
+// isSafeCoverRedirectURL reports whether rawURL is safe to redirect to for a
+// cover image. Only absolute HTTPS URLs with a non-empty host are permitted;
+// all other schemes (http, javascript, data, protocol-relative, etc.) are
+// rejected to prevent open-redirect attacks.
+func isSafeCoverRedirectURL(rawURL string) bool {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	return strings.EqualFold(parsedURL.Scheme, "https") && parsedURL.Host != ""
+}
+
 func dataURLMIMEType(raw string) (string, bool) {
 	meta, _, ok := strings.Cut(raw, ",")
 	if !ok || !strings.HasPrefix(meta, "data:") {
