@@ -137,7 +137,7 @@ In addition to the merged-PR lookback, check whether a **sibling automation agen
 
 Search for open PRs from the `update-docs` sibling workflow:
 ```
-repo:${{ github.repository }} is:pr is:open label:documentation label:automation "docs:" in:title
+repo:${{ github.repository }} is:pr is:open label:documentation label:automation "docs" in:title
 ```
 
 Exclude PRs whose title starts with `docs(daily):` (those belong to this workflow). For each remaining open PR, check whether the PR body or title mentions the same documentation file you intend to update (e.g., `api-reference.md`, `kobo.md`). If a sibling PR already covers the file:

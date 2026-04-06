@@ -15,7 +15,7 @@ permissions:
   issues: read
   pull-requests: read
 
-tracker-id: q
+tracker-id: q-workflow
 
 network: defaults
 
