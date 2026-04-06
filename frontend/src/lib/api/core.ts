@@ -1,19 +1,24 @@
-export const TOKEN_KEY = "biblioteka_token";
+// In-memory token storage. The token is intentionally not persisted to
+// localStorage to prevent XSS from leaking a long-lived credential across
+// page loads. The server sets an HttpOnly cookie on login/signup which
+// handles authentication after page refreshes without any
+// JavaScript-accessible persistent state.
+let _token: string | null = null;
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return _token;
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+  _token = token;
 }
 
 export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  _token = null;
 }
 
 export function hasToken(): boolean {
-  return !!localStorage.getItem(TOKEN_KEY);
+  return _token !== null && _token !== "";
 }
 
 export class ApiError extends Error {

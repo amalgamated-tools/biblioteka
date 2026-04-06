@@ -346,7 +346,7 @@ Each sub-module imports `request` (and `setToken` where needed) from `./core`; t
 
 `api/core.ts` contains the building blocks used by all other sub-modules:
 
-- **Token storage** — Stores the JWT in `localStorage` under the key `biblioteka_token`. Use `setToken`, `clearToken`, `hasToken`, and `getToken` to manage it.
+- **Token storage** — Stores the JWT in an in-memory module variable (not `localStorage`) to prevent XSS from leaking credentials. The server sets an `HttpOnly` cookie (`biblioteka_token`) for session persistence across page reloads. Use `setToken`, `clearToken`, `hasToken`, and `getToken` to manage the in-memory token.
 - **`ApiError`** — A typed subclass of `Error` that carries a numeric `status` field (the HTTP status code). Catch `ApiError` when you need to branch on a specific status code.
 - **`request<T>`** — The shared fetch wrapper. It attaches the `Authorization: Bearer` header when a token is stored and throws `ApiError` on any non-2xx response.
 - **`getVersion`** — Fetches the server version from `GET /api/version`.
@@ -2207,8 +2207,8 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 **`init` (nine tests) — application startup authentication flow:**
 
-1. **`sets loading to false when no token and no cookie`** — no token in localStorage, `getMe()` returns 401; asserts `loading` is `false` and `user` is `null`.
-2. **`fetches user when token exists`** — token in localStorage, `getMe()` resolves; asserts `user` is populated and `loading` is `false`.
+1. **`sets loading to false when no token and no cookie`** — no in-memory token, `getMe()` returns 401; asserts `loading` is `false` and `user` is `null`.
+2. **`fetches user when token exists`** — in-memory token set, `getMe()` resolves; asserts `user` is populated and `loading` is `false`.
 3. **`clears token and retries when getMe returns 401 with token`** — stale token case; asserts `clearToken()` is called and `getMe()` is called twice.
 4. **`clears stale token and authenticates via cookie on retry`** — first `getMe()` rejects with 401, second resolves with an OIDC user; asserts the user is set from the cookie session.
 5. **`preserves token on transient network error`** — `getMe()` rejects with a generic `Error` (not `ApiError`); asserts `clearToken()` is **not** called.
@@ -2229,7 +2229,7 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 `frontend/src/lib/api.test.ts` exercises the centralised API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and cover the core, auth, config, admin, and credentials sub-modules. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into nine `describe` blocks:
 
-**`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying `localStorage` read/write semantics, including the edge case of an empty string being treated as "no token".
+**`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying in-memory token read/write semantics, including the edge case of an empty string being treated as "no token".
 
 **`ApiError` (one test):** asserts the custom error class has the correct `name`, `message`, `status`, and prototype chain.
 
