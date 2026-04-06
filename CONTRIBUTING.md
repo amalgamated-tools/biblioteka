@@ -17,6 +17,7 @@ Your signature is recorded once and applies to all future contributions.
 - Go 1.26+
 - Node.js 22+ with [pnpm](https://pnpm.io/)
 - Redis (for background jobs)
+- [goreman](https://github.com/mattn/goreman) — required to run `make dev` (starts the backend and frontend together); install with `go install github.com/mattn/goreman@latest`
 - [ExifTool](https://exiftool.org/) (optional; used for metadata extraction across all supported formats — EPUB, MOBI, AZW3, PDF; imports succeed without it but metadata is derived from filename/path-derived metadata only)
 - Docker (optional, for running the full stack locally)
 
@@ -27,6 +28,8 @@ If you use [mise](https://mise.jdx.dev/), you can install Go, Node.js, pnpm, and
 ```bash
 mise install
 ```
+
+> **goreman is not managed by mise.** Install it separately with `go install github.com/mattn/goreman@latest` (requires your Go install bin directory — `$GOBIN` if set, otherwise `$(go env GOPATH)/bin` — to be on your `$PATH`).
 
 ## Getting Started
 
@@ -300,7 +303,7 @@ web: PORT=8080 go run cmd/server/main.go -mode=server
 frontend: cd frontend && pnpm run dev --host
 ```
 
-This is distinct from `Procfile.dev`, which uses [air](https://github.com/cosmtrek/air) for hot-reload during normal development.
+This is distinct from `Procfile.dev`, which uses [air](https://github.com/air-verse/air) for hot-reload during normal development (`go tool air -c .air.toml`). The `.air.toml` file in the repository root configures which directories and file extensions air watches, where to write the compiled binary, and build delay settings.
 
 ### IDE and Editor Support
 

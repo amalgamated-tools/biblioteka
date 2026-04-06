@@ -130,6 +130,8 @@ make run
 
 ### Development Mode (hot-reload)
 
+**Additional prerequisite:** [goreman](https://github.com/mattn/goreman) — install with `go install github.com/mattn/goreman@latest`.
+
 ```bash
 # Install frontend dependencies
 cd frontend && pnpm install && cd ..
