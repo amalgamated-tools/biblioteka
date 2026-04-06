@@ -25,7 +25,7 @@ tools:
 safe-outputs:
   create-pull-request:
     expires: 3d
-    title-prefix: "[dead-code] "
+    title-prefix: "chore(dead-code): "
     labels: [chore, dead-code]
     reviewers: [copilot]
   noop:
