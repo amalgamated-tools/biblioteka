@@ -56,10 +56,7 @@ func sameOrigin(r *http.Request) bool {
 
 func matchRequestOrigin(u *url.URL, r *http.Request) bool {
 	// Compare scheme.
-	reqScheme := "http"
-	if r.TLS != nil {
-		reqScheme = "https"
-	}
+	reqScheme := requestScheme(r)
 	if !strings.EqualFold(u.Scheme, reqScheme) {
 		return false
 	}
@@ -84,11 +81,18 @@ func defaultPort(scheme string) string {
 	}
 }
 
+func normalizeHost(host string) string {
+	if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+		return strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	}
+	return host
+}
+
 func parseHostPort(hostport, defaultPort string) (string, string) {
 	host, port, err := net.SplitHostPort(hostport)
 	if err != nil {
 		// Likely no port present; fall back to the provided default port.
-		return hostport, defaultPort
+		return normalizeHost(hostport), defaultPort
 	}
 	if port == "" {
 		port = defaultPort
