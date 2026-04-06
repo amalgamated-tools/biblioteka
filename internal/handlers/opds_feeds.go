@@ -15,12 +15,13 @@ import (
 
 func (h *OPDSHandler) rootFeed(w http.ResponseWriter, r *http.Request) {
 	baseURL := opdsBaseURL(r)
+	now := time.Now().UTC().Format(time.RFC3339)
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        baseURL + "/",
 		Title:     "Biblioteka OPDS Catalog",
-		Updated:   time.Now().UTC().Format(time.RFC3339),
+		Updated:   now,
 		Links: []opdspkg.Link{
 			{Rel: opdspkg.RelSelf, Href: baseURL, Type: opdspkg.NavContentType},
 			{Rel: opdspkg.RelStart, Href: baseURL, Type: opdspkg.NavContentType},
@@ -30,28 +31,28 @@ func (h *OPDSHandler) rootFeed(w http.ResponseWriter, r *http.Request) {
 			{
 				Title:   "All Books",
 				ID:      baseURL + "/all",
-				Updated: time.Now().UTC().Format(time.RFC3339),
+				Updated: now,
 				Content: &opdspkg.Content{Type: "text", Value: "Browse all books"},
 				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/all", Type: opdspkg.AcqContentType}},
 			},
 			{
 				Title:   "Recent Books",
 				ID:      baseURL + "/recent",
-				Updated: time.Now().UTC().Format(time.RFC3339),
+				Updated: now,
 				Content: &opdspkg.Content{Type: "text", Value: "Recently added books"},
 				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/recent", Type: opdspkg.AcqContentType}},
 			},
 			{
 				Title:   "Authors",
 				ID:      baseURL + "/authors",
-				Updated: time.Now().UTC().Format(time.RFC3339),
+				Updated: now,
 				Content: &opdspkg.Content{Type: "text", Value: "Browse by author"},
 				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/authors", Type: opdspkg.NavContentType}},
 			},
 			{
 				Title:   "Series",
 				ID:      baseURL + "/series",
-				Updated: time.Now().UTC().Format(time.RFC3339),
+				Updated: now,
 				Content: &opdspkg.Content{Type: "text", Value: "Browse by series"},
 				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/series", Type: opdspkg.NavContentType}},
 			},
