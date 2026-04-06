@@ -5,6 +5,19 @@ import (
 	"fmt"
 )
 
+// countFallback issues a COUNT query only when a paginated query returned no
+// rows at a non-zero offset — the usual sign that the offset exceeded the
+// total row count and the window function had nothing to return. When that
+// condition is met, the result of the COUNT query is written to *total.
+func countFallback(ctx context.Context, d *DB, total *int, rowCount, offset int, query string, args ...any) error {
+	if rowCount == 0 && offset > 0 {
+		if err := d.QueryRowContext(ctx, query, args...).Scan(total); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // allowedListTables is the set of tables that listAll and listPaginated may
 // query. Any table not in this set is rejected at runtime to prevent accidental
 // SQL injection if a caller ever passes a dynamic value.
