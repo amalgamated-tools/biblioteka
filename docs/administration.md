@@ -125,6 +125,7 @@ curl "http://localhost:8080/api/audit-logs?limit=50&offset=50" \
 |------------------------|---------------|--------------------------------------------------|------------------------------------------|
 | `user.signed_up`       | `user`        | `email`, `name`                                  | New account via `POST /api/auth/signup`  |
 | `user.admin_updated`   | `user`        | `is_admin`                                       | Admin toggle via `PUT /api/admin/users/{id}` |
+| `user.profile_updated` | `user`        | `name`                                           | Display name changed via `PUT /api/auth/me` |
 | `library.created`      | `library`     | `name`                                           | `POST /api/libraries`                   |
 | `library.updated`      | `library`     | `name`                                           | `PUT /api/libraries/{id}`               |
 | `library.deleted`      | `library`     | `name`                                           | `DELETE /api/libraries/{id}`            |
