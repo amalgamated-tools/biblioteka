@@ -128,7 +128,7 @@ Use `search_pull_requests` with a query like:
 `repo:${{ github.repository }} is:pr is:merged merged:>=YYYY-MM-DDTHH:MM:SSZ label:documentation label:automation in:title "docs"`
 (Replace `YYYY-MM-DDTHH:MM:SSZ` with the UTC timestamp 48 hours ago, computed as: current UTC time minus 48 hours, formatted as `2006-01-02T15:04:05Z`. For example, if now is `2026-04-06T10:00:00Z`, use `2026-04-04T10:00:00Z`.)
 
-For each candidate file, check the merged PR list for a PR whose **title contains the filename** (e.g., `kobo.md`, `frontend.md`) **or** whose title prefix matches the `docs(scope):` pattern for that file (e.g., `docs(kobo):` for `docs/kobo.md`). Match as a case-insensitive substring. If a merged doc PR for that file is found within 48 hours:
+For each candidate file, check the merged PR list for a PR whose **title contains the filename** (e.g., `kobo.md`, `frontend.md`) **or** whose title prefix matches `docs(daily):` (the standardized prefix for this workflow). Match as a case-insensitive substring. If a merged doc PR for that file is found within 48 hours:
 - **Skip** that file and log: `LOOKBACK SKIP [file]: merged doc PR #N found within 48 hours`
 
 Only proceed with files that do **not** have a recently merged doc PR.
@@ -172,13 +172,13 @@ Before creating any pull requests, perform the following checks **in order**:
 
 #### 6a. Deduplication Guard
 
-For each documentation change you plan to create a PR for, search for an existing **open** PR with a matching title. Derive the search terms from the proposed PR title: extract the `docs(scope):` prefix and 2–3 significant words from the remainder. For example, for a proposed PR titled `docs(frontend): decorative icon aria-hidden pattern`, search:
-`repo:${{ github.repository }} is:pr is:open in:title "docs(frontend): decorative icon"`
+For each documentation change you plan to create a PR for, use the standardized PR title format `docs(daily): <summary>` and search for an existing **open** PR with a matching title. Derive the search terms from the proposed PR title: use the fixed `docs(daily):` prefix and 2–3 significant words from the remainder. For example, for a proposed PR titled `docs(daily): decorative icon aria-hidden pattern`, search:
+`repo:${{ github.repository }} is:pr is:open in:title "docs(daily): decorative icon"`
 
 - **If a matching open PR is found**: skip this change and log `DEDUP SKIP [title]: open PR #N already exists`. Do **not** create a new PR for this change.
 - **If no matching open PR is found**: proceed with this change.
 
-Apply this check to every candidate PR before proceeding to the cap check below.
+Apply this check to every candidate PR before proceeding to the cap check below, and use the same `docs(daily): <summary>` format consistently in any related lookback searches and PR-title guidance.
 
 #### 6b. Per-Run Hard Cap (8 PRs)
 
