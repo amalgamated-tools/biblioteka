@@ -180,9 +180,7 @@
     class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800"
   >
     <div class="text-center py-8">
-      <p role="status" class="text-ink-500 dark:text-ink-300">
-        Loading books...
-      </p>
+      <p role="status" class="text-ink-500 dark:text-ink-300">Loading books...</p>
     </div>
   </div>
 {:else if total === 0}
