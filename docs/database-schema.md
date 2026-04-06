@@ -372,7 +372,7 @@ Named sync tokens that authenticate a Kobo e-reader device. Each token grants ac
 | `id`         | TEXT    | NOT NULL | auto-gen | Primary key                                              |
 | `user_id`    | TEXT    | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE                        |
 | `name`       | TEXT    | NOT NULL | —        | Human-readable label (max 100 chars)                    |
-| `token_hash` | TEXT    | NULL     | `NULL`   | SHA-256 hex digest of the raw token; always set (application enforced)                             |
+| `token_hash` | TEXT    | NOT NULL | —        | SHA-256 hex digest of the raw token                                                                |
 | `created_at` | DATETIME| NOT NULL | `now()`  | When the token was created                               |
 
 **Indexes:**
