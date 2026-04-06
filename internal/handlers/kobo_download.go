@@ -42,6 +42,23 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Re-validate that the stored file path is still within an allowed library
+	// root. This catches pre-existing rows that may reference paths outside
+	// library directories, and handles symlink-aware canonicalization.
+	allowed, pathErr := isBookFilePathAllowed(r.Context(), h.DB, target.FilePath)
+	if pathErr != nil {
+		slog.ErrorContext(r.Context(), "failed to validate book file path for kobo download", slog.Any(otelkeys.Error, pathErr))
+		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
+		return
+	}
+	if !allowed {
+		slog.WarnContext(r.Context(), "kobo download blocked: file path outside library roots",
+			slog.String(otelkeys.Path, target.FilePath),
+		)
+		writeKoboJSON(w, http.StatusForbidden, map[string]any{})
+		return
+	}
+
 	f, err := os.Open(target.FilePath)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to open book file for kobo download",
