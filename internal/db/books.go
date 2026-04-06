@@ -249,7 +249,11 @@ func (d *DB) RemoveBookFromLibrary(ctx context.Context, libraryID, bookID string
 
 // bookColumnsWithPrefix returns book columns with a table alias prefix.
 func bookColumnsWithPrefix(prefix string) string {
-	return prefix + "id, " + prefix + "title, " + prefix + "description, " + prefix + "asin, " + prefix + "isbn10, " + prefix + "isbn13, " + prefix + "goodreads_id, " + prefix + "hardcover_id, " + prefix + "google_books_id, " + prefix + "publication_date, " + prefix + "publisher, " + prefix + "language, " + prefix + "cover_image_url, " + prefix + "created_at, " + prefix + "updated_at"
+	cols := strings.Split(bookColumns, ", ")
+	for i, c := range cols {
+		cols[i] = prefix + c
+	}
+	return strings.Join(cols, ", ")
 }
 
 // dollarN returns a PostgreSQL-style positional placeholder ($1, $2, ...).
