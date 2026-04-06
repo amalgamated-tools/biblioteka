@@ -91,7 +91,7 @@ describe("Auth", () => {
     expect(signupPanel!).not.toHaveAttribute("hidden");
   });
 
-  it("hides the Sign Up tab when signup is disabled", async () => {
+  it("hides the Sign Up tab and panel when signup is disabled", async () => {
     vi.mocked(getSignupEnabled).mockResolvedValueOnce(false);
 
     render(Auth);
@@ -101,5 +101,10 @@ describe("Auth", () => {
 
     const loginTab = screen.getByRole("tab", { name: "Login" });
     expect(loginTab).toBeInTheDocument();
+
+    // Signup panel should not be rendered when signup is disabled
+    const panels = screen.getAllByRole("tabpanel", { hidden: true });
+    expect(panels).toHaveLength(1);
+    expect(panels[0].id).toBe("login-panel");
   });
 });
