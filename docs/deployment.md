@@ -157,7 +157,7 @@ Before going live, verify each item:
   | `SMTP_TLS` | `starttls` | TLS mode: `none`, `starttls`, or `tls`. Authenticated SMTP (`SMTP_USERNAME` set) without TLS is only permitted for loopback addresses |
   | `SMTP_USERNAME` | *(empty)* | Auth username; leave empty for unauthenticated relay |
   | `SMTP_PASSWORD` | *(empty)* | Auth password; required when `SMTP_USERNAME` is set |
-  | `SMTP_FROM` | *(empty)* | Envelope `From` address (e.g. `biblioteka@example.com`); required when `SMTP_HOST` is set |
+  | `SMTP_FROM` | *(empty)* | Sender address for outgoing mail; accepts a bare address (e.g. `biblioteka@example.com`) or RFC 5322 display-name format (e.g. `"Biblioteka" <biblioteka@example.com>`); required when `SMTP_HOST` is set |
 
   These can be passed via a `.env` file or exported in your shell before running `docker compose up`.
 
