@@ -59,7 +59,8 @@ func validateField(ctx context.Context, fieldName, value string, attrs ...slog.A
 		for _, a := range attrs {
 			args = append(args, a)
 		}
-		slog.ErrorContext(ctx, "book processing failed: empty "+fieldName+" in payload", args...)
+		args = append(args, slog.String(otelkeys.Field, fieldName))
+		slog.ErrorContext(ctx, "book processing failed: required payload field is empty", args...)
 		return fmt.Errorf("invalid payload: %w", err)
 	}
 	return nil
