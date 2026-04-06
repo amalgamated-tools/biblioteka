@@ -115,6 +115,21 @@ describe("library store", () => {
       expect(libraryStore.scanningIds.has("lib1")).toBe(false);
       expect(libraryStore.isScanning).toBe(false);
     });
+
+    it("propagates errors and leaves libraries unchanged", async () => {
+      libraryStore.libraries = [fakeLibrary];
+      vi.mocked(api.createLibrary).mockRejectedValue(new Error("server error"));
+
+      await expect(
+        libraryStore.add({
+          name: "Bad",
+          paths: [],
+          organization_type: "book_per_folder",
+          monitored: false,
+        }),
+      ).rejects.toThrow("server error");
+      expect(libraryStore.libraries).toEqual([fakeLibrary]);
+    });
   });
 
   describe("clearScanning", () => {
@@ -228,6 +243,14 @@ describe("library store", () => {
 
       expect(libraryStore.libraries).toEqual([]);
       expect(libraryStore.scanningIds.has("lib1")).toBe(false);
+    });
+
+    it("propagates errors and leaves libraries unchanged", async () => {
+      libraryStore.libraries = [fakeLibrary];
+      vi.mocked(api.deleteLibrary).mockRejectedValue(new Error("server error"));
+
+      await expect(libraryStore.remove("lib1")).rejects.toThrow("server error");
+      expect(libraryStore.libraries).toEqual([fakeLibrary]);
     });
   });
 });
