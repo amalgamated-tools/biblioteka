@@ -168,7 +168,7 @@
     </h2>
     <button
       onclick={navigateBack}
-      class="text-ink-300 hover:text-ink-500 dark:hover:text-ink-200 transition-colors"
+      class="text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
       aria-label="Close form"
     >
       <X class="w-5 h-5" aria-hidden="true" />
@@ -245,7 +245,7 @@
                 onclick={() => {
                   formPaths = formPaths.filter((_, idx) => idx !== i);
                 }}
-                class="p-2 text-ink-300 hover:text-danger-600 transition-colors"
+                class="p-2 text-ink-400 hover:text-danger-600 transition-colors"
                 title="Remove folder"
                 aria-label="Remove folder"
                 disabled={saving}
