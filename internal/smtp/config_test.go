@@ -139,6 +139,29 @@ func TestValidateForSend_FromWithDisplayName(t *testing.T) {
 	require.Equal(t, `"Display Name" <from@example.com>`, params.FromHeader, "FromHeader should include display name")
 }
 
+func TestValidateForSend_ErrorsAreValidationError(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  Config
+	}{
+		{"missing host", Config{From: "from@example.com"}},
+		{"missing from", Config{Host: "smtp.example.com"}},
+		{"invalid port", Config{Host: "smtp.example.com", From: "from@example.com", Port: "99999"}},
+		{"invalid TLS", Config{Host: "smtp.example.com", From: "from@example.com", TLS: "bad"}},
+		{"username without password", Config{Host: "smtp.example.com", From: "from@example.com", Username: "u", TLS: "starttls"}},
+		{"invalid host characters", Config{Host: "host with space", From: "from@example.com"}},
+		{"host with brackets", Config{Host: "[::1]", From: "from@example.com"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ValidateForSend(tc.cfg)
+			require.Error(t, err, "expected an error")
+			var ve *ValidationError
+			require.ErrorAs(t, err, &ve, "error should be *ValidationError, got %T: %v", err, err)
+		})
+	}
+}
+
 func TestResolveConfig_EnvOverride(t *testing.T) {
 	t.Setenv("SMTP_HOST", "env.smtp.example.com")
 	t.Setenv("SMTP_PORT", "2525")
