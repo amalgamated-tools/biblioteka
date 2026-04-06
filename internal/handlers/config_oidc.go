@@ -126,12 +126,19 @@ func ssrfSafeHTTPClient() *http.Client {
 		if err != nil {
 			return nil, err
 		}
+		var safeIP string
 		for _, ipStr := range ips {
 			if ip := net.ParseIP(ipStr); ip != nil && isPrivateIP(ip) {
 				return nil, fmt.Errorf("refusing to connect to private address %s", ipStr)
+			} else if safeIP == "" {
+				safeIP = ipStr
 			}
 		}
-		return baseDialer.DialContext(ctx, network, net.JoinHostPort(host, port))
+		if safeIP == "" {
+			return nil, fmt.Errorf("no valid addresses for host %s", host)
+		}
+		// Connect directly to the validated IP — never re-resolve the hostname.
+		return baseDialer.DialContext(ctx, network, net.JoinHostPort(safeIP, port))
 	}
 	return &http.Client{
 		Transport: &http.Transport{DialContext: safeDialContext},
