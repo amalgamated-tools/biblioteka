@@ -110,6 +110,24 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 		return
 	}
 
+	// Re-validate that the stored file path is still within an allowed library
+	// root. This catches pre-existing rows that may reference paths outside
+	// library directories, and handles symlink-aware canonicalization.
+	allowed, pathErr := isBookFilePathAllowed(ctx, h.DB, bf.FilePath)
+	if pathErr != nil {
+		slog.ErrorContext(ctx, "OPDS: failed to validate book file path", slog.Any(otelkeys.Error, pathErr))
+		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "urn:biblioteka:opds:error", "Failed to validate file path")
+		return
+	}
+	if !allowed {
+		slog.WarnContext(ctx, "OPDS download blocked: file path outside library roots",
+			slog.String(otelkeys.BookFileID, fileID),
+			slog.String(otelkeys.Path, bf.FilePath),
+		)
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
 	mimeType := opdspkg.MIMETypeForFileType(bf.FileType)
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
@@ -191,6 +209,14 @@ func (h *OPDSHandler) serveCover(w http.ResponseWriter, r *http.Request, bookID 
 		return
 	}
 
+	if !isSafeCoverRedirectURL(*book.CoverImageURL) {
+		slog.WarnContext(ctx, "OPDS: unsafe cover image URL scheme rejected",
+			slog.String(otelkeys.BookID, bookID),
+			slog.String(otelkeys.URL, *book.CoverImageURL),
+		)
+		http.NotFound(w, r)
+		return
+	}
 	http.Redirect(w, r, *book.CoverImageURL, http.StatusTemporaryRedirect)
 }
 
