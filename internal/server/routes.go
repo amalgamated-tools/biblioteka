@@ -19,12 +19,14 @@ import (
 func (s *Server) setupRoutes(ctx context.Context) {
 	// Public auth routes (rate-limited)
 	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Limit(s.authHandler.Signup))
-	s.mux.HandleFunc("/api/auth/signup/enabled", s.authLimiter.Limit(s.handleSignupEnabled))
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
 	s.mux.HandleFunc("/api/auth/logout", s.authLimiter.Limit(s.authHandler.Logout))
 
-	// OIDC auth routes — always registered, check handler at request time
+	// Public informational endpoints (not rate-limited, read-only)
+	s.mux.HandleFunc("/api/auth/signup/enabled", s.handleSignupEnabled)
 	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
+
+	// OIDC auth routes — always registered, check handler at request time
 	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Login)))
 	s.mux.HandleFunc("/api/auth/oidc/callback", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Callback)))
 	s.mux.HandleFunc("/api/auth/oidc/link", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Link)))

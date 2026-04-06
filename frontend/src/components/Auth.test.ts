@@ -107,4 +107,25 @@ describe("Auth", () => {
     expect(panels).toHaveLength(1);
     expect(panels[0].id).toBe("login-panel");
   });
+
+  it("keyboard navigation does not hide login panel when signup is disabled", async () => {
+    vi.mocked(getSignupEnabled).mockResolvedValueOnce(false);
+
+    const user = userEvent.setup();
+    render(Auth);
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("tab", { name: "Sign Up" })).toBeNull();
+    });
+
+    const loginTab = screen.getByRole("tab", { name: "Login" });
+    loginTab.focus();
+
+    // ArrowRight should not toggle away from login
+    await user.keyboard("{ArrowRight}");
+    await tick();
+
+    const loginPanel = screen.getByRole("tabpanel", { hidden: true });
+    expect(loginPanel.id).toBe("login-panel");
+    expect(loginPanel).not.toHaveAttribute("hidden");
+  });
 });
