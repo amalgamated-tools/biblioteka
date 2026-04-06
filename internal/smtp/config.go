@@ -5,7 +5,6 @@ package smtp
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/mail"
 	netsmtp "net/smtp"
@@ -13,6 +12,16 @@ import (
 	"strconv"
 	"strings"
 )
+
+// ValidationError is returned by ValidateForSend when the smtp configuration
+// is invalid. Its message is safe to surface directly to the API caller.
+type ValidationError struct {
+	msg string
+}
+
+func (e *ValidationError) Error() string { return e.msg }
+
+func validationErr(msg string) error { return &ValidationError{msg: msg} }
 
 // Setting key constants used to store SMTP configuration in the application
 // settings table.
@@ -111,27 +120,29 @@ func IsLoopbackHost(host string) bool {
 // ValidateHost checks that host is a syntactically valid SMTP hostname.
 func ValidateHost(host string) error {
 	if host == "" {
-		return fmt.Errorf("host is required")
+		return validationErr("host is required")
 	}
 	for i := 0; i < len(host); i++ {
 		c := host[i]
 		if c <= 0x20 || c == 0x7f {
-			return fmt.Errorf("host contains invalid characters")
+			return validationErr("host contains invalid characters")
 		}
 	}
 	if strings.ContainsAny(host, "[]") {
-		return fmt.Errorf("host must not contain brackets; provide the bare IPv6 address")
+		return validationErr("host must not contain brackets; provide the bare IPv6 address")
 	}
 	if strings.Contains(host, ":") && net.ParseIP(host) == nil {
-		return fmt.Errorf("host must not contain a port; specify the port separately")
+		return validationErr("host must not contain a port; specify the port separately")
 	}
 	return nil
 }
 
 // ValidateForSend validates cfg and returns SendParams ready for a Send call.
+// All validation errors are returned as *ValidationError, which the caller may
+// safely surface to API clients.
 func ValidateForSend(cfg Config) (SendParams, error) {
 	if cfg.Host == "" {
-		return SendParams{}, fmt.Errorf("host is required")
+		return SendParams{}, validationErr("host is required")
 	}
 	if err := ValidateHost(cfg.Host); err != nil {
 		return SendParams{}, err
@@ -139,14 +150,14 @@ func ValidateForSend(cfg Config) (SendParams, error) {
 
 	from := strings.TrimSpace(cfg.From)
 	if from == "" {
-		return SendParams{}, fmt.Errorf("from address is required")
+		return SendParams{}, validationErr("from address is required")
 	}
 	if strings.ContainsAny(from, "\r\n") {
-		return SendParams{}, fmt.Errorf("from address contains invalid characters")
+		return SendParams{}, validationErr("from address contains invalid characters")
 	}
 	parsedFrom, err := mail.ParseAddress(from)
 	if err != nil {
-		return SendParams{}, fmt.Errorf("from address is not a valid email address")
+		return SendParams{}, validationErr("from address is not a valid email address")
 	}
 	// Use the bare email address for the SMTP MAIL FROM envelope command.
 	// The display name (if any) is preserved in FromHeader for the message header.
@@ -164,7 +175,7 @@ func ValidateForSend(cfg Config) (SendParams, error) {
 	}
 	portNum, err := strconv.Atoi(port)
 	if err != nil || portNum < 1 || portNum > 65535 {
-		return SendParams{}, fmt.Errorf("port must be a number between 1 and 65535")
+		return SendParams{}, validationErr("port must be a number between 1 and 65535")
 	}
 	port = strconv.Itoa(portNum)
 
@@ -173,13 +184,13 @@ func ValidateForSend(cfg Config) (SendParams, error) {
 		tlsMode = "starttls"
 	}
 	if tlsMode != "none" && tlsMode != "starttls" && tlsMode != "tls" {
-		return SendParams{}, fmt.Errorf("tls must be one of: none, starttls, tls")
+		return SendParams{}, validationErr("tls must be one of: none, starttls, tls")
 	}
 	if cfg.Username != "" && cfg.Password == "" {
-		return SendParams{}, fmt.Errorf("password is required when username is set")
+		return SendParams{}, validationErr("password is required when username is set")
 	}
 	if tlsMode == "none" && cfg.Username != "" && !IsLoopbackHost(cfg.Host) {
-		return SendParams{}, fmt.Errorf("authenticated SMTP without TLS is only allowed for localhost/loopback; use STARTTLS or TLS for remote servers")
+		return SendParams{}, validationErr("authenticated SMTP without TLS is only allowed for localhost/loopback; use STARTTLS or TLS for remote servers")
 	}
 
 	var smtpAuth netsmtp.Auth

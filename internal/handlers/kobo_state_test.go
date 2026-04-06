@@ -4,12 +4,35 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-// TestHandleBookState_UnknownMethodReturnsOK verifies that HandleBookState
+// TestHandleBookState_UpdateWithNonExistentBook verifies that updating state
+// for a book that was deleted mid-flight returns 404, not 500.
+func TestHandleBookState_UpdateWithNonExistentBook(t *testing.T) {
+	t.Parallel()
+
+	h, userID := setupKoboHandler(t)
+	book, err := h.DB.CreateBook(context.Background(), "Delete Race Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "create book")
+
+	// Delete the book to simulate the race condition.
+	require.NoError(t, h.DB.DeleteBook(context.Background(), book.ID), "delete book")
+
+	body := `{"ReadingStates":[{"StatusInfo":{"Status":"Reading"}}]}`
+	r := httptest.NewRequest(http.MethodPut, "/v1/library/"+book.ID+"/state", strings.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+	h.HandleBookState(w, r)
+
+	// The GetBook pre-check returns 404 because the book was deleted; the
+	// ErrBookNotFound path in UpsertKoboReadingState covers the race window.
+	require.Equal(t, http.StatusNotFound, w.Code)
+}
+
 // returns 200 with an empty JSON array for unknown HTTP methods, matching
 // the Kobo device's expected behavior.
 func TestHandleBookState_UnknownMethodReturnsOK(t *testing.T) {
