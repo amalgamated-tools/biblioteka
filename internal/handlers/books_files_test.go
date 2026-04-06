@@ -19,11 +19,17 @@ import (
 func createTestLibrary(t *testing.T, d *db.DB) string {
 	t.Helper()
 	dir := t.TempDir()
+	registerTestLibrary(t, d, dir)
+	return dir
+}
+
+// registerTestLibrary registers an existing directory as a library in the test DB.
+func registerTestLibrary(t *testing.T, d *db.DB, dir string) {
+	t.Helper()
 	pathsJSON, err := json.Marshal([]string{dir})
 	require.NoError(t, err, "marshal library paths")
 	_, err = d.CreateLibrary(t.Context(), "Test Library", string(pathsJSON), db.LibraryOrganizationBookPerFolder, false)
 	require.NoError(t, err, "create test library")
-	return dir
 }
 
 func TestGetBookFiles_Empty(t *testing.T) {
@@ -222,13 +228,16 @@ func TestPostBookFiles_PathOutsideLibrary(t *testing.T) {
 	h, userID := setupBookHandler(t)
 	createTestLibrary(t, h.DB)
 
+	// Create a second temp dir that is NOT registered as a library root.
+	outsideDir := t.TempDir()
+
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
 		FileType: "epub",
 		FileName: "gunslinger.epub",
-		FilePath: "/etc/passwd",
+		FilePath: filepath.Join(outsideDir, "gunslinger.epub"),
 	})
 	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/files", bytes.NewReader(body))
 	r = withUserID(r, userID)
@@ -246,11 +255,18 @@ func TestPostBookFiles_PathTraversal(t *testing.T) {
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
 
-	// Attempt path traversal from within the library root.
+	// Create a temp dir outside the library root to use as the traversal target.
+	outsideDir := t.TempDir()
+
+	// Attempt path traversal from within the library root to the outside dir.
+	// Build a relative path that escapes the library directory.
+	relPath, err := filepath.Rel(dir, outsideDir)
+	require.NoError(t, err, "compute relative path")
+
 	body := mustMarshal(t, createBookFileRequest{
 		FileType: "epub",
 		FileName: "passwd",
-		FilePath: filepath.Join(dir, "../../../etc/passwd"),
+		FilePath: filepath.Join(dir, relPath, "evil.epub"),
 	})
 	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/files", bytes.NewReader(body))
 	r = withUserID(r, userID)

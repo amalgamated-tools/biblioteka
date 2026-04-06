@@ -469,14 +469,29 @@ func requireAdmin(d *db.DB, w http.ResponseWriter, r *http.Request) bool {
 }
 
 // isPathUnderRoot reports whether absPath is nested inside (or equal to) root.
-// root is resolved to an absolute path before the comparison so relative
-// library roots are handled correctly.
+// Both paths are resolved to absolute, cleaned, and symlink-resolved paths
+// before the comparison so relative library roots and symlink escapes are
+// handled correctly. When symlink resolution fails (e.g. the target does not
+// exist yet) the function falls back to the cleaned absolute paths.
 func isPathUnderRoot(absPath, root string) bool {
 	absRoot, err := filepath.Abs(root)
 	if err != nil {
 		return false
 	}
 	absRoot = filepath.Clean(absRoot)
+
+	// Attempt symlink-aware canonicalization for both root and target.
+	if resolved, err := filepath.EvalSymlinks(absRoot); err == nil {
+		absRoot = resolved
+	}
+	if resolved, err := filepath.EvalSymlinks(absPath); err == nil {
+		absPath = resolved
+	} else if parent := filepath.Dir(absPath); parent != absPath {
+		if resolvedParent, err := filepath.EvalSymlinks(parent); err == nil {
+			absPath = filepath.Join(resolvedParent, filepath.Base(absPath))
+		}
+	}
+
 	return absPath == absRoot || strings.HasPrefix(absPath, absRoot+string(filepath.Separator))
 }
 
@@ -489,6 +504,16 @@ func isBookFilePathAllowed(ctx context.Context, d *db.DB, filePath string) (bool
 		return false, fmt.Errorf("resolve file path: %w", err)
 	}
 	absPath = filepath.Clean(absPath)
+	// Resolve symlinks so a link targeting outside the library root is caught.
+	// If the full path does not exist yet (common for new files), resolve the
+	// parent directory and re-append the base name.
+	if resolved, evalErr := filepath.EvalSymlinks(absPath); evalErr == nil {
+		absPath = resolved
+	} else if parent := filepath.Dir(absPath); parent != absPath {
+		if resolvedParent, evalErr := filepath.EvalSymlinks(parent); evalErr == nil {
+			absPath = filepath.Join(resolvedParent, filepath.Base(absPath))
+		}
+	}
 
 	libraries, err := d.ListLibraries(ctx)
 	if err != nil {
