@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 )
@@ -20,14 +19,6 @@ func WithPort(port int) ServerOption {
 func WithDB(db *db.DB) ServerOption {
 	return func(s *Server) {
 		s.DB = db
-	}
-}
-
-// WithJWTManager attaches the JWT token manager used for issuing and
-// validating user sessions.
-func WithJWTManager(jwt *auth.JWTManager) ServerOption {
-	return func(s *Server) {
-		s.JWT = jwt
 	}
 }
 
