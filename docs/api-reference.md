@@ -725,6 +725,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `kosync_credential.deleted` | `kosync_credential` | KOSync credentials removed via `DELETE /api/kosync/credentials` |
 | `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
+| `user.profile_updated` | `user`        | Display name changed via `PUT /api/auth/me` |
 | `smtp.config_updated`  | `config`      | SMTP settings saved via `PUT /api/config/smtp` |
 
 | Status | Description |
