@@ -63,6 +63,8 @@ frontend/
         series.ts             Series CRUD + series–book relationships
         books.ts              Book CRUD, associations, and file management
         tokens.ts             API keys, Kobo tokens
+      autoDismissTimer.svelte.ts  `AutoDismissTimer` class — temporary visibility state with auto-dismiss timeout
+      autoDismissTimer.test.ts    Unit tests for `AutoDismissTimer`
       clipboard.ts            Async clipboard helper with `execCommand` fallback
       clipboard.test.ts       Clipboard helper unit tests
       copyTimeout.svelte.ts   `CopyTimeoutState` class — auto-resetting copied-ID feedback state
@@ -433,6 +435,57 @@ It throws an `Error` if the active path fails:
 > **Guidance:** Always surface copy failures to the user — for example, by displaying an error banner. Do not silently swallow the thrown error.
 
 Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs, share links, etc.) to the clipboard. Do **not** inline `navigator.clipboard.writeText` calls in components, as the fallback path would not be covered.
+
+### `autoDismissTimer.svelte.ts`
+
+`frontend/src/lib/autoDismissTimer.svelte.ts` exports `AutoDismissTimer`, a small Svelte 5 class that tracks whether a transient message (success, error, or informational) should be visible and automatically hides it after a configurable duration.
+
+**Constructor:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `duration` | `number` | `3000` | Time in milliseconds before `visible` auto-resets to `false` |
+
+**Reactive public fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `visible` | `boolean` | `true` while the message should be displayed; `false` otherwise |
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `show()` | Sets `visible` to `true`, cancels any running timer, and starts a new auto-reset timer |
+| `clear()` | Cancels the pending timer and sets `visible` to `false` immediately |
+
+Always call `clear()` from `onDestroy` to prevent timer leaks when the component is unmounted before the timeout fires.
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import { onDestroy } from "svelte";
+  import { AutoDismissTimer } from "../lib/autoDismissTimer.svelte";
+
+  const successTimer = new AutoDismissTimer(); // auto-hides after 3 s
+
+  onDestroy(() => successTimer.clear());
+
+  async function handleSave() {
+    await saveSettings();
+    successTimer.show();
+  }
+</script>
+
+<button onclick={() => void handleSave()}>Save</button>
+
+{#if successTimer.visible}
+  <p role="status">Settings saved.</p>
+{/if}
+```
+
+Use `AutoDismissTimer` whenever a component shows a transient success or informational message that should disappear automatically. Avoid inlining `setTimeout` calls in components for this pattern, because they are easy to duplicate and easy to forget to clean up; prefer `AutoDismissTimer` for consistency and safe cancellation via `clear()`.
 
 ### `tokenList.svelte.ts`
 
