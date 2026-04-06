@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -53,7 +54,7 @@ func NewEnrichGoodreadsHandler(database *db.DB, grClient GoodreadsSearcher) func
 
 func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSearcher, p EnrichGoodreadsPayload) error {
 	if p.BookID == "" || p.UserID == "" {
-		return fmt.Errorf("enrich goodreads: book_id and user_id are required")
+		return errors.New("enrich goodreads: book_id and user_id are required")
 	}
 
 	book, err := database.GetBook(ctx, p.BookID)

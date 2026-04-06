@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -40,7 +41,7 @@ func lookupOrganizationType(ctx context.Context, database *db.DB, p ProcessFileP
 
 func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.Extractor, enqueuer Enqueuer, p ProcessFilePayload, lookup bookFileLookupFunc) error {
 	if database == nil {
-		err := fmt.Errorf("process book file: database is nil")
+		err := errors.New("process book file: database is nil")
 		slog.ErrorContext(ctx, "book processing failed: database is nil",
 			slog.Any(otelkeys.Error, err),
 		)
@@ -48,7 +49,7 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 	}
 
 	if extractor == nil {
-		err := fmt.Errorf("process book file: extractor is nil")
+		err := errors.New("process book file: extractor is nil")
 		slog.ErrorContext(ctx, "book processing failed: extractor is nil",
 			slog.Any(otelkeys.Error, err),
 		)

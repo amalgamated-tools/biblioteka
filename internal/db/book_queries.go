@@ -95,17 +95,7 @@ func (d *DB) ListBooksByAuthor(ctx context.Context, authorID string) ([]Book, er
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	for rows.Next() {
-		b, err := scanBook(rows)
-		if err != nil {
-			return nil, err
-		}
-		books = append(books, *b)
-	}
-	return books, rows.Err()
+	return collectRows(rows, scanBook)
 }
 
 // ListBooksByAuthorPaginated returns books for a specific author with pagination and total count.
@@ -164,17 +154,7 @@ func (d *DB) ListBooksBySeries(ctx context.Context, seriesID string) ([]Book, er
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	for rows.Next() {
-		b, err := scanBook(rows)
-		if err != nil {
-			return nil, err
-		}
-		books = append(books, *b)
-	}
-	return books, rows.Err()
+	return collectRows(rows, scanBook)
 }
 
 // ListBooksBySeriesPaginated returns books in a specific series with pagination and total count.
