@@ -19,7 +19,7 @@ import (
 func (s *Server) setupRoutes(ctx context.Context) {
 	// Public auth routes (rate-limited)
 	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Limit(s.authHandler.Signup))
-	s.mux.HandleFunc("/api/auth/signup/enabled", s.handleSignupEnabled)
+	s.mux.HandleFunc("/api/auth/signup/enabled", s.authLimiter.Limit(s.handleSignupEnabled))
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
 	s.mux.HandleFunc("/api/auth/logout", s.authLimiter.Limit(s.authHandler.Logout))
 

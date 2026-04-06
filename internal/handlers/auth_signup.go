@@ -21,6 +21,7 @@ import (
 //	@Param			body	body		signupRequest	true	"Signup request"
 //	@Success		201		{object}	authResponse
 //	@Failure		400		{object}	errorResponse
+//	@Failure		403		{object}	errorResponse
 //	@Failure		409		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse
 //	@Router			/auth/signup [post]
