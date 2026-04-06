@@ -24,6 +24,7 @@ func mustSignup(t *testing.T, h *AuthHandler, name, email, password string) auth
 	require.NoError(t, err)
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 	h.Signup(w, r)
 	require.Equal(t, http.StatusCreated, w.Code)
 	var resp authResponse
