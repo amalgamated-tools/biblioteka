@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"golang.org/x/crypto/bcrypt"
@@ -48,7 +49,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "signup request", slog.String(otelkeys.Email, redactEmail(req.Email)))
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), auth.BcryptCost)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to hash password during signup",
 			slog.String(otelkeys.Email, redactEmail(req.Email)),
