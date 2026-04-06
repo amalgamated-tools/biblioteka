@@ -22,5 +22,4 @@ func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		next.ServeHTTP(w, r)
 	})
-	})
 }
