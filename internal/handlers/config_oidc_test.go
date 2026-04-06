@@ -80,7 +80,9 @@ func TestValidateOIDCIssuerURL_LocalhostRejectedViaDNS(t *testing.T) {
 
 func TestValidateOIDCIssuerURL_ValidPublicURL(t *testing.T) {
 	// A syntactically valid https URL with a non-private host should pass.
-	// (oidc.NewProvider is not called here, so no network access occurs.)
+	// validateOIDCIssuerURL does not call oidc.NewProvider here, so this avoids
+	// the OIDC HTTP discovery request, but hostname validation may still perform
+	// DNS resolution.
 	err := validateOIDCIssuerURL(t.Context(), "https://auth.example.com")
 	require.NoError(t, err)
 }
