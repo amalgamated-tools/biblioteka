@@ -540,7 +540,7 @@ All six fields (`host`, `port`, `username`, `password`, `from`, `tls`) are writt
 | `port` | string | | SMTP port; defaults to `"587"` when omitted |
 | `username` | string | | SMTP authentication username; leave empty for unauthenticated SMTP |
 | `password` | string | ✓* | SMTP authentication password; required when `username` is set and no password is currently stored |
-| `from` | string | ✓ | Envelope `From` address (must be a plain `user@host` address without a display name) |
+| `from` | string | ✓ | Envelope `From` address; accepts a bare address (e.g. `no-reply@example.com`) or RFC 5322 format with a display name (e.g. `"Biblioteka" <no-reply@example.com>`) |
 | `tls` | string | | `"none"`, `"starttls"` (default), or `"tls"` |
 
 \* Required when `username` is set and no password is currently stored; may be omitted to preserve an existing password for the same username.
@@ -548,7 +548,7 @@ All six fields (`host`, `port`, `username`, `password`, `from`, `tls`) are writt
 **Validation rules:**
 - `host` must be a valid hostname or IP address — no scheme (`smtp://`), embedded port, or path component.
 - Authenticated SMTP (`username` set) without TLS is only allowed for localhost/loopback addresses. Use `starttls` or `tls` for remote servers.
-- `from` must be a valid RFC 5321 email address without a display name (e.g. `"Alice <alice@example.com>"` is rejected).
+- `from` must be a valid email address parseable by RFC 5322 — either a bare address (`user@host`) or a display-name form (`"Display Name" <user@host>`). The display name is preserved in the message `From:` header; the bare address is used for the SMTP envelope.
 
 **Responses:**
 

@@ -115,6 +115,21 @@ describe("library store", () => {
       expect(libraryStore.scanningIds.has("lib1")).toBe(false);
       expect(libraryStore.isScanning).toBe(false);
     });
+
+    it("propagates errors and leaves libraries unchanged", async () => {
+      libraryStore.libraries = [fakeLibrary];
+      vi.mocked(api.createLibrary).mockRejectedValue(new Error("server error"));
+
+      await expect(
+        libraryStore.add({
+          name: "Bad",
+          paths: [],
+          organization_type: "book_per_folder",
+          monitored: false,
+        }),
+      ).rejects.toThrow("server error");
+      expect(libraryStore.libraries).toEqual([fakeLibrary]);
+    });
   });
 
   describe("clearScanning", () => {
@@ -168,6 +183,49 @@ describe("library store", () => {
     });
   });
 
+  describe("edit", () => {
+    it("updates the library in the store", async () => {
+      const updated: Library = {
+        ...fakeLibrary,
+        name: "Updated Library",
+        paths: ["/books", "/more-books"],
+      };
+      libraryStore.libraries = [fakeLibrary];
+      vi.mocked(api.updateLibrary).mockResolvedValue(updated);
+
+      const result = await libraryStore.edit("lib1", {
+        name: "Updated Library",
+        paths: ["/books", "/more-books"],
+        organization_type: "book_per_folder",
+        monitored: false,
+      });
+
+      expect(api.updateLibrary).toHaveBeenCalledWith("lib1", {
+        name: "Updated Library",
+        paths: ["/books", "/more-books"],
+        organization_type: "book_per_folder",
+        monitored: false,
+      });
+      expect(result).toEqual(updated);
+      expect(libraryStore.libraries).toEqual([updated]);
+    });
+
+    it("propagates errors and leaves libraries unchanged", async () => {
+      libraryStore.libraries = [fakeLibrary];
+      vi.mocked(api.updateLibrary).mockRejectedValue(new Error("not found"));
+
+      await expect(
+        libraryStore.edit("lib1", {
+          name: "Bad",
+          paths: [],
+          organization_type: "book_per_folder",
+          monitored: false,
+        }),
+      ).rejects.toThrow("not found");
+      expect(libraryStore.libraries).toEqual([fakeLibrary]);
+    });
+  });
+
   describe("remove", () => {
     it("removes the library from the store and clears its scanning state", async () => {
       vi.mocked(api.createLibrary).mockResolvedValue(fakeLibrary);
@@ -185,6 +243,14 @@ describe("library store", () => {
 
       expect(libraryStore.libraries).toEqual([]);
       expect(libraryStore.scanningIds.has("lib1")).toBe(false);
+    });
+
+    it("propagates errors and leaves libraries unchanged", async () => {
+      libraryStore.libraries = [fakeLibrary];
+      vi.mocked(api.deleteLibrary).mockRejectedValue(new Error("server error"));
+
+      await expect(libraryStore.remove("lib1")).rejects.toThrow("server error");
+      expect(libraryStore.libraries).toEqual([fakeLibrary]);
     });
   });
 });
