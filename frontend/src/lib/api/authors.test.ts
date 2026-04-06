@@ -14,6 +14,7 @@ import {
   updateAuthor,
   deleteAuthor,
   listAuthorBooks,
+  clearToken,
 } from "../api";
 import type { Author, PaginatedBooks } from "../../types";
 import {
@@ -43,7 +44,7 @@ const fakeAuthor: Author = {
 };
 
 beforeEach(() => {
-  localStorage.clear();
+  clearToken();
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
 });
