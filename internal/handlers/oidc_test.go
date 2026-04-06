@@ -180,12 +180,13 @@ func TestOIDCConsumeLinkNonce(t *testing.T) {
 		wantKeyRemoved bool
 	}{
 		{
-			name:       "valid nonce returns user ID",
-			nonceKey:   "valid-nonce",
-			seed:       true,
-			expiry:     5 * time.Minute,
-			userID:     "user-123",
-			wantUserID: "user-123",
+			name:           "valid nonce returns user ID",
+			nonceKey:       "valid-nonce",
+			seed:           true,
+			expiry:         5 * time.Minute,
+			userID:         "user-123",
+			wantUserID:     "user-123",
+			wantKeyRemoved: true,
 		},
 		{
 			name:       "unknown nonce returns empty",
@@ -566,7 +567,8 @@ func TestOIDCCallback_EmailVerification(t *testing.T) {
 			claims: map[string]any{
 				"sub": "oidc-user-3", "email": "noverify@example.com", "name": "No Verify User",
 			},
-			wantCode: http.StatusUnauthorized,
+			wantCode:   http.StatusUnauthorized,
+			wantErrMsg: "OIDC email must be verified by the identity provider",
 		},
 	}
 	for _, tt := range tests {
