@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -391,6 +392,8 @@ func TestBookSeries_Handler(t *testing.T) {
 func TestBookFiles_Handler(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
+	dir := createTestLibrary(t, h.DB)
+
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
 
@@ -399,7 +402,7 @@ func TestBookFiles_Handler(t *testing.T) {
 		"file_type": "epub",
 		"file_name": "gunslinger.epub",
 		"file_size": 1024,
-		"file_path": "/books/gunslinger.epub",
+		"file_path": filepath.Join(dir, "gunslinger.epub"),
 	})
 	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/files", bytes.NewReader(body))
 	r = withUserID(r, userID)
