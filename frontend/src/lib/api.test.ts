@@ -11,6 +11,7 @@ import {
   setToken,
   clearToken,
   hasToken,
+  getToken,
   ApiError,
   signup,
   login,
@@ -36,8 +37,6 @@ import {
   setKosyncCredential,
   deleteKosyncCredential,
 } from "./api";
-
-const TOKEN_KEY = "biblioteka_token";
 
 let fetchMock: Mock;
 
@@ -65,22 +64,22 @@ function mockFetchResponse(
 
 describe("Token management", () => {
   beforeEach(() => {
-    localStorage.clear();
-  });
-
-  it("setToken stores token in localStorage", () => {
-    setToken("test-token");
-    expect(localStorage.getItem(TOKEN_KEY)).toBe("test-token");
-  });
-
-  it("clearToken removes token from localStorage", () => {
-    localStorage.setItem(TOKEN_KEY, "test-token");
     clearToken();
-    expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+  });
+
+  it("setToken stores token in memory", () => {
+    setToken("test-token");
+    expect(getToken()).toBe("test-token");
+  });
+
+  it("clearToken clears the in-memory token", () => {
+    setToken("test-token");
+    clearToken();
+    expect(getToken()).toBeNull();
   });
 
   it("hasToken returns true when token exists", () => {
-    localStorage.setItem(TOKEN_KEY, "test-token");
+    setToken("test-token");
     expect(hasToken()).toBe(true);
   });
 
@@ -89,7 +88,7 @@ describe("Token management", () => {
   });
 
   it("hasToken returns false for empty string", () => {
-    localStorage.setItem(TOKEN_KEY, "");
+    setToken("");
     expect(hasToken()).toBe(false);
   });
 });
@@ -106,7 +105,7 @@ describe("ApiError", () => {
 
 describe("request (via API functions)", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -242,12 +241,12 @@ describe("request (via API functions)", () => {
 
 describe("Auth API functions", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
 
-  it("signup stores token and returns result", async () => {
+  it("signup stores token in memory and returns result", async () => {
     const authResp = {
       token: "new-token",
       user: { id: "1", email: "a@b.com" },
@@ -256,10 +255,10 @@ describe("Auth API functions", () => {
 
     const result = await signup("Name", "a@b.com", "pass");
     expect(result).toEqual(authResp);
-    expect(localStorage.getItem(TOKEN_KEY)).toBe("new-token");
+    expect(getToken()).toBe("new-token");
   });
 
-  it("login stores token and returns result", async () => {
+  it("login stores token in memory and returns result", async () => {
     const authResp = {
       token: "login-token",
       user: { id: "2", email: "b@c.com" },
@@ -268,7 +267,7 @@ describe("Auth API functions", () => {
 
     const result = await login("b@c.com", "pass");
     expect(result).toEqual(authResp);
-    expect(localStorage.getItem(TOKEN_KEY)).toBe("login-token");
+    expect(getToken()).toBe("login-token");
   });
 
   it("getOidcEnabled returns true when enabled", async () => {
@@ -314,7 +313,7 @@ describe("Auth API functions", () => {
 
 describe("Config API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -361,7 +360,7 @@ describe("Config API", () => {
 
 describe("Admin API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -388,7 +387,7 @@ describe("Admin API", () => {
 
 describe("Audit Logs API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -415,7 +414,7 @@ describe("Audit Logs API", () => {
 
 describe("OPDS Credentials API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -479,7 +478,7 @@ describe("OPDS Credentials API", () => {
 
 describe("KOSync Credentials API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -543,7 +542,7 @@ describe("KOSync Credentials API", () => {
 
 describe("Auth extended API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -586,7 +585,7 @@ describe("Auth extended API", () => {
 
 describe("SMTP Config API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });

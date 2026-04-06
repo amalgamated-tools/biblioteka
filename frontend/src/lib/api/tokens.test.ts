@@ -14,6 +14,7 @@ import {
   listKoboTokens,
   createKoboToken,
   deleteKoboToken,
+  clearToken,
 } from "../api";
 import type {
   APIKey,
@@ -62,7 +63,7 @@ const fakeKoboTokenCreate: KoboTokenCreateResponse = {
 };
 
 beforeEach(() => {
-  localStorage.clear();
+  clearToken();
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
 });
