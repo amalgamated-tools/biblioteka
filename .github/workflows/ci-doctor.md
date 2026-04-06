@@ -29,7 +29,7 @@ engine:
 safe-outputs:
   create-issue:
     expires: 1d
-    title-prefix: "[CI Failure Doctor] "
+    title-prefix: "fix(ci): "
     labels: [cookie]
     close-older-issues: true
   add-comment:
