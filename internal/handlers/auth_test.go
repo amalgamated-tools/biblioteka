@@ -23,7 +23,7 @@ func mustSignup(t *testing.T, h *AuthHandler, name, email, password string) auth
 	body, err := json.Marshal(map[string]string{"name": name, "email": email, "password": password})
 	require.NoError(t, err)
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewReader(body))
-	w := httptest.NewRecorder()
+	r.Header.Set("Content-Type", "application/json")
 	h.Signup(w, r)
 	require.Equal(t, http.StatusCreated, w.Code)
 	var resp authResponse
