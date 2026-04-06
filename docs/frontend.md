@@ -95,6 +95,7 @@ export class CrudStore<T extends { id: string }, TInput> {
   items: T[] = $state.raw([]);
   loading = $state(false);
   loaded  = $state(false);
+  error: string | null = $state(null);
 
   private readonly ops: CrudOps<T, TInput>;
 
@@ -105,6 +106,31 @@ export class CrudStore<T extends { id: string }, TInput> {
   async edit(id: string, input: TInput):    Promise<T>    { … }
   async remove(id: string):                 Promise<void> { … }
 }
+```
+
+The `error` field is set when `load()` fails and cleared before each operation. If the rejection value is an `Error` instance, its `message` is used; otherwise the fallback string `"Failed to load"` is stored. Because `loaded` remains `false` after a failed `load()`, the idempotency guard allows a retry — callers can re-invoke `load()` after displaying the error and the store will attempt the fetch again.
+
+**Displaying load errors from a `CrudStore`-based store:**
+
+```svelte
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { authorStore } from "../stores/authors.svelte";
+
+  onMount(() => { authorStore.load(); });
+</script>
+
+{#if authorStore.error}
+  <p role="alert" class="text-danger-600">{authorStore.error}</p>
+{/if}
+
+{#if authorStore.loading}
+  <p>Loading…</p>
+{:else}
+  {#each authorStore.authors as author}
+    <p>{author.name}</p>
+  {/each}
+{/if}
 ```
 
 A concrete store extends `CrudStore` and passes the relevant API functions to the constructor:
