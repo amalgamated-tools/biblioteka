@@ -152,15 +152,17 @@ func TestServeCover_UnsafeExternalURL(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	for _, unsafeURL := range []string{
-		"http://evil.com/cover.jpg",
-		"//evil.com/cover.jpg",
-		"javascript:alert(1)",
-		"ftp://example.com/cover.jpg",
+	for _, tc := range []struct {
+		name      string
+		unsafeURL string
+	}{
+		{name: "http", unsafeURL: "http://evil.com/cover.jpg"},
+		{name: "protocol-relative", unsafeURL: "//evil.com/cover.jpg"},
+		{name: "javascript", unsafeURL: "javascript:alert(1)"},
+		{name: "ftp", unsafeURL: "ftp://example.com/cover.jpg"},
 	} {
-		unsafeURL := unsafeURL
-		t.Run(unsafeURL, func(t *testing.T) {
-			book, err := h.DB.CreateBook(ctx, "Unsafe Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &unsafeURL)
+		t.Run(tc.name, func(t *testing.T) {
+			book, err := h.DB.CreateBook(ctx, "Unsafe Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &tc.unsafeURL)
 			require.NoError(t, err, "create book")
 
 			r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
