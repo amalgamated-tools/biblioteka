@@ -70,8 +70,7 @@
     <div class="text-center animate-fade-in">
       <div class="relative w-16 h-16 mx-auto mb-6" aria-hidden="true">
         <div
-          class="absolute inset-0 rounded-2xl bg-accent-500/20 dark:bg-accent-500/10"
-          style="animation: spin-slow 3s linear infinite"
+          class="absolute inset-0 rounded-2xl bg-accent-500/20 dark:bg-accent-500/10 animate-spin-slow"
         ></div>
         <div
           class="absolute inset-1 rounded-xl bg-accent-600 flex items-center justify-center"

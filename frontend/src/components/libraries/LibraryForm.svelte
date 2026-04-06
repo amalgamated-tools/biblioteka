@@ -168,7 +168,7 @@
     </h2>
     <button
       onclick={navigateBack}
-      class="text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
+      class="text-ink-400 hover:text-ink-500 dark:hover:text-ink-200 transition-colors"
       aria-label="Close form"
     >
       <X class="w-5 h-5" aria-hidden="true" />
