@@ -6,9 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/handlers"
 	_ "modernc.org/sqlite"
@@ -38,13 +36,6 @@ func newTestDB(t *testing.T) *db.DB {
 	require.NoError(t, err, "newTestDB: migrations")
 
 	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
-}
-
-func newTestJWT(t *testing.T) *auth.JWTManager {
-	t.Helper()
-	jm, err := auth.NewJWTManager("testsecret", time.Hour)
-	require.NoError(t, err, "newTestJWT")
-	return jm
 }
 
 // ---------------------------------------------------------------------------
@@ -303,9 +294,8 @@ func TestOIDCRoute_Configured(t *testing.T) {
 
 func TestNewServer_DefaultPort(t *testing.T) {
 	d := newTestDB(t)
-	jm := newTestJWT(t)
 
-	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm))
+	s, err := NewServer(t.Context(), WithDB(d))
 	require.NoError(t, err, "NewServer")
 
 	require.Equal(t, 8080, s.port)
@@ -314,9 +304,8 @@ func TestNewServer_DefaultPort(t *testing.T) {
 
 func TestNewServer_WithPort(t *testing.T) {
 	d := newTestDB(t)
-	jm := newTestJWT(t)
 
-	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm), WithPort(9090))
+	s, err := NewServer(t.Context(), WithDB(d), WithPort(9090))
 	require.NoError(t, err, "NewServer")
 
 	require.Equal(t, 9090, s.port)
@@ -325,20 +314,9 @@ func TestNewServer_WithPort(t *testing.T) {
 
 func TestNewServer_WithDB(t *testing.T) {
 	d := newTestDB(t)
-	jm := newTestJWT(t)
 
-	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm))
+	s, err := NewServer(t.Context(), WithDB(d))
 	require.NoError(t, err, "NewServer")
 
 	require.Equal(t, d, s.DB)
-}
-
-func TestNewServer_WithJWTManager(t *testing.T) {
-	d := newTestDB(t)
-	jm := newTestJWT(t)
-
-	s, err := NewServer(t.Context(), WithDB(d), WithJWTManager(jm))
-	require.NoError(t, err, "NewServer")
-
-	require.Equal(t, jm, s.JWT)
 }
