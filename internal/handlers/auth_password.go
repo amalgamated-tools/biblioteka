@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -84,6 +85,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.DebugContext(r.Context(), "password changed", slog.String(otelkeys.UserID, userID))
+	logAudit(r.Context(), h.DB, userID, db.AuditActionPasswordChanged, "user", userID, nil)
 
 	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "password updated"})
 }

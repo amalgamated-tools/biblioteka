@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -239,6 +240,18 @@ func TestChangePassword_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.ChangePassword(w, r)
 	require.Equal(t, http.StatusOK, w.Code)
+
+	// Verify audit log was created
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+	require.NoError(t, err)
+	found := false
+	for _, l := range logs {
+		if l.Action == db.AuditActionPasswordChanged && l.EntityID == signupResp.User.ID {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected audit log entry for password change")
 
 	// Verify new password works at login.
 	loginBody := `{"email":"eve@example.com","password":"newpassword1"}`
