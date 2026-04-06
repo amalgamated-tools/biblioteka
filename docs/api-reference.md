@@ -104,7 +104,7 @@ Create a new user account. The first user to sign up automatically becomes an ad
 |------------|--------|----------|-----------------------|
 | `name`     | string | ✓        | Display name          |
 | `email`    | string | ✓        | Email address         |
-| `password` | string | ✓        | Password (min 6 chars) |
+| `password` | string | ✓        | Password (min 8 chars) |
 
 **Responses:**
 
@@ -1441,7 +1441,7 @@ Create or replace the current user's OPDS credential. If a credential already ex
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `username` | string | ✓ | OPDS username (case-insensitive, trimmed) |
-| `password` | string | ✓ | OPDS password (min 6 chars) |
+| `password` | string | ✓ | OPDS password (min 8 chars) |
 
 **Responses:**
 
@@ -1749,7 +1749,7 @@ Create or update the current user's KOSync credentials.
 | Field      | Type   | Required | Description |
 |------------|--------|----------|-------------|
 | `username` | string | ✓ | KOSync username (max 256 chars, case-insensitive, globally unique) |
-| `password` | string | ✓ | KOSync password (min 6 chars) |
+| `password` | string | ✓ | KOSync password (min 8 chars) |
 
 **Response `200 OK`:** Same shape as `GET /api/kosync/credentials`.
 

@@ -154,7 +154,7 @@ Content-Type: application/json
 
 {
   "username": "alice",
-  "password": "s3cr3t!"
+  "password": "s3cr3t!1"
 }
 ```
 
@@ -165,7 +165,7 @@ Creates OPDS credentials if they don't exist, or replaces the current credential
 | Field      | Type   | Required | Description                                                          |
 |------------|--------|----------|----------------------------------------------------------------------|
 | `username` | string | ✓        | OPDS username (max 256 chars, case-insensitive, must be globally unique) |
-| `password` | string | ✓        | OPDS password (min 6 chars)                                          |
+| `password` | string | ✓        | OPDS password (min 8 chars)                                          |
 
 **Response `200 OK`:**
 

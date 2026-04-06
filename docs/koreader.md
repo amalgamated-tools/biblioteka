@@ -99,7 +99,7 @@ Create or update the current user's KOSync credentials. Call this endpoint to se
 | Field      | Type   | Required | Description                             |
 |------------|--------|----------|-----------------------------------------|
 | `username` | string | ✓        | KOSync username (max 256 chars, case-insensitive, must be globally unique) |
-| `password` | string | ✓        | KOSync password (min 6 chars)           |
+| `password` | string | ✓        | KOSync password (min 8 chars)           |
 
 **Response `200 OK`:**
 
