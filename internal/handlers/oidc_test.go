@@ -215,7 +215,7 @@ func TestOIDCConsumeLinkNonce(t *testing.T) {
 				h.linkNoncesMu.Lock()
 				_, exists := h.linkNonces[tt.nonceKey]
 				h.linkNoncesMu.Unlock()
-				require.False(t, exists, "expired nonce should have been removed from the map")
+				require.False(t, exists, "nonce %q should have been removed from the map after consumption", tt.nonceKey)
 			}
 		})
 	}
