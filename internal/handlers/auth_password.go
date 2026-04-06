@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -47,6 +49,10 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	user, err := h.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(r.Context(), w, http.StatusUnauthorized, "user not found")
+			return
+		}
 		slog.ErrorContext(r.Context(), "failed to get user for password change",
 			slog.Any(otelkeys.UserID, userID),
 			slog.Any(otelkeys.Error, err),

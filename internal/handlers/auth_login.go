@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -43,8 +45,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.DB.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
-		slog.DebugContext(r.Context(), "login failed: user not found", slog.String(otelkeys.Email, req.Email))
-		writeError(r.Context(), w, http.StatusUnauthorized, "invalid email or password")
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.DebugContext(r.Context(), "login failed: user not found", slog.String(otelkeys.Email, req.Email))
+			writeError(r.Context(), w, http.StatusUnauthorized, "invalid email or password")
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to look up user by email",
+			slog.String(otelkeys.Email, req.Email),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
