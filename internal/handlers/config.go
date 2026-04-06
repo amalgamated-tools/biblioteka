@@ -31,6 +31,9 @@ type ConfigHandler struct {
 	DB               *db.DB
 	IsOIDCConfigured func() bool
 	OnOIDCConfigSet  func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error
+	// IssuerURLValidator validates an OIDC issuer URL before provider discovery.
+	// If nil, the default SSRF-aware validator (validateOIDCIssuerURL) is used.
+	IssuerURLValidator func(ctx context.Context, rawURL string) error
 	// SendMailFunc overrides the default smtp.Send implementation (used in tests).
 	SendMailFunc smtp.SendFunc
 }

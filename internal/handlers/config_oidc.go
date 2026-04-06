@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -13,6 +17,82 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/coreos/go-oidc/v3/oidc"
 )
+
+// privateIPNets lists IP networks that must never be targeted by an OIDC
+// provider discovery request (SSRF protection).
+var privateIPNets = func() []*net.IPNet {
+	var nets []*net.IPNet
+	for _, cidr := range []string{
+		"10.0.0.0/8",     // RFC-1918 class A private
+		"172.16.0.0/12",  // RFC-1918 class B private
+		"192.168.0.0/16", // RFC-1918 class C private
+		"127.0.0.0/8",    // IPv4 loopback
+		"169.254.0.0/16", // IPv4 link-local (incl. AWS IMDS 169.254.169.254)
+		"0.0.0.0/8",      // "this" network
+		"::1/128",        // IPv6 loopback
+		"fc00::/7",       // IPv6 unique-local (fc00:: / fd00::)
+		"fe80::/10",      // IPv6 link-local
+		"::/128",         // IPv6 unspecified
+		"100.64.0.0/10",  // Shared address space (RFC 6598)
+	} {
+		_, n, err := net.ParseCIDR(cidr)
+		if err != nil {
+			panic(fmt.Sprintf("handlers: invalid CIDR %q: %v", cidr, err))
+		}
+		nets = append(nets, n)
+	}
+	return nets
+}()
+
+func isPrivateIP(ip net.IP) bool {
+	for _, n := range privateIPNets {
+		if n.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+// validateOIDCIssuerURL rejects issuer URLs that could be exploited for
+// Server-Side Request Forgery (SSRF):
+//   - only the https scheme is permitted
+//   - literal private/loopback/link-local IP addresses in the host are blocked
+//   - if the host is a DNS name, it is resolved and any private/loopback/
+//     link-local address in the result is also blocked
+func validateOIDCIssuerURL(ctx context.Context, rawURL string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid issuer_url: %w", err)
+	}
+	if u.Scheme != "https" {
+		return errors.New("issuer_url must use the https scheme")
+	}
+	host := u.Hostname()
+	if host == "" {
+		return errors.New("issuer_url must include a host")
+	}
+
+	// Block literal private/loopback/link-local IP addresses directly in the URL.
+	if ip := net.ParseIP(host); ip != nil {
+		if isPrivateIP(ip) {
+			return errors.New("issuer_url must not point to a private, loopback, or link-local address")
+		}
+		return nil // a routable literal IP is accepted; no DNS lookup needed
+	}
+
+	// Resolve the hostname and block any private/loopback/link-local result.
+	// A DNS lookup failure is not treated as an error here; oidc.NewProvider
+	// will surface any connectivity problem with its own request.
+	addrs, err := net.DefaultResolver.LookupHost(ctx, host)
+	if err == nil {
+		for _, addr := range addrs {
+			if ip := net.ParseIP(addr); ip != nil && isPrivateIP(ip) {
+				return errors.New("issuer_url must not resolve to a private, loopback, or link-local address")
+			}
+		}
+	}
+	return nil
+}
 
 type oidcConfigResponse struct {
 	IssuerURL       string `json:"issuer_url"`
@@ -116,6 +196,16 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		slog.String(otelkeys.IssuerURL, issuerURL),
 		slog.String(otelkeys.RedirectURI, redirectURI),
 	)
+
+	// Validate the issuer URL to prevent SSRF attacks.
+	validator := h.IssuerURLValidator
+	if validator == nil {
+		validator = validateOIDCIssuerURL
+	}
+	if err := validator(r.Context(), issuerURL); err != nil {
+		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
