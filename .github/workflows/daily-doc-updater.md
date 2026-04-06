@@ -28,9 +28,9 @@ safe-outputs:
     auto-merge: true
   create-issue:
     labels: [documentation, automation]
-    max: 1
+    max: 2
   add-comment:
-    max: 1
+    max: 2
 
 tools:
   cache-memory: true
@@ -244,7 +244,7 @@ If you made any documentation changes:
    - Links to relevant merged PRs that triggered the updates
    - Any notes about features that need further review
 
-**PR Title Format**: `[docs] Update documentation for features from [date]`
+**PR Title Format**: `docs(daily): <brief scope-specific description>`
 
 **PR Description Template**:
 ```markdown
