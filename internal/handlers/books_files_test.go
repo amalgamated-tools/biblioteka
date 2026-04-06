@@ -5,11 +5,26 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
+
+// createTestLibrary creates a temporary directory, registers it as a library in
+// the test DB, and returns the absolute path to that directory. The library is
+// cleaned up automatically when the test ends.
+func createTestLibrary(t *testing.T, d *db.DB) string {
+	t.Helper()
+	dir := t.TempDir()
+	pathsJSON, err := json.Marshal([]string{dir})
+	require.NoError(t, err, "marshal library paths")
+	_, err = d.CreateLibrary(t.Context(), "Test Library", string(pathsJSON), db.LibraryOrganizationBookPerFolder, false)
+	require.NoError(t, err, "create test library")
+	return dir
+}
 
 func TestGetBookFiles_Empty(t *testing.T) {
 	h, userID := setupBookHandler(t)
@@ -55,6 +70,8 @@ func TestGetBookFiles_WithFiles(t *testing.T) {
 func TestPostBookFiles_Success(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
+	dir := createTestLibrary(t, h.DB)
+
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
 
@@ -62,7 +79,7 @@ func TestPostBookFiles_Success(t *testing.T) {
 		FileType: "epub",
 		FileName: "gunslinger.epub",
 		FileSize: 2048,
-		FilePath: "/books/gunslinger.epub",
+		FilePath: filepath.Join(dir, "gunslinger.epub"),
 	})
 	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/files", bytes.NewReader(body))
 	r = withUserID(r, userID)
@@ -170,13 +187,15 @@ func TestBookFiles_MethodNotAllowed(t *testing.T) {
 func TestPostBookFiles_AuditLog(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
+	dir := createTestLibrary(t, h.DB)
+
 	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
 		FileType: "epub",
 		FileName: "gunslinger.epub",
-		FilePath: "/books/gunslinger.epub",
+		FilePath: filepath.Join(dir, "gunslinger.epub"),
 	})
 	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/files", bytes.NewReader(body))
 	r = withUserID(r, userID)
@@ -197,4 +216,68 @@ func TestPostBookFiles_AuditLog(t *testing.T) {
 		}
 	}
 	require.True(t, found)
+}
+
+func TestPostBookFiles_PathOutsideLibrary(t *testing.T) {
+	h, userID := setupBookHandler(t)
+	createTestLibrary(t, h.DB)
+
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "create book")
+
+	body := mustMarshal(t, createBookFileRequest{
+		FileType: "epub",
+		FileName: "gunslinger.epub",
+		FilePath: "/etc/passwd",
+	})
+	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/files", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestPostBookFiles_PathTraversal(t *testing.T) {
+	h, userID := setupBookHandler(t)
+	dir := createTestLibrary(t, h.DB)
+
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "create book")
+
+	// Attempt path traversal from within the library root.
+	body := mustMarshal(t, createBookFileRequest{
+		FileType: "epub",
+		FileName: "passwd",
+		FilePath: filepath.Join(dir, "../../../etc/passwd"),
+	})
+	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/files", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestPostBookFiles_NoLibraries(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	require.NoError(t, err, "create book")
+
+	// No libraries are configured; any path should be rejected.
+	body := mustMarshal(t, createBookFileRequest{
+		FileType: "epub",
+		FileName: "gunslinger.epub",
+		FilePath: "/books/gunslinger.epub",
+	})
+	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/files", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }

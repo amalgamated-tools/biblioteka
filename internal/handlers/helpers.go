@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -465,4 +466,49 @@ func requireAdmin(d *db.DB, w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	return true
+}
+
+// isPathUnderRoot reports whether absPath is nested inside (or equal to) root.
+// root is resolved to an absolute path before the comparison so relative
+// library roots are handled correctly.
+func isPathUnderRoot(absPath, root string) bool {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	absRoot = filepath.Clean(absRoot)
+	return absPath == absRoot || strings.HasPrefix(absPath, absRoot+string(filepath.Separator))
+}
+
+// isBookFilePathAllowed reports whether filePath resolves to a location that
+// is nested inside one of the paths of any configured library. It returns
+// false (with a nil error) when no library root contains the path.
+func isBookFilePathAllowed(ctx context.Context, d *db.DB, filePath string) (bool, error) {
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return false, fmt.Errorf("resolve file path: %w", err)
+	}
+	absPath = filepath.Clean(absPath)
+
+	libraries, err := d.ListLibraries(ctx)
+	if err != nil {
+		return false, fmt.Errorf("list libraries: %w", err)
+	}
+
+	for _, lib := range libraries {
+		var paths []string
+		if jsonErr := json.Unmarshal([]byte(lib.Paths), &paths); jsonErr != nil {
+			slog.WarnContext(ctx, "failed to parse library paths; skipping library during path validation",
+				slog.String(otelkeys.LibraryID, lib.ID),
+				slog.Any(otelkeys.Error, jsonErr),
+			)
+			continue
+		}
+		for _, p := range paths {
+			if isPathUnderRoot(absPath, p) {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
