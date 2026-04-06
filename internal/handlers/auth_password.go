@@ -54,7 +54,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to get user for password change",
-			slog.Any(otelkeys.UserID, userID),
+			slog.String(otelkeys.UserID, userID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get user")
@@ -74,7 +74,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to hash new password",
-			slog.Any(otelkeys.UserID, userID),
+			slog.String(otelkeys.UserID, userID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to hash password")
@@ -83,7 +83,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.DB.UpdatePassword(r.Context(), userID, string(hash)); err != nil {
 		slog.ErrorContext(r.Context(), "failed to update password",
-			slog.Any(otelkeys.UserID, userID),
+			slog.String(otelkeys.UserID, userID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update password")
