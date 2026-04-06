@@ -34,6 +34,9 @@ type ConfigHandler struct {
 	// IssuerURLValidator validates an OIDC issuer URL before provider discovery.
 	// If nil, the default SSRF-aware validator (validateOIDCIssuerURL) is used.
 	IssuerURLValidator func(ctx context.Context, rawURL string) error
+	// OIDCHTTPClient overrides the HTTP client used for OIDC provider discovery.
+	// If nil, an SSRF-safe client that blocks connections to private IPs is used.
+	OIDCHTTPClient *http.Client
 	// SendMailFunc overrides the default smtp.Send implementation (used in tests).
 	SendMailFunc smtp.SendFunc
 }

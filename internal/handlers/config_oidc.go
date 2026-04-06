@@ -255,7 +255,11 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	defer cancel()
 	// Use a safe HTTP client that validates resolved IPs at connect time to
 	// prevent DNS rebinding attacks (TOCTOU between validation and discovery).
-	safeCtx := oidc.ClientContext(ctx, ssrfSafeHTTPClient())
+	httpClient := h.OIDCHTTPClient
+	if httpClient == nil {
+		httpClient = ssrfSafeHTTPClient()
+	}
+	safeCtx := oidc.ClientContext(ctx, httpClient)
 	if _, err := oidc.NewProvider(safeCtx, issuerURL); err != nil {
 		slog.ErrorContext(ctx, "OIDC provider discovery failed",
 			slog.String(otelkeys.IssuerURL, issuerURL),
