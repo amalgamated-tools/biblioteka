@@ -116,10 +116,12 @@ func TestHandleDownload_FormatNotFound(t *testing.T) {
 
 func TestHandleDownload_FileNotFoundOnDisk(t *testing.T) {
 	h, _ := setupKoboHandler(t)
+	dir := t.TempDir()
+	registerTestLibrary(t, h.DB, dir)
 	book, err := h.DB.CreateBook(t.Context(), "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
 	// Register a file in the DB that doesn't exist on disk.
-	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "test.epub", 1024, nil, filepath.Join(t.TempDir(), "nonexistent-kobo-test-file.epub"))
+	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "test.epub", 1024, nil, filepath.Join(dir, "nonexistent-kobo-test-file.epub"))
 	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/download/"+book.ID+"/epub", nil)
@@ -134,7 +136,9 @@ func TestHandleDownload_Success(t *testing.T) {
 	h, _ := setupKoboHandler(t)
 
 	// Write a temp file to serve.
-	f, err := os.CreateTemp(t.TempDir(), "test-*.epub")
+	dir := t.TempDir()
+	registerTestLibrary(t, h.DB, dir)
+	f, err := os.CreateTemp(dir, "test-*.epub")
 	require.NoError(t, err, "create temp file")
 	content := []byte("fake epub content")
 	_, err = f.Write(content)
@@ -168,6 +172,7 @@ func TestHandleDownload_CaseInsensitiveFormat(t *testing.T) {
 	h := &KoboHandler{DB: d}
 
 	dir := t.TempDir()
+	registerTestLibrary(t, d, dir)
 	bookFile := filepath.Join(dir, "sample.epub")
 	require.NoError(t, os.WriteFile(bookFile, []byte("epub content"), 0o644), "write file")
 
@@ -195,6 +200,7 @@ func TestHandleDownload_ContentDispositionHeader(t *testing.T) {
 	h := &KoboHandler{DB: d}
 
 	dir := t.TempDir()
+	registerTestLibrary(t, d, dir)
 	bookFile := filepath.Join(dir, "my-book.epub")
 	require.NoError(t, os.WriteFile(bookFile, []byte("epub data"), 0o644), "write file")
 
@@ -224,6 +230,7 @@ func TestHandleDownload_ReturnsFileContents(t *testing.T) {
 	h := &KoboHandler{DB: d}
 
 	dir := t.TempDir()
+	registerTestLibrary(t, d, dir)
 	fileContent := []byte("epub file content here")
 	bookFile := filepath.Join(dir, "content.epub")
 	require.NoError(t, os.WriteFile(bookFile, fileContent, 0o644), "write file")
