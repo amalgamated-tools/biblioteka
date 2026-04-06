@@ -19,6 +19,7 @@ import (
 func (s *Server) setupRoutes(ctx context.Context) {
 	// Public auth routes (rate-limited)
 	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Limit(s.authHandler.Signup))
+	s.mux.HandleFunc("/api/auth/signup/enabled", s.handleSignupEnabled)
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
 	s.mux.HandleFunc("/api/auth/logout", s.authLimiter.Limit(s.authHandler.Logout))
 
@@ -196,6 +197,35 @@ type versionResponse struct {
 
 type oidcEnabledResponse struct {
 	Enabled bool `json:"enabled"`
+}
+
+type signupEnabledResponse struct {
+	Enabled bool `json:"enabled"`
+}
+
+// handleSignupEnabled godoc
+//
+//	@Summary		Check if signup is enabled
+//	@Description	Returns whether new user signup is permitted on this server
+//	@Tags			System
+//	@Produce		json
+//	@Success		200	{object}	signupEnabledResponse
+//	@Router			/auth/signup/enabled [get]
+func (s *Server) handleSignupEnabled(w http.ResponseWriter, r *http.Request) {
+	if !checkSystemEndpointMethod(w, r, "failed to encode signup enabled method not allowed response", http.MethodGet, http.MethodHead) {
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	resp := signupEnabledResponse{
+		Enabled: !s.authHandler.DisableSignup,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.ErrorContext(r.Context(), "failed to encode signup enabled response", slog.Any(otelkeys.Error, err))
+	}
 }
 
 // handleHealth godoc

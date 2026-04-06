@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { BookCheck } from "lucide-svelte";
   import { authStore } from "../stores/auth.svelte";
-  import { getOidcEnabled } from "../lib/api";
+  import { getOidcEnabled, getSignupEnabled } from "../lib/api";
   import { required, minLength, validate } from "../lib/validation";
   import AlertBanner from "./ui/AlertBanner.svelte";
   import Button from "./ui/Button.svelte";
@@ -15,6 +15,7 @@
   let error: string | null = $state(null);
   let loading = $state(false);
   let oidcEnabled = $state(false);
+  let signupEnabled = $state(true);
 
   function handleTabKeydown(event: KeyboardEvent) {
     if (loading) return;
@@ -39,6 +40,11 @@
       oidcEnabled = await getOidcEnabled();
     } catch {
       // OIDC not available
+    }
+    try {
+      signupEnabled = await getSignupEnabled();
+    } catch {
+      // Assume signup is enabled if the check fails
     }
   });
 
@@ -154,20 +160,22 @@
         >
           Login
         </button>
-        <button
-          id="signup-tab"
-          role="tab"
-          aria-selected={!isLogin}
-          aria-controls="signup-panel"
-          tabindex={!isLogin ? 0 : -1}
-          disabled={loading}
-          onclick={() => (isLogin = false)}
-          class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {!isLogin
-            ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
-            : 'text-ink-500 dark:text-ink-300 hover:text-ink-700 dark:hover:text-ink-200'}"
-        >
-          Sign Up
-        </button>
+        {#if signupEnabled}
+          <button
+            id="signup-tab"
+            role="tab"
+            aria-selected={!isLogin}
+            aria-controls="signup-panel"
+            tabindex={!isLogin ? 0 : -1}
+            disabled={loading}
+            onclick={() => (isLogin = false)}
+            class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {!isLogin
+              ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
+              : 'text-ink-500 dark:text-ink-300 hover:text-ink-700 dark:hover:text-ink-200'}"
+          >
+            Sign Up
+          </button>
+        {/if}
       </div>
 
       <div
@@ -233,7 +241,7 @@
         id="signup-panel"
         role="tabpanel"
         aria-labelledby="signup-tab"
-        hidden={isLogin}
+        hidden={isLogin || !signupEnabled}
       >
         <form onsubmit={handleSubmit} class="space-y-4">
           <div>

@@ -52,6 +52,14 @@ export async function getOidcEnabled(): Promise<boolean> {
   return data.enabled === true;
 }
 
+export async function getSignupEnabled(): Promise<boolean> {
+  const data = await request<{ enabled: boolean }>(
+    "GET",
+    "/api/auth/signup/enabled",
+  );
+  return data.enabled === true;
+}
+
 export async function createOidcLinkNonce(): Promise<string> {
   const data = await request<{ nonce: string }>(
     "POST",
