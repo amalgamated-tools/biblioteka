@@ -29,7 +29,7 @@ If you use [mise](https://mise.jdx.dev/), you can install Go, Node.js, pnpm, and
 mise install
 ```
 
-> **goreman is not managed by mise.** Install it separately with `go install github.com/mattn/goreman@latest` (requires `$GOPATH/bin` or `$(go env GOPATH)/bin` to be on your `$PATH`).
+> **goreman is not managed by mise.** Install it separately with `go install github.com/mattn/goreman@latest` (requires your Go install bin directory — `$GOBIN` if set, otherwise `$(go env GOPATH)/bin` — to be on your `$PATH`).
 
 ## Getting Started
 
