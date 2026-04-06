@@ -28,6 +28,7 @@ const (
 	AuditActionLibraryUpdated          = "library.updated"
 	AuditActionOPDSCredentialDeleted   = "opds_credential.deleted"
 	AuditActionOPDSCredentialUpdated   = "opds_credential.updated"
+	AuditActionPasswordChanged         = "user.password_changed"
 	AuditActionKOSyncCredentialDeleted = "kosync_credential.deleted"
 	AuditActionKOSyncCredentialUpdated = "kosync_credential.updated"
 	AuditActionSeriesCreated           = "series.created"
