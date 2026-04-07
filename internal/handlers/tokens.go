@@ -44,8 +44,9 @@ type tokenOps struct {
 // decode name → validate → create (generate+hash+persist) → audit → respond.
 //
 // If the create closure returns a *tokenError, its message is used as the
-// client-facing HTTP error and the log message. Otherwise a generic
-// "failed to create <resource>" message is used for both.
+// client-facing HTTP error response. Otherwise a generic
+// "failed to create <resource>" message is used for the client response.
+// The log message is always the fixed string "failed to create token".
 func handleTokenCreate(ops tokenOps, w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name string `json:"name"`
