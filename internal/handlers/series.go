@@ -112,7 +112,7 @@ func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// listSeries godoc
+// listSeries returns all series.
 //
 //	@Summary		List series
 //	@Description	Returns all series
@@ -127,7 +127,7 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 	listEntities(w, r, "series", h.DB.ListSeries, toSeriesDTO)
 }
 
-// createSeries godoc
+// createSeries creates a new series.
 //
 //	@Summary		Create a series
 //	@Description	Create a new series
@@ -146,7 +146,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 	createNamedEntity(h.seriesOps(), w, r)
 }
 
-// getSeries godoc
+// getSeries returns a single series by ID.
 //
 //	@Summary		Get a series
 //	@Description	Returns a single series by ID
@@ -164,7 +164,7 @@ func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id str
 	getNamedEntity(h.seriesOps(), w, r, id)
 }
 
-// updateSeries godoc
+// updateSeries updates an existing series.
 //
 //	@Summary		Update a series
 //	@Description	Update an existing series
@@ -185,7 +185,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 	updateNamedEntity(h.seriesOps(), w, r, id)
 }
 
-// deleteSeries godoc
+// deleteSeries deletes a series by ID.
 //
 //	@Summary		Delete a series
 //	@Description	Delete a series by ID
@@ -206,7 +206,7 @@ func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id 
 	)
 }
 
-// listSeriesBooks godoc
+// listSeriesBooks returns paginated books belonging to the specified series.
 //
 //	@Summary		List books in a series
 //	@Description	Returns paginated books for a specific series, ordered by position then title

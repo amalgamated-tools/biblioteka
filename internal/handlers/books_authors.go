@@ -7,7 +7,7 @@ type setBookAuthorsRequest struct {
 	AuthorIDs []string `json:"author_ids"`
 }
 
-// getBookAuthors godoc
+// getBookAuthors returns the authors associated with the specified book.
 //
 //	@Summary		List book authors
 //	@Description	Get the list of authors for a book
@@ -24,7 +24,7 @@ func (h *BookHandler) getBookAuthors(w http.ResponseWriter, r *http.Request, boo
 	respondBookSubResource(r.Context(), w, bookID, h.DB.GetBookAuthors, toAuthorDTO, "book authors")
 }
 
-// putBookAuthors godoc
+// putBookAuthors replaces the author list for the specified book.
 //
 //	@Summary		Set book authors
 //	@Description	Replace the list of authors for a book

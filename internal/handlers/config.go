@@ -47,7 +47,7 @@ type configStatusResponse struct {
 	IsAdmin        bool `json:"is_admin"`
 }
 
-// HandleConfigStatus godoc
+// HandleConfigStatus returns whether OIDC and SMTP are configured, and whether the authenticated user is an admin.
 //
 //	@Summary		Get configuration status
 //	@Description	Returns OIDC and SMTP configuration status and admin status

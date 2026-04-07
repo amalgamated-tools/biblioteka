@@ -115,7 +115,7 @@ func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// listAuthors godoc
+// listAuthors returns all authors.
 //
 //	@Summary		List authors
 //	@Description	Returns all authors
@@ -130,7 +130,7 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 	listEntities(w, r, "authors", h.DB.ListAuthors, toAuthorDTO)
 }
 
-// createAuthor godoc
+// createAuthor creates a new author.
 //
 //	@Summary		Create an author
 //	@Description	Create a new author
@@ -149,7 +149,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 	createNamedEntity(h.authorOps(), w, r)
 }
 
-// getAuthor godoc
+// getAuthor returns a single author by ID.
 //
 //	@Summary		Get an author
 //	@Description	Returns a single author by ID
@@ -167,7 +167,7 @@ func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id str
 	getNamedEntity(h.authorOps(), w, r, id)
 }
 
-// updateAuthor godoc
+// updateAuthor updates an existing author.
 //
 //	@Summary		Update an author
 //	@Description	Update an existing author
@@ -188,7 +188,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 	updateNamedEntity(h.authorOps(), w, r, id)
 }
 
-// deleteAuthor godoc
+// deleteAuthor deletes an author by ID.
 //
 //	@Summary		Delete an author
 //	@Description	Delete an author by ID
@@ -209,7 +209,7 @@ func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id 
 	)
 }
 
-// listAuthorBooks godoc
+// listAuthorBooks returns paginated books by the specified author.
 //
 //	@Summary		List books by author
 //	@Description	Returns paginated books for a specific author

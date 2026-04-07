@@ -38,8 +38,6 @@ type setSMTPConfigRequest struct {
 
 // HandleSMTPConfig dispatches GET and PUT requests for /api/config/smtp.
 //
-// HandleSMTPConfig godoc
-//
 //	@Summary		Get or update SMTP configuration
 //	@Description	GET returns current SMTP config (admin only). PUT updates SMTP config (admin only).
 //	@Tags			Config
@@ -169,8 +167,6 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleSMTPTest sends a test email to the admin user's email address.
-//
-// HandleSMTPTest godoc
 //
 //	@Summary		Send SMTP test email
 //	@Description	Sends a test email to the authenticated admin user's email address (admin only)
