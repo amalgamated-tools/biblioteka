@@ -13,7 +13,7 @@ Send a `POST /api/auth/signup` request. The first account created is automatical
 ```bash
 curl -X POST http://localhost:8080/api/auth/signup \
   -H "Content-Type: application/json" \
-  -d '{"name":"Alice","email":"alice@example.com","password":"s3cr3t!"}'
+  -d '{"name":"Alice","email":"alice@example.com","password":"s3cr3t!1"}'
 ```
 
 The response includes a short-lived JWT and a `biblioteka_token` HttpOnly session cookie:
@@ -36,7 +36,7 @@ The response includes a short-lived JWT and a `biblioteka_token` HttpOnly sessio
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"alice@example.com","password":"s3cr3t!"}'
+  -d '{"email":"alice@example.com","password":"s3cr3t!1"}'
 ```
 
 ### Using the JWT
@@ -69,7 +69,7 @@ Returns the updated user object.
 curl -X PUT http://localhost:8080/api/auth/password \
   -H "Authorization: Bearer <jwt>" \
   -H "Content-Type: application/json" \
-  -d '{"currentPassword":"s3cr3t!","newPassword":"b3tt3rS3cr3t!"}'
+  -d '{"currentPassword":"s3cr3t!1","newPassword":"b3tt3rS3cr3t!"}'
 ```
 
 ---

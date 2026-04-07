@@ -73,7 +73,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create token for user",
-			slog.Any(otelkeys.UserID, user.ID),
+			slog.String(otelkeys.UserID, user.ID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create token")

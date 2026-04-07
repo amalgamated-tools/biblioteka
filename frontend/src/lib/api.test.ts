@@ -17,6 +17,7 @@ import {
   login,
   getMe,
   getOidcEnabled,
+  getSignupEnabled,
   changePassword,
   updateProfile,
   logout,
@@ -292,6 +293,31 @@ describe("Auth API functions", () => {
     mockFetchResponse({});
 
     const result = await getOidcEnabled();
+    expect(result).toBe(false);
+  });
+
+  it("getSignupEnabled returns true when enabled", async () => {
+    mockFetchResponse({ enabled: true });
+
+    const result = await getSignupEnabled();
+    expect(result).toBe(true);
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/auth/signup/enabled");
+    expect(options.method).toBe("GET");
+  });
+
+  it("getSignupEnabled returns false when disabled", async () => {
+    mockFetchResponse({ enabled: false });
+
+    const result = await getSignupEnabled();
+    expect(result).toBe(false);
+  });
+
+  it("getSignupEnabled returns false for unexpected response", async () => {
+    mockFetchResponse({});
+
+    const result = await getSignupEnabled();
     expect(result).toBe(false);
   });
 

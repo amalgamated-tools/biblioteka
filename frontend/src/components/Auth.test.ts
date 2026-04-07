@@ -14,10 +14,13 @@ vi.mock("../stores/auth.svelte", () => ({
 
 vi.mock("../lib/api", () => ({
   getOidcEnabled: vi.fn().mockResolvedValue(false),
+  getSignupEnabled: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock("lucide-svelte", () => ({ BookCheck: () => {} }));
 vi.mock("./ui/AlertBanner.svelte", () => ({ default: () => {} }));
+
+import { getSignupEnabled } from "../lib/api";
 
 import Auth from "./Auth.svelte";
 
@@ -86,5 +89,43 @@ describe("Auth", () => {
     const signupPanel = panels.find((p) => p.id === "signup-panel");
     expect(signupPanel).toBeDefined();
     expect(signupPanel!).not.toHaveAttribute("hidden");
+  });
+
+  it("hides the Sign Up tab and panel when signup is disabled", async () => {
+    vi.mocked(getSignupEnabled).mockResolvedValueOnce(false);
+
+    render(Auth);
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("tab", { name: "Sign Up" })).toBeNull();
+    });
+
+    const loginTab = screen.getByRole("tab", { name: "Login" });
+    expect(loginTab).toBeInTheDocument();
+
+    // Signup panel should not be rendered when signup is disabled
+    const panels = screen.getAllByRole("tabpanel", { hidden: true });
+    expect(panels).toHaveLength(1);
+    expect(panels[0].id).toBe("login-panel");
+  });
+
+  it("keyboard navigation does not hide login panel when signup is disabled", async () => {
+    vi.mocked(getSignupEnabled).mockResolvedValueOnce(false);
+
+    const user = userEvent.setup();
+    render(Auth);
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("tab", { name: "Sign Up" })).toBeNull();
+    });
+
+    const loginTab = screen.getByRole("tab", { name: "Login" });
+    loginTab.focus();
+
+    // ArrowRight should not toggle away from login
+    await user.keyboard("{ArrowRight}");
+    await tick();
+
+    const loginPanel = screen.getByRole("tabpanel", { hidden: true });
+    expect(loginPanel.id).toBe("login-panel");
+    expect(loginPanel).not.toHaveAttribute("hidden");
   });
 });

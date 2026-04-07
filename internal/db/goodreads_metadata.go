@@ -104,17 +104,7 @@ func (d *DB) ListGoodreadsMetadataByUser(ctx context.Context, userID string, lim
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var results []GoodreadsMetadata
-	for rows.Next() {
-		gm, err := scanGoodreadsMetadata(rows)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, *gm)
-	}
-	return results, rows.Err()
+	return collectRows(rows, scanGoodreadsMetadata)
 }
 
 // ListGoodreadsMetadataByStatus returns goodreads_metadata rows for a user filtered by status.
@@ -132,17 +122,7 @@ func (d *DB) ListGoodreadsMetadataByStatus(ctx context.Context, userID, status s
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var results []GoodreadsMetadata
-	for rows.Next() {
-		gm, err := scanGoodreadsMetadata(rows)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, *gm)
-	}
-	return results, rows.Err()
+	return collectRows(rows, scanGoodreadsMetadata)
 }
 
 // ErrInvalidGoodreadsMetadataStatus is returned when an invalid status is passed.

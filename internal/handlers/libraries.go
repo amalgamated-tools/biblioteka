@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -130,7 +129,16 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 		return "", false
 	}
 	if err := validatePaths(req.Paths); err != nil {
-		writeError(ctx, w, http.StatusBadRequest, err.Error())
+		var pve *pathValidationError
+		if errors.As(err, &pve) {
+			writeError(ctx, w, http.StatusBadRequest, pve.Error())
+		} else {
+			slog.ErrorContext(ctx, "failed to validate library paths",
+				slog.Any(otelkeys.Error, err),
+				slog.Any(otelkeys.LibraryPaths, req.Paths),
+			)
+			writeError(ctx, w, http.StatusInternalServerError, "failed to validate paths")
+		}
 		return "", false
 	}
 	if req.OrganizationType == "" {
@@ -310,7 +318,7 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
-	deleteResource(h.DB, w, r, id, "library", otelkeys.LibraryID,
+	deleteResource(h.DB, w, r, id, "library", "library", otelkeys.LibraryID,
 		h.DB.GetLibrary, h.DB.DeleteLibrary,
 		db.AuditActionLibraryDeleted,
 		func(l *db.Library) map[string]any { return map[string]any{"name": l.Name} },
@@ -345,11 +353,19 @@ func validatePaths(paths []string) error {
 	for _, p := range paths {
 		info, err := os.Stat(p)
 		if err != nil {
-			return fmt.Errorf("folder not found: %s", p)
+			if os.IsNotExist(err) {
+				return &pathValidationError{msg: "folder not found: " + p}
+			}
+			return err
 		}
 		if !info.IsDir() {
-			return fmt.Errorf("path is not a folder: %s", p)
+			return &pathValidationError{msg: "path is not a folder: " + p}
 		}
 	}
 	return nil
 }
+
+// pathValidationError carries a user-safe message about an invalid library path.
+type pathValidationError struct{ msg string }
+
+func (e *pathValidationError) Error() string { return e.msg }
