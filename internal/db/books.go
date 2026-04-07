@@ -119,17 +119,7 @@ func (d *DB) ListBooks(ctx context.Context) ([]Book, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	for rows.Next() {
-		b, err := scanBook(rows)
-		if err != nil {
-			return nil, err
-		}
-		books = append(books, *b)
-	}
-	return books, rows.Err()
+	return collectRows(rows, scanBook)
 }
 
 // ListBooksByLibrary returns all books in a specific library.
@@ -143,17 +133,7 @@ func (d *DB) ListBooksByLibrary(ctx context.Context, libraryID string) ([]Book, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	for rows.Next() {
-		b, err := scanBook(rows)
-		if err != nil {
-			return nil, err
-		}
-		books = append(books, *b)
-	}
-	return books, rows.Err()
+	return collectRows(rows, scanBook)
 }
 
 // ListBooksByLibraryPaginated returns books in a specific library with pagination and total count.
