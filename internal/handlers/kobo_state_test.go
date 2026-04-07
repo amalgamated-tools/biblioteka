@@ -11,7 +11,10 @@ import (
 )
 
 // TestHandleBookState_UpdateWithNonExistentBook verifies that updating state
-// for a book that was deleted mid-flight returns 404, not 500.
+// for a deleted book returns 404 via the GetBook pre-check, not 500.
+// The race window where a book is deleted between GetBook and
+// UpsertKoboReadingState is covered at the DB layer by
+// TestUpsertKoboReadingState_NonExistentBookReturnsErrBookNotFound.
 func TestHandleBookState_UpdateWithNonExistentBook(t *testing.T) {
 	t.Parallel()
 
@@ -19,7 +22,7 @@ func TestHandleBookState_UpdateWithNonExistentBook(t *testing.T) {
 	book, err := h.DB.CreateBook(context.Background(), "Delete Race Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.NoError(t, err, "create book")
 
-	// Delete the book to simulate the race condition.
+	// Delete the book so the GetBook pre-check returns 404.
 	require.NoError(t, h.DB.DeleteBook(context.Background(), book.ID), "delete book")
 
 	body := `{"ReadingStates":[{"StatusInfo":{"Status":"Reading"}}]}`
@@ -28,8 +31,6 @@ func TestHandleBookState_UpdateWithNonExistentBook(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleBookState(w, r)
 
-	// The GetBook pre-check returns 404 because the book was deleted; the
-	// ErrBookNotFound path in UpsertKoboReadingState covers the race window.
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
