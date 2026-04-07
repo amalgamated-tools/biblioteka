@@ -152,22 +152,10 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	var total int
-	for rows.Next() {
-		b, t, err := scanBookAndTotal(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		total = t
-		books = append(books, *b)
-	}
-	if err := rows.Err(); err != nil {
+	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
+	if err != nil {
 		return nil, 0, err
 	}
-
 	// When offset exceeds total rows, the window function returns nothing.
 	// Fall back to a COUNT query so the caller can report the true total.
 	if err := countFallback(ctx, d, &total, len(books), offset,
@@ -176,7 +164,6 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 	); err != nil {
 		return nil, 0, err
 	}
-
 	return books, total, nil
 }
 
