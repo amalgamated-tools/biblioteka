@@ -199,7 +199,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 //	@Failure		500	{object}	errorResponse
 //	@Router			/series/{id} [delete]
 func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id string) {
-	deleteResource(h.DB, w, r, id, "series", otelkeys.SeriesID,
+	deleteResource(h.DB, w, r, id, "series", "series", otelkeys.SeriesID,
 		h.DB.GetSeries, h.DB.DeleteSeries,
 		db.AuditActionSeriesDeleted,
 		func(s *db.Series) map[string]any { return map[string]any{"name": s.Name} },

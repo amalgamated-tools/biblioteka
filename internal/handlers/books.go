@@ -480,7 +480,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 //	@Failure		500	{object}	errorResponse
 //	@Router			/books/{id} [delete]
 func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id string) {
-	deleteResource(h.DB, w, r, id, "book", otelkeys.BookID,
+	deleteResource(h.DB, w, r, id, "book", "book", otelkeys.BookID,
 		h.DB.GetBook, h.DB.DeleteBook,
 		db.AuditActionBookDeleted,
 		func(b *db.Book) map[string]any { return map[string]any{"title": b.Title} },
