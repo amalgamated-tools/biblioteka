@@ -54,14 +54,20 @@ func createNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 		return
 	}
 
-	slog.DebugContext(ctx, "creating "+ops.entityLabel, slog.String(otelkeys.Name, name))
+	slog.DebugContext(ctx, "creating entity",
+		slog.String(otelkeys.EntityType, ops.entityLabel),
+		slog.String(otelkeys.Name, name),
+	)
 
 	entity, err := ops.create(ctx, req)
 	if err != nil {
 		if handleNameErr(ctx, w, err, ops.errInvalidName, ops.errNameExists, ops.entityArticle) {
 			return
 		}
-		slog.ErrorContext(ctx, "failed to create "+ops.entityLabel, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to create entity",
+			slog.String(otelkeys.EntityType, ops.entityLabel),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to create "+ops.entityLabel)
 		return
 	}
@@ -71,7 +77,8 @@ func createNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 		return
 	}
 
-	slog.DebugContext(ctx, ops.entityLabel+" created",
+	slog.DebugContext(ctx, "entity created",
+		slog.String(otelkeys.EntityType, ops.entityLabel),
 		slog.String(ops.idKey, ops.entityID(entity)), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 		slog.String(otelkeys.Name, ops.entityName(entity)),
 	)
@@ -86,7 +93,8 @@ func createNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 // call get → handle errors → respond.
 func getNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
-	slog.DebugContext(ctx, "fetching "+ops.entityLabel,
+	slog.DebugContext(ctx, "fetching entity",
+		slog.String(otelkeys.EntityType, ops.entityLabel),
 		slog.String(ops.idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 	entity, err := ops.get(ctx, id)
 	if handleDBErr(ctx, w, err, ops.entityLabel) {
@@ -114,7 +122,8 @@ func updateNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 		return
 	}
 
-	slog.DebugContext(ctx, "updating "+ops.entityLabel,
+	slog.DebugContext(ctx, "updating entity",
+		slog.String(otelkeys.EntityType, ops.entityLabel),
 		slog.String(ops.idKey, id), //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 		slog.String(otelkeys.Name, name),
 	)

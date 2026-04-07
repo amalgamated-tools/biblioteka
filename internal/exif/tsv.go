@@ -109,7 +109,6 @@ func setIDOnce(
 	ctx context.Context,
 	field *string,
 	value string,
-	logMsg string,
 	logAttr slog.Attr,
 	extrasKey string,
 	out *ExifToolOutput,
@@ -117,7 +116,8 @@ func setIDOnce(
 	if *field == "" || *field == value {
 		*field = value
 	} else {
-		slog.DebugContext(ctx, logMsg,
+		slog.DebugContext(ctx, "duplicate identifier value found; keeping first",
+			slog.String(otelkeys.Key, extrasKey),
 			slog.String(otelkeys.Existing, *field),
 			logAttr,
 		)
@@ -131,7 +131,6 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 		case strings.EqualFold(cur.Scheme, "CALIBRE"), strings.HasPrefix(cur.Value, "urn:calibre:"):
 			cur.Value = strings.TrimPrefix(cur.Value, "urn:calibre:")
 			setIDOnce(ctx, &out.CalibreID, cur.Value,
-				"multiple Calibre ID values found; keeping first",
 				slog.String(otelkeys.CalibreID, cur.Value),
 				"Duplicate Calibre ID", out)
 		case strings.EqualFold(cur.Scheme, "ISBN"), strings.HasPrefix(cur.Value, "urn:isbn"):
@@ -139,37 +138,31 @@ func flushIdent(ctx context.Context, cur *Identifier, out *ExifToolOutput) {
 			isbn := NormalizeISBN(cur.Value)
 			if len(isbn) == 10 {
 				setIDOnce(ctx, &out.ISBN10, isbn,
-					"multiple isbn-10 values found; keeping first",
 					slog.String(otelkeys.ISBN, isbn),
 					"Duplicate ISBN-10", out)
 			} else if len(isbn) == 13 {
 				setIDOnce(ctx, &out.ISBN13, isbn,
-					"multiple isbn-13 values found; keeping first",
 					slog.String(otelkeys.ISBN, isbn),
 					"Duplicate ISBN-13", out)
 			}
 		case strings.EqualFold(cur.Scheme, "GOODREADS"), strings.HasPrefix(cur.Value, "urn:goodreads"):
 			cur.Value = strings.TrimPrefix(cur.Value, "urn:goodreads:")
 			setIDOnce(ctx, &out.GoodreadsID, cur.Value,
-				"multiple Goodreads ID values found; keeping first",
 				slog.String(otelkeys.GoodreadsID, cur.Value),
 				"Duplicate Goodreads ID", out)
 		case strings.EqualFold(cur.Scheme, "AMAZON"), strings.EqualFold(cur.Scheme, "MOBI-ASIN"), strings.HasPrefix(cur.Value, "urn:amazon"):
 			cur.Value = strings.TrimPrefix(cur.Value, "urn:amazon:")
 			setIDOnce(ctx, &out.ASIN, cur.Value,
-				"multiple ASIN values found; keeping first",
 				slog.String(otelkeys.ASIN, cur.Value),
 				"Duplicate ASIN", out)
 		case strings.EqualFold(cur.Scheme, "GOOGLE"), strings.HasPrefix(cur.Value, "urn:google"):
 			cur.Value = strings.TrimPrefix(cur.Value, "urn:google:")
 			setIDOnce(ctx, &out.GoogleID, cur.Value,
-				"multiple Google ID values found; keeping first",
 				slog.String(otelkeys.GoogleID, cur.Value),
 				"Duplicate Google ID", out)
 		case strings.HasPrefix(cur.Value, "urn:hardcoverbook:"):
 			cur.Value = strings.TrimPrefix(cur.Value, "urn:hardcoverbook:")
 			setIDOnce(ctx, &out.HardcoverID, cur.Value,
-				"multiple Hardcover ID values found; keeping first",
 				slog.String(otelkeys.HardcoverID, cur.Value),
 				"Duplicate Hardcover ID", out)
 		default:

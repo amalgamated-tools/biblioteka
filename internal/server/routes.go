@@ -173,7 +173,7 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 //	@Success		200	{object}	enabledResponse
 //	@Router			/auth/oidc/enabled [get]
 func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
-	if !checkSystemEndpointMethod(w, r, "failed to encode OIDC enabled method not allowed response", http.MethodGet, http.MethodHead) {
+	if !checkSystemEndpointMethod(w, r, http.MethodGet, http.MethodHead) {
 		return
 	}
 
@@ -203,7 +203,7 @@ type enabledResponse struct {
 //	@Success		200	{object}	enabledResponse
 //	@Router			/auth/signup/enabled [get]
 func (s *Server) handleSignupEnabled(w http.ResponseWriter, r *http.Request) {
-	if !checkSystemEndpointMethod(w, r, "failed to encode signup enabled method not allowed response", http.MethodGet, http.MethodHead) {
+	if !checkSystemEndpointMethod(w, r, http.MethodGet, http.MethodHead) {
 		return
 	}
 
@@ -221,7 +221,7 @@ func (s *Server) handleSignupEnabled(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	healthResponse
 //	@Router			/health [get]
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	if !checkSystemEndpointMethod(w, r, "failed to encode health method not allowed response", http.MethodGet, http.MethodHead) {
+	if !checkSystemEndpointMethod(w, r, http.MethodGet, http.MethodHead) {
 		return
 	}
 
@@ -242,7 +242,7 @@ func writeSystemJSON(ctx context.Context, w http.ResponseWriter, status int, dat
 // checkSystemEndpointMethod validates that the request method is one of the allowed methods.
 // If not, it writes a JSON 405 Method Not Allowed response and returns false.
 // Callers should return immediately when this function returns false.
-func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, logMessage string, allowedMethods ...string) bool {
+func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, allowedMethods ...string) bool {
 	if slices.Contains(allowedMethods, r.Method) {
 		return true
 	}
@@ -256,7 +256,13 @@ func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, logMessag
 	}
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), logMessage, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(
+			r.Context(),
+			"failed to encode method not allowed response",
+			slog.Any(otelkeys.Error, err),
+			slog.String(otelkeys.Path, r.URL.Path),
+			slog.String(otelkeys.Method, r.Method),
+		)
 	}
 
 	return false
@@ -271,7 +277,7 @@ func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, logMessag
 //	@Success		200	{object}	versionResponse
 //	@Router			/version [get]
 func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
-	if !checkSystemEndpointMethod(w, r, "failed to encode version method not allowed response", http.MethodGet, http.MethodHead) {
+	if !checkSystemEndpointMethod(w, r, http.MethodGet, http.MethodHead) {
 		return
 	}
 
