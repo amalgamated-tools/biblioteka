@@ -75,6 +75,22 @@ curl -X PUT http://localhost:8080/api/admin/users/<user-id> \
 
 `oidc_linked: true` means the account is linked to an OIDC/SSO provider. The user can log in via their SSO provider without a password. They may also retain a local password if the account was created locally before linking.
 
+### Controlling self-registration
+
+By default, anyone who can reach your Biblioteka instance can create an account. To prevent new self-service registrations (for example, in a single-user or invite-only deployment), set the `DISABLE_SIGNUP` environment variable:
+
+```bash
+DISABLE_SIGNUP=true
+```
+
+When enabled:
+- `POST /api/auth/signup` returns `403 Forbidden` for all callers.
+- The **Sign Up** tab is hidden in the web UI.
+- The first admin account (created before disabling) retains full access.
+- The `GET /api/auth/signup/enabled` endpoint returns `{"enabled": false}`, letting clients adapt their UI accordingly.
+
+> **Tip:** Deploy with `DISABLE_SIGNUP=true` from the start if you are the sole user. Create your admin account first, then redeploy with signup disabled.
+
 ---
 
 ## Audit Logs
