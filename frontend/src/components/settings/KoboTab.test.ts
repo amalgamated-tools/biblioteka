@@ -136,7 +136,9 @@ describe("KoboTab delete confirmation", () => {
     await tick();
 
     // The mock tokens have no `token` field, so they render in hidden-token state.
-    const copyButtons = screen.getAllByRole("button", { name: /Copy unavailable/i });
+    const copyButtons = screen.getAllByRole("button", {
+      name: /Copy unavailable/i,
+    });
     expect(copyButtons.length).toBeGreaterThan(0);
 
     const copyButton = copyButtons[0];
