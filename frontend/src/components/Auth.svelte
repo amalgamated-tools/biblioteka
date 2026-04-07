@@ -39,16 +39,16 @@
   onMount(async () => {
     try {
       oidcEnabled = await getOidcEnabled();
-    } catch {
-      // OIDC not available
+    } catch (e) {
+      console.error("Failed to check OIDC status", e);
     }
     try {
       signupEnabled = await getSignupEnabled();
       if (!signupEnabled) {
         isLogin = true;
       }
-    } catch {
-      // Assume signup is enabled if the check fails
+    } catch (e) {
+      console.error("Failed to check signup status", e);
     }
   });
 

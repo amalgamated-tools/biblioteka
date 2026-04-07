@@ -44,20 +44,17 @@ export async function logout(): Promise<void> {
   }
 }
 
-export async function getOidcEnabled(): Promise<boolean> {
-  const data = await request<{ enabled: boolean }>(
-    "GET",
-    "/api/auth/oidc/enabled",
-  );
+async function getFeatureEnabled(path: string): Promise<boolean> {
+  const data = await request<{ enabled: boolean }>("GET", path);
   return data.enabled === true;
 }
 
+export async function getOidcEnabled(): Promise<boolean> {
+  return getFeatureEnabled("/api/auth/oidc/enabled");
+}
+
 export async function getSignupEnabled(): Promise<boolean> {
-  const data = await request<{ enabled: boolean }>(
-    "GET",
-    "/api/auth/signup/enabled",
-  );
-  return data.enabled === true;
+  return getFeatureEnabled("/api/auth/signup/enabled");
 }
 
 export async function createOidcLinkNonce(): Promise<string> {
