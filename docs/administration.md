@@ -296,8 +296,8 @@ Before attempting provider discovery, the server validates the issuer URL agains
 
 - Non-`https` schemes (only `https://` is accepted)
 - URLs containing userinfo (e.g. `https://user:pass@issuer.example.com`)
-- Literal private, loopback, or link-local IP addresses (RFC 1918, `127.0.0.0/8`, `169.254.0.0/16`, IPv6 loopback/link-local, and shared address space per RFC 6598)
-- Hostnames that resolve via DNS to any of the above address ranges
+- Literal private, loopback, link-local, or unique-local IP addresses (RFC 1918, `127.0.0.0/8`, `169.254.0.0/16`, `100.64.0.0/10` per RFC 6598, IPv6 loopback `::1`, link-local `fe80::/10`, and unique-local `fc00::/7`)
+- Hostnames that resolve via DNS to any of the above address ranges (DNS failures are treated as pass — the OIDC discovery request itself will fail and the `ssrfSafeHTTPClient` provides a second check at connection time)
 - IPv6 zone identifiers in the host (e.g. `[fe80::1%lo0]`)
 
 If validation passes, the server performs OIDC discovery. If discovery fails, the config is rejected with a `400` error.

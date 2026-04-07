@@ -263,7 +263,7 @@ Biblioteka sets the following HTTP security headers on every response via the `S
 
 | Header | Value | Purpose |
 |--------|-------|---------|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data: https://fonts.gstatic.com;` | Restricts resource origins to prevent XSS and data injection |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data: https://fonts.gstatic.com;` | Restricts external resource origins; `'unsafe-inline'` is required by the frontend theme bootstrap and limits (but does not eliminate) inline XSS protection |
 | `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing |
 | `X-Frame-Options` | `DENY` | Blocks framing (clickjacking protection) |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer information sent in cross-origin requests |
