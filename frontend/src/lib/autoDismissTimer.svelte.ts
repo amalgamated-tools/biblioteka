@@ -6,6 +6,9 @@ import { TimeoutState } from "./timeoutState.svelte";
  * Tracks whether a message (success, error, or informational) should be
  * visible and automatically clears that state after a configurable duration.
  *
+ * Call `clear()` from `onDestroy` to cancel any pending timer and prevent
+ * leaks when the component is torn down.
+ *
  * State is reactive via Svelte 5 `$state` runes.
  */
 export class AutoDismissTimer extends TimeoutState<boolean> {
