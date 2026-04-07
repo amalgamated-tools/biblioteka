@@ -133,6 +133,10 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 		if errors.As(err, &pve) {
 			writeError(ctx, w, http.StatusBadRequest, pve.Error())
 		} else {
+			slog.ErrorContext(ctx, "failed to validate library paths",
+				slog.Any(otelkeys.Error, err),
+				slog.Any(otelkeys.LibraryPaths, req.Paths),
+			)
 			writeError(ctx, w, http.StatusInternalServerError, "failed to validate paths")
 		}
 		return "", false
