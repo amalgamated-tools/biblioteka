@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -42,7 +43,8 @@ func Test_ValidateName(t *testing.T) {
 }
 
 func Test_ValidatePassword(t *testing.T) {
-	wantMsg := fmt.Sprintf("password must be at least %d characters", minPasswordLength)
+	wantMinMsg := fmt.Sprintf("password must be at least %d characters", minPasswordLength)
+	wantMaxMsg := fmt.Sprintf("password must be at most %d characters", maxPasswordLength)
 	tests := []struct {
 		name      string
 		password  string
@@ -51,10 +53,13 @@ func Test_ValidatePassword(t *testing.T) {
 	}{
 		{"valid password", "secret123", true, ""},
 		{"exact minimum length", "12345678", true, ""},
-		{"too short", "abc", false, wantMsg},
-		{"7 chars (one below minimum)", "1234567", false, wantMsg},
-		{"empty", "", false, wantMsg},
-		{"one char", "x", false, wantMsg},
+		{"too short", "abc", false, wantMinMsg},
+		{"7 chars (one below minimum)", "1234567", false, wantMinMsg},
+		{"empty", "", false, wantMinMsg},
+		{"one char", "x", false, wantMinMsg},
+		{"exact maximum length", strings.Repeat("a", maxPasswordLength), true, ""},
+		{"one above maximum", strings.Repeat("a", maxPasswordLength+1), false, wantMaxMsg},
+		{"well above maximum", strings.Repeat("a", 200), false, wantMaxMsg},
 	}
 
 	for _, tt := range tests {

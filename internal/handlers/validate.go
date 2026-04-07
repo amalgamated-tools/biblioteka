@@ -12,6 +12,12 @@ const (
 	maxTokenNameLength = 100
 
 	minPasswordLength = 8
+	// maxPasswordLength caps passwords at 72 bytes — bcrypt's internal truncation
+	// limit. Without this cap, two passwords that share the same first 72 bytes
+	// would be treated as identical (silent truncation collision). NIST SP 800-63B
+	// §5.1.1.2 requires verifiers to support at least 64 characters; 72 matches
+	// bcrypt's natural limit and avoids any silent truncation.
+	maxPasswordLength = 72
 )
 
 // validateName returns true if name is non-blank. On failure it writes a 400
@@ -41,12 +47,16 @@ func validateTokenName(ctx context.Context, w http.ResponseWriter, name string) 
 	return name, true
 }
 
-// validatePassword checks that a password meets the minimum length requirement.
+// validatePassword checks that a password meets the length requirements.
 // On failure it writes a 400 error response and returns false, so callers can
 // simply return.
 func validatePassword(ctx context.Context, w http.ResponseWriter, password string) bool {
 	if len(password) < minPasswordLength {
 		writeError(ctx, w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+		return false
+	}
+	if len(password) > maxPasswordLength {
+		writeError(ctx, w, http.StatusBadRequest, fmt.Sprintf("password must be at most %d characters", maxPasswordLength))
 		return false
 	}
 	return true
