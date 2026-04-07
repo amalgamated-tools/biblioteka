@@ -23,7 +23,10 @@ func respondBookSubResource[T any, DTO any](
 ) {
 	items, err := getFn(ctx, bookID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get book sub-resource", slog.String(otelkeys.Resource, resourceName), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to get book sub-resource",
+			slog.String(otelkeys.Resource, resourceName),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to get "+resourceName)
 		return
 	}
@@ -50,7 +53,10 @@ func putBookSubResource[T any, DTO any, Req any, Payload any](
 		return
 	}
 	if err := setFn(ctx, bookID, extractPayload(&req)); err != nil {
-		slog.ErrorContext(ctx, "failed to set book sub-resource", slog.String(otelkeys.Resource, resourceName), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to set book sub-resource",
+			slog.String(otelkeys.Resource, resourceName),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to set "+resourceName)
 		return
 	}

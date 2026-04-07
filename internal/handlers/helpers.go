@@ -267,12 +267,18 @@ func listUserEntities[T any, DTO any](
 
 	entities, err := list(ctx, userID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to list entities", slog.String(otelkeys.Resource, resource), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to list entities",
+			slog.String(otelkeys.Resource, resource),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+resource)
 		return
 	}
 
-	slog.DebugContext(ctx, "entities listed", slog.String(otelkeys.Resource, resource), slog.Int(otelkeys.Count, len(entities)))
+	slog.DebugContext(ctx, "entities listed",
+		slog.String(otelkeys.Resource, resource),
+		slog.Int(otelkeys.Count, len(entities)),
+	)
 
 	writeJSON(ctx, w, http.StatusOK, mapSlice(entities, toDTO))
 }
@@ -292,12 +298,18 @@ func listEntities[T any, DTO any](
 
 	entities, err := list(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to list entities", slog.String(otelkeys.Resource, resource), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to list entities",
+			slog.String(otelkeys.Resource, resource),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+resource)
 		return
 	}
 
-	slog.DebugContext(ctx, "entities listed", slog.String(otelkeys.Resource, resource), slog.Int(otelkeys.Count, len(entities)))
+	slog.DebugContext(ctx, "entities listed",
+		slog.String(otelkeys.Resource, resource),
+		slog.Int(otelkeys.Count, len(entities)),
+	)
 
 	writeJSON(ctx, w, http.StatusOK, mapSlice(entities, toDTO))
 }
