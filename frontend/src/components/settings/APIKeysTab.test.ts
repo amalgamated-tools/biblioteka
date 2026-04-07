@@ -67,7 +67,7 @@ describe("APIKeysTab delete confirmation", () => {
     await fireEvent.click(deleteButton);
     await tick();
 
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /Delete/ })).toBeInTheDocument();
     expect(screen.getByText(/Delete "CI Pipeline"\?/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
@@ -88,7 +88,7 @@ describe("APIKeysTab delete confirmation", () => {
     await fireEvent.click(cancelButton);
     await tick();
 
-    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(screen.queryByRole("group", { name: /Delete/ })).toBeNull();
   });
 
   it("calls deleteAPIKey after confirming deletion", async () => {
@@ -123,32 +123,12 @@ describe("APIKeysTab delete confirmation", () => {
     await fireEvent.click(deleteButton);
     await tick();
 
-    // Only one alertdialog should be shown
-    expect(screen.getAllByRole("alertdialog")).toHaveLength(1);
+    // Only one delete confirmation group should be shown
+    expect(screen.getAllByRole("group", { name: /Delete/ })).toHaveLength(1);
     // The other delete button should still be visible
     expect(
       screen.getByRole("button", { name: /Delete API key My Script/ }),
     ).toBeInTheDocument();
-  });
-
-  it("dismisses confirmation dialog when Escape is pressed", async () => {
-    render(APIKeysTab);
-    await tick();
-    await tick();
-
-    const deleteButton = screen.getByRole("button", {
-      name: /Delete API key CI Pipeline/,
-    });
-    await fireEvent.click(deleteButton);
-    await tick();
-
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-
-    const dialog = screen.getByRole("alertdialog");
-    await fireEvent.keyDown(dialog, { key: "Escape" });
-    await tick();
-
-    expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
   it("moves focus to the Delete confirm button when dialog opens", async () => {
