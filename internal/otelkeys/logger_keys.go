@@ -71,6 +71,7 @@ const (
 	LibrariesEnqueued   string = "libraries_enqueued"
 	LibraryID           string = "library_id"
 	LibraryName         string = "library_name"
+	LibraryPaths        string = "library_paths"
 	LibraryRoot         string = "library_root"
 	Limit               string = "limit"
 	Line                string = "line"

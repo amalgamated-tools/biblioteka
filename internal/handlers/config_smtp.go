@@ -127,7 +127,13 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		TLS:      strings.TrimSpace(req.TLS),
 	})
 	if err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
+		var ve *smtp.ValidationError
+		if errors.As(err, &ve) {
+			writeError(r.Context(), w, http.StatusBadRequest, ve.Error())
+			return
+		}
+		slog.ErrorContext(r.Context(), "unexpected SMTP validation error", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to validate SMTP configuration")
 		return
 	}
 
@@ -229,7 +235,13 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 
 	params, err := smtp.ValidateForSend(cfg)
 	if err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
+		var ve *smtp.ValidationError
+		if errors.As(err, &ve) {
+			writeError(r.Context(), w, http.StatusBadRequest, ve.Error())
+			return
+		}
+		slog.ErrorContext(r.Context(), "unexpected SMTP validation error", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to validate SMTP configuration")
 		return
 	}
 
