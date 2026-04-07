@@ -88,6 +88,8 @@ Reading states have three statuses that map to Kobo's values:
 | `Reading` | Book is in progress |
 | `Finished` | Book has been marked finished |
 
+The state endpoint returns `404 Not Found` when the referenced book does not exist in the library. This can happen if a book was deleted after the device last synced its list; the next library sync will remove the book from the device, resolving the mismatch.
+
 ---
 
 ## Managing sync tokens
