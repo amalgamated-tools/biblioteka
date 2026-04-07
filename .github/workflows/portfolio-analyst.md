@@ -32,7 +32,7 @@ steps:
 safe-outputs:
   create-discussion:
     title-prefix: "[portfolio] "
-    category: "announcements"
+    category: "audits"
     close-older-discussions: true
   upload-asset:
 timeout-minutes: 20

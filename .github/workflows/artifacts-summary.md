@@ -22,7 +22,7 @@ tools:
     toolsets: [actions, repos]
 safe-outputs:
   create-discussion:
-    category: "announcements"
+    category: "audits"
     max: 1
     close-older-discussions: true
 timeout-minutes: 15
