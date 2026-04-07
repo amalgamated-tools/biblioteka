@@ -159,7 +159,7 @@ func TestHandleOIDCEnabled_NotConfigured(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	var body oidcEnabledResponse
+	var body enabledResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	require.False(t, body.Enabled)
 }
@@ -175,7 +175,7 @@ func TestHandleOIDCEnabled_Configured(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	var body oidcEnabledResponse
+	var body enabledResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	require.True(t, body.Enabled)
 }
@@ -186,6 +186,61 @@ func TestHandleOIDCEnabled_MethodNotAllowed(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	s.handleOIDCEnabled(rec, req)
+
+	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
+
+	allow := rec.Header().Get("Allow")
+	require.NotEmpty(t, allow)
+
+	var body map[string]string
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
+	require.Equal(t, "method not allowed", body["error"])
+}
+
+// ---------------------------------------------------------------------------
+// handleSignupEnabled
+// ---------------------------------------------------------------------------
+
+func TestHandleSignupEnabled_Enabled(t *testing.T) {
+	s := &Server{
+		authHandler: &handlers.AuthHandler{DisableSignup: false},
+	}
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/signup/enabled", nil)
+	rec := httptest.NewRecorder()
+
+	s.handleSignupEnabled(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var body enabledResponse
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
+	require.True(t, body.Enabled)
+}
+
+func TestHandleSignupEnabled_Disabled(t *testing.T) {
+	s := &Server{
+		authHandler: &handlers.AuthHandler{DisableSignup: true},
+	}
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/signup/enabled", nil)
+	rec := httptest.NewRecorder()
+
+	s.handleSignupEnabled(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var body enabledResponse
+	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
+	require.False(t, body.Enabled)
+}
+
+func TestHandleSignupEnabled_MethodNotAllowed(t *testing.T) {
+	s := &Server{
+		authHandler: &handlers.AuthHandler{},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/signup/enabled", nil)
+	rec := httptest.NewRecorder()
+
+	s.handleSignupEnabled(rec, req)
 
 	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 
