@@ -373,6 +373,7 @@ func deleteResource[T any](
 	r *http.Request,
 	id string,
 	resource string,
+	auditEntityType string,
 	idKey string,
 	get func(context.Context, string) (T, error),
 	del func(context.Context, string) error,
@@ -380,7 +381,7 @@ func deleteResource[T any](
 	auditMeta func(T) map[string]any,
 ) {
 	userID := auth.UserIDFromContext(r.Context())
-	deleteResourceCore(d, w, r, userID, id, resource, resource, idKey,
+	deleteResourceCore(d, w, r, userID, id, resource, auditEntityType, idKey,
 		func(ctx context.Context) (T, error) { return get(ctx, id) },
 		func(ctx context.Context) error { return del(ctx, id) },
 		auditAction, auditMeta,
