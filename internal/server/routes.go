@@ -256,7 +256,13 @@ func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, allowedMe
 	}
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), "failed to encode method not allowed response", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(
+			r.Context(),
+			"failed to encode method not allowed response",
+			slog.Any(otelkeys.Error, err),
+			slog.String(otelkeys.Path, r.URL.Path),
+			slog.String(otelkeys.Method, r.Method),
+		)
 	}
 
 	return false
