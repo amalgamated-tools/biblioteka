@@ -173,6 +173,116 @@ func TestCollectRows_ClosesRowsOnError(t *testing.T) {
 	require.False(t, rows.Next())
 }
 
+// --- collectRowsAndTotal tests -------------------------------------------
+
+// sampleWithTotal is used by collectRowsAndTotal tests to exercise the
+// scan-with-total pattern (e.g., a window function COUNT(*) OVER()).
+func scanSampleAndTotal(row interface{ Scan(...any) error }) (*sample, int, error) {
+	var s sample
+	var total int
+	if err := row.Scan(&s.Name, &s.Age, &total); err != nil {
+		return nil, 0, err
+	}
+	return &s, total, nil
+}
+
+func TestCollectRowsAndTotal_HappyPath(t *testing.T) {
+	d := memDB(t)
+	_, err := d.Exec(`CREATE TABLE tt (name TEXT, age INTEGER)`)
+	require.NoError(t, err)
+	_, err = d.Exec(`INSERT INTO tt VALUES ('Alice', 30), ('Bob', 25), ('Carol', 40)`)
+	require.NoError(t, err)
+
+	// Simulate a paginated query with COUNT(*) OVER() as the total column.
+	rows, err := d.Query(`SELECT name, age, COUNT(*) OVER() AS total FROM tt ORDER BY age`)
+	require.NoError(t, err)
+
+	items, total, err := collectRowsAndTotal(rows, scanSampleAndTotal)
+	require.NoError(t, err)
+	require.Equal(t, 3, total)
+	require.Len(t, items, 3)
+	want := []sample{{"Bob", 25}, {"Alice", 30}, {"Carol", 40}}
+	for i, w := range want {
+		require.Equal(t, w, items[i])
+	}
+}
+
+func TestCollectRowsAndTotal_EmptyResult(t *testing.T) {
+	d := memDB(t)
+	_, err := d.Exec(`CREATE TABLE tt2 (name TEXT, age INTEGER)`)
+	require.NoError(t, err)
+
+	rows, err := d.Query(`SELECT name, age, COUNT(*) OVER() AS total FROM tt2`)
+	require.NoError(t, err)
+
+	items, total, err := collectRowsAndTotal(rows, scanSampleAndTotal)
+	require.NoError(t, err)
+	require.Nil(t, items)
+	require.Equal(t, 0, total)
+}
+
+func TestCollectRowsAndTotal_PropagatesScanError(t *testing.T) {
+	d := memDB(t)
+	_, err := d.Exec(`CREATE TABLE tt3 (name TEXT)`)
+	require.NoError(t, err)
+	_, err = d.Exec(`INSERT INTO tt3 VALUES ('Alice')`)
+	require.NoError(t, err)
+
+	// Query returns one column, but scanSampleAndTotal expects three.
+	rows, err := d.Query(`SELECT name FROM tt3`)
+	require.NoError(t, err)
+
+	items, total, err := collectRowsAndTotal(rows, scanSampleAndTotal)
+	require.Error(t, err, "expected scan error, got nil with items: %+v", items)
+	require.Nil(t, items)
+	require.Equal(t, 0, total)
+
+	// Rows should be closed even after a scan error.
+	require.False(t, rows.Next())
+}
+
+func TestCollectRowsAndTotal_ClosesRowsOnSuccess(t *testing.T) {
+	d := memDB(t)
+	_, err := d.Exec(`CREATE TABLE tt4 (name TEXT, age INTEGER)`)
+	require.NoError(t, err)
+	_, err = d.Exec(`INSERT INTO tt4 VALUES ('Alice', 30)`)
+	require.NoError(t, err)
+
+	rows, err := d.Query(`SELECT name, age, COUNT(*) OVER() AS total FROM tt4`)
+	require.NoError(t, err)
+
+	_, _, err = collectRowsAndTotal(rows, scanSampleAndTotal)
+	require.NoError(t, err)
+
+	// Calling rows.Next() after Close returns false.
+	require.False(t, rows.Next())
+}
+
+func TestCollectRowsAndTotal_PropagatesRowsErr(t *testing.T) {
+	d := memDB(t)
+	_, err := d.Exec(`CREATE TABLE tt5 (name TEXT, age INTEGER)`)
+	require.NoError(t, err)
+	// Insert a large batch to prevent the driver from buffering everything.
+	for range 10000 {
+		_, err = d.Exec(`INSERT INTO tt5 VALUES ('x', 1)`)
+		require.NoError(t, err)
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	rows, err := d.QueryContext(ctx, `SELECT name, age, COUNT(*) OVER() AS total FROM tt5`)
+	require.NoError(t, err)
+
+	// Cancel the context so rows.Err() reports context.Canceled.
+	cancel()
+
+	_, _, err = collectRowsAndTotal(rows, scanSampleAndTotal)
+
+	if err == nil {
+		t.Skip("SQLite driver buffered all rows; context cancel did not propagate to rows.Err()")
+	}
+	require.ErrorIs(t, err, context.Canceled)
+}
+
 func TestCollectRows_PropagatesRowsErr(t *testing.T) {
 	// rows.Err() is checked after the iteration loop in collectRows.
 	// To exercise this, we cancel the query's context before iterating,

@@ -23,26 +23,13 @@ func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book,
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	var total int
-	for rows.Next() {
-		b, t, err := scanBookAndTotal(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		total = t
-		books = append(books, *b)
-	}
-	if err := rows.Err(); err != nil {
+	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
+	if err != nil {
 		return nil, 0, err
 	}
-
 	if err := countFallback(ctx, d, &total, len(books), offset, `SELECT COUNT(*) FROM books`); err != nil {
 		return nil, 0, err
 	}
-
 	return books, total, nil
 }
 
@@ -61,26 +48,13 @@ func (d *DB) ListRecentBooks(ctx context.Context, limit, offset int) ([]Book, in
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	var total int
-	for rows.Next() {
-		b, t, err := scanBookAndTotal(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		total = t
-		books = append(books, *b)
-	}
-	if err := rows.Err(); err != nil {
+	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
+	if err != nil {
 		return nil, 0, err
 	}
-
 	if err := countFallback(ctx, d, &total, len(books), offset, `SELECT COUNT(*) FROM books`); err != nil {
 		return nil, 0, err
 	}
-
 	return books, total, nil
 }
 
@@ -114,29 +88,16 @@ func (d *DB) ListBooksByAuthorPaginated(ctx context.Context, authorID string, li
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	var total int
-	for rows.Next() {
-		b, t, err := scanBookAndTotal(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		total = t
-		books = append(books, *b)
-	}
-	if err := rows.Err(); err != nil {
+	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
+	if err != nil {
 		return nil, 0, err
 	}
-
 	if err := countFallback(ctx, d, &total, len(books), offset,
 		`SELECT COUNT(*) FROM books b INNER JOIN book_authors ba ON ba.book_id = b.id WHERE ba.author_id = $1`,
 		authorID,
 	); err != nil {
 		return nil, 0, err
 	}
-
 	return books, total, nil
 }
 
@@ -176,29 +137,16 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	var total int
-	for rows.Next() {
-		b, t, err := scanBookAndTotal(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		total = t
-		books = append(books, *b)
-	}
-	if err := rows.Err(); err != nil {
+	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
+	if err != nil {
 		return nil, 0, err
 	}
-
 	if err := countFallback(ctx, d, &total, len(books), offset,
 		`SELECT COUNT(*) FROM books b INNER JOIN book_series bs ON bs.book_id = b.id WHERE bs.series_id = $1`,
 		seriesID,
 	); err != nil {
 		return nil, 0, err
 	}
-
 	return books, total, nil
 }
 
@@ -228,27 +176,14 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	var total int
-	for rows.Next() {
-		b, t, err := scanBookAndTotal(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		total = t
-		books = append(books, *b)
-	}
-	if err := rows.Err(); err != nil {
+	books, total, err := collectRowsAndTotal(rows, scanBookAndTotal)
+	if err != nil {
 		return nil, 0, err
 	}
-
 	if err := countFallback(ctx, d, &total, len(books), offset,
 		`SELECT COUNT(*) FROM books `+whereClause, likePattern,
 	); err != nil {
 		return nil, 0, err
 	}
-
 	return books, total, nil
 }
