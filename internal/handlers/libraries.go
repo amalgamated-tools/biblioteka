@@ -100,7 +100,7 @@ func (h *LibraryHandler) HandleLibrary(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// listLibraries godoc
+// listLibraries returns all libraries.
 //
 //	@Summary		List libraries
 //	@Description	Returns all libraries
@@ -156,7 +156,7 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 	return string(data), true
 }
 
-// createLibrary godoc
+// createLibrary creates a new library and enqueues a scan job for each configured path (admin only).
 //
 //	@Summary		Create a library
 //	@Description	Create a new library and enqueue scan jobs
@@ -222,7 +222,7 @@ func (h *LibraryHandler) createLibrary(w http.ResponseWriter, r *http.Request) {
 	writeJSON(r.Context(), w, http.StatusCreated, dto)
 }
 
-// getLibrary godoc
+// getLibrary returns a single library by ID.
 //
 //	@Summary		Get a library
 //	@Description	Returns a single library by ID
@@ -245,7 +245,7 @@ func (h *LibraryHandler) getLibrary(w http.ResponseWriter, r *http.Request, id s
 	writeJSON(r.Context(), w, http.StatusOK, toLibraryDTO(lib))
 }
 
-// updateLibrary godoc
+// updateLibrary replaces the configuration for an existing library (admin only).
 //
 //	@Summary		Update a library
 //	@Description	Update an existing library
@@ -299,7 +299,7 @@ func (h *LibraryHandler) updateLibrary(w http.ResponseWriter, r *http.Request, i
 	writeJSON(r.Context(), w, http.StatusOK, toLibraryDTO(lib))
 }
 
-// deleteLibrary godoc
+// deleteLibrary permanently removes a library (admin only).
 //
 //	@Summary		Delete a library
 //	@Description	Delete a library by ID
@@ -325,7 +325,7 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 	)
 }
 
-// listLibraryBooks godoc
+// listLibraryBooks returns paginated books belonging to the specified library.
 //
 //	@Summary		List books in a library
 //	@Description	Returns paginated books belonging to a specific library
