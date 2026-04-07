@@ -135,7 +135,9 @@ type bookDTO struct {
 	UpdatedAt       db.Timestamp         `json:"updated_at"`
 }
 
-func (h *BookHandler) toBookDTO(ctx context.Context, b *db.Book) (bookDTO, error) {
+// loadBookDTO builds a bookDTO for b by issuing three additional DB queries:
+// GetBookAuthors, GetBookSeries, and ListBookFiles.
+func (h *BookHandler) loadBookDTO(ctx context.Context, b *db.Book) (bookDTO, error) {
 	dto := bookDTO{
 		ID:              b.ID,
 		Title:           b.Title,
@@ -342,7 +344,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dto, err := h.toBookDTO(r.Context(), b)
+	dto, err := h.loadBookDTO(r.Context(), b)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to build book DTO",
 			slog.String(otelkeys.BookID, b.ID),
@@ -393,7 +395,7 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 		return
 	}
 
-	dto, err := h.toBookDTO(r.Context(), b)
+	dto, err := h.loadBookDTO(r.Context(), b)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to build book DTO",
 			slog.String(otelkeys.BookID, b.ID),
@@ -442,7 +444,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		return
 	}
 
-	dto, err := h.toBookDTO(r.Context(), b)
+	dto, err := h.loadBookDTO(r.Context(), b)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to build book DTO",
 			slog.String(otelkeys.BookID, b.ID),
