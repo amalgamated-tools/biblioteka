@@ -16,5 +16,8 @@ export async function listEntityBooks(
     limit: String(limit),
     offset: String(offset),
   });
-  return request<PaginatedBooks>("GET", `${entityPath}/books?${params.toString()}`);
+  return request<PaginatedBooks>(
+    "GET",
+    `${entityPath}/books?${params.toString()}`,
+  );
 }
