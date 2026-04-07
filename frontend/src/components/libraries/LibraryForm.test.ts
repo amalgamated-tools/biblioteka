@@ -34,6 +34,39 @@ import { libraryStore } from "../../stores/libraries.svelte";
 describe("LibraryForm accessibility", () => {
   afterEach(() => cleanup());
 
+  it("renders an h1 heading with 'Create Library' in create mode", async () => {
+    const { getByRole } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    expect(
+      getByRole("heading", { level: 1, name: /Create Library/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders an h1 heading with 'Edit Library' in edit mode", async () => {
+    vi.mocked(libraryStore).libraries = [
+      {
+        id: "lib-1",
+        name: "Fiction",
+        paths: ["/books"],
+        organization_type: LIBRARY_ORGANIZATION_TYPES.BOOK_PER_FOLDER,
+        monitored: false,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { getByRole } = render(LibraryForm, {
+      props: { mode: "edit", editId: "lib-1" },
+    });
+    await tick();
+
+    expect(
+      getByRole("heading", { level: 1, name: /Edit Library/i }),
+    ).toBeInTheDocument();
+  });
+
   it("marks the name input as aria-required", async () => {
     const { container } = render(LibraryForm, {
       props: { mode: "create", editId: "" },
