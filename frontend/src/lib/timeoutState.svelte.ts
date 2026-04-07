@@ -8,7 +8,7 @@
  * State is reactive via Svelte 5 `$state` runes.
  */
 export class TimeoutState<T> {
-  value: T = $state<T>(undefined as T);
+  protected value: T = $state<T>(undefined as T);
 
   private timeoutId: number | null = null;
   private readonly idleValue: T;
