@@ -22,12 +22,18 @@ import (
 //	@Param			body	body		signupRequest	true	"Signup request"
 //	@Success		201		{object}	authResponse
 //	@Failure		400		{object}	errorResponse
+//	@Failure		403		{object}	errorResponse
 //	@Failure		409		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse
 //	@Router			/auth/signup [post]
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	if h.DisableSignup {
+		writeError(r.Context(), w, http.StatusForbidden, "signup is disabled")
 		return
 	}
 
