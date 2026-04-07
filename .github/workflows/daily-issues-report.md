@@ -1,5 +1,5 @@
 ---
-description: Daily report analyzing repository issues with clustering, metrics, and trend charts
+description: Daily issues report as a themed HTML dashboard with CSS-only charts, SVG tickers, OGP images, sitemaps, and GitHub Pages deployment
 on:
   schedule: daily
   workflow_dispatch:
@@ -8,7 +8,8 @@ permissions:
   actions: read
   issues: read
   pull-requests: read
-  discussions: read
+  pages: write
+  id-token: write
 engine: copilot
 strict: true
 tracker-id: daily-issues-report
@@ -17,358 +18,347 @@ features:
 tools:
   github:
     lockdown: false
-    toolsets: [default, discussions]
+    toolsets: [default]
+  bash:
+    - "*"
 safe-outputs:
   upload-asset:
-  create-discussion:
-    expires: 3d
-    category: "announcements"
-    title-prefix: "[daily issues] "
-    max: 1
-    close-older-discussions: true
-  close-discussion:
-    max: 10
 timeout-minutes: 30
 imports:
   - shared/mood.md
   - shared/jqschema.md
   - shared/issues-data-fetch.md
-  - shared/python-dataviz.md
-  - shared/trends.md
   - shared/reporting.md
 source: github/gh-aw/.github/workflows/daily-issues-report.md@852cb06ad52958b402ed982b69957ffc57ca0619
+
+steps:
+  - name: Setup report site directory
+    run: |
+      mkdir -p /tmp/gh-aw/report-site
+
+  - name: Upload Pages artifact
+    if: always()
+    uses: actions/upload-pages-artifact@v4
+    with:
+      path: /tmp/gh-aw/report-site
+
+  - name: Deploy to GitHub Pages
+    if: always()
+    id: pages-deployment
+    uses: actions/deploy-pages@v4
 ---
 
 {{#runtime-import? .github/shared-instructions.md}}
 
-# Daily Issues Report Generator
+# Daily Issues Report — Themed HTML Dashboard
 
-You are an expert analyst that generates comprehensive daily reports about repository issues, using Python for clustering and visualization.
+You are an expert front-end engineer and data analyst. Your job is to generate a complete, self-contained static HTML dashboard that visualizes repository issue metrics — **using only HTML, inline CSS, and inline SVG**. No JavaScript. No Python. No external assets or CDN links.
 
 ## Mission
 
-Generate a daily report analyzing up to 1000 issues from the repository (see `issues_analyzed` in scratchpad/metrics-glossary.md):
-1. Cluster issues by topic/theme using natural language analysis
-2. Calculate various metrics (open/closed rates, response times, label distribution)
-3. Generate trend charts showing issue activity over time
-4. Create a new discussion with the report
-5. Close previous daily issues discussions to avoid clutter
+Generate a daily report analyzing up to 1000 issues from the repository:
+1. Process issues data with `bash` and `jq`
+2. Build a themed HTML dashboard with **CSS-only charts** (bar, donut, sparkline)
+3. Generate an **SVG ticker** strip summarizing key metrics
+4. Produce an **OGP image** (SVG) for social-media previews
+5. Write a **sitemap.xml**
+6. Write every file to `/tmp/gh-aw/report-site/` for GitHub Pages deployment
 
 ## Current Context
 
 - **Repository**: ${{ github.repository }}
 - **Run ID**: ${{ github.run_id }}
-- **Date**: Generated daily at 6 AM UTC
+- **Date**: Generated daily
+
+---
 
 ## Phase 1: Load and Prepare Data
 
 The issues data has been pre-fetched and is available at `/tmp/gh-aw/issues-data/issues.json`.
 
-1. **Load the issues data**:
+1. **Verify the data**:
    ```bash
    jq 'length' /tmp/gh-aw/issues-data/issues.json
    ```
 
-2. **Prepare data for Python analysis**:
-   - Copy issues.json to `/tmp/gh-aw/python/data/issues.json`
-   - Validate the data is properly formatted
-
-## Phase 2: Python Analysis with Clustering
-
-Create a Python script to analyze and cluster the issues. Use scikit-learn for clustering if available, or implement simple keyword-based clustering.
-
-### Required Analysis
-
-**Clustering Requirements**:
-- Use TF-IDF vectorization on issue titles and bodies
-- Apply K-means or hierarchical clustering
-- Identify 5-10 major issue clusters/themes
-- Label each cluster based on common keywords
-
-**Metrics to Calculate** (see scratchpad/metrics-glossary.md for definitions):
-- Total issues (open vs closed) - `total_issues`, `open_issues`, `closed_issues`
-- Issues opened in last 7, 30 days - `issues_opened_7d`, `issues_opened_30d`
-- Average time to close (for closed issues)
-- Most active labels (by issue count)
-- Most active authors
-- Issues without labels (need triage) - `issues_without_labels`
-- Issues without assignees - `issues_without_assignees`
-- Stale issues (no activity in 30+ days) - `stale_issues`
-
-### Python Script Structure
-
-```python
-#!/usr/bin/env python3
-"""
-Daily Issues Analysis Script
-Clusters issues and generates metrics and visualizations
-"""
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import datetime, timedelta
-import json
-from collections import Counter
-import re
-
-# Load issues data
-with open('/tmp/gh-aw/python/data/issues.json', 'r') as f:
-    issues = json.load(f)
-
-df = pd.DataFrame(issues)
-
-# Convert dates
-df['createdAt'] = pd.to_datetime(df['createdAt'])
-df['updatedAt'] = pd.to_datetime(df['updatedAt'])
-df['closedAt'] = pd.to_datetime(df['closedAt'])
-
-# Calculate basic metrics (see scratchpad/metrics-glossary.md for definitions)
-
-# Scope: All issues in repository, no filters
-total_issues = len(df)
-
-# Scope: Issues where state = "open" at report time
-open_issues = len(df[df['state'] == 'OPEN'])
-
-# Scope: Issues where state = "closed" at report time
-closed_issues = len(df[df['state'] == 'CLOSED'])
-
-# Time-based metrics
-now = datetime.now(df['createdAt'].iloc[0].tzinfo if len(df) > 0 else None)
-
-# Scope: Issues created in last 7 days
-issues_opened_7d = len(df[df['createdAt'] > now - timedelta(days=7)])
-
-# Scope: Issues created in last 30 days
-issues_opened_30d = len(df[df['createdAt'] > now - timedelta(days=30)])
-
-# Average time to close
-# Scope: Closed issues with valid timestamps
-closed_df = df[df['closedAt'].notna()]
-if len(closed_df) > 0:
-    closed_df['time_to_close'] = closed_df['closedAt'] - closed_df['createdAt']
-    avg_close_time = closed_df['time_to_close'].mean()
-
-# Extract labels for clustering
-def extract_labels(labels_list):
-    if labels_list:
-        return [l['name'] for l in labels_list]
-    return []
-
-df['label_names'] = df['labels'].apply(extract_labels)
-
-# Simple keyword-based clustering from titles
-def cluster_by_keywords(title):
-    title_lower = title.lower() if title else ''
-    if 'bug' in title_lower or 'fix' in title_lower or 'error' in title_lower:
-        return 'Bug Reports'
-    elif 'feature' in title_lower or 'enhancement' in title_lower or 'request' in title_lower:
-        return 'Feature Requests'
-    elif 'doc' in title_lower or 'readme' in title_lower:
-        return 'Documentation'
-    elif 'test' in title_lower:
-        return 'Testing'
-    elif 'refactor' in title_lower or 'cleanup' in title_lower:
-        return 'Refactoring'
-    elif 'security' in title_lower or 'vulnerability' in title_lower:
-        return 'Security'
-    elif 'performance' in title_lower or 'slow' in title_lower:
-        return 'Performance'
-    else:
-        return 'Other'
-
-df['cluster'] = df['title'].apply(cluster_by_keywords)
-
-# Save metrics to JSON for report
-# Note: Using standardized metric names from scratchpad/metrics-glossary.md
-metrics = {
-    'total_issues': total_issues,
-    'open_issues': open_issues,
-    'closed_issues': closed_issues,
-    'issues_opened_7d': issues_opened_7d,  # Standardized name
-    'issues_opened_30d': issues_opened_30d,  # Standardized name
-    'cluster_counts': df['cluster'].value_counts().to_dict()
-}
-with open('/tmp/gh-aw/python/data/metrics.json', 'w') as f:
-    json.dump(metrics, f, indent=2, default=str)
-```
-
-### Install Additional Libraries
-
-If needed for better clustering:
-```bash
-pip install --user scikit-learn
-```
-
-## Phase 3: Generate Trend Charts
-
-Generate exactly **2 high-quality charts**:
-
-### Chart 1: Issue Activity Trends
-- **Title**: "Issue Activity - Last 30 Days"
-- **Content**: 
-  - Line showing issues opened per day
-  - Line showing issues closed per day
-  - 7-day moving average overlay
-- **Save to**: `/tmp/gh-aw/python/charts/issue_activity_trends.png`
-
-### Chart 2: Issue Distribution by Cluster
-- **Title**: "Issue Clusters by Theme"
-- **Chart Type**: Horizontal bar chart
-- **Content**:
-  - Horizontal bars showing count per cluster
-  - Include cluster labels based on keywords
-  - Sort by count descending
-- **Save to**: `/tmp/gh-aw/python/charts/issue_clusters.png`
-
-### Chart Quality Requirements
-- DPI: 300 minimum
-- Figure size: 12x7 inches
-- Use seaborn styling with professional colors
-- Clear labels and legend
-- Grid lines for readability
-
-## Phase 4: Upload Charts
-
-Use the `upload asset` tool to upload both charts:
-1. Upload `/tmp/gh-aw/python/charts/issue_activity_trends.png`
-2. Upload `/tmp/gh-aw/python/charts/issue_clusters.png`
-3. Collect the returned URLs for embedding in the discussion
-
-## Phase 5: Close Previous Discussions
-
-Before creating the new discussion, find and close previous daily issues discussions:
-
-1. Search for discussions with title prefix "[daily issues]"
-2. Close each found discussion with reason "OUTDATED"
-3. Add a closing comment: "This discussion has been superseded by a newer daily issues report."
-
-Use the `close_discussion` safe output for each discussion found.
-
-## Phase 6: Create Discussion Report
-
-Create a new discussion with the comprehensive report.
-
-**Formatting Guideline**: Use h3 (###) or lower for all headers in your report to maintain proper document hierarchy. The discussion title serves as h1, so all content headers should start at h3.
-
-### Discussion Format
-
-**Title**: `[daily issues] Daily Issues Report - YYYY-MM-DD`
-
-**Body**:
-
-```markdown
-Brief 2-3 paragraph summary of key findings: total issues analyzed, main clusters identified, notable trends, and any concerns that need attention.
-
-<details>
-<summary><b>📊 Full Report Details</b></summary>
-
-### 📈 Issue Activity Trends
-
-![Issue Activity Trends](URL_FROM_UPLOAD_ASSET_CHART_1)
-
-[2-3 sentence analysis of activity trends - peaks, patterns, recent changes]
-
-### 🏷️ Issue Clusters by Theme
-
-![Issue Clusters](URL_FROM_UPLOAD_ASSET_CHART_2)
-
-[Analysis of the major clusters found and their characteristics]
-
-### Cluster Details
-
-| Cluster | Theme | Issue Count | Sample Issues |
-|---------|-------|-------------|---------------|
-| 1 | [Theme] | [Count] | #123, #456 |
-| 2 | [Theme] | [Count] | #789, #101 |
-| ... | ... | ... | ... |
-
-### 📊 Key Metrics
-
-### Volume Metrics
-- **Total Issues Analyzed** (`issues_analyzed`): [NUMBER] (Scope: Last 1000 issues)
-- **Open Issues** (`open_issues`): [NUMBER] ([PERCENT]%)
-- **Closed Issues** (`closed_issues`): [NUMBER] ([PERCENT]%)
-
-### Time-Based Metrics
-- **Issues Opened (Last 7 Days)** (`issues_opened_7d`): [NUMBER]
-- **Issues Opened (Last 30 Days)** (`issues_opened_30d`): [NUMBER]
-- **Average Time to Close**: [DURATION]
-
-### Triage Metrics
-- **Issues Without Labels** (`issues_without_labels`): [NUMBER]
-- **Issues Without Assignees** (`issues_without_assignees`): [NUMBER]
-- **Stale Issues (30+ days)** (`stale_issues`): [NUMBER]
-
-### 🏆 Top Labels
-
-| Label | Issue Count |
-|-------|-------------|
-| [label] | [count] |
-| ... | ... |
-
-### 👥 Most Active Authors
-
-| Author | Issues Created |
-|--------|----------------|
-| @[author] | [count] |
-| ... | ... |
-
-### ⚠️ Issues Needing Attention
-
-### Stale Issues (No Activity 30+ Days)
-- #[number]: [title]
-- #[number]: [title]
-
-### Unlabeled Issues
-- #[number]: [title]
-- #[number]: [title]
-
-### 📝 Recommendations
-
-1. [Specific actionable recommendation based on findings]
-2. [Another recommendation]
-3. [...]
-
-</details>
+2. **Extract metrics with `jq`** into `/tmp/gh-aw/report-site/data.json`:
+
+   ```bash
+   jq -c '{
+     total:        length,
+     open:         [.[] | select(.state=="OPEN")]  | length,
+     closed:       [.[] | select(.state=="CLOSED")] | length,
+     opened_7d:    [.[] | select(.createdAt > (now - 7*86400  | todate))] | length,
+     opened_30d:   [.[] | select(.createdAt > (now - 30*86400 | todate))] | length,
+     stale:        [.[] | select(.state=="OPEN") | select(.updatedAt < (now - 30*86400 | todate))] | length,
+     no_labels:    [.[] | select(.state=="OPEN") | select((.labels | length)==0)] | length,
+     no_assignees: [.[] | select(.state=="OPEN") | select((.assignees | length)==0)] | length,
+     top_labels:   [.[] | .labels[]?.name] | group_by(.) | map({name:.[0], count:length}) | sort_by(-.count) | .[0:10],
+     top_authors:  [.[] | .author.login] | group_by(.) | map({login:.[0], count:length}) | sort_by(-.count) | .[0:10],
+     clusters:     [.[] | {
+       cluster: (
+         if   (.title | test("bug|fix|error";"i"))           then "Bug Reports"
+         elif (.title | test("feat|enhancement|request";"i")) then "Feature Requests"
+         elif (.title | test("doc|readme";"i"))               then "Documentation"
+         elif (.title | test("test";"i"))                     then "Testing"
+         elif (.title | test("refactor|cleanup";"i"))         then "Refactoring"
+         elif (.title | test("secur|vuln";"i"))               then "Security"
+         elif (.title | test("perf|slow";"i"))                then "Performance"
+         else "Other" end
+       )
+     }] | group_by(.cluster) | map({name:.[0].cluster, count:length}) | sort_by(-.count),
+     daily_opened: [.[] | .createdAt[:10]] | group_by(.) | map({date:.[0], count:length}) | sort_by(.date) | .[-30:],
+     daily_closed: [.[] | select(.closedAt != null) | .closedAt[:10]] | group_by(.) | map({date:.[0], count:length}) | sort_by(.date) | .[-30:]
+   }' /tmp/gh-aw/issues-data/issues.json > /tmp/gh-aw/report-site/data.json
+   ```
+
+   Adapt the `jq` filter as needed if any fields are missing. Gracefully handle nulls.
 
 ---
-*Report generated automatically by the Daily Issues Report workflow*
-*Data source: Last 1000 issues from ${{ github.repository }}*
+
+## Phase 2: Generate Themed HTML Dashboard
+
+Write `/tmp/gh-aw/report-site/index.html` — a **single self-contained HTML file** with all CSS inlined in a `<style>` block. No `<script>` tags. No external resources.
+
+### Design System
+
+Use CSS custom properties on `:root` for a **dark professional theme**:
+
+| Token | Value | Purpose |
+|---|---|---|
+| `--bg` | `#0d1117` | Page background |
+| `--surface` | `#161b22` | Card background |
+| `--border` | `#30363d` | Card/section borders |
+| `--text` | `#e6edf3` | Primary text |
+| `--text-muted` | `#7d8590` | Secondary text |
+| `--accent` | `#58a6ff` | Links, highlights |
+| `--green` | `#3fb950` | Positive / open metrics |
+| `--red` | `#f85149` | Negative / attention metrics |
+| `--purple` | `#bc8cff` | Cluster / category accent |
+| `--orange` | `#d29922` | Warning / stale metrics |
+| `--chart-1` through `--chart-8` | distinct hues | Chart segment colors |
+
+Include a `@media (prefers-color-scheme: light)` override that remaps these tokens to a light palette.
+
+### Layout
+
+- Responsive CSS Grid: single column on mobile, 2-col on tablet, 3-col on desktop.
+- `max-width: 1200px; margin: 0 auto;` wrapper.
+- Sticky header bar with repo name, date, and a mini SVG ticker (see Phase 3).
+
+### Required Sections (top → bottom)
+
+1. **Hero / Summary Cards** — a grid of metric cards:
+   - Total Issues (open / closed split shown as a stacked bar inside the card)
+   - Issues Opened Last 7 Days
+   - Issues Opened Last 30 Days
+   - Stale Issues (30+ days no activity)
+   - Issues Without Labels
+   - Issues Without Assignees
+
+2. **Issue Activity — Last 30 Days** (CSS-only area/line chart)
+   - One SVG `<polyline>` for "opened per day" and another for "closed per day".
+   - Use the `daily_opened` and `daily_closed` arrays from `data.json`.
+   - The SVG viewBox should be e.g. `0 0 600 200`; scale data points to fit.
+   - Add axis labels (first and last date) and a subtle grid with `<line>` elements.
+   - Include a legend below the chart.
+
+3. **Issue Clusters by Theme** (CSS-only horizontal bar chart)
+   - Each cluster is a `<div>` row: label on the left, colored bar whose `width` is a CSS `calc()` percentage of the maximum cluster count, count on the right.
+   - Use `--chart-N` colors for each bar.
+   - Sort descending by count.
+
+4. **Top Labels** — styled HTML `<table>` with label name (color-coded badge) and count.
+
+5. **Top Authors** — styled HTML `<table>` with avatar placeholder (first-letter circle) and count.
+
+6. **Issues Needing Attention**
+   - Collapsible `<details>` sections for:
+     - Stale issues (list up to 20)
+     - Unlabeled issues (list up to 20)
+   - Each item links to the issue URL.
+
+7. **Recommendations** — 3–5 bullet-point insights derived from the data.
+
+8. **Footer** — generation timestamp, repository link, workflow run link.
+
+### CSS-Only Chart Techniques
+
+**Horizontal bar chart (clusters, labels)**:
+```css
+.bar {
+  height: 28px;
+  border-radius: 4px;
+  /* width set via inline style: style="width: 72%" */
+  transition: width 0.3s ease;
+}
 ```
+
+**Donut chart (open vs closed)**:
+```css
+.donut {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  /* Percentages injected as inline style */
+  background: conic-gradient(
+    var(--green) 0% var(--open-pct),
+    var(--red)   var(--open-pct) 100%
+  );
+  mask: radial-gradient(circle, transparent 55%, black 56%);
+  -webkit-mask: radial-gradient(circle, transparent 55%, black 56%);
+}
+```
+
+**Sparkline (activity trend)**:
+Use an inline `<svg>` with `<polyline>` — no JS needed. Compute the `points` attribute from the daily arrays.
+
+### OGP Meta Tags
+
+Add these `<meta>` tags in `<head>`:
+
+```html
+<meta property="og:title"       content="Daily Issues Report — YYYY-MM-DD — OWNER/REPO" />
+<meta property="og:description" content="X open issues, Y closed, Z opened this week" />
+<meta property="og:image"       content="og-image.svg" />
+<meta property="og:type"        content="website" />
+<meta property="og:url"         content="https://OWNER.github.io/REPO/" />
+<meta name="twitter:card"       content="summary_large_image" />
+```
+
+Replace placeholders with actual computed values from the metrics.
+
+---
+
+## Phase 3: Generate SVG Ticker
+
+Write `/tmp/gh-aw/report-site/ticker.svg` — a standalone SVG that displays a scrolling marquee of key stats. This ticker is also embedded inline in the HTML header.
+
+The ticker should be a horizontal strip (e.g. `viewBox="0 0 1200 40"`) containing:
+- Metric labels and values as `<text>` elements spaced evenly
+- A `<animateTransform>` for a smooth left-scroll loop (CSS `@keyframes` inside `<style>` within the SVG is also acceptable)
+- Metrics to show: Total Issues · Open · Closed · Opened 7d · Stale · Unlabeled
+
+Example structure:
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 40">
+  <style>
+    .ticker-text { font: 600 14px system-ui, sans-serif; fill: #e6edf3; }
+    .ticker-label { fill: #7d8590; }
+    @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .ticker-group { animation: scroll 20s linear infinite; }
+  </style>
+  <g class="ticker-group">
+    <!-- duplicated content for seamless loop -->
+    <text x="0"   y="26" class="ticker-label">Total</text>
+    <text x="40"  y="26" class="ticker-text">542</text>
+    <text x="100" y="26" class="ticker-label">Open</text>
+    <text x="140" y="26" class="ticker-text">128</text>
+    <!-- ... repeat, then duplicate the whole set offset by half-width ... -->
+  </g>
+</svg>
+```
+
+---
+
+## Phase 4: Generate OGP Image
+
+Write `/tmp/gh-aw/report-site/og-image.svg` — a 1200 × 630 SVG suitable for social-media previews.
+
+Design:
+- Dark background (`#0d1117`), rounded rect border (`#30363d`).
+- Large title: "Daily Issues Report".
+- Subtitle: repository name and date.
+- Three large metric boxes in a row: **Open**, **Closed**, **Opened 7d**, each with a big number and a label.
+- A mini bar chart showing the top 5 clusters.
+- Small footer text: "Generated by GitHub Actions".
+
+Upload this SVG as an asset using the `upload asset` tool and use the returned URL for the `og:image` meta tag.
+
+---
+
+## Phase 5: Generate Sitemap
+
+Write `/tmp/gh-aw/report-site/sitemap.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://OWNER.github.io/REPO/</loc>
+    <lastmod>YYYY-MM-DD</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
+```
+
+Replace `OWNER`, `REPO`, and `YYYY-MM-DD` with actual values from context.
+
+---
+
+## Phase 6: Upload OGP Image Asset
+
+Use the `upload asset` tool to upload `/tmp/gh-aw/report-site/og-image.svg` (or render it to PNG first if the upload tool only accepts images). Collect the returned URL and patch the `og:image` meta tag in `index.html` to use the absolute URL.
+
+---
+
+## File Manifest
+
+When finished, `/tmp/gh-aw/report-site/` must contain at minimum:
+
+| File | Purpose |
+|------|---------|
+| `index.html` | Full dashboard (single self-contained file, all CSS inlined) |
+| `og-image.svg` | Open Graph preview image (1200 × 630) |
+| `ticker.svg` | Standalone scrolling ticker strip |
+| `sitemap.xml` | Sitemap for search engines |
+| `data.json` | Raw metrics extracted from issues (for transparency) |
+
+The post-agent workflow steps will automatically upload this directory as a GitHub Pages artifact and deploy it.
+
+---
 
 ## Important Guidelines
 
 ### Data Quality
-- Handle missing fields gracefully (null checks)
+- Handle missing fields gracefully (null checks in `jq` filters)
 - Validate date formats before processing
 - Skip malformed issues rather than failing
+- If the issues data file is empty or missing, generate a placeholder page
 
-### Clustering Tips
-- If scikit-learn is not available, use keyword-based clustering
-- Focus on meaningful themes, not just statistical clusters
-- Aim for 5-10 clusters maximum for readability
+### HTML Quality
+- Valid HTML5 (`<!DOCTYPE html>`)
+- All CSS in a single `<style>` block — no inline `style` attributes except for data-driven values (bar widths, conic-gradient percentages, polyline points)
+- No `<script>` tags anywhere
+- Accessible: proper heading hierarchy, `alt` text on SVGs, ARIA labels on charts, sufficient color contrast
+- Responsive: readable on mobile (320px) through desktop (1440px+)
 
 ### Chart Quality
-- Use consistent color schemes
-- Make charts readable when embedded in markdown
-- Include proper axis labels and titles
+- CSS-only bar charts with smooth `border-radius` and subtle hover states (`:hover` for bar highlight)
+- Donut chart via `conic-gradient` with mask for the center hole
+- SVG polyline sparklines with clean axis labels
+- Consistent color palette using the design tokens above
+- All charts must be readable without JavaScript
 
-### Report Quality
-- Be specific with numbers and percentages
-- Highlight actionable insights
-- Keep the summary brief but informative
+### SVG Quality
+- Valid SVG 1.1 namespace
+- Text elements use `system-ui, sans-serif` for cross-platform rendering
+- Animations use CSS `@keyframes` inside `<style>` (not SMIL) for broader compatibility
+- OGP image must render correctly at 1200 × 630 in social-media previews
+
+---
 
 ## Success Criteria
 
 A successful run will:
-- ✅ Load and analyze all available issues data
-- ✅ Cluster issues into meaningful themes
-- ✅ Generate 2 high-quality trend charts
-- ✅ Upload charts as assets
-- ✅ Close previous daily issues discussions
-- ✅ Create a new discussion with comprehensive report
-- ✅ Include all required metrics and visualizations
+- ✅ Extract and process all available issues data with `jq`
+- ✅ Generate `index.html` with a professional dark-themed dashboard
+- ✅ Include CSS-only bar charts, donut chart, and SVG sparkline — no JS
+- ✅ Generate `ticker.svg` with scrolling metrics
+- ✅ Generate `og-image.svg` (1200 × 630) for social previews
+- ✅ Include OGP `<meta>` tags in `index.html`
+- ✅ Generate `sitemap.xml` with correct URLs
+- ✅ Write all files to `/tmp/gh-aw/report-site/`
+- ✅ Upload the OGP image as an asset and update the meta tag with the absolute URL
 
-Begin your analysis now. Load the data, run the Python analysis, generate charts, and create the discussion report.
+Begin now. Extract the data, build the HTML, generate the SVGs, write the sitemap, and place everything in `/tmp/gh-aw/report-site/`.
