@@ -1,3 +1,5 @@
+import type { PaginatedBooks } from "../../types";
+
 // In-memory token storage. The token is intentionally not persisted to
 // localStorage to prevent XSS from leaking a long-lived credential across
 // page loads. The server sets an HttpOnly cookie on login/signup which
@@ -87,4 +89,19 @@ export async function request<T>(
   }
 
   return data as T;
+}
+
+export async function listEntityBooks(
+  entityPath: string,
+  limit: number,
+  offset: number,
+): Promise<PaginatedBooks> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return request<PaginatedBooks>(
+    "GET",
+    `${entityPath}/books?${params.toString()}`,
+  );
 }
