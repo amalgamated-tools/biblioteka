@@ -8,3 +8,4 @@ export * from "./api/authors";
 export * from "./api/series";
 export * from "./api/books";
 export * from "./api/tokens";
+export * from "./api/pagination";
