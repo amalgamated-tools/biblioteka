@@ -1,45 +1,52 @@
-# Agent Performance — 2026-04-06
+# Agent Performance — 2026-04-07
 **Workflow:** agent-performance-analyzer
-**Run timestamp:** 2026-04-06T23:44Z
+**Run timestamp:** 2026-04-07T23:44Z
 
 ## Ecosystem Snapshot
-- 31 workflows tracked (stable from Apr 5)
-- Active Apr 6: 12 workflows (Agentic Maintenance, Daily Doc Updater, Duplicate Code Detector, Grumpy Code Reviewer, CI Coach, Issue Triage, Dead Code Remover, Schema Consistency Checker, Dependabot Burner, Update Docs, File Diet, PR review workflows)
-- Success rate: 100% (no hard failures on agentic workflows today)
-- Open issues: 7 (3 new from duplicate-code-detector today)
-- PRs today: 2 from daily-doc-updater (massive improvement from 18+ on Apr 5!)
-- Merged PRs today: 20+ (security sprint, all Copilot)
+- 31 workflows tracked, **all compiled** (previously 6 uncompiled — RESOLVED)
+- Scheduled runs today: 19 — all succeeded (100% success rate)
+- Open issues: 3 (down from 7 on Apr 6)
+- Open agent/Copilot PRs: 16 (14 Copilot + 2 github-actions[bot])
+- PRs merged today: 6+ (accessibility fixes, code simplifications, refactoring)
 
-## 🟢 RESOLVED: daily-doc-updater PR Explosion
-- Issue #1381 closed by veverkap as "completed" on Apr 6 at 01:27
-- Today output: 2 PRs (#1448, #1453) vs 18+ on Apr 5
-- **89% volume reduction — FIXED**
+## ✅ RESOLVED: All 6 Uncompiled Workflows Now Compiled
+- Previously flagged workflows (artifacts-summary, commit-changes-analyzer,
+  duplicate-code-detector, grumpy-reviewer, pr-nitpick-reviewer, weekly-repo-map)
+  now all show compiled: Yes
+- Status: CLOSED
 
-## 🔴 NEW CRITICAL: GH_AW_AGENT_TOKEN Permission Failure
-- `duplicate-code-detector` run failed to assign Copilot to issues #1449 and #1451
-- Error: ERR_PERMISSION: copilot coding agent is not available for this repository
-- Issue created: #1452 (tracking failure)
-- Affects: any workflow using Copilot assignment via GH_AW_AGENT_TOKEN
+## ✅ RESOLVED: daily-doc-updater PR explosion
+- Resolved Apr 6; today only 1 PR (#1499 Kobo 404 docs) - sustained improvement
 
-## 🌟 Outstanding: Security Sprint (Human + Copilot collaboration)
-- veverkap raised 6 security issues (#1423-#1429) based on security review
-- Copilot fixed all 6 within hours: PRs #1421-#1435 all merged today
-- 100% merge rate for security fixes - fastest resolution pipeline seen
+## ⚠️ NEW: Copilot PR Queue Backlog (14 open PRs)
+- 14 Copilot PRs opened today across multiple themes (refactoring, auth, docs, CI)
+- Quality appears high but volume creates review burden
+- Recommendation: Set PR review cadence; batch-merge related PRs
+- Monitor for stale/merge-conflicting PRs
 
-## Unresolved Issues from Previous Runs
-- 🟡 ci-coach: 7+ consecutive no-ops (runs #31–#37+) — still recommending weekly schedule
-- 🟡 daily-workflow-updater: gh CLI not available — still permanent failure
-- 🟠 6 uncompiled workflows (see shared-alerts.md)
+## 🟡 CARRIED: GH_AW_AGENT_TOKEN Permission Failure
+- Issue #1452 still open (from Apr 6 duplicate-code-detector run)
+- Today's run adapted gracefully (no Copilot assignment attempted?)
+- Action: Verify token has Copilot assignment permission
+
+## 🟡 MONITORING: daily-workflow-updater
+- Today ran 4.2 min (positive change from previous failure pattern)
+- Previous persistent gh CLI failure; needs 3 more successful runs to clear
 
 ## Agent Scores This Run
-- duplicate-code-detector: B+ (quality high, Copilot assignment failed today)
-- daily-doc-updater: A- (resolved, excellent today)
-- issue-triage: A (3 correct no-ops, no false positives)
-- schema-consistency-checker: A (correct no-op)
-- dependabot-burner: A (correct no-op)
-- dead-code-remover: A- (correct no-op today)
-- ci-coach: C (7 no-ops, schedule too aggressive)
-- daily-workflow-updater: F (permanent failure)
+- code-simplifier: A (13.6 min, quality PRs, #1480 merged via file-diet)
+- daily-accessibility-review: A (14.9 min, issue group #1460, fast fix pipeline)
+- daily-doc-updater: A (8.1 min, targeted 1 PR #1499, sustained fix)
+- dead-code-remover: A (10.6 min, #1480 merged quickly)
+- dependabot-burner: A (3.7 min, no excess dependabot PRs)
+- duplicate-code-detector: B+ (5.5 min, quality issues, Apr 6 assign failure monitoring)
+- schema-consistency-checker: B+ (10.4 min, ran cleanly)
+- daily-security-review: B+ (9.2 min, clean - healthy repo or over-cautious)
+- daily-workflow-updater: B (4.2 min, apparent improvement - monitoring)
+- ci-coach: N/A (not in today's runs — good, schedule improvement may be working)
+- daily-nitpick-reviewer: B (9.5 min, ran)
+- daily-grumpy-reviewer: B (9.9 min, ran)
 
 ## Issues Created This Run
-- Performance report discussion (this run)
+- None (all findings are status updates/monitoring)
+- Performance report discussion created
