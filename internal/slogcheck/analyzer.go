@@ -68,14 +68,22 @@ func run(pass *analysis.Pass) (any, error) {
 		if types.Implements(t, errorIface) {
 			return
 		}
-		// Also allow pointer-to-T when *T implements error.
-		if ptr, ok := t.(*types.Pointer); ok && types.Implements(ptr, errorIface) {
+		// Also allow T when *T implements error (e.g. a non-pointer value
+		// whose pointer receiver satisfies the error interface).
+		if _, ok := t.(*types.Pointer); !ok && types.Implements(types.NewPointer(t), errorIface) {
 			return
 		}
 
+		// Normalize untyped basic types (e.g. untyped string from a literal)
+		// to their default typed form so the map lookup matches.
+		lookup := t
+		if basic, ok := t.(*types.Basic); ok && basic.Info()&types.IsUntyped != 0 {
+			lookup = types.Default(t)
+		}
+
 		// Report if the type has a direct slog constructor.
-		if alt, found := typedAlternative[t.String()]; found {
-			pass.Reportf(call.Pos(), "use %s instead of slog.Any for %s values", alt, t)
+		if alt, found := typedAlternative[lookup.String()]; found {
+			pass.Reportf(call.Pos(), "use %s instead of slog.Any for %s values", alt, lookup)
 		}
 	})
 
@@ -83,7 +91,7 @@ func run(pass *analysis.Pass) (any, error) {
 }
 
 // isSlogAny reports whether call is an invocation of the log/slog package-level
-// Any function (not the method on *slog.Logger).
+// Any function.
 func isSlogAny(pass *analysis.Pass, call *ast.CallExpr) bool {
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok || sel.Sel.Name != "Any" {
@@ -97,8 +105,6 @@ func isSlogAny(pass *analysis.Pass, call *ast.CallExpr) bool {
 	if !ok {
 		return false
 	}
-	// Accept both the package-level function and the method on *slog.Logger —
-	// both live in "log/slog" and both accept an untyped value.
 	pkg := fn.Pkg()
 	return pkg != nil && pkg.Path() == "log/slog"
 }
