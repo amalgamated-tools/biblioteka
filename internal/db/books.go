@@ -137,7 +137,7 @@ func (d *DB) ListBooksByLibrary(ctx context.Context, libraryID string) ([]Book, 
 	slog.DebugContext(ctx, "db: listing books by library", slog.String(otelkeys.LibraryID, libraryID))
 	orderBy := d.dialectOrderBy("b.title", "ASC")
 	rows, err := d.QueryContext(ctx,
-		`SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13, b.goodreads_id, b.hardcover_id, b.google_books_id, b.publication_date, b.publisher, b.language, b.cover_image_url, b.created_at, b.updated_at FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy,
+		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy,
 		libraryID,
 	)
 	if err != nil {
@@ -249,9 +249,9 @@ func (d *DB) RemoveBookFromLibrary(ctx context.Context, libraryID, bookID string
 
 // bookColumnsWithPrefix returns book columns with a table alias prefix.
 func bookColumnsWithPrefix(prefix string) string {
-	cols := strings.Split(bookColumns, ", ")
+	cols := strings.Split(bookColumns, ",")
 	for i, c := range cols {
-		cols[i] = prefix + c
+		cols[i] = prefix + strings.TrimSpace(c)
 	}
 	return strings.Join(cols, ", ")
 }
