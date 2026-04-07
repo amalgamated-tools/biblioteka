@@ -72,6 +72,15 @@ curl -X PUT http://localhost:8080/api/auth/password \
   -d '{"currentPassword":"s3cr3t!1","newPassword":"b3tt3rS3cr3t!"}'
 ```
 
+### Password security properties
+
+| Property | Detail |
+|----------|--------|
+| Minimum length | 8 characters (per [NIST SP 800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html)) |
+| Storage | bcrypt hash with work factor 12; plaintext is never persisted |
+| Work factor rationale | Cost 12 is used instead of bcrypt's default (cost 10) because modern hardware can brute-force cost-10 hashes significantly faster than when the default was standardized |
+| Timing safety | Protocol-layer credential endpoints (OPDS, KOSync) perform a dummy bcrypt comparison when a username is not found to mitigate timing-based enumeration; the main login endpoint does not currently apply this protection |
+
 ---
 
 ## OIDC / SSO Authentication
