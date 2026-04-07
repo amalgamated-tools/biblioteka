@@ -22,8 +22,11 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
 	s.mux.HandleFunc("/api/auth/logout", s.authLimiter.Limit(s.authHandler.Logout))
 
-	// OIDC auth routes — always registered, check handler at request time
+	// Public informational endpoints (not rate-limited, read-only)
+	s.mux.HandleFunc("/api/auth/signup/enabled", s.handleSignupEnabled)
 	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
+
+	// OIDC auth routes — always registered, check handler at request time
 	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Login)))
 	s.mux.HandleFunc("/api/auth/oidc/callback", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Callback)))
 	s.mux.HandleFunc("/api/auth/oidc/link", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Link)))
@@ -167,23 +170,16 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 //	@Description	Returns whether OIDC authentication is configured on this server
 //	@Tags			System
 //	@Produce		json
-//	@Success		200	{object}	oidcEnabledResponse
+//	@Success		200	{object}	enabledResponse
 //	@Router			/auth/oidc/enabled [get]
 func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
 	if !checkSystemEndpointMethod(w, r, http.MethodGet, http.MethodHead) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	resp := oidcEnabledResponse{
+	writeSystemJSON(r.Context(), w, http.StatusOK, enabledResponse{
 		Enabled: s.oidcHandler != nil,
-	}
-
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), "failed to encode OIDC enabled response", slog.Any(otelkeys.Error, err))
-	}
+	})
 }
 
 type healthResponse struct {
@@ -194,8 +190,26 @@ type versionResponse struct {
 	Version string `json:"version"`
 }
 
-type oidcEnabledResponse struct {
+type enabledResponse struct {
 	Enabled bool `json:"enabled"`
+}
+
+// handleSignupEnabled godoc
+//
+//	@Summary		Check if signup is enabled
+//	@Description	Returns whether new user signup is permitted on this server
+//	@Tags			System
+//	@Produce		json
+//	@Success		200	{object}	enabledResponse
+//	@Router			/auth/signup/enabled [get]
+func (s *Server) handleSignupEnabled(w http.ResponseWriter, r *http.Request) {
+	if !checkSystemEndpointMethod(w, r, "failed to encode signup enabled method not allowed response", http.MethodGet, http.MethodHead) {
+		return
+	}
+
+	writeSystemJSON(r.Context(), w, http.StatusOK, enabledResponse{
+		Enabled: !s.authHandler.DisableSignup,
+	})
 }
 
 // handleHealth godoc
@@ -211,15 +225,17 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	writeSystemJSON(r.Context(), w, http.StatusOK, healthResponse{Status: "ok"})
+}
+
+// writeSystemJSON encodes data as JSON and writes it with the given status code.
+// This is a server-package equivalent of handlers.writeJSON for system endpoints.
+func writeSystemJSON(ctx context.Context, w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 
-	resp := healthResponse{
-		Status: "ok",
-	}
-
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), "failed to encode health response", slog.Any(otelkeys.Error, err))
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		slog.ErrorContext(ctx, "failed to encode JSON response", slog.Any(otelkeys.Error, err))
 	}
 }
 
@@ -259,14 +275,5 @@ func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	resp := versionResponse{
-		Version: s.version,
-	}
-
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), "failed to encode version response", slog.Any(otelkeys.Error, err))
-	}
+	writeSystemJSON(r.Context(), w, http.StatusOK, versionResponse{Version: s.version})
 }

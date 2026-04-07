@@ -172,3 +172,54 @@ func TestStatusRecorder_Push_NotSupported(t *testing.T) {
 
 	require.ErrorIs(t, err, http.ErrNotSupported)
 }
+
+// --- SecurityHeadersMiddleware tests ---
+
+func TestSecurityHeadersMiddleware_SetsHeaders(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	w := httptest.NewRecorder()
+	SecurityHeadersMiddleware(next).ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, globalCSP, w.Header().Get("Content-Security-Policy"))
+	require.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
+	require.Equal(t, "DENY", w.Header().Get("X-Frame-Options"))
+}
+
+func TestSecurityHeadersMiddleware_HeadersCanBeOverridden(t *testing.T) {
+	overrideCSP := "default-src 'none';"
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		// Simulate a route handler that overrides the global CSP.
+		w.Header().Set("Content-Security-Policy", overrideCSP)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/swagger/", nil)
+	w := httptest.NewRecorder()
+	SecurityHeadersMiddleware(next).ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, overrideCSP, w.Header().Get("Content-Security-Policy"))
+	// Other security headers should still be set by the global middleware.
+	require.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
+	require.Equal(t, "DENY", w.Header().Get("X-Frame-Options"))
+}
+
+func TestSecurityHeadersMiddleware_CallsNext(t *testing.T) {
+	called := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	SecurityHeadersMiddleware(next).ServeHTTP(w, r)
+
+	require.True(t, called)
+	require.Equal(t, http.StatusNoContent, w.Code)
+}

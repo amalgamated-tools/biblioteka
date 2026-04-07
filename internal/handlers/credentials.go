@@ -184,7 +184,7 @@ func upsertCredential(ops credentialOps, w http.ResponseWriter, r *http.Request)
 		toHash = ops.deriveKey(req.Password)
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(toHash), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(toHash), auth.BcryptCost)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to hash protocol password", slog.String(otelkeys.Protocol, ops.protocol), slog.Any(otelkeys.Error, err))
 		writeError(ctx, w, http.StatusInternalServerError, "failed to create credentials")

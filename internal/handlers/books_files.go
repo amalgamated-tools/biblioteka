@@ -59,6 +59,18 @@ func (h *BookHandler) postBookFiles(w http.ResponseWriter, r *http.Request, book
 		writeError(r.Context(), w, http.StatusBadRequest, "file_type, file_name, and file_path are required")
 		return
 	}
+
+	allowed, err := isBookFilePathAllowed(r.Context(), h.DB, req.FilePath)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to validate book file path", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to validate file path")
+		return
+	}
+	if !allowed {
+		writeError(r.Context(), w, http.StatusBadRequest, "file path is outside allowed library directories")
+		return
+	}
+
 	bf, err := h.DB.CreateBookFile(r.Context(), bookID, req.FileType, req.FileName, req.FileSize, req.FileHash, req.FilePath)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create book file", slog.Any(otelkeys.Error, err))

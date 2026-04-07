@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"golang.org/x/crypto/bcrypt"
@@ -21,12 +22,18 @@ import (
 //	@Param			body	body		signupRequest	true	"Signup request"
 //	@Success		201		{object}	authResponse
 //	@Failure		400		{object}	errorResponse
+//	@Failure		403		{object}	errorResponse
 //	@Failure		409		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse
 //	@Router			/auth/signup [post]
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	if h.DisableSignup {
+		writeError(r.Context(), w, http.StatusForbidden, "signup is disabled")
 		return
 	}
 
@@ -48,7 +55,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "signup request", slog.String(otelkeys.Email, redactEmail(req.Email)))
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), auth.BcryptCost)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to hash password during signup",
 			slog.String(otelkeys.Email, redactEmail(req.Email)),
@@ -77,7 +84,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	token, err := h.JWT.CreateToken(r.Context(), user.ID)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create token for user",
-			slog.Any(otelkeys.UserID, user.ID),
+			slog.String(otelkeys.UserID, user.ID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create token")

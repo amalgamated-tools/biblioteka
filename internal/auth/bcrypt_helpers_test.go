@@ -13,4 +13,8 @@ func TestMustGenerateDummyBcryptHash(t *testing.T) {
 
 	require.NoError(t, bcrypt.CompareHashAndPassword(hash, []byte("dummy-secret")), "generated hash did not match original secret")
 	require.Error(t, bcrypt.CompareHashAndPassword(hash, []byte("other-secret")))
+
+	cost, err := bcrypt.Cost(hash)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, cost, BcryptCost, "bcrypt cost should be at least BcryptCost")
 }

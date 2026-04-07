@@ -66,10 +66,7 @@ async function waitForSignupTab(page) {
 }
 
 async function logoutIfNeeded(page) {
-    // Clear both localStorage token and browser cookies
-    await page.evaluate(() => {
-        localStorage.removeItem('biblioteka_token');
-    });
+    // Clear browser cookies to remove the HttpOnly session cookie
     await page.context().clearCookies();
     await page.goto(`${BASE_URL}/`, {
         waitUntil: 'networkidle',
