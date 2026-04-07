@@ -195,4 +195,3 @@ func createGoodreadsMetadataFromResult(ctx context.Context, database *db.DB, use
 		int64Ptr(result.AuthorLegacyID),
 	)
 }
-
