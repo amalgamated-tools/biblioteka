@@ -1,9 +1,10 @@
 /**
  * Generic timeout-based auto-resetting reactive state.
  *
- * Manages a reactive `value` that reverts to `idleValue` after `duration` ms.
- * Subclasses expose domain-specific getters and trigger methods on top of the
- * shared timer infrastructure.
+ * Manages a protected reactive `value` that reverts to `idleValue` after
+ * `duration` ms. Subclasses expose domain-specific public getters (e.g.
+ * `visible`, `copiedId`) and trigger methods on top of the shared timer
+ * infrastructure.
  *
  * State is reactive via Svelte 5 `$state` runes.
  */
