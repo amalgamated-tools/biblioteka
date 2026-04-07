@@ -40,15 +40,7 @@ func (d *DB) SetSettings(ctx context.Context, settings []Setting) error {
 	if err != nil {
 		return fmt.Errorf("db: begin settings transaction: %w", err)
 	}
-	committed := false
-	defer func() {
-		if committed {
-			return
-		}
-		if rollbackErr := tx.Rollback(); rollbackErr != nil && rollbackErr != sql.ErrTxDone {
-			slog.WarnContext(ctx, "db: failed to roll back settings transaction", slog.Any(otelkeys.Error, rollbackErr))
-		}
-	}()
+	defer deferRollback(ctx, tx)
 
 	for _, setting := range settings {
 		slog.DebugContext(ctx, "db: saving setting", slog.String(otelkeys.Key, setting.Key))
@@ -60,7 +52,6 @@ func (d *DB) SetSettings(ctx context.Context, settings []Setting) error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("db: commit settings transaction: %w", err)
 	}
-	committed = true
 	return nil
 }
 

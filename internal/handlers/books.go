@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -361,6 +359,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	if h.Enqueuer != nil {
 		enqueueCtx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 10*time.Second)
+		defer cancel()
 		if _, err := h.Enqueuer.Enqueue(enqueueCtx, jobs.JobEnrichGoodreads, jobs.EnrichGoodreadsPayload{
 			BookID: b.ID,
 			UserID: userID,
@@ -370,7 +369,6 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 				slog.Any(otelkeys.Error, err),
 			)
 		}
-		cancel()
 	}
 }
 
@@ -440,13 +438,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 	)
 
 	b, err := h.DB.UpdateBook(r.Context(), id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.CoverImageURL)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "book not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to update book", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book")
+	if handleUpdateErr(r.Context(), w, err, nil, nil, "a book", "book", id) {
 		return
 	}
 
@@ -480,7 +472,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 //	@Failure		500	{object}	errorResponse
 //	@Router			/books/{id} [delete]
 func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request, id string) {
-	deleteResource(h.DB, w, r, id, "book", otelkeys.BookID,
+	deleteResource(h.DB, w, r, id, "book", "book", otelkeys.BookID,
 		h.DB.GetBook, h.DB.DeleteBook,
 		db.AuditActionBookDeleted,
 		func(b *db.Book) map[string]any { return map[string]any{"title": b.Title} },

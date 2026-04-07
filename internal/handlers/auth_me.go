@@ -46,7 +46,7 @@ func (h *AuthHandler) getMe(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to get user",
-			slog.Any(otelkeys.UserID, userID),
+			slog.String(otelkeys.UserID, userID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get user")
@@ -93,7 +93,7 @@ func (h *AuthHandler) updateProfile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to update user profile",
-			slog.Any(otelkeys.UserID, userID),
+			slog.String(otelkeys.UserID, userID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update profile")
