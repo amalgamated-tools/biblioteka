@@ -353,7 +353,10 @@ func validatePaths(paths []string) error {
 	for _, p := range paths {
 		info, err := os.Stat(p)
 		if err != nil {
-			return &pathValidationError{msg: "folder not found: " + p}
+			if os.IsNotExist(err) {
+				return &pathValidationError{msg: "folder not found: " + p}
+			}
+			return err
 		}
 		if !info.IsDir() {
 			return &pathValidationError{msg: "path is not a folder: " + p}
