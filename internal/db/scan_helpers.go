@@ -63,7 +63,10 @@ func collectRows[T any](rows *sql.Rows, scan func(interface{ Scan(...any) error 
 		}
 		items = append(items, *item)
 	}
-	return items, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 // collectRowsAndTotal iterates rows, scans each one using scan (which also
