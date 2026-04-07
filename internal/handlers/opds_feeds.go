@@ -93,12 +93,13 @@ func (h *OPDSHandler) writeBooksFeed(
 	entries := h.bookEntries(ctx, books, baseURL)
 	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.AcqContentType)
 	links = append(links, extraLinks...)
+	now := time.Now().UTC().Format(time.RFC3339)
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        selfURL,
 		Title:     title,
-		Updated:   time.Now().UTC().Format(time.RFC3339),
+		Updated:   now,
 		Links:     links,
 		Entries:   entries,
 	}
@@ -153,11 +154,12 @@ func (h *OPDSHandler) writeNamedEntityNavFeed(
 	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.NavContentType)
 	links = append(links, opdspkg.Link{Rel: opdspkg.RelStart, Href: baseURL, Type: opdspkg.NavContentType})
 
+	now := time.Now().UTC().Format(time.RFC3339)
 	feed := &opdspkg.Feed{
 		XMLNS:   opdspkg.XMLNSAtom,
 		ID:      selfURL,
 		Title:   title,
-		Updated: time.Now().UTC().Format(time.RFC3339),
+		Updated: now,
 		Links:   links,
 		Entries: entries,
 	}
@@ -264,12 +266,13 @@ func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
 	entries := h.bookEntries(ctx, books, baseURL)
 	escapedQuery := url.QueryEscape(query)
 	selfURL := baseURL + "/search?q=" + escapedQuery
+	now := time.Now().UTC().Format(time.RFC3339)
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        selfURL,
 		Title:     fmt.Sprintf("Search: %s", query),
-		Updated:   time.Now().UTC().Format(time.RFC3339),
+		Updated:   now,
 		Links:     opdspkg.PaginationLinks(baseURL+"/search?q="+escapedQuery, page, total, opdspkg.PageSize, opdspkg.AcqContentType),
 		Entries:   entries,
 	}
