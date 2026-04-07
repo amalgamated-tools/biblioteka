@@ -112,8 +112,11 @@ Create a new user account. The first user to sign up automatically becomes an ad
 |--------|-------------|
 | `201 Created` | Account created; returns token and user object |
 | `400 Bad Request` | Missing or invalid fields |
+| `403 Forbidden` | Signup is disabled on this server (`DISABLE_SIGNUP=true`) |
 | `409 Conflict` | Email already registered |
 | `429 Too Many Requests` | Rate limit exceeded |
+
+> **Self-registration control:** Server operators can set `DISABLE_SIGNUP=true` to prevent new accounts from being created. When disabled, the sign-up form is hidden in the UI and all requests to this endpoint return `403 Forbidden`. Check the current state with [`GET /api/auth/signup/enabled`](#get-apiauthsignupenabled).
 
 **Response body (`201`):**
 
@@ -129,6 +132,22 @@ Create a new user account. The first user to sign up automatically becomes an ad
   }
 }
 ```
+
+---
+
+### `GET /api/auth/signup/enabled`
+
+Returns whether new user self-registration is currently permitted on this server. Also accepts `HEAD` (returns headers only, no body). No authentication required.
+
+**Response body (`200`):**
+
+```json
+{ "enabled": true }
+```
+
+| Field     | Type    | Description |
+|-----------|---------|-------------|
+| `enabled` | boolean | `true` when `POST /api/auth/signup` accepts new registrations; `false` when `DISABLE_SIGNUP=true` is set |
 
 ---
 
@@ -645,6 +664,15 @@ Grant or revoke admin privileges for a user. Admins cannot change their own admi
 ```json
 { "message": "admin status updated" }
 ```
+
+**Error responses:**
+
+| Status | Description |
+|--------|-------------|
+| `400 Bad Request` | Caller attempted to change their own admin status |
+| `401 Unauthorized` | JWT is valid but the calling user's account no longer exists |
+| `403 Forbidden` | Caller is not an admin |
+| `404 Not Found` | Target user not found |
 
 ---
 
@@ -1615,7 +1643,7 @@ Serve a book's cover image. When the stored `cover_image_url` is a `data:` URL (
 | Status | Description |
 |--------|-------------|
 | `200 OK` | Image bytes; `Content-Type` is set to the detected image MIME type (e.g. `image/jpeg`, `image/png`) |
-| `307 Temporary Redirect` | Cover URL is a plain HTTP/HTTPS URL; client is redirected there |
+| `307 Temporary Redirect` | Cover URL is a plain `https://` URL; client is redirected there. Non-HTTPS URLs (e.g. `http://`) stored in `cover_image_url` are rejected and return `404` instead |
 | `404 Not Found` | Book not found or no cover image set |
 | `500 Internal Server Error` | Stored data URL is malformed or its payload is not a valid image |
 
