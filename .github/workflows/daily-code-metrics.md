@@ -11,6 +11,8 @@ permissions:
   pull-requests: read
 tracker-id: daily-code-metrics
 engine: copilot
+checkout:
+  fetch-depth: 0
 tools:
   repo-memory:
     branch-prefix: daily
