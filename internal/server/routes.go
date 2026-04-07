@@ -203,7 +203,7 @@ type enabledResponse struct {
 //	@Success		200	{object}	enabledResponse
 //	@Router			/auth/signup/enabled [get]
 func (s *Server) handleSignupEnabled(w http.ResponseWriter, r *http.Request) {
-	if !checkSystemEndpointMethod(w, r, "failed to encode signup enabled method not allowed response", http.MethodGet, http.MethodHead) {
+	if !checkSystemEndpointMethod(w, r, http.MethodGet, http.MethodHead) {
 		return
 	}
 
