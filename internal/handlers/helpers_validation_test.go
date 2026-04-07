@@ -50,8 +50,9 @@ func Test_ValidatePassword(t *testing.T) {
 		wantMsg   string
 	}{
 		{"valid password", "secret123", true, ""},
-		{"exact minimum length", "123456", true, ""},
+		{"exact minimum length", "12345678", true, ""},
 		{"too short", "abc", false, wantMsg},
+		{"7 chars (one below minimum)", "1234567", false, wantMsg},
 		{"empty", "", false, wantMsg},
 		{"one char", "x", false, wantMsg},
 	}
