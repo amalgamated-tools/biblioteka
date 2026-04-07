@@ -22,14 +22,9 @@
 <div
   class="flex items-center justify-end gap-2 animate-scale-in {extraClass ??
     ''}"
-  role="alertdialog"
-  aria-modal="false"
+  role="group"
   aria-labelledby={`delete-confirm-label-${itemId}`}
-  tabindex="-1"
   use:autofocusFirstButton
-  onkeydown={(e: KeyboardEvent) => {
-    if (e.key === "Escape") onCancel();
-  }}
 >
   <span
     id={`delete-confirm-label-${itemId}`}

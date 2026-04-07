@@ -273,7 +273,7 @@ describe("LibraryForm delete confirmation accessibility", () => {
     expect(trigger).toHaveTextContent("Delete Library");
   });
 
-  it("shows delete confirmation with role=alertdialog when trigger is clicked", async () => {
+  it("shows delete confirmation with role=group when trigger is clicked", async () => {
     const { container } = render(LibraryForm, {
       props: { mode: "edit", editId: "lib-1" },
     });
@@ -285,7 +285,7 @@ describe("LibraryForm delete confirmation accessibility", () => {
     await fireEvent.click(trigger);
     await tick();
 
-    const dialog = container.querySelector('[role="alertdialog"]');
+    const dialog = container.querySelector('[role="group"]');
     expect(dialog).toBeInTheDocument();
   });
 
@@ -301,37 +301,13 @@ describe("LibraryForm delete confirmation accessibility", () => {
     await fireEvent.click(trigger);
     await tick();
 
-    const dialog = container.querySelector('[role="alertdialog"]')!;
+    const dialog = container.querySelector('[role="group"]')!;
     const labelledBy = dialog.getAttribute("aria-labelledby");
     expect(labelledBy).toBeTruthy();
 
     const label = container.querySelector(`#${labelledBy}`);
     expect(label).toBeInTheDocument();
     expect(label).toHaveTextContent('Delete "My Fiction"?');
-  });
-
-  it("pressing Escape on the confirmation dismisses it and restores focus to the trigger", async () => {
-    const { container } = render(LibraryForm, {
-      props: { mode: "edit", editId: "lib-1" },
-    });
-    await tick();
-
-    const trigger = container.querySelector<HTMLButtonElement>(
-      '[data-delete-trigger="lib-delete"]',
-    )!;
-    await fireEvent.click(trigger);
-    await tick();
-
-    const dialog = container.querySelector('[role="alertdialog"]')!;
-    await fireEvent.keyDown(dialog, { key: "Escape" });
-    await tick();
-
-    expect(container.querySelector('[role="alertdialog"]')).toBeNull();
-    const restoredTrigger = container.querySelector<HTMLButtonElement>(
-      '[data-delete-trigger="lib-delete"]',
-    )!;
-    expect(restoredTrigger).toBeInTheDocument();
-    expect(document.activeElement).toBe(restoredTrigger);
   });
 
   it("clicking the cancel button dismisses the confirmation and restores focus to the trigger", async () => {
@@ -346,14 +322,14 @@ describe("LibraryForm delete confirmation accessibility", () => {
     await fireEvent.click(trigger);
     await tick();
 
-    const buttons = container.querySelectorAll('[role="alertdialog"] button');
+    const buttons = container.querySelectorAll('[role="group"] button');
     const cancelButton = Array.from(buttons).find(
       (b) => b.textContent?.trim() === "Cancel",
     )!;
     await fireEvent.click(cancelButton);
     await tick();
 
-    expect(container.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(container.querySelector('[role="group"]')).toBeNull();
     const restoredTrigger = container.querySelector<HTMLButtonElement>(
       '[data-delete-trigger="lib-delete"]',
     )!;

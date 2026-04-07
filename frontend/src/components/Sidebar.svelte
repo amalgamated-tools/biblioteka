@@ -196,7 +196,7 @@
     </div>
   </nav>
   <div class="px-5 py-2 border-t border-ink-800/60">
-    <p class="text-[10px] text-ink-600 text-center tracking-wider uppercase">
+    <p class="text-[10px] text-ink-300 text-center tracking-wider uppercase">
       {version ? `v${version}` : ""}
     </p>
   </div>
