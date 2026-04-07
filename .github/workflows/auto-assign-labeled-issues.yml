@@ -1,0 +1,40 @@
+name: Auto-assign labeled issues to Copilot
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  auto-assign:
+    runs-on: ubuntu-latest
+    # Only run for the three labels that require ownership
+    if: |
+      github.event.label.name == 'a11y' ||
+      github.event.label.name == 'code-quality' ||
+      github.event.label.name == 'security'
+    # Assignment is a single API call; 5 minutes is generous.
+    timeout-minutes: 5
+    steps:
+      - name: Assign Copilot if issue has no assignees
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+
+            if (issue.assignees && issue.assignees.length > 0) {
+              core.info(`Issue #${issue.number} already has assignees — skipping.`);
+              return;
+            }
+
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              assignees: ['copilot'],
+            });
+
+            core.info(`Assigned copilot to issue #${issue.number} (label: ${context.payload.label.name})`);
