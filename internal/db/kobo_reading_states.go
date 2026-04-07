@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -9,6 +10,9 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
+
+// ErrBookNotFound is returned when a referenced book does not exist.
+var ErrBookNotFound = errors.New("book not found")
 
 // KoboReadingState represents a user's reading progress for a book.
 type KoboReadingState struct {
@@ -76,6 +80,9 @@ func (d *DB) UpsertKoboReadingState(ctx context.Context, userID, bookID, status 
 		userID, bookID, status, percentRead, locationValue, locationType, locationSource,
 	))
 	if err != nil {
+		if isForeignKeyViolation(err) {
+			return nil, fmt.Errorf("upsert kobo reading state: %w", ErrBookNotFound)
+		}
 		return nil, fmt.Errorf("upsert kobo reading state: %w", err)
 	}
 	return state, nil

@@ -224,6 +224,14 @@ func TestGetReadingStatesForBooks_UserIsolation(t *testing.T) {
 	require.Len(t, result, 0)
 }
 
+func TestUpsertKoboReadingState_NonExistentBookReturnsErrBookNotFound(t *testing.T) {
+	d := newTestDB(t)
+	user := createTestUser(t, d)
+
+	_, err := d.UpsertKoboReadingState(t.Context(), user.ID, "nonexistent-book-id", "Reading", nil, nil, nil, nil)
+	require.ErrorIs(t, err, ErrBookNotFound)
+}
+
 func TestGetReadingStatesForBooks_WithSinceFilter(t *testing.T) {
 	d := newTestDB(t)
 	user := createTestUser(t, d)

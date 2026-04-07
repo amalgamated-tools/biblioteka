@@ -137,6 +137,15 @@ func isUniqueViolation(err error) bool {
 		strings.Contains(msg, "duplicate key value violates unique constraint")
 }
 
+// isForeignKeyViolation reports whether err is a foreign-key constraint violation.
+func isForeignKeyViolation(err error) bool {
+	msg := err.Error()
+	// SQLite: "FOREIGN KEY constraint failed"
+	// PostgreSQL: "violates foreign key constraint ..."
+	return strings.Contains(msg, "FOREIGN KEY constraint failed") ||
+		strings.Contains(msg, "violates foreign key constraint")
+}
+
 // isColumnUniqueViolation reports whether err is a unique constraint violation
 // on the specified table column or named unique index (as reported in the error message).
 func isColumnUniqueViolation(err error, tableCol, idxName string) bool {
