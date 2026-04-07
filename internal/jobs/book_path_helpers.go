@@ -55,11 +55,13 @@ func reorganizedCandidatePaths(ctx context.Context, p ProcessFilePayload, pathIn
 func validateField(ctx context.Context, fieldName, value string, attrs ...slog.Attr) error {
 	if strings.TrimSpace(value) == "" {
 		err := fmt.Errorf("process book file: payload %s is empty", fieldName)
-		args := []any{slog.Any(otelkeys.Error, err)}
+		args := make([]any, 0, len(attrs)+2)
+		args = append(args, slog.Any(otelkeys.Error, err))
 		for _, a := range attrs {
 			args = append(args, a)
 		}
-		slog.ErrorContext(ctx, "book processing failed: empty "+fieldName+" in payload", args...)
+		args = append(args, slog.String(otelkeys.Field, fieldName))
+		slog.ErrorContext(ctx, "book processing failed: required payload field is empty", args...)
 		return fmt.Errorf("invalid payload: %w", err)
 	}
 	return nil
