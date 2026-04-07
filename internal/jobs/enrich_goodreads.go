@@ -171,27 +171,21 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, book *db.B
 // createGoodreadsMetadataFromResult maps a Goodreads BookResult to a
 // GoodreadsMetadata record and persists it with "pending" status.
 func createGoodreadsMetadataFromResult(ctx context.Context, database *db.DB, userID, bookID string, result *goodreads.BookResult) (*db.GoodreadsMetadata, error) {
-	return database.CreateGoodreadsMetadata(ctx,
-		userID,
-		strPtr(bookID),
-		strPtr(result.BookTitle),
-		nil, // description — not available from Goodreads
-		strPtr(result.BookASIN),
-		strPtr(result.BookISBN),
-		strPtr(result.BookISBN13),
-		strPtr(result.BookID),
-		nil, // hardcoverID
-		nil, // googleBooksID
-		nil, // publicationDate
-		nil, // publisher
-		strPtr(result.BookLanguage),
-		strPtr(result.BookImageURL),
-		strPtr(result.AuthorName),
-		strPtr(result.AuthorID),
-		strPtr(result.AuthorProfileImageURL),
-		strPtr(result.WorkID),
-		int64Ptr(result.BookLegacyID),
-		int64Ptr(result.WorkLegacyID),
-		int64Ptr(result.AuthorLegacyID),
-	)
+	return database.CreateGoodreadsMetadata(ctx, userID, db.GoodreadsMetadataInput{
+		BookID:                  strPtr(bookID),
+		Title:                   strPtr(result.BookTitle),
+		ASIN:                    strPtr(result.BookASIN),
+		ISBN10:                  strPtr(result.BookISBN),
+		ISBN13:                  strPtr(result.BookISBN13),
+		GoodreadsID:             strPtr(result.BookID),
+		Language:                strPtr(result.BookLanguage),
+		CoverImageURL:           strPtr(result.BookImageURL),
+		AuthorName:              strPtr(result.AuthorName),
+		AuthorGoodreadsID:       strPtr(result.AuthorID),
+		AuthorImageURL:          strPtr(result.AuthorProfileImageURL),
+		GoodreadsWorkID:         strPtr(result.WorkID),
+		GoodreadsBookLegacyID:   int64Ptr(result.BookLegacyID),
+		GoodreadsWorkLegacyID:   int64Ptr(result.WorkLegacyID),
+		GoodreadsAuthorLegacyID: int64Ptr(result.AuthorLegacyID),
+	})
 }
