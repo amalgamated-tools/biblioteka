@@ -359,6 +359,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	if h.Enqueuer != nil {
 		enqueueCtx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 10*time.Second)
+		defer cancel()
 		if _, err := h.Enqueuer.Enqueue(enqueueCtx, jobs.JobEnrichGoodreads, jobs.EnrichGoodreadsPayload{
 			BookID: b.ID,
 			UserID: userID,
@@ -368,7 +369,6 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 				slog.Any(otelkeys.Error, err),
 			)
 		}
-		cancel()
 	}
 }
 

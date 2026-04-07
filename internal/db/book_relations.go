@@ -46,17 +46,7 @@ func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var authors []Author
-	for rows.Next() {
-		a, err := scanAuthor(rows)
-		if err != nil {
-			return nil, err
-		}
-		authors = append(authors, *a)
-	}
-	return authors, rows.Err()
+	return collectRows(rows, scanAuthor)
 }
 
 // SetBookAuthors replaces all author associations for a book.
@@ -104,18 +94,15 @@ func (d *DB) GetBookSeries(ctx context.Context, bookID string) ([]BookSeriesEntr
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	return collectRows(rows, scanBookSeriesEntry)
+}
 
-	var entries []BookSeriesEntry
-	for rows.Next() {
-		var entry BookSeriesEntry
-		err := rows.Scan(&entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position)
-		if err != nil {
-			return nil, err
-		}
-		entries = append(entries, entry)
+func scanBookSeriesEntry(row interface{ Scan(...any) error }) (*BookSeriesEntry, error) {
+	var entry BookSeriesEntry
+	if err := row.Scan(&entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position); err != nil {
+		return nil, err
 	}
-	return entries, rows.Err()
+	return &entry, nil
 }
 
 // SetBookSeries replaces all series associations for a book.

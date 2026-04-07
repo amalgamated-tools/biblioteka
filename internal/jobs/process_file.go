@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -34,7 +35,7 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor, enque
 	if extractor == nil {
 		return func(ctx context.Context, payload []byte) error {
 			slog.ErrorContext(ctx, "process:file handler misconfigured: metadata extractor is nil")
-			return fmt.Errorf("process file handler misconfigured: metadata extractor is nil")
+			return errors.New("process file handler misconfigured: metadata extractor is nil")
 		}
 	}
 
