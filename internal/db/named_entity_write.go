@@ -24,7 +24,10 @@ func namedEntityCreate[T any](
 		slog.WarnContext(ctx, "db: rejecting entity with blank name after normalization", slog.String(otelkeys.EntityType, entityLabel))
 		return nil, errInvalid
 	}
-	slog.DebugContext(ctx, "db: creating entity", slog.String(otelkeys.EntityType, entityLabel), slog.String(otelkeys.Name, name))
+	slog.DebugContext(ctx, "db: creating entity",
+		slog.String(otelkeys.EntityType, entityLabel),
+		slog.String(otelkeys.Name, name),
+	)
 	result, err := insertFn(ctx, name)
 	if err != nil {
 		if isUniqueViolation(err) {

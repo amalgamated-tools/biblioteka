@@ -54,14 +54,20 @@ func createNamedEntity[T, DTO, Req any](ops namedEntityOps[T, DTO, Req], w http.
 		return
 	}
 
-	slog.DebugContext(ctx, "creating entity", slog.String(otelkeys.EntityType, ops.entityLabel), slog.String(otelkeys.Name, name))
+	slog.DebugContext(ctx, "creating entity",
+		slog.String(otelkeys.EntityType, ops.entityLabel),
+		slog.String(otelkeys.Name, name),
+	)
 
 	entity, err := ops.create(ctx, req)
 	if err != nil {
 		if handleNameErr(ctx, w, err, ops.errInvalidName, ops.errNameExists, ops.entityArticle) {
 			return
 		}
-		slog.ErrorContext(ctx, "failed to create entity", slog.String(otelkeys.EntityType, ops.entityLabel), slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to create entity",
+			slog.String(otelkeys.EntityType, ops.entityLabel),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to create "+ops.entityLabel)
 		return
 	}
