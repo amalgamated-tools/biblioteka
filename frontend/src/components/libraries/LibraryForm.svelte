@@ -163,9 +163,9 @@
   class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6 animate-fade-in"
 >
   <div class="flex items-center justify-between mb-5">
-    <h2 class="text-xl font-display font-bold text-ink-900 dark:text-cream-100">
+    <h1 class="text-xl font-display font-bold text-ink-900 dark:text-cream-100">
       {mode === "edit" ? "Edit Library" : "Create Library"}
-    </h2>
+    </h1>
     <button
       onclick={navigateBack}
       class="text-ink-400 hover:text-ink-500 dark:hover:text-ink-200 transition-colors"

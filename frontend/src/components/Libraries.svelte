@@ -59,6 +59,7 @@
     <div
       class="flex flex-col items-center justify-center py-24 animate-fade-in"
     >
+      <h1 class="sr-only">Libraries</h1>
       <LibraryIcon
         class="w-16 h-16 text-ink-200 dark:text-ink-700 mb-6"
         aria-hidden="true"
