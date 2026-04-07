@@ -159,7 +159,7 @@ func TestHandleOIDCEnabled_NotConfigured(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	var body oidcEnabledResponse
+	var body enabledResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	require.False(t, body.Enabled)
 }
@@ -175,7 +175,7 @@ func TestHandleOIDCEnabled_Configured(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	var body oidcEnabledResponse
+	var body enabledResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	require.True(t, body.Enabled)
 }
@@ -212,7 +212,7 @@ func TestHandleSignupEnabled_Enabled(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	var body signupEnabledResponse
+	var body enabledResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	require.True(t, body.Enabled)
 }
@@ -228,7 +228,7 @@ func TestHandleSignupEnabled_Disabled(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	var body signupEnabledResponse
+	var body enabledResponse
 	require.NoError(t, json.NewDecoder(rec.Body).Decode(&body), "decode body")
 	require.False(t, body.Enabled)
 }
