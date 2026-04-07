@@ -35,7 +35,7 @@ func registerTestLibrary(t *testing.T, d *db.DB, dir string) {
 func TestGetBookFiles_Empty(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID+"/files", nil)
@@ -54,7 +54,7 @@ func TestGetBookFiles_Empty(t *testing.T) {
 func TestGetBookFiles_WithFiles(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	_, err = h.DB.CreateBookFile(t.Context(), b.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 	require.NoError(t, err, "create book file")
@@ -78,7 +78,7 @@ func TestPostBookFiles_Success(t *testing.T) {
 
 	dir := createTestLibrary(t, h.DB)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
@@ -106,7 +106,7 @@ func TestPostBookFiles_Success(t *testing.T) {
 func TestPostBookFiles_MissingFileType(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
@@ -125,7 +125,7 @@ func TestPostBookFiles_MissingFileType(t *testing.T) {
 func TestPostBookFiles_MissingFileName(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
@@ -144,7 +144,7 @@ func TestPostBookFiles_MissingFileName(t *testing.T) {
 func TestPostBookFiles_MissingFilePath(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
@@ -163,7 +163,7 @@ func TestPostBookFiles_MissingFilePath(t *testing.T) {
 func TestPostBookFiles_InvalidJSON(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/files", strings.NewReader("not-json"))
@@ -178,7 +178,7 @@ func TestPostBookFiles_InvalidJSON(t *testing.T) {
 func TestBookFiles_MethodNotAllowed(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/files", nil)
@@ -195,7 +195,7 @@ func TestPostBookFiles_AuditLog(t *testing.T) {
 
 	dir := createTestLibrary(t, h.DB)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
@@ -231,7 +231,7 @@ func TestPostBookFiles_PathOutsideLibrary(t *testing.T) {
 	// Create a second temp dir that is NOT registered as a library root.
 	outsideDir := t.TempDir()
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, createBookFileRequest{
@@ -252,7 +252,7 @@ func TestPostBookFiles_PathTraversal(t *testing.T) {
 	h, userID := setupBookHandler(t)
 	dir := createTestLibrary(t, h.DB)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	// Create a temp dir outside the library root to use as the traversal target.
@@ -280,7 +280,7 @@ func TestPostBookFiles_PathTraversal(t *testing.T) {
 func TestPostBookFiles_NoLibraries(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	// No libraries are configured; any path should be rejected.

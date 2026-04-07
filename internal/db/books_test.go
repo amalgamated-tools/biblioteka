@@ -10,7 +10,7 @@ import (
 func TestCreateBook(t *testing.T) {
 	d := newTestDB(t)
 
-	b, err := d.CreateBook(t.Context(), "The Gunslinger", new("The first book"), nil, new("1234567890"), nil, nil, nil, nil, new("1982-06-10"), new("Grant"), new("en"), nil)
+	b, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger", Description: new("The first book"), ISBN10: new("1234567890"), PublicationDate: new("1982-06-10"), Publisher: new("Grant"), Language: new("en")})
 	require.NoError(t, err, "CreateBook() error")
 	require.NotEqual(t, "", b.ID)
 	require.Equal(t, "The Gunslinger", b.Title)
@@ -22,7 +22,7 @@ func TestCreateBook(t *testing.T) {
 func TestGetBook(t *testing.T) {
 	d := newTestDB(t)
 
-	created, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	created, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 
 	found, err := d.GetBook(t.Context(), created.ID)
@@ -41,9 +41,9 @@ func TestGetBook_NotFound(t *testing.T) {
 func TestListBooks(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateBook(t.Context(), "A Game of Thrones", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "A Game of Thrones"})
 	require.NoError(t, err, "CreateBook() for A Game of Thrones error")
-	_, err = d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() for The Gunslinger error")
 
 	books, err := d.ListBooks(t.Context())
@@ -55,10 +55,10 @@ func TestListBooks(t *testing.T) {
 func TestUpdateBook(t *testing.T) {
 	d := newTestDB(t)
 
-	created, err := d.CreateBook(t.Context(), "Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	created, err := d.CreateBook(t.Context(), BookInput{Title: "Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 
-	updated, err := d.UpdateBook(t.Context(), created.ID, "The Gunslinger", new("Revised edition"), nil, nil, nil, nil, nil, nil, nil, nil, new("en"), nil)
+	updated, err := d.UpdateBook(t.Context(), created.ID, BookInput{Title: "The Gunslinger", Description: new("Revised edition"), Language: new("en")})
 	require.NoError(t, err, "UpdateBook() error")
 	require.Equal(t, "The Gunslinger", updated.Title)
 }
@@ -66,7 +66,7 @@ func TestUpdateBook(t *testing.T) {
 func TestDeleteBook(t *testing.T) {
 	d := newTestDB(t)
 
-	b, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 
 	err = d.DeleteBook(t.Context(), b.ID)
@@ -88,7 +88,7 @@ func TestAddBookToLibrary(t *testing.T) {
 
 	lib, err := d.CreateLibrary(t.Context(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
 	require.NoError(t, err, "CreateLibrary() error")
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 
 	err = d.AddBookToLibrary(t.Context(), lib.ID, book.ID)
@@ -105,11 +105,11 @@ func TestListBooksByLibraryPaginated(t *testing.T) {
 
 	lib, err := d.CreateLibrary(t.Context(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
 	require.NoError(t, err, "CreateLibrary() error")
-	b1, err := d.CreateBook(t.Context(), "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b1, err := d.CreateBook(t.Context(), BookInput{Title: "Alpha"})
 	require.NoError(t, err, "CreateBook() for Alpha error")
-	b2, err := d.CreateBook(t.Context(), "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b2, err := d.CreateBook(t.Context(), BookInput{Title: "Beta"})
 	require.NoError(t, err, "CreateBook() for Beta error")
-	b3, err := d.CreateBook(t.Context(), "Gamma", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b3, err := d.CreateBook(t.Context(), BookInput{Title: "Gamma"})
 	require.NoError(t, err, "CreateBook() for Gamma error")
 	err = d.AddBookToLibrary(t.Context(), lib.ID, b1.ID)
 	require.NoError(t, err, "AddBookToLibrary() for Alpha error")
@@ -135,7 +135,7 @@ func TestRemoveBookFromLibrary(t *testing.T) {
 
 	lib, err := d.CreateLibrary(t.Context(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
 	require.NoError(t, err, "CreateLibrary() error")
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 	require.NoError(t, d.AddBookToLibrary(t.Context(), lib.ID, book.ID), "AddBookToLibrary() error")
 
@@ -150,7 +150,7 @@ func TestRemoveBookFromLibrary(t *testing.T) {
 func TestSetBookAuthors(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 	a1, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor() for Stephen King error")
@@ -168,7 +168,7 @@ func TestSetBookAuthors(t *testing.T) {
 func TestSetBookAuthors_Replace(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Talisman", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Talisman"})
 	require.NoError(t, err, "CreateBook() error")
 	a1, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor() for Stephen King error")
@@ -189,7 +189,7 @@ func TestSetBookAuthors_Replace(t *testing.T) {
 func TestSetBookSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 	require.NotNil(t, book)
 
@@ -211,11 +211,11 @@ func TestSetBookSeries(t *testing.T) {
 func TestGetAuthorsForBooks(t *testing.T) {
 	d := newTestDB(t)
 
-	book1, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book1, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() for book1 error")
 	require.NotNil(t, book1)
 
-	book2, err := d.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book2, err := d.CreateBook(t.Context(), BookInput{Title: "The Drawing of the Three"})
 	require.NoError(t, err, "CreateBook() for book2 error")
 	require.NotNil(t, book2)
 
@@ -246,7 +246,7 @@ func TestGetAuthorsForBooks(t *testing.T) {
 func TestDeleteBook_CascadeAuthorsAndSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 	a, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor() error")
@@ -270,16 +270,14 @@ func TestCreateBookWithFile(t *testing.T) {
 
 	b, bf, err := d.CreateBookWithFile(
 		t.Context(),
-		"The Gunslinger",
-		new("The first book of the Dark Tower series"),
-		nil,
-		new("1234567890"),
-		nil,
-		nil, nil, nil,
-		new("1982-06-10"),
-		new("Grant"),
-		new("en"),
-		nil,
+		BookInput{
+			Title:           "The Gunslinger",
+			Description:     new("The first book of the Dark Tower series"),
+			ISBN10:          new("1234567890"),
+			PublicationDate: new("1982-06-10"),
+			Publisher:       new("Grant"),
+			Language:        new("en"),
+		},
 		"epub",
 		"the-gunslinger.epub",
 		4096,
@@ -324,8 +322,7 @@ func TestCreateBookWithFile_RollbackOnFileFailure(t *testing.T) {
 
 	_, _, err = d.CreateBookWithFile(
 		t.Context(),
-		"Orphan Book",
-		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		BookInput{Title: "Orphan Book"},
 		"epub",
 		"orphan.epub",
 		1024,
@@ -345,7 +342,7 @@ func TestDeleteLibrary_DoesNotDeleteBook(t *testing.T) {
 
 	lib, err := d.CreateLibrary(t.Context(), "Fiction", `[]`, LibraryOrganizationBookPerFolder, false)
 	require.NoError(t, err, "CreateLibrary() error")
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 	require.NoError(t, d.AddBookToLibrary(t.Context(), lib.ID, book.ID), "AddBookToLibrary() error")
 

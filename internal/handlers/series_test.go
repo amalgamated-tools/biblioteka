@@ -182,9 +182,9 @@ func TestListSeriesBooks_Handler(t *testing.T) {
 	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	require.NoError(t, err, "create series")
 
-	b1, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b1, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
-	b2, err := h.DB.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b2, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Drawing of the Three"})
 	require.NoError(t, err, "create book")
 
 	require.NoError(t, h.DB.SetBookSeries(t.Context(), b1.ID, []db.BookSeriesInput{{SeriesID: s.ID}}), "set book series")

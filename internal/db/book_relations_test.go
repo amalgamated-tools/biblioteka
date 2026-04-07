@@ -14,7 +14,7 @@ import (
 func TestGetBookAuthors_Empty(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "Authorless Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Authorless Book"})
 	require.NoError(t, err, "CreateBook()")
 
 	authors, err := d.GetBookAuthors(t.Context(), book.ID)
@@ -27,7 +27,7 @@ func TestGetBookAuthors_Empty(t *testing.T) {
 func TestSetBookAuthors_ClearAll(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook()")
 	author, err := d.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor()")
@@ -45,7 +45,7 @@ func TestSetBookAuthors_ClearAll(t *testing.T) {
 func TestSetBookAuthors_DeduplicatesIDs(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "Shared Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Shared Book"})
 	require.NoError(t, err, "CreateBook()")
 	author, err := d.CreateAuthor(t.Context(), "Author A", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor()")
@@ -63,7 +63,7 @@ func TestSetBookAuthors_DeduplicatesIDs(t *testing.T) {
 func TestGetBookSeries_Empty(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "Standalone Novel", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Standalone Novel"})
 	require.NoError(t, err, "CreateBook()")
 
 	entries, err := d.GetBookSeries(t.Context(), book.ID)
@@ -76,7 +76,7 @@ func TestGetBookSeries_Empty(t *testing.T) {
 func TestSetBookSeries_ClearAll(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook()")
 	s, err := d.CreateSeries(t.Context(), "Dark Tower", nil, nil, nil)
 	require.NoError(t, err, "CreateSeries()")
@@ -94,7 +94,7 @@ func TestSetBookSeries_ClearAll(t *testing.T) {
 func TestSetBookSeries_DeduplicatesLastPositionWins(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "Crossover Novel", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Crossover Novel"})
 	require.NoError(t, err, "CreateBook()")
 	s, err := d.CreateSeries(t.Context(), "A Series", nil, nil, nil)
 	require.NoError(t, err, "CreateSeries()")
@@ -136,7 +136,7 @@ func TestGetAuthorsForBooks_NilInput(t *testing.T) {
 func TestGetAuthorsForBooks_BookWithNoAuthors(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "Orphan Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Orphan Book"})
 	require.NoError(t, err, "CreateBook()")
 
 	result, err := d.GetAuthorsForBooks(t.Context(), []string{book.ID})
