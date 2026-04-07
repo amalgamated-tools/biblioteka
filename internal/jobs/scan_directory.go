@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -29,7 +30,7 @@ type Enqueuer interface {
 // enqueuer for every supported ebook file (.epub, .mobi, .pdf, .azw3) found.
 func ScanDirectory(ctx context.Context, enqueuer Enqueuer, p ScanPathPayload) error {
 	if p.Path == "" {
-		return fmt.Errorf("scan path payload: path is required")
+		return errors.New("scan path payload: path is required")
 	}
 
 	slog.DebugContext(ctx, "scan:path job received", slog.String(otelkeys.Path, p.Path))

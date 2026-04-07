@@ -46,17 +46,7 @@ func (d *DB) GetBookAuthors(ctx context.Context, bookID string) ([]Author, error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var authors []Author
-	for rows.Next() {
-		a, err := scanAuthor(rows)
-		if err != nil {
-			return nil, err
-		}
-		authors = append(authors, *a)
-	}
-	return authors, rows.Err()
+	return collectRows(rows, scanAuthor)
 }
 
 // SetBookAuthors replaces all author associations for a book.
@@ -79,7 +69,7 @@ func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []stri
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback() //nolint:errcheck
+	defer deferRollback(ctx, tx)
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM book_authors WHERE book_id = $1`, bookID); err != nil {
 		return err
@@ -104,18 +94,15 @@ func (d *DB) GetBookSeries(ctx context.Context, bookID string) ([]BookSeriesEntr
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	return collectRows(rows, scanBookSeriesEntry)
+}
 
-	var entries []BookSeriesEntry
-	for rows.Next() {
-		var entry BookSeriesEntry
-		err := rows.Scan(&entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position)
-		if err != nil {
-			return nil, err
-		}
-		entries = append(entries, entry)
+func scanBookSeriesEntry(row interface{ Scan(...any) error }) (*BookSeriesEntry, error) {
+	var entry BookSeriesEntry
+	if err := row.Scan(&entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position); err != nil {
+		return nil, err
 	}
-	return entries, rows.Err()
+	return &entry, nil
 }
 
 // SetBookSeries replaces all series associations for a book.
@@ -138,7 +125,7 @@ func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSer
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback() //nolint:errcheck
+	defer deferRollback(ctx, tx)
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM book_series WHERE book_id = $1`, bookID); err != nil {
 		return err

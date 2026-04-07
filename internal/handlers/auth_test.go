@@ -120,6 +120,22 @@ func TestSignup_MethodNotAllowed(t *testing.T) {
 	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
+func TestSignup_Disabled(t *testing.T) {
+	h := newAuthHandler(t)
+	h.DisableSignup = true
+
+	body := `{"name":"Alice","email":"alice@example.com","password":"secret123"}`
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.Signup(w, r)
+
+	require.Equal(t, http.StatusForbidden, w.Code)
+	var resp map[string]string
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Equal(t, "signup is disabled", resp["error"])
+}
+
 func TestLogin_Success(t *testing.T) {
 	h := newAuthHandler(t)
 	mustSignup(t, h, "Bob", "bob@example.com", "secret123")

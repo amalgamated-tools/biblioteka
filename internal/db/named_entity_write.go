@@ -21,10 +21,13 @@ func namedEntityCreate[T any](
 ) (*T, error) {
 	name = normalize(name)
 	if name == "" {
-		slog.WarnContext(ctx, "db: rejecting "+entityLabel+" with blank name after normalization")
+		slog.WarnContext(ctx, "db: rejecting entity with blank name after normalization", slog.String(otelkeys.EntityType, entityLabel))
 		return nil, errInvalid
 	}
-	slog.DebugContext(ctx, "db: creating "+entityLabel, slog.String(otelkeys.Name, name))
+	slog.DebugContext(ctx, "db: creating entity",
+		slog.String(otelkeys.EntityType, entityLabel),
+		slog.String(otelkeys.Name, name),
+	)
 	result, err := insertFn(ctx, name)
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -49,10 +52,11 @@ func namedEntityUpdate[T any](
 ) (*T, error) {
 	name = normalize(name)
 	if name == "" {
-		slog.WarnContext(ctx, "db: rejecting "+entityLabel+" update with blank name after normalization")
+		slog.WarnContext(ctx, "db: rejecting entity update with blank name after normalization", slog.String(otelkeys.EntityType, entityLabel))
 		return nil, errInvalid
 	}
-	slog.DebugContext(ctx, "db: updating "+entityLabel,
+	slog.DebugContext(ctx, "db: updating entity",
+		slog.String(otelkeys.EntityType, entityLabel),
 		slog.String(otelkeys.EntityID, id),
 		slog.String(otelkeys.Name, name),
 	)
