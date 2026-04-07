@@ -126,7 +126,7 @@ func writeError(ctx context.Context, w http.ResponseWriter, status int, message 
 	}
 }
 
-const minPasswordLength = 8
+const minPasswordLength = 6
 
 // validatePassword checks that a password meets the minimum length requirement.
 // On failure it writes a 400 error response and returns false, so callers can
