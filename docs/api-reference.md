@@ -104,7 +104,7 @@ Create a new user account. The first user to sign up automatically becomes an ad
 |------------|--------|----------|-----------------------|
 | `name`     | string | ✓        | Display name          |
 | `email`    | string | ✓        | Email address         |
-| `password` | string | ✓        | Password (min 6 chars) |
+| `password` | string | ✓        | Password (min 8 chars) |
 
 **Responses:**
 
@@ -116,7 +116,7 @@ Create a new user account. The first user to sign up automatically becomes an ad
 | `409 Conflict` | Email already registered |
 | `429 Too Many Requests` | Rate limit exceeded |
 
-> **Self-registration control:** Server operators can set `DISABLE_SIGNUP=true` to prevent new accounts from being created. When disabled, the sign-up form is hidden in the UI and all requests to this endpoint return `403 Forbidden`. Check the current state with [`GET /api/auth/signup/enabled`](#get-apiauthsignupenabled).
+> **Self-registration control:** Server operators can set `DISABLE_SIGNUP=true` to prevent new accounts from being created. When disabled, the sign-up form is hidden in the UI and all `POST` requests to this endpoint return `403 Forbidden`. Check the current state with [`GET /api/auth/signup/enabled`](#get-apiauthsignupenabled).
 
 **Response body (`201`):**
 
@@ -669,10 +669,13 @@ Grant or revoke admin privileges for a user. Admins cannot change their own admi
 
 | Status | Description |
 |--------|-------------|
+| `400 Bad Request` | Request body is invalid or missing required fields |
 | `400 Bad Request` | Caller attempted to change their own admin status |
-| `401 Unauthorized` | JWT is valid but the calling user's account no longer exists |
+| `401 Unauthorized` | JWT is missing, malformed, or invalid, or the JWT is valid but the calling user's account no longer exists |
 | `403 Forbidden` | Caller is not an admin |
 | `404 Not Found` | Target user not found |
+| `405 Method Not Allowed` | Method is not `PUT` |
+| `500 Internal Server Error` | Database error or failed to update the user's admin status |
 
 ---
 
@@ -1644,7 +1647,7 @@ Serve a book's cover image. When the stored `cover_image_url` is a `data:` URL (
 |--------|-------------|
 | `200 OK` | Image bytes; `Content-Type` is set to the detected image MIME type (e.g. `image/jpeg`, `image/png`) |
 | `307 Temporary Redirect` | Cover URL is a plain `https://` URL; client is redirected there. Non-HTTPS URLs (e.g. `http://`) stored in `cover_image_url` are rejected and return `404` instead |
-| `404 Not Found` | Book not found or no cover image set |
+| `404 Not Found` | Book not found, no cover image set, or stored `cover_image_url` is rejected because it is not HTTPS |
 | `500 Internal Server Error` | Stored data URL is malformed or its payload is not a valid image |
 
 See [Cover images](opds.md#cover-images) in the OPDS guide for MIME-type detection rules and details on the `data:` URL content-sniffing behaviour.
