@@ -40,7 +40,7 @@ func (d *DB) SetSettings(ctx context.Context, settings []Setting) error {
 	if err != nil {
 		return fmt.Errorf("db: begin settings transaction: %w", err)
 	}
-	defer tx.Rollback() //nolint:errcheck
+	defer deferRollback(ctx, tx)
 
 	for _, setting := range settings {
 		slog.DebugContext(ctx, "db: saving setting", slog.String(otelkeys.Key, setting.Key))
