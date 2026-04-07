@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +27,7 @@ func TestListLibraryBooks_Success(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &lib), "unmarshal library")
 
 	// Create a book and link it to the library.
-	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book to library")
 
@@ -63,7 +64,7 @@ func TestListLibraryBooks_PaginationValid(t *testing.T) {
 	const totalBooks = 3
 	for i := range totalBooks {
 		title := fmt.Sprintf("Book %d", i+1)
-		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: title})
 		require.NoError(t, err, "create book %d", i+1)
 		require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book %d to library", i+1)
 	}
@@ -101,7 +102,7 @@ func TestListLibraryBooks_PaginationInvalidValues(t *testing.T) {
 	const totalBooks = 3
 	for i := range totalBooks {
 		title := fmt.Sprintf("Invalid Book %d", i+1)
-		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: title})
 		require.NoError(t, err, "create book %d", i+1)
 		require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book %d to library", i+1)
 	}
@@ -139,7 +140,7 @@ func TestListLibraryBooks_PaginationMaxLimitClamping(t *testing.T) {
 	const totalBooks = 10
 	for i := range totalBooks {
 		title := fmt.Sprintf("Clamped Book %d", i+1)
-		book, err := h.DB.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: title})
 		require.NoError(t, err, "create book %d", i+1)
 		require.NoError(t, h.DB.AddBookToLibrary(t.Context(), lib.ID, book.ID), "add book %d to library", i+1)
 	}

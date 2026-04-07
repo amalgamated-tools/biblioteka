@@ -151,7 +151,7 @@ func TestHandleKobo_BookMetadata_Success(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(t.Context(), "Metadata Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Metadata Test"})
 	require.NoError(t, err, "create book")
 	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "book.epub", 2048, nil, filepath.Join(t.TempDir(), "metadata-test.epub"))
 	require.NoError(t, err, "create book file")
@@ -197,7 +197,7 @@ func TestHandleKobo_BookState_GetDefault(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(t.Context(), "State Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "State Test Book"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/state", nil)
@@ -234,7 +234,7 @@ func TestHandleKobo_BookState_Update_Success(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(t.Context(), "Reading Progress", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Reading Progress"})
 	require.NoError(t, err, "create book")
 
 	progress := 42.5
@@ -281,7 +281,7 @@ func TestHandleKobo_BookState_Update_BadRequest(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(t.Context(), "Bad State Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Bad State Book"})
 	require.NoError(t, err, "create book")
 
 	// Send empty ReadingStates array (invalid).
@@ -317,7 +317,7 @@ func TestHandleKobo_BookState_GetExisting(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(t.Context(), "Existing State", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Existing State"})
 	require.NoError(t, err, "create book")
 	pct := 75.0
 	_, err = h.DB.UpsertKoboReadingState(t.Context(), userID, book.ID, "Finished", &pct, nil, nil, nil)
@@ -349,7 +349,7 @@ func TestHandleKobo_Sync_WithBooks(t *testing.T) {
 	tokenValue := createTestKoboToken(t, h, userID)
 
 	// Create a book with a downloadable file so it appears in sync results.
-	book, err := h.DB.CreateBook(t.Context(), "Sync Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Sync Test Book"})
 	require.NoError(t, err, "create book")
 	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "sync.epub", 512, nil, filepath.Join(t.TempDir(), "sync-test.epub"))
 	require.NoError(t, err, "create book file")
@@ -387,7 +387,7 @@ func TestHandleKobo_Sync_SkipsBookWithoutFiles(t *testing.T) {
 	tokenValue := createTestKoboToken(t, h, userID)
 
 	// Book with no downloadable files should be skipped.
-	_, err := h.DB.CreateBook(t.Context(), "No Files Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "No Files Book"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/sync", nil)
@@ -409,7 +409,7 @@ func TestHandleKobo_Sync_WithReadingState(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(t.Context(), "Read Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Read Book"})
 	require.NoError(t, err, "create book")
 	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "read.epub", 512, nil, filepath.Join(t.TempDir(), "read-test.epub"))
 	require.NoError(t, err, "create book file")

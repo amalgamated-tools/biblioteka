@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
 
 	"github.com/stretchr/testify/require"
@@ -20,7 +21,7 @@ func TestAllBooks_Pagination(t *testing.T) {
 
 	// Create enough books to have a second page (opdspkg.PageSize is 50).
 	for i := range 55 {
-		_, err := h.DB.CreateBook(ctx, "Book "+padInt(i), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		_, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Book " + padInt(i)})
 		require.NoError(t, err, "create book %d", i)
 	}
 

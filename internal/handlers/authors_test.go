@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -180,9 +181,9 @@ func TestListAuthorBooks_Handler(t *testing.T) {
 	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "create author")
 
-	b1, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b1, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
-	b2, err := h.DB.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b2, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Drawing of the Three"})
 	require.NoError(t, err, "create book")
 
 	require.NoError(t, h.DB.SetBookAuthors(t.Context(), b1.ID, []string{a.ID}), "set book authors")

@@ -25,11 +25,11 @@ func TestListBooksBySeries_OrderedByPosition(t *testing.T) {
 	s, err := d.CreateSeries(t.Context(), "Dark Tower", nil, nil, nil)
 	require.NoError(t, err, "CreateSeries()")
 
-	b1, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b1, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook(b1)")
-	b2, err := d.CreateBook(t.Context(), "The Drawing of the Three", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b2, err := d.CreateBook(t.Context(), BookInput{Title: "The Drawing of the Three"})
 	require.NoError(t, err, "CreateBook(b2)")
-	b3, err := d.CreateBook(t.Context(), "The Waste Lands", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b3, err := d.CreateBook(t.Context(), BookInput{Title: "The Waste Lands"})
 	require.NoError(t, err, "CreateBook(b3)")
 
 	// Assign series entries out of order.
@@ -55,9 +55,9 @@ func TestListBooksBySeries_NullPositionSorting(t *testing.T) {
 	s, err := d.CreateSeries(t.Context(), "Nullable Positions", nil, nil, nil)
 	require.NoError(t, err, "CreateSeries()")
 
-	b1, err := d.CreateBook(t.Context(), "Positioned", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b1, err := d.CreateBook(t.Context(), BookInput{Title: "Positioned"})
 	require.NoError(t, err, "CreateBook(positioned)")
-	b2, err := d.CreateBook(t.Context(), "Unpositioned", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b2, err := d.CreateBook(t.Context(), BookInput{Title: "Unpositioned"})
 	require.NoError(t, err, "CreateBook(unpositioned)")
 
 	require.NoError(t, d.SetBookSeries(t.Context(), b2.ID, []BookSeriesInput{{SeriesID: s.ID, Position: nil}}), "SetBookSeries(b2 nil position)")
@@ -80,7 +80,7 @@ func TestListBooksBySeriesPaginated(t *testing.T) {
 	require.NoError(t, err, "CreateSeries()")
 
 	for i, title := range []string{"Book One", "Book Two", "Book Three", "Book Four"} {
-		b, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		b, err := d.CreateBook(t.Context(), BookInput{Title: title})
 		require.NoError(t, err, "CreateBook(%q)", title)
 		pos := float64(i + 1)
 		require.NoError(t, d.SetBookSeries(t.Context(), b.ID, []BookSeriesInput{{SeriesID: s.ID, Position: &pos}}), "SetBookSeries(%q)", title)
@@ -98,7 +98,7 @@ func TestListBooksBySeriesPaginated_OffsetBeyondTotal(t *testing.T) {
 
 	s, err := d.CreateSeries(t.Context(), "Small Series", nil, nil, nil)
 	require.NoError(t, err, "CreateSeries()")
-	b, err := d.CreateBook(t.Context(), "One Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := d.CreateBook(t.Context(), BookInput{Title: "One Book"})
 	require.NoError(t, err, "CreateBook()")
 	require.NoError(t, d.SetBookSeries(t.Context(), b.ID, []BookSeriesInput{{SeriesID: s.ID, Position: new(1.0)}}), "SetBookSeries()")
 

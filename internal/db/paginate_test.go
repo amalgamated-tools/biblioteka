@@ -127,7 +127,7 @@ func TestListPaginated_ZeroLimitReturnsTotal(t *testing.T) {
 
 func TestCountFallback_OffsetExceeded(t *testing.T) {
 	d := newTestDB(t)
-	_, err := d.CreateBook(t.Context(), "Only Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Only Book"})
 	require.NoError(t, err)
 
 	var total int

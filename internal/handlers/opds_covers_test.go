@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 
@@ -44,7 +45,7 @@ func TestCoverImageInFeed(t *testing.T) {
 	ctx := t.Context()
 
 	coverURL := "https://example.com/cover.png"
-	_, err := h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL)
+	_, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Alpha", CoverImageURL: &coverURL})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
@@ -66,7 +67,7 @@ func TestCoverImageInFeed_DataURLRewritten(t *testing.T) {
 
 	pngBytes := testutils.TinyPNG()
 	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, err := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Cover Book", CoverImageURL: &dataURL})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
@@ -90,7 +91,7 @@ func TestServeCover_DataURL(t *testing.T) {
 
 	pngBytes := testutils.TinyPNG()
 	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, err := h.DB.CreateBook(ctx, "Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &dataURL)
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Cover Book", CoverImageURL: &dataURL})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
@@ -117,7 +118,7 @@ func TestServeCover_MissingCover(t *testing.T) {
 			h := setupOPDSHandler(t)
 			ctx := t.Context()
 
-			book, err := h.DB.CreateBook(ctx, "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, tc.cover)
+			book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Book", CoverImageURL: tc.cover})
 			require.NoError(t, err, "create book")
 
 			r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
@@ -134,7 +135,7 @@ func TestServeCover_ExternalURL(t *testing.T) {
 	ctx := t.Context()
 
 	coverURL := "https://example.com/cover.jpg"
-	book, err := h.DB.CreateBook(ctx, "External Cover", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &coverURL)
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "External Cover", CoverImageURL: &coverURL})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
@@ -162,7 +163,7 @@ func TestServeCover_UnsafeExternalURL(t *testing.T) {
 		{name: "ftp", unsafeURL: "ftp://example.com/cover.jpg"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			book, err := h.DB.CreateBook(ctx, "Unsafe Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &tc.unsafeURL)
+			book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Unsafe Cover Book", CoverImageURL: &tc.unsafeURL})
 			require.NoError(t, err, "create book")
 
 			r := httptest.NewRequest(http.MethodGet, "/opds/covers/"+book.ID, nil)
