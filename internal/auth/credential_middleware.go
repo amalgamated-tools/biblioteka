@@ -105,7 +105,7 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			username, secret, ok := cfg.extractCreds(r)
 			if !ok {
-				slog.InfoContext(r.Context(), cfg.protocolName+": missing credentials")
+				slog.InfoContext(r.Context(), "protocol: missing credentials", slog.String(otelkeys.Protocol, cfg.protocolName))
 				cfg.writeMissing(w, r)
 				return
 			}
@@ -114,7 +114,8 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 			userID, passwordHash, err := cfg.lookupCredential(r.Context(), normUsername)
 			if err != nil {
 				if cfg.writeServiceUnavailable != nil && !errors.Is(err, sql.ErrNoRows) {
-					slog.ErrorContext(r.Context(), cfg.protocolName+": credential lookup failed",
+					slog.ErrorContext(r.Context(), "protocol: credential lookup failed",
+						slog.String(otelkeys.Protocol, cfg.protocolName),
 						slog.Any(otelkeys.Error, err),
 					)
 					cfg.writeServiceUnavailable(w, r)
@@ -122,7 +123,8 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 					// Perform a dummy bcrypt comparison to prevent timing-based
 					// username enumeration.
 					_ = bcrypt.CompareHashAndPassword(cfg.dummyHash, []byte(secret))
-					slog.InfoContext(r.Context(), cfg.protocolName+": unknown username",
+					slog.InfoContext(r.Context(), "protocol: unknown username",
+						slog.String(otelkeys.Protocol, cfg.protocolName),
 						cfg.usernameAttr(normUsername),
 					)
 					cfg.writeUnauthorized(w, r)
@@ -131,14 +133,16 @@ func bcryptCredMiddleware(cfg bcryptCredConfig) func(http.Handler) http.Handler 
 			}
 
 			if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(secret)); err != nil {
-				slog.InfoContext(r.Context(), cfg.protocolName+": invalid credential",
+				slog.InfoContext(r.Context(), "protocol: invalid credential",
+					slog.String(otelkeys.Protocol, cfg.protocolName),
 					cfg.usernameAttr(normUsername),
 				)
 				cfg.writeUnauthorized(w, r)
 				return
 			}
 
-			slog.DebugContext(r.Context(), cfg.protocolName+": authentication successful",
+			slog.DebugContext(r.Context(), "protocol: authentication successful",
+				slog.String(otelkeys.Protocol, cfg.protocolName),
 				slog.String(otelkeys.UserID, userID),
 				cfg.usernameAttr(normUsername),
 			)
