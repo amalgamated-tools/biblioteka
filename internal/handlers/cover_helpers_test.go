@@ -7,6 +7,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestIsSafeCoverRedirectURL(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want bool
+	}{
+		{"https is allowed", "https://example.com/cover.jpg", true},
+		{"https with path and query", "https://cdn.example.com/img.png?v=1", true},
+		{"http is rejected", "http://example.com/cover.jpg", false},
+		{"protocol-relative is rejected", "//example.com/cover.jpg", false},
+		{"javascript is rejected", "javascript:alert(1)", false},
+		{"data URL is rejected", "data:image/png;base64,abc", false},
+		{"empty string is rejected", "", false},
+		{"relative path is rejected", "/cover.jpg", false},
+		{"ftp is rejected", "ftp://example.com/cover.jpg", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, isSafeCoverRedirectURL(tt.url))
+		})
+	}
+}
+
 func TestDataURLMIMEType(t *testing.T) {
 	tests := []struct {
 		name     string

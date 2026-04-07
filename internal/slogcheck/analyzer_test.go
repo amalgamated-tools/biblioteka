@@ -1,0 +1,13 @@
+package slogcheck_test
+
+import (
+	"testing"
+
+	"golang.org/x/tools/go/analysis/analysistest"
+
+	"github.com/amalgamated-tools/biblioteka/internal/slogcheck"
+)
+
+func TestAnalyzer(t *testing.T) {
+	analysistest.Run(t, analysistest.TestData(), slogcheck.Analyzer, "p")
+}

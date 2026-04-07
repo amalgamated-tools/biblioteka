@@ -76,7 +76,7 @@ func (d *DB) CreateBookWithFile(ctx context.Context, title string, description, 
 	if err != nil {
 		return nil, nil, err
 	}
-	defer tx.Rollback() //nolint:errcheck
+	defer deferRollback(ctx, tx)
 
 	b, err := scanBook(tx.QueryRowContext(ctx,
 		`INSERT INTO books (title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING `+bookColumns,
@@ -119,17 +119,7 @@ func (d *DB) ListBooks(ctx context.Context) ([]Book, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	for rows.Next() {
-		b, err := scanBook(rows)
-		if err != nil {
-			return nil, err
-		}
-		books = append(books, *b)
-	}
-	return books, rows.Err()
+	return collectRows(rows, scanBook)
 }
 
 // ListBooksByLibrary returns all books in a specific library.
@@ -137,23 +127,13 @@ func (d *DB) ListBooksByLibrary(ctx context.Context, libraryID string) ([]Book, 
 	slog.DebugContext(ctx, "db: listing books by library", slog.String(otelkeys.LibraryID, libraryID))
 	orderBy := d.dialectOrderBy("b.title", "ASC")
 	rows, err := d.QueryContext(ctx,
-		`SELECT b.id, b.title, b.description, b.asin, b.isbn10, b.isbn13, b.goodreads_id, b.hardcover_id, b.google_books_id, b.publication_date, b.publisher, b.language, b.cover_image_url, b.created_at, b.updated_at FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy,
+		`SELECT `+bookColumnsWithPrefix("b.")+` FROM books b INNER JOIN library_books lb ON lb.book_id = b.id WHERE lb.library_id = $1 `+orderBy,
 		libraryID,
 	)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var books []Book
-	for rows.Next() {
-		b, err := scanBook(rows)
-		if err != nil {
-			return nil, err
-		}
-		books = append(books, *b)
-	}
-	return books, rows.Err()
+	return collectRows(rows, scanBook)
 }
 
 // ListBooksByLibraryPaginated returns books in a specific library with pagination and total count.
@@ -249,7 +229,11 @@ func (d *DB) RemoveBookFromLibrary(ctx context.Context, libraryID, bookID string
 
 // bookColumnsWithPrefix returns book columns with a table alias prefix.
 func bookColumnsWithPrefix(prefix string) string {
-	return prefix + "id, " + prefix + "title, " + prefix + "description, " + prefix + "asin, " + prefix + "isbn10, " + prefix + "isbn13, " + prefix + "goodreads_id, " + prefix + "hardcover_id, " + prefix + "google_books_id, " + prefix + "publication_date, " + prefix + "publisher, " + prefix + "language, " + prefix + "cover_image_url, " + prefix + "created_at, " + prefix + "updated_at"
+	cols := strings.Split(bookColumns, ",")
+	for i, c := range cols {
+		cols[i] = prefix + strings.TrimSpace(c)
+	}
+	return strings.Join(cols, ", ")
 }
 
 // dollarN returns a PostgreSQL-style positional placeholder ($1, $2, ...).

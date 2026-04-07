@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -125,7 +126,7 @@ func writeError(ctx context.Context, w http.ResponseWriter, status int, message 
 	}
 }
 
-const minPasswordLength = 6
+const minPasswordLength = 8
 
 // validatePassword checks that a password meets the minimum length requirement.
 // On failure it writes a 400 error response and returns false, so callers can
@@ -228,7 +229,8 @@ func handleUpdateErr(ctx context.Context, w http.ResponseWriter, err, errInvalid
 	if handleNameErr(ctx, w, err, errInvalid, errExists, resourceArticle) {
 		return true
 	}
-	slog.ErrorContext(ctx, "failed to update "+resource,
+	slog.ErrorContext(ctx, "failed to update entity",
+		slog.String(otelkeys.Resource, resource),
 		slog.String(otelkeys.EntityID, id),
 		slog.Any(otelkeys.Error, err),
 	)
@@ -261,16 +263,22 @@ func listUserEntities[T any, DTO any](
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
 
-	slog.DebugContext(ctx, "listing "+resource)
+	slog.DebugContext(ctx, "listing entities", slog.String(otelkeys.Resource, resource))
 
 	entities, err := list(ctx, userID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to list "+resource, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to list entities",
+			slog.String(otelkeys.Resource, resource),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+resource)
 		return
 	}
 
-	slog.DebugContext(ctx, resource+" listed", slog.Int(otelkeys.Count, len(entities)))
+	slog.DebugContext(ctx, "entities listed",
+		slog.String(otelkeys.Resource, resource),
+		slog.Int(otelkeys.Count, len(entities)),
+	)
 
 	writeJSON(ctx, w, http.StatusOK, mapSlice(entities, toDTO))
 }
@@ -286,16 +294,22 @@ func listEntities[T any, DTO any](
 	toDTO func(*T) DTO,
 ) {
 	ctx := r.Context()
-	slog.DebugContext(ctx, "listing "+resource)
+	slog.DebugContext(ctx, "listing entities", slog.String(otelkeys.Resource, resource))
 
 	entities, err := list(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to list "+resource, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to list entities",
+			slog.String(otelkeys.Resource, resource),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list "+resource)
 		return
 	}
 
-	slog.DebugContext(ctx, resource+" listed", slog.Int(otelkeys.Count, len(entities)))
+	slog.DebugContext(ctx, "entities listed",
+		slog.String(otelkeys.Resource, resource),
+		slog.Int(otelkeys.Count, len(entities)),
+	)
 
 	writeJSON(ctx, w, http.StatusOK, mapSlice(entities, toDTO))
 }
@@ -321,7 +335,7 @@ func deleteResourceCore[T any](
 	auditMeta func(T) map[string]any,
 ) {
 	ctx := r.Context()
-	slog.DebugContext(ctx, "deleting "+resource, slog.String(idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+	slog.DebugContext(ctx, "deleting resource", slog.String(otelkeys.Resource, resource), slog.String(idKey, id)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 
 	entity, err := get(ctx)
 	if err != nil {
@@ -329,7 +343,7 @@ func deleteResourceCore[T any](
 			writeError(ctx, w, http.StatusNotFound, resource+" not found")
 			return
 		}
-		slog.ErrorContext(ctx, "failed to get "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+		slog.ErrorContext(ctx, "failed to get resource", slog.String(otelkeys.Resource, resource), slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
 		return
 	}
@@ -339,7 +353,7 @@ func deleteResourceCore[T any](
 			writeError(ctx, w, http.StatusNotFound, resource+" not found")
 			return
 		}
-		slog.ErrorContext(ctx, "failed to delete "+resource, slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
+		slog.ErrorContext(ctx, "failed to delete resource", slog.String(otelkeys.Resource, resource), slog.String(idKey, id), slog.Any(otelkeys.Error, err)) //nolint:sloglint // idKey is always an otelkeys constant passed by callers
 		writeError(ctx, w, http.StatusInternalServerError, "failed to delete "+resource)
 		return
 	}
@@ -372,6 +386,7 @@ func deleteResource[T any](
 	r *http.Request,
 	id string,
 	resource string,
+	auditEntityType string,
 	idKey string,
 	get func(context.Context, string) (T, error),
 	del func(context.Context, string) error,
@@ -379,7 +394,7 @@ func deleteResource[T any](
 	auditMeta func(T) map[string]any,
 ) {
 	userID := auth.UserIDFromContext(r.Context())
-	deleteResourceCore(d, w, r, userID, id, resource, resource, idKey,
+	deleteResourceCore(d, w, r, userID, id, resource, auditEntityType, idKey,
 		func(ctx context.Context) (T, error) { return get(ctx, id) },
 		func(ctx context.Context) error { return del(ctx, id) },
 		auditAction, auditMeta,
@@ -465,4 +480,74 @@ func requireAdmin(d *db.DB, w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	return true
+}
+
+// isPathUnderRoot reports whether absPath is nested inside (or equal to) root.
+// Both paths are resolved to absolute, cleaned, and symlink-resolved paths
+// before the comparison so relative library roots and symlink escapes are
+// handled correctly. When symlink resolution fails (e.g. the target does not
+// exist yet) the function falls back to the cleaned absolute paths.
+func isPathUnderRoot(absPath, root string) bool {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	absRoot = filepath.Clean(absRoot)
+
+	// Attempt symlink-aware canonicalization for both root and target.
+	if resolved, err := filepath.EvalSymlinks(absRoot); err == nil {
+		absRoot = resolved
+	}
+	if resolved, err := filepath.EvalSymlinks(absPath); err == nil {
+		absPath = resolved
+	} else if parent := filepath.Dir(absPath); parent != absPath {
+		if resolvedParent, err := filepath.EvalSymlinks(parent); err == nil {
+			absPath = filepath.Join(resolvedParent, filepath.Base(absPath))
+		}
+	}
+
+	return absPath == absRoot || strings.HasPrefix(absPath, absRoot+string(filepath.Separator))
+}
+
+// isBookFilePathAllowed reports whether filePath resolves to a location that
+// is nested inside one of the paths of any configured library. It returns
+// false (with a nil error) when no library root contains the path.
+func isBookFilePathAllowed(ctx context.Context, d *db.DB, filePath string) (bool, error) {
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return false, fmt.Errorf("resolve file path: %w", err)
+	}
+	absPath = filepath.Clean(absPath)
+	// Resolve symlinks so a link targeting outside the library root is caught.
+	// If the full path does not exist yet (common for new files), resolve the
+	// parent directory and re-append the base name.
+	if resolved, evalErr := filepath.EvalSymlinks(absPath); evalErr == nil {
+		absPath = resolved
+	} else if parent := filepath.Dir(absPath); parent != absPath {
+		if resolvedParent, evalErr := filepath.EvalSymlinks(parent); evalErr == nil {
+			absPath = filepath.Join(resolvedParent, filepath.Base(absPath))
+		}
+	}
+
+	libraries, err := d.ListLibraries(ctx)
+	if err != nil {
+		return false, fmt.Errorf("list libraries: %w", err)
+	}
+
+	for _, lib := range libraries {
+		var paths []string
+		if jsonErr := json.Unmarshal([]byte(lib.Paths), &paths); jsonErr != nil {
+			slog.WarnContext(ctx, "failed to parse library paths; skipping library during path validation",
+				slog.String(otelkeys.LibraryID, lib.ID),
+				slog.Any(otelkeys.Error, jsonErr),
+			)
+			continue
+		}
+		for _, p := range paths {
+			if isPathUnderRoot(absPath, p) {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }

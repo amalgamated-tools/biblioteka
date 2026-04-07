@@ -1,12 +1,9 @@
 package handlers
 
 import (
-	"database/sql"
-	"errors"
 	"log/slog"
 	"net/http"
 
-	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -72,25 +69,11 @@ func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id
 //	@Failure		500	{object}	errorResponse
 //	@Router			/book-files/{id} [delete]
 func (h *BookFileHandler) deleteBookFile(w http.ResponseWriter, r *http.Request, id string) {
-	slog.DebugContext(r.Context(), "deleting book file", slog.String(otelkeys.BookFileID, id))
-
-	bf, err := h.DB.GetBookFile(r.Context(), id)
-	if handleDBErr(r.Context(), w, err, "book file") {
-		return
-	}
-
-	if err := h.DB.DeleteBookFile(r.Context(), id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "book file not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to delete book file", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to delete book file")
-		return
-	}
-
-	userID := auth.UserIDFromContext(r.Context())
-	logAudit(r.Context(), h.DB, userID, db.AuditActionBookFileDeleted, "book_file", id, map[string]any{"book_id": bf.BookID, "file_name": bf.FileName, "file_type": bf.FileType})
-
-	w.WriteHeader(http.StatusNoContent)
+	deleteResource(h.DB, w, r, id, "book file", "book_file", otelkeys.BookFileID,
+		h.DB.GetBookFile, h.DB.DeleteBookFile,
+		db.AuditActionBookFileDeleted,
+		func(bf *db.BookFile) map[string]any {
+			return map[string]any{"book_id": bf.BookID, "file_name": bf.FileName, "file_type": bf.FileType}
+		},
+	)
 }

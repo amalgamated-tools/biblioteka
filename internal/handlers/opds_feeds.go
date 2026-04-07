@@ -15,12 +15,13 @@ import (
 
 func (h *OPDSHandler) rootFeed(w http.ResponseWriter, r *http.Request) {
 	baseURL := opdsBaseURL(r)
+	now := time.Now().UTC().Format(time.RFC3339)
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        baseURL + "/",
 		Title:     "Biblioteka OPDS Catalog",
-		Updated:   time.Now().UTC().Format(time.RFC3339),
+		Updated:   now,
 		Links: []opdspkg.Link{
 			{Rel: opdspkg.RelSelf, Href: baseURL, Type: opdspkg.NavContentType},
 			{Rel: opdspkg.RelStart, Href: baseURL, Type: opdspkg.NavContentType},
@@ -30,28 +31,28 @@ func (h *OPDSHandler) rootFeed(w http.ResponseWriter, r *http.Request) {
 			{
 				Title:   "All Books",
 				ID:      baseURL + "/all",
-				Updated: time.Now().UTC().Format(time.RFC3339),
+				Updated: now,
 				Content: &opdspkg.Content{Type: "text", Value: "Browse all books"},
 				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/all", Type: opdspkg.AcqContentType}},
 			},
 			{
 				Title:   "Recent Books",
 				ID:      baseURL + "/recent",
-				Updated: time.Now().UTC().Format(time.RFC3339),
+				Updated: now,
 				Content: &opdspkg.Content{Type: "text", Value: "Recently added books"},
 				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/recent", Type: opdspkg.AcqContentType}},
 			},
 			{
 				Title:   "Authors",
 				ID:      baseURL + "/authors",
-				Updated: time.Now().UTC().Format(time.RFC3339),
+				Updated: now,
 				Content: &opdspkg.Content{Type: "text", Value: "Browse by author"},
 				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/authors", Type: opdspkg.NavContentType}},
 			},
 			{
 				Title:   "Series",
 				ID:      baseURL + "/series",
-				Updated: time.Now().UTC().Format(time.RFC3339),
+				Updated: now,
 				Content: &opdspkg.Content{Type: "text", Value: "Browse by series"},
 				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/series", Type: opdspkg.NavContentType}},
 			},
@@ -92,12 +93,13 @@ func (h *OPDSHandler) writeBooksFeed(
 	entries := h.bookEntries(ctx, books, baseURL)
 	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.AcqContentType)
 	links = append(links, extraLinks...)
+	now := time.Now().UTC().Format(time.RFC3339)
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        selfURL,
 		Title:     title,
-		Updated:   time.Now().UTC().Format(time.RFC3339),
+		Updated:   now,
 		Links:     links,
 		Entries:   entries,
 	}
@@ -152,11 +154,12 @@ func (h *OPDSHandler) writeNamedEntityNavFeed(
 	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.NavContentType)
 	links = append(links, opdspkg.Link{Rel: opdspkg.RelStart, Href: baseURL, Type: opdspkg.NavContentType})
 
+	now := time.Now().UTC().Format(time.RFC3339)
 	feed := &opdspkg.Feed{
 		XMLNS:   opdspkg.XMLNSAtom,
 		ID:      selfURL,
 		Title:   title,
-		Updated: time.Now().UTC().Format(time.RFC3339),
+		Updated: now,
 		Links:   links,
 		Entries: entries,
 	}
@@ -263,12 +266,13 @@ func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
 	entries := h.bookEntries(ctx, books, baseURL)
 	escapedQuery := url.QueryEscape(query)
 	selfURL := baseURL + "/search?q=" + escapedQuery
+	now := time.Now().UTC().Format(time.RFC3339)
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        selfURL,
 		Title:     fmt.Sprintf("Search: %s", query),
-		Updated:   time.Now().UTC().Format(time.RFC3339),
+		Updated:   now,
 		Links:     opdspkg.PaginationLinks(baseURL+"/search?q="+escapedQuery, page, total, opdspkg.PageSize, opdspkg.AcqContentType),
 		Entries:   entries,
 	}
