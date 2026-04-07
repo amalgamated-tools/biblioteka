@@ -1,5 +1,6 @@
 import type { Library, LibraryInput, PaginatedBooks } from "../../types";
-import { request, listEntityBooks } from "./core";
+import { request } from "./core";
+import { listEntityBooks } from "./pagination";
 
 export async function listLibraries(): Promise<Library[]> {
   return request<Library[]>("GET", "/api/libraries");
