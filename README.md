@@ -156,6 +156,7 @@ Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be 
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
 | `JWT_SECRET` | — | **Required in production** – random secret for signing tokens |
 | `SECURE_COOKIES` | `true` | Marks session cookies as `Secure`. Set to `false` for local HTTP development (the provided `.env.sample` defaults to `false`) |
+| `DISABLE_SIGNUP` | `false` | Set to `true` to disable public self-registration. When set, `POST /api/auth/signup` returns `403 Forbidden` and the Sign Up tab is hidden in the UI. Useful for single-user or invite-only deployments. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `LOG_FORMAT` | `json` | `json` or `text` |
 | `OIDC_ISSUER_URL` | *(empty)* | OIDC provider issuer URL |
