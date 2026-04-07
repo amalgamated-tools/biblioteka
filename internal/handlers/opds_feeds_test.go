@@ -84,10 +84,10 @@ func TestAllBooks_WithBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	_, err := h.DB.CreateBook(ctx, "Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Alpha"})
 
 	require.NoError(t, err, "create book Alpha")
-	_, err = h.DB.CreateBook(ctx, "Beta", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = h.DB.CreateBook(ctx, db.BookInput{Title: "Beta"})
 	require.NoError(t, err, "create book Beta")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
@@ -107,7 +107,7 @@ func TestAllBooks_WithDescription(t *testing.T) {
 	ctx := t.Context()
 
 	desc := "A great book"
-	_, err := h.DB.CreateBook(ctx, "Alpha", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Alpha", Description: &desc})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
@@ -126,7 +126,7 @@ func TestAllBooks_WithAuthorsAndFiles(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	book, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	author, err := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "create author")
@@ -158,10 +158,10 @@ func TestRecentBooks(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	_, err := h.DB.CreateBook(ctx, "First", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := h.DB.CreateBook(ctx, db.BookInput{Title: "First"})
 
 	require.NoError(t, err, "create book First")
-	_, err = h.DB.CreateBook(ctx, "Second", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = h.DB.CreateBook(ctx, db.BookInput{Title: "Second"})
 	require.NoError(t, err, "create book Second")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/recent", nil)
@@ -226,7 +226,7 @@ func TestAuthorBooks(t *testing.T) {
 
 	author, err := h.DB.CreateAuthor(ctx, "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "create author")
-	book, err := h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "The Shining"})
 	require.NoError(t, err, "create book")
 	require.NoError(t, h.DB.SetBookAuthors(ctx, book.ID, []string{author.ID}), "set book authors")
 
@@ -298,7 +298,7 @@ func TestSeriesBooks(t *testing.T) {
 
 	series, err := h.DB.CreateSeries(ctx, "The Dark Tower", nil, nil, nil)
 	require.NoError(t, err, "create series")
-	book, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	pos := 1.0
 	require.NoError(t, h.DB.SetBookSeries(ctx, book.ID, []db.BookSeriesInput{{SeriesID: series.ID, Position: &pos}}), "set book series")
@@ -332,12 +332,12 @@ func TestSearch_WithResults(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	_, err := h.DB.CreateBook(ctx, "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := h.DB.CreateBook(ctx, db.BookInput{Title: "The Gunslinger"})
 
 	require.NoError(t, err, "create book")
-	_, err = h.DB.CreateBook(ctx, "The Shining", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = h.DB.CreateBook(ctx, db.BookInput{Title: "The Shining"})
 	require.NoError(t, err, "create book")
-	_, err = h.DB.CreateBook(ctx, "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = h.DB.CreateBook(ctx, db.BookInput{Title: "Dune"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=The", nil)
@@ -368,10 +368,10 @@ func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	_, err := h.DB.CreateBook(ctx, "100% Pure", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := h.DB.CreateBook(ctx, db.BookInput{Title: "100% Pure"})
 
 	require.NoError(t, err, "create book")
-	_, err = h.DB.CreateBook(ctx, "Other Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = h.DB.CreateBook(ctx, db.BookInput{Title: "Other Book"})
 	require.NoError(t, err, "create book")
 
 	// Search for "%" should not match everything due to LIKE wildcard escaping.
@@ -424,7 +424,7 @@ func TestDownload_Success(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Test Book"})
 	require.NoError(t, err, "create book")
 
 	// Create a temp file to serve and register it as a library root.
@@ -465,7 +465,7 @@ func TestDownload_FileMissing(t *testing.T) {
 	tmpDir := t.TempDir()
 	registerTestLibrary(t, h.DB, tmpDir)
 
-	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Test Book"})
 	require.NoError(t, err, "create book")
 	bf, err := h.DB.CreateBookFile(ctx, book.ID, "epub", "test.epub", 100, nil, filepath.Join(tmpDir, "nonexistent.epub"))
 	require.NoError(t, err, "create book file")
@@ -481,7 +481,7 @@ func TestDownload_UnknownFileType(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Test Book"})
 	require.NoError(t, err, "create book")
 
 	tmpDir := t.TempDir()

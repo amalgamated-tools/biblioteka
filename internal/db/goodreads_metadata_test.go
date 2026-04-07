@@ -251,7 +251,7 @@ func TestCreateGoodreadsMetadata_WithBookID(t *testing.T) {
 	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "hash")
 	require.NoError(t, err, "CreateUser() error")
 
-	book, err := d.CreateBook(t.Context(), "Existing Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Existing Book"})
 	require.NoError(t, err, "CreateBook() error")
 
 	title := "Updated Metadata"

@@ -337,7 +337,20 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "creating book", slog.String(otelkeys.Title, req.Title))
 
-	b, err := h.DB.CreateBook(r.Context(), req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.CoverImageURL)
+	b, err := h.DB.CreateBook(r.Context(), db.BookInput{
+		Title:           req.Title,
+		Description:     req.Description,
+		ASIN:            req.ASIN,
+		ISBN10:          req.ISBN10,
+		ISBN13:          req.ISBN13,
+		GoodreadsID:     req.GoodreadsID,
+		HardcoverID:     req.HardcoverID,
+		GoogleBooksID:   req.GoogleBooksID,
+		PublicationDate: req.PublicationDate,
+		Publisher:       req.Publisher,
+		Language:        req.Language,
+		CoverImageURL:   req.CoverImageURL,
+	})
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create book", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book")
@@ -439,7 +452,20 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		slog.String(otelkeys.Title, req.Title),
 	)
 
-	b, err := h.DB.UpdateBook(r.Context(), id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.CoverImageURL)
+	b, err := h.DB.UpdateBook(r.Context(), id, db.BookInput{
+		Title:           req.Title,
+		Description:     req.Description,
+		ASIN:            req.ASIN,
+		ISBN10:          req.ISBN10,
+		ISBN13:          req.ISBN13,
+		GoodreadsID:     req.GoodreadsID,
+		HardcoverID:     req.HardcoverID,
+		GoogleBooksID:   req.GoogleBooksID,
+		PublicationDate: req.PublicationDate,
+		Publisher:       req.Publisher,
+		Language:        req.Language,
+		CoverImageURL:   req.CoverImageURL,
+	})
 	if handleUpdateErr(r.Context(), w, err, nil, nil, "a book", "book", id) {
 		return
 	}

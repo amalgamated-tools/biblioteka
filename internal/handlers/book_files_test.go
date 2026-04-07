@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,7 +22,7 @@ func setupBookFileHandler(t *testing.T) (*BookFileHandler, string) {
 func TestGetBookFile_Handler(t *testing.T) {
 	h, userID := setupBookFileHandler(t)
 
-	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 	require.NoError(t, err, "create book file")
@@ -54,7 +55,7 @@ func TestGetBookFile_NotFound(t *testing.T) {
 func TestDeleteBookFile_Handler(t *testing.T) {
 	h, userID := setupBookFileHandler(t)
 
-	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 	require.NoError(t, err, "create book file")

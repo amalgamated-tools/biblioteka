@@ -11,7 +11,7 @@ import (
 func TestSearchBooks_NoMatch(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateBook(t.Context(), "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err, "CreateBook()")
 
 	books, total, err := d.SearchBooks(t.Context(), "Asimov", 10, 0)
@@ -23,13 +23,13 @@ func TestSearchBooks_NoMatch(t *testing.T) {
 func TestSearchBooks_MatchesByTitle(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateBook(t.Context(), "Foundation", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Foundation"})
 	require.NoError(t, err, "CreateBook(Foundation)")
 
-	_, err = d.CreateBook(t.Context(), "Foundation and Empire", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = d.CreateBook(t.Context(), BookInput{Title: "Foundation and Empire"})
 	require.NoError(t, err, "CreateBook(Foundation and Empire)")
 
-	_, err = d.CreateBook(t.Context(), "Dune", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err, "CreateBook(Dune)")
 
 	books, total, err := d.SearchBooks(t.Context(), "Foundation", 10, 0)
@@ -42,10 +42,10 @@ func TestSearchBooks_MatchesByDescription(t *testing.T) {
 	d := newTestDB(t)
 
 	desc := "A story about a desert planet"
-	_, err := d.CreateBook(t.Context(), "Dune", &desc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Dune", Description: &desc})
 	require.NoError(t, err, "CreateBook(Dune)")
 
-	_, err = d.CreateBook(t.Context(), "Foundation", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = d.CreateBook(t.Context(), BookInput{Title: "Foundation"})
 	require.NoError(t, err, "CreateBook(Foundation)")
 
 	books, total, err := d.SearchBooks(t.Context(), "desert planet", 10, 0)
@@ -58,7 +58,7 @@ func TestSearchBooks_MatchesByDescription(t *testing.T) {
 func TestSearchBooks_CaseInsensitive(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateBook(t.Context(), "Foundation", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Foundation"})
 	require.NoError(t, err, "CreateBook()")
 
 	for _, q := range []string{"foundation", "FOUNDATION", "Foundation", "fOuNdAtIoN"} {
@@ -72,10 +72,10 @@ func TestSearchBooks_CaseInsensitive(t *testing.T) {
 func TestSearchBooks_SpecialCharacterEscaping(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateBook(t.Context(), "100% Pure Fiction", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "100% Pure Fiction"})
 	require.NoError(t, err, "CreateBook(100%% Pure Fiction)")
 
-	_, err = d.CreateBook(t.Context(), "Something Else", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = d.CreateBook(t.Context(), BookInput{Title: "Something Else"})
 	require.NoError(t, err, "CreateBook(Something Else)")
 
 	// Searching for "%" as a literal character should find exactly one book.
@@ -89,10 +89,10 @@ func TestSearchBooks_SpecialCharacterEscaping(t *testing.T) {
 func TestSearchBooks_UnderscoreEscaping(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateBook(t.Context(), "hello_world", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "hello_world"})
 	require.NoError(t, err, "CreateBook(hello_world)")
 
-	_, err = d.CreateBook(t.Context(), "helloXworld", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = d.CreateBook(t.Context(), BookInput{Title: "helloXworld"})
 	require.NoError(t, err, "CreateBook(helloXworld)")
 
 	// Searching for literal underscore should find only the one with "_".
@@ -104,10 +104,10 @@ func TestSearchBooks_UnderscoreEscaping(t *testing.T) {
 func TestSearchBooks_BackslashEscaping(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateBook(t.Context(), `Back\slash`, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: `Back\slash`})
 	require.NoError(t, err, "CreateBook()")
 
-	_, err = d.CreateBook(t.Context(), "BackXslash", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err = d.CreateBook(t.Context(), BookInput{Title: "BackXslash"})
 	require.NoError(t, err, "CreateBook(BackXslash)")
 
 	books, _, err := d.SearchBooks(t.Context(), `\`, 10, 0)
@@ -119,7 +119,7 @@ func TestSearchBooks_Paginated(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, title := range []string{"Abc Foundation", "Def Foundation", "Ghi Foundation", "Jkl Foundation"} {
-		_, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		_, err := d.CreateBook(t.Context(), BookInput{Title: title})
 		require.NoError(t, err, "CreateBook(%q)", title)
 	}
 
@@ -139,7 +139,7 @@ func TestSearchBooks_Paginated(t *testing.T) {
 func TestSearchBooks_OffsetBeyondTotal(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateBook(t.Context(), "Searchable Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Searchable Book"})
 	require.NoError(t, err, "CreateBook()")
 
 	books, total, err := d.SearchBooks(t.Context(), "Searchable", 10, 50)

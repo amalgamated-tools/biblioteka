@@ -51,12 +51,28 @@ func scanBookAndTotal(row interface{ Scan(...any) error }) (*Book, int, error) {
 	return &b, total, nil
 }
 
+// BookInput holds the fields used to create or update a book record.
+type BookInput struct {
+	Title           string
+	Description     *string
+	ASIN            *string
+	ISBN10          *string
+	ISBN13          *string
+	GoodreadsID     *string
+	HardcoverID     *string
+	GoogleBooksID   *string
+	PublicationDate *string
+	Publisher       *string
+	Language        *string
+	CoverImageURL   *string
+}
+
 // CreateBook inserts a new book and returns it.
-func (d *DB) CreateBook(ctx context.Context, title string, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL *string) (*Book, error) {
-	slog.DebugContext(ctx, "db: creating book", slog.String(otelkeys.Title, title))
+func (d *DB) CreateBook(ctx context.Context, input BookInput) (*Book, error) {
+	slog.DebugContext(ctx, "db: creating book", slog.String(otelkeys.Title, input.Title))
 	b, err := scanBook(d.QueryRowContext(ctx,
 		`INSERT INTO books (title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING `+bookColumns,
-		title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL,
+		input.Title, input.Description, input.ASIN, input.ISBN10, input.ISBN13, input.GoodreadsID, input.HardcoverID, input.GoogleBooksID, input.PublicationDate, input.Publisher, input.Language, input.CoverImageURL,
 	))
 	if err != nil {
 		return nil, err
@@ -66,9 +82,9 @@ func (d *DB) CreateBook(ctx context.Context, title string, description, asin, is
 
 // CreateBookWithFile atomically creates a book and its associated file record
 // within a single transaction. If either insert fails the transaction is rolled back.
-func (d *DB) CreateBookWithFile(ctx context.Context, title string, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL *string, fileType, fileName string, fileSize int64, fileHash *string, filePath string) (*Book, *BookFile, error) {
+func (d *DB) CreateBookWithFile(ctx context.Context, input BookInput, fileType, fileName string, fileSize int64, fileHash *string, filePath string) (*Book, *BookFile, error) {
 	slog.DebugContext(ctx, "db: creating book with file",
-		slog.String(otelkeys.Title, title),
+		slog.String(otelkeys.Title, input.Title),
 		slog.String(otelkeys.FileName, fileName),
 	)
 
@@ -80,7 +96,7 @@ func (d *DB) CreateBookWithFile(ctx context.Context, title string, description, 
 
 	b, err := scanBook(tx.QueryRowContext(ctx,
 		`INSERT INTO books (title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING `+bookColumns,
-		title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL,
+		input.Title, input.Description, input.ASIN, input.ISBN10, input.ISBN13, input.GoodreadsID, input.HardcoverID, input.GoogleBooksID, input.PublicationDate, input.Publisher, input.Language, input.CoverImageURL,
 	))
 	if err != nil {
 		return nil, nil, err
@@ -168,14 +184,14 @@ func (d *DB) ListBooksByLibraryPaginated(ctx context.Context, libraryID string, 
 }
 
 // UpdateBook updates a book's fields and returns the updated book.
-func (d *DB) UpdateBook(ctx context.Context, id, title string, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL *string) (*Book, error) {
+func (d *DB) UpdateBook(ctx context.Context, id string, input BookInput) (*Book, error) {
 	slog.DebugContext(ctx, "db: updating book",
 		slog.String(otelkeys.BookID, id),
-		slog.String(otelkeys.Title, title),
+		slog.String(otelkeys.Title, input.Title),
 	)
 	b, err := scanBook(d.QueryRowContext(ctx,
 		`UPDATE books SET title = $1, description = $2, asin = $3, isbn10 = $4, isbn13 = $5, goodreads_id = $6, hardcover_id = $7, google_books_id = $8, publication_date = $9, publisher = $10, language = $11, cover_image_url = $12, updated_at = `+d.now()+` WHERE id = $13 RETURNING `+bookColumns,
-		title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL, id,
+		input.Title, input.Description, input.ASIN, input.ISBN10, input.ISBN13, input.GoodreadsID, input.HardcoverID, input.GoogleBooksID, input.PublicationDate, input.Publisher, input.Language, input.CoverImageURL, id,
 	))
 	if err != nil {
 		return nil, err
