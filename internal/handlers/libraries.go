@@ -310,7 +310,7 @@ func (h *LibraryHandler) deleteLibrary(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
-	deleteResource(h.DB, w, r, id, "library", otelkeys.LibraryID,
+	deleteResource(h.DB, w, r, id, "library", "library", otelkeys.LibraryID,
 		h.DB.GetLibrary, h.DB.DeleteLibrary,
 		db.AuditActionLibraryDeleted,
 		func(l *db.Library) map[string]any { return map[string]any{"name": l.Name} },

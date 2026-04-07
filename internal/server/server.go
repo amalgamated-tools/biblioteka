@@ -150,7 +150,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	// Determine cookie security mode: secure by default, can be disabled for local dev
 	secureCookies := os.Getenv("SECURE_COOKIES") != "false"
 
-	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT, SecureCookies: secureCookies}
+	// Disable signup if DISABLE_SIGNUP=true; signup is enabled by default.
+	disableSignup := os.Getenv("DISABLE_SIGNUP") == "true"
+
+	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT, SecureCookies: secureCookies, DisableSignup: disableSignup}
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}
 	s.libraryHandler = &handlers.LibraryHandler{DB: s.DB}
 	if s.Worker != nil {
@@ -235,6 +238,7 @@ func (s *Server) Run(ctx context.Context) error {
 		middleware.RequestIDHandler,
 		otel.TraceMiddleware,
 		middleware.LoggingMiddleware,
+		middleware.SecurityHeadersMiddleware,
 	).Then(s.mux)
 
 	s.httpServer = &http.Server{

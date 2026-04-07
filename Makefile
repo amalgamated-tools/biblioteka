@@ -124,6 +124,7 @@ swagger-fmt:
 
 lint:
 	$(GOLANGCI_LINT_CMD) run ./... --max-issues-per-linter 0 --max-same-issues 0
+	go run ./cmd/slogcheck ./...
 
 fmt:
 	go fmt ./...

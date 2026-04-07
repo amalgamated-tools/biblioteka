@@ -58,8 +58,6 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "admin listing users", slog.String(otelkeys.CallerID, userID))
 	if !requireAdmin(h.DB, w, r) {
 		return
 	}
@@ -90,18 +88,11 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !requireAdmin(h.DB, w, r) {
+		return
+	}
+
 	callerID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "setting admin status", slog.String(otelkeys.CallerID, callerID))
-	isAdmin, err := h.DB.IsAdmin(r.Context(), callerID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
-		return
-	}
-	if !isAdmin {
-		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
-		return
-	}
 
 	targetID, ok := extractPathID(r.URL.Path, "/api/admin/users/")
 	if !ok {

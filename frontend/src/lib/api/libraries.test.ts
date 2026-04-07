@@ -13,6 +13,7 @@ import {
   updateLibrary,
   deleteLibrary,
   listLibraryBooks,
+  clearToken,
 } from "../api";
 import type { Library, PaginatedBooks } from "../../types";
 import {
@@ -41,7 +42,7 @@ const fakeLibrary: Library = {
 };
 
 beforeEach(() => {
-  localStorage.clear();
+  clearToken();
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
 });

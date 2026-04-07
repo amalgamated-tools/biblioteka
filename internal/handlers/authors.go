@@ -202,7 +202,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 //	@Failure		500	{object}	errorResponse
 //	@Router			/authors/{id} [delete]
 func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
+	deleteResource(h.DB, w, r, id, "author", "author", otelkeys.AuthorID,
 		h.DB.GetAuthor, h.DB.DeleteAuthor,
 		db.AuditActionAuthorDeleted,
 		func(a *db.Author) map[string]any { return map[string]any{"name": a.Name} },
