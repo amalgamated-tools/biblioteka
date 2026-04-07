@@ -76,7 +76,7 @@ func (d *DB) CreateBookWithFile(ctx context.Context, title string, description, 
 	if err != nil {
 		return nil, nil, err
 	}
-	defer tx.Rollback() //nolint:errcheck
+	defer deferRollback(ctx, tx)
 
 	b, err := scanBook(tx.QueryRowContext(ctx,
 		`INSERT INTO books (title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING `+bookColumns,

@@ -79,7 +79,7 @@ func (d *DB) SetBookAuthors(ctx context.Context, bookID string, authorIDs []stri
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback() //nolint:errcheck
+	defer deferRollback(ctx, tx)
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM book_authors WHERE book_id = $1`, bookID); err != nil {
 		return err
@@ -138,7 +138,7 @@ func (d *DB) SetBookSeries(ctx context.Context, bookID string, entries []BookSer
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback() //nolint:errcheck
+	defer deferRollback(ctx, tx)
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM book_series WHERE book_id = $1`, bookID); err != nil {
 		return err
