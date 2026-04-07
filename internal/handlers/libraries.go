@@ -136,12 +136,15 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 		switch {
 		case errors.As(err, &pve):
 			writeError(ctx, w, http.StatusBadRequest, pve.Error())
-		case errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled):
+		case errors.Is(err, context.DeadlineExceeded):
 			slog.WarnContext(ctx, "library path validation timed out",
 				slog.Any(otelkeys.Error, err),
 				slog.Any(otelkeys.LibraryPaths, req.Paths),
 			)
 			writeError(ctx, w, http.StatusInternalServerError, "path validation timed out")
+		case errors.Is(err, context.Canceled):
+			// Client disconnected; no point writing a response.
+			return "", false
 		default:
 			slog.ErrorContext(ctx, "failed to validate library paths",
 				slog.Any(otelkeys.Error, err),
@@ -372,6 +375,14 @@ func validatePaths(ctx context.Context, paths []string) error {
 
 // validatePathsWith is the testable core of validatePaths; callers may supply
 // a custom stat function (e.g. a blocking stub in tests).
+//
+// Note: os.Stat is not context-cancelable. If statFn blocks indefinitely
+// (e.g. an unresponsive NFS/SMB mount with no kernel-level timeout), the
+// background goroutine will remain alive even after the caller returns via
+// ctx.Done(). The context timeout bounds handler latency, not goroutine
+// lifetime. If this becomes an operational concern, configure mount-level
+// timeouts (e.g. NFS timeo=/retrans=/soft options) rather than trying to
+// kill the goroutine from Go.
 func validatePathsWith(ctx context.Context, paths []string, statFn func(string) (os.FileInfo, error)) error {
 	type result struct{ err error }
 	ch := make(chan result, 1)
