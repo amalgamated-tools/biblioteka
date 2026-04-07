@@ -391,6 +391,12 @@ After generating the report, update the memory cache files:
 
 ---
 
+## Step 7: Create Issues
+
+For the top nitpicks that require immediate attention, create GitHub Issues with the "bug" label and assign to the copilot. Reference the discussion report for context.
+
+---
+
 ## Review Scope Guidelines
 
 ### Focus On
