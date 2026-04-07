@@ -259,6 +259,16 @@ curl -X POST http://localhost:8080/api/libraries \
 
 Use `PUT /api/libraries/{id}` to update a library and `DELETE /api/libraries/{id}` to remove it. Both operations require admin privileges. Deleting a library removes only the library record and its book associations — the underlying book, author, series, and book file records are not deleted.
 
+### Book file path validation
+
+When a book file is registered via `POST /api/books/{id}/files`, the server resolves the submitted `file_path` to a canonical absolute path and checks it against all configured library roots. If the path falls outside every library root, the request is rejected with `400 Bad Request`:
+
+```
+file path is outside allowed library directories
+```
+
+This validation also applies at download time: if a previously registered file's stored path no longer falls within any library root (for example, after a library is removed), the download endpoints (`GET /download/{bookID}/{format}` and the OPDS download endpoint) return `403 Forbidden` instead of serving the file.
+
 ---
 
 ## OIDC Configuration (Runtime)
@@ -282,7 +292,15 @@ curl -X PUT http://localhost:8080/api/config/oidc \
   }'
 ```
 
-The server immediately tests the issuer URL by performing OIDC discovery before saving. If discovery fails, the config is rejected with a `400` error.
+Before attempting provider discovery, the server validates the issuer URL against a set of SSRF-prevention rules. The following are rejected with `400 Bad Request`:
+
+- Non-`https` schemes (only `https://` is accepted)
+- URLs containing userinfo (e.g. `https://user:pass@issuer.example.com`)
+- Literal private, loopback, link-local, or unique-local IP addresses (RFC 1918, `127.0.0.0/8`, `169.254.0.0/16`, `100.64.0.0/10` per RFC 6598, IPv6 loopback `::1`, link-local `fe80::/10`, and unique-local `fc00::/7`)
+- Hostnames that resolve via DNS to any of the above address ranges (DNS failures are treated as pass — the OIDC discovery request itself will fail and the `ssrfSafeHTTPClient` provides a second check at connection time)
+- IPv6 zone identifiers in the host (e.g. `[fe80::1%lo0]`)
+
+If validation passes, the server performs OIDC discovery. If discovery fails, the config is rejected with a `400` error.
 
 All four settings (`issuer_url`, `client_id`, `client_secret`, `redirect_uri`) are saved atomically in a single database transaction. If the write fails, none of the settings are changed — the configuration is never left in a partially-updated state.
 
