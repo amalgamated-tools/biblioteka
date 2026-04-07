@@ -1,5 +1,5 @@
 import type { Library, LibraryInput, PaginatedBooks } from "../../types";
-import { request } from "./core";
+import { request, listEntityBooks } from "./core";
 
 export async function listLibraries(): Promise<Library[]> {
   return request<Library[]>("GET", "/api/libraries");
@@ -25,13 +25,5 @@ export async function listLibraryBooks(
   limit = 50,
   offset = 0,
 ): Promise<PaginatedBooks> {
-  const query = new URLSearchParams({
-    limit: String(limit),
-    offset: String(offset),
-  });
-
-  return request<PaginatedBooks>(
-    "GET",
-    `/api/libraries/${libraryId}/books?${query.toString()}`,
-  );
+  return listEntityBooks(`/api/libraries/${libraryId}`, limit, offset);
 }
