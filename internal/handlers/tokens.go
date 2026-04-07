@@ -2,7 +2,11 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -10,6 +14,35 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
+
+const maxTokenSizeBytes = 64 * 1024
+
+// generateRandomHex generates n random bytes and returns them as a lowercase
+// hex-encoded string. It wraps crypto/rand.Read and returns an error if the
+// random source fails.
+func generateRandomHex(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate random bytes: %w", err)
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// generateBase64Token generates a cryptographically random token of n bytes
+// and returns it as a Base64-encoded string.
+func generateBase64Token(n int) (string, error) {
+	if n <= 0 {
+		return "", fmt.Errorf("generate token: n must be positive")
+	}
+	if n > maxTokenSizeBytes {
+		return "", fmt.Errorf("generate token: n too large (max %d bytes)", maxTokenSizeBytes)
+	}
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("generate token: %w", err)
+	}
+	return base64.StdEncoding.EncodeToString(buf), nil
+}
 
 // tokenError wraps an error with a client-facing message so that
 // handleTokenCreate can surface distinct HTTP responses for different failure
