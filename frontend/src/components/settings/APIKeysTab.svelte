@@ -133,6 +133,9 @@
                 newlyCreatedKey = null;
               }
             }}
+            aria-label={newKeyCopyState.copiedId !== null
+              ? "API key copied"
+              : "Copy API key"}
             class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {newKeyCopyState.copiedId !==
             null
               ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
