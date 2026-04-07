@@ -63,5 +63,51 @@ func collectRows[T any](rows *sql.Rows, scan func(interface{ Scan(...any) error 
 		}
 		items = append(items, *item)
 	}
-	return items, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+// collectRowsAndTotal iterates rows, scans each one using scan (which also
+// returns a window-function total), and returns the collected slice and the
+// total seen on the last row. It always closes rows before returning.
+//
+// This eliminates the per-entity rows-iteration boilerplate for paginated
+// queries that embed a COUNT(*) OVER() column:
+//
+//	defer rows.Close()
+//	var items []T
+//	var total int
+//	for rows.Next() {
+//	    item, t, err := scan(rows)
+//	    if err != nil {
+//	        return nil, 0, err
+//	    }
+//	    total = t
+//	    items = append(items, *item)
+//	}
+//	if err := rows.Err(); err != nil {
+//	    return nil, 0, err
+//	}
+//
+// which can now be written as:
+//
+//	return collectRowsAndTotal(rows, scanFooAndTotal)
+func collectRowsAndTotal[T any](rows *sql.Rows, scan func(interface{ Scan(...any) error }) (*T, int, error)) ([]T, int, error) {
+	defer rows.Close()
+	var items []T
+	var total int
+	for rows.Next() {
+		item, t, err := scan(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		total = t
+		items = append(items, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
 }
