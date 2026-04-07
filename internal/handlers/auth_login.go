@@ -41,17 +41,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.DebugContext(r.Context(), "login attempt", slog.String(otelkeys.Email, req.Email))
+	slog.DebugContext(r.Context(), "login attempt", slog.String(otelkeys.Email, redactEmail(req.Email)))
 
 	user, err := h.DB.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.DebugContext(r.Context(), "login failed: user not found", slog.String(otelkeys.Email, req.Email))
+			slog.DebugContext(r.Context(), "login failed: user not found", slog.String(otelkeys.Email, redactEmail(req.Email)))
 			writeError(r.Context(), w, http.StatusUnauthorized, "invalid email or password")
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to look up user by email",
-			slog.String(otelkeys.Email, req.Email),
+			slog.String(otelkeys.Email, redactEmail(req.Email)),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "internal server error")
@@ -59,13 +59,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.PasswordHash == "" {
-		slog.DebugContext(r.Context(), "login failed: OIDC-only account", slog.String(otelkeys.Email, req.Email))
+		slog.DebugContext(r.Context(), "login failed: OIDC-only account", slog.String(otelkeys.Email, redactEmail(req.Email)))
 		writeError(r.Context(), w, http.StatusUnauthorized, "this account uses OIDC login")
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		slog.DebugContext(r.Context(), "login failed: invalid password", slog.String(otelkeys.Email, req.Email))
+		slog.DebugContext(r.Context(), "login failed: invalid password", slog.String(otelkeys.Email, redactEmail(req.Email)))
 		writeError(r.Context(), w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
@@ -82,7 +82,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "login successful",
 		slog.String(otelkeys.UserID, user.ID),
-		slog.String(otelkeys.Email, user.Email),
+		slog.String(otelkeys.Email, redactEmail(user.Email)),
 	)
 
 	setAuthCookie(w, token, h.SecureCookies)
