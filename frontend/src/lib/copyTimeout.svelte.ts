@@ -6,6 +6,9 @@ import { TimeoutState } from "./timeoutState.svelte";
  * Tracks which item (by ID) was most recently copied to the clipboard and
  * automatically clears that state after a configurable duration.
  *
+ * Call `clear()` from `onDestroy` to cancel any pending timer and prevent
+ * leaks when the component is torn down.
+ *
  * State is reactive via Svelte 5 `$state` runes.
  */
 export class CopyTimeoutState extends TimeoutState<string | null> {

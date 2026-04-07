@@ -1,5 +1,6 @@
 import type { Series, SeriesInput, PaginatedBooks } from "../../types";
-import { request, listEntityBooks } from "./core";
+import { request } from "./core";
+import { listEntityBooks } from "./pagination";
 
 export async function listSeries(): Promise<Series[]> {
   return request<Series[]>("GET", "/api/series");

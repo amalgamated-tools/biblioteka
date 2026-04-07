@@ -1,5 +1,3 @@
-import type { PaginatedBooks } from "../../types";
-
 // In-memory token storage. The token is intentionally not persisted to
 // localStorage to prevent XSS from leaking a long-lived credential across
 // page loads. The server sets an HttpOnly cookie on login/signup which
@@ -89,25 +87,4 @@ export async function request<T>(
   }
 
   return data as T;
-}
-
-/**
- * Fetches a paginated list of books for a given entity path.
- *
- * Shared by `listAuthorBooks`, `listSeriesBooks`, and `listLibraryBooks` to
- * avoid repeating the same URLSearchParams + request pattern in every entity
- * module. Pass the entity base path (e.g. `/api/authors/${id}`) and the
- * pagination parameters; the `/books` suffix and query string are appended
- * here.
- */
-export async function listEntityBooks(
-  entityPath: string,
-  limit: number,
-  offset: number,
-): Promise<PaginatedBooks> {
-  const params = new URLSearchParams({
-    limit: String(limit),
-    offset: String(offset),
-  });
-  return request<PaginatedBooks>("GET", `${entityPath}/books?${params.toString()}`);
 }

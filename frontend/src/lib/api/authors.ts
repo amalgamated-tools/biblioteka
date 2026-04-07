@@ -1,5 +1,6 @@
 import type { Author, AuthorInput, PaginatedBooks } from "../../types";
-import { request, listEntityBooks } from "./core";
+import { request } from "./core";
+import { listEntityBooks } from "./pagination";
 
 export async function listAuthors(): Promise<Author[]> {
   return request<Author[]>("GET", "/api/authors");
