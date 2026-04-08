@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
+  security-events: read
 tools:
   github:
     toolsets: [repos, issues, pull_requests, code_security]
