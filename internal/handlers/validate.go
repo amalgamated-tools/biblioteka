@@ -12,11 +12,12 @@ const (
 	maxTokenNameLength = 100
 
 	minPasswordLength = 8
-	// maxPasswordLength caps passwords at 72 bytes — bcrypt's internal truncation
-	// limit. Without this cap, two passwords that share the same first 72 bytes
-	// would be treated as identical (silent truncation collision). NIST SP 800-63B
-	// §5.1.1.2 requires verifiers to support at least 64 characters; 72 matches
-	// bcrypt's natural limit and avoids any silent truncation.
+	// maxPasswordLength caps passwords at 72 bytes, which is bcrypt's input
+	// limit. Without this cap, bcrypt would silently truncate anything beyond the
+	// first 72 bytes, so two passwords that share those first 72 bytes would be
+	// treated as identical. This byte-based limit avoids silent truncation
+	// collisions, but it is not the same as guaranteeing support for 64 Unicode
+	// characters when passwords contain multi-byte UTF-8 characters.
 	maxPasswordLength = 72
 )
 
