@@ -91,7 +91,7 @@ func TestEnrichGoodreads_ISBNLookup(t *testing.T) {
 		searchByISBNResult: []goodreads.BookResult{sampleBookResult},
 	}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: book.ID,
 		UserID: user.ID,
 	})
@@ -125,7 +125,7 @@ func TestEnrichGoodreads_ISBN10Lookup(t *testing.T) {
 		searchByISBNResult: []goodreads.BookResult{sampleBookResult},
 	}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: book.ID,
 		UserID: user.ID,
 	})
@@ -148,7 +148,7 @@ func TestEnrichGoodreads_ASINLookup(t *testing.T) {
 		getByASINResult: &sampleBookResult,
 	}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: book.ID,
 		UserID: user.ID,
 	})
@@ -176,7 +176,7 @@ func TestEnrichGoodreads_GoodreadsIDLookup(t *testing.T) {
 		getByIDResult: &sampleBookResult,
 	}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: book.ID,
 		UserID: user.ID,
 	})
@@ -200,7 +200,7 @@ func TestEnrichGoodreads_TitleSearchFallback(t *testing.T) {
 		searchResult: []goodreads.BookResult{sampleBookResult},
 	}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: book.ID,
 		UserID: user.ID,
 	})
@@ -228,7 +228,7 @@ func TestEnrichGoodreads_ISBNPreferredOverTitle(t *testing.T) {
 		searchResult:       []goodreads.BookResult{sampleBookResult},
 	}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: book.ID,
 		UserID: user.ID,
 	})
@@ -248,7 +248,7 @@ func TestEnrichGoodreads_NoMatch(t *testing.T) {
 		searchResult: nil,
 	}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: book.ID,
 		UserID: user.ID,
 	})
@@ -270,7 +270,7 @@ func TestEnrichGoodreads_ISBNFailsFallsToTitle(t *testing.T) {
 		searchResult:    []goodreads.BookResult{sampleBookResult},
 	}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: book.ID,
 		UserID: user.ID,
 	})
@@ -290,7 +290,7 @@ func TestEnrichGoodreads_MissingBookID(t *testing.T) {
 	database := newTestDB(t)
 	mock := &mockGoodreadsClient{}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: "",
 		UserID: "some-user",
 	})
@@ -302,7 +302,7 @@ func TestEnrichGoodreads_MissingUserID(t *testing.T) {
 	database := newTestDB(t)
 	mock := &mockGoodreadsClient{}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: "some-book",
 		UserID: "",
 	})
@@ -314,7 +314,7 @@ func TestEnrichGoodreads_BookNotFound(t *testing.T) {
 	database := newTestDB(t)
 	mock := &mockGoodreadsClient{}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: "nonexistent-book-id",
 		UserID: "some-user",
 	})
@@ -331,7 +331,7 @@ func TestEnrichGoodreadsHandler_UnmarshalPayload(t *testing.T) {
 		searchResult: []goodreads.BookResult{sampleBookResult},
 	}
 
-	handler := NewEnrichGoodreadsHandler(database, mock)
+	handler := NewEnrichGoodreadsHandler(database, mock, nil)
 
 	payload, err := json.Marshal(EnrichGoodreadsPayload{
 		BookID: book.ID,
@@ -351,7 +351,7 @@ func TestEnrichGoodreadsHandler_InvalidPayload(t *testing.T) {
 	database := newTestDB(t)
 	mock := &mockGoodreadsClient{}
 
-	handler := NewEnrichGoodreadsHandler(database, mock)
+	handler := NewEnrichGoodreadsHandler(database, mock, nil)
 	err := handler(t.Context(), []byte("not json"))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unmarshal")
@@ -366,7 +366,7 @@ func TestEnrichGoodreads_MetadataFieldsMapping(t *testing.T) {
 		searchResult: []goodreads.BookResult{sampleBookResult},
 	}
 
-	err := enrichGoodreads(t.Context(), database, mock, EnrichGoodreadsPayload{
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
 		BookID: book.ID,
 		UserID: user.ID,
 	})

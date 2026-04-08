@@ -22,6 +22,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/handlers/middleware"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 
 	_ "github.com/amalgamated-tools/biblioteka/docs/swagger"
@@ -168,6 +169,27 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.bookHandler = &handlers.BookHandler{DB: s.DB}
 	if s.Worker != nil {
 		s.bookHandler.Enqueuer = s.Worker
+
+		// Create a pub/sub subscriber for SSE metadata events.
+		redisURL := os.Getenv("REDIS_URL")
+		if redisURL == "" {
+			redisURL = "redis://localhost:6379"
+		}
+		psClient, err := pubsub.NewClient(redisURL)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to create pubsub client for metadata events",
+				slog.Any(otelkeys.Error, err),
+			)
+		} else {
+			s.shutdownFuncs = append(s.shutdownFuncs, func(_ context.Context) error {
+				return psClient.Close()
+			})
+			s.bookHandler.MetadataHandler = &handlers.MetadataHandler{
+				DB:         s.DB,
+				Enqueuer:   s.Worker,
+				Subscriber: psClient,
+			}
+		}
 	}
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}

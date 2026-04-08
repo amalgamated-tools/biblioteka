@@ -10,6 +10,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/goodreads"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
 )
 
 // JobEnrichGoodreads is the registered name for the Goodreads enrichment job.
@@ -30,10 +31,20 @@ type GoodreadsSearcher interface {
 	GetBookByID(ctx context.Context, grID string) (*goodreads.BookResult, error)
 }
 
+// progressEvent is the JSON structure published to Redis pub/sub for SSE clients.
+type progressEvent struct {
+	Event      string `json:"event"`
+	Source     string `json:"source,omitempty"`
+	Step       string `json:"step,omitempty"`
+	Message    string `json:"message,omitempty"`
+	MetadataID string `json:"metadata_id,omitempty"`
+}
+
 // NewEnrichGoodreadsHandler returns a worker.Func that fetches Goodreads
 // metadata for a book and stores the result as a pending GoodreadsMetadata
-// record for user review.
-func NewEnrichGoodreadsHandler(database *db.DB, grClient GoodreadsSearcher) func(ctx context.Context, payload []byte) error {
+// record for user review. If publisher is non-nil, progress events are
+// broadcast via Redis pub/sub for SSE clients.
+func NewEnrichGoodreadsHandler(database *db.DB, grClient GoodreadsSearcher, publisher pubsub.Publisher) func(ctx context.Context, payload []byte) error {
 	return func(ctx context.Context, payload []byte) error {
 		var p EnrichGoodreadsPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
@@ -48,14 +59,18 @@ func NewEnrichGoodreadsHandler(database *db.DB, grClient GoodreadsSearcher) func
 			slog.String(otelkeys.UserID, p.UserID),
 		)
 
-		return enrichGoodreads(ctx, database, grClient, p)
+		return enrichGoodreads(ctx, database, grClient, publisher, p)
 	}
 }
 
-func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSearcher, p EnrichGoodreadsPayload) error {
+func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSearcher, publisher pubsub.Publisher, p EnrichGoodreadsPayload) error {
 	if p.BookID == "" || p.UserID == "" {
 		return errors.New("enrich goodreads: book_id and user_id are required")
 	}
+
+	channel := pubsub.MetadataChannel(p.BookID, p.UserID)
+
+	publishProgress(ctx, publisher, channel, "searching", "Looking up book...")
 
 	book, err := database.GetBook(ctx, p.BookID)
 	if err != nil {
@@ -63,15 +78,17 @@ func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSea
 			slog.String(otelkeys.BookID, p.BookID),
 			slog.Any(otelkeys.Error, err),
 		)
+		publishEvent(ctx, publisher, channel, progressEvent{Event: "error", Message: "failed to fetch book"})
 		return fmt.Errorf("fetch book %s: %w", p.BookID, err)
 	}
 
-	result, strategy := lookupGoodreads(ctx, grClient, book)
+	result, strategy := lookupGoodreads(ctx, grClient, publisher, channel, book)
 	if result == nil {
 		slog.InfoContext(ctx, "no Goodreads match found for book",
 			slog.String(otelkeys.BookID, p.BookID),
 			slog.String(otelkeys.Title, book.Title),
 		)
+		publishEvent(ctx, publisher, channel, progressEvent{Event: "not_found", Message: "No Goodreads match found"})
 		return nil
 	}
 
@@ -82,13 +99,19 @@ func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSea
 		slog.String(otelkeys.GoodreadsID, result.BookID),
 	)
 
-	if _, err := createGoodreadsMetadataFromResult(ctx, database, p.UserID, p.BookID, result); err != nil {
+	publishProgress(ctx, publisher, channel, "match_found", fmt.Sprintf("Found: %s", result.BookTitle))
+
+	gm, err := createGoodreadsMetadataFromResult(ctx, database, p.UserID, p.BookID, result)
+	if err != nil {
 		slog.ErrorContext(ctx, "failed to create goodreads metadata",
 			slog.String(otelkeys.BookID, p.BookID),
 			slog.Any(otelkeys.Error, err),
 		)
+		publishEvent(ctx, publisher, channel, progressEvent{Event: "error", Message: "failed to save metadata"})
 		return fmt.Errorf("create goodreads metadata for book %s: %w", p.BookID, err)
 	}
+
+	publishEvent(ctx, publisher, channel, progressEvent{Event: "complete", MetadataID: gm.ID})
 
 	return nil
 }
@@ -96,9 +119,10 @@ func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSea
 // lookupGoodreads tries multiple strategies to find a book on Goodreads.
 // Returns the first match and the strategy name that found it, or (nil, "")
 // if no match is found.
-func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, book *db.Book) (*goodreads.BookResult, string) {
+func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, publisher pubsub.Publisher, channel string, book *db.Book) (*goodreads.BookResult, string) {
 	// Strategy 1: ISBN lookup (highest confidence)
 	if isbn := derefStr(book.ISBN13); isbn != "" {
+		publishProgress(ctx, publisher, channel, "searching_isbn13", "Searching Goodreads by ISBN-13...")
 		results, err := grClient.SearchByISBN(ctx, isbn)
 		if err == nil && len(results) > 0 {
 			return &results[0], "isbn13"
@@ -111,6 +135,7 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, book *db.B
 		}
 	}
 	if isbn := derefStr(book.ISBN10); isbn != "" {
+		publishProgress(ctx, publisher, channel, "searching_isbn10", "Searching Goodreads by ISBN-10...")
 		results, err := grClient.SearchByISBN(ctx, isbn)
 		if err == nil && len(results) > 0 {
 			return &results[0], "isbn10"
@@ -125,6 +150,7 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, book *db.B
 
 	// Strategy 2: ASIN lookup
 	if asin := derefStr(book.ASIN); asin != "" {
+		publishProgress(ctx, publisher, channel, "searching_asin", "Searching Goodreads by ASIN...")
 		result, err := grClient.GetBookByASIN(ctx, asin)
 		if err == nil && result != nil {
 			return result, "asin"
@@ -139,6 +165,7 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, book *db.B
 
 	// Strategy 3: Goodreads ID lookup
 	if grID := derefStr(book.GoodreadsID); grID != "" {
+		publishProgress(ctx, publisher, channel, "searching_goodreads_id", "Searching Goodreads by ID...")
 		result, err := grClient.GetBookByID(ctx, grID)
 		if err == nil && result != nil {
 			return result, "goodreads_id"
@@ -153,6 +180,7 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, book *db.B
 
 	// Strategy 4: Title search (lowest confidence)
 	if book.Title != "" {
+		publishProgress(ctx, publisher, channel, "searching_title", "Searching Goodreads by title...")
 		results, err := grClient.Search(ctx, book.Title)
 		if err == nil && len(results) > 0 {
 			return &results[0], "title"
@@ -188,4 +216,37 @@ func createGoodreadsMetadataFromResult(ctx context.Context, database *db.DB, use
 		GoodreadsWorkLegacyID:   int64Ptr(result.WorkLegacyID),
 		GoodreadsAuthorLegacyID: int64Ptr(result.AuthorLegacyID),
 	})
+}
+
+// publishProgress is a convenience wrapper that publishes a progress event
+// with a source of "goodreads".
+func publishProgress(ctx context.Context, publisher pubsub.Publisher, channel, step, message string) {
+	publishEvent(ctx, publisher, channel, progressEvent{
+		Event:   "progress",
+		Source:  "goodreads",
+		Step:    step,
+		Message: message,
+	})
+}
+
+// publishEvent marshals and publishes a progress event to the given channel.
+// If publisher is nil or marshaling/publishing fails, the error is logged but
+// does not interrupt the job.
+func publishEvent(ctx context.Context, publisher pubsub.Publisher, channel string, evt progressEvent) {
+	if publisher == nil {
+		return
+	}
+	data, err := json.Marshal(evt)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to marshal progress event",
+			slog.Any(otelkeys.Error, err),
+		)
+		return
+	}
+	if err := publisher.Publish(ctx, channel, string(data)); err != nil {
+		slog.WarnContext(ctx, "failed to publish progress event",
+			slog.String(otelkeys.PubSubChannel, channel),
+			slog.Any(otelkeys.Error, err),
+		)
+	}
 }
