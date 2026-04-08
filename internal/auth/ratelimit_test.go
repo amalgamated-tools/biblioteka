@@ -217,3 +217,62 @@ func TestRateLimiter_Limit_WithTrustedProxies(t *testing.T) {
 	limited(w2, r2)
 	require.Equal(t, http.StatusTooManyRequests, w2.Code)
 }
+
+func TestIpFromRequestTrusted_UnparseableXFF_FallsBackToRemoteAddr(t *testing.T) {
+	trusted := []*net.IPNet{mustParseCIDR(t, "10.0.0.0/8")}
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.RemoteAddr = "10.0.0.1:9999"
+	r.Header.Set("X-Forwarded-For", "not-an-ip")
+
+	ip := ipFromRequestTrusted(r, trusted)
+	require.Equal(t, "10.0.0.1", ip, "should fall back to RemoteAddr when XFF contains unparseable entry")
+}
+
+func TestIpFromRequestTrusted_UnparseableXFF_SkipsToValidIP(t *testing.T) {
+	trusted := []*net.IPNet{mustParseCIDR(t, "10.0.0.0/8")}
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.RemoteAddr = "10.0.0.1:9999"
+	r.Header.Set("X-Forwarded-For", "203.0.113.50, not-an-ip")
+
+	ip := ipFromRequestTrusted(r, trusted)
+	require.Equal(t, "203.0.113.50", ip, "should skip unparseable entry and return valid non-trusted IP")
+}
+
+func TestIpFromRequestTrusted_PortSuffixedXFF(t *testing.T) {
+	trusted := []*net.IPNet{mustParseCIDR(t, "10.0.0.0/8")}
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.RemoteAddr = "10.0.0.1:9999"
+	r.Header.Set("X-Forwarded-For", "203.0.113.50:8080")
+
+	ip := ipFromRequestTrusted(r, trusted)
+	require.Equal(t, "203.0.113.50", ip, "should strip port from ip:port XFF entry")
+}
+
+func TestIpFromRequestTrusted_IPv6(t *testing.T) {
+	trusted := []*net.IPNet{mustParseCIDR(t, "fd00::/8")}
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.RemoteAddr = "[fd00::1]:9999"
+	r.Header.Set("X-Forwarded-For", "2001:db8::1")
+
+	ip := ipFromRequestTrusted(r, trusted)
+	require.Equal(t, "2001:db8::1", ip, "should return IPv6 client IP from XFF")
+}
+
+func TestIpFromRequestTrusted_IPv6_AllTrusted(t *testing.T) {
+	trusted := []*net.IPNet{mustParseCIDR(t, "::/0")}
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.RemoteAddr = "[fd00::1]:9999"
+	r.Header.Set("X-Forwarded-For", "fd00::2, fd00::3")
+
+	ip := ipFromRequestTrusted(r, trusted)
+	require.Equal(t, "fd00::1", ip, "should fall back to RemoteAddr when all IPv6 XFF IPs are trusted")
+}
+
+func TestIsTrusted_NilCIDR(t *testing.T) {
+	cidrs := []*net.IPNet{nil, mustParseCIDR(t, "10.0.0.0/8")}
+	ip := net.ParseIP("10.0.0.1")
+	require.True(t, isTrusted(ip, cidrs), "should skip nil CIDR and match subsequent entry")
+
+	ip2 := net.ParseIP("203.0.113.1")
+	require.False(t, isTrusted(ip2, cidrs), "should return false for non-matching IP with nil CIDR in slice")
+}

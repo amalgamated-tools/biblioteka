@@ -148,6 +148,7 @@ Before going live, verify each item:
 - [ ] **PostgreSQL backups** — if using PostgreSQL, schedule regular `pg_dump` backups of the `biblioteka` database.
 - [ ] **SQLite backups** — if using SQLite, back up the Docker volume (`biblioteka-data`) or the `*.db` file.
 - [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to keep anonymous telemetry disabled (default). Set to `true` to enable it.
+- [ ] **`TRUSTED_PROXIES`** — set to your reverse-proxy CIDR(s) if behind nginx/Caddy/Traefik. Leave unset if deploying without a proxy (direct exposure).
 - [ ] **SMTP** — if you want email delivery, configure the variables below (or use the admin UI under *Settings → Email*). Environment variables take precedence over UI settings when `SMTP_HOST` is set; unset `SMTP_HOST` to switch back to UI-managed config.
 
   | Variable | Default | Notes |

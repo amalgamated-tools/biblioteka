@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -46,13 +47,19 @@ func NewRateLimiterWithTrustedProxies(rate float64, burst int, trustedProxies []
 
 func newRateLimiter(rate float64, burst int, trustedProxies []*net.IPNet) *RateLimiter {
 	cleanup := 5 * time.Minute
+	// Defensive copy to prevent caller mutation from causing data races.
+	var copied []*net.IPNet
+	if len(trustedProxies) > 0 {
+		copied = make([]*net.IPNet, len(trustedProxies))
+		copy(copied, trustedProxies)
+	}
 	return &RateLimiter{
 		visitors:       make(map[string]*visitor),
 		nextCleanup:    time.Now().Add(cleanup),
 		rate:           rate,
 		burst:          burst,
 		cleanup:        cleanup,
-		trustedProxies: trustedProxies,
+		trustedProxies: copied,
 	}
 }
 
@@ -114,6 +121,9 @@ func ipFromRequest(r *http.Request) string {
 // isTrusted reports whether ip falls within any of the given CIDR ranges.
 func isTrusted(ip net.IP, cidrs []*net.IPNet) bool {
 	for _, cidr := range cidrs {
+		if cidr == nil {
+			continue
+		}
 		if cidr.Contains(ip) {
 			return true
 		}
@@ -148,15 +158,27 @@ func ipFromRequestTrusted(r *http.Request, trustedProxies []*net.IPNet) string {
 		}
 		ip := net.ParseIP(candidate)
 		if ip == nil {
-			// Unparseable entry; treat as untrusted client IP.
-			return candidate
+			// Try ip:port format (e.g. "1.2.3.4:80").
+			host, _, err := net.SplitHostPort(candidate)
+			if err == nil {
+				ip = net.ParseIP(host)
+				if ip != nil && !isTrusted(ip, trustedProxies) {
+					return host
+				}
+			}
+			if ip == nil {
+				// Unparseable entry — skip it. Do not use the raw string
+				// as a rate-limit key; it may be attacker-controlled.
+				continue
+			}
 		}
 		if !isTrusted(ip, trustedProxies) {
 			return candidate
 		}
 	}
 
-	// Every IP in the chain was trusted — fall back to RemoteAddr.
+	// Every valid IP in the chain was trusted, or no valid IP was found —
+	// fall back to RemoteAddr.
 	return remoteHost
 }
 
@@ -175,7 +197,7 @@ func ParseTrustedProxyCIDRs(raw string) ([]*net.IPNet, error) {
 		}
 		_, cidr, err := net.ParseCIDR(p)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("parsing CIDR %q: %w", p, err)
 		}
 		cidrs = append(cidrs, cidr)
 	}
@@ -186,7 +208,7 @@ func ParseTrustedProxyCIDRs(raw string) ([]*net.IPNet, error) {
 func (rl *RateLimiter) Limit(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var ip string
-		if len(rl.trustedProxies) > 0 {
+		if rl.trustedProxies != nil {
 			ip = ipFromRequestTrusted(r, rl.trustedProxies)
 		} else {
 			ip = ipFromRequest(r)
