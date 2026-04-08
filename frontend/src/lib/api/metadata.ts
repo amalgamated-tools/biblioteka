@@ -3,8 +3,8 @@ import { request } from "./core";
 
 export async function fetchMetadata(
   bookId: string,
-): Promise<{ task_id: string }> {
-  return request<{ task_id: string }>(
+): Promise<{ task_id: string; status: string }> {
+  return request<{ task_id: string; status: string }>(
     "POST",
     `/api/books/${bookId}/metadata/fetch`,
   );

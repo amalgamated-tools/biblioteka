@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -118,21 +119,33 @@ func toMetadataDTO(gm *db.GoodreadsMetadata) metadataDTO {
 	}
 }
 
+// getPendingMetadataOrErr fetches the pending metadata for a book and writes
+// the appropriate error response if missing or unavailable. Returns the
+// metadata and true on success; returns nil and false when it wrote an error
+// response (caller should return).
+func getPendingMetadataOrErr(ctx context.Context, d *db.DB, w http.ResponseWriter, userID, bookID string) (*db.GoodreadsMetadata, bool) {
+	gm, err := d.GetPendingGoodreadsMetadataByBook(ctx, userID, bookID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(ctx, w, http.StatusNotFound, "no pending metadata found")
+			return nil, false
+		}
+		slog.ErrorContext(ctx, "failed to get pending metadata",
+			slog.String(otelkeys.BookID, bookID),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to get pending metadata")
+		return nil, false
+	}
+	return gm, true
+}
+
 // getPendingMetadata returns the most recent pending metadata for a book.
 func (h *MetadataHandler) getPendingMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
-	gm, err := h.DB.GetPendingGoodreadsMetadataByBook(r.Context(), userID, bookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "no pending metadata found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get pending metadata",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get pending metadata")
+	gm, ok := getPendingMetadataOrErr(r.Context(), h.DB, w, userID, bookID)
+	if !ok {
 		return
 	}
 
@@ -292,17 +305,8 @@ func (h *MetadataHandler) streamEvents(w http.ResponseWriter, r *http.Request, b
 func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
-	gm, err := h.DB.GetPendingGoodreadsMetadataByBook(r.Context(), userID, bookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "no pending metadata found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get pending metadata for apply",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get pending metadata")
+	gm, ok := getPendingMetadataOrErr(r.Context(), h.DB, w, userID, bookID)
+	if !ok {
 		return
 	}
 
@@ -361,17 +365,8 @@ func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, 
 func (h *MetadataHandler) rejectMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
-	gm, err := h.DB.GetPendingGoodreadsMetadataByBook(r.Context(), userID, bookID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "no pending metadata found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get pending metadata for reject",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get pending metadata")
+	gm, ok := getPendingMetadataOrErr(r.Context(), h.DB, w, userID, bookID)
+	if !ok {
 		return
 	}
 
