@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: "PR number to check for merge conflicts"
+        required: true
+        type: number
 
 permissions:
   contents: read
@@ -45,16 +50,16 @@ You are the Merge Conflict Resolver agent. Your mission is to detect merge confl
 ## Current Context
 
 - **Repository**: ${{ github.repository }}
-- **Pull Request**: #${{ github.event.pull_request.number }}
-- **PR Title**: "${{ github.event.pull_request.title }}"
+- **Pull Request**: #${{ github.event.pull_request.number || github.event.inputs.pull_request_number }}
+- **PR Title**: "${{ github.event.pull_request.title || 'N/A (manual dispatch)' }}"
 
 ## Phase 1: Check for Merge Conflicts
 
 ### 1.1 Determine Mergeable Status
 
-Use the GitHub tools to get the pull request details for PR #${{ github.event.pull_request.number }}. Check the `mergeable` and `mergeable_state` fields.
+Use the GitHub tools to get the pull request details for PR #${{ github.event.pull_request.number || github.event.inputs.pull_request_number }}. Check the `mergeable` and `mergeable_state` fields.
 
-- If the PR is **mergeable** (no conflicts): call `noop` with a message like "No merge conflicts detected on PR #${{ github.event.pull_request.number }}" and stop.
+- If the PR is **mergeable** (no conflicts): call `noop` with a message like "No merge conflicts detected on PR #${{ github.event.pull_request.number || github.event.inputs.pull_request_number }}" and stop.
 - If the PR **has merge conflicts** (`mergeable` is `false` and/or `mergeable_state` is `"dirty"`): proceed to Phase 2.
 - If the mergeable state is **unknown** or **pending**: wait a few seconds and re-check. GitHub computes mergeability asynchronously. Retry up to 3 times with 10-second delays before giving up.
 
@@ -65,7 +70,7 @@ Use the GitHub tools to get the pull request details for PR #${{ github.event.pu
 Use the GitHub CLI to get the PR's head and base branch names (these are not available as template expressions):
 
 ```bash
-PR_DATA=$(gh pr view ${{ github.event.pull_request.number }} --json headRefName,baseRefName)
+PR_DATA=$(gh pr view ${{ github.event.pull_request.number || github.event.inputs.pull_request_number }} --json headRefName,baseRefName)
 HEAD_BRANCH=$(echo "$PR_DATA" | jq -r '.headRefName')
 BASE_BRANCH=$(echo "$PR_DATA" | jq -r '.baseRefName')
 echo "Head branch: $HEAD_BRANCH"
