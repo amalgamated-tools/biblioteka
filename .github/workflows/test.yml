@@ -186,11 +186,11 @@ jobs:
 
       - name: Check for known vulnerabilities
         run: |
-          # govulncheck exits 3 when vulnerabilities are found.
+          # govulncheck exit codes: 0 = no vulns, 3 = vulns found, other = error.
           # Stdlib vulns require a Go toolchain update and cannot be fixed in-repo,
           # so we only fail on non-stdlib (third-party) vulnerabilities.
           set +e
-          go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 -format json ./... > vulncheck.json 2>&1
+          go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 -format json ./... > vulncheck.json 2>vulncheck.stderr
           rc=$?
           set -e
 
@@ -199,17 +199,42 @@ jobs:
             exit 0
           fi
 
-          # Count non-stdlib findings (module path is not "stdlib")
-          non_stdlib=$(jq -r 'select(.finding != null) | .finding.trace[0].module' vulncheck.json 2>/dev/null | grep -cv '^stdlib$' || echo 0)
+          # Any exit code other than 3 is an execution error — fail hard.
+          if [ "$rc" -ne 3 ]; then
+            echo "::error::govulncheck failed with exit code $rc"
+            cat vulncheck.stderr
+            exit 1
+          fi
+
+          # Count non-stdlib findings (module path is not "stdlib").
+          # Fail closed: if jq parsing fails, treat as non-stdlib to avoid masking issues.
+          non_stdlib=$(jq -r 'select(.finding != null) | .finding.trace[0].module' vulncheck.json 2>/dev/null | grep -cv '^stdlib$') || non_stdlib=1
+
+          # Render a human-readable summary from the JSON instead of re-running govulncheck.
+          summary=$(jq -r '
+            select(.finding != null)
+            | .finding as $f
+            | ($f.osv // "unknown") as $osv
+            | ($f.trace[0].module // "unknown") as $module
+            | ($f.trace[0].package // "unknown") as $package
+            | "- \($osv) | module: \($module) | package: \($package)"
+          ' vulncheck.json 2>/dev/null)
+
+          if [ -n "$summary" ]; then
+            echo "Vulnerability summary:"
+            echo "$summary"
+          else
+            echo "Vulnerabilities were detected, but no summary could be rendered from vulncheck.json."
+            echo "Raw govulncheck JSON output:"
+            cat vulncheck.json
+          fi
 
           if [ "$non_stdlib" -gt 0 ]; then
             echo "::error::Non-stdlib vulnerabilities found"
-            go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./... || true
             exit 1
           fi
 
           echo "::warning::Only Go stdlib vulnerabilities found (requires Go toolchain update to fix)"
-          go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./... || true
           exit 0
 
   go-all:

@@ -1,5 +1,5 @@
 ---
-description: Weekly security scan that reviews code changes from the last 7 days for suspicious patterns indicating malicious agentic threats
+description: Weekly security scan that reviews code changes from the last 8 days for suspicious patterns indicating malicious agentic threats
 on:
   schedule: weekly
   workflow_dispatch:
@@ -33,7 +33,7 @@ You are the Weekly Malicious Code Scanner - a specialized security agent that an
 
 ## Mission
 
-Review all code changes made in the last seven days and identify suspicious patterns that could indicate:
+Review all code changes made in the last eight days and identify suspicious patterns that could indicate:
 - Attempts to exfiltrate secrets or sensitive data
 - Code that doesn't fit the project's normal context
 - Unusual network activity or data transfers
@@ -46,7 +46,7 @@ When suspicious patterns are detected, generate code-scanning alerts (not standa
 
 - **Repository**: ${{ github.repository }}
 - **Analysis Date**: $(date +%Y-%m-%d)
-- **Analysis Window**: Last 7 days of commits
+- **Analysis Window**: Last 8 days of commits
 - **Scanner**: Malicious Code Scanner
 
 ## Analysis Framework
@@ -59,11 +59,11 @@ Since this is a fresh clone, fetch the complete git history:
 # Fetch all history for analysis
 git fetch --unshallow || echo "Repository already has full history"
 
-# Get list of files changed in last 7 days
-git log --since="7 days ago" --name-only --pretty=format: | sort | uniq > /tmp/changed_files.txt
+# Get list of files changed in last 8 days
+git log --since="8 days ago" --name-only --pretty=format: | sort | uniq > /tmp/changed_files.txt
 
 # Get commit details for context
-git log --since="7 days ago" --pretty=format:"%h - %an, %ar : %s" > /tmp/recent_commits.txt
+git log --since="8 days ago" --pretty=format:"%h - %an, %ar : %s" > /tmp/recent_commits.txt
 ```
 
 ### 2. Suspicious Pattern Detection
@@ -104,7 +104,7 @@ done
 **Example patterns to detect:**
 ```bash
 # Check for unusual file additions
-git log --since="7 days ago" --diff-filter=A --name-only --pretty=format: | \
+git log --since="8 days ago" --diff-filter=A --name-only --pretty=format: | \
   sort | uniq | while read -r file; do
   if [ -f "$file" ]; then
     # Check if file is in an unusual location for its type
@@ -136,16 +136,24 @@ done
 
 ### 3. Code Review Analysis
 
-For each file that changed in the last 7 days:
+For each file that changed in the last 8 days:
 
 1. **Get the full diff** to understand what changed:
    ```bash
-   git diff HEAD~$(git rev-list --count --since="7 days ago" HEAD)..HEAD
+   base_commit=$(git rev-list --since="8 days ago" --reverse HEAD | head -n 1)
+   if [ -z "$base_commit" ]; then
+     base_commit=$(git rev-list --max-parents=0 HEAD | head -n 1)
+   fi
+   if git rev-parse "${base_commit}^" >/dev/null 2>&1; then
+     git diff "${base_commit}^..HEAD"
+   else
+     git diff "${base_commit}..HEAD"
+   fi
    ```
 
 2. **Analyze new function additions** for suspicious logic:
    ```bash
-   git log --since="7 days ago" --all -p | grep -A 20 "^+func\|^+def\|^+function"
+   git log --since="8 days ago" --all -p | grep -A 20 "^+func\|^+def\|^+function"
    ```
 
 3. **Check for obfuscated code**:
@@ -166,8 +174,8 @@ Use the GitHub API tools to gather context:
 
 1. **Review recent PRs and commits** to understand the changes:
    ```bash
-   # Get list of authors from last 7 days
-   git log --since="7 days ago" --format="%an" | sort | uniq
+   # Get list of authors from last 8 days
+   git log --since="8 days ago" --format="%an" | sort | uniq
    ```
 
 2. **Check if changes align with repository purpose**:
@@ -239,7 +247,7 @@ When suspicious patterns are found, create code-scanning alerts with this struct
 
 - **Stay within timeout**: Complete analysis within 15 minutes
 - **Batch operations**: Group similar git operations
-- **Focus on changes**: Only analyze files that changed in last 7 days
+- **Focus on changes**: Only analyze files that changed in last 8 days
 - **Skip generated files**: Ignore lock files, compiled code, dependencies
 
 ### Security Considerations
@@ -253,7 +261,7 @@ When suspicious patterns are found, create code-scanning alerts with this struct
 
 A successful malicious code scan:
 
-- ✅ Fetches git history for last 7 days
+- ✅ Fetches git history for last 8 days
 - ✅ Identifies all files changed in the analysis window
 - ✅ Scans for secret exfiltration patterns
 - ✅ Detects out-of-context code
@@ -279,7 +287,7 @@ Your output MUST:
    ```json
    {
      "noop": {
-       "message": "✅ Weekly malicious code scan completed. Analyzed [N] files changed in the last 7 days. No suspicious patterns detected."
+       "message": "✅ Weekly malicious code scan completed. Analyzed [N] files changed in the last 8 days. No suspicious patterns detected."
      }
    }
    ```
@@ -324,4 +332,4 @@ Your output MUST:
 
 **The workflow WILL FAIL if you don't call one of these tools.** Writing a message in your output text is NOT sufficient - you must actually invoke the tool.
 
-Begin your weekly malicious code scan now. Analyze all code changes from the last 7 days, identify suspicious patterns, and generate appropriate code-scanning alerts for any threats detected.
+Begin your weekly malicious code scan now. Analyze all code changes from the last 8 days, identify suspicious patterns, and generate appropriate code-scanning alerts for any threats detected.
