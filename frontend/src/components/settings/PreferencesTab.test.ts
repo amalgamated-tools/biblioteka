@@ -18,6 +18,7 @@ describe("PreferencesTab", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   it("renders all three theme buttons", () => {
@@ -91,7 +92,6 @@ describe("PreferencesTab", () => {
     await tick();
 
     expect(status).toHaveTextContent("Theme changed to dark");
-    vi.useRealTimers();
   });
 
   it("announces 'follow system settings' when auto theme is selected", async () => {
@@ -106,6 +106,5 @@ describe("PreferencesTab", () => {
     await tick();
 
     expect(status).toHaveTextContent("Theme changed to follow system settings");
-    vi.useRealTimers();
   });
 });
