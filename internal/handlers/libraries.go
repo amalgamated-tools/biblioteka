@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -128,11 +129,23 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 		writeError(ctx, w, http.StatusBadRequest, "paths must not be empty strings")
 		return "", false
 	}
-	if err := validatePaths(req.Paths); err != nil {
+	validateCtx, cancel := context.WithTimeout(ctx, pathValidationTimeout)
+	defer cancel()
+	if err := validatePaths(validateCtx, req.Paths); err != nil {
 		var pve *pathValidationError
-		if errors.As(err, &pve) {
+		switch {
+		case errors.As(err, &pve):
 			writeError(ctx, w, http.StatusBadRequest, pve.Error())
-		} else {
+		case errors.Is(err, context.DeadlineExceeded):
+			slog.WarnContext(ctx, "library path validation timed out",
+				slog.Any(otelkeys.Error, err),
+				slog.Any(otelkeys.LibraryPaths, req.Paths),
+			)
+			writeError(ctx, w, http.StatusInternalServerError, "path validation timed out")
+		case errors.Is(err, context.Canceled):
+			// Client disconnected; no point writing a response.
+			return "", false
+		default:
 			slog.ErrorContext(ctx, "failed to validate library paths",
 				slog.Any(otelkeys.Error, err),
 				slog.Any(otelkeys.LibraryPaths, req.Paths),
@@ -349,20 +362,54 @@ func (h *LibraryHandler) listLibraryBooks(w http.ResponseWriter, r *http.Request
 	)
 }
 
-func validatePaths(paths []string) error {
-	for _, p := range paths {
-		info, err := os.Stat(p)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return &pathValidationError{msg: "folder not found: " + p}
+// pathValidationTimeout is the maximum time allowed to stat all library paths.
+// It guards against blocking the HTTP handler goroutine on slow NFS/SMB mounts.
+const pathValidationTimeout = 5 * time.Second
+
+// validatePaths checks that every path in paths exists and is a directory.
+// It runs the filesystem checks in a background goroutine so that
+// pathValidationTimeout (via context) can abort a hung os.Stat call.
+func validatePaths(ctx context.Context, paths []string) error {
+	return validatePathsWith(ctx, paths, os.Stat)
+}
+
+// validatePathsWith is the testable core of validatePaths; callers may supply
+// a custom stat function (e.g. a blocking stub in tests).
+//
+// Note: os.Stat is not context-cancelable. If statFn blocks indefinitely
+// (e.g. an unresponsive NFS/SMB mount with no kernel-level timeout), the
+// background goroutine will remain alive even after the caller returns via
+// ctx.Done(). The context timeout bounds handler latency, not goroutine
+// lifetime. If this becomes an operational concern, configure mount-level
+// timeouts (e.g. NFS timeo=/retrans=/soft options) rather than trying to
+// kill the goroutine from Go.
+func validatePathsWith(ctx context.Context, paths []string, statFn func(string) (os.FileInfo, error)) error {
+	type result struct{ err error }
+	ch := make(chan result, 1)
+	go func() {
+		for _, p := range paths {
+			info, err := statFn(p)
+			if err != nil {
+				if os.IsNotExist(err) {
+					ch <- result{&pathValidationError{msg: "folder not found: " + p}}
+					return
+				}
+				ch <- result{err}
+				return
 			}
-			return err
+			if !info.IsDir() {
+				ch <- result{&pathValidationError{msg: "path is not a folder: " + p}}
+				return
+			}
 		}
-		if !info.IsDir() {
-			return &pathValidationError{msg: "path is not a folder: " + p}
-		}
+		ch <- result{nil}
+	}()
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("path validation timed out: %w", ctx.Err())
+	case r := <-ch:
+		return r.err
 	}
-	return nil
 }
 
 // pathValidationError carries a user-safe message about an invalid library path.
