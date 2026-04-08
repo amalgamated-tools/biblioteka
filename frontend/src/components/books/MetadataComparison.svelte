@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { RemoteMetadata } from "../../types";
-  import { ArrowRight, Check, X } from "lucide-svelte";
+  import { ArrowLeft, Check, X } from "lucide-svelte";
   import Button from "../ui/Button.svelte";
 
   interface CurrentValues {
@@ -21,7 +21,7 @@
   interface Props {
     metadata: RemoteMetadata;
     currentValues: CurrentValues;
-    onApplyField: (field: keyof RemoteMetadata) => void;
+    onApplyField: (field: keyof CurrentValues) => void;
     onApplyAll: () => void;
     onDismiss: () => void;
   }
@@ -66,8 +66,6 @@
     switch (source) {
       case "goodreads":
         return "Goodreads";
-      case "hardcover":
-        return "Hardcover";
       default:
         return source;
     }
@@ -131,7 +129,7 @@
                 title="Use fetched value"
                 aria-label="Use fetched {field.label}"
               >
-                <ArrowRight class="w-3.5 h-3.5 rotate-180" aria-hidden="true" />
+                <ArrowLeft class="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             {:else}
               <span

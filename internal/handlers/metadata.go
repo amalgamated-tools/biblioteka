@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -157,11 +158,28 @@ func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	// If a pending metadata record already exists, short-circuit with 202 so
+	// the client can listen on SSE or poll without triggering a duplicate job.
+	if existing, lookupErr := h.DB.GetPendingGoodreadsMetadataByBook(r.Context(), userID, bookID); lookupErr == nil {
+		slog.DebugContext(r.Context(), "pending metadata already exists, skipping enqueue",
+			slog.String(otelkeys.BookID, bookID),
+			slog.String(otelkeys.GoodreadsMetadataID, existing.ID),
+		)
+		writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: ""})
+		return
+	}
+
 	taskID, err := h.Enqueuer.Enqueue(r.Context(), jobs.JobEnrichGoodreads, jobs.EnrichGoodreadsPayload{
 		BookID: bookID,
 		UserID: userID,
 	})
 	if err != nil {
+		// asynq's Unique option returns "task already exists" for duplicate
+		// enqueue attempts — treat as a successful 202 since the job is in-flight.
+		if strings.Contains(err.Error(), "task already exists") {
+			writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: ""})
+			return
+		}
 		slog.ErrorContext(r.Context(), "failed to enqueue metadata fetch",
 			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
@@ -294,7 +312,9 @@ func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, 
 	}
 
 	input := db.BookInput{
-		Title:           coalesceStr(gm.Title, book.Title),
+		Title: coalesceStr(gm.Title, book.Title),
+		// Note: gm.AuthorName is intentionally not applied here. Authors are a
+		// separate many-to-many relationship managed via SetBookAuthors.
 		Description:     coalescePtr(gm.Description, book.Description),
 		ASIN:            coalescePtr(gm.ASIN, book.ASIN),
 		ISBN10:          coalescePtr(gm.ISBN10, book.ISBN10),

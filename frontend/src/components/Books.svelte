@@ -15,19 +15,11 @@
   );
 
   // Parse subPath: "", "{id}", "{id}/edit"
-  let bookId = $derived.by(() => {
-    const sub = routerStore.subPath;
-    if (!sub) return "";
-    const parts = sub.split("/");
-    return parts[0];
-  });
-
-  let isEdit = $derived.by(() => {
-    const sub = routerStore.subPath;
-    if (!sub) return false;
-    const parts = sub.split("/");
-    return parts.length > 1 && parts[1] === "edit";
-  });
+  let subParts = $derived(
+    routerStore.subPath ? routerStore.subPath.split("/") : [],
+  );
+  let bookId = $derived(subParts[0] ?? "");
+  let isEdit = $derived(subParts.length > 1 && subParts[1] === "edit");
 
   function handlePageChange(offset: number) {
     routerStore.setQueryParam("offset", offset === 0 ? null : String(offset));

@@ -10,13 +10,17 @@
   let { book }: Props = $props();
 
   function handleClick(e: MouseEvent) {
+    // Preserve native link semantics for modified clicks (open in new tab, etc.)
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+      return;
+    }
     e.preventDefault();
     routerStore.navigate(`books/${book.id}`);
   }
 </script>
 
 <a
-  href="#books/{book.id}"
+  href={`#books/${book.id}`}
   class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden hover:shadow-md transition-shadow cursor-pointer block no-underline"
   onclick={handleClick}
 >
