@@ -112,15 +112,17 @@ func (h *APIKeyHandler) createAPIKey(w http.ResponseWriter, r *http.Request) {
 		auditEntityType: "api_key",
 		auditCreate:     db.AuditActionAPIKeyCreated,
 		create: func(ctx context.Context, userID, name string) (string, any, error) {
-			// Generate 32 random hex characters (16 bytes).
-			hexKey, err := generateRandomHex(16)
+			// Generate 40 random hex characters (20 bytes / 160 bits).
+			// NIST SP 800-63B §5.1.2.1 requires at least 20 bytes of entropy for
+			// look-up secrets used as authenticators.
+			hexKey, err := generateRandomHex(20)
 			if err != nil {
 				return "", nil, &tokenError{err: err, message: "failed to generate API key"}
 			}
 			fullKey := auth.APIKeyPrefix + hexKey
 
 			// Hash the full key with SHA-256. This is appropriate because API keys are
-			// high-entropy random tokens (128 bits), not user-chosen passwords. Expensive
+			// high-entropy random tokens (160 bits), not user-chosen passwords. Expensive
 			// hashing (bcrypt/argon2) is unnecessary for cryptographically random secrets.
 			keyHash := auth.HashAPIKey(fullKey)
 

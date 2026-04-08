@@ -26,8 +26,8 @@ type APIKeyValidator interface {
 
 // HashAPIKey returns the hex-encoded SHA-256 hash of the given API key.
 // SHA-256 is appropriate here because API keys are high-entropy random tokens
-// (128 bits), not user-chosen passwords. Expensive hashing (bcrypt/argon2) is
-// unnecessary — an attacker cannot brute-force 128-bit keys regardless of hash speed.
+// (160 bits), not user-chosen passwords. Expensive hashing (bcrypt/argon2) is
+// unnecessary — an attacker cannot brute-force 160-bit keys regardless of hash speed.
 func HashAPIKey(key string) string {
 	return hashHighEntropyToken(key)
 }
