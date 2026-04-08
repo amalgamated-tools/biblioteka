@@ -200,8 +200,8 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, publisher 
 			}
 			slog.DebugContext(ctx, "Goodreads title search result did not match book title",
 				slog.String(otelkeys.BookID, book.ID),
-				slog.String("search_title", book.Title),
-				slog.String("result_title", results[0].BookTitle),
+				slog.String(otelkeys.SearchTitle, book.Title),
+				slog.String(otelkeys.ResultTitle, results[0].BookTitle),
 			)
 		}
 		if err != nil {
