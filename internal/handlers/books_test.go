@@ -483,3 +483,55 @@ func TestCreateBook_NoEnqueuer(t *testing.T) {
 
 	require.Equal(t, http.StatusCreated, w.Code, "book creation should succeed without enqueuer")
 }
+
+func TestUpdateBook_Success(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Original Title"})
+	require.NoError(t, err, "create book")
+
+	desc := "A great book"
+	body := mustMarshal(t, bookRequest{Title: "Updated Title", Description: &desc})
+	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID, bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var dto bookDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto))
+	require.Equal(t, "Updated Title", dto.Title)
+	require.NotNil(t, dto.Description)
+	require.Equal(t, "A great book", *dto.Description)
+}
+
+func TestUpdateBook_MissingTitle(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Original Title"})
+	require.NoError(t, err, "create book")
+
+	body := mustMarshal(t, bookRequest{})
+	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID, bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestUpdateBook_NotFound(t *testing.T) {
+	h, userID := setupBookHandler(t)
+
+	body := mustMarshal(t, bookRequest{Title: "Any Title"})
+	r := httptest.NewRequest(http.MethodPut, "/api/books/nonexistent-id", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookRoutes(w, r)
+
+	require.Equal(t, http.StatusNotFound, w.Code)
+}

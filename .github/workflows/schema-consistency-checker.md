@@ -25,7 +25,7 @@ safe-outputs:
     branch: "assets/${{ github.workflow }}"
   create-discussion:
     expires: 3d
-    category: "announcements"
+    category: "audits"
     title-prefix: "[Schema Consistency] "
     max: 1
     close-older-discussions: true

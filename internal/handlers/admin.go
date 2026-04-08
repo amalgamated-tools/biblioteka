@@ -40,7 +40,7 @@ func toAdminUserDTO(u *db.User) adminUserDTO {
 	}
 }
 
-// HandleListUsers godoc
+// HandleListUsers returns the full list of users in the system (admin only).
 //
 //	@Summary		List all users
 //	@Description	Returns a list of all users (admin only)
@@ -65,7 +65,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	listEntities(w, r, "users", h.DB.ListUsers, toAdminUserDTO)
 }
 
-// HandleSetAdmin godoc
+// HandleSetAdmin updates the admin status of the specified user (admin only).
 //
 //	@Summary		Set user admin status
 //	@Description	Change a user's admin status (admin only)

@@ -11,7 +11,7 @@ type OPDSCredentialHandler struct {
 	DB *db.DB
 }
 
-// HandleOPDSCredentials godoc
+// HandleOPDSCredentials handles GET, PUT, and DELETE requests for the authenticated user's OPDS credential.
 //
 //	@Summary		Manage OPDS credentials
 //	@Description	GET returns the current user's OPDS credential.

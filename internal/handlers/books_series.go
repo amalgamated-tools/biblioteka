@@ -19,7 +19,7 @@ type setBookSeriesRequest struct {
 	Entries []db.BookSeriesInput `json:"entries"`
 }
 
-// getBookSeries godoc
+// getBookSeries returns the series entries associated with the specified book.
 //
 //	@Summary		List book series
 //	@Description	Get the list of series for a book
@@ -36,7 +36,7 @@ func (h *BookHandler) getBookSeries(w http.ResponseWriter, r *http.Request, book
 	respondBookSubResource(r.Context(), w, bookID, h.DB.GetBookSeries, toBookSeriesEntryDTO, "book series")
 }
 
-// putBookSeries godoc
+// putBookSeries replaces the series entries for the specified book.
 //
 //	@Summary		Set book series
 //	@Description	Replace the list of series for a book
