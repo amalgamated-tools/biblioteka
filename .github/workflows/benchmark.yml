@@ -12,7 +12,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 # Cancel in-progress benchmark runs for the same PR on new pushes.
 concurrency:
@@ -24,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Go Benchmarks
     timeout-minutes: 15
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -34,10 +35,25 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
+      - name: Cache exiftool apt package
+        id: exiftool-cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
+        with:
+          path: ${{ runner.temp }}/apt-cache
+          key: ${{ runner.os }}-apt-exiftool-v1
+          restore-keys: |
+            ${{ runner.os }}-apt-exiftool-
+
       - name: Install exiftool
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -q libimage-exiftool-perl
+          mkdir -p "${{ runner.temp }}/apt-cache"
+          if [ "${{ steps.exiftool-cache.outputs.cache-hit }}" = "true" ]; then
+            sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q --no-download libimage-exiftool-perl
+          else
+            sudo apt-get update -qq
+            sudo apt-get -o dir::cache::archives="${{ runner.temp }}/apt-cache" install -y -q libimage-exiftool-perl
+          fi
+          exiftool -ver
 
       - name: Run benchmarks
         run: |
