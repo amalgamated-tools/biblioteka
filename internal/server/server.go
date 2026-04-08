@@ -126,6 +126,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 
 		if jwtSecret == "" {
 			slog.InfoContext(ctx, "WARNING: JWT_SECRET not set, using random secret. Existing JWT tokens will become invalid after a server restart; all users will need to log in again.")
+		} else if len(jwtSecret) < auth.MinSecretLength {
+			slog.WarnContext(ctx, "JWT_SECRET is shorter than the recommended minimum of 32 characters; a short secret weakens HMAC-SHA256 signing",
+				slog.Int(otelkeys.JWTSecretLength, len(jwtSecret)),
+			)
 		}
 	}
 
