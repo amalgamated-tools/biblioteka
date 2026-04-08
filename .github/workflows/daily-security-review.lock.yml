@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"658f7602f914367440e2487372c17359f4662d1b5b7bb753adfa53617b39857d","compiler_version":"v0.67.1","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"5fc03ad41229c07c7b24f8024395fcdc99748ff142e7e493e2d295d2f9f4bd39","compiler_version":"v0.67.1","strict":true,"agent_id":"copilot"}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
 #  | |_| | __ _  ___ _ __ | |_ _  ___ 
@@ -21,7 +21,7 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# Daily security review that scans the entire codebase for vulnerabilities, insecure patterns, and security best-practice violations that automated scanners miss
+# Weekly security review that scans the entire codebase for vulnerabilities, insecure patterns, and security best-practice violations that automated scanners miss
 #
 # Resolved workflow manifest:
 #   Imports:
@@ -43,11 +43,11 @@
 #   - actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
 #   - github/gh-aw-actions/setup@80471a493be8c528dd27daf73cd644242a7965e0 # v0.67.1
 
-name: "Daily Security Review"
+name: "Weekly Security Review"
 "on":
   schedule:
-  - cron: "13 19 * * *"
-    # Friendly format: daily (scattered)
+  - cron: "13 19 * * 5"
+    # Friendly format: weekly (scattered)
   workflow_dispatch:
     inputs:
       aw_context:
@@ -61,7 +61,7 @@ permissions: {}
 concurrency:
   group: "gh-aw-${{ github.workflow }}"
 
-run-name: "Daily Security Review"
+run-name: "Weekly Security Review"
 
 jobs:
   activation:
@@ -91,7 +91,7 @@ jobs:
           GH_AW_INFO_VERSION: "latest"
           GH_AW_INFO_AGENT_VERSION: "latest"
           GH_AW_INFO_CLI_VERSION: "v0.67.1"
-          GH_AW_INFO_WORKFLOW_NAME: "Daily Security Review"
+          GH_AW_INFO_WORKFLOW_NAME: "Weekly Security Review"
           GH_AW_INFO_EXPERIMENTAL: "false"
           GH_AW_INFO_SUPPORTS_TOOLS_ALLOWLIST: "true"
           GH_AW_INFO_STAGED: "false"
@@ -160,15 +160,15 @@ jobs:
         run: |
           bash ${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh
           {
-          cat << 'GH_AW_PROMPT_378aa7b37df9348a_EOF'
+          cat << 'GH_AW_PROMPT_11e4ae88056f8f65_EOF'
           <system>
-          GH_AW_PROMPT_378aa7b37df9348a_EOF
+          GH_AW_PROMPT_11e4ae88056f8f65_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/cache_memory_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_378aa7b37df9348a_EOF'
+          cat << 'GH_AW_PROMPT_11e4ae88056f8f65_EOF'
           <safe-output-tools>
           Tools: add_comment, create_issue(max:5), create_discussion, missing_tool, missing_data, noop
           </safe-output-tools>
@@ -200,14 +200,14 @@ jobs:
           {{/if}}
           </github-context>
           
-          GH_AW_PROMPT_378aa7b37df9348a_EOF
+          GH_AW_PROMPT_11e4ae88056f8f65_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_378aa7b37df9348a_EOF'
+          cat << 'GH_AW_PROMPT_11e4ae88056f8f65_EOF'
           </system>
           {{#runtime-import .github/workflows/shared/mood.md}}
           {{#runtime-import .github/workflows/shared/reporting.md}}
           {{#runtime-import .github/workflows/daily-security-review.md}}
-          GH_AW_PROMPT_378aa7b37df9348a_EOF
+          GH_AW_PROMPT_11e4ae88056f8f65_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
@@ -400,23 +400,23 @@ jobs:
           mkdir -p ${RUNNER_TEMP}/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_3e238aaa54991ac4_EOF'
-          {"add_comment":{"max":1},"create_discussion":{"category":"audits","close_older_discussions":true,"expires":72,"fallback_to_issue":true,"max":1,"title_prefix":"[daily-security] "},"create_issue":{"expires":720,"labels":["security","automation"],"max":5},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_3e238aaa54991ac4_EOF
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_2c6493688d7b28bf_EOF'
+          {"add_comment":{"max":1},"create_discussion":{"category":"audits","close_older_discussions":true,"expires":72,"fallback_to_issue":true,"max":1,"title_prefix":"[weekly-security] "},"create_issue":{"expires":720,"labels":["security","automation"],"max":5},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"report_incomplete":{}}
+          GH_AW_SAFE_OUTPUTS_CONFIG_2c6493688d7b28bf_EOF
       - name: Write Safe Outputs Tools
         run: |
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_0841ec3db7668222_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_e5ea8abb5e8fbaa9_EOF'
           {
             "description_suffixes": {
               "add_comment": " CONSTRAINTS: Maximum 1 comment(s) can be added.",
-              "create_discussion": " CONSTRAINTS: Maximum 1 discussion(s) can be created. Title will be prefixed with \"[daily-security] \". Discussions will be created in category \"audits\".",
+              "create_discussion": " CONSTRAINTS: Maximum 1 discussion(s) can be created. Title will be prefixed with \"[weekly-security] \". Discussions will be created in category \"audits\".",
               "create_issue": " CONSTRAINTS: Maximum 5 issue(s) can be created. Labels [\"security\" \"automation\"] will be automatically added."
             },
             "repo_params": {},
             "dynamic_tools": []
           }
-          GH_AW_SAFE_OUTPUTS_TOOLS_META_0841ec3db7668222_EOF
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_5389e63b36087d0a_EOF'
+          GH_AW_SAFE_OUTPUTS_TOOLS_META_e5ea8abb5e8fbaa9_EOF
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_6becfa6183f519a5_EOF'
           {
             "add_comment": {
               "defaultMax": 1,
@@ -569,7 +569,7 @@ jobs:
               }
             }
           }
-          GH_AW_SAFE_OUTPUTS_VALIDATION_5389e63b36087d0a_EOF
+          GH_AW_SAFE_OUTPUTS_VALIDATION_6becfa6183f519a5_EOF
           node ${RUNNER_TEMP}/gh-aw/actions/generate_safe_outputs_tools.cjs
       - name: Generate Safe Outputs MCP Server Config
         id: safe-outputs-config
@@ -639,7 +639,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.14'
           
           mkdir -p /home/runner/.copilot
-          cat << GH_AW_MCP_CONFIG_91f11ffaf7c00bdd_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
+          cat << GH_AW_MCP_CONFIG_29bf8956dd7e06ca_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
           {
             "mcpServers": {
               "github": {
@@ -680,7 +680,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_91f11ffaf7c00bdd_EOF
+          GH_AW_MCP_CONFIG_29bf8956dd7e06ca_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -936,8 +936,8 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_NOOP_MAX: "1"
-          GH_AW_WORKFLOW_NAME: "Daily Security Review"
-          GH_AW_TRACKER_ID: "daily-security-review"
+          GH_AW_WORKFLOW_NAME: "Weekly Security Review"
+          GH_AW_TRACKER_ID: "weekly-security-review"
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
           GH_AW_NOOP_REPORT_AS_ISSUE: "true"
@@ -954,8 +954,8 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_MISSING_TOOL_CREATE_ISSUE: "true"
-          GH_AW_WORKFLOW_NAME: "Daily Security Review"
-          GH_AW_TRACKER_ID: "daily-security-review"
+          GH_AW_WORKFLOW_NAME: "Weekly Security Review"
+          GH_AW_TRACKER_ID: "weekly-security-review"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -969,8 +969,8 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_REPORT_INCOMPLETE_CREATE_ISSUE: "true"
-          GH_AW_WORKFLOW_NAME: "Daily Security Review"
-          GH_AW_TRACKER_ID: "daily-security-review"
+          GH_AW_WORKFLOW_NAME: "Weekly Security Review"
+          GH_AW_TRACKER_ID: "weekly-security-review"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -984,8 +984,8 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "Daily Security Review"
-          GH_AW_TRACKER_ID: "daily-security-review"
+          GH_AW_WORKFLOW_NAME: "Weekly Security Review"
+          GH_AW_TRACKER_ID: "weekly-security-review"
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
           GH_AW_WORKFLOW_ID: "daily-security-review"
@@ -1087,8 +1087,8 @@ jobs:
         if: always() && steps.detection_guard.outputs.run_detection == 'true'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          WORKFLOW_NAME: "Daily Security Review"
-          WORKFLOW_DESCRIPTION: "Daily security review that scans the entire codebase for vulnerabilities, insecure patterns, and security best-practice violations that automated scanners miss"
+          WORKFLOW_NAME: "Weekly Security Review"
+          WORKFLOW_DESCRIPTION: "Weekly security review that scans the entire codebase for vulnerabilities, insecure patterns, and security best-practice violations that automated scanners miss"
           HAS_PATCH: ${{ needs.agent.outputs.has_patch }}
         with:
           script: |
@@ -1175,9 +1175,9 @@ jobs:
       GH_AW_EFFECTIVE_TOKENS: ${{ needs.agent.outputs.effective_tokens }}
       GH_AW_ENGINE_ID: "copilot"
       GH_AW_ENGINE_MODEL: ${{ needs.agent.outputs.model }}
-      GH_AW_TRACKER_ID: "daily-security-review"
+      GH_AW_TRACKER_ID: "weekly-security-review"
       GH_AW_WORKFLOW_ID: "daily-security-review"
-      GH_AW_WORKFLOW_NAME: "Daily Security Review"
+      GH_AW_WORKFLOW_NAME: "Weekly Security Review"
     outputs:
       code_push_failure_count: ${{ steps.process_safe_outputs.outputs.code_push_failure_count }}
       code_push_failure_errors: ${{ steps.process_safe_outputs.outputs.code_push_failure_errors }}
@@ -1228,7 +1228,7 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "*.githubusercontent.com,api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,codeload.github.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,docs.github.com,github-cloud.githubusercontent.com,github-cloud.s3.amazonaws.com,github.blog,github.com,github.githubassets.com,host.docker.internal,json-schema.org,json.schemastore.org,keyserver.ubuntu.com,lfs.github.com,objects.githubusercontent.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,raw.githubusercontent.com,registry.npmjs.org,s.symcb.com,s.symcd.com,security.ubuntu.com,telemetry.enterprise.githubcopilot.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"max\":1},\"create_discussion\":{\"category\":\"audits\",\"close_older_discussions\":true,\"expires\":72,\"fallback_to_issue\":true,\"max\":1,\"title_prefix\":\"[daily-security] \"},\"create_issue\":{\"expires\":720,\"labels\":[\"security\",\"automation\"],\"max\":5},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"},\"report_incomplete\":{}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"max\":1},\"create_discussion\":{\"category\":\"audits\",\"close_older_discussions\":true,\"expires\":72,\"fallback_to_issue\":true,\"max\":1,\"title_prefix\":\"[weekly-security] \"},\"create_issue\":{\"expires\":720,\"labels\":[\"security\",\"automation\"],\"max\":5},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"},\"report_incomplete\":{}}"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
