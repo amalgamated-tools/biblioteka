@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +12,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
+
+// mockSubscriber implements pubsub.Subscriber for tests that need a non-nil
+// Subscriber but don't actually stream events.
+type mockSubscriber struct{}
+
+func (m *mockSubscriber) Subscribe(_ context.Context, _ string) (<-chan string, func()) {
+	ch := make(chan string)
+	return ch, func() { close(ch) }
+}
 
 func setupMetadataHandler(t *testing.T) (*MetadataHandler, *BookHandler, string) {
 	t.Helper()
@@ -117,6 +127,37 @@ func TestFetchMetadata_NoEnqueuer(t *testing.T) {
 	h.HandleBookMetadata(w, r, book.ID)
 
 	require.Equal(t, http.StatusServiceUnavailable, w.Code)
+}
+
+func TestStreamEvents_NoSubscriber(t *testing.T) {
+	d := newTestDB(t)
+	h := &MetadataHandler{DB: d} // Subscriber is nil
+	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
+	require.NoError(t, err)
+	book := createTestBook(t, d, "Test Book")
+
+	r := httptest.NewRequest(http.MethodGet, "/api/books/"+book.ID+"/metadata/events", nil)
+	r = withUserID(r, user.ID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookMetadata(w, r, book.ID)
+
+	require.Equal(t, http.StatusServiceUnavailable, w.Code)
+}
+
+func TestStreamEvents_BookNotFound(t *testing.T) {
+	d := newTestDB(t)
+	h := &MetadataHandler{DB: d, Subscriber: &mockSubscriber{}}
+	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
+	require.NoError(t, err)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/books/nonexistent/metadata/events", nil)
+	r = withUserID(r, user.ID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookMetadata(w, r, "nonexistent")
+
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestFetchMetadata_EnqueueError(t *testing.T) {
