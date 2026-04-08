@@ -69,7 +69,7 @@ frontend/
       clipboard.test.ts       Clipboard helper unit tests
       copyTimeout.svelte.ts   `CopyTimeoutState` class — auto-resetting copied-ID feedback state
       copyTimeout.test.ts     Unit tests for `CopyTimeoutState`
-      timeoutState.svelte.ts  `TimeoutState<T>` abstract base class — shared timer infrastructure for `AutoDismissTimer` and `CopyTimeoutState`
+      timeoutState.svelte.ts  `TimeoutState<T>` base class — shared timer infrastructure for `AutoDismissTimer` and `CopyTimeoutState`
       timeoutState.test.ts    Unit tests for `TimeoutState`
       tokenList.svelte.ts     `TokenListState<T>` class — load/delete lifecycle for token-like lists
       tokenList.test.ts       Unit tests for `TokenListState`
@@ -1361,7 +1361,7 @@ The same `border-ink-400 dark:border-ink-400` pattern must be applied to any inl
 | `border-ink-400` | Light | `bg-white` | Meets WCAG 1.4.11 ≥ 3:1 |
 | `dark:border-ink-400` | Dark | `dark:bg-ink-800` | Meets WCAG 1.4.11 ≥ 3:1 |
 
-**Rule:** All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. Never use `dark:border-ink-200` or `dark:border-ink-300` for a bordered input sitting on `dark:bg-ink-800` — those tokens do not meet the 3:1 non-text contrast requirement.
+**Rule:** All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. In light mode, do not use `border-ink-200` on `bg-white`; in dark mode, do not use `dark:border-ink-700` on `dark:bg-ink-800` — those are the low-contrast combinations that fail the 3:1 non-text contrast requirement.
 
 ### Live region for theme change announcements (`PreferencesTab.svelte`)
 
@@ -1775,7 +1775,7 @@ When editing the app shell or adding new persistent navigation elements:
 12. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
 13. Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so the element is visible when focused. When the action is context-sensitive (e.g. per-library settings links), include the context in the `aria-label` so each link has a unique, descriptive name. See [Focus visible — Library settings link](#focus-visible--library-settings-link-sidebarsvelte) above.
 14. When using `TextInput` (or any input) with a `placeholder` on a dark background, use `dark:placeholder:text-ink-300` or lighter — never `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800`. See [Dark-mode placeholder contrast](#dark-mode-placeholder-contrast-textinputsvelte) above.
-15. All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. Never use `dark:border-ink-200` or `dark:border-ink-300` for a bordered input on `dark:bg-ink-800`. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
+15. All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. In light mode, do not use `border-ink-200` on `bg-white`; in dark mode, do not use `dark:border-ink-700` on `dark:bg-ink-800`. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
 16. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 17. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
 18. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
@@ -1967,7 +1967,7 @@ When adding or editing a form component:
 7. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
 8. Toggle switches (`<input type="checkbox">` styled as a switch) carry both `role="switch"` and `aria-checked={booleanState}`. Use an explicit `for`/`id` label association. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) above.
 9. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-10. Form inputs use `border-ink-400 dark:border-ink-400` for their border — never lighter tokens such as `dark:border-ink-200` or `dark:border-ink-300` on a dark background. Prefer the reusable `TextInput` component; when writing an inline `<input>` directly, apply this class manually. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
+10. Form inputs use `border-ink-400 dark:border-ink-400` for their border — in light mode, avoid `border-ink-200` on `bg-white`; in dark mode, avoid `dark:border-ink-700` on `dark:bg-ink-800`. Prefer the reusable `TextInput` component; when writing an inline `<input>` directly, apply this class manually. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
 11. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
 ### Inline confirmation dialogs for destructive actions
