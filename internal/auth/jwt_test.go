@@ -13,6 +13,24 @@ func TestNewJWTManager_WithSecret(t *testing.T) {
 	require.NotNil(t, jm)
 }
 
+func TestMinSecretLength(t *testing.T) {
+	require.Equal(t, 32, MinSecretLength, "MinSecretLength should be 32")
+}
+
+func TestNewJWTManager_ShortSecret(t *testing.T) {
+	// A short (non-empty) secret is accepted — the caller is responsible for
+	// logging a warning — but the manager must still function correctly.
+	jm, err := NewJWTManager("short", time.Hour)
+	require.NoError(t, err, "NewJWTManager() with short secret should succeed")
+	require.NotNil(t, jm)
+
+	token, err := jm.CreateToken(t.Context(), "user-1")
+	require.NoError(t, err, "CreateToken() with short secret")
+	claims, err := jm.ValidateToken(t.Context(), token)
+	require.NoError(t, err, "ValidateToken() with short secret")
+	require.Equal(t, "user-1", claims.UserID)
+}
+
 func TestNewJWTManager_RandomSecret(t *testing.T) {
 	jm, err := NewJWTManager("", time.Hour)
 	require.NoError(t, err, "NewJWTManager() with empty secret unexpected error")
