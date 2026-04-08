@@ -3,6 +3,13 @@
   import { Palette } from "lucide-svelte";
 
   const themes = ["light", "dark", "auto"] as const;
+
+  let themeAnnouncement = $state("");
+
+  function setTheme(t: (typeof themes)[number]) {
+    themeStore.set(t);
+    themeAnnouncement = `Theme changed to ${t}`;
+  }
 </script>
 
 <div
@@ -27,7 +34,7 @@
             <button
               type="button"
               aria-pressed={themeStore.preference === t}
-              onclick={() => themeStore.set(t)}
+              onclick={() => setTheme(t)}
               class="px-5 py-2.5 rounded-xl font-medium capitalize transition-all {themeStore.preference ===
               t
                 ? 'bg-accent-600 text-white shadow-md shadow-accent-600/20'
@@ -40,6 +47,9 @@
         <p class="text-xs text-ink-500 dark:text-ink-300 mt-2">
           Choose how you prefer biblioteka to appear
         </p>
+        <span role="status" aria-live="polite" class="sr-only"
+          >{themeAnnouncement}</span
+        >
       </fieldset>
     </div>
   </div>
