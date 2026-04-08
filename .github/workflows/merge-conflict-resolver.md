@@ -16,6 +16,7 @@ permissions:
   pull-requests: read
 
 engine: copilot
+tracker-id: merge-conflict-resolver
 
 tools:
   bash: true
@@ -129,7 +130,7 @@ Abort the previous test merge and start fresh:
 ```bash
 git merge --abort 2>/dev/null || true
 git checkout "$HEAD_BRANCH"
-git merge "origin/$BASE_BRANCH"
+git merge --no-commit --no-ff "origin/$BASE_BRANCH"
 ```
 
 If the merge produces conflicts, resolve them by examining each conflicting file:
@@ -151,13 +152,7 @@ If the merge produces conflicts, resolve them by examining each conflicting file
 After resolving all conflicts:
 
 - Ensure no conflict markers remain in any file:
-  ```bash
-  git diff --check || echo "No conflict markers found"
-  ```
-  As a fallback, also scan the working tree:
-  ```bash
-  grep -rn "^<<<<<<<\|^=======\|^>>>>>>>" --exclude-dir=.git . || echo "No conflict markers found"
-  ```
+  
 - If conflict markers remain, the resolution is incomplete — **do not commit**
 
 ### 3.4 Complete the Merge
@@ -165,13 +160,12 @@ After resolving all conflicts:
 Commit the merge resolution locally with a descriptive message that lists the resolved files:
 
 ```bash
-git commit -m "merge: resolve conflicts with base branch
+git commit -m "chore: resolve conflicts with base branch
 
 Resolved conflicts in:
 - file1.go
 - file2.ts
 "
-```
 
 Then use the `push-to-pull-request-branch` safe output to push the changes to the PR branch.
 
@@ -195,7 +189,7 @@ Please review the resolution to make sure everything looks correct.
 
 If you cannot resolve the conflicts automatically (e.g., complex semantic conflicts, binary files, or too many conflicting files):
 
-1. **Reset the working tree**: `git merge --abort` or `git reset --hard`
+1. **Reset the working tree**: `git merge --abort` or `git reset --hard ORIG_HEAD`
 2. **Comment on the PR** using `add-comment` explaining what went wrong and providing manual resolution steps:
 
 ```
@@ -211,7 +205,8 @@ The conflicts in this PR are too complex for automatic resolution. Please resolv
 ```bash
 git fetch origin
 git checkout <head-branch>
-git merge origin/<base-branch>
+git checkout $HEAD_BRANCH
+git merge origin/$BASE_BRANCH
 # Resolve conflicts in your editor
 git add .
 git commit
