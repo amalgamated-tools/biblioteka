@@ -43,8 +43,8 @@ func Test_ValidateName(t *testing.T) {
 }
 
 func Test_ValidatePassword(t *testing.T) {
-	wantMinMsg := fmt.Sprintf("password must be at least %d characters", minPasswordLength)
-	wantMaxMsg := fmt.Sprintf("password must be at most %d characters", maxPasswordLength)
+	wantMinMsg := fmt.Sprintf("password must be at least %d bytes", minPasswordLength)
+	wantMaxMsg := fmt.Sprintf("password must be at most %d bytes", maxPasswordLength)
 	tests := []struct {
 		name      string
 		password  string
@@ -60,6 +60,10 @@ func Test_ValidatePassword(t *testing.T) {
 		{"exact maximum length", strings.Repeat("a", maxPasswordLength), true, ""},
 		{"one above maximum", strings.Repeat("a", maxPasswordLength+1), false, wantMaxMsg},
 		{"well above maximum", strings.Repeat("a", 200), false, wantMaxMsg},
+		// Multi-byte: 24 × '€' (3 bytes each) = 72 bytes — exactly at bcrypt's byte limit.
+		{"multi-byte at byte limit", strings.Repeat("€", 24), true, ""},
+		// Multi-byte: 25 × '€' = 75 bytes — over the limit despite being only 25 characters.
+		{"multi-byte over byte limit", strings.Repeat("€", 25), false, wantMaxMsg},
 	}
 
 	for _, tt := range tests {

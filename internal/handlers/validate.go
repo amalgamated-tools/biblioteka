@@ -52,11 +52,11 @@ func validateTokenName(ctx context.Context, w http.ResponseWriter, name string) 
 // simply return.
 func validatePassword(ctx context.Context, w http.ResponseWriter, password string) bool {
 	if len(password) < minPasswordLength {
-		writeError(ctx, w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+		writeError(ctx, w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d bytes", minPasswordLength))
 		return false
 	}
 	if len(password) > maxPasswordLength {
-		writeError(ctx, w, http.StatusBadRequest, fmt.Sprintf("password must be at most %d characters", maxPasswordLength))
+		writeError(ctx, w, http.StatusBadRequest, fmt.Sprintf("password must be at most %d bytes", maxPasswordLength))
 		return false
 	}
 	return true
