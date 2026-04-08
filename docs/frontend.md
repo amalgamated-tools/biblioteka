@@ -46,7 +46,7 @@ frontend/
         BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states
         Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
         DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
-        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes
+        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3)
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
       actions.ts              Svelte action utilities (`autofocusFirstButton`)
@@ -775,7 +775,7 @@ Padding is intentionally left to the caller via the `class` prop to avoid Tailwi
 
 ### `TextInput.svelte`
 
-A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding.
+A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA).
 
 **Props:**
 
@@ -1034,7 +1034,7 @@ An accessible inline delete-confirmation dialog that replaces the current item's
 
 ### `TextInput.svelte`
 
-A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent.
+A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent. In dark mode, placeholder text uses `text-ink-300` (not `text-ink-500`) to satisfy the WCAG 1.4.3 Contrast Minimum (Level AA) for non-active UI text.
 
 **Props:**
 
@@ -1284,6 +1284,29 @@ Key details:
 | `aria-label={...lib.name...}` | Unique, descriptive label per library (WCAG 2.4.6) |
 
 **Rule:** Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so focus is always visible. If you add a new icon-only action link to the sidebar, follow the same resting-opacity pattern.
+
+### Dark-mode placeholder contrast (`TextInput.svelte`)
+
+**WCAG criterion:** [1.4.3 Contrast (Minimum)](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html) (Level AA)
+
+Placeholder text is a visual hint; it is not required for understanding the form, but it must still be readable. WCAG 1.4.3 requires a contrast ratio of at least 4.5:1 for normal-weight text below 18 pt (or 3:1 for large / bold text). In dark mode, the background of `TextInput` is `dark:bg-ink-800`. Using `dark:placeholder:text-ink-500` produced a contrast ratio below 4.5:1 against that background — a Level AA violation. The fix uses `dark:placeholder:text-ink-300` instead, which meets the required ratio.
+
+The relevant `$derived` class string in `TextInput.svelte`:
+
+```svelte
+const stateClasses = $derived(
+  disabled
+    ? "bg-ink-50 dark:bg-ink-800 text-ink-500 dark:text-ink-400 cursor-not-allowed"
+    : "bg-white text-ink-900 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 placeholder:text-ink-500 dark:placeholder:text-ink-300",
+);
+```
+
+| Token | Mode | Role |
+|-------|------|------|
+| `placeholder:text-ink-500` | Light | Placeholder text on `bg-white` — sufficient contrast |
+| `dark:placeholder:text-ink-300` | Dark | Placeholder text on `dark:bg-ink-800` — meets 4.5:1 minimum (WCAG 1.4.3) |
+
+**Rule:** When using placeholder text on a dark background, always use `dark:placeholder:text-ink-300` (or lighter). Never use `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800` — the resulting contrast ratio is insufficient.
 
 ### ARIA landmarks
 
@@ -1657,8 +1680,9 @@ When editing the app shell or adding new persistent navigation elements:
 11. Sidebar navigation groups must use `role="group"` with `aria-labelledby` pointing to a native `<h2>` heading so screen readers announce the section name. See [Labelled navigation groups](#labelled-navigation-groups-sidebarsvelte) above.
 12. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
 13. Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so the element is visible when focused. When the action is context-sensitive (e.g. per-library settings links), include the context in the `aria-label` so each link has a unique, descriptive name. See [Focus visible — Library settings link](#focus-visible--library-settings-link-sidebarsvelte) above.
-14. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
-15. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
+14. When using `TextInput` (or any input) with a `placeholder` on a dark background, use `dark:placeholder:text-ink-300` or lighter — never `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800`. See [Dark-mode placeholder contrast](#dark-mode-placeholder-contrast-textinputsvelte) above.
+15. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+16. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
 
 ### Form accessibility
 
@@ -2105,6 +2129,20 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 **"LibraryForm organization type dropdown" — four tests:** verify that the file-organization `<select>` renders with the correct options, defaults to `book_per_folder` in create mode, and is associated with a visible label.
 
 > **Testing note:** Each test calls `await tick()` after `render()` to flush Svelte 5 reactive state before asserting. `afterEach(cleanup)` removes the rendered component from JSDOM between tests.
+
+#### `TextInput.test.ts`
+
+`frontend/src/components/ui/TextInput.test.ts` verifies ARIA forwarding and accessibility-critical styling on the reusable text input (WCAG 1.4.3, 4.1.2). The key accessibility test:
+
+1. **`uses ink-300 for dark-mode placeholder contrast (WCAG 1.4.3)`** — renders `TextInput` without a `disabled` prop and asserts the class string of the underlying `<input>` contains `dark:placeholder:text-ink-300` and does **not** contain `dark:placeholder:text-ink-500`. This pins the contrast fix introduced in PR #1512 and prevents regressions.
+
+Additional tests verify attribute forwarding:
+
+2. **`forwards placeholder attribute`** — asserts a `placeholder` prop is applied to the underlying element.
+3. **`forwards aria-describedby attribute`** — asserts the ARIA attribute reaches the underlying element, enabling inline error association patterns.
+4. **`forwards id attribute`** — asserts `id` forwarding so explicit `<label for>` associations work correctly.
+
+> **Testing note:** `afterEach(cleanup)` removes rendered components between tests.
 
 #### `APIKeysTab.test.ts`
 
