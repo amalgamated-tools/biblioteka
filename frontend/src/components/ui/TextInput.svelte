@@ -27,6 +27,6 @@
   {type}
   bind:value
   {disabled}
-  class="px-4 border border-ink-200 dark:border-ink-700 rounded-xl transition-all {stateClasses} {extraClass ??
+  class="px-4 border border-ink-400 dark:border-ink-400 rounded-xl transition-all {stateClasses} {extraClass ??
     ''}"
 />

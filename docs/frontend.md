@@ -37,7 +37,7 @@ frontend/
         APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix); delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         KoboTab.svelte          Kobo sync token management; displays setup instructions; delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
-        PreferencesTab.svelte   Display theme selection
+        PreferencesTab.svelte   Display theme selection; announces the new theme to screen readers via a `role="status"` live region so assistive technologies are notified without moving focus (WCAG 4.1.3)
         SmtpTab.svelte          Admin: SMTP mail server configuration
         UsersTab.svelte         Admin: user list and admin-role toggling; all `<th>` column headers carry `scope="col"` (WCAG 1.3.1); the role-toggle button carries an action-oriented `aria-label` describing the operation it will perform (WCAG 4.1.2)
       ui/                 Generic reusable UI components
@@ -775,7 +775,7 @@ Padding is intentionally left to the caller via the `class` prop to avoid Tailwi
 
 ### `TextInput.svelte`
 
-A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA).
+A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1.
 
 **Props:**
 
@@ -1034,7 +1034,7 @@ An accessible inline delete-confirmation dialog that replaces the current item's
 
 ### `TextInput.svelte`
 
-A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent. In dark mode, placeholder text uses `text-ink-300` (not `text-ink-500`) to satisfy the WCAG 1.4.3 Contrast Minimum (Level AA) for non-active UI text.
+A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` (not `dark:placeholder:text-ink-500`) to satisfy the WCAG 1.4.3 Contrast Minimum (Level AA) for non-active UI text. The border uses `border-ink-400 dark:border-ink-400` to satisfy the WCAG 1.4.11 Non-text Contrast minimum of 3:1 in both light and dark modes.
 
 **Props:**
 
@@ -1076,7 +1076,7 @@ For inline validation errors, pass `aria-invalid` and `aria-describedby` through
 | `AccountTab.svelte` | `settings/account` | All users | Change password; link OIDC account |
 | `APIKeysTab.svelte` | `settings/api-keys` | All users | Create and revoke long-lived API keys (`bib_` prefix); uses inline `role="alertdialog"` confirmations for delete actions |
 | `KoboTab.svelte` | `settings/kobo` | All users | Create and revoke Kobo sync tokens; copy device sync URL; uses inline `role="alertdialog"` confirmations for delete actions |
-| `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
+| `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme; announces the selected theme via a `role="status"` live region (WCAG 4.1.3) |
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
 | `SmtpTab.svelte` | `settings/smtp` | Admins only | Configure SMTP mail server |
 | `UsersTab.svelte` | `settings/users` | Admins only | List users; toggle admin role |
@@ -1307,6 +1307,68 @@ const stateClasses = $derived(
 | `dark:placeholder:text-ink-300` | Dark | Placeholder text on `dark:bg-ink-800` — meets 4.5:1 minimum (WCAG 1.4.3) |
 
 **Rule:** When using placeholder text on a dark background, always use `dark:placeholder:text-ink-300` (or lighter). Never use `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800` — the resulting contrast ratio is insufficient.
+
+### Form control border contrast (`TextInput.svelte`)
+
+**WCAG criterion:** [1.4.11 Non-text Contrast](https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html) (Level AA)
+
+The visible boundary of a form control (e.g. the border of a text input or a bordered button) must have a contrast ratio of at least 3:1 against the adjacent background. WCAG 1.4.11 covers all states of UI components: default, hover, focus, and disabled.
+
+`TextInput.svelte` uses `border-ink-400` in both light and dark modes. In light mode (`bg-white`), `ink-400` provides sufficient contrast against the white background. In dark mode (`dark:bg-ink-800`), the same `dark:border-ink-400` class is applied explicitly — overriding Tailwind's default dark-mode cascade — to ensure the border remains perceivable.
+
+The border class on `TextInput.svelte`:
+
+```svelte
+<input
+  class="px-4 border border-ink-400 dark:border-ink-400 rounded-xl transition-all {stateClasses} ..."
+/>
+```
+
+The same `border-ink-400 dark:border-ink-400` pattern must be applied to any inline form control (`<input>`, `<select>`, bordered `<button>`, etc.) that does not use the reusable `TextInput` component — for example, the TLS Mode `<select>` in `SmtpTab.svelte`, the File Organization `<select>` in `LibraryForm.svelte`, and bordered pagination buttons (Previous/Next) in `BookList.svelte`.
+
+| Class | Mode | Adjacent background | Requirement |
+|-------|------|---------------------|-------------|
+| `border-ink-400` | Light | `bg-white` | Meets WCAG 1.4.11 ≥ 3:1 |
+| `dark:border-ink-400` | Dark | `dark:bg-ink-800` | Meets WCAG 1.4.11 ≥ 3:1 |
+
+**Rule:** All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. Never use `dark:border-ink-200` or `dark:border-ink-300` for a bordered input sitting on `dark:bg-ink-800` — those tokens do not meet the 3:1 non-text contrast requirement.
+
+### Live region for theme change announcements (`PreferencesTab.svelte`)
+
+**WCAG criterion:** [4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html) (Level AA)
+
+When a user selects a new theme (light, dark, or auto), the UI updates visually but no element receives focus. Without an explicit live region, screen-reader users receive no feedback that their action succeeded. `PreferencesTab.svelte` uses a `role="status"` element — an implicit `aria-live="polite"` live region — to announce the change in a non-intrusive way.
+
+**Implementation in `PreferencesTab.svelte`:**
+
+```svelte
+<script lang="ts">
+  let themeAnnouncement = $state("");
+
+  function setTheme(t: (typeof themes)[number]) {
+    themeStore.set(t);
+    themeAnnouncement = "";           // reset first so the same message re-triggers
+    const label = t === "auto" ? "follow system settings" : t;
+    setTimeout(() => {
+      themeAnnouncement = `Theme changed to ${label}`;
+    }, 0);                            // defer one macrotask so the DOM reset is flushed
+  }
+</script>
+
+<!-- Visually hidden; content is announced politely by screen readers -->
+<span role="status" class="sr-only">{themeAnnouncement}</span>
+```
+
+Key details:
+
+| Element / technique | Purpose |
+|---|---|
+| `role="status"` | Declares an implicit `aria-live="polite"` live region; screen readers announce its content after the current interaction completes without interrupting ongoing speech |
+| `class="sr-only"` | Hides the element visually (absolute position, 1 px × 1 px) while keeping it in the accessibility tree |
+| `themeAnnouncement = ""` then `setTimeout(..., 0)` | Resetting the text before setting it again ensures repeated selections of the same theme still trigger a fresh announcement; the 0 ms timeout flushes the Svelte reactivity cycle so the empty string reaches the DOM before the new message |
+| `"follow system settings"` for `auto` | Human-readable label; `"auto"` alone would be ambiguous to a screen-reader user unfamiliar with the UI option names |
+
+**Rule:** Whenever a user action produces a transient status change that is not communicated by focus movement or a visible heading update, add a `role="status"` live region with `class="sr-only"`. Use `role="alert"` (assertive) only for urgent errors that must interrupt the user immediately. Reset the live-region text to `""` before updating it to guarantee re-announcement when the same message is emitted twice in a row.
 
 ### ARIA landmarks
 
@@ -1681,8 +1743,10 @@ When editing the app shell or adding new persistent navigation elements:
 12. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
 13. Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so the element is visible when focused. When the action is context-sensitive (e.g. per-library settings links), include the context in the `aria-label` so each link has a unique, descriptive name. See [Focus visible — Library settings link](#focus-visible--library-settings-link-sidebarsvelte) above.
 14. When using `TextInput` (or any input) with a `placeholder` on a dark background, use `dark:placeholder:text-ink-300` or lighter — never `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800`. See [Dark-mode placeholder contrast](#dark-mode-placeholder-contrast-textinputsvelte) above.
-15. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
-16. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
+15. All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. Never use `dark:border-ink-200` or `dark:border-ink-300` for a bordered input on `dark:bg-ink-800`. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
+16. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+17. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
+18. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
 
 ### Form accessibility
 
@@ -1871,7 +1935,8 @@ When adding or editing a form component:
 7. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
 8. Toggle switches (`<input type="checkbox">` styled as a switch) carry both `role="switch"` and `aria-checked={booleanState}`. Use an explicit `for`/`id` label association. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) above.
 9. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-10. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+10. Form inputs use `border-ink-400 dark:border-ink-400` for their border — never lighter tokens such as `dark:border-ink-200` or `dark:border-ink-300` on a dark background. Prefer the reusable `TextInput` component; when writing an inline `<input>` directly, apply this class manually. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
+11. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
 ### Inline confirmation dialogs for destructive actions
 
@@ -2209,6 +2274,21 @@ Additional tests verify attribute forwarding:
 7. **`moves focus to the Delete confirm button when dialog opens`** — asserts the Delete button inside the `alertdialog` receives focus.
 
 > **Mocking note:** The test file mocks `api.listKoboTokens`, `api.createKoboToken`, `api.deleteKoboToken`, `clipboard.copyToClipboard`, and all `lucide-svelte` icon components. `afterEach` calls `cleanup()` and `vi.clearAllMocks()`.
+
+#### `PreferencesTab.test.ts`
+
+`frontend/src/components/settings/PreferencesTab.test.ts` verifies the theme selection controls and the screen-reader live region in the preferences settings tab (WCAG 4.1.2, 4.1.3). Eight tests are included in the `PreferencesTab` describe block:
+
+1. **`renders all three theme buttons`** — asserts the three toggle buttons (light, dark, auto) are present in the DOM with the correct accessible names.
+2. **`renders a fieldset with a Theme legend`** — asserts the theme buttons are grouped inside a `<fieldset>` with a `<legend>` whose text is "Theme", providing the group a programmatic label (WCAG 1.3.1).
+3. **`sets aria-pressed='true' on the active theme button`** — seeds `themeStore.preference` as `"dark"` and asserts only the dark button carries `aria-pressed="true"` (WCAG 4.1.2).
+4. **`sets aria-pressed='false' on inactive theme buttons`** — with the dark theme active, asserts the light and auto buttons carry `aria-pressed="false"`.
+5. **`calls themeStore.set with the correct theme when a button is clicked`** — clicks the light button and asserts `themeStore.set` is called with `"light"`.
+6. **`calls themeStore.set with 'dark' when the dark button is clicked`** — clicks the dark button and asserts `themeStore.set` is called with `"dark"`.
+7. **`announces theme change to screen readers via a live region`** — uses fake timers, clicks the dark button, advances timers by 0 ms, then asserts the `role="status"` element contains the text `"Theme changed to dark"` (WCAG 4.1.3).
+8. **`announces 'follow system settings' when auto theme is selected`** — clicks the auto button and asserts the live region text is `"Theme changed to follow system settings"`, verifying that the human-readable label is used instead of the raw `"auto"` value.
+
+> **Testing note:** Tests 7 and 8 use `vi.useFakeTimers()` to control the `setTimeout(..., 0)` call inside `setTheme` and `await tick()` to flush Svelte 5 reactivity before asserting the live region text. `vi.useRealTimers()` is called at the end of each timer test to restore the real clock. The test file mocks `themeStore` and all `lucide-svelte` icon components; `afterEach` calls `cleanup()` and `vi.clearAllMocks()`.
 
 ---
 

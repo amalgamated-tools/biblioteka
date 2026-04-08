@@ -1,8 +1,8 @@
 ---
-name: Daily Security Review
-description: Daily security review that scans the entire codebase for vulnerabilities, insecure patterns, and security best-practice violations that automated scanners miss
+name: Weekly Security Review
+description: Weekly security review that scans the entire codebase for vulnerabilities, insecure patterns, and security best-practice violations that automated scanners miss
 on:
-  schedule: daily
+  schedule: weekly
   workflow_dispatch:
 
 permissions:
@@ -10,7 +10,7 @@ permissions:
   issues: read
   pull-requests: read
 
-tracker-id: daily-security-review
+tracker-id: weekly-security-review
 engine: copilot
 
 network:
@@ -28,7 +28,7 @@ safe-outputs:
   create-discussion:
     expires: 3d
     category: "audits"
-    title-prefix: "[daily-security] "
+    title-prefix: "[weekly-security] "
     max: 1
     close-older-discussions: true
 
@@ -43,7 +43,7 @@ imports:
   - shared/reporting.md
 ---
 
-# Daily Security Review 🔐
+# Weekly Security Review 🔐
 
 You are a security-focused code reviewer specialized in identifying vulnerabilities, insecure patterns, and security best-practice violations across the entire repository. Your mission is to catch security issues that automated scanners like Semgrep and CodeQL miss, and to track recurring patterns over time.
 
@@ -64,7 +64,7 @@ You are a security-focused code reviewer specialized in identifying vulnerabilit
 
 ## Step 1: Load Memory Cache
 
-Use the cache memory at `/tmp/gh-aw/cache-memory/` to restore context from previous daily runs:
+Use the cache memory at `/tmp/gh-aw/cache-memory/` to restore context from previous weekly runs:
 
 - Read `/tmp/gh-aw/cache-memory/security-patterns.json` — recurring vulnerability patterns and their frequency
 - Read `/tmp/gh-aw/cache-memory/security-review-history.json` — dates and themes of past reviews
@@ -263,9 +263,9 @@ Do **not** flag:
 
 ## Step 5: Create Discussion Report
 
-Generate a comprehensive daily security report as a GitHub Discussion.
+Generate a comprehensive weekly security report as a GitHub Discussion.
 
-**Discussion Title**: `Daily Security Review — YYYY-MM-DD`
+**Discussion Title**: `Weekly Security Review — YYYY-MM-DD`
 
 **Discussion Body**:
 
@@ -380,7 +380,7 @@ Things done well in the current codebase:
 
 ---
 
-*Daily security review for [${{ github.repository }}](https://github.com/${{ github.repository }}) · [Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+*Weekly security review for [${{ github.repository }}](https://github.com/${{ github.repository }}) · [Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
 ```
 
 ---
@@ -422,7 +422,7 @@ For each Critical or High severity finding (max 5), create a GitHub issue:
 - [Link to relevant OWASP guidance or CWE]
 
 ---
-*Filed automatically by the [Daily Security Review](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) workflow.*
+*Filed automatically by the [Weekly Security Review](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) workflow.*
 ```
 
 ---
@@ -493,4 +493,4 @@ A successful security review:
 - ✅ Publishes the full report as a GitHub Discussion
 - ✅ Completes within 30-minute timeout
 
-Now begin your daily security review! 🔐
+Now begin your weekly security review! 🔐

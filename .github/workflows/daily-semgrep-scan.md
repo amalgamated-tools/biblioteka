@@ -1,11 +1,11 @@
 ---
-description: Daily Semgrep security scan for SQL injection and other vulnerabilities
-name: Daily Semgrep Scan
+description: Weekly Semgrep security scan for SQL injection and other vulnerabilities
+name: Weekly Semgrep Scan
 imports:
   - shared/mood.md
   - shared/mcp/semgrep.md
 on:
-  schedule: daily
+  schedule: weekly on monday around 21:00
   workflow_dispatch:
 permissions:
   contents: read

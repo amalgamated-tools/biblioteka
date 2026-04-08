@@ -149,7 +149,20 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	}
 
 	if s.authLimiter == nil {
-		s.authLimiter = auth.NewRateLimiter(5, 10)
+		var trustedProxies []*net.IPNet
+		if raw := os.Getenv("TRUSTED_PROXIES"); raw != "" {
+			var err error
+			trustedProxies, err = auth.ParseTrustedProxyCIDRs(raw)
+			if err != nil {
+				return nil, fmt.Errorf("invalid TRUSTED_PROXIES: %w", err)
+			}
+			slog.InfoContext(ctx, "rate limiter trusting proxies from X-Forwarded-For", slog.Int(otelkeys.Count, len(trustedProxies)))
+		}
+		if len(trustedProxies) > 0 {
+			s.authLimiter = auth.NewRateLimiterWithTrustedProxies(5, 10, trustedProxies)
+		} else {
+			s.authLimiter = auth.NewRateLimiter(5, 10)
+		}
 	}
 
 	// Determine cookie security mode: secure by default, can be disabled for local dev

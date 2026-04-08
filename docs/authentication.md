@@ -281,11 +281,13 @@ If a user signs in via OIDC and no existing account has that `sub` claim, the se
 |----------|-------|
 | Algorithm | HS256 |
 | Expiry | 24 hours |
-| Secret | Configured via `JWT_SECRET` environment variable |
+| Secret | Configured via `JWT_SECRET` environment variable; minimum recommended length is **32 characters** |
 | Cookie name | `biblioteka_token` |
 | Cookie flags | `HttpOnly`, `SameSite=Strict`, `Secure` (when `SECURE_COOKIES=true`) |
 
 > **Security note:** Keep `JWT_SECRET` secret and rotate it periodically. Rotating the secret immediately invalidates all existing tokens, forcing all users to log in again. The default value `change-me-in-production` must not be used in production.
+>
+> If `JWT_SECRET` is set but shorter than 32 characters, the server logs a warning at startup because a short secret weakens HMAC-SHA256 signing. Use `openssl rand -hex 32` to generate a strong 64-character secret.
 
 ---
 
