@@ -122,7 +122,9 @@ with open("/tmp/coverage.out") as f:
         if not line or line.startswith("mode:"):
             continue
         # Skip vendor and generated files
-        if "/vendor/" in line or line.endswith(".gen.go"):
+        file_path = parts[0].split(":")[0] if len(parts) >= 3 else ""
+        # Skip vendor and generated files
+        if "/vendor/" in file_path or file_path.endswith(".gen.go"):
             continue
         # Format: file:startLine.startCol,endLine.endCol numStatements count
         parts = line.split()
