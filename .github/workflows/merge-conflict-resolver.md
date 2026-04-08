@@ -88,17 +88,24 @@ Run a test merge locally to identify which files have conflicts:
 git fetch origin "$BASE_BRANCH"
 git fetch origin "$HEAD_BRANCH"
 git checkout "$HEAD_BRANCH"
-git merge --no-commit --no-ff "origin/$BASE_BRANCH" || true
+MERGE_OUTPUT=$(git merge --no-commit --no-ff "origin/$BASE_BRANCH" 2>&1) || MERGE_EXIT=$?
+if [ -z "$MERGE_EXIT" ]; then
+  echo "Merge applied cleanly (no conflicts)"
+fi
 git diff --name-only --diff-filter=U
 ```
 
+If `MERGE_EXIT` is non-zero but `git diff --diff-filter=U` shows no files, the merge failed for a reason other than conflicts (e.g., a missing ref) — abort and report the error.
+
 Record the list of conflicting files. If no files conflict (the merge succeeded cleanly), run `git merge --abort` and call `noop`.
+
+**Important**: The test merge is left in-progress intentionally so Phase 3.2 can abort and restart it cleanly.
 
 ## Phase 2: Comment on the PR
 
 Before attempting to resolve the conflicts, add a comment on the pull request informing the author.
 
-Use the `add-comment` safe output to post a comment like:
+Use the `add-comment` safe output to post a comment listing the actual conflicting file paths discovered in Phase 1.3:
 
 ```
 🔀 **Merge conflicts detected!**
@@ -133,7 +140,9 @@ git checkout "$HEAD_BRANCH"
 git merge --no-commit --no-ff "origin/$BASE_BRANCH"
 ```
 
-If the merge produces conflicts, resolve them by examining each conflicting file:
+If the merge produces conflicts, first check whether any conflicted files are in protected paths (`.github/`, `.agents/`, or dependency lock files like `go.mod`, `go.sum`, `package.json`, `pnpm-lock.yaml`, etc.). If so, skip auto-resolution entirely and jump to Phase 4.2 (Handle Failure) — the `push-to-pull-request-branch` safe output will reject changes to these paths.
+
+For non-protected conflicting files, resolve them by examining each one:
 
 1. **Read each conflicting file** to understand the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
 2. **Analyze both sides** of the conflict:
@@ -149,7 +158,7 @@ If the merge produces conflicts, resolve them by examining each conflicting file
 
 ### 3.3 Safety Checks
 
-After resolving all conflicts:
+After resolving all conflicts and staging the resolved files with `git add`:
 
 - Ensure no conflict markers remain in any file:
   ```bash
@@ -172,6 +181,7 @@ Resolved conflicts in:
 - file1.go
 - file2.ts
 "
+```
 
 Then use the `push-to-pull-request-branch` safe output to push the changes to the PR branch.
 
@@ -195,10 +205,10 @@ Please review the resolution to make sure everything looks correct.
 
 If you cannot resolve the conflicts automatically (e.g., complex semantic conflicts, binary files, or too many conflicting files):
 
-1. **Reset the working tree**: `git merge --abort` or `git reset --hard ORIG_HEAD`
+1. **Reset the working tree**: `git merge --abort` (since the merge was started with `--no-commit`, this cleanly reverts all changes)
 2. **Comment on the PR** using `add-comment` explaining what went wrong and providing manual resolution steps:
 
-```
+````
 ⚠️ **Could not auto-resolve merge conflicts**
 
 The conflicts in this PR are too complex for automatic resolution. Please resolve them manually:
@@ -210,14 +220,14 @@ The conflicts in this PR are too complex for automatic resolution. Please resolv
 **Steps to resolve locally:**
 ```bash
 git fetch origin
-git checkout $HEAD_BRANCH
-git merge origin/$BASE_BRANCH
+git checkout <head-branch>
+git merge origin/<base-branch>
 # Resolve conflicts in your editor
 git add .
 git commit
 git push
 ```
-```
+````
 
 ## Important Guidelines
 
