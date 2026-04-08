@@ -5,7 +5,7 @@ imports:
   - shared/mood.md
   - shared/mcp/semgrep.md
 on:
-  schedule: daily
+  schedule: weekly on monday around 21:00
   workflow_dispatch:
 permissions:
   contents: read

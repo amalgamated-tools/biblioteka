@@ -1,7 +1,7 @@
 ---
 description: Weekly security scan that reviews code changes from the last 8 days for suspicious patterns indicating malicious agentic threats
 on:
-  schedule: weekly
+  schedule: weekly on monday around 10:00
   workflow_dispatch:
 permissions:
   contents: read
