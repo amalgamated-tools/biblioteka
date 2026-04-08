@@ -69,6 +69,8 @@ frontend/
       clipboard.test.ts       Clipboard helper unit tests
       copyTimeout.svelte.ts   `CopyTimeoutState` class — auto-resetting copied-ID feedback state
       copyTimeout.test.ts     Unit tests for `CopyTimeoutState`
+      timeoutState.svelte.ts  `TimeoutState<T>` abstract base class — shared timer infrastructure for `AutoDismissTimer` and `CopyTimeoutState`
+      timeoutState.test.ts    Unit tests for `TimeoutState<T>`
       tokenList.svelte.ts     `TokenListState<T>` class — load/delete lifecycle for token-like lists
       tokenList.test.ts       Unit tests for `TokenListState`
       validation.ts           Composable form-validation rule functions
@@ -438,7 +440,7 @@ Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs
 
 ### `autoDismissTimer.svelte.ts`
 
-`frontend/src/lib/autoDismissTimer.svelte.ts` exports `AutoDismissTimer`, a small Svelte 5 class that tracks whether a transient message (success, error, or informational) should be visible and automatically hides it after a configurable duration.
+`frontend/src/lib/autoDismissTimer.svelte.ts` exports `AutoDismissTimer`, a Svelte 5 class that extends `TimeoutState<boolean>` and tracks whether a transient message (success, error, or informational) should be visible and automatically hides it after a configurable duration.
 
 **Constructor:**
 
@@ -592,7 +594,7 @@ Use `TokenListState` whenever a settings tab manages a list of user-owned tokens
 
 ### `copyTimeout.svelte.ts`
 
-`frontend/src/lib/copyTimeout.svelte.ts` exports `CopyTimeoutState`, a small class that manages the "copied" UI feedback state — tracking which item was most recently copied to the clipboard and automatically clearing that state after a configurable duration.
+`frontend/src/lib/copyTimeout.svelte.ts` exports `CopyTimeoutState`, a class that extends `TimeoutState<string | null>` and manages the "copied" UI feedback state — tracking which item was most recently copied to the clipboard and automatically clearing that state after a configurable duration.
 
 **Constructor:**
 
@@ -651,6 +653,34 @@ Always call `clear()` from `onDestroy` to prevent timer leaks when the component
 ```
 
 Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback after a clipboard write. Do **not** manage copy timers inline with `setTimeout` in components.
+
+### `timeoutState.svelte.ts`
+
+`frontend/src/lib/timeoutState.svelte.ts` exports `TimeoutState<T>`, the shared base class for `AutoDismissTimer` and `CopyTimeoutState`. It manages a protected reactive `value` that reverts to an `idleValue` after a configurable `duration`. Subclasses expose domain-specific public getters and trigger methods on top of this shared timer infrastructure.
+
+**Constructor:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `idleValue` | `T` | The value `value` reverts to after the timeout fires or `clear()` is called |
+| `duration` | `number` | Time in milliseconds before `value` resets to `idleValue` |
+
+**Protected API (for subclasses):**
+
+| Member | Description |
+|--------|-------------|
+| `value` | The reactive `$state` field; exposed as a domain-specific public getter in each subclass |
+| `activate(activeValue)` | Sets `value` to `activeValue`, cancels any running timer, and starts a new auto-reset timer |
+
+**Public API:**
+
+| Method | Description |
+|--------|-------------|
+| `clear()` | Cancels any pending timeout and resets `value` to `idleValue` immediately |
+
+Always call `clear()` from `onDestroy` to prevent timer leaks. Both `AutoDismissTimer` and `CopyTimeoutState` inherit this method — components using either class call the same `clear()` API.
+
+Do **not** use `TimeoutState` directly in components. Extend it in a new subclass when you need auto-resetting reactive state with a different `T`. For boolean visibility (`true`/`false`) use `AutoDismissTimer`; for string-or-null item tracking use `CopyTimeoutState`.
 
 ## TypeScript types
 
@@ -1343,9 +1373,11 @@ When a user selects a new theme (light, dark, or auto), the UI updates visually 
 
 ```svelte
 <script lang="ts">
+  import { themeStore, type ThemePreference } from "../../stores/theme.svelte";
+
   let themeAnnouncement = $state("");
 
-  function setTheme(t: (typeof themes)[number]) {
+  function setTheme(t: ThemePreference) {
     themeStore.set(t);
     themeAnnouncement = "";           // reset first so the same message re-triggers
     const label = t === "auto" ? "follow system settings" : t;
@@ -2288,7 +2320,7 @@ Additional tests verify attribute forwarding:
 7. **`announces theme change to screen readers via a live region`** — uses fake timers, clicks the dark button, advances timers by 0 ms, then asserts the `role="status"` element contains the text `"Theme changed to dark"` (WCAG 4.1.3).
 8. **`announces 'follow system settings' when auto theme is selected`** — clicks the auto button and asserts the live region text is `"Theme changed to follow system settings"`, verifying that the human-readable label is used instead of the raw `"auto"` value.
 
-> **Testing note:** Tests 7 and 8 use `vi.useFakeTimers()` to control the `setTimeout(..., 0)` call inside `setTheme` and `await tick()` to flush Svelte 5 reactivity before asserting the live region text. `vi.useRealTimers()` is called at the end of each timer test to restore the real clock. The test file mocks `themeStore` and all `lucide-svelte` icon components; `afterEach` calls `cleanup()` and `vi.clearAllMocks()`.
+> **Testing note:** Tests 7 and 8 use `vi.useFakeTimers()` to control the `setTimeout(..., 0)` call inside `setTheme` and `await tick()` to flush Svelte 5 reactivity before asserting the live region text. `vi.useRealTimers()` is called in `afterEach` to restore the real clock after every test. The test file mocks `themeStore` and all `lucide-svelte` icon components; `afterEach` calls `cleanup()`, `vi.clearAllMocks()`, and `vi.useRealTimers()`.
 
 ---
 

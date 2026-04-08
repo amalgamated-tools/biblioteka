@@ -363,3 +363,24 @@ Signup, login, logout, all OIDC auth endpoints (`/api/auth/oidc/login`, `/api/au
 | Burst | 10 requests |
 | Scope | Per client IP address |
 | Response on limit | `429 Too Many Requests` |
+
+
+### Client IP detection and `TRUSTED_PROXIES`
+
+By default the rate limiter identifies clients by `RemoteAddr` (the direct TCP peer) and **ignores** the `X-Forwarded-For` header. This is the safe default when Biblioteka is exposed directly to the internet, because an attacker could inject arbitrary IP values through `X-Forwarded-For` to bypass per-IP limits.
+
+When Biblioteka runs behind a reverse proxy (nginx, Caddy, Traefik, etc.), the proxy's IP would be the direct peer, causing all clients to share a single rate-limit bucket. Set the `TRUSTED_PROXIES` environment variable to unlock `X-Forwarded-For` processing:
+
+```
+TRUSTED_PROXIES=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+```
+
+When `TRUSTED_PROXIES` is set, the rate limiter:
+
+1. Checks whether `RemoteAddr` falls within a trusted CIDR range.
+2. If it does, walks the `X-Forwarded-For` list from right to left, stopping at the rightmost IP that is **not** in a trusted range — that IP is used as the client identifier.
+3. If `RemoteAddr` is not trusted, `X-Forwarded-For` is still ignored and `RemoteAddr` is used directly.
+
+This "rightmost untrusted" strategy prevents a client from spoofing its IP by prepending values to the `X-Forwarded-For` header: only the IP added by the trusted proxy at the network boundary is honored.
+
+> **Security note:** Only include CIDRs that correspond to your own reverse proxies in `TRUSTED_PROXIES`. Setting this to `0.0.0.0/0` effectively trusts every peer and allows any client to spoof its IP address, bypassing rate limiting entirely. See also the `TRUSTED_PROXIES` entry in [Environment variables](deployment.md#environment-variables).
