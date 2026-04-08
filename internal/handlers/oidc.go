@@ -66,7 +66,7 @@ func NewOIDCHandler(ctx context.Context, database *db.DB, jwt *auth.JWTManager, 
 	}, nil
 }
 
-// Login godoc
+// Login initiates the OIDC authentication flow by redirecting the browser to the provider's authorization endpoint.
 //
 // @Summary		OIDC login
 // @Description	Redirects to the OIDC provider's authorization endpoint

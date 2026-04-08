@@ -14,7 +14,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// Callback godoc
+// Callback handles the redirect from the OIDC provider, validates the authorization code, and issues a session JWT.
 //
 //	@Summary		OIDC callback
 //	@Description	Handles the OIDC provider's redirect after authentication

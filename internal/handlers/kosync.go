@@ -43,7 +43,7 @@ type kosyncProgressRequest struct {
 
 // ---- Biblioteka credential-management API (JWT-protected) ----
 
-// HandleKOSyncCredentials godoc
+// HandleKOSyncCredentials handles GET, PUT, and DELETE requests for the authenticated user's KOSync credential.
 //
 //	@Summary		Manage KOSync credentials
 //	@Description	GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).

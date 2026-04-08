@@ -9,7 +9,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// getBookFiles godoc
+// getBookFiles returns all files associated with the specified book.
 //
 //	@Summary		List book files
 //	@Description	List files for a book
@@ -35,7 +35,7 @@ type createBookFileRequest struct {
 	FilePath string  `json:"file_path"`
 }
 
-// postBookFiles godoc
+// postBookFiles adds a new file record to the specified book.
 //
 //	@Summary		Add a book file
 //	@Description	Add a new file for a book
