@@ -73,6 +73,13 @@ describe("TextInput", () => {
     expect(screen.getByRole("textbox")).toHaveAttribute("id", "my-input");
   });
 
+  it("uses ink-300 for dark-mode placeholder contrast (WCAG 1.4.3)", () => {
+    const { container } = render(TextInput);
+    const classes = container.querySelector("input")!.className;
+    expect(classes).toContain("dark:placeholder:text-ink-300");
+    expect(classes).not.toContain("dark:placeholder:text-ink-500");
+  });
+
   it("appends extra class to the input element", () => {
     const { container } = render(TextInput, { class: "w-full py-2" });
     expect(container.querySelector("input")!.className).toContain(
