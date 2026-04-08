@@ -305,7 +305,7 @@ Long-lived credentials for programmatic API access. Each key belongs to one user
 - `idx_api_keys_user_id` — list all keys for a user
 
 **Notes:**
-- The full API key (`bib_` + 32 hex chars) is shown **once** at creation. Only the `key_hash` persists.
+- The full API key (`bib_` + 40 hex chars) is shown **once** at creation and is not recoverable afterward. The `key_hash` persists for lookup, and the non-secret `key_prefix` persists for UI identification.
 - When a user is deleted, all their API keys are deleted via CASCADE.
 - See the [Authentication guide — API Keys](authentication.md#api-keys) for usage details.
 
