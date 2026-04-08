@@ -21,7 +21,7 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# Daily security scan that reviews code changes from the last 3 days for suspicious patterns indicating malicious agentic threats
+# Weekly security scan that reviews code changes from the last 7 days for suspicious patterns indicating malicious agentic threats
 #
 # Source: github/gh-aw/.github/workflows/daily-malicious-code-scan.md@852cb06ad52958b402ed982b69957ffc57ca0619
 #
@@ -92,7 +92,7 @@ jobs:
           GH_AW_INFO_VERSION: "latest"
           GH_AW_INFO_AGENT_VERSION: "latest"
           GH_AW_INFO_CLI_VERSION: "v0.67.1"
-          GH_AW_INFO_WORKFLOW_NAME: "Daily Malicious Code Scan Agent"
+          GH_AW_INFO_WORKFLOW_NAME: "Weekly Malicious Code Scan Agent"
           GH_AW_INFO_EXPERIMENTAL: "false"
           GH_AW_INFO_SUPPORTS_TOOLS_ALLOWLIST: "true"
           GH_AW_INFO_STAGED: "false"
@@ -853,7 +853,7 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_NOOP_MAX: "1"
-          GH_AW_WORKFLOW_NAME: "Daily Malicious Code Scan Agent"
+          GH_AW_WORKFLOW_NAME: "Weekly Malicious Code Scan Agent"
           GH_AW_WORKFLOW_SOURCE: "github/gh-aw/.github/workflows/daily-malicious-code-scan.md@852cb06ad52958b402ed982b69957ffc57ca0619"
           GH_AW_WORKFLOW_SOURCE_URL: "${{ github.server_url }}/github/gh-aw/blob/852cb06ad52958b402ed982b69957ffc57ca0619/.github/workflows/daily-malicious-code-scan.md"
           GH_AW_TRACKER_ID: "malicious-code-scan"
@@ -873,7 +873,7 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_MISSING_TOOL_CREATE_ISSUE: "true"
-          GH_AW_WORKFLOW_NAME: "Daily Malicious Code Scan Agent"
+          GH_AW_WORKFLOW_NAME: "Weekly Malicious Code Scan Agent"
           GH_AW_WORKFLOW_SOURCE: "github/gh-aw/.github/workflows/daily-malicious-code-scan.md@852cb06ad52958b402ed982b69957ffc57ca0619"
           GH_AW_WORKFLOW_SOURCE_URL: "${{ github.server_url }}/github/gh-aw/blob/852cb06ad52958b402ed982b69957ffc57ca0619/.github/workflows/daily-malicious-code-scan.md"
           GH_AW_TRACKER_ID: "malicious-code-scan"
@@ -890,7 +890,7 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_REPORT_INCOMPLETE_CREATE_ISSUE: "true"
-          GH_AW_WORKFLOW_NAME: "Daily Malicious Code Scan Agent"
+          GH_AW_WORKFLOW_NAME: "Weekly Malicious Code Scan Agent"
           GH_AW_WORKFLOW_SOURCE: "github/gh-aw/.github/workflows/daily-malicious-code-scan.md@852cb06ad52958b402ed982b69957ffc57ca0619"
           GH_AW_WORKFLOW_SOURCE_URL: "${{ github.server_url }}/github/gh-aw/blob/852cb06ad52958b402ed982b69957ffc57ca0619/.github/workflows/daily-malicious-code-scan.md"
           GH_AW_TRACKER_ID: "malicious-code-scan"
@@ -907,7 +907,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "Daily Malicious Code Scan Agent"
+          GH_AW_WORKFLOW_NAME: "Weekly Malicious Code Scan Agent"
           GH_AW_WORKFLOW_SOURCE: "github/gh-aw/.github/workflows/daily-malicious-code-scan.md@852cb06ad52958b402ed982b69957ffc57ca0619"
           GH_AW_WORKFLOW_SOURCE_URL: "${{ github.server_url }}/github/gh-aw/blob/852cb06ad52958b402ed982b69957ffc57ca0619/.github/workflows/daily-malicious-code-scan.md"
           GH_AW_TRACKER_ID: "malicious-code-scan"
