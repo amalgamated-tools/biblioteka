@@ -1,4 +1,4 @@
-name: Auto-assign labeled issues to Copilot
+name: Auto-assign labeled issues
 
 on:
   issues:
@@ -18,11 +18,12 @@ jobs:
     # Assignment is a single API call; 5 minutes is generous.
     timeout-minutes: 5
     steps:
-      - name: Assign Copilot if issue has no assignees
+      - name: Assign default user if issue has no assignees
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const assignee = '${{ vars.AUTO_ASSIGN_LOGIN || 'copilot' }}';
             const issue = context.payload.issue;
 
             if (issue.assignees && issue.assignees.length > 0) {
@@ -34,7 +35,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issue.number,
-              assignees: ['copilot'],
+              assignees: [assignee],
             });
 
-            core.info(`Assigned copilot to issue #${issue.number} (label: ${context.payload.label.name})`);
+            core.info(`Assigned ${assignee} to issue #${issue.number} (label: ${context.payload.label.name})`);
