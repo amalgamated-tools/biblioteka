@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  issues: write
   pull-requests: write
 tools:
   github:
