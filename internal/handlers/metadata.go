@@ -174,12 +174,20 @@ func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, 
 
 	// If a pending metadata record already exists, short-circuit with 202 so
 	// the client can listen on SSE or poll without triggering a duplicate job.
-	if existing, lookupErr := h.DB.GetPendingGoodreadsMetadataByBook(r.Context(), userID, bookID); lookupErr == nil {
+	existing, lookupErr := h.DB.GetPendingGoodreadsMetadataByBook(r.Context(), userID, bookID)
+	if lookupErr == nil {
 		slog.DebugContext(r.Context(), "pending metadata already exists, skipping enqueue",
 			slog.String(otelkeys.BookID, bookID),
 			slog.String(otelkeys.GoodreadsMetadataID, existing.ID),
 		)
 		writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: "", Status: "already_exists"})
+		return
+	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
+		slog.ErrorContext(r.Context(), "failed to check pending metadata",
+			slog.String(otelkeys.BookID, bookID),
+			slog.Any(otelkeys.Error, lookupErr),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to check pending metadata")
 		return
 	}
 
@@ -243,14 +251,14 @@ func (h *MetadataHandler) streamEvents(w http.ResponseWriter, r *http.Request, b
 	userID := auth.UserIDFromContext(r.Context())
 	channel := pubsub.MetadataChannel(bookID, userID)
 
+	msgs, cancel := h.Subscriber.Subscribe(r.Context(), channel)
+	defer cancel()
+
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no") // disable nginx buffering
 	flusher.Flush()
-
-	msgs, cancel := h.Subscriber.Subscribe(r.Context(), channel)
-	defer cancel()
 
 	heartbeat := time.NewTicker(sseHeartbeatInterval)
 	defer heartbeat.Stop()
@@ -386,7 +394,9 @@ func (h *MetadataHandler) rejectMetadata(w http.ResponseWriter, r *http.Request,
 }
 
 // coalesceStr returns the pointed-to string if non-nil and non-empty,
-// otherwise falls back to the default value.
+// otherwise falls back to the default value. An empty string is treated as
+// absent so that metadata fields explicitly cleared by the provider do not
+// overwrite existing book data with blanks.
 func coalesceStr(ptr *string, fallback string) string {
 	if ptr != nil && *ptr != "" {
 		return *ptr
@@ -395,7 +405,8 @@ func coalesceStr(ptr *string, fallback string) string {
 }
 
 // coalescePtr returns ptr if non-nil and points to a non-empty string,
-// otherwise returns fallback.
+// otherwise returns fallback. Like coalesceStr, empty strings are treated as
+// absent to prevent blank metadata values from overwriting existing book data.
 func coalescePtr(ptr, fallback *string) *string {
 	if ptr != nil && *ptr != "" {
 		return ptr
