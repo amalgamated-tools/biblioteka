@@ -11,7 +11,7 @@ permissions:
 tracker-id: weekly-coverage-summary
 engine: copilot
 checkout:
-  fetch-depth: 1
+  fetch-depth: 1  # Only latest commit needed; no git-history analysis in this workflow
 tools:
   repo-memory:
     branch-prefix: weekly
@@ -69,42 +69,100 @@ go version
 Run the full Go test suite with a coverage profile:
 
 ```bash
-go test -coverprofile=/tmp/coverage.out -count=1 ./... 2>&1 | tee /tmp/test-output.txt
+set -o pipefail
+go test -coverprofile=/tmp/coverage.out -coverpkg=./... -count=1 -timeout=20m ./... 2>&1 | tee /tmp/test-output.txt
+TEST_EXIT_CODE=${PIPESTATUS[0]}
+echo "go test exit code: $TEST_EXIT_CODE"
 ```
 
 **Important**:
 - Use `-count=1` to disable test caching so coverage is always fresh.
+- Use `-coverpkg=./...` to include **all** packages in the coverage profile — without this flag, packages with no `_test.go` files are silently absent from `coverage.out` rather than appearing as 0%.
+- Use `-timeout=20m` to prevent a single deadlocked test from consuming the entire workflow timeout without producing actionable output.
+- Use `set -o pipefail` and capture `${PIPESTATUS[0]}` to preserve the `go test` exit status through the `tee` pipeline.
 - Save the test output for later analysis (pass/fail counts).
-- If some tests fail, continue with the analysis — partial coverage data is still valuable. Note which packages failed in the report.
+- If `TEST_EXIT_CODE` is non-zero but `/tmp/coverage.out` exists and is non-empty, continue with the analysis — partial coverage data is still valuable. Note which packages failed in the report.
+- If `/tmp/coverage.out` is missing or empty, skip coverage parsing/charts and follow the edge-case path for test failures.
 
 ## Step 3 — Parse Coverage Data
 
-### Per-package summary
+### Generate function-level report
 
-Use `go tool cover` to generate a function-level coverage report:
+Use `go tool cover` to generate a human-readable function-level coverage report (used for the per-function table in the discussion report):
 
 ```bash
 go tool cover -func=/tmp/coverage.out | tee /tmp/coverage-func.txt
 ```
 
-Parse the output to extract:
-- **Total coverage** (the last line: `total: (statements) XX.X%`)
-- **Per-package coverage** (aggregate statement coverage per package)
-- **Per-function coverage** (individual function coverage)
+The last line of this output gives the overall total: `total: (statements) XX.X%`.
 
-### Compute per-package coverage
+### Compute per-package statement counts from raw coverprofile
 
-Group coverage by package path. For each package compute:
-- Number of statements covered vs total
-- Coverage percentage
-- Whether the package improved or declined compared to last week
+**Important**: Do **not** rely on `go tool cover -func` for per-package statement totals. Instead, parse the raw `/tmp/coverage.out` coverprofile directly. Each line after the `mode:` header has the format:
+
+```
+file.go:startLine.startCol,endLine.endCol numStatements count
+```
+
+Aggregate per-package statement counts using this algorithm:
+
+```python
+#!/usr/bin/env python3
+"""Parse coverage.out and compute per-package statement totals."""
+import re
+from collections import defaultdict
+
+pkg_stats = defaultdict(lambda: {"statements": 0, "covered": 0})
+total_stmts = 0
+total_covered = 0
+
+with open("/tmp/coverage.out") as f:
+    for line in f:
+        line = line.strip()
+        if not line or line.startswith("mode:"):
+            continue
+        # Skip vendor and generated files
+        if "/vendor/" in line or line.endswith(".gen.go"):
+            continue
+        # Format: file:startLine.startCol,endLine.endCol numStatements count
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        file_path = parts[0].split(":")[0]
+        num_stmts = int(parts[1])
+        count = int(parts[2])
+
+        # Extract package path (everything up to the last '/')
+        pkg = file_path.rsplit("/", 1)[0]
+
+        pkg_stats[pkg]["statements"] += num_stmts
+        if count > 0:
+            pkg_stats[pkg]["covered"] += num_stmts
+        total_stmts += num_stmts
+        if count > 0:
+            total_covered += num_stmts
+
+# Compute percentages
+for pkg, stats in pkg_stats.items():
+    stats["coverage"] = round(stats["covered"] / stats["statements"] * 100, 1) if stats["statements"] > 0 else 0.0
+
+# Validation: total covered/total statements should align with the percentage
+# reported by `go tool cover -func` within rounding tolerance (±0.1%)
+total_pct = round(total_covered / total_stmts * 100, 1) if total_stmts > 0 else 0.0
+```
+
+Use this parsed data (not `go tool cover -func` output) to populate the `packages`, `total_statements`, and `covered_statements` fields in the JSONL record.
+
+### Compute coverage deltas
+
+For each package, compare the current week's coverage against the previous week's entry in `coverage-history.jsonl` to determine whether coverage improved or declined.
 
 ### Identify problem areas
 
 Flag:
-- Packages with **0% coverage** (completely untested)
+- Packages with **0% coverage** (completely untested) — with `-coverpkg=./...`, these appear in the profile as 0%
 - Packages with coverage **below 50%**
-- Functions with **0% coverage** in otherwise-tested packages
+- Functions with **0% coverage** in otherwise-tested packages (from `go tool cover -func` output)
 - The **5 lowest-coverage packages** (excluding 0%)
 
 ## Step 4 — Store Historical Data
@@ -306,7 +364,7 @@ Brief 2–3 sentence executive summary: current total coverage, week-over-week c
 
 ## Important Notes
 
-- **Do not modify any repository files.** This agent is read-only; it only produces a discussion report.
+- **Do not modify files in the checked-out repository working tree.** This agent is read-only with respect to repository contents and only produces a discussion report, **but it may and should update tool-managed repo-memory state when instructed** — specifically `/tmp/gh-aw/repo-memory/default/coverage-history.jsonl` via the `repo-memory` tool for coverage history persistence.
 - Exclude `vendor/` and generated files (`*.gen.go`) from coverage analysis if they appear in the profile.
 - Package paths should be displayed relative to the module root (`github.com/amalgamated-tools/biblioteka/`) for readability — e.g., show `internal/db` instead of the full import path.
 - If no action is needed (e.g., no Go code exists), call the `noop` safe-output tool with an explanation.
