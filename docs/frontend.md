@@ -1326,7 +1326,7 @@ When a user selects a new theme (light, dark, or auto), the UI updates visually 
     const label = t === "auto" ? "follow system settings" : t;
     setTimeout(() => {
       themeAnnouncement = `Theme changed to ${label}`;
-    }, 0);                            // defer one microtask so the DOM reset is flushed
+    }, 0);                            // defer one macrotask so the DOM reset is flushed
   }
 </script>
 
