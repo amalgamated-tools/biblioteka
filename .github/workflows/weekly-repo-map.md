@@ -17,7 +17,7 @@ tools:
 safe-outputs:
   create-discussion:
     expires: 7d
-    category: "announcements"
+    category: "audits"
     title-prefix: "📰 "
     close-older-discussions: true
   noop:
