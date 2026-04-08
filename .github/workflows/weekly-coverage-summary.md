@@ -109,7 +109,6 @@ Aggregate per-package statement counts using this algorithm:
 ```python
 #!/usr/bin/env python3
 """Parse coverage.out and compute per-package statement totals."""
-import re
 from collections import defaultdict
 
 pkg_stats = defaultdict(lambda: {"statements": 0, "covered": 0})
@@ -121,16 +120,14 @@ with open("/tmp/coverage.out") as f:
         line = line.strip()
         if not line or line.startswith("mode:"):
             continue
-        # Skip vendor and generated files
-        file_path = parts[0].split(":")[0] if len(parts) >= 3 else ""
-        # Skip vendor and generated files
-        if "/vendor/" in file_path or file_path.endswith(".gen.go"):
-            continue
         # Format: file:startLine.startCol,endLine.endCol numStatements count
         parts = line.split()
         if len(parts) < 3:
             continue
         file_path = parts[0].split(":")[0]
+        # Skip vendor and generated files
+        if "/vendor/" in file_path or file_path.endswith(".gen.go"):
+            continue
         num_stmts = int(parts[1])
         count = int(parts[2])
 
