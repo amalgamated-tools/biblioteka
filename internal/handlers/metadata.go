@@ -310,6 +310,9 @@ func (h *MetadataHandler) streamEvents(w http.ResponseWriter, r *http.Request, b
 }
 
 // applyMetadata applies the pending metadata to the book and marks it as applied.
+// The frontend UI currently uses a field-by-field workflow (copy into form, save
+// via UpdateBook, then reject the pending record), so this endpoint is primarily
+// intended for programmatic/CLI consumers that want a one-shot apply.
 func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
 	userID := auth.UserIDFromContext(r.Context())
 
