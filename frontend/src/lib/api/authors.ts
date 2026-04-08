@@ -1,5 +1,6 @@
 import type { Author, AuthorInput, PaginatedBooks } from "../../types";
 import { request } from "./core";
+import { listEntityBooks } from "./pagination";
 
 export async function listAuthors(): Promise<Author[]> {
   return request<Author[]>("GET", "/api/authors");
@@ -29,13 +30,5 @@ export async function listAuthorBooks(
   limit = 50,
   offset = 0,
 ): Promise<PaginatedBooks> {
-  const params = new URLSearchParams({
-    limit: String(limit),
-    offset: String(offset),
-  });
-
-  return request<PaginatedBooks>(
-    "GET",
-    `/api/authors/${authorId}/books?${params.toString()}`,
-  );
+  return listEntityBooks(`/api/authors/${authorId}`, limit, offset);
 }

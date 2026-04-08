@@ -20,7 +20,7 @@ func TestHandleCoverImage_DataURL(t *testing.T) {
 	h, _ := setupKoboHandler(t)
 	pngBytes := testutils.TinyPNG()
 	cover := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, err := h.DB.CreateBook(t.Context(), "Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &cover)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Book", CoverImageURL: &cover})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
@@ -49,7 +49,7 @@ func TestHandleCoverImage_BookNotFound(t *testing.T) {
 
 func TestHandleCoverImage_NoCover(t *testing.T) {
 	h, _ := setupKoboHandler(t)
-	book, err := h.DB.CreateBook(t.Context(), "No Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "No Cover Book"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
@@ -63,7 +63,7 @@ func TestHandleCoverImage_NoCover(t *testing.T) {
 func TestHandleCoverImage_ExternalURL(t *testing.T) {
 	h, _ := setupKoboHandler(t)
 	externalURL := "https://example.com/cover.jpg"
-	book, err := h.DB.CreateBook(t.Context(), "External Cover", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &externalURL)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "External Cover", CoverImageURL: &externalURL})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
@@ -103,7 +103,7 @@ func TestHandleDownload_MissingSegments(t *testing.T) {
 
 func TestHandleDownload_FormatNotFound(t *testing.T) {
 	h, _ := setupKoboHandler(t)
-	book, err := h.DB.CreateBook(t.Context(), "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Test Book"})
 	require.NoError(t, err, "create book")
 	// Book has no files at all, so format won't match.
 	r := httptest.NewRequest(http.MethodGet, "/download/"+book.ID+"/epub", nil)
@@ -118,7 +118,7 @@ func TestHandleDownload_FileNotFoundOnDisk(t *testing.T) {
 	h, _ := setupKoboHandler(t)
 	dir := t.TempDir()
 	registerTestLibrary(t, h.DB, dir)
-	book, err := h.DB.CreateBook(t.Context(), "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Test Book"})
 	require.NoError(t, err, "create book")
 	// Register a file in the DB that doesn't exist on disk.
 	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "test.epub", 1024, nil, filepath.Join(dir, "nonexistent-kobo-test-file.epub"))
@@ -145,7 +145,7 @@ func TestHandleDownload_Success(t *testing.T) {
 	require.NoError(t, err, "write temp file")
 	require.NoError(t, f.Close(), "close temp file")
 
-	book, err := h.DB.CreateBook(t.Context(), "Download Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Download Test"})
 	require.NoError(t, err, "create book")
 	_, err = h.DB.CreateBookFile(t.Context(), book.ID, "epub", "test.epub", int64(len(content)), nil, f.Name())
 	require.NoError(t, err, "create book file")
@@ -178,7 +178,7 @@ func TestHandleDownload_CaseInsensitiveFormat(t *testing.T) {
 
 	book, _, err := d.CreateBookWithFile(
 		t.Context(),
-		"Case Format Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		db.BookInput{Title: "Case Format Book"},
 		"epub", "sample.epub", int64(len("epub content")), nil, bookFile,
 	)
 	require.NoError(t, err, "create book")
@@ -206,7 +206,7 @@ func TestHandleDownload_ContentDispositionHeader(t *testing.T) {
 
 	book, _, err := d.CreateBookWithFile(
 		t.Context(),
-		"CD Header Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		db.BookInput{Title: "CD Header Book"},
 		"epub", "my-book.epub", int64(len("epub data")), nil, bookFile,
 	)
 	require.NoError(t, err, "create book")
@@ -237,7 +237,7 @@ func TestHandleDownload_ReturnsFileContents(t *testing.T) {
 
 	book, _, err := d.CreateBookWithFile(
 		t.Context(),
-		"Content Verify Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		db.BookInput{Title: "Content Verify Book"},
 		"epub", "content.epub", int64(len(fileContent)), nil, bookFile,
 	)
 	require.NoError(t, err, "create book")

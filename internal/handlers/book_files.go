@@ -31,7 +31,7 @@ func (h *BookFileHandler) HandleBookFile(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// getBookFile godoc
+// getBookFile returns a single book file record by ID.
 //
 //	@Summary		Get a book file
 //	@Description	Returns a single book file by ID
@@ -55,7 +55,7 @@ func (h *BookFileHandler) getBookFile(w http.ResponseWriter, r *http.Request, id
 	writeJSON(r.Context(), w, http.StatusOK, toBookFileDTO(bf))
 }
 
-// deleteBookFile godoc
+// deleteBookFile permanently removes a book file record.
 //
 //	@Summary		Delete a book file
 //	@Description	Delete a book file by ID

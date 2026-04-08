@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -135,7 +137,9 @@ type bookDTO struct {
 	UpdatedAt       db.Timestamp         `json:"updated_at"`
 }
 
-func (h *BookHandler) toBookDTO(ctx context.Context, b *db.Book) (bookDTO, error) {
+// loadBookDTO builds a bookDTO for b by issuing three additional DB queries:
+// GetBookAuthors, GetBookSeries, and ListBookFiles.
+func (h *BookHandler) loadBookDTO(ctx context.Context, b *db.Book) (bookDTO, error) {
 	dto := bookDTO{
 		ID:              b.ID,
 		Title:           b.Title,
@@ -252,7 +256,7 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 }
 
-// listBooks godoc
+// listBooks returns a paginated list of books, optionally filtered by a search query.
 //
 //	@Summary		List books
 //	@Description	Returns paginated books (summary without relations). When query is provided, performs a title/description search.
@@ -308,7 +312,7 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// createBook godoc
+// createBook creates a new book record and enqueues a Goodreads enrichment job.
 //
 //	@Summary		Create a book
 //	@Description	Create a new book
@@ -335,14 +339,27 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 
 	slog.DebugContext(r.Context(), "creating book", slog.String(otelkeys.Title, req.Title))
 
-	b, err := h.DB.CreateBook(r.Context(), req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.CoverImageURL)
+	b, err := h.DB.CreateBook(r.Context(), db.BookInput{
+		Title:           req.Title,
+		Description:     req.Description,
+		ASIN:            req.ASIN,
+		ISBN10:          req.ISBN10,
+		ISBN13:          req.ISBN13,
+		GoodreadsID:     req.GoodreadsID,
+		HardcoverID:     req.HardcoverID,
+		GoogleBooksID:   req.GoogleBooksID,
+		PublicationDate: req.PublicationDate,
+		Publisher:       req.Publisher,
+		Language:        req.Language,
+		CoverImageURL:   req.CoverImageURL,
+	})
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to create book", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to create book")
 		return
 	}
 
-	dto, err := h.toBookDTO(r.Context(), b)
+	dto, err := h.loadBookDTO(r.Context(), b)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to build book DTO",
 			slog.String(otelkeys.BookID, b.ID),
@@ -372,7 +389,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// getBook godoc
+// getBook returns a single book with its authors, series, and files.
 //
 //	@Summary		Get a book
 //	@Description	Returns a single book with authors, series, and files
@@ -393,7 +410,7 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 		return
 	}
 
-	dto, err := h.toBookDTO(r.Context(), b)
+	dto, err := h.loadBookDTO(r.Context(), b)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to build book DTO",
 			slog.String(otelkeys.BookID, b.ID),
@@ -405,7 +422,7 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 	writeJSON(r.Context(), w, http.StatusOK, dto)
 }
 
-// updateBook godoc
+// updateBook replaces the metadata fields of an existing book.
 //
 //	@Summary		Update a book
 //	@Description	Update an existing book
@@ -437,12 +454,34 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		slog.String(otelkeys.Title, req.Title),
 	)
 
-	b, err := h.DB.UpdateBook(r.Context(), id, req.Title, req.Description, req.ASIN, req.ISBN10, req.ISBN13, req.GoodreadsID, req.HardcoverID, req.GoogleBooksID, req.PublicationDate, req.Publisher, req.Language, req.CoverImageURL)
-	if handleUpdateErr(r.Context(), w, err, nil, nil, "a book", "book", id) {
+	b, err := h.DB.UpdateBook(r.Context(), id, db.BookInput{
+		Title:           req.Title,
+		Description:     req.Description,
+		ASIN:            req.ASIN,
+		ISBN10:          req.ISBN10,
+		ISBN13:          req.ISBN13,
+		GoodreadsID:     req.GoodreadsID,
+		HardcoverID:     req.HardcoverID,
+		GoogleBooksID:   req.GoogleBooksID,
+		PublicationDate: req.PublicationDate,
+		Publisher:       req.Publisher,
+		Language:        req.Language,
+		CoverImageURL:   req.CoverImageURL,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(r.Context(), w, http.StatusNotFound, "book not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to update book",
+			slog.String(otelkeys.BookID, id),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book")
 		return
 	}
 
-	dto, err := h.toBookDTO(r.Context(), b)
+	dto, err := h.loadBookDTO(r.Context(), b)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to build book DTO",
 			slog.String(otelkeys.BookID, b.ID),
@@ -458,7 +497,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 	writeJSON(r.Context(), w, http.StatusOK, dto)
 }
 
-// deleteBook godoc
+// deleteBook permanently removes a book record.
 //
 //	@Summary		Delete a book
 //	@Description	Delete a book by ID

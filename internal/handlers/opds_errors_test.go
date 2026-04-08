@@ -90,7 +90,7 @@ func TestBookEntries_AuthorLoadError(t *testing.T) {
 	h := setupOPDSHandler(t)
 	ctx := t.Context()
 
-	book, err := h.DB.CreateBook(ctx, "Test Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Test Book"})
 	require.NoError(t, err, "create book")
 
 	// Close DB so batch author/file loads fail.

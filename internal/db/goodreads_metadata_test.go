@@ -20,9 +20,13 @@ func TestCreateGoodreadsMetadata(t *testing.T) {
 
 	gm, err := d.CreateGoodreadsMetadata(
 		t.Context(), user.ID,
-		nil, &title, nil, nil, nil, &isbn13, &grID, nil, nil, nil, nil, nil, nil,
-		&authorName, nil, nil, nil,
-		&bookLegacyID, nil, nil,
+		GoodreadsMetadataInput{
+			Title:                 &title,
+			ISBN13:                &isbn13,
+			GoodreadsID:           &grID,
+			AuthorName:            &authorName,
+			GoodreadsBookLegacyID: &bookLegacyID,
+		},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 	require.NotEqual(t, "", gm.ID)
@@ -47,9 +51,7 @@ func TestGetGoodreadsMetadata(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		t.Context(), user.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{Title: &title},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
@@ -79,9 +81,7 @@ func TestGetGoodreadsMetadata_WrongUser(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		t.Context(), user1.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{Title: &title},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
@@ -98,16 +98,12 @@ func TestListGoodreadsMetadataByUser(t *testing.T) {
 	title2 := "Book Two"
 	_, err = d.CreateGoodreadsMetadata(
 		t.Context(), user.ID,
-		nil, &title1, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{Title: &title1},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 	_, err = d.CreateGoodreadsMetadata(
 		t.Context(), user.ID,
-		nil, &title2, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{Title: &title2},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
@@ -124,9 +120,7 @@ func TestListGoodreadsMetadataByStatus(t *testing.T) {
 	title1 := "Pending Book"
 	gm1, err := d.CreateGoodreadsMetadata(
 		t.Context(), user.ID,
-		nil, &title1, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{Title: &title1},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
@@ -137,9 +131,7 @@ func TestListGoodreadsMetadataByStatus(t *testing.T) {
 	title2 := "Still Pending"
 	_, err = d.CreateGoodreadsMetadata(
 		t.Context(), user.ID,
-		nil, &title2, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{Title: &title2},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
@@ -162,9 +154,7 @@ func TestUpdateGoodreadsMetadataStatus(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		t.Context(), user.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{Title: &title},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
@@ -190,9 +180,7 @@ func TestUpdateGoodreadsMetadataStatus_InvalidStatus(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		t.Context(), user.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{Title: &title},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
@@ -209,9 +197,7 @@ func TestDeleteGoodreadsMetadata(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		t.Context(), user.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{Title: &title},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
@@ -232,9 +218,7 @@ func TestDeleteGoodreadsMetadata_WrongUser(t *testing.T) {
 	title := "Test Book"
 	created, err := d.CreateGoodreadsMetadata(
 		t.Context(), user1.ID,
-		nil, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{Title: &title},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 
@@ -251,15 +235,13 @@ func TestCreateGoodreadsMetadata_WithBookID(t *testing.T) {
 	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "hash")
 	require.NoError(t, err, "CreateUser() error")
 
-	book, err := d.CreateBook(t.Context(), "Existing Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Existing Book"})
 	require.NoError(t, err, "CreateBook() error")
 
 	title := "Updated Metadata"
 	gm, err := d.CreateGoodreadsMetadata(
 		t.Context(), user.ID,
-		&book.ID, &title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil,
-		nil, nil, nil,
+		GoodreadsMetadataInput{BookID: &book.ID, Title: &title},
 	)
 	require.NoError(t, err, "CreateGoodreadsMetadata() error")
 	require.NotNil(t, gm.BookID)

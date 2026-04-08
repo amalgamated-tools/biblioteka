@@ -12,7 +12,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// Me godoc
+// Me dispatches GET (return the current user's profile) and PUT (update display name) for the authenticated user.
 //
 //	@Summary		Get or update current user
 //	@Description	GET returns the authenticated user's profile; PUT updates the display name
@@ -56,7 +56,7 @@ func (h *AuthHandler) getMe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(r.Context(), w, http.StatusOK, toUserDTO(user))
 }
 
-// UpdateProfile godoc
+// updateProfile updates the authenticated user's display name.
 //
 //	@Summary		Update current user's profile
 //	@Description	Updates the authenticated user's display name

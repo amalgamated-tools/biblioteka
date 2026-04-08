@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +20,7 @@ func TestHandleBookState_UpdateWithNonExistentBook(t *testing.T) {
 	t.Parallel()
 
 	h, userID := setupKoboHandler(t)
-	book, err := h.DB.CreateBook(context.Background(), "Delete Race Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(context.Background(), db.BookInput{Title: "Delete Race Book"})
 	require.NoError(t, err, "create book")
 
 	// Delete the book so the GetBook pre-check returns 404.
@@ -40,7 +41,7 @@ func TestHandleBookState_UnknownMethodReturnsOK(t *testing.T) {
 	t.Parallel()
 
 	h, userID := setupKoboHandler(t)
-	book, err := h.DB.CreateBook(context.Background(), "State Unknown Method", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(context.Background(), db.BookInput{Title: "State Unknown Method"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodDelete, "/v1/library/"+book.ID+"/state", nil)
@@ -57,7 +58,7 @@ func TestHandleBookState_StatePathParsing(t *testing.T) {
 	t.Parallel()
 
 	h, userID := setupKoboHandler(t)
-	book, err := h.DB.CreateBook(context.Background(), "Path Parsing Test", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(context.Background(), db.BookInput{Title: "Path Parsing Test"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/v1/library/"+book.ID+"/state", nil)
@@ -78,7 +79,7 @@ func TestHandleBookState_ReadingProgressPercentage(t *testing.T) {
 
 	user, err := d.CreateUser(context.Background(), "Progress User", "progress@example.com", "password")
 	require.NoError(t, err, "create user")
-	book, err := d.CreateBook(context.Background(), "Progress Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(context.Background(), db.BookInput{Title: "Progress Book"})
 	require.NoError(t, err, "create book")
 
 	pct := 0.35
@@ -107,7 +108,7 @@ func TestHandleBookState_UserIsolation(t *testing.T) {
 	require.NoError(t, err, "create user1")
 	user2, err := d.CreateUser(context.Background(), "User2", "user2@example.com", "password")
 	require.NoError(t, err, "create user2")
-	book, err := d.CreateBook(context.Background(), "Shared Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(context.Background(), db.BookInput{Title: "Shared Book"})
 	require.NoError(t, err, "create book")
 
 	// Set state for user1.

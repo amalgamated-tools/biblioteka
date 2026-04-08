@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
 
 	"github.com/stretchr/testify/require"
@@ -24,11 +25,7 @@ func TestHandleCoverImage_JPEGDataURL(t *testing.T) {
 	// so the response will be image/png regardless of the declared JPEG prefix.
 	pngBytes := testutils.TinyPNG()
 	jpegDataURL := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, err := h.DB.CreateBook(
-		t.Context(),
-		"JPEG Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		&jpegDataURL,
-	)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "JPEG Cover Book", CoverImageURL: &jpegDataURL})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
@@ -49,11 +46,7 @@ func TestHandleCoverImage_PNGDataURL(t *testing.T) {
 
 	pngBytes := testutils.TinyPNG()
 	pngDataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
-	book, err := h.DB.CreateBook(
-		t.Context(),
-		"PNG Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		&pngDataURL,
-	)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "PNG Cover Book", CoverImageURL: &pngDataURL})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
@@ -74,11 +67,7 @@ func TestHandleCoverImage_InvalidDataURL(t *testing.T) {
 
 	// Malformed data URL: not valid base64.
 	badURL := "data:image/png;base64,!notvalidbase64!"
-	book, err := h.DB.CreateBook(
-		t.Context(),
-		"Bad Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		&badURL,
-	)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Bad Cover Book", CoverImageURL: &badURL})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
@@ -111,11 +100,7 @@ func TestHandleCoverImage_HTTPSRedirect(t *testing.T) {
 	h, _ := setupKoboHandler(t)
 
 	coverURL := "https://example.com/cover.jpg"
-	book, err := h.DB.CreateBook(
-		t.Context(),
-		"External Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		&coverURL,
-	)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "External Cover Book", CoverImageURL: &coverURL})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
@@ -144,11 +129,7 @@ func TestHandleCoverImage_UnsafeCoverURL(t *testing.T) {
 			t.Parallel()
 
 			h, _ := setupKoboHandler(t)
-			book, err := h.DB.CreateBook(
-				t.Context(),
-				"Unsafe Cover Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-				&tc.url,
-			)
+			book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Unsafe Cover Book", CoverImageURL: &tc.url})
 			require.NoError(t, err, "create book")
 
 			r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)

@@ -24,7 +24,7 @@ func koboTestPastTime() time.Time {
 
 func createTestBookForKobo(t *testing.T, d *DB, title string) *Book {
 	t.Helper()
-	b, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := d.CreateBook(t.Context(), BookInput{Title: title})
 	require.NoError(t, err, "createTestBookForKobo(%q)", title)
 	return b
 }

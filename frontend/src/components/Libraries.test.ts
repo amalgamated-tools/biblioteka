@@ -54,6 +54,18 @@ describe("Libraries", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders an sr-only h1 heading in empty state", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [];
+    vi.mocked(routerStore).subPath = "";
+    render(Libraries);
+    await tick();
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: /Libraries/i }),
+    ).toBeInTheDocument();
+  });
+
   it("navigates to libraries/new when the button is clicked", async () => {
     vi.mocked(libraryStore).loaded = true;
     vi.mocked(libraryStore).libraries = [];
