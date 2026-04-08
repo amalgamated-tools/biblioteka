@@ -17,6 +17,7 @@ import { themeStore } from "../../stores/theme.svelte";
 describe("PreferencesTab", () => {
   afterEach(() => {
     cleanup();
+    vi.mocked(themeStore).preference = "auto";
     vi.clearAllMocks();
     vi.useRealTimers();
   });
@@ -95,6 +96,7 @@ describe("PreferencesTab", () => {
   });
 
   it("announces 'follow system settings' when auto theme is selected", async () => {
+    vi.mocked(themeStore).preference = "light";
     vi.useFakeTimers();
     render(PreferencesTab);
 
