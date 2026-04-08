@@ -43,11 +43,11 @@
 #   - actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
 #   - github/gh-aw-actions/setup@80471a493be8c528dd27daf73cd644242a7965e0 # v0.67.1
 
-name: "Daily Security Review"
+name: "Weekly Security Review"
 "on":
   schedule:
-  - cron: "13 19 * * *"
-    # Friendly format: daily (scattered)
+  - cron: "13 19 * * 1"
+    # Friendly format: weekly on Monday (scattered)
   workflow_dispatch:
     inputs:
       aw_context:
@@ -61,7 +61,7 @@ permissions: {}
 concurrency:
   group: "gh-aw-${{ github.workflow }}"
 
-run-name: "Daily Security Review"
+run-name: "Weekly Security Review"
 
 jobs:
   activation:
