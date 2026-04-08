@@ -37,7 +37,7 @@ frontend/
         APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix); delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         KoboTab.svelte          Kobo sync token management; displays setup instructions; delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
-        PreferencesTab.svelte   Display theme selection
+        PreferencesTab.svelte   Display theme selection; announces the new theme to screen readers via a `role="status"` live region so assistive technologies are notified without moving focus (WCAG 4.1.3)
         SmtpTab.svelte          Admin: SMTP mail server configuration
         UsersTab.svelte         Admin: user list and admin-role toggling; all `<th>` column headers carry `scope="col"` (WCAG 1.3.1); the role-toggle button carries an action-oriented `aria-label` describing the operation it will perform (WCAG 4.1.2)
       ui/                 Generic reusable UI components
@@ -1076,7 +1076,7 @@ For inline validation errors, pass `aria-invalid` and `aria-describedby` through
 | `AccountTab.svelte` | `settings/account` | All users | Change password; link OIDC account |
 | `APIKeysTab.svelte` | `settings/api-keys` | All users | Create and revoke long-lived API keys (`bib_` prefix); uses inline `role="alertdialog"` confirmations for delete actions |
 | `KoboTab.svelte` | `settings/kobo` | All users | Create and revoke Kobo sync tokens; copy device sync URL; uses inline `role="alertdialog"` confirmations for delete actions |
-| `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
+| `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme; announces the selected theme via a `role="status"` live region (WCAG 4.1.3) |
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
 | `SmtpTab.svelte` | `settings/smtp` | Admins only | Configure SMTP mail server |
 | `UsersTab.svelte` | `settings/users` | Admins only | List users; toggle admin role |
@@ -1307,6 +1307,43 @@ const stateClasses = $derived(
 | `dark:placeholder:text-ink-300` | Dark | Placeholder text on `dark:bg-ink-800` — meets 4.5:1 minimum (WCAG 1.4.3) |
 
 **Rule:** When using placeholder text on a dark background, always use `dark:placeholder:text-ink-300` (or lighter). Never use `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800` — the resulting contrast ratio is insufficient.
+
+### Live region for theme change announcements (`PreferencesTab.svelte`)
+
+**WCAG criterion:** [4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html) (Level AA)
+
+When a user selects a new theme (light, dark, or auto), the UI updates visually but no element receives focus. Without an explicit live region, screen-reader users receive no feedback that their action succeeded. `PreferencesTab.svelte` uses a `role="status"` element — an implicit `aria-live="polite"` live region — to announce the change in a non-intrusive way.
+
+**Implementation in `PreferencesTab.svelte`:**
+
+```svelte
+<script lang="ts">
+  let themeAnnouncement = $state("");
+
+  function setTheme(t: (typeof themes)[number]) {
+    themeStore.set(t);
+    themeAnnouncement = "";           // reset first so the same message re-triggers
+    const label = t === "auto" ? "follow system settings" : t;
+    setTimeout(() => {
+      themeAnnouncement = `Theme changed to ${label}`;
+    }, 0);                            // defer one macrotask so the DOM reset is flushed
+  }
+</script>
+
+<!-- Visually hidden; content is announced politely by screen readers -->
+<span role="status" class="sr-only">{themeAnnouncement}</span>
+```
+
+Key details:
+
+| Element / technique | Purpose |
+|---|---|
+| `role="status"` | Declares an implicit `aria-live="polite"` live region; screen readers announce its content after the current interaction completes without interrupting ongoing speech |
+| `class="sr-only"` | Hides the element visually (absolute position, 1 px × 1 px) while keeping it in the accessibility tree |
+| `themeAnnouncement = ""` then `setTimeout(..., 0)` | Resetting the text before setting it again ensures repeated selections of the same theme still trigger a fresh announcement; the 0 ms timeout flushes the Svelte reactivity cycle so the empty string reaches the DOM before the new message |
+| `"follow system settings"` for `auto` | Human-readable label; `"auto"` alone would be ambiguous to a screen-reader user unfamiliar with the UI option names |
+
+**Rule:** Whenever a user action produces a transient status change that is not communicated by focus movement or a visible heading update, add a `role="status"` live region with `class="sr-only"`. Use `role="alert"` (assertive) only for urgent errors that must interrupt the user immediately. Reset the live-region text to `""` before updating it to guarantee re-announcement when the same message is emitted twice in a row.
 
 ### ARIA landmarks
 
@@ -1683,6 +1720,7 @@ When editing the app shell or adding new persistent navigation elements:
 14. When using `TextInput` (or any input) with a `placeholder` on a dark background, use `dark:placeholder:text-ink-300` or lighter — never `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800`. See [Dark-mode placeholder contrast](#dark-mode-placeholder-contrast-textinputsvelte) above.
 15. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 16. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
+17. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
 
 ### Form accessibility
 
@@ -2209,6 +2247,21 @@ Additional tests verify attribute forwarding:
 7. **`moves focus to the Delete confirm button when dialog opens`** — asserts the Delete button inside the `alertdialog` receives focus.
 
 > **Mocking note:** The test file mocks `api.listKoboTokens`, `api.createKoboToken`, `api.deleteKoboToken`, `clipboard.copyToClipboard`, and all `lucide-svelte` icon components. `afterEach` calls `cleanup()` and `vi.clearAllMocks()`.
+
+#### `PreferencesTab.test.ts`
+
+`frontend/src/components/settings/PreferencesTab.test.ts` verifies the theme selection controls and the screen-reader live region in the preferences settings tab (WCAG 4.1.2, 4.1.3). Eight tests are included in the `PreferencesTab` describe block:
+
+1. **`renders all three theme buttons`** — asserts the three toggle buttons (light, dark, auto) are present in the DOM with the correct accessible names.
+2. **`renders a fieldset with a Theme legend`** — asserts the theme buttons are grouped inside a `<fieldset>` with a `<legend>` whose text is "Theme", providing the group a programmatic label (WCAG 1.3.1).
+3. **`sets aria-pressed='true' on the active theme button`** — seeds `themeStore.preference` as `"dark"` and asserts only the dark button carries `aria-pressed="true"` (WCAG 4.1.2).
+4. **`sets aria-pressed='false' on inactive theme buttons`** — with the dark theme active, asserts the light and auto buttons carry `aria-pressed="false"`.
+5. **`calls themeStore.set with the correct theme when a button is clicked`** — clicks the light button and asserts `themeStore.set` is called with `"light"`.
+6. **`calls themeStore.set with 'dark' when the dark button is clicked`** — clicks the dark button and asserts `themeStore.set` is called with `"dark"`.
+7. **`announces theme change to screen readers via a live region`** — uses fake timers, clicks the dark button, advances timers by 0 ms, then asserts the `role="status"` element contains the text `"Theme changed to dark"` (WCAG 4.1.3).
+8. **`announces 'follow system settings' when auto theme is selected`** — clicks the auto button and asserts the live region text is `"Theme changed to follow system settings"`, verifying that the human-readable label is used instead of the raw `"auto"` value.
+
+> **Testing note:** Tests 7 and 8 use `vi.useFakeTimers()` to control the `setTimeout(..., 0)` call inside `setTheme` and `await tick()` to flush Svelte 5 reactivity before asserting the live region text. `vi.useRealTimers()` is called at the end of each timer test to restore the real clock. The test file mocks `themeStore` and all `lucide-svelte` icon components; `afterEach` calls `cleanup()` and `vi.clearAllMocks()`.
 
 ---
 
