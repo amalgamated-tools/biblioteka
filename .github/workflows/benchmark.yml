@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Set up Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v5
         with:
           go-version: 1.26.1
           cache: true
@@ -57,7 +57,7 @@ jobs:
           retention-days: 90
 
       - name: Post benchmark comment
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
@@ -66,7 +66,9 @@ jobs:
 
             // Extract only benchmark lines (lines starting with Benchmark)
             const benchLines = raw.split('\n').filter(l => l.startsWith('Benchmark'));
+            const MARKER = '<!-- gh-benchmark-comment -->';
             const body = [
+              MARKER,
               '## Benchmark Results',
               '',
               'Results for packages touched by this PR (`-benchtime=3s`).',
@@ -75,31 +77,33 @@ jobs:
               benchLines.length > 0 ? benchLines.join('\n') : 'No benchmarks found in the changed packages.',
               '```',
               '',
-              '_Full results are available in the [`benchmark-results` artifact](' +
-                `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).` +
-                ' To establish a performance baseline, compare these numbers against the `main` branch benchmarks._',
+              `_Full results are available in the [Actions run for this benchmark](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}). To establish a performance baseline, compare these numbers against the \`main\` branch benchmarks._`,
             ].join('\n');
 
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find(c =>
-              c.user.login === 'github-actions[bot]' && c.body.includes('## Benchmark Results')
-            );
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
+            try {
+              const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body,
               });
+              const existing = comments.find(c =>
+                c.user.login === 'github-actions[bot]' && c.body.startsWith(MARKER)
+              );
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body,
+                });
+              }
+            } catch (e) {
+              core.warning(`Could not post benchmark comment: ${e.message}`);
             }

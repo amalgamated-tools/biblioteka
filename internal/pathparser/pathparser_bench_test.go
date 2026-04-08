@@ -5,7 +5,9 @@ import "testing"
 // BenchmarkParseBookPath measures the cost of the full path-parsing pipeline
 // across representative library layouts (3-level series, 2-level author, flat
 // dash-separated, and 0-segment single file).  These benchmarks are run in CI
-// to catch regressions in parsing performance.
+// to track parsing performance over time. Results are uploaded as a 90-day
+// artifact and posted as a PR comment for manual comparison against the main
+// branch.
 
 func BenchmarkParseBookPath_ThreeLevel(b *testing.B) {
 	filePath := "/library/Brandon Sanderson/Mistborn/2. The Well of Ascension (2006).epub"
