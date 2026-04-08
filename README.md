@@ -171,6 +171,7 @@ Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be 
 | `SMTP_TLS` | `starttls` | TLS mode: `none`, `starttls`, or `tls` |
 | `TELEMETRY_ENABLED` | `false` | Send anonymous usage telemetry on first startup (opt-in, disabled by default) |
 | `TELEMETRY_ENDPOINT` | *(internal default)* | Override the anonymous telemetry collection endpoint |
+| `TRUSTED_PROXIES` | *(empty)* | Comma-separated CIDR ranges of trusted reverse proxies (e.g. `10.0.0.0/8,172.16.0.0/12`). When set, the rate limiter uses the rightmost non-trusted IP from `X-Forwarded-For`. When unset, `X-Forwarded-For` is ignored and `RemoteAddr` is used directly |
 | `POSTGRES_PASSWORD` | — | PostgreSQL password; used by the `docker-compose.postgres.yml` Docker Compose file |
 
 ## Admin
