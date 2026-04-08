@@ -8,7 +8,11 @@
 
   function setTheme(t: (typeof themes)[number]) {
     themeStore.set(t);
-    themeAnnouncement = `Theme changed to ${t}`;
+    themeAnnouncement = "";
+    const label = t === "auto" ? "follow system settings" : t;
+    setTimeout(() => {
+      themeAnnouncement = `Theme changed to ${label}`;
+    }, 0);
   }
 </script>
 
@@ -47,9 +51,7 @@
         <p class="text-xs text-ink-500 dark:text-ink-300 mt-2">
           Choose how you prefer biblioteka to appear
         </p>
-        <span role="status" aria-live="polite" class="sr-only"
-          >{themeAnnouncement}</span
-        >
+        <span role="status" class="sr-only">{themeAnnouncement}</span>
       </fieldset>
     </div>
   </div>

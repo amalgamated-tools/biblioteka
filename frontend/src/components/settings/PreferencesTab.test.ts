@@ -79,14 +79,33 @@ describe("PreferencesTab", () => {
   });
 
   it("announces theme change to screen readers via a live region", async () => {
+    vi.useFakeTimers();
     render(PreferencesTab);
 
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("");
+    expect(status.textContent).toBe("");
 
     await fireEvent.click(screen.getByRole("button", { name: "dark" }));
     await tick();
+    vi.advanceTimersByTime(0);
+    await tick();
 
     expect(status).toHaveTextContent("Theme changed to dark");
+    vi.useRealTimers();
+  });
+
+  it("announces 'follow system settings' when auto theme is selected", async () => {
+    vi.useFakeTimers();
+    render(PreferencesTab);
+
+    const status = screen.getByRole("status");
+
+    await fireEvent.click(screen.getByRole("button", { name: "auto" }));
+    await tick();
+    vi.advanceTimersByTime(0);
+    await tick();
+
+    expect(status).toHaveTextContent("Theme changed to follow system settings");
+    vi.useRealTimers();
   });
 });
