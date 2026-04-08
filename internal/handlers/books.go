@@ -17,8 +17,9 @@ import (
 
 // BookHandler holds dependencies for book endpoints.
 type BookHandler struct {
-	DB       *db.DB
-	Enqueuer jobs.Enqueuer
+	DB              *db.DB
+	Enqueuer        jobs.Enqueuer
+	MetadataHandler *MetadataHandler
 }
 
 type bookRequest struct {
@@ -237,6 +238,12 @@ func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 			h.postBookFiles(w, r, id)
 		default:
 			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
+	case "metadata":
+		if h.MetadataHandler != nil {
+			h.MetadataHandler.HandleBookMetadata(w, r, id)
+		} else {
+			writeError(r.Context(), w, http.StatusNotFound, "not found")
 		}
 	default:
 		writeError(r.Context(), w, http.StatusNotFound, "not found")
