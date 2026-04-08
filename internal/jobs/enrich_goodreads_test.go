@@ -311,6 +311,33 @@ func TestEnrichGoodreads_TitleSearchNoMatchWhenTitlesDiffer(t *testing.T) {
 	require.Empty(t, metadata, "no metadata should be created when title search result doesn't match")
 }
 
+func TestEnrichGoodreads_TitleSearchMatchesLaterResult(t *testing.T) {
+	database := newTestDB(t)
+	user := createTestUser(t, database)
+	book := createTestBookWithFields(t, database, "Project Hail Mary", nil, nil, nil, nil)
+
+	unrelated := goodreads.BookResult{
+		BookTitle: "A Completely Different Book",
+		BookID:    "kca://book/amzn1.gr.book.v3.other",
+	}
+
+	mock := &mockGoodreadsClient{
+		searchResult: []goodreads.BookResult{unrelated, unrelated, sampleBookResult},
+	}
+
+	err := enrichGoodreads(t.Context(), database, mock, nil, EnrichGoodreadsPayload{
+		BookID: book.ID,
+		UserID: user.ID,
+	})
+	require.NoError(t, err)
+
+	metadata, err := database.ListGoodreadsMetadataByUser(t.Context(), user.ID, 10, 0)
+	require.NoError(t, err)
+	require.Len(t, metadata, 1, "should match the third result")
+	require.NotNil(t, metadata[0].Title)
+	require.Equal(t, "Project Hail Mary", *metadata[0].Title)
+}
+
 func TestTitleSimilar(t *testing.T) {
 	tests := []struct {
 		a, b string
