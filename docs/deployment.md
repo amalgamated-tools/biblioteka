@@ -171,6 +171,7 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 | `SECURE_COOKIES` | **Yes** (set to `true`) | Prevents cookies being sent over HTTP |
 | `DATABASE_URL` | No | Omit for SQLite; set to a PostgreSQL DSN for Postgres |
 | `REDIS_URL` | No | Defaults to `redis://localhost:6379` |
+| `TRUSTED_PROXIES` | No | Comma-separated CIDR ranges of trusted reverse proxies (e.g. `10.0.0.0/8,172.16.0.0/12`). When set, the rate limiter uses the rightmost non-trusted IP from `X-Forwarded-For`. When unset, `X-Forwarded-For` is ignored and `RemoteAddr` is used directly. |
 
 ## Reverse Proxy Setup
 
