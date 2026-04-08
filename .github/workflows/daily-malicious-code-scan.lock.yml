@@ -48,7 +48,7 @@ name: "Weekly Malicious Code Scan Agent"
 "on":
   schedule:
   - cron: "11 10 * * 1"
-    # Friendly format: weekly (scattered)
+    # Friendly format: weekly (Monday, scattered)
   workflow_dispatch:
     inputs:
       aw_context:
