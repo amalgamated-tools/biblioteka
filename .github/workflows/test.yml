@@ -273,12 +273,14 @@ jobs:
   coverage-comment:
     needs: [go-test, frontend-checks]
     if: >-
-      github.event_name == 'pull_request'
+      always()
+      && github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name == github.repository
       && needs.go-test.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      contents: read
       pull-requests: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
