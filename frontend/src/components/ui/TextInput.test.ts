@@ -73,6 +73,20 @@ describe("TextInput", () => {
     expect(screen.getByRole("textbox")).toHaveAttribute("id", "my-input");
   });
 
+  it("uses ink-400 border for sufficient contrast (WCAG 1.4.11)", () => {
+    const { container } = render(TextInput);
+    const classes = container.querySelector("input")!.className;
+    expect(classes).toContain("border-ink-400");
+    expect(classes).not.toContain("border-ink-200");
+  });
+
+  it("uses ink-400 dark border for sufficient contrast (WCAG 1.4.11)", () => {
+    const { container } = render(TextInput);
+    const classes = container.querySelector("input")!.className;
+    expect(classes).toContain("dark:border-ink-400");
+    expect(classes).not.toContain("dark:border-ink-700");
+  });
+
   it("uses ink-300 for dark-mode placeholder contrast (WCAG 1.4.3)", () => {
     const { container } = render(TextInput);
     const classes = container.querySelector("input")!.className;

@@ -64,6 +64,7 @@ const (
 	Issuer              string = "issuer"
 	IssuerURL           string = "issuer_url"
 	Job                 string = "job"
+	JWTSecretLength     string = "jwt_secret_length"
 	Key                 string = "key"
 	KoboTokenID         string = "kobo_token_id"
 	KOSyncUsername      string = "kosync_username"

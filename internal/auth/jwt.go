@@ -37,6 +37,10 @@ type JWTManager struct {
 	ttl     time.Duration
 }
 
+// MinSecretLength is the minimum recommended length (in bytes) for a
+// JWT signing secret. Secrets shorter than this weaken HMAC-SHA256.
+const MinSecretLength = 32
+
 // NewJWTManager creates a new JWTManager. If secret is empty, a random one is generated
 // (tokens will not survive server restarts).
 func NewJWTManager(secret string, ttl time.Duration) (*JWTManager, error) {

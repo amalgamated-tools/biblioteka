@@ -321,7 +321,7 @@
         <select
           id="smtp-tls"
           bind:value={smtpTls}
-          class="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
+          class="w-full px-4 py-2.5 border border-ink-400 dark:border-ink-400 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
           disabled={smtpLoading || smtpEnvOverride}
         >
           <option value="starttls">STARTTLS</option>
