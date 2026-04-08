@@ -1,52 +1,56 @@
-# Agent Performance — 2026-04-07
+# Agent Performance — 2026-04-08
 **Workflow:** agent-performance-analyzer
-**Run timestamp:** 2026-04-07T23:44Z
+**Run timestamp:** 2026-04-08T23:44Z
 
 ## Ecosystem Snapshot
-- 31 workflows tracked, **all compiled** (previously 6 uncompiled — RESOLVED)
-- Scheduled runs today: 19 — all succeeded (100% success rate)
-- Open issues: 3 (down from 7 on Apr 6)
-- Open agent/Copilot PRs: 16 (14 Copilot + 2 github-actions[bot])
-- PRs merged today: 6+ (accessibility fixes, code simplifications, refactoring)
+- 33 workflows tracked, 32 compiled (daily-malicious-code-scan PR #1545 open)
+- 30/30 scheduled runs today: 100% success rate
+- Open issues: 5 (3 duplicate-code-detector outputs + 2 workflow failures)
+- Open agent PRs: 6 (3 doc duplicates, 2 CI fixes, 1 refactor)
+- PRs merged today: 0 (vs 6 yesterday)
+- Agentic Maintenance ran 11 times — all success
 
-## ✅ RESOLVED: All 6 Uncompiled Workflows Now Compiled
-- Previously flagged workflows (artifacts-summary, commit-changes-analyzer,
-  duplicate-code-detector, grumpy-reviewer, pr-nitpick-reviewer, weekly-repo-map)
-  now all show compiled: Yes
-- Status: CLOSED
+## Top Performers (A-grade)
+- agentic-maintenance: A+ (11 runs, 100%)
+- daily-accessibility-review: A
+- code-simplifier: A
+- dead-code-remover: A
+- dependabot-burner: A
+- daily-security-review: A
+- daily-grumpy-reviewer: A
+- daily-nitpick-reviewer: A
+- daily-documentation-updater: A (sustained improvement from Apr 6 fix)
+- duplicate-code-detector: A- (quality issues created but Copilot assignment blocked)
 
-## ✅ RESOLVED: daily-doc-updater PR explosion
-- Resolved Apr 6; today only 1 PR (#1499 Kobo 404 docs) - sustained improvement
+## ⚠️ CRITICAL: update-docs Duplicate PR Recurrence
+- 3 identical PRs opened in 2 hours (#1538, #1539, #1547)
+- TOCTOU race: multiple Test workflow completions trigger simultaneous runs
+- Deduplication check passes before sibling run opens its PR
+- All 3 have same title: "docs: document TimeoutState base class..."
+- Action: Close #1538 + #1539, keep #1547; fix dedup logic in update-docs
 
-## ⚠️ NEW: Copilot PR Queue Backlog (14 open PRs)
-- 14 Copilot PRs opened today across multiple themes (refactoring, auth, docs, CI)
-- Quality appears high but volume creates review burden
-- Recommendation: Set PR review cadence; batch-merge related PRs
-- Monitor for stale/merge-conflicting PRs
+## ⚠️ OPEN: GH_AW_AGENT_TOKEN Copilot Assignment (Day 3)
+- Issues: #1551 (today), #1452 (historical)
+- daily-workflow-updater and duplicate-code-detector affected
+- Copilot fix pipeline degraded — issues sit unassigned
 
-## 🟡 CARRIED: GH_AW_AGENT_TOKEN Permission Failure
-- Issue #1452 still open (from Apr 6 duplicate-code-detector run)
-- Today's run adapted gracefully (no Copilot assignment attempted?)
-- Action: Verify token has Copilot assignment permission
+## ⚠️ NEW: merge-conflict-resolver Config Bug
+- Issue #1541: push_to_pull_request_branch fails in workflow_dispatch context
+- Fix PR #1544 open (Copilot-authored), awaiting merge
 
-## 🟡 MONITORING: daily-workflow-updater
-- Today ran 4.2 min (positive change from previous failure pattern)
-- Previous persistent gh CLI failure; needs 3 more successful runs to clear
+## 🟡 MONITORING: daily-workflow-updater Phantom Failure
+- Run 24134169785 shows success but created issue #1526
+- May be inner agentic step failure masked by outer GHA success
+- Assigned to Copilot; expires Apr 15
 
-## Agent Scores This Run
-- code-simplifier: A (13.6 min, quality PRs, #1480 merged via file-diet)
-- daily-accessibility-review: A (14.9 min, issue group #1460, fast fix pipeline)
-- daily-doc-updater: A (8.1 min, targeted 1 PR #1499, sustained fix)
-- dead-code-remover: A (10.6 min, #1480 merged quickly)
-- dependabot-burner: A (3.7 min, no excess dependabot PRs)
-- duplicate-code-detector: B+ (5.5 min, quality issues, Apr 6 assign failure monitoring)
-- schema-consistency-checker: B+ (10.4 min, ran cleanly)
-- daily-security-review: B+ (9.2 min, clean - healthy repo or over-cautious)
-- daily-workflow-updater: B (4.2 min, apparent improvement - monitoring)
-- ci-coach: N/A (not in today's runs — good, schedule improvement may be working)
-- daily-nitpick-reviewer: B (9.5 min, ran)
-- daily-grumpy-reviewer: B (9.9 min, ran)
+## 🟡 MONITORING: daily-malicious-code-scan Compilation
+- Compiled: No in status tool
+- Fix PR #1545 open (Copilot-authored), awaiting merge
+- Run succeeded today despite compilation flag
+
+## Resolved Since Yesterday
+- PR queue reduction: 14 open Copilot PRs yesterday → 6 today
+- All other previously-flagged uncompiled workflows: RESOLVED
 
 ## Issues Created This Run
-- None (all findings are status updates/monitoring)
-- Performance report discussion created
+- None (no new issues needed; existing tracking covers all findings)
