@@ -107,7 +107,7 @@
         cover_image_url: coverImageUrl.trim() || null,
       };
       await api.updateBook(bookId, input);
-      // Mark pending metadata as applied so it doesn't reappear on next visit.
+      // Clear pending metadata so it doesn't reappear on next visit.
       if (metadata) {
         try {
           await api.rejectMetadata(bookId);

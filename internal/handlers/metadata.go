@@ -196,10 +196,8 @@ func (h *MetadataHandler) streamEvents(w http.ResponseWriter, r *http.Request, b
 	}
 
 	// Verify the book exists before opening a long-lived SSE connection.
-	if _, err := h.DB.GetBook(r.Context(), bookID); err != nil {
-		if handleDBErr(r.Context(), w, err, "book") {
-			return
-		}
+	if _, err := h.DB.GetBook(r.Context(), bookID); handleDBErr(r.Context(), w, err, "book") {
+		return
 	}
 
 	// Extend the write deadline for this long-lived connection.
