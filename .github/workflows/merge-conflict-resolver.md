@@ -147,16 +147,25 @@ After resolving all conflicts:
 
 - Ensure no conflict markers remain in any file:
   ```bash
-  grep -rn "^<<<<<<<\|^=======\|^>>>>>>>" . --include="*" | grep -v ".git/" || echo "No conflict markers found"
+  git diff --check || echo "No conflict markers found"
+  ```
+  As a fallback, also scan the working tree:
+  ```bash
+  grep -rn "^<<<<<<<\|^=======\|^>>>>>>>" --exclude-dir=.git . || echo "No conflict markers found"
   ```
 - If conflict markers remain, the resolution is incomplete — **do not commit**
 
 ### 3.4 Complete the Merge
 
-Commit the merge resolution locally:
+Commit the merge resolution locally with a descriptive message that lists the resolved files:
 
 ```bash
-git commit -m "merge: resolve conflicts with base branch"
+git commit -m "merge: resolve conflicts with base branch
+
+Resolved conflicts in:
+- file1.go
+- file2.ts
+"
 ```
 
 Then use the `push-to-pull-request-branch` safe output to push the changes to the PR branch.
