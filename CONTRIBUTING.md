@@ -633,6 +633,10 @@ Major version bumps are opened as individual PRs and require manual review befor
 
 Dependabot pull requests for **patch and minor** version updates are automatically approved and enabled for auto-merge. Major version updates require a manual review before merging. The auto-merge workflow runs only when the pull request author is `dependabot[bot]`.
 
+#### Doc Updater Auto-Merge (`.github/workflows/doc-updater-auto-merge.yml`)
+
+Documentation pull requests created by the `daily-doc-updater` agentic workflow are automatically approved and enabled for auto-merge once all required CI checks pass. The workflow targets PRs whose title starts with `docs(daily):` and that carry both the `documentation` and `automation` labels. It runs only when the pull request author is `github-actions[bot]`.
+
 ### Automated agentic workflows
 
 Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that run on a schedule or in response to events. They analyze the codebase, find issues, and open pull requests or GitHub issues automatically. You do not need to trigger them manually.
@@ -660,7 +664,7 @@ Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that ru
 | **Daily Assign Issue to User** | Daily | Assigns one unassigned open issue to an active contributor |
 | **Daily Code Metrics** | Daily | GitHub Discussion in "audits" category with code health metrics and 30-day trend charts |
 | **Daily Copilot Token Report** | Weekdays at 11:00 UTC | GitHub Discussion in "audits" category with Copilot token consumption and cost trends |
-| **Daily Doc Updater** | Daily at 06:00 UTC | Draft pull requests correcting and expanding documentation |
+| **Daily Doc Updater** | Daily at 06:00 UTC | Pull requests (auto-merged) correcting and expanding documentation |
 | **Daily Issues Report** | Daily | GitHub Discussion in "audits" category with issue clustering, metrics, and trend charts |
 | **Daily Multi-Device Docs Tester** | Daily | GitHub issues for responsive-design failures; asset uploads with test results |
 | **Daily Observability Report** | Daily | GitHub Discussion in "audits" category with logging and telemetry coverage analysis |
@@ -798,7 +802,7 @@ Review these reports to monitor AI spending across workflows and identify expens
 
 #### Daily Doc Updater
 
-The `daily-doc-updater` workflow runs every day at 06:00 UTC. It reviews recent code changes and the existing documentation for gaps, inaccuracies, and outdated content. When it identifies documentation that needs updating, it opens a draft pull request with the title prefix `[docs]`. Draft PRs expire after one day if not merged. Review and merge these pull requests to keep documentation in sync with the codebase.
+The `daily-doc-updater` workflow runs every day at 06:00 UTC. It reviews recent code changes and the existing documentation for gaps, inaccuracies, and outdated content. When it identifies documentation that needs updating, it opens a pull request with the title prefix `docs(daily):` and the labels `documentation` and `automation`. These PRs are automatically approved and auto-merged once CI passes (via the `doc-updater-auto-merge` workflow). PRs expire after one day if not merged.
 
 This is a complement to the event-driven `update-docs` workflow (which fires on every push to `main`): `update-docs` documents specific code changes immediately, while `daily-doc-updater` sweeps for broader documentation drift on a schedule.
 
