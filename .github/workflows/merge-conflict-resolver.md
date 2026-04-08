@@ -29,6 +29,7 @@ network:
     - defaults
 
 safe-outputs:
+  max-patch-size: 10240
   add-comment:
     max: 2
   push-to-pull-request-branch:
@@ -140,9 +141,11 @@ git checkout "$HEAD_BRANCH"
 git merge --no-commit --no-ff "origin/$BASE_BRANCH"
 ```
 
-If the merge produces conflicts, first check whether any conflicted files are in protected paths (`.github/`, `.agents/`, or dependency lock files like `go.mod`, `go.sum`, `package.json`, `pnpm-lock.yaml`, etc.). If so, skip auto-resolution entirely and jump to Phase 4.2 (Handle Failure) — the `push-to-pull-request-branch` safe output will reject changes to these paths.
+If the merge produces conflicts, first check whether any conflicted files are in truly protected path prefixes (`.github/`, `.agents/`). If so, skip auto-resolution entirely and jump to Phase 4.2 (Handle Failure) — the `push-to-pull-request-branch` safe output will reject changes to these paths.
 
-For non-protected conflicting files, resolve them by examining each one:
+For dependency lock files (`go.sum`, `pnpm-lock.yaml`, etc.), treat them as generated files: prefer the base branch version and re-run the generator (`go mod tidy`, `pnpm install`, etc.) after resolving all other conflicts. Note that `go.mod` itself may require careful semantic merging — do not apply a blanket "prefer base" rule to it.
+
+For all other conflicting files, resolve them by examining each one:
 
 1. **Read each conflicting file** to understand the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
 2. **Analyze both sides** of the conflict:
@@ -238,7 +241,7 @@ git push
 - **No functional changes**: Only resolve conflicts — do not make any other code changes.
 - **Generated files**: For generated files (`*.gen.go`, lock files), prefer regenerating them rather than manually merging.
 - **Binary files**: Do not attempt to resolve conflicts in binary files. Report these as requiring manual resolution.
-- **Protected paths**: Files under `.github/` and `.agents/` are protected and cannot be pushed via the `push-to-pull-request-branch` safe output. If any conflicting files are in these paths, skip auto-resolution and post a manual-resolution comment instead.
+- **Protected paths**: Files under `.github/` and `.agents/` are protected and will be rejected by the `push-to-pull-request-branch` safe output. If any conflicting files are in these path prefixes, skip auto-resolution for those files and post a manual-resolution comment instead.
 
 ## ⚠️ Mandatory Output Requirement
 
