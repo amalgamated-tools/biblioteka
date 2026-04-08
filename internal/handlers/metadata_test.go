@@ -93,6 +93,7 @@ func TestFetchMetadata_Enqueues(t *testing.T) {
 	var resp fetchMetadataResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	require.Equal(t, "mock-job-id", resp.TaskID)
+	require.Equal(t, "enqueued", resp.Status)
 
 	enq := h.Enqueuer.(*mockEnqueuer)
 	enq.mu.Lock()

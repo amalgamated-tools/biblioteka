@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/goodreads"
@@ -15,6 +16,16 @@ import (
 
 // JobEnrichGoodreads is the registered name for the Goodreads enrichment job.
 const JobEnrichGoodreads = "enrich:goodreads"
+
+// Terminal SSE event types published on the metadata progress channel.
+// These constants are shared between the enrichment job (publisher) and the
+// SSE handler (consumer) to avoid magic strings.
+const (
+	EventComplete = "complete"
+	EventError    = "error"
+	EventNotFound = "not_found"
+	EventProgress = "progress"
+)
 
 // EnrichGoodreadsPayload is the JSON payload for the enrich:goodreads job.
 type EnrichGoodreadsPayload struct {
@@ -78,7 +89,7 @@ func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSea
 			slog.String(otelkeys.BookID, p.BookID),
 			slog.Any(otelkeys.Error, err),
 		)
-		publishEvent(ctx, publisher, channel, progressEvent{Event: "error", Message: "failed to fetch book"})
+		publishEvent(ctx, publisher, channel, progressEvent{Event: EventError, Message: "failed to fetch book"})
 		return fmt.Errorf("fetch book %s: %w", p.BookID, err)
 	}
 
@@ -88,7 +99,7 @@ func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSea
 			slog.String(otelkeys.BookID, p.BookID),
 			slog.String(otelkeys.Title, book.Title),
 		)
-		publishEvent(ctx, publisher, channel, progressEvent{Event: "not_found", Message: "No Goodreads match found"})
+		publishEvent(ctx, publisher, channel, progressEvent{Event: EventNotFound, Message: "No Goodreads match found"})
 		return nil
 	}
 
@@ -107,11 +118,11 @@ func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSea
 			slog.String(otelkeys.BookID, p.BookID),
 			slog.Any(otelkeys.Error, err),
 		)
-		publishEvent(ctx, publisher, channel, progressEvent{Event: "error", Message: "failed to save metadata"})
+		publishEvent(ctx, publisher, channel, progressEvent{Event: EventError, Message: "failed to save metadata"})
 		return fmt.Errorf("create goodreads metadata for book %s: %w", p.BookID, err)
 	}
 
-	publishEvent(ctx, publisher, channel, progressEvent{Event: "complete", MetadataID: gm.ID})
+	publishEvent(ctx, publisher, channel, progressEvent{Event: EventComplete, MetadataID: gm.ID})
 
 	return nil
 }
@@ -178,12 +189,20 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, publisher 
 		}
 	}
 
-	// Strategy 4: Title search (lowest confidence)
+	// Strategy 4: Title search (lowest confidence — verify the result title
+	// matches before accepting, since a generic search can return unrelated books)
 	if book.Title != "" {
 		publishProgress(ctx, publisher, channel, "searching_title", "Searching Goodreads by title...")
 		results, err := grClient.Search(ctx, book.Title)
 		if err == nil && len(results) > 0 {
-			return &results[0], "title"
+			if titleSimilar(book.Title, results[0].BookTitle) {
+				return &results[0], "title"
+			}
+			slog.DebugContext(ctx, "Goodreads title search result did not match book title",
+				slog.String(otelkeys.BookID, book.ID),
+				slog.String("search_title", book.Title),
+				slog.String("result_title", results[0].BookTitle),
+			)
 		}
 		if err != nil {
 			slog.WarnContext(ctx, "Goodreads title search failed",
@@ -218,11 +237,24 @@ func createGoodreadsMetadataFromResult(ctx context.Context, database *db.DB, use
 	})
 }
 
+// titleSimilar checks whether two book titles are similar enough to be
+// considered a match. It normalizes both titles to lowercase and checks
+// whether one contains the other, which handles common cases like subtitle
+// differences ("The Hobbit" vs "The Hobbit, or There and Back Again").
+func titleSimilar(a, b string) bool {
+	na := strings.ToLower(strings.TrimSpace(a))
+	nb := strings.ToLower(strings.TrimSpace(b))
+	if na == "" || nb == "" {
+		return false
+	}
+	return na == nb || strings.Contains(na, nb) || strings.Contains(nb, na)
+}
+
 // publishProgress is a convenience wrapper that publishes a progress event
 // with a source of "goodreads".
 func publishProgress(ctx context.Context, publisher pubsub.Publisher, channel, step, message string) {
 	publishEvent(ctx, publisher, channel, progressEvent{
-		Event:   "progress",
+		Event:   EventProgress,
 		Source:  "goodreads",
 		Step:    step,
 		Message: message,
