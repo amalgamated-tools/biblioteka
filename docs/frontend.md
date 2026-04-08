@@ -775,7 +775,7 @@ Padding is intentionally left to the caller via the `class` prop to avoid Tailwi
 
 ### `TextInput.svelte`
 
-A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400` in both light and dark modes to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1.
+A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1.
 
 **Props:**
 
@@ -1034,7 +1034,7 @@ An accessible inline delete-confirmation dialog that replaces the current item's
 
 ### `TextInput.svelte`
 
-A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent. In dark mode, placeholder text uses `text-ink-300` (not `text-ink-500`) to satisfy the WCAG 1.4.3 Contrast Minimum (Level AA) for non-active UI text. The border uses `border-ink-400 dark:border-ink-400` to satisfy the WCAG 1.4.11 Non-text Contrast minimum of 3:1 in both light and dark modes.
+A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` (not `dark:placeholder:text-ink-500`) to satisfy the WCAG 1.4.3 Contrast Minimum (Level AA) for non-active UI text. The border uses `border-ink-400 dark:border-ink-400` to satisfy the WCAG 1.4.11 Non-text Contrast minimum of 3:1 in both light and dark modes.
 
 **Props:**
 
@@ -1324,7 +1324,7 @@ The border class on `TextInput.svelte`:
 />
 ```
 
-The same `border-ink-400 dark:border-ink-400` pattern must be applied to any inline `<input>` element that does not use the reusable `TextInput` component — for example, the port field in `SmtpTab.svelte`, the directory-path inputs in `LibraryForm.svelte`, and bordered navigation controls such as page-size selectors in `BookList.svelte`.
+The same `border-ink-400 dark:border-ink-400` pattern must be applied to any inline form control (`<input>`, `<select>`, bordered `<button>`, etc.) that does not use the reusable `TextInput` component — for example, the TLS Mode `<select>` in `SmtpTab.svelte`, the File Organization `<select>` in `LibraryForm.svelte`, and bordered pagination buttons (Previous/Next) in `BookList.svelte`.
 
 | Class | Mode | Adjacent background | Requirement |
 |-------|------|---------------------|-------------|
@@ -1332,6 +1332,7 @@ The same `border-ink-400 dark:border-ink-400` pattern must be applied to any inl
 | `dark:border-ink-400` | Dark | `dark:bg-ink-800` | Meets WCAG 1.4.11 ≥ 3:1 |
 
 **Rule:** All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. Never use `dark:border-ink-200` or `dark:border-ink-300` for a bordered input sitting on `dark:bg-ink-800` — those tokens do not meet the 3:1 non-text contrast requirement.
+
 ### Live region for theme change announcements (`PreferencesTab.svelte`)
 
 **WCAG criterion:** [4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html) (Level AA)
