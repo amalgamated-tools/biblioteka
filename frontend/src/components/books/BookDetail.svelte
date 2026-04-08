@@ -127,18 +127,7 @@
             Details
           </h2>
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            {#each [
-              ["Title", book.title],
-              ["Publisher", book.publisher],
-              ["Language", book.language],
-              ["Publication Date", book.publication_date],
-              ["ISBN-13", book.isbn13],
-              ["ISBN-10", book.isbn10],
-              ["ASIN", book.asin],
-              ["Goodreads ID", book.goodreads_id],
-              ["Hardcover ID", book.hardcover_id],
-              ["Google Books ID", book.google_books_id],
-            ] as [label, value] (label)}
+            {#each [["Title", book.title], ["Publisher", book.publisher], ["Language", book.language], ["Publication Date", book.publication_date], ["ISBN-13", book.isbn13], ["ISBN-10", book.isbn10], ["ASIN", book.asin], ["Goodreads ID", book.goodreads_id], ["Hardcover ID", book.hardcover_id], ["Google Books ID", book.google_books_id]] as [label, value] (label)}
               <div>
                 <dt class="text-ink-500 dark:text-ink-400">{label}</dt>
                 <dd class="text-ink-900 dark:text-cream-100 font-medium">
@@ -150,9 +139,7 @@
 
           {#if book.description}
             <div class="mt-4 pt-4 border-t border-ink-100 dark:border-ink-800">
-              <h3
-                class="text-sm text-ink-500 dark:text-ink-400 mb-1"
-              >
+              <h3 class="text-sm text-ink-500 dark:text-ink-400 mb-1">
                 Description
               </h3>
               <p
