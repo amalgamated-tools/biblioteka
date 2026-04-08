@@ -139,23 +139,6 @@
       const es = api.subscribeToMetadataEvents(bookId);
       eventSource = es;
 
-      // Now trigger the job — the SSE subscription is already active.
-      const response = await api.fetchMetadata(bookId);
-
-      // If metadata already exists in the DB, no worker will publish SSE events.
-      // Short-circuit to avoid waiting for the 60-second timeout.
-      if (
-        response.status === "already_exists" ||
-        response.status === "already_running"
-      ) {
-        es.close();
-        eventSource = null;
-        fetchingMetadata = false;
-        progressMessage = null;
-        loadPendingMetadata();
-        return;
-      }
-
       // Client-side timeout: if SSE doesn't deliver a terminal event within
       // 60 seconds, close the connection and poll for results.
       const sseTimeout = setTimeout(() => {
@@ -174,6 +157,8 @@
         eventSource = null;
       }
 
+      // Register handlers immediately so no events are missed during the
+      // fetch request that follows.
       es.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -208,6 +193,22 @@
         // in case the job finished before SSE connected
         loadPendingMetadata();
       };
+
+      // Now trigger the job — the SSE subscription and handlers are already active.
+      const response = await api.fetchMetadata(bookId);
+
+      // If metadata already exists in the DB, no worker will publish SSE events.
+      // Short-circuit to avoid waiting for the 60-second timeout.
+      if (
+        response.status === "already_exists" ||
+        response.status === "already_running"
+      ) {
+        closeSSE();
+        fetchingMetadata = false;
+        progressMessage = null;
+        loadPendingMetadata();
+        return;
+      }
     } catch (e) {
       // Close the EventSource if it was opened before the error.
       if (eventSource) {
