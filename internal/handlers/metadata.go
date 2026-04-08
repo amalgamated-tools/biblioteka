@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -27,16 +26,16 @@ type MetadataHandler struct {
 // HandleBookMetadata dispatches /api/books/{id}/metadata and its sub-paths.
 // It expects the bookID to have already been extracted from the URL path.
 func (h *MetadataHandler) HandleBookMetadata(w http.ResponseWriter, r *http.Request, bookID string) {
-	// Parse the sub-path after "metadata"
-	// The full path is /api/books/{id}/metadata[/action]
-	// At this point r.URL.Path still has the full path, but we already have bookID.
-	// We need to extract the action after "metadata/".
-	prefix := "/api/books/" + bookID + "/metadata"
-	rest := strings.TrimPrefix(r.URL.Path, prefix)
-	rest = strings.TrimPrefix(rest, "/")
-	rest = strings.TrimSuffix(rest, "/")
+	// Extract the action segment after /api/books/{id}/metadata/ using the
+	// shared path helper. For bare /metadata, action will be "" (ok == false).
+	metadataPrefix := "/api/books/" + bookID + "/metadata/"
+	action, _, ok := extractPathSegments(r.URL.Path, metadataPrefix)
+	if !ok {
+		// No action segment — this is GET /api/books/{id}/metadata itself.
+		action = ""
+	}
 
-	switch rest {
+	switch action {
 	case "":
 		if r.Method != http.MethodGet {
 			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
