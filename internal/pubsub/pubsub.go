@@ -50,6 +50,16 @@ func (c *Client) Publish(ctx context.Context, channel, message string) error {
 // context is canceled.
 func (c *Client) Subscribe(ctx context.Context, channel string) (<-chan string, func()) {
 	sub := c.rdb.Subscribe(ctx, channel)
+
+	// Wait for the server to acknowledge the subscription so that callers
+	// don't miss messages published immediately after Subscribe returns.
+	if _, err := sub.Receive(ctx); err != nil {
+		slog.WarnContext(ctx, "failed to confirm Redis subscription",
+			slog.String(otelkeys.PubSubChannel, channel),
+			slog.Any(otelkeys.Error, err),
+		)
+	}
+
 	ch := make(chan string)
 
 	go func() {

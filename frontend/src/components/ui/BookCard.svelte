@@ -9,24 +9,16 @@
 
   let { book }: Props = $props();
 
-  function handleClick() {
+  function handleClick(e: MouseEvent) {
+    e.preventDefault();
     routerStore.navigate(`books/${book.id}`);
-  }
-
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleClick();
-    }
   }
 </script>
 
-<div
-  class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+<a
+  href="#books/{book.id}"
+  class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden hover:shadow-md transition-shadow cursor-pointer block no-underline"
   onclick={handleClick}
-  onkeydown={handleKeyDown}
-  role="link"
-  tabindex="0"
 >
   {#if book.cover_image_url}
     <div class="aspect-[2/3] bg-ink-100 dark:bg-ink-800">
@@ -60,4 +52,4 @@
       </p>
     {/if}
   </div>
-</div>
+</a>

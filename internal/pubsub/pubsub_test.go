@@ -14,7 +14,7 @@ func TestMetadataChannel(t *testing.T) {
 }
 
 // TestPublishSubscribe is an integration test that requires a running Redis
-// instance. It is skipped when REDIS_URL is not set.
+// instance. It is skipped when Redis is not reachable at localhost:6379.
 func TestPublishSubscribe(t *testing.T) {
 	redisURL := redisTestURL(t)
 
@@ -28,9 +28,6 @@ func TestPublishSubscribe(t *testing.T) {
 	channel := "test:pubsub:" + t.Name()
 	msgs, unsub := client.Subscribe(ctx, channel)
 	defer unsub()
-
-	// Give subscription time to establish.
-	time.Sleep(100 * time.Millisecond)
 
 	require.NoError(t, client.Publish(ctx, channel, "hello"))
 	require.NoError(t, client.Publish(ctx, channel, "world"))
