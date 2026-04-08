@@ -76,7 +76,7 @@ curl -X PUT http://localhost:8080/api/auth/password \
 
 | Property | Detail |
 |----------|--------|
-| Minimum length | 8 bytes (per [NIST SP 800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html)) |
+| Minimum length | [NIST SP 800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html) recommends a minimum of 8 characters; this server currently enforces a minimum of 8 bytes because password length validation is byte-counted |
 | Maximum length | 72 bytes (bcrypt silently truncates inputs longer than 72 bytes; any two passwords sharing the same first 72 bytes would be treated as identical — this cap prevents that collision) |
 | Storage | bcrypt hash with work factor 12; plaintext is never persisted |
 | Work factor rationale | Cost 12 is used instead of bcrypt's default (cost 10) because modern hardware can brute-force cost-10 hashes significantly faster than when the default was standardized |
