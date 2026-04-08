@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { themeStore } from "../../stores/theme.svelte";
+  import { themeStore, type ThemePreference } from "../../stores/theme.svelte";
   import { Palette } from "lucide-svelte";
 
   const themes = ["light", "dark", "auto"] as const;
 
   let themeAnnouncement = $state("");
 
-  function setTheme(t: (typeof themes)[number]) {
+  function setTheme(t: ThemePreference) {
     themeStore.set(t);
     themeAnnouncement = "";
     const label = t === "auto" ? "follow system settings" : t;
