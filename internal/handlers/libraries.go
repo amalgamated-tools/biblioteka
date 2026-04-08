@@ -156,10 +156,10 @@ func validateAndPrepareLibrary(ctx context.Context, w http.ResponseWriter, req *
 	return string(data), true
 }
 
-// createLibrary creates a new library and enqueues a scan job for each configured path (admin only).
+// createLibrary creates a new library and enqueues a scan job for the library using its configured paths (admin only).
 //
 //	@Summary		Create a library
-//	@Description	Create a new library and enqueue scan jobs
+//	@Description	Create a new library and enqueue a scan job for it using the configured paths
 //	@Tags			Libraries
 //	@Accept			json
 //	@Produce		json

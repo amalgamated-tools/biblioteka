@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ChangePassword verifies the user's current password and replaces it with the supplied new bcrypt-hashed password.
+// ChangePassword verifies the user's current password and replaces it with a bcrypt hash of the supplied new password.
 //
 //	@Summary		Change password
 //	@Description	Change the authenticated user's password

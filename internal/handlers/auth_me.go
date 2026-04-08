@@ -12,7 +12,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
-// Me dispatches GET (return the current user's profile) and PUT (update display name) for the authenticated user.
+// Me dispatches GET (returns the current user's profile) and PUT (updates display name) for the authenticated user.
 //
 //	@Summary		Get or update current user
 //	@Description	GET returns the authenticated user's profile; PUT updates the display name

@@ -308,7 +308,7 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// createBook creates a new book record and enqueues a Goodreads enrichment job.
+// createBook creates a new book record and attempts to enqueue a Goodreads enrichment job when background jobs are enabled.
 //
 //	@Summary		Create a book
 //	@Description	Create a new book
