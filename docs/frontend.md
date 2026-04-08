@@ -775,7 +775,7 @@ Padding is intentionally left to the caller via the `class` prop to avoid Tailwi
 
 ### `TextInput.svelte`
 
-A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA).
+A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400` in both light and dark modes to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1.
 
 **Props:**
 
@@ -1034,7 +1034,7 @@ An accessible inline delete-confirmation dialog that replaces the current item's
 
 ### `TextInput.svelte`
 
-A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent. In dark mode, placeholder text uses `text-ink-300` (not `text-ink-500`) to satisfy the WCAG 1.4.3 Contrast Minimum (Level AA) for non-active UI text.
+A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent. In dark mode, placeholder text uses `text-ink-300` (not `text-ink-500`) to satisfy the WCAG 1.4.3 Contrast Minimum (Level AA) for non-active UI text. The border uses `border-ink-400 dark:border-ink-400` to satisfy the WCAG 1.4.11 Non-text Contrast minimum of 3:1 in both light and dark modes.
 
 **Props:**
 
@@ -1308,6 +1308,30 @@ const stateClasses = $derived(
 
 **Rule:** When using placeholder text on a dark background, always use `dark:placeholder:text-ink-300` (or lighter). Never use `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800` — the resulting contrast ratio is insufficient.
 
+### Form control border contrast (`TextInput.svelte`)
+
+**WCAG criterion:** [1.4.11 Non-text Contrast](https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html) (Level AA)
+
+The visible boundary of a form control (e.g. the border of a text input or a bordered button) must have a contrast ratio of at least 3:1 against the adjacent background. WCAG 1.4.11 covers all states of UI components: default, hover, focus, and disabled.
+
+`TextInput.svelte` uses `border-ink-400` in both light and dark modes. In light mode (`bg-white`), `ink-400` provides sufficient contrast against the white background. In dark mode (`dark:bg-ink-800`), the same `dark:border-ink-400` class is applied explicitly — overriding Tailwind's default dark-mode cascade — to ensure the border remains perceivable.
+
+The border class on `TextInput.svelte`:
+
+```svelte
+<input
+  class="px-4 border border-ink-400 dark:border-ink-400 rounded-xl transition-all {stateClasses} ..."
+/>
+```
+
+The same `border-ink-400 dark:border-ink-400` pattern must be applied to any inline `<input>` element that does not use the reusable `TextInput` component — for example, the port field in `SmtpTab.svelte`, the directory-path inputs in `LibraryForm.svelte`, and bordered navigation controls such as page-size selectors in `BookList.svelte`.
+
+| Class | Mode | Adjacent background | Requirement |
+|-------|------|---------------------|-------------|
+| `border-ink-400` | Light | `bg-white` | Meets WCAG 1.4.11 ≥ 3:1 |
+| `dark:border-ink-400` | Dark | `dark:bg-ink-800` | Meets WCAG 1.4.11 ≥ 3:1 |
+
+**Rule:** All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. Never use `dark:border-ink-200` or `dark:border-ink-300` for a bordered input sitting on `dark:bg-ink-800` — those tokens do not meet the 3:1 non-text contrast requirement.
 ### Live region for theme change announcements (`PreferencesTab.svelte`)
 
 **WCAG criterion:** [4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html) (Level AA)
@@ -1718,9 +1742,10 @@ When editing the app shell or adding new persistent navigation elements:
 12. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
 13. Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so the element is visible when focused. When the action is context-sensitive (e.g. per-library settings links), include the context in the `aria-label` so each link has a unique, descriptive name. See [Focus visible — Library settings link](#focus-visible--library-settings-link-sidebarsvelte) above.
 14. When using `TextInput` (or any input) with a `placeholder` on a dark background, use `dark:placeholder:text-ink-300` or lighter — never `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800`. See [Dark-mode placeholder contrast](#dark-mode-placeholder-contrast-textinputsvelte) above.
-15. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
-16. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
-17. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
+15. All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. Never use `dark:border-ink-200` or `dark:border-ink-300` for a bordered input on `dark:bg-ink-800`. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
+16. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+17. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
+18. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
 
 ### Form accessibility
 
@@ -1909,7 +1934,8 @@ When adding or editing a form component:
 7. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
 8. Toggle switches (`<input type="checkbox">` styled as a switch) carry both `role="switch"` and `aria-checked={booleanState}`. Use an explicit `for`/`id` label association. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) above.
 9. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-10. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+10. Form inputs use `border-ink-400 dark:border-ink-400` for their border — never lighter tokens such as `dark:border-ink-200` or `dark:border-ink-300` on a dark background. Prefer the reusable `TextInput` component; when writing an inline `<input>` directly, apply this class manually. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
+11. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
 ### Inline confirmation dialogs for destructive actions
 
