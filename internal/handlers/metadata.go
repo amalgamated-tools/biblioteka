@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -15,6 +14,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
+	"github.com/hibiken/asynq"
 )
 
 // MetadataHandler handles metadata fetch, review, and apply endpoints for books.
@@ -141,6 +141,7 @@ func (h *MetadataHandler) getPendingMetadata(w http.ResponseWriter, r *http.Requ
 
 type fetchMetadataResponse struct {
 	TaskID string `json:"task_id"`
+	Status string `json:"status"`
 }
 
 // fetchMetadata enqueues a metadata enrichment job for the given book.
@@ -165,7 +166,7 @@ func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, 
 			slog.String(otelkeys.BookID, bookID),
 			slog.String(otelkeys.GoodreadsMetadataID, existing.ID),
 		)
-		writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: ""})
+		writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: "", Status: "already_exists"})
 		return
 	}
 
@@ -174,10 +175,10 @@ func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, 
 		UserID: userID,
 	})
 	if err != nil {
-		// asynq's Unique option returns "task already exists" for duplicate
-		// enqueue attempts — treat as a successful 202 since the job is in-flight.
-		if strings.Contains(err.Error(), "task already exists") {
-			writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: ""})
+		// asynq returns ErrDuplicateTask when a unique task is already enqueued —
+		// treat as a successful 202 since the job is in-flight.
+		if errors.Is(err, asynq.ErrDuplicateTask) {
+			writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: "", Status: "already_running"})
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to enqueue metadata fetch",
@@ -190,7 +191,7 @@ func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, 
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionMetadataFetchRequested, "book", bookID, map[string]any{"task_id": taskID})
 
-	writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: taskID})
+	writeJSON(r.Context(), w, http.StatusAccepted, fetchMetadataResponse{TaskID: taskID, Status: "enqueued"})
 }
 
 // sseWriteTimeout is the maximum time an SSE connection stays open.
@@ -279,7 +280,7 @@ func (h *MetadataHandler) streamEvents(w http.ResponseWriter, r *http.Request, b
 				Event string `json:"event"`
 			}
 			if json.Unmarshal([]byte(msg), &evt) == nil {
-				if evt.Event == "complete" || evt.Event == "error" || evt.Event == "not_found" {
+				if evt.Event == jobs.EventComplete || evt.Event == jobs.EventError || evt.Event == jobs.EventNotFound {
 					return
 				}
 			}
@@ -338,12 +339,16 @@ func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	// Mark the metadata as applied.
+	// Mark the metadata as applied. If this fails, roll back is not feasible
+	// (the book is already updated), but we must tell the caller so the pending
+	// record can be cleaned up manually rather than silently reappearing.
 	if _, err := h.DB.UpdateGoodreadsMetadataStatus(r.Context(), userID, gm.ID, db.GoodreadsMetadataStatusApplied); err != nil {
-		slog.WarnContext(r.Context(), "failed to mark metadata as applied",
+		slog.ErrorContext(r.Context(), "failed to mark metadata as applied",
 			slog.String(otelkeys.GoodreadsMetadataID, gm.ID),
 			slog.Any(otelkeys.Error, err),
 		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "book updated but failed to mark metadata as applied")
+		return
 	}
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionMetadataApplied, "book", bookID,
