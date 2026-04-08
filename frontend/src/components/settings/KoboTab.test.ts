@@ -127,6 +127,29 @@ describe("KoboTab delete confirmation", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders hidden-token Copy button as disabled and does not trigger clipboard copy", async () => {
+    const { copyToClipboard } = await import("../../lib/clipboard");
+    vi.mocked(copyToClipboard).mockClear();
+
+    render(KoboTab);
+    await tick();
+    await tick();
+
+    // The mock tokens have no `token` field, so they render in hidden-token state.
+    const copyButtons = screen.getAllByRole("button", {
+      name: /Copy unavailable/i,
+    });
+    expect(copyButtons.length).toBeGreaterThan(0);
+
+    const copyButton = copyButtons[0];
+    expect(copyButton).toBeDisabled();
+
+    await fireEvent.click(copyButton);
+    await tick();
+
+    expect(copyToClipboard).not.toHaveBeenCalled();
+  });
+
   it("moves focus to the Delete confirm button when dialog opens", async () => {
     render(KoboTab);
     await tick();
