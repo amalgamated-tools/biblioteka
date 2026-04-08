@@ -190,7 +190,7 @@ jobs:
           # Stdlib vulns require a Go toolchain update and cannot be fixed in-repo,
           # so we only fail on non-stdlib (third-party) vulnerabilities.
           set +e
-          go run golang.org/x/vuln/cmd/govulncheck@latest -format json ./... > vulncheck.json 2>&1
+          go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 -format json ./... > vulncheck.json 2>&1
           rc=$?
           set -e
 
@@ -204,12 +204,12 @@ jobs:
 
           if [ "$non_stdlib" -gt 0 ]; then
             echo "::error::Non-stdlib vulnerabilities found"
-            go run golang.org/x/vuln/cmd/govulncheck@latest ./... || true
+            go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./... || true
             exit 1
           fi
 
           echo "::warning::Only Go stdlib vulnerabilities found (requires Go toolchain update to fix)"
-          go run golang.org/x/vuln/cmd/govulncheck@latest ./... || true
+          go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./... || true
           exit 0
 
   go-all:
