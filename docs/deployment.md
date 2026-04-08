@@ -167,7 +167,7 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `JWT_SECRET` | **Yes** | Random secret for signing JWTs; leaked tokens are valid until they expire |
+| `JWT_SECRET` | **Yes** | Random secret for signing JWTs (minimum 32 characters recommended; a shorter value logs a startup warning); leaked tokens are valid until they expire |
 | `SECURE_COOKIES` | **Yes** (set to `true`) | Prevents cookies being sent over HTTP |
 | `DATABASE_URL` | No | Omit for SQLite; set to a PostgreSQL DSN for Postgres |
 | `REDIS_URL` | No | Defaults to `redis://localhost:6379` |
