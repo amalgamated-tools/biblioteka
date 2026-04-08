@@ -21,7 +21,7 @@
   interface Props {
     metadata: RemoteMetadata;
     currentValues: CurrentValues;
-    onApplyField: (field: keyof CurrentValues) => void;
+    onApplyField: (field: keyof RemoteMetadata & keyof CurrentValues) => void;
     onApplyAll: () => void;
     onDismiss: () => void;
   }
