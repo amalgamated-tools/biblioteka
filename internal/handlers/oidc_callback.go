@@ -134,7 +134,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	if linkUserID == "" && (claims.EmailVerified == nil || !*claims.EmailVerified) {
 		slog.WarnContext(r.Context(), "OIDC login rejected: email not verified by identity provider",
-			slog.String(otelkeys.Email, claims.Email),
+			slog.String(otelkeys.Email, redactEmail(claims.Email)),
 		)
 		writeError(r.Context(), w, http.StatusUnauthorized, "OIDC email must be verified by the identity provider")
 		return
@@ -208,7 +208,7 @@ func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name
 		return nil, fmt.Errorf("database error: %w", err)
 	}
 
-	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by email", slog.String(otelkeys.Email, email))
+	slog.DebugContext(ctx, "OIDC findOrCreateUser: looking up by email", slog.String(otelkeys.Email, redactEmail(email)))
 	user, err = h.DB.GetUserByEmail(ctx, email)
 	if err == nil {
 		slog.DebugContext(ctx, "OIDC findOrCreateUser: linking subject to existing user", slog.String(otelkeys.UserID, user.ID))
@@ -221,7 +221,7 @@ func (h *OIDCHandler) findOrCreateUser(ctx context.Context, subject, email, name
 		return nil, fmt.Errorf("database error: %w", err)
 	}
 
-	slog.DebugContext(ctx, "OIDC findOrCreateUser: creating new user", slog.String(otelkeys.Email, email))
+	slog.DebugContext(ctx, "OIDC findOrCreateUser: creating new user", slog.String(otelkeys.Email, redactEmail(email)))
 	user, err = h.DB.CreateOIDCUser(ctx, name, email, subject)
 	if err == nil {
 		slog.DebugContext(ctx, "OIDC findOrCreateUser: new user created", slog.String(otelkeys.UserID, user.ID))

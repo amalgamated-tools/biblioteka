@@ -260,13 +260,13 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := send(r.Context(), params.Addr, params.Auth, params.From, to, []byte(msg), params.TLS); err != nil {
 		slog.ErrorContext(r.Context(), "failed to send test email",
-			slog.String(otelkeys.Email, to),
+			slog.String(otelkeys.Email, redactEmail(to)),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusBadGateway, "failed to send test email")
 		return
 	}
 
-	slog.InfoContext(r.Context(), "test email sent", slog.String(otelkeys.Email, to))
+	slog.InfoContext(r.Context(), "test email sent", slog.String(otelkeys.Email, redactEmail(to)))
 	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": fmt.Sprintf("Test email sent to %s", to)})
 }
