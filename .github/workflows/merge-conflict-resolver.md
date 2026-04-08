@@ -152,7 +152,13 @@ If the merge produces conflicts, resolve them by examining each conflicting file
 After resolving all conflicts:
 
 - Ensure no conflict markers remain in any file:
-  
+  ```bash
+  git diff --cached --check && echo "No conflict markers found in staged files"
+  ```
+  As a fallback, also scan the working tree:
+  ```bash
+  grep -rn "^<<<<<<<\|^=======\|^>>>>>>>" --exclude-dir=.git . || echo "No conflict markers found"
+  ```
 - If conflict markers remain, the resolution is incomplete — **do not commit**
 
 ### 3.4 Complete the Merge
@@ -204,7 +210,6 @@ The conflicts in this PR are too complex for automatic resolution. Please resolv
 **Steps to resolve locally:**
 ```bash
 git fetch origin
-git checkout <head-branch>
 git checkout $HEAD_BRANCH
 git merge origin/$BASE_BRANCH
 # Resolve conflicts in your editor
@@ -223,6 +228,7 @@ git push
 - **No functional changes**: Only resolve conflicts — do not make any other code changes.
 - **Generated files**: For generated files (`*.gen.go`, lock files), prefer regenerating them rather than manually merging.
 - **Binary files**: Do not attempt to resolve conflicts in binary files. Report these as requiring manual resolution.
+- **Protected paths**: Files under `.github/` and `.agents/` are protected and cannot be pushed via the `push-to-pull-request-branch` safe output. If any conflicting files are in these paths, skip auto-resolution and post a manual-resolution comment instead.
 
 ## ⚠️ Mandatory Output Requirement
 
