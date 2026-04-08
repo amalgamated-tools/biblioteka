@@ -1340,7 +1340,7 @@ Key details:
 |---|---|
 | `role="status"` | Declares an implicit `aria-live="polite"` live region; screen readers announce its content after the current interaction completes without interrupting ongoing speech |
 | `class="sr-only"` | Hides the element visually (absolute position, 1 px × 1 px) while keeping it in the accessibility tree |
-| `themeAnnouncement = ""` then `setTimeout(..., 0)` | Resetting the text before setting it again ensures repeated selections of the same theme still trigger a fresh announcement; the 0 ms timeout flushes the Svelte reactivity cycle so the empty string reaches the DOM before the new message |
+| `themeAnnouncement = ""` then `setTimeout(..., 0)` | Resetting the text before setting it again ensures repeated selections of the same theme still trigger a fresh announcement; the 0 ms timeout defers the new assignment to the next macrotask, after Svelte has flushed the empty string to the DOM |
 | `"follow system settings"` for `auto` | Human-readable label; `"auto"` alone would be ambiguous to a screen-reader user unfamiliar with the UI option names |
 
 **Rule:** Whenever a user action produces a transient status change that is not communicated by focus movement or a visible heading update, add a `role="status"` live region with `class="sr-only"`. Use `role="alert"` (assertive) only for urgent errors that must interrupt the user immediately. Reset the live-region text to `""` before updating it to guarantee re-announcement when the same message is emitted twice in a row.
