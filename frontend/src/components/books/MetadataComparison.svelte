@@ -77,9 +77,7 @@
 <div class="mt-4 pt-4 border-t border-ink-100 dark:border-ink-800">
   <div class="flex items-center justify-between mb-4">
     <div class="flex items-center gap-2">
-      <h3
-        class="text-sm font-semibold text-ink-700 dark:text-ink-200"
-      >
+      <h3 class="text-sm font-semibold text-ink-700 dark:text-ink-200">
         Fetched Metadata
       </h3>
       <span
@@ -89,10 +87,7 @@
       </span>
     </div>
     <div class="flex items-center gap-2">
-      <Button
-        onclick={onApplyAll}
-        class="px-3 py-1.5 text-xs"
-      >
+      <Button onclick={onApplyAll} class="px-3 py-1.5 text-xs">
         <Check class="w-3 h-3 mr-1 inline" aria-hidden="true" />
         Apply All
       </Button>
