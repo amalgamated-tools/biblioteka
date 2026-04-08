@@ -34,10 +34,11 @@ After identifying open Dependabot PRs, check the GitHub Advisory Database for vu
 
 1. For each open Dependabot PR, inspect the PR title and body to identify the package name and updated version.
 2. Use the `code_security` toolset to check for known advisories associated with the dependency being updated.
-3. Based on severity, apply the following labels to the Dependabot PR (create the label if it doesn't exist):
+3. Based on severity, apply the following existing repository labels to the Dependabot PR when they are already available:
    - `severity: critical` — for CVSS critical (9.0–10.0) vulnerabilities
    - `severity: high` — for CVSS high (7.0–8.9) vulnerabilities
    - `security` — for any PR that fixes a known CVE (critical or high)
+   If one or more of these labels do not exist in the repository, do not attempt to create them.
 4. For critical and high severity security PRs:
    - Add a comment to the PR explaining the severity and recommending expedited review.
    - Include the CVE identifier and a brief description of the vulnerability if available.
