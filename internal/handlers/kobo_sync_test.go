@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/kobo"
 
 	"github.com/stretchr/testify/require"
@@ -25,10 +26,7 @@ func TestHandleSync_PageSizeLimit(t *testing.T) {
 	// Create more books than the page size + some files.
 	dir := t.TempDir()
 	for i := range kobo.SyncPageSize + 5 {
-		book, err := h.DB.CreateBook(
-			context.Background(),
-			"Sync Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		)
+		book, err := h.DB.CreateBook(context.Background(), db.BookInput{Title: "Sync Book"})
 		require.NoError(t, err, "create book %d", i)
 		filePath := filepath.Join(dir, "book-"+book.ID+".epub")
 		_, err = h.DB.CreateBookFile(

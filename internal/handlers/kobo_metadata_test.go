@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,11 +22,7 @@ func TestHandleBookMetadata_CoverURLIncluded(t *testing.T) {
 	tokenValue := createTestKoboToken(t, h, userID)
 
 	coverURL := "https://example.com/cover.jpg"
-	book, err := h.DB.CreateBook(
-		context.Background(),
-		"Cover URL Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		&coverURL,
-	)
+	book, err := h.DB.CreateBook(context.Background(), db.BookInput{Title: "Cover URL Book", CoverImageURL: &coverURL})
 	require.NoError(t, err, "create book")
 	// A book file is required for metadata to be returned.
 	_, err = h.DB.CreateBookFile(
@@ -59,7 +56,7 @@ func TestHandleBookMetadata_MultipleEntitlementsEachHaveMetadata(t *testing.T) {
 	tokenValue := createTestKoboToken(t, h, userID)
 
 	// Create a book with a file so metadata is returned.
-	book, err := h.DB.CreateBook(context.Background(), "Book Alpha", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(context.Background(), db.BookInput{Title: "Book Alpha"})
 	require.NoError(t, err, "create book")
 	_, err = h.DB.CreateBookFile(
 		context.Background(), book.ID, "epub", "alpha.epub", 512, nil,
@@ -89,7 +86,7 @@ func TestHandleBookMetadata_ContainsEntitlementID(t *testing.T) {
 	handler := koboDeviceHandler(h)
 	tokenValue := createTestKoboToken(t, h, userID)
 
-	book, err := h.DB.CreateBook(context.Background(), "Entitlement Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(context.Background(), db.BookInput{Title: "Entitlement Book"})
 	require.NoError(t, err, "create book")
 	_, err = h.DB.CreateBookFile(
 		context.Background(), book.ID, "epub", "entitlement.epub", 512, nil,

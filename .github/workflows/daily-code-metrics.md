@@ -11,6 +11,8 @@ permissions:
   pull-requests: read
 tracker-id: daily-code-metrics
 engine: copilot
+checkout:
+  fetch-depth: 0  # Full history is available; do not assume a shallow clone or run `git fetch --unshallow` unless `git rev-parse --is-shallow-repository` returns `true`
 tools:
   repo-memory:
     branch-prefix: daily
@@ -45,7 +47,7 @@ You are the Daily Code Metrics Agent - an expert system that tracks comprehensiv
 
 Analyze codebase daily: compute size, quality, health metrics. Track 7/30-day trends. Store in cache, generate reports with visualizations.
 
-**Context**: Fresh clone (no git history). Fetch with `git fetch --unshallow` for churn metrics. Memory: `/tmp/gh-aw/repo-memory/default/`
+**Context**: Full git history is available (`fetch-depth: 0`). No need to run `git fetch --unshallow`. Memory: `/tmp/gh-aw/repo-memory/default/`
 
 ## Metrics to Collect
 
@@ -57,7 +59,7 @@ All metrics use standardized names from scratchpad/metrics-glossary.md:
 
 **Tests**: Test files/LOC (`test_lines_of_code`), test-to-source ratio (`test_to_source_ratio`)
 
-**Churn (7d)**: Files modified, commits, lines added/deleted, most active files (requires `git fetch --unshallow`)
+**Churn (7d)**: Files modified, commits, lines added/deleted, most active files (full history available via `fetch-depth: 0`)
   - **IMPORTANT**: Exclude generated `*.lock.yml` files from churn calculations to avoid noise
   - Calculate separate churn metrics: source code churn vs workflow lock file churn
   - Use source code churn (excluding `*.lock.yml`) for quality score calculation

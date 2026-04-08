@@ -21,7 +21,7 @@ func TestListBooksPaginated_OrdersByTitle(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, title := range []string{"Zebra", "Apple", "Mango"} {
-		_, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		_, err := d.CreateBook(t.Context(), BookInput{Title: title})
 		require.NoError(t, err, "CreateBook(%q)", title)
 	}
 
@@ -38,7 +38,7 @@ func TestListBooksPaginated_FirstPage(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, title := range []string{"A", "B", "C", "D", "E"} {
-		_, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		_, err := d.CreateBook(t.Context(), BookInput{Title: title})
 		require.NoError(t, err, "CreateBook(%q)", title)
 	}
 
@@ -54,7 +54,7 @@ func TestListBooksPaginated_SecondPage(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, title := range []string{"A", "B", "C", "D", "E"} {
-		_, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		_, err := d.CreateBook(t.Context(), BookInput{Title: title})
 		require.NoError(t, err, "CreateBook(%q)", title)
 	}
 
@@ -71,7 +71,7 @@ func TestListBooksPaginated_SecondPage(t *testing.T) {
 func TestListBooksPaginated_OffsetBeyondTotal(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateBook(t.Context(), "Only Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Only Book"})
 	require.NoError(t, err, "CreateBook()")
 
 	books, total, err := d.ListBooksPaginated(t.Context(), 10, 100)
@@ -95,7 +95,7 @@ func TestListRecentBooks_Paginated(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, title := range []string{"A", "B", "C", "D", "E"} {
-		_, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		_, err := d.CreateBook(t.Context(), BookInput{Title: title})
 		require.NoError(t, err, "CreateBook(%q)", title)
 	}
 
@@ -113,7 +113,7 @@ func TestListRecentBooks_Paginated(t *testing.T) {
 func TestListRecentBooks_OffsetBeyondTotal(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateBook(t.Context(), "Solo", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Solo"})
 	require.NoError(t, err, "CreateBook()")
 
 	books, total, err := d.ListRecentBooks(t.Context(), 10, 50)
@@ -143,11 +143,11 @@ func TestListBooksByAuthor_ReturnsMatchingBooks(t *testing.T) {
 	other, err := d.CreateAuthor(t.Context(), "J.K. Rowling", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor(other)")
 
-	b1, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b1, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook(b1)")
-	b2, err := d.CreateBook(t.Context(), "It", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b2, err := d.CreateBook(t.Context(), BookInput{Title: "It"})
 	require.NoError(t, err, "CreateBook(b2)")
-	b3, err := d.CreateBook(t.Context(), "Harry Potter", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b3, err := d.CreateBook(t.Context(), BookInput{Title: "Harry Potter"})
 	require.NoError(t, err, "CreateBook(b3)")
 
 	err = d.SetBookAuthors(t.Context(), b1.ID, []string{author.ID})
@@ -172,7 +172,7 @@ func TestListBooksByAuthorPaginated(t *testing.T) {
 	require.NoError(t, err, "CreateAuthor()")
 
 	for _, title := range []string{"Book A", "Book B", "Book C", "Book D"} {
-		b, err := d.CreateBook(t.Context(), title, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		b, err := d.CreateBook(t.Context(), BookInput{Title: title})
 		require.NoError(t, err, "CreateBook(%q)", title)
 		err = d.SetBookAuthors(t.Context(), b.ID, []string{author.ID})
 		require.NoError(t, err, "SetBookAuthors(%q)", title)
@@ -196,7 +196,7 @@ func TestListBooksByAuthorPaginated_OffsetBeyondTotal(t *testing.T) {
 
 	author, err := d.CreateAuthor(t.Context(), "Solo Author", nil, nil, nil, nil)
 	require.NoError(t, err, "CreateAuthor()")
-	b, err := d.CreateBook(t.Context(), "One Book", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := d.CreateBook(t.Context(), BookInput{Title: "One Book"})
 	require.NoError(t, err, "CreateBook()")
 	err = d.SetBookAuthors(t.Context(), b.ID, []string{author.ID})
 	require.NoError(t, err, "SetBookAuthors()")

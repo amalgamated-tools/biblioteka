@@ -68,7 +68,7 @@ func TestKoboBookMetadata_WithSeries(t *testing.T) {
 	s, err := h.DB.CreateSeries(t.Context(), seriesName, nil, nil, nil)
 	require.NoError(t, err, "create series")
 
-	book, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	pos := 1.0

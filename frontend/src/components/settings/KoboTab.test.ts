@@ -63,7 +63,7 @@ describe("KoboTab delete confirmation", () => {
     await fireEvent.click(deleteButton);
     await tick();
 
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /Delete/ })).toBeInTheDocument();
     expect(screen.getByText(/Delete "My Kobo Libra"\?/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe("KoboTab delete confirmation", () => {
     await fireEvent.click(cancelButton);
     await tick();
 
-    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(screen.queryByRole("group", { name: /Delete/ })).toBeNull();
   });
 
   it("calls deleteKoboToken after confirming deletion", async () => {
@@ -119,32 +119,35 @@ describe("KoboTab delete confirmation", () => {
     await fireEvent.click(deleteButton);
     await tick();
 
-    // Only one alertdialog should be shown
-    expect(screen.getAllByRole("alertdialog")).toHaveLength(1);
+    // Only one delete confirmation group should be shown
+    expect(screen.getAllByRole("group", { name: /Delete/ })).toHaveLength(1);
     // The other delete button should still be visible
     expect(
       screen.getByRole("button", { name: /Delete token Kobo Elipsa/ }),
     ).toBeInTheDocument();
   });
 
-  it("dismisses confirmation dialog when Escape is pressed", async () => {
+  it("renders hidden-token Copy button as disabled and does not trigger clipboard copy", async () => {
+    const { copyToClipboard } = await import("../../lib/clipboard");
+    vi.mocked(copyToClipboard).mockClear();
+
     render(KoboTab);
     await tick();
     await tick();
 
-    const deleteButton = screen.getByRole("button", {
-      name: /Delete token My Kobo Libra/,
+    // The mock tokens have no `token` field, so they render in hidden-token state.
+    const copyButtons = screen.getAllByRole("button", {
+      name: /Copy unavailable/i,
     });
-    await fireEvent.click(deleteButton);
+    expect(copyButtons.length).toBeGreaterThan(0);
+
+    const copyButton = copyButtons[0];
+    expect(copyButton).toBeDisabled();
+
+    await fireEvent.click(copyButton);
     await tick();
 
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-
-    const dialog = screen.getByRole("alertdialog");
-    await fireEvent.keyDown(dialog, { key: "Escape" });
-    await tick();
-
-    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(copyToClipboard).not.toHaveBeenCalled();
   });
 
   it("moves focus to the Delete confirm button when dialog opens", async () => {

@@ -10,7 +10,7 @@ import (
 func TestCreateBookFile(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 	require.NotNil(t, book)
 
@@ -30,7 +30,7 @@ func TestCreateBookFile(t *testing.T) {
 func TestGetBookFile(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 	created, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 	require.NoError(t, err, "CreateBookFile() error")
@@ -50,7 +50,7 @@ func TestGetBookFile_NotFound(t *testing.T) {
 func TestListBookFiles(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 	_, err = d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 	require.NoError(t, err, "CreateBookFile() for epub error")
@@ -66,7 +66,7 @@ func TestListBookFiles(t *testing.T) {
 func TestDeleteBookFile(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 	bf, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
 	require.NoError(t, err, "CreateBookFile() error")
@@ -88,7 +88,7 @@ func TestDeleteBookFile_NotFound(t *testing.T) {
 func TestDeleteBook_CascadeFiles(t *testing.T) {
 	d := newTestDB(t)
 
-	book, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() error")
 	require.NotNil(t, book)
 	bf, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
@@ -104,10 +104,10 @@ func TestDeleteBook_CascadeFiles(t *testing.T) {
 func TestGetFilesForBooks(t *testing.T) {
 	d := newTestDB(t)
 
-	book1, err := d.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book1, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "CreateBook() for book1 error")
 	require.NotNil(t, book1)
-	book2, err := d.CreateBook(t.Context(), "Wizard and Glass", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	book2, err := d.CreateBook(t.Context(), BookInput{Title: "Wizard and Glass"})
 	require.NoError(t, err, "CreateBook() for book2 error")
 	require.NotNil(t, book2)
 

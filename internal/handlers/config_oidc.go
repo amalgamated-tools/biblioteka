@@ -164,7 +164,7 @@ type setOIDCConfigRequest struct {
 	RedirectURI  string `json:"redirect_uri"`
 }
 
-// HandleGetOIDCConfig godoc
+// HandleGetOIDCConfig returns the current OIDC provider configuration (admin only).
 //
 //	@Summary		Get OIDC configuration
 //	@Description	Returns current OIDC configuration (admin only)
@@ -197,7 +197,7 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-// HandleSetOIDCConfig godoc
+// HandleSetOIDCConfig validates and persists a new OIDC provider configuration (admin only).
 //
 //	@Summary		Set OIDC configuration
 //	@Description	Update OIDC configuration with validation (admin only)

@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ChangePassword godoc
+// ChangePassword verifies the user's current password and replaces it with the supplied new bcrypt-hashed password.
 //
 //	@Summary		Change password
 //	@Description	Change the authenticated user's password

@@ -16,7 +16,7 @@ import (
 func TestGetBookSeries_Empty(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID+"/series", nil)
@@ -35,7 +35,7 @@ func TestGetBookSeries_Empty(t *testing.T) {
 func TestGetBookSeries_WithEntries(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	require.NoError(t, err, "create series")
@@ -62,7 +62,7 @@ func TestGetBookSeries_WithEntries(t *testing.T) {
 func TestPutBookSeries_Success(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	s, err := h.DB.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
 	require.NoError(t, err, "create series")
@@ -88,7 +88,7 @@ func TestPutBookSeries_Success(t *testing.T) {
 func TestPutBookSeries_ClearsExisting(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	s1, err := h.DB.CreateSeries(t.Context(), "Series One", nil, nil, nil)
 	require.NoError(t, err, "create series1")
@@ -130,7 +130,7 @@ func TestPutBookSeries_ClearsExisting(t *testing.T) {
 func TestPutBookSeries_InvalidJSON(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/series", strings.NewReader("not-json"))
@@ -145,7 +145,7 @@ func TestPutBookSeries_InvalidJSON(t *testing.T) {
 func TestBookSeries_MethodNotAllowed(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/series", nil)
@@ -160,7 +160,7 @@ func TestBookSeries_MethodNotAllowed(t *testing.T) {
 func TestPutBookSeries_EmptyEntries(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, setBookSeriesRequest{Entries: []db.BookSeriesInput{}})

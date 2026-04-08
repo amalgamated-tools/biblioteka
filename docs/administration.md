@@ -89,7 +89,7 @@ When enabled:
 - The first admin account (created before disabling) retains full access.
 - The `GET /api/auth/signup/enabled` endpoint returns `{"enabled": false}`, letting clients adapt their UI accordingly.
 
-> **Tip:** If you are the sole user, first deploy with signup enabled and create your initial admin account. Then set `DISABLE_SIGNUP=true` and redeploy to prevent further self-service registrations.
+> **Tip:** If you are the sole user, deploy with signup enabled initially, create your first admin account, then set `DISABLE_SIGNUP=true` and redeploy to prevent further self-service registrations.
 
 ---
 

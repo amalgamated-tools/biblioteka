@@ -69,7 +69,7 @@ var sampleBookResult = goodreads.BookResult{
 
 func createTestBookWithFields(t *testing.T, database *db.DB, title string, isbn13, isbn10, asin, grID *string) *db.Book {
 	t.Helper()
-	book, err := database.CreateBook(t.Context(), title, nil, asin, isbn10, isbn13, grID, nil, nil, nil, nil, nil, nil)
+	book, err := database.CreateBook(t.Context(), db.BookInput{Title: title, ASIN: asin, ISBN10: isbn10, ISBN13: isbn13, GoodreadsID: grID})
 	require.NoError(t, err, "create test book")
 	return book
 }

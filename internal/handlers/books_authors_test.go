@@ -8,13 +8,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetBookAuthors_Empty(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID+"/authors", nil)
@@ -33,7 +34,7 @@ func TestGetBookAuthors_Empty(t *testing.T) {
 func TestGetBookAuthors_WithAuthors(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	a1, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "create author")
@@ -57,7 +58,7 @@ func TestGetBookAuthors_WithAuthors(t *testing.T) {
 func TestPutBookAuthors_Success(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
 	require.NoError(t, err, "create author")
@@ -80,7 +81,7 @@ func TestPutBookAuthors_Success(t *testing.T) {
 func TestPutBookAuthors_ClearsExisting(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 	a1, err := h.DB.CreateAuthor(t.Context(), "Author One", nil, nil, nil, nil)
 	require.NoError(t, err, "create author1")
@@ -112,7 +113,7 @@ func TestPutBookAuthors_ClearsExisting(t *testing.T) {
 func TestPutBookAuthors_InvalidJSON(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodPut, "/api/books/"+b.ID+"/authors", strings.NewReader("not-json"))
@@ -127,7 +128,7 @@ func TestPutBookAuthors_InvalidJSON(t *testing.T) {
 func TestBookAuthors_MethodNotAllowed(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	r := httptest.NewRequest(http.MethodPost, "/api/books/"+b.ID+"/authors", nil)
@@ -142,7 +143,7 @@ func TestBookAuthors_MethodNotAllowed(t *testing.T) {
 func TestPutBookAuthors_EmptyList(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
-	b, err := h.DB.CreateBook(t.Context(), "The Gunslinger", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
 
 	body := mustMarshal(t, setBookAuthorsRequest{AuthorIDs: []string{}})
