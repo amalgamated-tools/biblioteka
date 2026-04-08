@@ -153,10 +153,9 @@ func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, 
 	}
 
 	// Verify the book exists.
-	if _, err := h.DB.GetBook(r.Context(), bookID); err != nil {
-		if handleDBErr(r.Context(), w, err, "book") {
-			return
-		}
+	_, err := h.DB.GetBook(r.Context(), bookID)
+	if handleDBErr(r.Context(), w, err, "book") {
+		return
 	}
 
 	taskID, err := h.Enqueuer.Enqueue(r.Context(), jobs.JobEnrichGoodreads, jobs.EnrichGoodreadsPayload{
@@ -179,6 +178,9 @@ func (h *MetadataHandler) fetchMetadata(w http.ResponseWriter, r *http.Request, 
 
 // sseWriteTimeout is the maximum time an SSE connection stays open.
 const sseWriteTimeout = 2 * time.Minute
+
+// sseHeartbeatInterval is the interval between SSE keepalive comments.
+const sseHeartbeatInterval = 15 * time.Second
 
 // streamEvents opens an SSE connection that streams metadata fetch progress
 // events from Redis pub/sub.
@@ -214,17 +216,35 @@ func (h *MetadataHandler) streamEvents(w http.ResponseWriter, r *http.Request, b
 	msgs, cancel := h.Subscriber.Subscribe(r.Context(), channel)
 	defer cancel()
 
+	heartbeat := time.NewTicker(sseHeartbeatInterval)
+	defer heartbeat.Stop()
+
 	for {
 		select {
 		case <-r.Context().Done():
 			return
+		case <-heartbeat.C:
+			// SSE comment line as keepalive.
+			if err := rc.SetWriteDeadline(time.Now().Add(sseWriteTimeout)); err != nil {
+				slog.WarnContext(r.Context(), "failed to extend write deadline for SSE heartbeat",
+					slog.Any(otelkeys.Error, err),
+				)
+			}
+			if _, err := fmt.Fprint(w, ": heartbeat\n\n"); err != nil {
+				return
+			}
+			flusher.Flush()
 		case msg, ok := <-msgs:
 			if !ok {
 				return
 			}
 
 			// Extend deadline on each write.
-			_ = rc.SetWriteDeadline(time.Now().Add(sseWriteTimeout))
+			if err := rc.SetWriteDeadline(time.Now().Add(sseWriteTimeout)); err != nil {
+				slog.WarnContext(r.Context(), "failed to extend write deadline for SSE",
+					slog.Any(otelkeys.Error, err),
+				)
+			}
 
 			_, err := fmt.Fprintf(w, "data: %s\n\n", msg)
 			if err != nil {
@@ -265,10 +285,8 @@ func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, 
 
 	// Build a BookInput from the metadata, falling back to current book values.
 	book, err := h.DB.GetBook(r.Context(), bookID)
-	if err != nil {
-		if handleDBErr(r.Context(), w, err, "book") {
-			return
-		}
+	if handleDBErr(r.Context(), w, err, "book") {
+		return
 	}
 
 	input := db.BookInput{
