@@ -190,18 +190,23 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, publisher 
 	}
 
 	// Strategy 4: Title search (lowest confidence — verify the result title
-	// matches before accepting, since a generic search can return unrelated books)
+	// matches before accepting, since a generic search can return unrelated books).
+	// Scan up to the first 5 results for a match rather than only checking results[0].
 	if book.Title != "" {
 		publishProgress(ctx, publisher, channel, "searching_title", "Searching Goodreads by title...")
 		results, err := grClient.Search(ctx, book.Title)
 		if err == nil && len(results) > 0 {
-			if titleSimilar(book.Title, results[0].BookTitle) {
-				return &results[0], "title"
+			const maxTitleCandidates = 5
+			limit := min(len(results), maxTitleCandidates)
+			for i := range limit {
+				if titleSimilar(book.Title, results[i].BookTitle) {
+					return &results[i], "title"
+				}
 			}
-			slog.DebugContext(ctx, "Goodreads title search result did not match book title",
+			slog.DebugContext(ctx, "Goodreads title search results did not match book title",
 				slog.String(otelkeys.BookID, book.ID),
 				slog.String(otelkeys.SearchTitle, book.Title),
-				slog.String(otelkeys.ResultTitle, results[0].BookTitle),
+				slog.Int(otelkeys.Count, limit),
 			)
 		}
 		if err != nil {

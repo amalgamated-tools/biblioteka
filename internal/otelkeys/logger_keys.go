@@ -103,7 +103,6 @@ const (
 	RemoteAddr          string = "remote_addr"
 	RequestID           string = "request_id"
 	Resource            string = "resource"
-	ResultTitle         string = "result_title"
 	SeriesCount         string = "series_count"
 	SeriesID            string = "series_id"
 	SearchTitle         string = "search_title"

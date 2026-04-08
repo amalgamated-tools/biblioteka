@@ -61,6 +61,7 @@ func (c *Client) Subscribe(ctx context.Context, channel string) (<-chan string, 
 	}
 
 	ch := make(chan string, 1)
+	done := make(chan struct{})
 
 	go func() {
 		defer close(ch)
@@ -68,6 +69,8 @@ func (c *Client) Subscribe(ctx context.Context, channel string) (<-chan string, 
 		for {
 			select {
 			case <-ctx.Done():
+				return
+			case <-done:
 				return
 			case msg, ok := <-redisCh:
 				if !ok {
@@ -77,12 +80,15 @@ func (c *Client) Subscribe(ctx context.Context, channel string) (<-chan string, 
 				case ch <- msg.Payload:
 				case <-ctx.Done():
 					return
+				case <-done:
+					return
 				}
 			}
 		}
 	}()
 
 	cancel := func() {
+		close(done)
 		if err := sub.Close(); err != nil {
 			slog.WarnContext(ctx, "failed to close Redis subscription",
 				slog.String(otelkeys.PubSubChannel, channel),
