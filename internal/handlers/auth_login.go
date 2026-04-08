@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Login godoc
+// Login authenticates a user with email and password, returning a signed JWT and setting an auth cookie on success.
 //
 //	@Summary		Log in
 //	@Description	Authenticate with email and password

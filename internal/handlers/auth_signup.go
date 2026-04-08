@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Signup godoc
+// Signup creates a new user account with the supplied name, email, and password, then returns a signed JWT.
 //
 //	@Summary		Sign up a new user
 //	@Description	Create a new user account with name, email, and password

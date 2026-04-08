@@ -2,7 +2,7 @@ package handlers
 
 import "net/http"
 
-// Logout godoc
+// Logout clears the user's auth cookie and ends the current session.
 //
 //	@Summary		Log out
 //	@Description	Clears the authentication cookie
