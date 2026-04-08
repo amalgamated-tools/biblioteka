@@ -12,7 +12,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// CreateLinkNonce godoc
+// CreateLinkNonce issues a short-lived nonce that the client passes to Link to begin the OIDC account-linking flow.
 //
 //	@Summary		Create OIDC link nonce
 //	@Description	Generate a short-lived nonce for linking an OIDC account
@@ -72,7 +72,7 @@ func (h *OIDCHandler) consumeLinkNonce(nonce string) string {
 	return entry.UserID
 }
 
-// Link godoc
+// Link validates the nonce and redirects to the OIDC provider to link an external identity to the user's account.
 //
 //	@Summary		Link OIDC account
 //	@Description	Redirects to OIDC provider to link account (requires nonce)

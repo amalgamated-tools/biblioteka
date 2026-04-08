@@ -164,7 +164,7 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 	}
 }
 
-// handleOIDCEnabled godoc
+// handleOIDCEnabled reports whether OIDC authentication is configured on this server.
 //
 //	@Summary		Check if OIDC is enabled
 //	@Description	Returns whether OIDC authentication is configured on this server
@@ -194,7 +194,7 @@ type enabledResponse struct {
 	Enabled bool `json:"enabled"`
 }
 
-// handleSignupEnabled godoc
+// handleSignupEnabled reports whether new user self-registration is permitted on this server.
 //
 //	@Summary		Check if signup is enabled
 //	@Description	Returns whether new user signup is permitted on this server
@@ -212,7 +212,7 @@ func (s *Server) handleSignupEnabled(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleHealth godoc
+// handleHealth returns the server's health status.
 //
 //	@Summary		Health check
 //	@Description	Returns server health status
@@ -268,7 +268,7 @@ func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, allowedMe
 	return false
 }
 
-// handleVersion godoc
+// handleVersion returns the running server version string.
 //
 //	@Summary		Get server version
 //	@Description	Returns the server version

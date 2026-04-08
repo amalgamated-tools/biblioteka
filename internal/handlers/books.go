@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -254,7 +256,7 @@ func (h *BookHandler) handleBook(w http.ResponseWriter, r *http.Request, id stri
 	}
 }
 
-// listBooks godoc
+// listBooks returns a paginated list of books, optionally filtered by a search query.
 //
 //	@Summary		List books
 //	@Description	Returns paginated books (summary without relations). When query is provided, performs a title/description search.
@@ -310,7 +312,7 @@ func (h *BookHandler) listBooks(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// createBook godoc
+// createBook creates a new book record and enqueues a Goodreads enrichment job.
 //
 //	@Summary		Create a book
 //	@Description	Create a new book
@@ -387,7 +389,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// getBook godoc
+// getBook returns a single book with its authors, series, and files.
 //
 //	@Summary		Get a book
 //	@Description	Returns a single book with authors, series, and files
@@ -420,7 +422,7 @@ func (h *BookHandler) getBook(w http.ResponseWriter, r *http.Request, id string)
 	writeJSON(r.Context(), w, http.StatusOK, dto)
 }
 
-// updateBook godoc
+// updateBook replaces the metadata fields of an existing book.
 //
 //	@Summary		Update a book
 //	@Description	Update an existing book
@@ -466,7 +468,16 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 		Language:        req.Language,
 		CoverImageURL:   req.CoverImageURL,
 	})
-	if handleUpdateErr(r.Context(), w, err, nil, nil, "a book", "book", id) {
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(r.Context(), w, http.StatusNotFound, "book not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to update book",
+			slog.String(otelkeys.BookID, id),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update book")
 		return
 	}
 
@@ -486,7 +497,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id stri
 	writeJSON(r.Context(), w, http.StatusOK, dto)
 }
 
-// deleteBook godoc
+// deleteBook permanently removes a book record.
 //
 //	@Summary		Delete a book
 //	@Description	Delete a book by ID
