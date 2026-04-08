@@ -116,6 +116,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 			)
 		} else {
 			publisher = psClient
+			defer func() { _ = psClient.Close() }()
 		}
 
 		w.Register(cancelCtx, jobs.JobEnrichGoodreads, jobs.NewEnrichGoodreadsHandler(database, grClient, publisher))

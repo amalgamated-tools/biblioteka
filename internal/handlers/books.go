@@ -239,13 +239,18 @@ func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 		default:
 			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		}
-	case "metadata":
-		if h.MetadataHandler != nil {
-			h.MetadataHandler.HandleBookMetadata(w, r, id)
-		} else {
-			writeError(r.Context(), w, http.StatusNotFound, "not found")
-		}
 	default:
+		// Metadata is a nested sub-resource with its own action paths
+		// (e.g. metadata/fetch, metadata/events). extractPathSegments returns
+		// "metadata/fetch" in sub, so we match on prefix rather than exact string.
+		if sub == "metadata" || strings.HasPrefix(sub, "metadata/") {
+			if h.MetadataHandler != nil {
+				h.MetadataHandler.HandleBookMetadata(w, r, id)
+			} else {
+				writeError(r.Context(), w, http.StatusNotFound, "not found")
+			}
+			return
+		}
 		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}
 }

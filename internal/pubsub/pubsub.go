@@ -47,7 +47,7 @@ func (c *Client) Publish(ctx context.Context, channel, message string) error {
 // Subscribe listens for messages on the given channel. It returns a string
 // channel and a cancel function. The caller must call cancel to release
 // resources. The returned channel is closed when cancel is called or the
-// context is cancelled.
+// context is canceled.
 func (c *Client) Subscribe(ctx context.Context, channel string) (<-chan string, func()) {
 	sub := c.rdb.Subscribe(ctx, channel)
 	ch := make(chan string)

@@ -20,7 +20,7 @@ func TestPublishSubscribe(t *testing.T) {
 
 	client, err := NewClient(redisURL)
 	require.NoError(t, err)
-	defer func() { _ = client.Close() }()
+	t.Cleanup(func() { require.NoError(t, client.Close()) })
 
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -41,7 +41,7 @@ func TestPublishSubscribe(t *testing.T) {
 		case m := <-msgs:
 			got = append(got, m)
 		case <-ctx.Done():
-			t.Fatal("timed out waiting for messages")
+			require.FailNow(t, "timed out waiting for messages")
 		}
 	}
 
@@ -55,7 +55,7 @@ func TestSubscribeCancelStopsChannel(t *testing.T) {
 
 	client, err := NewClient(redisURL)
 	require.NoError(t, err)
-	defer func() { _ = client.Close() }()
+	t.Cleanup(func() { require.NoError(t, client.Close()) })
 
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -69,7 +69,7 @@ func TestSubscribeCancelStopsChannel(t *testing.T) {
 	case _, ok := <-msgs:
 		require.False(t, ok, "expected channel to be closed")
 	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for channel to close after cancel")
+		require.FailNow(t, "timed out waiting for channel to close after cancel")
 	}
 }
 
@@ -84,9 +84,9 @@ func redisTestURL(t *testing.T) string {
 	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 	defer cancel()
 	if err := client.rdb.Ping(ctx).Err(); err != nil {
-		_ = client.Close()
+		require.NoError(t, client.Close())
 		t.Skipf("skipping: Redis not available at %s: %v", url, err)
 	}
-	_ = client.Close()
+	require.NoError(t, client.Close())
 	return url
 }

@@ -264,3 +264,47 @@ func TestMetadata_UnknownSubPath(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
+
+// TestMetadata_RoutingThroughBookHandler verifies that metadata sub-paths are
+// correctly routed through HandleBookRoutes (not just HandleBookMetadata).
+func TestMetadata_RoutingThroughBookHandler(t *testing.T) {
+	h, bh, userID := setupMetadataHandler(t)
+	bh.MetadataHandler = h
+	book := createTestBook(t, h.DB, "Test Book")
+
+	tests := []struct {
+		name           string
+		method         string
+		path           string
+		wantNotRouting bool // true if we expect anything other than 404 "not found"
+	}{
+		{"GET metadata", http.MethodGet, "/api/books/" + book.ID + "/metadata", true},
+		{"POST fetch", http.MethodPost, "/api/books/" + book.ID + "/metadata/fetch", true},
+		{"GET events", http.MethodGet, "/api/books/" + book.ID + "/metadata/events", true},
+		{"POST apply", http.MethodPost, "/api/books/" + book.ID + "/metadata/apply", true},
+		{"POST reject", http.MethodPost, "/api/books/" + book.ID + "/metadata/reject", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(tt.method, tt.path, nil)
+			r = withUserID(r, userID)
+			w := httptest.NewRecorder()
+
+			bh.HandleBookRoutes(w, r)
+
+			// The key assertion: the request must NOT return a 404 "not found"
+			// routing error. Any other status (even 404 "no pending metadata")
+			// means routing succeeded and the handler was reached.
+			if tt.wantNotRouting {
+				if w.Code == http.StatusNotFound {
+					var body map[string]string
+					if json.Unmarshal(w.Body.Bytes(), &body) == nil {
+						require.NotEqual(t, "not found", body["error"],
+							"request was not routed to metadata handler")
+					}
+				}
+			}
+		})
+	}
+}

@@ -107,6 +107,14 @@
         cover_image_url: coverImageUrl.trim() || null,
       };
       await api.updateBook(bookId, input);
+      // Mark pending metadata as applied so it doesn't reappear on next visit.
+      if (metadata) {
+        try {
+          await api.rejectMetadata(bookId);
+        } catch {
+          // Best effort — the book is already saved.
+        }
+      }
       routerStore.navigate(`books/${bookId}`);
     } catch (e) {
       formError = e instanceof Error ? e.message : "Failed to save book";
@@ -128,6 +136,24 @@
       const es = api.subscribeToMetadataEvents(bookId);
       eventSource = es;
 
+      // Client-side timeout: if SSE doesn't deliver a terminal event within
+      // 60 seconds, close the connection and poll for results.
+      const sseTimeout = setTimeout(() => {
+        if (fetchingMetadata && eventSource === es) {
+          es.close();
+          eventSource = null;
+          fetchingMetadata = false;
+          progressMessage = null;
+          loadPendingMetadata();
+        }
+      }, 60_000);
+
+      function closeSSE() {
+        clearTimeout(sseTimeout);
+        es.close();
+        eventSource = null;
+      }
+
       es.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -135,21 +161,17 @@
             progressMessage = data.message;
           }
           if (data.event === "complete") {
-            es.close();
-            eventSource = null;
+            closeSSE();
             fetchingMetadata = false;
             progressMessage = null;
-            // Load the new metadata
             loadPendingMetadata();
           } else if (data.event === "error") {
-            es.close();
-            eventSource = null;
+            closeSSE();
             fetchingMetadata = false;
             metadataError = data.message ?? "Metadata fetch failed";
             progressMessage = null;
           } else if (data.event === "not_found") {
-            es.close();
-            eventSource = null;
+            closeSSE();
             fetchingMetadata = false;
             metadataError = data.message ?? "No metadata found for this book";
             progressMessage = null;
@@ -160,8 +182,7 @@
       };
 
       es.onerror = () => {
-        es.close();
-        eventSource = null;
+        closeSSE();
         fetchingMetadata = false;
         // If we got an error before any complete event, try loading metadata
         // in case the job finished before SSE connected

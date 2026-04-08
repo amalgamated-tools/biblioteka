@@ -170,6 +170,11 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	if s.Worker != nil {
 		s.bookHandler.Enqueuer = s.Worker
 
+		metadataHandler := &handlers.MetadataHandler{
+			DB:       s.DB,
+			Enqueuer: s.Worker,
+		}
+
 		// Create a pub/sub subscriber for SSE metadata events.
 		redisURL := os.Getenv("REDIS_URL")
 		if redisURL == "" {
@@ -177,19 +182,17 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		}
 		psClient, err := pubsub.NewClient(redisURL)
 		if err != nil {
-			slog.WarnContext(ctx, "failed to create pubsub client for metadata events",
+			slog.WarnContext(ctx, "failed to create pubsub client for metadata events; SSE streaming disabled",
 				slog.Any(otelkeys.Error, err),
 			)
 		} else {
 			s.shutdownFuncs = append(s.shutdownFuncs, func(_ context.Context) error {
 				return psClient.Close()
 			})
-			s.bookHandler.MetadataHandler = &handlers.MetadataHandler{
-				DB:         s.DB,
-				Enqueuer:   s.Worker,
-				Subscriber: psClient,
-			}
+			metadataHandler.Subscriber = psClient
 		}
+
+		s.bookHandler.MetadataHandler = metadataHandler
 	}
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
