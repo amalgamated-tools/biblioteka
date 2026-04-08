@@ -60,7 +60,7 @@ func (c *Client) Subscribe(ctx context.Context, channel string) (<-chan string, 
 		)
 	}
 
-	ch := make(chan string)
+	ch := make(chan string, 1)
 
 	go func() {
 		defer close(ch)

@@ -60,7 +60,11 @@
     <h1
       class="text-3xl font-display font-bold text-ink-900 dark:text-cream-100 truncate"
     >
-      {book?.title ?? "Book"}
+      {#if book}
+        {book.title}
+      {:else}
+        &nbsp;
+      {/if}
     </h1>
     {#if book}
       <button

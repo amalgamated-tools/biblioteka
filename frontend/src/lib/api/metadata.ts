@@ -1,4 +1,4 @@
-import type { RemoteMetadata } from "../../types";
+import type { BookSummary, RemoteMetadata } from "../../types";
 import { request } from "./core";
 
 export async function fetchMetadata(
@@ -14,8 +14,8 @@ export async function getMetadata(bookId: string): Promise<RemoteMetadata> {
   return request<RemoteMetadata>("GET", `/api/books/${bookId}/metadata`);
 }
 
-export async function applyMetadata(bookId: string): Promise<unknown> {
-  return request<unknown>("POST", `/api/books/${bookId}/metadata/apply`);
+export async function applyMetadata(bookId: string): Promise<BookSummary> {
+  return request<BookSummary>("POST", `/api/books/${bookId}/metadata/apply`);
 }
 
 export async function rejectMetadata(bookId: string): Promise<void> {

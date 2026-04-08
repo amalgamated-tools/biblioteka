@@ -51,6 +51,10 @@
   async function loadBook(id: string) {
     loading = true;
     error = null;
+    metadata = null;
+    metadataError = null;
+    progressMessage = null;
+    fetchingMetadata = false;
     try {
       book = await api.getBook(id);
       populateForm(book);
@@ -58,7 +62,7 @@
       try {
         metadata = await api.getMetadata(id);
       } catch {
-        // No pending metadata, that's fine
+        metadata = null;
       }
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to load book";
@@ -191,6 +195,11 @@
         loadPendingMetadata();
       };
     } catch (e) {
+      // Close the EventSource if it was opened before the error.
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
       fetchingMetadata = false;
       metadataError =
         e instanceof Error ? e.message : "Failed to start metadata fetch";
@@ -202,7 +211,7 @@
     try {
       metadata = await api.getMetadata(bookId);
     } catch {
-      // No metadata found
+      metadata = null;
     }
   }
 
@@ -254,18 +263,21 @@
 
   function applyAll() {
     if (!metadata) return;
-    if (metadata.title) title = metadata.title;
-    if (metadata.description) description = metadata.description;
-    if (metadata.publisher) publisher = metadata.publisher;
-    if (metadata.language) language = metadata.language;
-    if (metadata.publication_date) publicationDate = metadata.publication_date;
-    if (metadata.isbn13) isbn13 = metadata.isbn13;
-    if (metadata.isbn10) isbn10 = metadata.isbn10;
-    if (metadata.asin) asin = metadata.asin;
-    if (metadata.goodreads_id) goodreadsId = metadata.goodreads_id;
-    if (metadata.hardcover_id) hardcoverId = metadata.hardcover_id;
-    if (metadata.google_books_id) googleBooksId = metadata.google_books_id;
-    if (metadata.cover_image_url) coverImageUrl = metadata.cover_image_url;
+    if (metadata.title != null) title = metadata.title;
+    if (metadata.description != null) description = metadata.description;
+    if (metadata.publisher != null) publisher = metadata.publisher;
+    if (metadata.language != null) language = metadata.language;
+    if (metadata.publication_date != null)
+      publicationDate = metadata.publication_date;
+    if (metadata.isbn13 != null) isbn13 = metadata.isbn13;
+    if (metadata.isbn10 != null) isbn10 = metadata.isbn10;
+    if (metadata.asin != null) asin = metadata.asin;
+    if (metadata.goodreads_id != null) goodreadsId = metadata.goodreads_id;
+    if (metadata.hardcover_id != null) hardcoverId = metadata.hardcover_id;
+    if (metadata.google_books_id != null)
+      googleBooksId = metadata.google_books_id;
+    if (metadata.cover_image_url != null)
+      coverImageUrl = metadata.cover_image_url;
   }
 
   async function dismissMetadata() {
