@@ -208,7 +208,7 @@ jobs:
 
           # Count non-stdlib findings (module path is not "stdlib").
           # Fail closed: if jq parsing fails, treat as non-stdlib to avoid masking issues.
-          non_stdlib=$(jq -r 'select(.finding != null) | .finding.trace[0].module' vulncheck.json 2>/dev/null | grep -cv '^stdlib$') || non_stdlib=1
+          non_stdlib=$(jq -r 'select(.finding != null) | .finding.trace[0].module' vulncheck.json 2>/dev/null | (grep -cv '^stdlib$' || echo 0)) || non_stdlib=1
 
           # Render a human-readable summary from the JSON instead of re-running govulncheck.
           summary=$(jq -r '
