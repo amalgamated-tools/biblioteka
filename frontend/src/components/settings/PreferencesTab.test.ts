@@ -77,4 +77,16 @@ describe("PreferencesTab", () => {
 
     expect(themeStore.set).toHaveBeenCalledWith("dark");
   });
+
+  it("announces theme change to screen readers via a live region", async () => {
+    render(PreferencesTab);
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("");
+
+    await fireEvent.click(screen.getByRole("button", { name: "dark" }));
+    await tick();
+
+    expect(status).toHaveTextContent("Theme changed to dark");
+  });
 });
