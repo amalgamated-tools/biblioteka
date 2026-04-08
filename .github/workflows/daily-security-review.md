@@ -1,8 +1,8 @@
 ---
-name: Daily Security Review
-description: Daily security review that scans the entire codebase for vulnerabilities, insecure patterns, and security best-practice violations that automated scanners miss
+name: Weekly Security Review
+description: Weekly security review that scans the entire codebase for vulnerabilities, insecure patterns, and security best-practice violations that automated scanners miss
 on:
-  schedule: daily
+  schedule: weekly
   workflow_dispatch:
 
 permissions:
