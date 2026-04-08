@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { themeStore } from "../../stores/theme.svelte";
+  import { themeStore, type ThemePreference } from "../../stores/theme.svelte";
   import { Palette } from "lucide-svelte";
 
   const themes = ["light", "dark", "auto"] as const;
 
   let themeAnnouncement = $state("");
 
-  function setTheme(t: (typeof themes)[number]) {
+  function setTheme(t: ThemePreference) {
     themeStore.set(t);
     themeAnnouncement = "";
     const label = t === "auto" ? "follow system settings" : t;
@@ -51,7 +51,9 @@
         <p class="text-xs text-ink-500 dark:text-ink-300 mt-2">
           Choose how you prefer biblioteka to appear
         </p>
-        <span role="status" class="sr-only">{themeAnnouncement}</span>
+        <span role="status" aria-live="polite" class="sr-only"
+          >{themeAnnouncement}</span
+        >
       </fieldset>
     </div>
   </div>

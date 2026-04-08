@@ -17,7 +17,9 @@ import { themeStore } from "../../stores/theme.svelte";
 describe("PreferencesTab", () => {
   afterEach(() => {
     cleanup();
+    vi.mocked(themeStore).preference = "auto";
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   it("renders all three theme buttons", () => {
@@ -91,10 +93,10 @@ describe("PreferencesTab", () => {
     await tick();
 
     expect(status).toHaveTextContent("Theme changed to dark");
-    vi.useRealTimers();
   });
 
   it("announces 'follow system settings' when auto theme is selected", async () => {
+    vi.mocked(themeStore).preference = "light";
     vi.useFakeTimers();
     render(PreferencesTab);
 
@@ -106,6 +108,5 @@ describe("PreferencesTab", () => {
     await tick();
 
     expect(status).toHaveTextContent("Theme changed to follow system settings");
-    vi.useRealTimers();
   });
 });
