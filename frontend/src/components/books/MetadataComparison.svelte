@@ -144,9 +144,9 @@
             class="truncate {different
               ? 'text-accent-700 dark:text-accent-300 font-medium'
               : 'text-ink-500 dark:text-ink-400'}"
-            title={displayValue(String(remote))}
+            title={String(remote)}
           >
-            {displayValue(String(remote))}
+            {String(remote)}
           </span>
         </div>
       {/if}

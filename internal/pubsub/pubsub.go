@@ -6,10 +6,15 @@ package pubsub
 import (
 	"context"
 	"log/slog"
+	"sync"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/redis/go-redis/v9"
 )
+
+// metadataChannelPrefix is the Redis pub/sub channel prefix for metadata fetch
+// progress events.
+const metadataChannelPrefix = "biblioteka:metadata:"
 
 // Publisher sends messages to a named channel.
 type Publisher interface {
@@ -62,6 +67,7 @@ func (c *Client) Subscribe(ctx context.Context, channel string) (<-chan string, 
 
 	ch := make(chan string, 1)
 	done := make(chan struct{})
+	var once sync.Once
 
 	go func() {
 		defer close(ch)
@@ -88,13 +94,15 @@ func (c *Client) Subscribe(ctx context.Context, channel string) (<-chan string, 
 	}()
 
 	cancel := func() {
-		close(done)
-		if err := sub.Close(); err != nil {
-			slog.WarnContext(ctx, "failed to close Redis subscription",
-				slog.String(otelkeys.PubSubChannel, channel),
-				slog.Any(otelkeys.Error, err),
-			)
-		}
+		once.Do(func() {
+			close(done)
+			if err := sub.Close(); err != nil {
+				slog.WarnContext(ctx, "failed to close Redis subscription",
+					slog.String(otelkeys.PubSubChannel, channel),
+					slog.Any(otelkeys.Error, err),
+				)
+			}
+		})
 	}
 
 	return ch, cancel
@@ -108,5 +116,5 @@ func (c *Client) Close() error {
 // MetadataChannel returns the pub/sub channel name for metadata fetch progress
 // events for a given book and user.
 func MetadataChannel(bookID, userID string) string {
-	return "biblioteka:metadata:" + bookID + ":" + userID
+	return metadataChannelPrefix + bookID + ":" + userID
 }

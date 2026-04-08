@@ -229,7 +229,10 @@
     }
   }
 
-  function applyField(field: keyof RemoteMetadata) {
+  type EditableMetadataField = keyof RemoteMetadata &
+    keyof typeof currentFormValues;
+
+  function applyField(field: EditableMetadataField) {
     if (!metadata) return;
     const value = metadata[field];
     if (value == null) return;
