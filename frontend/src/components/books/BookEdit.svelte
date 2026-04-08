@@ -129,12 +129,14 @@
     progressMessage = "Starting metadata fetch...";
 
     try {
-      await api.fetchMetadata(bookId);
-
-      // Open SSE connection for progress
+      // Open SSE connection first so no progress events are missed if the
+      // worker processes the job before the subscription is established.
       eventSource?.close();
       const es = api.subscribeToMetadataEvents(bookId);
       eventSource = es;
+
+      // Now trigger the job — the SSE subscription is already active.
+      await api.fetchMetadata(bookId);
 
       // Client-side timeout: if SSE doesn't deliver a terminal event within
       // 60 seconds, close the connection and poll for results.
