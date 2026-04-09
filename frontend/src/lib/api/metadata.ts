@@ -3,8 +3,8 @@ import { request } from "./core";
 
 export async function fetchMetadata(
   bookId: string,
-): Promise<{ task_id: string; status: string }> {
-  return request<{ task_id: string; status: string }>(
+): Promise<{ task_id?: string; status: "enqueued" | "already_exists" | "already_running" }> {
+  return request<{ task_id?: string; status: "enqueued" | "already_exists" | "already_running" }>(
     "POST",
     `/api/books/${bookId}/metadata/fetch`,
   );

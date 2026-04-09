@@ -117,6 +117,10 @@ func toMetadataDTO(gm *db.GoodreadsMetadata) metadataDTO {
 		CreatedAt:       gm.CreatedAt,
 		UpdatedAt:       gm.UpdatedAt,
 	}
+	// Intentionally omitted from the DTO: AuthorGoodreadsID, AuthorImageURL,
+	// GoodreadsWorkID, GoodreadsBookLegacyID, GoodreadsWorkLegacyID, and
+	// GoodreadsAuthorLegacyID. These are internal Goodreads identifiers used
+	// only during enrichment and have no value in the user-facing API.
 }
 
 // getPendingMetadataOrErr fetches the pending metadata for a book and writes
@@ -153,7 +157,7 @@ func (h *MetadataHandler) getPendingMetadata(w http.ResponseWriter, r *http.Requ
 }
 
 type fetchMetadataResponse struct {
-	TaskID string `json:"task_id"`
+	TaskID string `json:"task_id,omitempty"`
 	Status string `json:"status"`
 }
 
@@ -248,17 +252,19 @@ func (h *MetadataHandler) streamEvents(w http.ResponseWriter, r *http.Request, b
 		)
 	}
 
-	userID := auth.UserIDFromContext(r.Context())
-	channel := pubsub.MetadataChannel(bookID, userID)
-
-	msgs, cancel := h.Subscriber.Subscribe(r.Context(), channel)
-	defer cancel()
-
+	// Send SSE response headers immediately so the client sees a 200 before
+	// the Redis subscription round-trip (which may be slow).
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no") // disable nginx buffering
 	flusher.Flush()
+
+	userID := auth.UserIDFromContext(r.Context())
+	channel := pubsub.MetadataChannel(bookID, userID)
+
+	msgs, cancel := h.Subscriber.Subscribe(r.Context(), channel)
+	defer cancel()
 
 	heartbeat := time.NewTicker(sseHeartbeatInterval)
 	defer heartbeat.Stop()

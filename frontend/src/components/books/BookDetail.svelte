@@ -59,12 +59,10 @@
     </div>
     <h1
       class="text-3xl font-display font-bold text-ink-900 dark:text-cream-100 truncate"
+      aria-busy={!book}
+      aria-label={!book ? "Loading book title" : undefined}
     >
-      {#if book}
-        {book.title}
-      {:else}
-        &nbsp;
-      {/if}
+      {book?.title ?? ""}
     </h1>
     {#if book}
       <button

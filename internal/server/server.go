@@ -180,13 +180,13 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.authorHandler = &handlers.AuthorHandler{DB: s.DB}
 	s.seriesHandler = &handlers.SeriesHandler{DB: s.DB}
 	s.bookHandler = &handlers.BookHandler{DB: s.DB}
+
+	// Always wire MetadataHandler so GET/apply/reject endpoints work without
+	// a background worker. Only Enqueuer and Subscriber are conditional.
+	metadataHandler := &handlers.MetadataHandler{DB: s.DB}
 	if s.Worker != nil {
 		s.bookHandler.Enqueuer = s.Worker
-
-		metadataHandler := &handlers.MetadataHandler{
-			DB:       s.DB,
-			Enqueuer: s.Worker,
-		}
+		metadataHandler.Enqueuer = s.Worker
 
 		// Create a pub/sub subscriber for SSE metadata events.
 		redisURL := os.Getenv("REDIS_URL")
@@ -204,9 +204,8 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 			})
 			metadataHandler.Subscriber = psClient
 		}
-
-		s.bookHandler.MetadataHandler = metadataHandler
 	}
+	s.bookHandler.MetadataHandler = metadataHandler
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}

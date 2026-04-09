@@ -252,7 +252,19 @@ func titleSimilar(a, b string) bool {
 	if na == "" || nb == "" {
 		return false
 	}
-	return na == nb || strings.Contains(na, nb) || strings.Contains(nb, na)
+	// Require a minimum length of 4 characters for substring matching to
+	// prevent false positives with very short titles (e.g. "It" matching
+	// "Digital", "Britain", etc.).
+	if na == nb {
+		return true
+	}
+	if len(na) >= 4 && strings.Contains(nb, na) {
+		return true
+	}
+	if len(nb) >= 4 && strings.Contains(na, nb) {
+		return true
+	}
+	return false
 }
 
 // publishProgress is a convenience wrapper that publishes a progress event
