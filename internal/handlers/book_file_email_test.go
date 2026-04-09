@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	netsmtp "net/smtp"
@@ -64,7 +64,10 @@ func TestHandleEmailBookFile_Success(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code, "body: %s", w.Body.String())
 	require.Equal(t, "noreply@example.com", calledFrom)
 	require.Equal(t, "reader@example.com", calledTo)
-	require.Contains(t, string(calledMsg), "test.epub")
+	// Verify the message contains the file name and MIME type.
+	msgStr := string(calledMsg)
+	require.Contains(t, msgStr, "test.epub", "message should include file name")
+	require.Contains(t, msgStr, "application/epub+zip", "message should include MIME type")
 }
 
 func TestHandleEmailBookFile_MethodNotAllowed(t *testing.T) {
@@ -172,7 +175,7 @@ func TestHandleEmailBookFile_SMTPNotConfigured(t *testing.T) {
 func TestHandleEmailBookFile_SendFailure(t *testing.T) {
 	h, userID, bf, _ := setupEmailHandler(t)
 	h.SendMailFunc = func(_ context.Context, _ string, _ netsmtp.Auth, _, _ string, _ []byte, _ string) error {
-		return fmt.Errorf("connection refused")
+		return errors.New("connection refused")
 	}
 
 	r := httptest.NewRequest(http.MethodPost, "/api/book-files/"+bf.ID+"/email", bytes.NewBufferString(`{"to":"reader@example.com"}`))
@@ -210,4 +213,32 @@ func TestHandleEmailBookFile_InvalidControlCharsInTo(t *testing.T) {
 	h.HandleBookFile(w, r)
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleEmailBookFile_FileNotOnDisk(t *testing.T) {
+	h, userID := setupBookFileHandler(t)
+
+	// Configure SMTP.
+	require.NoError(t, h.DB.SetSetting(t.Context(), "smtp_host", "smtp.example.com"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), "smtp_port", "587"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), "smtp_from", "noreply@example.com"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), "smtp_tls", "starttls"))
+
+	h.SendMailFunc = func(_ context.Context, _ string, _ netsmtp.Auth, _, _ string, _ []byte, _ string) error {
+		return nil
+	}
+
+	// Create a book file record with a path that does not exist on disk.
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Ghost Book"})
+	require.NoError(t, err)
+	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "ghost.epub", 0, nil, "/nonexistent/path/ghost.epub")
+	require.NoError(t, err)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/book-files/"+bf.ID+"/email", bytes.NewBufferString(`{"to":"reader@example.com"}`))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookFile(w, r)
+
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }

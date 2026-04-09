@@ -38,6 +38,7 @@ const fakeBook: Book = {
       file_size: 1024,
       file_hash: null,
       file_path: "/books/hobbit.epub",
+      download_count: 0,
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-01T00:00:00Z",
     },
@@ -183,7 +184,9 @@ describe("EmailBookModal", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() =>
-      expect(screen.getByRole("alert")).toHaveTextContent("failed to send email"),
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "failed to send email",
+      ),
     );
   });
 });

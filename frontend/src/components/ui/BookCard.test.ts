@@ -4,11 +4,6 @@ import { userEvent } from "@testing-library/user-event";
 import type { BookSummary } from "../../types";
 
 vi.mock("lucide-svelte", () => ({ BookOpen: () => {}, Mail: () => {} }));
-vi.mock("../../stores/router.svelte", () => ({
-  routerStore: {
-    navigate: vi.fn(),
-  },
-}));
 vi.mock("./EmailBookModal.svelte", () => ({ default: () => {} }));
 
 import BookCard from "./BookCard.svelte";
@@ -107,6 +102,5 @@ describe("BookCard", () => {
     // The mock modal renders nothing visible, but we verify it was triggered
     // by checking the button is still present (not replaced).
     expect(btn).toBeInTheDocument();
-  });
   });
 });
