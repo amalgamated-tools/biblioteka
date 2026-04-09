@@ -64,6 +64,12 @@ func (c *Client) Subscribe(ctx context.Context, channel string) (<-chan string, 
 			slog.String(otelkeys.PubSubChannel, channel),
 			slog.Any(otelkeys.Error, err),
 		)
+		// Subscription was never confirmed — close and return a closed channel
+		// so the SSE handler terminates immediately instead of stalling.
+		_ = sub.Close()
+		closed := make(chan string)
+		close(closed)
+		return closed, func() {}
 	}
 
 	ch := make(chan string, 1)

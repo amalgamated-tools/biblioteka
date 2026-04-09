@@ -1,6 +1,7 @@
 <script lang="ts">
-  import type { Book, BookInput, RemoteMetadata } from "../../types";
+  import type { Book, BookInput, RemoteMetadata, MetadataProgressEvent } from "../../types";
   import { routerStore } from "../../stores/router.svelte";
+  import { ApiError } from "../../lib/api/core";
   import * as api from "../../lib/api";
   import { ArrowLeft, BookOpen, Search } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
@@ -58,11 +59,19 @@
     try {
       book = await api.getBook(id);
       populateForm(book);
-      // Check for existing pending metadata
+      // Check for existing pending metadata (404 means none exists)
       try {
         metadata = await api.getMetadata(id);
-      } catch {
+      } catch (metaErr) {
         metadata = null;
+        // A 404 is expected when no pending metadata exists. Surface other
+        // errors so the user knows something went wrong.
+        if (!(metaErr instanceof ApiError && metaErr.status === 404)) {
+          metadataError =
+            metaErr instanceof Error
+              ? metaErr.message
+              : "Failed to check for pending metadata";
+        }
       }
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to load book";
@@ -132,6 +141,19 @@
     metadataError = null;
     progressMessage = "Starting metadata fetch...";
 
+    let sseTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    function closeSSE() {
+      if (sseTimeout != null) {
+        clearTimeout(sseTimeout);
+        sseTimeout = null;
+      }
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+    }
+
     try {
       // Open SSE connection first so no progress events are missed if the
       // worker processes the job before the subscription is established.
@@ -141,27 +163,20 @@
 
       // Client-side timeout: if SSE doesn't deliver a terminal event within
       // 60 seconds, close the connection and poll for results.
-      const sseTimeout = setTimeout(() => {
+      sseTimeout = setTimeout(() => {
         if (fetchingMetadata && eventSource === es) {
-          es.close();
-          eventSource = null;
+          closeSSE();
           fetchingMetadata = false;
           progressMessage = null;
           loadPendingMetadata();
         }
       }, 60_000);
 
-      function closeSSE() {
-        clearTimeout(sseTimeout);
-        es.close();
-        eventSource = null;
-      }
-
       // Register handlers immediately so no events are missed during the
       // fetch request that follows.
       es.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
+          const data: MetadataProgressEvent = JSON.parse(event.data);
           if (data.message) {
             progressMessage = data.message;
           }
@@ -210,11 +225,7 @@
         return;
       }
     } catch (e) {
-      // Close the EventSource if it was opened before the error.
-      if (eventSource) {
-        eventSource.close();
-        eventSource = null;
-      }
+      closeSSE();
       fetchingMetadata = false;
       metadataError =
         e instanceof Error ? e.message : "Failed to start metadata fetch";
@@ -229,6 +240,21 @@
       metadata = null;
     }
   }
+
+  let currentFormValues = $derived({
+    title,
+    description: description || null,
+    publisher: publisher || null,
+    language: language || null,
+    publication_date: publicationDate || null,
+    isbn13: isbn13 || null,
+    isbn10: isbn10 || null,
+    asin: asin || null,
+    goodreads_id: goodreadsId || null,
+    hardcover_id: hardcoverId || null,
+    google_books_id: googleBooksId || null,
+    cover_image_url: coverImageUrl || null,
+  });
 
   type EditableMetadataField = keyof RemoteMetadata &
     keyof typeof currentFormValues;
@@ -308,21 +334,6 @@
         e instanceof Error ? e.message : "Failed to dismiss metadata";
     }
   }
-
-  let currentFormValues = $derived({
-    title,
-    description: description || null,
-    publisher: publisher || null,
-    language: language || null,
-    publication_date: publicationDate || null,
-    isbn13: isbn13 || null,
-    isbn10: isbn10 || null,
-    asin: asin || null,
-    goodreads_id: goodreadsId || null,
-    hardcover_id: hardcoverId || null,
-    google_books_id: googleBooksId || null,
-    cover_image_url: coverImageUrl || null,
-  });
 </script>
 
 <div class="animate-fade-in">
