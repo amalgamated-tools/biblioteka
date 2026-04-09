@@ -5,6 +5,7 @@ package pubsub
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 
@@ -39,7 +40,7 @@ type Client struct {
 func NewClient(redisURL string) (*Client, error) {
 	opts, err := redis.ParseURL(redisURL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse redis URL: %w", err)
 	}
 	return &Client{rdb: redis.NewClient(opts)}, nil
 }
