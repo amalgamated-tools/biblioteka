@@ -89,9 +89,19 @@ type GoodreadsMetadataInput struct {
 	GoodreadsAuthorLegacyID *int64
 }
 
-// TODO(#1099): wire up Goodreads metadata API — CreateGoodreadsMetadata, GetGoodreadsMetadata,
-// ListGoodreadsMetadataByUser, ListGoodreadsMetadataByStatus, UpdateGoodreadsMetadataStatus,
-// and DeleteGoodreadsMetadata have no HTTP handlers or routes yet.
+// GetPendingGoodreadsMetadataByBook returns the most recent pending
+// goodreads_metadata row for the given book and user, or sql.ErrNoRows if none
+// exists.
+func (d *DB) GetPendingGoodreadsMetadataByBook(ctx context.Context, userID, bookID string) (*GoodreadsMetadata, error) {
+	slog.DebugContext(ctx, "db: fetching pending goodreads metadata by book",
+		slog.String(otelkeys.BookID, bookID),
+		slog.String(otelkeys.UserID, userID),
+	)
+	return scanGoodreadsMetadata(d.QueryRowContext(ctx,
+		`SELECT `+goodreadsMetadataColumns+` FROM goodreads_metadata WHERE user_id = $1 AND book_id = $2 AND status = $3 ORDER BY created_at DESC, id DESC LIMIT 1`,
+		userID, bookID, GoodreadsMetadataStatusPending,
+	))
+}
 
 // CreateGoodreadsMetadata inserts a new goodreads_metadata row and returns it.
 func (d *DB) CreateGoodreadsMetadata(ctx context.Context, userID string, input GoodreadsMetadataInput) (*GoodreadsMetadata, error) {
