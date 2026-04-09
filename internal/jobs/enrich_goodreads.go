@@ -11,6 +11,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/goodreads"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/ptrutil"
 	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
 )
 
@@ -132,7 +133,7 @@ func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSea
 // if no match is found.
 func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, publisher pubsub.Publisher, channel string, book *db.Book) (*goodreads.BookResult, string) {
 	// Strategy 1: ISBN lookup (highest confidence)
-	if isbn := derefStr(book.ISBN13); isbn != "" {
+	if isbn := ptrutil.Deref(book.ISBN13); isbn != "" {
 		publishProgress(ctx, publisher, channel, "searching_isbn13", "Searching Goodreads by ISBN-13...")
 		results, err := grClient.SearchByISBN(ctx, isbn)
 		if err == nil && len(results) > 0 {
@@ -145,7 +146,7 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, publisher 
 			)
 		}
 	}
-	if isbn := derefStr(book.ISBN10); isbn != "" {
+	if isbn := ptrutil.Deref(book.ISBN10); isbn != "" {
 		publishProgress(ctx, publisher, channel, "searching_isbn10", "Searching Goodreads by ISBN-10...")
 		results, err := grClient.SearchByISBN(ctx, isbn)
 		if err == nil && len(results) > 0 {
@@ -160,7 +161,7 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, publisher 
 	}
 
 	// Strategy 2: ASIN lookup
-	if asin := derefStr(book.ASIN); asin != "" {
+	if asin := ptrutil.Deref(book.ASIN); asin != "" {
 		publishProgress(ctx, publisher, channel, "searching_asin", "Searching Goodreads by ASIN...")
 		result, err := grClient.GetBookByASIN(ctx, asin)
 		if err == nil && result != nil {
@@ -175,7 +176,7 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, publisher 
 	}
 
 	// Strategy 3: Goodreads ID lookup
-	if grID := derefStr(book.GoodreadsID); grID != "" {
+	if grID := ptrutil.Deref(book.GoodreadsID); grID != "" {
 		publishProgress(ctx, publisher, channel, "searching_goodreads_id", "Searching Goodreads by ID...")
 		result, err := grClient.GetBookByID(ctx, grID)
 		if err == nil && result != nil {
@@ -224,21 +225,21 @@ func lookupGoodreads(ctx context.Context, grClient GoodreadsSearcher, publisher 
 // GoodreadsMetadata record and persists it with "pending" status.
 func createGoodreadsMetadataFromResult(ctx context.Context, database *db.DB, userID, bookID string, result *goodreads.BookResult) (*db.GoodreadsMetadata, error) {
 	return database.CreateGoodreadsMetadata(ctx, userID, db.GoodreadsMetadataInput{
-		BookID:                  strPtr(bookID),
-		Title:                   strPtr(result.BookTitle),
-		ASIN:                    strPtr(result.BookASIN),
-		ISBN10:                  strPtr(result.BookISBN),
-		ISBN13:                  strPtr(result.BookISBN13),
-		GoodreadsID:             strPtr(result.BookID),
-		Language:                strPtr(result.BookLanguage),
-		CoverImageURL:           strPtr(result.BookImageURL),
-		AuthorName:              strPtr(result.AuthorName),
-		AuthorGoodreadsID:       strPtr(result.AuthorID),
-		AuthorImageURL:          strPtr(result.AuthorProfileImageURL),
-		GoodreadsWorkID:         strPtr(result.WorkID),
-		GoodreadsBookLegacyID:   int64Ptr(result.BookLegacyID),
-		GoodreadsWorkLegacyID:   int64Ptr(result.WorkLegacyID),
-		GoodreadsAuthorLegacyID: int64Ptr(result.AuthorLegacyID),
+		BookID:                  ptrutil.NilIfZero(bookID),
+		Title:                   ptrutil.NilIfZero(result.BookTitle),
+		ASIN:                    ptrutil.NilIfZero(result.BookASIN),
+		ISBN10:                  ptrutil.NilIfZero(result.BookISBN),
+		ISBN13:                  ptrutil.NilIfZero(result.BookISBN13),
+		GoodreadsID:             ptrutil.NilIfZero(result.BookID),
+		Language:                ptrutil.NilIfZero(result.BookLanguage),
+		CoverImageURL:           ptrutil.NilIfZero(result.BookImageURL),
+		AuthorName:              ptrutil.NilIfZero(result.AuthorName),
+		AuthorGoodreadsID:       ptrutil.NilIfZero(result.AuthorID),
+		AuthorImageURL:          ptrutil.NilIfZero(result.AuthorProfileImageURL),
+		GoodreadsWorkID:         ptrutil.NilIfZero(result.WorkID),
+		GoodreadsBookLegacyID:   ptrutil.NilIfZero(result.BookLegacyID),
+		GoodreadsWorkLegacyID:   ptrutil.NilIfZero(result.WorkLegacyID),
+		GoodreadsAuthorLegacyID: ptrutil.NilIfZero(result.AuthorLegacyID),
 	})
 }
 
