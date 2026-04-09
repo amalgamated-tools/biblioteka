@@ -1,5 +1,10 @@
 <script lang="ts">
-  import type { Book, BookInput, RemoteMetadata, MetadataProgressEvent } from "../../types";
+  import type {
+    Book,
+    BookInput,
+    RemoteMetadata,
+    MetadataProgressEvent,
+  } from "../../types";
   import { routerStore } from "../../stores/router.svelte";
   import { ApiError } from "../../lib/api/core";
   import * as api from "../../lib/api";
