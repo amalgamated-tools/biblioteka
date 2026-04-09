@@ -5,12 +5,10 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/ptrutil"
 
 	"github.com/stretchr/testify/require"
 )
-
-func strPtr(s string) *string   { return &s }
-func f64Ptr(f float64) *float64 { return &f }
 
 func TestFormatForFileType(t *testing.T) {
 	cases := []struct {
@@ -101,7 +99,7 @@ func TestBookMetadata_Language_Default(t *testing.T) {
 }
 
 func TestBookMetadata_Language_Set(t *testing.T) {
-	book := &db.Book{ID: "bk1", Title: "French", Language: strPtr("fr")}
+	book := &db.Book{ID: "bk1", Title: "French", Language: ptrutil.Ptr("fr")}
 	meta := BookMetadata(book, nil, nil, nil)
 	require.Equal(t, "fr", meta.Language)
 }
