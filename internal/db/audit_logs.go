@@ -37,6 +37,7 @@ const (
 	AuditActionSMTPConfigUpdated       = "smtp.config_updated"
 	AuditActionUserProfileUpdated      = "user.profile_updated"
 	AuditActionUserSignedUp            = "user.signed_up"
+	AuditActionWatchFolderUpdated      = "watch_folder.config_updated"
 )
 
 // AuditLog represents a single audit log entry.

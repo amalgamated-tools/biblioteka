@@ -11,6 +11,7 @@
     Send,
     KeyRound,
     BookOpen,
+    FolderSearch,
   } from "lucide-svelte";
   import AccountTab from "./settings/AccountTab.svelte";
   import OidcTab from "./settings/OidcTab.svelte";
@@ -19,6 +20,7 @@
   import PreferencesTab from "./settings/PreferencesTab.svelte";
   import APIKeysTab from "./settings/APIKeysTab.svelte";
   import KoboTab from "./settings/KoboTab.svelte";
+  import WatchFolderTab from "./settings/WatchFolderTab.svelte";
 
   type SettingsTab =
     | "account"
@@ -27,7 +29,8 @@
     | "smtp"
     | "users"
     | "api-keys"
-    | "kobo";
+    | "kobo"
+    | "watch-folder";
 
   type TabDef = { key: SettingsTab; label: string; icon: typeof Mail };
 
@@ -41,6 +44,7 @@
   const adminTabs: TabDef[] = [
     { key: "oidc", label: "OIDC / SSO", icon: Shield },
     { key: "smtp", label: "Email / SMTP", icon: Send },
+    { key: "watch-folder", label: "Watch Folder", icon: FolderSearch },
     { key: "users", label: "Users", icon: Users },
   ];
 
@@ -171,6 +175,10 @@
 
       {#if activeTab === "smtp" && isAdmin}
         <SmtpTab initialSmtpConfigured={smtpConfigured} />
+      {/if}
+
+      {#if activeTab === "watch-folder" && isAdmin}
+        <WatchFolderTab />
       {/if}
 
       {#if activeTab === "users" && isAdmin}
