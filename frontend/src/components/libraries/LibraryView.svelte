@@ -24,6 +24,12 @@
   function handleBooksFound() {
     libraryStore.clearScanning(libraryId);
   }
+
+  $effect(() => {
+    if (library) {
+      routerStore.setPageTitle(`${library.name} – biblioteka`);
+    }
+  });
 </script>
 
 <div class="animate-fade-in">
