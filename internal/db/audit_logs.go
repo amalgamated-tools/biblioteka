@@ -20,6 +20,7 @@ const (
 	AuditActionBookDeleted             = "book.deleted"
 	AuditActionBookFileCreated         = "book_file.created"
 	AuditActionBookFileDeleted         = "book_file.deleted"
+	AuditActionBookFileEmailed         = "book_file.emailed"
 	AuditActionBookUpdated             = "book.updated"
 	AuditActionKoboTokenCreated        = "kobo_token.created"
 	AuditActionKoboTokenDeleted        = "kobo_token.deleted"

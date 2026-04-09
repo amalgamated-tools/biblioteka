@@ -36,6 +36,7 @@ vi.mock("lucide-svelte", () => ({
   List: () => {},
   ChevronLeft: () => {},
   ChevronRight: () => {},
+  Mail: () => {},
 }));
 
 import LibraryView from "./LibraryView.svelte";
