@@ -117,13 +117,8 @@ func (h *AuditLogHandler) HandleAuditLogs(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	dtos := make([]auditLogDTO, 0, len(entries))
-	for i := range entries {
-		dtos = append(dtos, toAuditLogDTO(&entries[i]))
-	}
-
 	writeJSON(r.Context(), w, http.StatusOK, auditLogListDTO{
-		Entries: dtos,
+		Entries: mapSlice(entries, toAuditLogDTO),
 		Total:   total,
 		Limit:   limit,
 		Offset:  offset,
