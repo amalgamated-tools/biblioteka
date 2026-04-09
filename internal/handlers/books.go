@@ -9,8 +9,9 @@ import (
 
 // BookHandler holds dependencies for book endpoints.
 type BookHandler struct {
-	DB       *db.DB
-	Enqueuer jobs.Enqueuer
+	DB              *db.DB
+	Enqueuer        jobs.Enqueuer
+	MetadataHandler *MetadataHandler
 }
 
 // HandleBooks handles GET /api/books and POST /api/books.
@@ -64,6 +65,17 @@ func (h *BookHandler) HandleBookRoutes(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
 		}
 	default:
+		// Metadata is a nested sub-resource with its own action paths
+		// (e.g. metadata/fetch, metadata/events). extractPathSegments returns
+		// "metadata/fetch" in sub, so we match on prefix rather than exact string.
+		if sub == "metadata" || strings.HasPrefix(sub, "metadata/") {
+			if h.MetadataHandler != nil {
+				h.MetadataHandler.HandleBookMetadata(w, r, id)
+			} else {
+				writeError(r.Context(), w, http.StatusNotFound, "not found")
+			}
+			return
+		}
 		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}
 }
