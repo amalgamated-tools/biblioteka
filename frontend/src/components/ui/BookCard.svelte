@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { BookSummary } from "../../types";
+  import { routerStore } from "../../stores/router.svelte";
   import { BookOpen } from "lucide-svelte";
 
   interface Props {
@@ -7,10 +8,21 @@
   }
 
   let { book }: Props = $props();
+
+  function handleClick(e: MouseEvent) {
+    // Preserve native link semantics for modified clicks (open in new tab, etc.)
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+      return;
+    }
+    e.preventDefault();
+    routerStore.navigate(`books/${book.id}`);
+  }
 </script>
 
-<div
-  class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden hover:shadow-md transition-shadow"
+<a
+  href={`#books/${book.id}`}
+  class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden hover:shadow-md transition-shadow cursor-pointer block no-underline"
+  onclick={handleClick}
 >
   {#if book.cover_image_url}
     <div class="aspect-[2/3] bg-ink-100 dark:bg-ink-800">
@@ -44,4 +56,4 @@
       </p>
     {/if}
   </div>
-</div>
+</a>

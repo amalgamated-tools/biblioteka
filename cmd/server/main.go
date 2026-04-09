@@ -13,6 +13,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
 	"github.com/amalgamated-tools/biblioteka/internal/server"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 	"golang.org/x/sync/errgroup"
@@ -105,7 +106,20 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		w.Register(cancelCtx, jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
 
 		grClient := goodreads.NewClient()
-		w.Register(cancelCtx, jobs.JobEnrichGoodreads, jobs.NewEnrichGoodreadsHandler(database, grClient))
+
+		// Create a pub/sub publisher for metadata enrichment progress events.
+		var publisher pubsub.Publisher
+		psClient, psErr := pubsub.NewClient(redisURL)
+		if psErr != nil {
+			slog.WarnContext(cancelCtx, "failed to create pubsub publisher; metadata progress events disabled",
+				slog.Any(otelkeys.Error, psErr),
+			)
+		} else {
+			publisher = psClient
+			defer func() { _ = psClient.Close() }()
+		}
+
+		w.Register(cancelCtx, jobs.JobEnrichGoodreads, jobs.NewEnrichGoodreadsHandler(database, grClient, publisher))
 
 		if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
 			slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any(otelkeys.Error, err))

@@ -22,6 +22,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/handlers/middleware"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 
 	_ "github.com/amalgamated-tools/biblioteka/docs/swagger"
@@ -179,9 +180,32 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.authorHandler = &handlers.AuthorHandler{DB: s.DB}
 	s.seriesHandler = &handlers.SeriesHandler{DB: s.DB}
 	s.bookHandler = &handlers.BookHandler{DB: s.DB}
+
+	// Always wire MetadataHandler so GET/apply/reject endpoints work without
+	// a background worker. Only Enqueuer and Subscriber are conditional.
+	metadataHandler := &handlers.MetadataHandler{DB: s.DB}
 	if s.Worker != nil {
 		s.bookHandler.Enqueuer = s.Worker
+		metadataHandler.Enqueuer = s.Worker
+
+		// Create a pub/sub subscriber for SSE metadata events.
+		redisURL := os.Getenv("REDIS_URL")
+		if redisURL == "" {
+			redisURL = "redis://localhost:6379"
+		}
+		psClient, err := pubsub.NewClient(redisURL)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to create pubsub client for metadata events; SSE streaming disabled",
+				slog.Any(otelkeys.Error, err),
+			)
+		} else {
+			s.shutdownFuncs = append(s.shutdownFuncs, func(_ context.Context) error {
+				return psClient.Close()
+			})
+			metadataHandler.Subscriber = psClient
+		}
 	}
+	s.bookHandler.MetadataHandler = metadataHandler
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
