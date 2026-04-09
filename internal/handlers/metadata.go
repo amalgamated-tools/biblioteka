@@ -252,19 +252,23 @@ func (h *MetadataHandler) streamEvents(w http.ResponseWriter, r *http.Request, b
 		)
 	}
 
-	// Send SSE response headers immediately so the client sees a 200 before
-	// the Redis subscription round-trip (which may be slow).
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("X-Accel-Buffering", "no") // disable nginx buffering
-	flusher.Flush()
-
+	// Subscribe to Redis pub/sub BEFORE flushing headers. The client opens
+	// this SSE connection and then immediately POSTs /metadata/fetch, so the
+	// subscription must be confirmed before the client can trigger the job —
+	// otherwise events published between Flush() and Subscribe() are lost.
 	userID := auth.UserIDFromContext(r.Context())
 	channel := pubsub.MetadataChannel(bookID, userID)
 
 	msgs, cancel := h.Subscriber.Subscribe(r.Context(), channel)
 	defer cancel()
+
+	// Now that the subscription is active, send SSE headers so the client
+	// knows the stream is ready and can proceed to trigger the fetch job.
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no") // disable nginx buffering
+	flusher.Flush()
 
 	heartbeat := time.NewTicker(sseHeartbeatInterval)
 	defer heartbeat.Stop()
