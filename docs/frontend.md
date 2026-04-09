@@ -69,7 +69,7 @@ frontend/
       clipboard.test.ts       Clipboard helper unit tests
       copyTimeout.svelte.ts   `CopyTimeoutState` class — auto-resetting copied-ID feedback state
       copyTimeout.test.ts     Unit tests for `CopyTimeoutState`
-      timeoutState.svelte.ts  `TimeoutState<T>` abstract base class — shared timer infrastructure for `AutoDismissTimer` and `CopyTimeoutState`
+      timeoutState.svelte.ts  `TimeoutState<T>` base class — shared timer infrastructure for `AutoDismissTimer` and `CopyTimeoutState`
       timeoutState.test.ts    Unit tests for `TimeoutState<T>`
       tokenList.svelte.ts     `TokenListState<T>` class — load/delete lifecycle for token-like lists
       tokenList.test.ts       Unit tests for `TokenListState`
