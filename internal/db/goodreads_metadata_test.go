@@ -247,3 +247,81 @@ func TestCreateGoodreadsMetadata_WithBookID(t *testing.T) {
 	require.NotNil(t, gm.BookID)
 	require.Equal(t, book.ID, *gm.BookID)
 }
+
+func TestGetPendingGoodreadsMetadataByBook(t *testing.T) {
+	d := newTestDB(t)
+	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "hash")
+	require.NoError(t, err)
+
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Test Book"})
+	require.NoError(t, err)
+
+	// Create a pending metadata record for this book
+	title := "Remote Title"
+	gm, err := d.CreateGoodreadsMetadata(t.Context(), user.ID,
+		GoodreadsMetadataInput{BookID: &book.ID, Title: &title},
+	)
+	require.NoError(t, err)
+
+	found, err := d.GetPendingGoodreadsMetadataByBook(t.Context(), user.ID, book.ID)
+	require.NoError(t, err)
+	require.Equal(t, gm.ID, found.ID)
+	require.Equal(t, GoodreadsMetadataStatusPending, found.Status)
+}
+
+func TestGetPendingGoodreadsMetadataByBook_NotFound(t *testing.T) {
+	d := newTestDB(t)
+	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "hash")
+	require.NoError(t, err)
+
+	_, err = d.GetPendingGoodreadsMetadataByBook(t.Context(), user.ID, "nonexistent")
+	require.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestGetPendingGoodreadsMetadataByBook_IgnoresApplied(t *testing.T) {
+	d := newTestDB(t)
+	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "hash")
+	require.NoError(t, err)
+
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Test Book"})
+	require.NoError(t, err)
+
+	title := "Applied Title"
+	gm, err := d.CreateGoodreadsMetadata(t.Context(), user.ID,
+		GoodreadsMetadataInput{BookID: &book.ID, Title: &title},
+	)
+	require.NoError(t, err)
+
+	_, err = d.UpdateGoodreadsMetadataStatus(t.Context(), user.ID, gm.ID, GoodreadsMetadataStatusApplied)
+	require.NoError(t, err)
+
+	_, err = d.GetPendingGoodreadsMetadataByBook(t.Context(), user.ID, book.ID)
+	require.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestGetPendingGoodreadsMetadataByBook_MultiplePending(t *testing.T) {
+	d := newTestDB(t)
+	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "hash")
+	require.NoError(t, err)
+
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Test Book"})
+	require.NoError(t, err)
+
+	title1 := "First"
+	gm1, err := d.CreateGoodreadsMetadata(t.Context(), user.ID,
+		GoodreadsMetadataInput{BookID: &book.ID, Title: &title1},
+	)
+	require.NoError(t, err)
+
+	title2 := "Second"
+	gm2, err := d.CreateGoodreadsMetadata(t.Context(), user.ID,
+		GoodreadsMetadataInput{BookID: &book.ID, Title: &title2},
+	)
+	require.NoError(t, err)
+
+	// Should return one of the pending records (both are valid).
+	found, err := d.GetPendingGoodreadsMetadataByBook(t.Context(), user.ID, book.ID)
+	require.NoError(t, err)
+	require.Equal(t, GoodreadsMetadataStatusPending, found.Status)
+	require.Contains(t, []string{gm1.ID, gm2.ID}, found.ID)
+}

@@ -266,6 +266,38 @@ export interface KosyncCredentialInput {
   password: string;
 }
 
+// Remote Metadata
+
+export interface RemoteMetadata {
+  id: string;
+  book_id: string | null;
+  status: string;
+  source: string;
+  title: string | null;
+  description: string | null;
+  asin: string | null;
+  isbn10: string | null;
+  isbn13: string | null;
+  goodreads_id: string | null;
+  hardcover_id: string | null;
+  google_books_id: string | null;
+  publication_date: string | null;
+  publisher: string | null;
+  language: string | null;
+  cover_image_url: string | null;
+  author_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MetadataProgressEvent {
+  event: "progress" | "complete" | "not_found" | "error";
+  source?: string;
+  step?: string;
+  message?: string;
+  metadata_id?: string;
+}
+
 // Audit Logs
 
 export interface AuditLog {
