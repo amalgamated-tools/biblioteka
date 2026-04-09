@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { BookSummary } from "../../types";
-  import { routerStore } from "../../stores/router.svelte";
   import { BookOpen, Mail } from "lucide-svelte";
   import EmailBookModal from "./EmailBookModal.svelte";
 
@@ -10,20 +9,11 @@
 
   let { book }: Props = $props();
 
-  function handleClick(e: MouseEvent) {
-    // Preserve native link semantics for modified clicks (open in new tab, etc.)
-    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-      return;
-    }
-    e.preventDefault();
-    routerStore.navigate(`books/${book.id}`);
-  }
-
   let showEmailModal = $state(false);
 </script>
 
 <div
-  class="relative bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden hover:shadow-md transition-shadow group"
+  class="relative bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden hover:shadow-md transition-shadow"
 >
   {#if book.cover_image_url}
     <div class="aspect-[2/3] bg-ink-100 dark:bg-ink-800">
@@ -58,12 +48,12 @@
     {/if}
   </div>
 
-  <!-- Email button: visible on hover -->
+  <!-- Email button: always visible, accent on hover/focus -->
   <button
     onclick={() => (showEmailModal = true)}
     aria-label="Email {book.title}"
     title="Email this book"
-    class="absolute top-2 right-2 p-1.5 rounded-lg bg-white/80 dark:bg-ink-900/80 backdrop-blur-sm text-ink-500 hover:text-accent-600 dark:hover:text-accent-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shadow-sm border border-ink-100 dark:border-ink-700"
+    class="absolute top-2 right-2 p-1.5 rounded-lg bg-white/80 dark:bg-ink-900/80 backdrop-blur-sm text-ink-400 hover:text-accent-600 dark:hover:text-accent-400 focus:text-accent-600 dark:focus:text-accent-400 transition-colors shadow-sm border border-ink-100 dark:border-ink-700"
   >
     <Mail class="w-4 h-4" aria-hidden="true" />
   </button>

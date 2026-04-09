@@ -58,8 +58,7 @@
       const result = await api.emailBookFile(selectedFileId, toAddress.trim());
       successMessage = result.message;
     } catch (err) {
-      sendError =
-        err instanceof Error ? err.message : "Failed to send email";
+      sendError = err instanceof Error ? err.message : "Failed to send email";
     } finally {
       sending = false;
     }
@@ -187,10 +186,7 @@
             <Button variant="secondary" type="button" onclick={onClose}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={sending || !toAddress.trim()}
-            >
+            <Button type="submit" disabled={sending || !toAddress.trim()}>
               {sending ? "Sending…" : "Send"}
             </Button>
           </div>
