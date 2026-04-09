@@ -10,6 +10,7 @@
   } from "lucide-svelte";
   import AlertBanner from "./AlertBanner.svelte";
   import BookCard from "./BookCard.svelte";
+  import { routerStore } from "../../stores/router.svelte";
 
   interface Props {
     fetchBooks: (limit: number, offset: number) => Promise<PaginatedBooks>;
@@ -287,7 +288,16 @@
         <tbody>
           {#each books as book (book.id)}
             <tr
-              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors"
+              onclick={() => routerStore.navigate(`books/${book.id}`)}
+              role="link"
+              tabindex="0"
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  routerStore.navigate(`books/${book.id}`);
+                }
+              }}
+              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">

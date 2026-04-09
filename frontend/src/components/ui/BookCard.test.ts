@@ -3,6 +3,11 @@ import { cleanup, render, screen } from "@testing-library/svelte";
 import type { BookSummary } from "../../types";
 
 vi.mock("lucide-svelte", () => ({ BookOpen: () => {} }));
+vi.mock("../../stores/router.svelte", () => ({
+  routerStore: {
+    navigate: vi.fn(),
+  },
+}));
 
 import BookCard from "./BookCard.svelte";
 
@@ -76,5 +81,11 @@ describe("BookCard", () => {
   it("does not render a publisher element when publisher is null", () => {
     render(BookCard, { book: baseBook });
     expect(screen.queryByText("Allen & Unwin")).toBeNull();
+  });
+
+  it("renders as a link to the book detail view", () => {
+    render(BookCard, { book: baseBook });
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", "#books/b1");
   });
 });
