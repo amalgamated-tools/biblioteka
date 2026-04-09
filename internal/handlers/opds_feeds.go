@@ -168,35 +168,23 @@ func (h *OPDSHandler) writeNamedEntityNavFeed(
 	writeOPDSFeed(r, w, opdspkg.NavContentType, feed)
 }
 
+func toNavEntity(id, name string, updatedAt db.Timestamp) opdspkg.NavEntity {
+	return opdspkg.NavEntity{ID: id, Name: name, Updated: updatedAt.Format(time.RFC3339)}
+}
+
 func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
 	h.writeNamedEntityNavFeed(w, r, "authors", "Authors",
 		adaptNavEntities(h.DB.ListAuthorsPaginated, func(a db.Author) opdspkg.NavEntity {
-			return opdspkg.NavEntity{ID: a.ID, Name: a.Name, Updated: a.UpdatedAt.Format(time.RFC3339)}
+			return toNavEntity(a.ID, a.Name, a.UpdatedAt)
 		}),
-	)
-}
-
-func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
-	writeEntityBooksFeed(h, w, r, authorID,
-		h.DB.GetAuthor, slog.String(otelkeys.AuthorID, authorID), "author",
-		"/authors/", func(a *db.Author) string { return "Books by " + a.Name },
-		h.DB.ListBooksByAuthorPaginated,
 	)
 }
 
 func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
 	h.writeNamedEntityNavFeed(w, r, "series", "Series",
 		adaptNavEntities(h.DB.ListSeriesPaginated, func(s db.Series) opdspkg.NavEntity {
-			return opdspkg.NavEntity{ID: s.ID, Name: s.Name, Updated: s.UpdatedAt.Format(time.RFC3339)}
+			return toNavEntity(s.ID, s.Name, s.UpdatedAt)
 		}),
-	)
-}
-
-func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, seriesID string) {
-	writeEntityBooksFeed(h, w, r, seriesID,
-		h.DB.GetSeries, slog.String(otelkeys.SeriesID, seriesID), "series",
-		"/series/", func(s *db.Series) string { return s.Name },
-		h.DB.ListBooksBySeriesPaginated,
 	)
 }
 
@@ -236,6 +224,22 @@ func writeEntityBooksFeed[T any](
 		func(c context.Context, limit, offset int) ([]db.Book, int, error) {
 			return listFn(c, entityID, limit, offset)
 		},
+	)
+}
+
+func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
+	writeEntityBooksFeed(h, w, r, authorID,
+		h.DB.GetAuthor, slog.String(otelkeys.AuthorID, authorID), "author", "/authors/",
+		func(a *db.Author) string { return "Books by " + a.Name },
+		h.DB.ListBooksByAuthorPaginated,
+	)
+}
+
+func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, seriesID string) {
+	writeEntityBooksFeed(h, w, r, seriesID,
+		h.DB.GetSeries, slog.String(otelkeys.SeriesID, seriesID), "series", "/series/",
+		func(s *db.Series) string { return s.Name },
+		h.DB.ListBooksBySeriesPaginated,
 	)
 }
 
