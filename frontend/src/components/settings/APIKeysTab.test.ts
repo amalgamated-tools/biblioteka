@@ -35,6 +35,23 @@ vi.mock("lucide-svelte", () => ({
 
 import APIKeysTab from "./APIKeysTab.svelte";
 
+describe("APIKeysTab table accessibility", () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("labels the API keys table with aria-label (WCAG 1.3.1)", async () => {
+    render(APIKeysTab);
+    await tick();
+    await tick();
+
+    expect(
+      screen.getByRole("table", { name: "API keys" }),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("APIKeysTab delete confirmation", () => {
   afterEach(() => {
     cleanup();

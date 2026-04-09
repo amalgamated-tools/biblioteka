@@ -16,25 +16,30 @@ const authStoreMock = vi.hoisted(() => ({
   init: vi.fn(),
 }));
 
+const routerStoreMock = vi.hoisted(() => ({
+  currentView: "dashboard" as string,
+  hash: "dashboard",
+  subPath: "",
+  isKnownView: true,
+  pageTitle: "Dashboard – biblioteka",
+  navigate: vi.fn(),
+}));
+
+const libraryStoreMock = vi.hoisted(() => ({
+  loaded: true,
+  libraries: [] as Array<{ id: string; name: string }>,
+}));
+
 vi.mock("./stores/auth.svelte", () => ({
   authStore: authStoreMock,
 }));
 
 vi.mock("./stores/router.svelte", () => ({
-  routerStore: {
-    currentView: "dashboard",
-    hash: "dashboard",
-    isKnownView: true,
-    pageTitle: "Dashboard – biblioteka",
-    navigate: vi.fn(),
-  },
+  routerStore: routerStoreMock,
 }));
 
 vi.mock("./stores/libraries.svelte", () => ({
-  libraryStore: {
-    loaded: true,
-    libraries: [],
-  },
+  libraryStore: libraryStoreMock,
 }));
 
 vi.mock("./components/Auth.svelte", () => ({ default: () => {} }));
@@ -51,6 +56,14 @@ import App from "./App.svelte";
 describe("App", () => {
   afterEach(() => {
     cleanup();
+    // Restore mocks to defaults
+    routerStoreMock.currentView = "dashboard";
+    routerStoreMock.hash = "dashboard";
+    routerStoreMock.subPath = "";
+    routerStoreMock.isKnownView = true;
+    routerStoreMock.pageTitle = "Dashboard – biblioteka";
+    libraryStoreMock.loaded = true;
+    libraryStoreMock.libraries = [];
   });
 
   it("sets document.title from routerStore.pageTitle on mount", async () => {
@@ -150,6 +163,26 @@ describe("App", () => {
         oidc_linked: false,
         is_admin: false,
       };
+    }
+  });
+
+  it("includes the library name in document.title when viewing a specific library (WCAG 2.4.2)", async () => {
+    routerStoreMock.currentView = "libraries";
+    routerStoreMock.hash = "libraries/lib-123";
+    routerStoreMock.subPath = "lib-123";
+    routerStoreMock.pageTitle = "Libraries – biblioteka";
+    libraryStoreMock.libraries = [{ id: "lib-123", name: "Fiction" }];
+
+    try {
+      render(App);
+      await tick();
+      expect(document.title).toBe("Fiction – biblioteka");
+    } finally {
+      routerStoreMock.currentView = "dashboard";
+      routerStoreMock.hash = "dashboard";
+      routerStoreMock.subPath = "";
+      routerStoreMock.pageTitle = "Dashboard – biblioteka";
+      libraryStoreMock.libraries = [];
     }
   });
 });

@@ -32,7 +32,22 @@
 
   // Update document title to reflect the current view (WCAG 2.4.2)
   $effect(() => {
-    document.title = routerStore.pageTitle;
+    let title = routerStore.pageTitle;
+    // Include the library name in the page title when viewing a specific library.
+    if (
+      routerStore.currentView === "libraries" &&
+      routerStore.subPath &&
+      routerStore.subPath !== "new" &&
+      !routerStore.subPath.startsWith("edit/")
+    ) {
+      const lib = libraryStore.libraries.find(
+        (l) => l.id === routerStore.subPath,
+      );
+      if (lib) {
+        title = `${lib.name} – biblioteka`;
+      }
+    }
+    document.title = title;
   });
 
   // Close the mobile sidebar whenever the active route changes.
