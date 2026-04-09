@@ -86,9 +86,9 @@ describe("BookDetail", () => {
     vi.mocked(getBook).mockResolvedValue(mockBook);
     render(BookDetail, { bookId: "b1" });
     await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { level: 1 }),
-      ).toHaveTextContent("The Hobbit");
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+        "The Hobbit",
+      );
     });
   });
 
@@ -104,9 +104,7 @@ describe("BookDetail", () => {
     vi.mocked(getBook).mockResolvedValue(mockBook);
     render(BookDetail, { bookId: "b1" });
     await waitFor(() => {
-      expect(
-        screen.getByText(/Allen & Unwin/),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Allen & Unwin/)).toBeInTheDocument();
       expect(screen.getByText(/English/)).toBeInTheDocument();
       expect(screen.getByText(/1937-09-21/)).toBeInTheDocument();
     });

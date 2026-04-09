@@ -1,12 +1,7 @@
 <script lang="ts">
   import type { Book } from "../../types";
   import { getBook, bookFileDownloadUrl } from "../../lib/api";
-  import {
-    ArrowLeft,
-    BookOpen,
-    Download,
-    FileText,
-  } from "lucide-svelte";
+  import { ArrowLeft, BookOpen, Download, FileText } from "lucide-svelte";
   import { routerStore } from "../../stores/router.svelte";
   import AlertBanner from "./AlertBanner.svelte";
 
@@ -105,14 +100,17 @@
             {#if book.series.length > 0}
               <p class="text-sm text-ink-500 dark:text-ink-400 mb-3">
                 {#each book.series as entry, i (entry.series.id)}
-                  {#if i > 0}, {/if}
+                  {#if i > 0},
+                  {/if}
                   {entry.series.name}{#if entry.position != null}
                     #{entry.position}{/if}
                 {/each}
               </p>
             {/if}
 
-            <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-500 dark:text-ink-400 mb-4">
+            <div
+              class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-500 dark:text-ink-400 mb-4"
+            >
               {#if book.publisher}
                 <span>Publisher: {book.publisher}</span>
               {/if}
@@ -155,13 +153,20 @@
                     >
                       {file.file_name}
                     </p>
-                    <div class="flex items-center gap-3 mt-1 text-xs text-ink-500 dark:text-ink-400">
+                    <div
+                      class="flex items-center gap-3 mt-1 text-xs text-ink-500 dark:text-ink-400"
+                    >
                       <span
                         class="uppercase font-medium text-accent-600 dark:text-accent-400"
                         >{file.file_type}</span
                       >
                       <span>{formatFileSize(file.file_size)}</span>
-                      <span>{file.download_count} {file.download_count === 1 ? "download" : "downloads"}</span>
+                      <span
+                        >{file.download_count}
+                        {file.download_count === 1
+                          ? "download"
+                          : "downloads"}</span
+                      >
                     </div>
                   </div>
                   <a
