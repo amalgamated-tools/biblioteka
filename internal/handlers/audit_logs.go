@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -78,32 +77,7 @@ func (h *AuditLogHandler) HandleAuditLogs(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	const defaultLimit = 50
-	const maxLimit = 200
-
-	limit := defaultLimit
-	offset := 0
-
-	if v := r.URL.Query().Get("limit"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1 {
-			writeError(r.Context(), w, http.StatusBadRequest, "invalid limit parameter")
-			return
-		}
-		if n > maxLimit {
-			n = maxLimit
-		}
-		limit = n
-	}
-
-	if v := r.URL.Query().Get("offset"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 0 {
-			writeError(r.Context(), w, http.StatusBadRequest, "invalid offset parameter")
-			return
-		}
-		offset = n
-	}
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
 
 	slog.DebugContext(r.Context(), "listing audit logs",
 		slog.Int(otelkeys.Limit, limit),
@@ -117,13 +91,8 @@ func (h *AuditLogHandler) HandleAuditLogs(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	dtos := make([]auditLogDTO, 0, len(entries))
-	for i := range entries {
-		dtos = append(dtos, toAuditLogDTO(&entries[i]))
-	}
-
 	writeJSON(r.Context(), w, http.StatusOK, auditLogListDTO{
-		Entries: dtos,
+		Entries: mapSlice(entries, toAuditLogDTO),
 		Total:   total,
 		Limit:   limit,
 		Offset:  offset,
