@@ -46,7 +46,7 @@ frontend/
         BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states
         Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
         DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
-        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3)
+        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3); border uses `border-ink-400 dark:border-ink-400` to meet the Non-text Contrast minimum (WCAG 1.4.11)
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
       actions.ts              Svelte action utilities (`autofocusFirstButton`)
@@ -69,6 +69,8 @@ frontend/
       clipboard.test.ts       Clipboard helper unit tests
       copyTimeout.svelte.ts   `CopyTimeoutState` class — auto-resetting copied-ID feedback state
       copyTimeout.test.ts     Unit tests for `CopyTimeoutState`
+      timeoutState.svelte.ts  `TimeoutState<T>` base class — shared timer infrastructure for `AutoDismissTimer` and `CopyTimeoutState`
+      timeoutState.test.ts    Unit tests for `TimeoutState`
       tokenList.svelte.ts     `TokenListState<T>` class — load/delete lifecycle for token-like lists
       tokenList.test.ts       Unit tests for `TokenListState`
       validation.ts           Composable form-validation rule functions
@@ -438,7 +440,7 @@ Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs
 
 ### `autoDismissTimer.svelte.ts`
 
-`frontend/src/lib/autoDismissTimer.svelte.ts` exports `AutoDismissTimer`, a small Svelte 5 class that tracks whether a transient message (success, error, or informational) should be visible and automatically hides it after a configurable duration.
+`frontend/src/lib/autoDismissTimer.svelte.ts` exports `AutoDismissTimer`, a Svelte 5 class that extends `TimeoutState<boolean>` and tracks whether a transient message (success, error, or informational) should be visible and automatically hides it after a configurable duration.
 
 **Constructor:**
 
@@ -592,7 +594,7 @@ Use `TokenListState` whenever a settings tab manages a list of user-owned tokens
 
 ### `copyTimeout.svelte.ts`
 
-`frontend/src/lib/copyTimeout.svelte.ts` exports `CopyTimeoutState`, a small class that manages the "copied" UI feedback state — tracking which item was most recently copied to the clipboard and automatically clearing that state after a configurable duration.
+`frontend/src/lib/copyTimeout.svelte.ts` exports `CopyTimeoutState`, a class that extends `TimeoutState<string | null>` and manages the "copied" UI feedback state — tracking which item was most recently copied to the clipboard and automatically clearing that state after a configurable duration.
 
 **Constructor:**
 
@@ -651,6 +653,34 @@ Always call `clear()` from `onDestroy` to prevent timer leaks when the component
 ```
 
 Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback after a clipboard write. Do **not** manage copy timers inline with `setTimeout` in components.
+
+### `timeoutState.svelte.ts`
+
+`frontend/src/lib/timeoutState.svelte.ts` exports `TimeoutState<T>`, the shared base class for `AutoDismissTimer` and `CopyTimeoutState`. It manages a protected reactive `value` that reverts to an `idleValue` after a configurable `duration`. Subclasses expose domain-specific public getters and trigger methods on top of this shared timer infrastructure.
+
+**Constructor:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `idleValue` | `T` | The value `value` reverts to after the timeout fires or `clear()` is called |
+| `duration` | `number` | Time in milliseconds before `value` resets to `idleValue` |
+
+**Protected API (for subclasses):**
+
+| Member | Description |
+|--------|-------------|
+| `value` | The reactive `$state` field; exposed as a domain-specific public getter in each subclass |
+| `activate(activeValue)` | Sets `value` to `activeValue`, cancels any running timer, and starts a new auto-reset timer |
+
+**Public API:**
+
+| Method | Description |
+|--------|-------------|
+| `clear()` | Cancels any pending timeout and resets `value` to `idleValue` immediately |
+
+Always call `clear()` from `onDestroy` to prevent timer leaks. Both `AutoDismissTimer` and `CopyTimeoutState` inherit this method — components using either class call the same `clear()` API.
+
+Do **not** use `TimeoutState` directly. Extend it in a new subclass when you need auto-resetting reactive state with a different `T`. For boolean visibility (`true`/`false`) use `AutoDismissTimer`; for string-or-null item tracking use `CopyTimeoutState`.
 
 ## TypeScript types
 
@@ -1331,7 +1361,7 @@ The same `border-ink-400 dark:border-ink-400` pattern must be applied to any inl
 | `border-ink-400` | Light | `bg-white` | Meets WCAG 1.4.11 ≥ 3:1 |
 | `dark:border-ink-400` | Dark | `dark:bg-ink-800` | Meets WCAG 1.4.11 ≥ 3:1 |
 
-**Rule:** All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. Never use `dark:border-ink-200` or `dark:border-ink-300` for a bordered input sitting on `dark:bg-ink-800` — those tokens do not meet the 3:1 non-text contrast requirement.
+**Rule:** All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. In light mode, do not use `border-ink-200` on `bg-white`; in dark mode, do not use `dark:border-ink-700` on `dark:bg-ink-800` — those are the low-contrast combinations that fail the 3:1 non-text contrast requirement.
 
 ### Live region for theme change announcements (`PreferencesTab.svelte`)
 
@@ -1343,9 +1373,11 @@ When a user selects a new theme (light, dark, or auto), the UI updates visually 
 
 ```svelte
 <script lang="ts">
+  import { themeStore, type ThemePreference } from "../../stores/theme.svelte";
+
   let themeAnnouncement = $state("");
 
-  function setTheme(t: (typeof themes)[number]) {
+  function setTheme(t: ThemePreference) {
     themeStore.set(t);
     themeAnnouncement = "";           // reset first so the same message re-triggers
     const label = t === "auto" ? "follow system settings" : t;
@@ -1743,7 +1775,7 @@ When editing the app shell or adding new persistent navigation elements:
 12. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
 13. Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so the element is visible when focused. When the action is context-sensitive (e.g. per-library settings links), include the context in the `aria-label` so each link has a unique, descriptive name. See [Focus visible — Library settings link](#focus-visible--library-settings-link-sidebarsvelte) above.
 14. When using `TextInput` (or any input) with a `placeholder` on a dark background, use `dark:placeholder:text-ink-300` or lighter — never `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800`. See [Dark-mode placeholder contrast](#dark-mode-placeholder-contrast-textinputsvelte) above.
-15. All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. Never use `dark:border-ink-200` or `dark:border-ink-300` for a bordered input on `dark:bg-ink-800`. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
+15. All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. In light mode, do not use `border-ink-200` on `bg-white`; in dark mode, do not use `dark:border-ink-700` on `dark:bg-ink-800`. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
 16. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 17. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
 18. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
@@ -1935,7 +1967,7 @@ When adding or editing a form component:
 7. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
 8. Toggle switches (`<input type="checkbox">` styled as a switch) carry both `role="switch"` and `aria-checked={booleanState}`. Use an explicit `for`/`id` label association. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) above.
 9. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-10. Form inputs use `border-ink-400 dark:border-ink-400` for their border — never lighter tokens such as `dark:border-ink-200` or `dark:border-ink-300` on a dark background. Prefer the reusable `TextInput` component; when writing an inline `<input>` directly, apply this class manually. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
+10. Form inputs use `border-ink-400 dark:border-ink-400` for their border — in light mode, avoid `border-ink-200` on `bg-white`; in dark mode, avoid `dark:border-ink-700` on `dark:bg-ink-800`. Prefer the reusable `TextInput` component; when writing an inline `<input>` directly, apply this class manually. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
 11. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
 ### Inline confirmation dialogs for destructive actions
@@ -2288,7 +2320,7 @@ Additional tests verify attribute forwarding:
 7. **`announces theme change to screen readers via a live region`** — uses fake timers, clicks the dark button, advances timers by 0 ms, then asserts the `role="status"` element contains the text `"Theme changed to dark"` (WCAG 4.1.3).
 8. **`announces 'follow system settings' when auto theme is selected`** — clicks the auto button and asserts the live region text is `"Theme changed to follow system settings"`, verifying that the human-readable label is used instead of the raw `"auto"` value.
 
-> **Testing note:** Tests 7 and 8 use `vi.useFakeTimers()` to control the `setTimeout(..., 0)` call inside `setTheme` and `await tick()` to flush Svelte 5 reactivity before asserting the live region text. `vi.useRealTimers()` is called at the end of each timer test to restore the real clock. The test file mocks `themeStore` and all `lucide-svelte` icon components; `afterEach` calls `cleanup()` and `vi.clearAllMocks()`.
+> **Testing note:** Tests 7 and 8 use `vi.useFakeTimers()` to control the `setTimeout(..., 0)` call inside `setTheme` and `await tick()` to flush Svelte 5 reactivity before asserting the live region text. `vi.useRealTimers()` is called in `afterEach` to restore the real clock after every test. The test file mocks `themeStore` and all `lucide-svelte` icon components; `afterEach` calls `cleanup()`, `vi.clearAllMocks()`, and `vi.useRealTimers()`.
 
 ---
 
