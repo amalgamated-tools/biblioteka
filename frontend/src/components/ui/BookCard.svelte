@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { BookSummary } from "../../types";
   import { routerStore } from "../../stores/router.svelte";
-  import { BookOpen } from "lucide-svelte";
+  import { BookOpen, Mail } from "lucide-svelte";
+  import EmailBookModal from "./EmailBookModal.svelte";
 
   interface Props {
     book: BookSummary;
@@ -17,12 +18,12 @@
     e.preventDefault();
     routerStore.navigate(`books/${book.id}`);
   }
+
+  let showEmailModal = $state(false);
 </script>
 
-<a
-  href={`#books/${book.id}`}
-  class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden hover:shadow-md transition-shadow cursor-pointer block no-underline"
-  onclick={handleClick}
+<div
+  class="relative bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden hover:shadow-md transition-shadow group"
 >
   {#if book.cover_image_url}
     <div class="aspect-[2/3] bg-ink-100 dark:bg-ink-800">
@@ -56,4 +57,18 @@
       </p>
     {/if}
   </div>
-</a>
+
+  <!-- Email button: visible on hover -->
+  <button
+    onclick={() => (showEmailModal = true)}
+    aria-label="Email {book.title}"
+    title="Email this book"
+    class="absolute top-2 right-2 p-1.5 rounded-lg bg-white/80 dark:bg-ink-900/80 backdrop-blur-sm text-ink-500 hover:text-accent-600 dark:hover:text-accent-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shadow-sm border border-ink-100 dark:border-ink-700"
+  >
+    <Mail class="w-4 h-4" aria-hidden="true" />
+  </button>
+</div>
+
+{#if showEmailModal}
+  <EmailBookModal bookId={book.id} onClose={() => (showEmailModal = false)} />
+{/if}
