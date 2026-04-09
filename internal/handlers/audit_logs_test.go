@@ -122,7 +122,7 @@ func TestHandleAuditLogs_LimitCappedAtMax(t *testing.T) {
 	require.Equal(t, 200, resp.Limit)
 }
 
-func TestHandleAuditLogs_InvalidLimit(t *testing.T) {
+func TestHandleAuditLogs_InvalidLimitFallsBackToDefault(t *testing.T) {
 	h, adminID, _ := setupAuditLogHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs?limit=abc", nil)
@@ -131,10 +131,14 @@ func TestHandleAuditLogs_InvalidLimit(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp auditLogListDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, 50, resp.Limit, "invalid limit should fall back to default")
 }
 
-func TestHandleAuditLogs_InvalidOffset(t *testing.T) {
+func TestHandleAuditLogs_InvalidOffsetFallsBackToDefault(t *testing.T) {
 	h, adminID, _ := setupAuditLogHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs?offset=abc", nil)
@@ -143,10 +147,14 @@ func TestHandleAuditLogs_InvalidOffset(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp auditLogListDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, 0, resp.Offset, "invalid offset should fall back to default")
 }
 
-func TestHandleAuditLogs_NegativeOffset(t *testing.T) {
+func TestHandleAuditLogs_NegativeOffsetFallsBackToDefault(t *testing.T) {
 	h, adminID, _ := setupAuditLogHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs?offset=-1", nil)
@@ -155,7 +163,11 @@ func TestHandleAuditLogs_NegativeOffset(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp auditLogListDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, 0, resp.Offset, "negative offset should fall back to default")
 }
 
 func TestHandleAuditLogs_EmptyList(t *testing.T) {
