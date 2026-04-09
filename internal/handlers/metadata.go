@@ -95,6 +95,10 @@ type metadataDTO struct {
 	UpdatedAt       db.Timestamp `json:"updated_at"`
 }
 
+// Intentionally omitted from the DTO: AuthorGoodreadsID, AuthorImageURL,
+// GoodreadsWorkID, GoodreadsBookLegacyID, GoodreadsWorkLegacyID, and
+// GoodreadsAuthorLegacyID. These are internal Goodreads identifiers used
+// only during enrichment and have no value in the user-facing API.
 func toMetadataDTO(gm *db.GoodreadsMetadata) metadataDTO {
 	return metadataDTO{
 		ID:              gm.ID,
@@ -117,10 +121,6 @@ func toMetadataDTO(gm *db.GoodreadsMetadata) metadataDTO {
 		CreatedAt:       gm.CreatedAt,
 		UpdatedAt:       gm.UpdatedAt,
 	}
-	// Intentionally omitted from the DTO: AuthorGoodreadsID, AuthorImageURL,
-	// GoodreadsWorkID, GoodreadsBookLegacyID, GoodreadsWorkLegacyID, and
-	// GoodreadsAuthorLegacyID. These are internal Goodreads identifiers used
-	// only during enrichment and have no value in the user-facing API.
 }
 
 // getPendingMetadataOrErr fetches the pending metadata for a book and writes

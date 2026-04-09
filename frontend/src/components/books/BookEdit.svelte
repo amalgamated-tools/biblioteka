@@ -210,8 +210,13 @@
         closeSSE();
         fetchingMetadata = false;
         // If we got an error before any complete event, try loading metadata
-        // in case the job finished before SSE connected
-        loadPendingMetadata();
+        // in case the job finished before SSE connected.
+        loadPendingMetadata().then(() => {
+          if (!metadata) {
+            metadataError =
+              "Metadata stream closed unexpectedly. Please try again.";
+          }
+        });
       };
 
       // Now trigger the job — the SSE subscription and handlers are already active.
@@ -219,15 +224,18 @@
 
       // If metadata already exists in the DB, no worker will publish SSE events.
       // Short-circuit to avoid waiting for the 60-second timeout.
-      if (
-        response.status === "already_exists" ||
-        response.status === "already_running"
-      ) {
+      if (response.status === "already_exists") {
         closeSSE();
         fetchingMetadata = false;
         progressMessage = null;
         loadPendingMetadata();
         return;
+      }
+
+      // If a job is already in flight, keep the SSE subscription open so the
+      // eventual complete/error event can still update the UI.
+      if (response.status === "already_running") {
+        progressMessage = "Metadata fetch already in progress...";
       }
     } catch (e) {
       closeSSE();
