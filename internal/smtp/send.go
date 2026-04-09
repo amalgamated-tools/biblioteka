@@ -53,8 +53,8 @@ func newClientWithContext(ctx context.Context, conn net.Conn, host string) (*net
 	return client, func() { close(done) }, nil
 }
 
-// Send dials addr, negotiates TLS according to tlsMode, authenticates with a
-// if non-nil, and delivers a single message from → to.
+// Send dials addr, negotiates TLS according to tlsMode, authenticates using
+// auth if non-nil, and delivers a single message from → to.
 func Send(ctx context.Context, addr string, a netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
