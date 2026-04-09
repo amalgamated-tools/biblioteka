@@ -150,25 +150,19 @@ func (h *BookHandler) loadBookDTO(ctx context.Context, b *db.Book) (bookDTO, err
 	if err != nil {
 		return bookDTO{}, err
 	}
-	for i := range authors {
-		dto.Authors = append(dto.Authors, toAuthorDTO(&authors[i]))
-	}
+	dto.Authors = mapSlice(authors, toAuthorDTO)
 
 	entries, err := h.DB.GetBookSeries(ctx, b.ID)
 	if err != nil {
 		return bookDTO{}, err
 	}
-	for _, e := range entries {
-		dto.Series = append(dto.Series, toBookSeriesEntryDTO(&e))
-	}
+	dto.Series = mapSlice(entries, toBookSeriesEntryDTO)
 
 	files, err := h.DB.ListBookFiles(ctx, b.ID)
 	if err != nil {
 		return bookDTO{}, err
 	}
-	for i := range files {
-		dto.Files = append(dto.Files, toBookFileDTO(&files[i]))
-	}
+	dto.Files = mapSlice(files, toBookFileDTO)
 
 	return dto, nil
 }
