@@ -7,6 +7,7 @@ import type { Library } from "../../types";
 vi.mock("../../stores/router.svelte", () => ({
   routerStore: {
     navigate: vi.fn(),
+    setPageTitle: vi.fn(),
   },
 }));
 
@@ -121,6 +122,26 @@ describe("LibraryView", () => {
     await tick();
 
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("sets the page title to the library name when library is provided", async () => {
+    render(LibraryView, {
+      props: { library: fakeLibrary, libraryId: "lib-1", error: null },
+    });
+    await tick();
+
+    expect(routerStore.setPageTitle).toHaveBeenCalledWith(
+      "Science Fiction – biblioteka",
+    );
+  });
+
+  it("does not set the page title when library is null", async () => {
+    render(LibraryView, {
+      props: { library: null, libraryId: "lib-1", error: null },
+    });
+    await tick();
+
+    expect(routerStore.setPageTitle).not.toHaveBeenCalled();
   });
 
   it("calls listLibraryBooks on mount", async () => {

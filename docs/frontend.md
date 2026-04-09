@@ -1233,6 +1233,7 @@ $effect(() => {
 | `books` | `All Books – biblioteka` |
 | `my-library` | `My Library – biblioteka` |
 | `libraries` | `Libraries – biblioteka` |
+| `libraries/{id}` | `{library name} – biblioteka` (set via `setPageTitle`) |
 | `settings` (no sub-path) | `Settings – biblioteka` |
 | `settings/account` | `Account Settings – biblioteka` |
 | `settings/preferences` | `Preferences – biblioteka` |
@@ -1242,6 +1243,8 @@ $effect(() => {
 | `settings/api-keys` | `API Keys – biblioteka` |
 | `settings/kobo` | `Kobo Sync – biblioteka` |
 | Unknown hash | `biblioteka` |
+
+**Dynamic page titles** — Views that display a named resource (such as a specific library) can call `routerStore.setPageTitle(title)` to override the default view title. The override is automatically cleared on navigation. For example, `LibraryView.svelte` sets the title to the library name when the library prop resolves.
 
 **When adding a new view or settings tab**, update both the corresponding union type (`AppView` or `SettingsSubPath`) and the matching title lookup table in `router.svelte.ts`. If you skip the lookup entry, `pageTitle` falls back to the top-level view title, which may be insufficiently descriptive.
 
