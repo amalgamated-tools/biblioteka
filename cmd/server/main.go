@@ -104,12 +104,19 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		w.Register(cancelCtx, jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
 		w.Register(cancelCtx, jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
 
+		w.Register(cancelCtx, jobs.JobScanWatchFolder, jobs.NewScanWatchFolderHandler(database, w))
+
 		grClient := goodreads.NewClient()
 		w.Register(cancelCtx, jobs.JobEnrichGoodreads, jobs.NewEnrichGoodreadsHandler(database, grClient))
 
 		if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
 			slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any(otelkeys.Error, err))
 			return fmt.Errorf("failed to schedule scan:libraries job: %w", err)
+		}
+
+		if _, err := w.RegisterSchedule("@every 1m", jobs.JobScanWatchFolder, struct{}{}); err != nil {
+			slog.ErrorContext(cancelCtx, "failed to schedule scan:watch-folder job", slog.Any(otelkeys.Error, err))
+			return fmt.Errorf("failed to schedule scan:watch-folder job: %w", err)
 		}
 	}
 

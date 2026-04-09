@@ -122,6 +122,7 @@ const (
 	Username            string = "username"
 	Value               string = "value"
 	Version             string = "version"
+	WatchFolderPath     string = "watch_folder_path"
 	WorkID              string = "work_id"
 	WorkLegacyID        string = "work_legacy_id"
 )

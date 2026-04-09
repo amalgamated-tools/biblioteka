@@ -199,6 +199,18 @@ export interface SetSMTPConfigInput {
   tls: string;
 }
 
+// Watch Folder Config
+
+export interface WatchFolderConfig {
+  path: string;
+  library_id: string;
+}
+
+export interface SetWatchFolderConfigInput {
+  path: string;
+  library_id: string;
+}
+
 // Admin - User Management
 
 export interface AdminUser {

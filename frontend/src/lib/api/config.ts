@@ -4,6 +4,8 @@ import type {
   SetOIDCConfigInput,
   SMTPConfig,
   SetSMTPConfigInput,
+  WatchFolderConfig,
+  SetWatchFolderConfigInput,
 } from "../../types";
 import { request } from "./core";
 
@@ -33,4 +35,14 @@ export async function setSmtpConfig(
 
 export async function testSmtpConfig(): Promise<{ message: string }> {
   return request<{ message: string }>("POST", "/api/config/smtp/test");
+}
+
+export async function getWatchFolderConfig(): Promise<WatchFolderConfig> {
+  return request<WatchFolderConfig>("GET", "/api/config/watch-folder");
+}
+
+export async function setWatchFolderConfig(
+  config: SetWatchFolderConfigInput,
+): Promise<{ message: string }> {
+  return request<{ message: string }>("PUT", "/api/config/watch-folder", config);
 }
