@@ -9,6 +9,7 @@ import {
 } from "vitest";
 import {
   listBooks,
+  getTotalBooksCount,
   getBook,
   createBook,
   updateBook,
@@ -152,6 +153,19 @@ describe("Books API", () => {
 
       const [url] = fetchMock.mock.calls[0];
       expect(url).toBe("/api/books?limit=50&offset=0");
+    });
+  });
+
+  describe("getTotalBooksCount", () => {
+    it("returns the total count from a minimal listBooks call", async () => {
+      mockFetchResponse({ books: [], total: 42, limit: 1, offset: 0 });
+
+      const count = await getTotalBooksCount();
+
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/books?limit=1&offset=0");
+      expect(options.method).toBe("GET");
+      expect(count).toBe(42);
     });
   });
 
