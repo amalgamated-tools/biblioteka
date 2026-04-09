@@ -30,7 +30,8 @@ safe-outputs:
     max: 1
     close-older-discussions: true
   close-discussion:
-    max: 10    
+    max: 10
+  noop:
 timeout-minutes: 30
 imports:
   - shared/mood.md
@@ -103,14 +104,11 @@ Map changed files to schema layers using these rules:
 
 Set a boolean flag for each layer (`true` = changed, `false` = unchanged).
 
-**Early exit**: If **none** of the five layers have any changed files, output a brief status and stop:
+**Early exit**: If **none** of the five layers have any changed files, call the `noop` safe-output tool and stop immediately. Do not proceed to analysis.
 
 ```
-✅ No schema-related files changed in the last 24 hours.
-Schema Consistency Checker has nothing to analyze today.
+noop message: "✅ No schema-related files changed in the last 24 hours. Schema Consistency Checker has nothing to analyze today."
 ```
-
-Then exit without invoking any analysis safe-outputs. Do not proceed to analysis.
 
 **Partial run**: If only some layers changed, skip the analysis sections for unchanged layers and note which layers were skipped in the report. For example, if only `LAYER_HANDLERS` and `LAYER_FRONTEND` changed, skip Analysis Area 1 (DB Migrations vs Go DB Layer) and focus only on Area 2 (Go Handler DTOs vs TypeScript) and Area 4 (Go DB Types vs Handler DTO Mappings).
 
@@ -476,12 +474,13 @@ You have access to:
 
 A successful run:
 - ✅ Runs scope detection (Step 0) before any analysis
-- ✅ Exits gracefully when no schema-related files changed in the last 24 hours
+- ✅ Calls `noop` and exits gracefully when no schema-related files changed in the last 24 hours
 - ✅ Analyzes only the layers affected by recent changes (skips unchanged layers)
 - ✅ Uses or creates an effective detection strategy
 - ✅ Updates cache with strategy results
 - ✅ Finds at least one category of inconsistencies OR confirms consistency
-- ✅ Creates a detailed discussion report
-- ✅ Provides actionable recommendations
+- ✅ Creates a detailed discussion report with actionable recommendations, OR calls `noop` if no inconsistencies are found
+
+**Important**: You **MUST** call exactly one safe-output tool before finishing. If no schema-related files changed in the last 24 hours, or if analysis finds zero inconsistencies, call `noop` with a descriptive status message. Otherwise, create a discussion report.
 
 Begin your analysis now. Check the cache, choose a strategy, execute it, and report your findings in a discussion.
