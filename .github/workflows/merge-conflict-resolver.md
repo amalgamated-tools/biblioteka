@@ -33,7 +33,7 @@ safe-outputs:
   add-comment:
     max: 2
   push-to-pull-request-branch:
-    target: "triggering"
+    target: "${{ github.event.pull_request.number || github.event.inputs.pull_request_number }}"
     max: 1
   noop:
   messages:
