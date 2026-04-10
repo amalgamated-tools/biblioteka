@@ -144,7 +144,7 @@ func TestDownloadBookFile_Success(t *testing.T) {
 
 	// Create a temp directory and file.
 	tmpDir := t.TempDir()
-	filePath := tmpDir + "/test-book.epub"
+	filePath := filepath.Join(tmpDir, "test-book.epub")
 	err := os.WriteFile(filePath, []byte("fake epub content"), 0o644)
 	require.NoError(t, err, "write test file")
 

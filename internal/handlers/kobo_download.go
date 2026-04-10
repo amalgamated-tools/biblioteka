@@ -72,7 +72,14 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			slog.WarnContext(r.Context(), "kobo download: failed to close book file",
+				slog.String(otelkeys.BookFileID, target.ID),
+				slog.Any(otelkeys.Error, closeErr),
+			)
+		}
+	}()
 
 	stat, err := f.Stat()
 	if err != nil {
