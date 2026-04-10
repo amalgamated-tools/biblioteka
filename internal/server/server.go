@@ -238,7 +238,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		clientSecret := os.Getenv("OIDC_CLIENT_SECRET")
 		redirectURI := os.Getenv("OIDC_REDIRECT_URI")
 		if clientID == "" || clientSecret == "" || redirectURI == "" {
-			return nil, fmt.Errorf("OIDC_ISSUER_URL is set but one or more of OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, or OIDC_REDIRECT_URI is missing")
+			return nil, errors.New("OIDC_ISSUER_URL is set but one or more of OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, or OIDC_REDIRECT_URI is missing")
 		}
 		oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, issuer, clientID, clientSecret, redirectURI, secureCookies)
 		if err != nil {

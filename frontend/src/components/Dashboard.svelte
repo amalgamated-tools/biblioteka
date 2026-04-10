@@ -14,6 +14,7 @@
   });
 
   onMount(() => {
+    // Fetch a single book to retrieve the total count for the dashboard.
     listBooks(1, 0)
       .then((data) => {
         totalBooks = data.total;
