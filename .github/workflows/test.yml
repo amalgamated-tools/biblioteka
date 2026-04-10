@@ -197,13 +197,6 @@ jobs:
           echo "pct=${PCT}" >> "$GITHUB_OUTPUT"
           echo "Coverage: ${PCT}"
 
-      - name: Upload Go coverage report
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
-        with:
-          name: go-coverage
-          path: coverage.out
-          retention-days: 14
-
       - name: Check for known vulnerabilities
         run: |
           # govulncheck exit codes: 0 = no vulns, 3 = vulns found, other = error.
@@ -320,7 +313,7 @@ jobs:
         with:
           script: |
             const MARKER = '<!-- gh-coverage-comment -->';
-            const goPct = '${{ needs.go-test.outputs.coverage-pct }}';
+            const goPct = '${{ needs.go-test.outputs.coverage-pct }}' || 'N/A';
             const frontendPct = '${{ steps.frontend-coverage.outputs.pct }}' || 'N/A';
             const rows = [
               `| Go backend | ${goPct} |`,
