@@ -55,7 +55,7 @@ func newClientWithContext(ctx context.Context, conn net.Conn, host string) (*net
 
 // Send dials addr, negotiates TLS according to tlsMode, authenticates using
 // auth if non-nil, and delivers a single message from → to.
-func Send(ctx context.Context, addr string, a netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
+func Send(ctx context.Context, addr string, auth netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		return fmt.Errorf("invalid address: %w", err)
