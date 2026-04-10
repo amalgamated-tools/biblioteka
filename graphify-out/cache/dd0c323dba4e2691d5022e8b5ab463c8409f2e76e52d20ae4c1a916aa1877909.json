@@ -1,0 +1,1 @@
+{"nodes": [{"id": "fixtures", "label": "fixtures.go", "file_type": "code", "source_file": "internal/goodreads/fixtures.go", "source_location": "L1"}], "edges": [{"source": "fixtures", "target": "embed", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "internal/goodreads/fixtures.go", "source_location": "L3", "weight": 1.0}]}
