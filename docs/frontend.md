@@ -33,7 +33,7 @@ frontend/
         LibraryForm.svelte   Create / edit library form; the "Monitor for new content" toggle uses `role="switch"` and explicit `aria-checked` to communicate on/off state to assistive technologies (WCAG 4.1.2); delete library action uses the `DeleteConfirmation` component for an accessible inline confirmation with keyboard-focus management and Escape-to-dismiss (WCAG 4.1.2)
         LibraryView.svelte   Library detail with book listing
       settings/           Tab sub-components for the Settings page (see Settings component architecture below)
-        AccountTab.svelte       Account & password management; OIDC linking
+        AccountTab.svelte       Account management: view email, edit display name, change password, and link OIDC account
         APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix); delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         KoboTab.svelte          Kobo sync token management; displays setup instructions; delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
@@ -70,7 +70,7 @@ frontend/
       copyTimeout.svelte.ts   `CopyTimeoutState` class — auto-resetting copied-ID feedback state
       copyTimeout.test.ts     Unit tests for `CopyTimeoutState`
       timeoutState.svelte.ts  `TimeoutState<T>` base class — shared timer infrastructure for `AutoDismissTimer` and `CopyTimeoutState`
-      timeoutState.test.ts    Unit tests for `TimeoutState`
+      timeoutState.test.ts    Unit tests for `TimeoutState<T>`
       tokenList.svelte.ts     `TokenListState<T>` class — load/delete lifecycle for token-like lists
       tokenList.test.ts       Unit tests for `TokenListState`
       validation.ts           Composable form-validation rule functions
@@ -680,7 +680,7 @@ Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback af
 
 Always call `clear()` from `onDestroy` to prevent timer leaks. Both `AutoDismissTimer` and `CopyTimeoutState` inherit this method — components using either class call the same `clear()` API.
 
-Do **not** use `TimeoutState` directly. Extend it in a new subclass when you need auto-resetting reactive state with a different `T`. For boolean visibility (`true`/`false`) use `AutoDismissTimer`; for string-or-null item tracking use `CopyTimeoutState`.
+Do **not** use `TimeoutState` directly in components. Extend it in a new subclass when you need auto-resetting reactive state with a different `T`. For boolean visibility (`true`/`false`) use `AutoDismissTimer`; for string-or-null item tracking use `CopyTimeoutState`.
 
 ## TypeScript types
 
@@ -1103,7 +1103,7 @@ For inline validation errors, pass `aria-invalid` and `aria-describedby` through
 
 | Component | Route | Visibility | Responsibility |
 |-----------|-------|------------|----------------|
-| `AccountTab.svelte` | `settings/account` | All users | Change password; link OIDC account |
+| `AccountTab.svelte` | `settings/account` | All users | View email; edit display name via `PUT /api/auth/me`; change password; link OIDC account |
 | `APIKeysTab.svelte` | `settings/api-keys` | All users | Create and revoke long-lived API keys (`bib_` prefix); uses inline `role="alertdialog"` confirmations for delete actions |
 | `KoboTab.svelte` | `settings/kobo` | All users | Create and revoke Kobo sync tokens; copy device sync URL; uses inline `role="alertdialog"` confirmations for delete actions |
 | `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme; announces the selected theme via a `role="status"` live region (WCAG 4.1.3) |
@@ -1233,6 +1233,7 @@ $effect(() => {
 | `books` | `All Books – biblioteka` |
 | `my-library` | `My Library – biblioteka` |
 | `libraries` | `Libraries – biblioteka` |
+| `libraries/{id}` | `{library name} – biblioteka` (set via `setPageTitle`) |
 | `settings` (no sub-path) | `Settings – biblioteka` |
 | `settings/account` | `Account Settings – biblioteka` |
 | `settings/preferences` | `Preferences – biblioteka` |
@@ -1241,7 +1242,9 @@ $effect(() => {
 | `settings/users` | `User Management – biblioteka` |
 | `settings/api-keys` | `API Keys – biblioteka` |
 | `settings/kobo` | `Kobo Sync – biblioteka` |
-| Unknown hash | `biblioteka` |
+| Unknown hash | `Page Not Found – biblioteka` |
+
+**Dynamic page titles** — Views that display a named resource (such as a specific library) can call `routerStore.setPageTitle(title)` to override the default view title. The override is automatically cleared on navigation. For example, `LibraryView.svelte` sets the title to the library name when the library prop resolves.
 
 **When adding a new view or settings tab**, update both the corresponding union type (`AppView` or `SettingsSubPath`) and the matching title lookup table in `router.svelte.ts`. If you skip the lookup entry, `pageTitle` falls back to the top-level view title, which may be insufficiently descriptive.
 
@@ -1401,6 +1404,41 @@ Key details:
 | `"follow system settings"` for `auto` | Human-readable label; `"auto"` alone would be ambiguous to a screen-reader user unfamiliar with the UI option names |
 
 **Rule:** Whenever a user action produces a transient status change that is not communicated by focus movement or a visible heading update, add a `role="status"` live region with `class="sr-only"`. Use `role="alert"` (assertive) only for urgent errors that must interrupt the user immediately. Reset the live-region text to `""` before updating it to guarantee re-announcement when the same message is emitted twice in a row.
+
+### Reduced-motion support (`index.css`)
+
+**WCAG criterion:** [2.3.3 Animation from Interactions](https://www.w3.org/WAI/WCAG21/Understanding/animation-from-interactions.html) (Level AAA) — also a widely adopted best practice for users with vestibular disorders even below AAA compliance.
+
+`frontend/src/index.css` applies a global `@media (prefers-reduced-motion: reduce)` rule that overrides all CSS animations, transitions, and scroll behaviour for users who have enabled the "reduce motion" accessibility preference in their operating system or browser:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+Setting durations to `0.01ms` (instead of `0`) avoids edge cases in some browsers where zero-duration animations never fire `animationend` events, which can leave UI state stuck. The `!important` declarations ensure no component-level Tailwind or inline style can accidentally override the user's preference.
+
+**Rule:** Do not add CSS animations that cannot be suppressed by `prefers-reduced-motion`. Every animation class (e.g. `animate-fade-in`, `animate-spin`) is automatically suppressed by this global rule, as is any animation applied by a Svelte component `<style>` block, because the `!important` declarations override all non-`!important` `animation-*` and `transition-*` properties site-wide. The main exceptions are motion driven outside normal CSS rules — for example JavaScript/Web Animations API animations — or unusual inline `!important` overrides. Adding a component-level `@media (prefers-reduced-motion: reduce)` guard is optional belt-and-suspenders practice, not a requirement.
+
+### Live regions in `BookList.svelte`
+
+`BookList.svelte` uses two distinct live-region techniques to keep screen-reader users informed of page state changes without moving keyboard focus:
+
+1. **Loading state** — The initial-load `<p role="status">Loading books...</p>` uses `role="status"` (implicit `aria-live="polite"`) so assistive technologies announce the loading message after any current speech completes. No explicit `aria-live` attribute is needed because `role="status"` already implies it.
+
+2. **Scan-in-progress and pagination count** — The "Scanning library…" message and the "Showing X–Y of Z books" pagination summary both carry `aria-live="polite"` and `aria-atomic="true"`. `aria-atomic="true"` ensures the entire text string is re-read as a unit when the count updates (e.g. going from page 1 to page 2), rather than announcing only the changed numbers.
+
+**Rule:** Use `role="status"` for state messages that appear on initial render and that you own via markup (`role` implies the live region). Use explicit `aria-live="polite"` with `aria-atomic="true"` for messages whose text content changes dynamically in-place (e.g. a count or progress string that updates repeatedly).
 
 ### ARIA landmarks
 
@@ -1745,7 +1783,7 @@ The following components apply this pattern. When you add icons to any of these 
 | `Books.svelte` | `BookOpen` (page-heading icon) |
 | `Libraries.svelte` | `LibraryIcon` (empty-state illustration), `Plus` (button with visible text) |
 | `MyLibrary.svelte` | `Library` (page-heading icon and empty-state illustration) |
-| `settings/AccountTab.svelte` | `Mail`, `Link` ×2, `Lock` (section-heading icons) |
+| `settings/AccountTab.svelte` | `Mail`, `User`, `Link` ×2, `Lock` (section-heading icons) |
 | `settings/APIKeysTab.svelte` | `KeyRound` (section-heading icon), `Copy`, `Trash2` (buttons with adjacent text) |
 | `settings/PreferencesTab.svelte` | `Palette` (section-heading icon) |
 | `settings/OidcTab.svelte` | `Shield` (section-heading icon) |
@@ -1779,6 +1817,7 @@ When editing the app shell or adding new persistent navigation elements:
 16. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 17. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
 18. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
+19. Do not add animations or transitions that cannot be suppressed by the global `prefers-reduced-motion` rule in `index.css`. Tailwind animation utilities (e.g. `animate-fade-in`, `animate-spin`) and ordinary CSS animations, including custom `@keyframes` used from component `<style>` blocks, are suppressible via that global override. Add a component-level `@media (prefers-reduced-motion: reduce)` guard only when motion is driven outside normal CSS animation/transition rules (for example, via JavaScript) or when local `!important` styles would otherwise bypass the global override. See [Reduced-motion support](#reduced-motion-support-indexcss) above.
 
 ### Form accessibility
 

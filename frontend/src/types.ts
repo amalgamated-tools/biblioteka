@@ -96,6 +96,7 @@ export interface BookFile {
   file_size: number;
   file_hash: string | null;
   file_path: string;
+  download_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -197,6 +198,18 @@ export interface SetSMTPConfigInput {
   password: string;
   from: string;
   tls: string;
+}
+
+// Watch Folder Config
+
+export interface WatchFolderConfig {
+  path: string;
+  library_id: string;
+}
+
+export interface SetWatchFolderConfigInput {
+  path: string;
+  library_id: string;
 }
 
 // Admin - User Management
