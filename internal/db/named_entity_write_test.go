@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,7 +40,7 @@ func TestNamedEntityCreate_Success(t *testing.T) {
 func TestNamedEntityCreate_UniqueViolationReturnsErrExists(t *testing.T) {
 	_, err := namedEntityCreate(t.Context(), "fake", "taken", identityNormalize, errFakeInvalid, errFakeExists,
 		func(_ context.Context, _ string) (*fakeEntity, error) {
-			return nil, fmt.Errorf("UNIQUE constraint failed: fakes.name")
+			return nil, errors.New("UNIQUE constraint failed: fakes.name")
 		},
 	)
 	require.ErrorIs(t, err, errFakeExists)
@@ -85,7 +84,7 @@ func TestNamedEntityUpdate_Success(t *testing.T) {
 func TestNamedEntityUpdate_UniqueViolationReturnsErrExists(t *testing.T) {
 	_, err := namedEntityUpdate(t.Context(), "fake", "id-1", "taken", identityNormalize, errFakeInvalid, errFakeExists,
 		func(_ context.Context, _, _ string) (*fakeEntity, error) {
-			return nil, fmt.Errorf("UNIQUE constraint failed: fakes.name")
+			return nil, errors.New("UNIQUE constraint failed: fakes.name")
 		},
 	)
 	require.ErrorIs(t, err, errFakeExists)

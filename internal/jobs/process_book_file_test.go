@@ -1,7 +1,7 @@
 package jobs
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -400,7 +400,7 @@ func TestProcessBookFile_EnqueueFailureDoesNotFailProcessing(t *testing.T) {
 	epubPath := filepath.Join(dir, "test-fail-enqueue.epub")
 	testutils.MakeTestEPUB(t, epubPath, "Fail Enqueue Test", "Test Author", "urn:isbn:9780000000003")
 
-	enq := &genericMockEnqueuer{err: fmt.Errorf("redis unavailable")}
+	enq := &genericMockEnqueuer{err: errors.New("redis unavailable")}
 
 	err = ProcessBookFile(t.Context(), database, ext, enq, ProcessFilePayload{
 		Path:     epubPath,
