@@ -1980,7 +1980,7 @@ Get a single book file by ID.
 | `file_size`      | integer  | File size in bytes |
 | `file_hash`      | string?  | Content hash (e.g. `sha256:abc123…`); `null` when not recorded |
 | `file_path`      | string   | Absolute path to the file on the server's filesystem |
-| `download_count` | integer  | Number of times this file has been downloaded |
+| `download_count` | integer  | Number of download requests initiated for this file |
 | `created_at`     | string   | Timestamp when the record was created (ISO 8601) |
 | `updated_at`     | string   | Timestamp when the record was last updated (ISO 8601) |
 
@@ -2011,7 +2011,7 @@ Download the raw file content for a book file. The response is the binary file c
 
 ### `POST /api/book-files/{id}/email` 🔒
 
-Send a book file as an email attachment to a specified address. Requires SMTP to be configured in the server settings. The file must be ≤ 25 MB; larger files are rejected with `413`.
+Send a book file as an email attachment to a specified address. Requires SMTP to be configured in the server settings. The file must be ≤ 25 MiB; larger files are rejected with `413`.
 
 **Path parameter:** `{id}` — book file ID.
 
@@ -2034,7 +2034,7 @@ Send a book file as an email attachment to a specified address. Requires SMTP to
 | `400 Bad Request` | Missing or invalid `to` address; SMTP not configured or misconfigured |
 | `403 Forbidden` | File path is outside all configured library roots |
 | `404 Not Found` | Book file record not found, or file no longer exists on disk |
-| `413 Request Entity Too Large` | File exceeds the 25 MB attachment limit |
+| `413 Request Entity Too Large` | File exceeds the 25 MiB attachment limit |
 | `500 Internal Server Error` | Unexpected server error (path validation, SMTP validation, message build, or file read failure) |
 | `502 Bad Gateway` | SMTP server rejected or failed to deliver the message |
 
