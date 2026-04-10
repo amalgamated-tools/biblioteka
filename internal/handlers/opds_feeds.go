@@ -216,7 +216,7 @@ func writeEntityBooksFeed[T any](
 				logAttr,
 				slog.Any(otelkeys.Error, err),
 			)
-			writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "", "Failed to fetch entity")
+			writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, opdsBaseURL(r)+pathPrefix+entityID, "Failed to fetch entity")
 		}
 		return
 	}
