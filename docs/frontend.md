@@ -1242,7 +1242,7 @@ $effect(() => {
 | `settings/users` | `User Management – biblioteka` |
 | `settings/api-keys` | `API Keys – biblioteka` |
 | `settings/kobo` | `Kobo Sync – biblioteka` |
-| Unknown hash | `biblioteka` |
+| Unknown hash | `Page Not Found – biblioteka` |
 
 **Dynamic page titles** — Views that display a named resource (such as a specific library) can call `routerStore.setPageTitle(title)` to override the default view title. The override is automatically cleared on navigation. For example, `LibraryView.svelte` sets the title to the library name when the library prop resolves.
 
