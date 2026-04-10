@@ -75,9 +75,27 @@
     }
   }
 
-  function handleClear() {
-    watchFolderPath = "";
-    watchFolderLibraryId = "";
+  async function handleClear() {
+    error = null;
+    successMessage = null;
+    loading = true;
+
+    try {
+      const result = await setWatchFolderConfig({
+        path: "",
+        library_id: "",
+      });
+      watchFolderPath = "";
+      watchFolderLibraryId = "";
+      successMessage = result.message;
+    } catch (err) {
+      error =
+        err instanceof Error
+          ? err.message
+          : "Failed to clear watch folder configuration";
+    } finally {
+      loading = false;
+    }
   }
 </script>
 

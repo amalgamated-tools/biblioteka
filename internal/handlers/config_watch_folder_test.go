@@ -50,10 +50,11 @@ func TestHandleSetWatchFolderConfig_Success(t *testing.T) {
 	// Create a temp directory to use as watch folder.
 	dir := t.TempDir()
 
-	body, _ := json.Marshal(setWatchFolderConfigRequest{
+	body, err := json.Marshal(setWatchFolderConfigRequest{
 		Path:      dir,
 		LibraryID: lib.ID,
 	})
+	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPut, "/api/config/watch-folder", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
@@ -88,10 +89,11 @@ func TestHandleSetWatchFolderConfig_ClearConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(setWatchFolderConfigRequest{
+	body, err := json.Marshal(setWatchFolderConfigRequest{
 		Path:      dir,
 		LibraryID: lib.ID,
 	})
+	require.NoError(t, err)
 	r := httptest.NewRequest(http.MethodPut, "/api/config/watch-folder", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	r = withUserID(r, adminID)
@@ -100,10 +102,11 @@ func TestHandleSetWatchFolderConfig_ClearConfig(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	// Now clear it.
-	body2, _ := json.Marshal(setWatchFolderConfigRequest{
+	body2, err := json.Marshal(setWatchFolderConfigRequest{
 		Path:      "",
 		LibraryID: "",
 	})
+	require.NoError(t, err)
 	r2 := httptest.NewRequest(http.MethodPut, "/api/config/watch-folder", bytes.NewReader(body2))
 	r2.Header.Set("Content-Type", "application/json")
 	r2 = withUserID(r2, adminID)
@@ -133,10 +136,11 @@ func TestHandleSetWatchFolderConfig_InvalidPath(t *testing.T) {
 	lib, err := h.DB.CreateLibrary(t.Context(), "Test Library", `["/tmp"]`, "none", true)
 	require.NoError(t, err)
 
-	body, _ := json.Marshal(setWatchFolderConfigRequest{
+	body, err := json.Marshal(setWatchFolderConfigRequest{
 		Path:      "/nonexistent/path/should/not/exist",
 		LibraryID: lib.ID,
 	})
+	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPut, "/api/config/watch-folder", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
@@ -158,10 +162,11 @@ func TestHandleSetWatchFolderConfig_PathIsFile(t *testing.T) {
 	f := filepath.Join(t.TempDir(), "notadir.txt")
 	require.NoError(t, os.WriteFile(f, []byte("test"), 0o644))
 
-	body, _ := json.Marshal(setWatchFolderConfigRequest{
+	body, err := json.Marshal(setWatchFolderConfigRequest{
 		Path:      f,
 		LibraryID: lib.ID,
 	})
+	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPut, "/api/config/watch-folder", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
@@ -177,10 +182,11 @@ func TestHandleSetWatchFolderConfig_MissingLibraryID(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(setWatchFolderConfigRequest{
+	body, err := json.Marshal(setWatchFolderConfigRequest{
 		Path:      dir,
 		LibraryID: "",
 	})
+	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPut, "/api/config/watch-folder", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
@@ -196,10 +202,11 @@ func TestHandleSetWatchFolderConfig_LibraryNotFound(t *testing.T) {
 	h, adminID, _ := setupConfigHandler(t)
 
 	dir := t.TempDir()
-	body, _ := json.Marshal(setWatchFolderConfigRequest{
+	body, err := json.Marshal(setWatchFolderConfigRequest{
 		Path:      dir,
 		LibraryID: "nonexistent-library-id",
 	})
+	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPut, "/api/config/watch-folder", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
@@ -214,10 +221,11 @@ func TestHandleSetWatchFolderConfig_LibraryNotFound(t *testing.T) {
 func TestHandleSetWatchFolderConfig_NonAdmin(t *testing.T) {
 	h, _, regularID := setupConfigHandler(t)
 
-	body, _ := json.Marshal(setWatchFolderConfigRequest{
+	body, err := json.Marshal(setWatchFolderConfigRequest{
 		Path:      "/tmp",
 		LibraryID: "some-id",
 	})
+	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPut, "/api/config/watch-folder", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")

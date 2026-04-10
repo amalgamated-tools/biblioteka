@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -16,13 +18,33 @@ import (
 )
 
 const (
-	settingWatchFolderPath      = "watch_folder_path"
-	settingWatchFolderLibraryID = "watch_folder_library_id"
+	settingWatchFolderPath      = db.SettingWatchFolderPath
+	settingWatchFolderLibraryID = db.SettingWatchFolderLibraryID
 
 	// watchFolderPathValidationTimeout guards against blocking the HTTP handler
 	// on slow NFS/SMB mounts.
 	watchFolderPathValidationTimeout = 5 * time.Second
+
+	// maxConcurrentPathValidations limits how many goroutines can be running
+	// os.Stat concurrently. This prevents unbounded goroutine accumulation
+	// when stat calls hang (e.g., stuck NFS/SMB mounts).
+	maxConcurrentPathValidations = 4
 )
+
+// pathValidationSem limits concurrent os.Stat goroutines for watch folder
+// path validation. Without this, hung filesystem calls could accumulate
+// goroutines indefinitely as each timed-out request spawns another.
+var pathValidationSem = struct {
+	ch   chan struct{}
+	once sync.Once
+}{}
+
+func acquirePathValidationSlot() chan struct{} {
+	pathValidationSem.once.Do(func() {
+		pathValidationSem.ch = make(chan struct{}, maxConcurrentPathValidations)
+	})
+	return pathValidationSem.ch
+}
 
 type watchFolderConfigResponse struct {
 	Path      string `json:"path"`
@@ -109,8 +131,22 @@ func (h *ConfigHandler) handleSetWatchFolderConfig(w http.ResponseWriter, r *htt
 		return
 	}
 
+	// Validate path is absolute.
+	if !filepath.IsAbs(path) {
+		writeError(r.Context(), w, http.StatusBadRequest, "watch folder path must be absolute")
+		return
+	}
+
 	// Validate path exists and is a directory.
 	if err := h.validateWatchFolderPath(r.Context(), path); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			slog.WarnContext(r.Context(), "watch folder path validation timed out",
+				slog.String(otelkeys.WatchFolderPath, path),
+				slog.Any(otelkeys.Error, err),
+			)
+			writeError(r.Context(), w, http.StatusInternalServerError, "timed out while validating watch folder path")
+			return
+		}
 		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -161,16 +197,30 @@ func (h *ConfigHandler) validateWatchFolderPathWith(ctx context.Context, path st
 	validateCtx, cancel := context.WithTimeout(ctx, watchFolderPathValidationTimeout)
 	defer cancel()
 
+	sem := acquirePathValidationSlot()
+	select {
+	case sem <- struct{}{}:
+		// acquired slot
+	case <-validateCtx.Done():
+		return context.DeadlineExceeded
+	}
+
 	type result struct{ err error }
 	ch := make(chan result, 1)
 	go func() {
+		defer func() { <-sem }()
 		info, err := statFn(path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				ch <- result{errors.New("folder not found: " + path)}
 				return
 			}
-			ch <- result{err}
+			// Don't expose raw OS error details to client; log them server-side.
+			slog.WarnContext(ctx, "watch folder path validation failed",
+				slog.String(otelkeys.WatchFolderPath, path),
+				slog.Any(otelkeys.Error, err),
+			)
+			ch <- result{errors.New("unable to access path: " + path)}
 			return
 		}
 		if !info.IsDir() {
@@ -182,7 +232,7 @@ func (h *ConfigHandler) validateWatchFolderPathWith(ctx context.Context, path st
 
 	select {
 	case <-validateCtx.Done():
-		return errors.New("path validation timed out")
+		return context.DeadlineExceeded
 	case r := <-ch:
 		return r.err
 	}
@@ -192,6 +242,12 @@ func (h *ConfigHandler) validateWatchFolderPathWith(ctx context.Context, path st
 func (h *ConfigHandler) getSettingOrEmpty(ctx context.Context, key string) string {
 	val, err := h.DB.GetSetting(ctx, key)
 	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			slog.WarnContext(ctx, "failed to read setting",
+				slog.String(otelkeys.Key, key),
+				slog.Any(otelkeys.Error, err),
+			)
+		}
 		return ""
 	}
 	return val

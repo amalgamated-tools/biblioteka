@@ -209,4 +209,24 @@ describe("WatchFolderTab form validation", () => {
       library_id: "",
     });
   });
+
+  it("Clear button calls setWatchFolderConfig to clear server config", async () => {
+    vi.mocked(getWatchFolderConfig).mockResolvedValueOnce({
+      path: "/incoming",
+      library_id: "lib-1",
+    });
+    render(WatchFolderTab);
+    await tick();
+    await tick();
+
+    const clearButton = screen.getByRole("button", { name: "Clear" });
+    await fireEvent.click(clearButton);
+    await tick();
+    await tick();
+
+    expect(setWatchFolderConfig).toHaveBeenCalledWith({
+      path: "",
+      library_id: "",
+    });
+  });
 });
