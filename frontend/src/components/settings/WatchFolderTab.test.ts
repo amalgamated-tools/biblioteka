@@ -7,11 +7,9 @@ vi.mock("../../lib/api", () => ({
     path: "",
     library_id: "",
   }),
-  setWatchFolderConfig: vi
-    .fn()
-    .mockResolvedValue({
-      message: "Watch folder configuration saved successfully",
-    }),
+  setWatchFolderConfig: vi.fn().mockResolvedValue({
+    message: "Watch folder configuration saved successfully",
+  }),
   listLibraries: vi.fn().mockResolvedValue([
     {
       id: "lib-1",
