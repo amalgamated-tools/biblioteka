@@ -152,10 +152,21 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 
 ### Exit Conditions
 
+When any of the following conditions are met, you **MUST** call the `noop` safe-output tool with a brief explanation before exiting. Failing to call any safe-output tool will cause the workflow to report a failure.
+
 - Exit if the repository has no implementation code yet (empty repository)
 - Exit if no code changes require documentation updates
 - Exit if all documentation is already up-to-date and comprehensive
+- Exit if no open documentation PRs need maintenance
+
+Example noop output:
+
+```json
+{"noop": {"message": "No action needed: all documentation is up-to-date with the latest code changes."}}
+```
 
 > NOTE: Never make direct pushes to main. Always create a pull request for documentation changes.
 
 > NOTE: Treat documentation gaps like failing tests.
+
+> **Important**: You MUST call exactly one safe-output tool before finishing. If documentation updates are needed, create a pull request. If no updates are needed, call `noop` with a status message. Do NOT end without calling a safe-output tool.
