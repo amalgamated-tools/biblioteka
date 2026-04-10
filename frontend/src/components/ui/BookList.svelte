@@ -344,7 +344,10 @@
       <button
         onclick={prevPage}
         disabled={currentPage <= 1}
-        aria-label="Previous page, page {Math.max(1, currentPage - 1)} of {totalPages}"
+        aria-label="Previous page, page {Math.max(
+          1,
+          currentPage - 1,
+        )} of {totalPages}"
         class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-400 dark:border-ink-400 transition-colors
           {currentPage <= 1
           ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
@@ -359,7 +362,10 @@
       <button
         onclick={nextPage}
         disabled={currentPage >= totalPages}
-        aria-label="Next page, page {Math.min(totalPages, currentPage + 1)} of {totalPages}"
+        aria-label="Next page, page {Math.min(
+          totalPages,
+          currentPage + 1,
+        )} of {totalPages}"
         class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-400 dark:border-ink-400 transition-colors
           {currentPage >= totalPages
           ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'

@@ -46,9 +46,7 @@ describe("APIKeysTab table accessibility", () => {
     await tick();
     await tick();
 
-    expect(
-      screen.getByRole("table", { name: "API keys" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "API keys" })).toBeInTheDocument();
   });
 });
 

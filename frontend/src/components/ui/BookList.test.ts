@@ -174,10 +174,7 @@ describe("BookList pagination accessibility", () => {
     const nextButton = screen.getByRole("button", {
       name: /Next page/,
     });
-    expect(nextButton).toHaveAttribute(
-      "aria-label",
-      "Next page, page 2 of 25",
-    );
+    expect(nextButton).toHaveAttribute("aria-label", "Next page, page 2 of 25");
   });
 });
 
