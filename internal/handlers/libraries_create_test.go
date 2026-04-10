@@ -3,7 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -167,7 +167,7 @@ func TestCreateLibrary_EnqueuesScanJobsForMultiplePaths(t *testing.T) {
 
 func TestCreateLibrary_EnqueueErrorDoesNotFailRequest(t *testing.T) {
 	h, adminID, _ := setupLibraryHandler(t)
-	mock := &mockEnqueuer{err: fmt.Errorf("redis unavailable")}
+	mock := &mockEnqueuer{err: errors.New("redis unavailable")}
 	h.Enqueuer = mock
 
 	dir := t.TempDir()

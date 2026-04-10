@@ -2,6 +2,7 @@ package goodreads
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -25,7 +26,7 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 			ctx,
 			"ISBN cannot be empty",
 		)
-		return nil, fmt.Errorf("ISBN cannot be empty")
+		return nil, errors.New("ISBN cannot be empty")
 	}
 	// Strip common ISBN formatting before validating and querying Goodreads.
 	var normalizedISBN strings.Builder

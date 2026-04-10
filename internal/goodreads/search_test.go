@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"sync/atomic"
@@ -117,7 +116,7 @@ func TestSearch_GraphQLError(t *testing.T) {
 	client := &Client{
 		client: &mockGraphQLClient{
 			handler: func(req *graphql.Request, resp *graphql.Response) error {
-				return fmt.Errorf("graphql request failed")
+				return errors.New("graphql request failed")
 			},
 		},
 	}
