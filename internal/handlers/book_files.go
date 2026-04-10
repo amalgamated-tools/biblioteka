@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"mime"
 	"net/http"
@@ -10,14 +11,18 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/smtp"
 )
 
 // BookFileHandler holds dependencies for book file endpoints.
 type BookFileHandler struct {
 	DB *db.DB
+	// SendMailFunc overrides the default smtp.Send implementation (used in tests).
+	SendMailFunc smtp.SendFunc
 }
 
-// HandleBookFile handles GET/DELETE /api/book-files/{id} and GET /api/book-files/{id}/download.
+// HandleBookFile handles GET/DELETE /api/book-files/{id} and sub-resources
+// such as /api/book-files/{id}/download and /api/book-files/{id}/email.
 func (h *BookFileHandler) HandleBookFile(w http.ResponseWriter, r *http.Request) {
 	id, sub, ok := extractPathSegments(r.URL.Path, "/api/book-files/")
 	if !ok {
@@ -41,9 +46,20 @@ func (h *BookFileHandler) HandleBookFile(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		h.downloadBookFile(w, r, id)
+	case "email":
+		h.handleEmailBookFile(w, r, id)
 	default:
 		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}
+}
+
+// readBookFileData reads the contents of the file at filePath from disk.
+func readBookFileData(filePath string) ([]byte, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("read book file %q: %w", filePath, err)
+	}
+	return data, nil
 }
 
 // getBookFile returns a single book file record by ID.

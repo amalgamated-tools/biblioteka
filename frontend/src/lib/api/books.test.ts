@@ -23,6 +23,7 @@ import {
   getBookFile,
   deleteBookFile,
   bookFileDownloadUrl,
+  emailBookFile,
   clearToken,
 } from "../api";
 import type {
@@ -345,6 +346,20 @@ describe("Books API", () => {
     it("returns the download URL for a book file", () => {
       const url = bookFileDownloadUrl("f1");
       expect(url).toBe("/api/book-files/f1/download");
+    });
+  });
+
+  describe("emailBookFile", () => {
+    it("sends POST /api/book-files/:id/email with to body and returns the message", async () => {
+      mockFetchResponse({ message: "Email sent successfully" });
+
+      const result = await emailBookFile("f1", "reader@example.com");
+
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/book-files/f1/email");
+      expect(options.method).toBe("POST");
+      expect(JSON.parse(options.body)).toEqual({ to: "reader@example.com" });
+      expect(result).toEqual({ message: "Email sent successfully" });
     });
   });
 });
