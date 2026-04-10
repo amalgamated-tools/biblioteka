@@ -17,6 +17,18 @@
     initialSmtpConfigured: boolean;
   }
 
+  interface SmtpStatus {
+    configured: boolean;
+    envOverride: boolean;
+    passwordSet: boolean;
+    error: string | null;
+    successMessage: string | null;
+    loading: boolean;
+    testLoading: boolean;
+    testMessage: string | null;
+    testError: string | null;
+  }
+
   let { initialSmtpConfigured }: Props = $props();
 
   let smtpForm = $state({
@@ -30,16 +42,16 @@
 
   // One-time initialisation – this prop is not expected to change after mount.
   // svelte-ignore state_referenced_locally
-  let smtpStatus = $state({
+  let smtpStatus: SmtpStatus = $state({
     configured: initialSmtpConfigured,
     envOverride: false,
     passwordSet: false,
-    error: null as string | null,
-    successMessage: null as string | null,
+    error: null,
+    successMessage: null,
     loading: false,
     testLoading: false,
-    testMessage: null as string | null,
-    testError: null as string | null,
+    testMessage: null,
+    testError: null,
   });
 
   const testMessageTimer = new AutoDismissTimer(5000);
