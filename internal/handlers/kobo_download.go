@@ -76,6 +76,10 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 
 	stat, err := f.Stat()
 	if err != nil {
+		slog.ErrorContext(r.Context(), "kobo download: failed to stat book file",
+			slog.String(otelkeys.BookFileID, target.ID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
 		return
 	}
