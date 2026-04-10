@@ -11,7 +11,7 @@ var _ = errors.New
 
 func examples() {
 	// Static strings — all should be flagged.
-	_ = fmt.Errorf("something went wrong")       // want `fmt\.Errorf with no format verbs; use errors\.New instead`
+	_ = fmt.Errorf("something went wrong")        // want `fmt\.Errorf with no format verbs; use errors\.New instead`
 	_ = fmt.Errorf("connection refused")          // want `fmt\.Errorf with no format verbs; use errors\.New instead`
 	_ = fmt.Errorf("EOF reached")                 // want `fmt\.Errorf with no format verbs; use errors\.New instead`
 	_ = fmt.Errorf("a 50%% literal percent sign") // want `fmt\.Errorf with no format verbs; use errors\.New instead`
