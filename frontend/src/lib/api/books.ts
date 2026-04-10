@@ -24,6 +24,11 @@ export async function listBooks(
   return request<PaginatedBooks>("GET", `/api/books?${params.toString()}`);
 }
 
+export async function getTotalBooksCount(): Promise<number> {
+  const data = await listBooks(1, 0);
+  return data.total;
+}
+
 export async function getBook(id: string): Promise<Book> {
   return request<Book>("GET", `/api/books/${id}`);
 }

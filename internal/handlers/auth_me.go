@@ -96,7 +96,7 @@ func (h *AuthHandler) updateProfile(w http.ResponseWriter, r *http.Request) {
 			slog.String(otelkeys.UserID, userID),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update profile")
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update user profile")
 		return
 	}
 
