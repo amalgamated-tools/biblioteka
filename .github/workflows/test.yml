@@ -308,7 +308,7 @@ jobs:
         with:
           script: |
             const MARKER = '<!-- gh-coverage-comment -->';
-            const goPct = process.env.GO_PCT || '';
+            const goPct = process.env.GO_PCT || 'N/A';
             const frontendPct = process.env.FRONTEND_PCT || 'N/A';
             const rows = [
               `| Go backend | ${goPct} |`,
