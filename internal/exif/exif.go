@@ -235,7 +235,7 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 	fileFormat := filepath.Ext(file)
 	if fileFormat == "" {
 		slog.WarnContext(ctx, "file has no extension, can't determine format", slog.String(otelkeys.Path, file))
-		return nil, fmt.Errorf("can't extract metadata from file without extension")
+		return nil, errors.New("can't extract metadata from file without extension")
 	}
 
 	for _, curA := range extractArgs {

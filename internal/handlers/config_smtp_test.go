@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -539,7 +540,7 @@ func TestHandleSMTPTest_SendMailFailure(t *testing.T) {
 	_ = h.DB.SetSetting(t.Context(), smtp.SettingKeyTLS, "starttls")
 
 	h.SendMailFunc = func(_ context.Context, addr string, a netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
-		return fmt.Errorf("connection refused")
+		return errors.New("connection refused")
 	}
 
 	r := httptest.NewRequest(http.MethodPost, "/api/config/smtp/test", nil)

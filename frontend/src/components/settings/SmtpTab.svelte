@@ -17,44 +17,63 @@
     initialSmtpConfigured: boolean;
   }
 
+  interface SmtpStatus {
+    configured: boolean;
+    envOverride: boolean;
+    passwordSet: boolean;
+    error: string | null;
+    successMessage: string | null;
+    loading: boolean;
+    testLoading: boolean;
+    testMessage: string | null;
+    testError: string | null;
+  }
+
   let { initialSmtpConfigured }: Props = $props();
+
+  let smtpForm = $state({
+    host: "",
+    port: "587",
+    username: "",
+    password: "",
+    from: "",
+    tls: "starttls",
+  });
 
   // One-time initialisation – this prop is not expected to change after mount.
   // svelte-ignore state_referenced_locally
-  let smtpConfigured = $state(initialSmtpConfigured);
-  let smtpEnvOverride = $state(false);
-  let smtpPasswordSet = $state(false);
-  let smtpHost = $state("");
-  let smtpPort = $state("587");
-  let smtpUsername = $state("");
-  let smtpPassword = $state("");
-  let smtpFrom = $state("");
-  let smtpTls = $state("starttls");
-  let smtpError: string | null = $state(null);
-  let smtpSuccessMessage: string | null = $state(null);
-  let smtpLoading = $state(false);
-  let smtpTestLoading = $state(false);
-  let smtpTestMessage: string | null = $state(null);
-  let smtpTestError: string | null = $state(null);
+  let smtpStatus: SmtpStatus = $state({
+    configured: initialSmtpConfigured,
+    envOverride: false,
+    passwordSet: false,
+    error: null,
+    successMessage: null,
+    loading: false,
+    testLoading: false,
+    testMessage: null,
+    testError: null,
+  });
 
   const testMessageTimer = new AutoDismissTimer(5000);
   const testErrorTimer = new AutoDismissTimer(5000);
 
   let smtpSubmitLabel = $derived.by(() => {
-    if (smtpLoading) return "Saving...";
-    return smtpConfigured ? "Update Configuration" : "Save Configuration";
+    if (smtpStatus.loading) return "Saving...";
+    return smtpStatus.configured
+      ? "Update Configuration"
+      : "Save Configuration";
   });
 
   onMount(async () => {
     try {
       const smtp = await getSmtpConfig();
-      smtpHost = smtp.host;
-      smtpPort = smtp.port || "587";
-      smtpUsername = smtp.username;
-      smtpFrom = smtp.from;
-      smtpTls = smtp.tls || "starttls";
-      smtpEnvOverride = smtp.env_override;
-      smtpPasswordSet = smtp.password_set;
+      smtpForm.host = smtp.host;
+      smtpForm.port = smtp.port || "587";
+      smtpForm.username = smtp.username;
+      smtpForm.from = smtp.from;
+      smtpForm.tls = smtp.tls || "starttls";
+      smtpStatus.envOverride = smtp.env_override;
+      smtpStatus.passwordSet = smtp.password_set;
     } catch {
       // ignore - user can re-enter
     }
@@ -67,71 +86,71 @@
 
   async function handleSmtpSave(e: SubmitEvent) {
     e.preventDefault();
-    smtpError = null;
-    smtpSuccessMessage = null;
+    smtpStatus.error = null;
+    smtpStatus.successMessage = null;
 
-    smtpError =
-      validate(smtpHost, [required("SMTP Host is required")]) ??
-      validate(smtpFrom, [required("From Address is required")]);
-    if (smtpError) return;
+    smtpStatus.error =
+      validate(smtpForm.host, [required("SMTP Host is required")]) ??
+      validate(smtpForm.from, [required("From Address is required")]);
+    if (smtpStatus.error) return;
 
     if (
-      !smtpPassword.trim() &&
-      smtpUsername.trim() &&
-      (!smtpPasswordSet || smtpEnvOverride)
+      !smtpForm.password.trim() &&
+      smtpForm.username.trim() &&
+      (!smtpStatus.passwordSet || smtpStatus.envOverride)
     ) {
-      smtpError = "Password is required when username is set";
+      smtpStatus.error = "Password is required when username is set";
       return;
     }
 
-    smtpLoading = true;
+    smtpStatus.loading = true;
 
     try {
       const result = await setSmtpConfig({
-        host: smtpHost.trim(),
-        port: smtpPort.trim() || "587",
-        username: smtpUsername.trim(),
-        password: smtpPassword.trim(),
-        from: smtpFrom.trim(),
-        tls: smtpTls,
+        host: smtpForm.host.trim(),
+        port: smtpForm.port.trim() || "587",
+        username: smtpForm.username.trim(),
+        password: smtpForm.password.trim(),
+        from: smtpForm.from.trim(),
+        tls: smtpForm.tls,
       });
       const status = await getConfigStatus();
-      smtpSuccessMessage = result.message;
-      smtpConfigured = status.smtp_configured;
-      if (smtpPassword.trim()) {
-        smtpPasswordSet = true;
-      } else if (!smtpUsername.trim()) {
+      smtpStatus.successMessage = result.message;
+      smtpStatus.configured = status.smtp_configured;
+      if (smtpForm.password.trim()) {
+        smtpStatus.passwordSet = true;
+      } else if (!smtpForm.username.trim()) {
         // Saved with no username → credentials were cleared
-        smtpPasswordSet = false;
+        smtpStatus.passwordSet = false;
       }
-      smtpPassword = "";
+      smtpForm.password = "";
     } catch (err) {
-      smtpError =
+      smtpStatus.error =
         err instanceof Error
           ? err.message
           : "Failed to save SMTP configuration";
     } finally {
-      smtpLoading = false;
+      smtpStatus.loading = false;
     }
   }
 
   async function handleSmtpTest() {
     testMessageTimer.clear();
     testErrorTimer.clear();
-    smtpTestMessage = null;
-    smtpTestError = null;
-    smtpTestLoading = true;
+    smtpStatus.testMessage = null;
+    smtpStatus.testError = null;
+    smtpStatus.testLoading = true;
 
     try {
       const result = await testSmtpConfig();
-      smtpTestMessage = result.message;
+      smtpStatus.testMessage = result.message;
       testMessageTimer.show();
     } catch (err) {
-      smtpTestError =
+      smtpStatus.testError =
         err instanceof Error ? err.message : "Failed to send test email";
       testErrorTimer.show();
     } finally {
-      smtpTestLoading = false;
+      smtpStatus.testLoading = false;
     }
   }
 </script>
@@ -147,31 +166,34 @@
         <Send class="w-5 h-5 text-accent-600" aria-hidden="true" />
         Email / SMTP Configuration
       </h2>
-      {#if smtpConfigured}
+      {#if smtpStatus.configured}
         <Button
           onclick={handleSmtpTest}
-          disabled={smtpTestLoading}
+          disabled={smtpStatus.testLoading}
           class="inline-flex items-center gap-2 px-4 py-2 text-sm"
         >
           <Mail class="w-4 h-4" aria-hidden="true" />
-          {smtpTestLoading ? "Sending..." : "Send Test Email"}
+          {smtpStatus.testLoading ? "Sending..." : "Send Test Email"}
         </Button>
       {/if}
     </div>
 
-    {#if testMessageTimer.visible && smtpTestMessage}
-      <AlertBanner variant="success" class="mb-4">{smtpTestMessage}</AlertBanner
+    {#if testMessageTimer.visible && smtpStatus.testMessage}
+      <AlertBanner variant="success" class="mb-4"
+        >{smtpStatus.testMessage}</AlertBanner
       >
     {/if}
 
-    {#if testErrorTimer.visible && smtpTestError}
-      <AlertBanner variant="error" class="mb-4">{smtpTestError}</AlertBanner>
+    {#if testErrorTimer.visible && smtpStatus.testError}
+      <AlertBanner variant="error" class="mb-4"
+        >{smtpStatus.testError}</AlertBanner
+      >
     {/if}
 
     <div class="mb-4">
       <div class="flex items-center gap-2 text-sm">
         <span class="text-ink-500 dark:text-ink-300">Status:</span>
-        {#if smtpConfigured}
+        {#if smtpStatus.configured}
           <span
             class="inline-flex items-center gap-1.5 text-success-700 dark:text-green-400 bg-success-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full font-medium"
           >
@@ -193,7 +215,7 @@
       Configure SMTP settings to enable email notifications from Biblioteka.
     </p>
 
-    {#if smtpEnvOverride}
+    {#if smtpStatus.envOverride}
       <div
         class="bg-accent-50 dark:bg-accent-800/20 border border-accent-200 dark:border-accent-700/30 text-accent-700 dark:text-accent-400 px-4 py-3 rounded-xl text-sm mb-4"
       >
@@ -214,10 +236,10 @@
         <TextInput
           id="smtp-host"
           type="text"
-          bind:value={smtpHost}
+          bind:value={smtpForm.host}
           class="w-full py-2.5"
           placeholder="smtp.example.com"
-          disabled={smtpLoading || smtpEnvOverride}
+          disabled={smtpStatus.loading || smtpStatus.envOverride}
         />
       </div>
 
@@ -231,10 +253,10 @@
         <TextInput
           id="smtp-port"
           type="text"
-          bind:value={smtpPort}
+          bind:value={smtpForm.port}
           class="w-full py-2.5"
           placeholder="587"
-          disabled={smtpLoading || smtpEnvOverride}
+          disabled={smtpStatus.loading || smtpStatus.envOverride}
         />
       </div>
 
@@ -248,14 +270,14 @@
         <TextInput
           id="smtp-username"
           type="text"
-          bind:value={smtpUsername}
+          bind:value={smtpForm.username}
           class="w-full py-2.5"
           placeholder="user@example.com"
-          disabled={smtpLoading || smtpEnvOverride}
+          disabled={smtpStatus.loading || smtpStatus.envOverride}
         />
       </div>
 
-      {#if !smtpEnvOverride}
+      {#if !smtpStatus.envOverride}
         <div>
           <label
             for="smtp-password"
@@ -266,17 +288,17 @@
           <TextInput
             id="smtp-password"
             type="password"
-            bind:value={smtpPassword}
+            bind:value={smtpForm.password}
             class="w-full py-2.5"
-            placeholder={smtpPasswordSet
+            placeholder={smtpStatus.passwordSet
               ? "Enter new password to update"
               : "Enter your SMTP password"}
-            disabled={smtpLoading}
-            aria-describedby={smtpPasswordSet
+            disabled={smtpStatus.loading}
+            aria-describedby={smtpStatus.passwordSet
               ? "smtp-password-hint"
               : undefined}
           />
-          {#if smtpPasswordSet}
+          {#if smtpStatus.passwordSet}
             <p
               id="smtp-password-hint"
               class="text-xs text-ink-500 dark:text-ink-300 mt-1"
@@ -297,10 +319,10 @@
         <TextInput
           id="smtp-from"
           type="email"
-          bind:value={smtpFrom}
+          bind:value={smtpForm.from}
           class="w-full py-2.5"
           placeholder="noreply@example.com"
-          disabled={smtpLoading || smtpEnvOverride}
+          disabled={smtpStatus.loading || smtpStatus.envOverride}
           aria-describedby="smtp-from-hint"
         />
         <p
@@ -320,9 +342,9 @@
         </label>
         <select
           id="smtp-tls"
-          bind:value={smtpTls}
+          bind:value={smtpForm.tls}
           class="w-full px-4 py-2.5 border border-ink-400 dark:border-ink-400 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 transition-all"
-          disabled={smtpLoading || smtpEnvOverride}
+          disabled={smtpStatus.loading || smtpStatus.envOverride}
         >
           <option value="starttls">STARTTLS</option>
           <option value="tls">TLS</option>
@@ -330,16 +352,20 @@
         </select>
       </div>
 
-      {#if smtpError}
-        <AlertBanner variant="error">{smtpError}</AlertBanner>
+      {#if smtpStatus.error}
+        <AlertBanner variant="error">{smtpStatus.error}</AlertBanner>
       {/if}
 
-      {#if smtpSuccessMessage}
-        <AlertBanner variant="success">{smtpSuccessMessage}</AlertBanner>
+      {#if smtpStatus.successMessage}
+        <AlertBanner variant="success">{smtpStatus.successMessage}</AlertBanner>
       {/if}
 
-      {#if !smtpEnvOverride}
-        <Button type="submit" disabled={smtpLoading} class="w-full px-4 py-2.5">
+      {#if !smtpStatus.envOverride}
+        <Button
+          type="submit"
+          disabled={smtpStatus.loading}
+          class="w-full px-4 py-2.5"
+        >
           {smtpSubmitLabel}
         </Button>
       {/if}
