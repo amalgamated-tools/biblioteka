@@ -96,6 +96,7 @@ export interface BookFile {
   file_size: number;
   file_hash: string | null;
   file_path: string;
+  download_count: number;
   created_at: string;
   updated_at: string;
 }
