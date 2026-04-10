@@ -295,7 +295,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: read
       issues: write
     steps:
       # No checkout, Go setup, or artifact downloads needed: both coverage
@@ -303,11 +302,14 @@ jobs:
 
       - name: Post coverage comment
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          GO_PCT: ${{ needs.go-test.outputs.coverage-pct }}
+          FRONTEND_PCT: ${{ needs.frontend-checks.outputs.coverage-pct }}
         with:
           script: |
             const MARKER = '<!-- gh-coverage-comment -->';
-            const goPct = '${{ needs.go-test.outputs.coverage-pct }}';
-            const frontendPct = '${{ needs.frontend-checks.outputs.coverage-pct }}' || 'N/A';
+            const goPct = process.env.GO_PCT || '';
+            const frontendPct = process.env.FRONTEND_PCT || 'N/A';
             const rows = [
               `| Go backend | ${goPct} |`,
             ];
