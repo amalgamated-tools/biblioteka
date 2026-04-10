@@ -1,11 +1,15 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
+import { userEvent } from "@testing-library/user-event";
 import type { BookSummary } from "../../types";
 
-vi.mock("lucide-svelte", () => ({ BookOpen: () => {} }));
-vi.mock("../../stores/router.svelte", () => ({
-  routerStore: {
-    navigate: vi.fn(),
+vi.mock("lucide-svelte", () => ({ BookOpen: () => {}, Mail: () => {} }));
+
+let emailModalRendered = false;
+vi.mock("./EmailBookModal.svelte", () => ({
+  default: () => {
+    emailModalRendered = true;
+    return {};
   },
 }));
 
@@ -30,7 +34,10 @@ const baseBook: BookSummary = {
 };
 
 describe("BookCard", () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    emailModalRendered = false;
+  });
 
   it("renders the book title in a heading", () => {
     render(BookCard, { book: baseBook });
@@ -87,5 +94,28 @@ describe("BookCard", () => {
     render(BookCard, { book: baseBook });
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute("href", "#books/b1");
+  });
+
+  it("renders an email button with accessible label", () => {
+    render(BookCard, { book: baseBook });
+    expect(
+      screen.getByRole("button", { name: /email the hobbit/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("email button has title attribute", () => {
+    render(BookCard, { book: baseBook });
+    expect(
+      screen.getByRole("button", { name: /email the hobbit/i }),
+    ).toHaveAttribute("title", "Email this book");
+  });
+
+  it("clicking the email button renders the email modal", async () => {
+    const user = userEvent.setup();
+    render(BookCard, { book: baseBook });
+    expect(emailModalRendered).toBe(false);
+    const btn = screen.getByRole("button", { name: /email the hobbit/i });
+    await user.click(btn);
+    expect(emailModalRendered).toBe(true);
   });
 });
