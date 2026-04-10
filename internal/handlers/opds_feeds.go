@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -230,12 +232,20 @@ func writeEntityBooksFeed[T any](
 	ctx := r.Context()
 	entity, err := getFn(ctx, entityID)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: entity not found",
-			slog.String(otelkeys.EntityType, entityType),
-			logAttr,
-			slog.Any(otelkeys.Error, err),
-		)
-		http.NotFound(w, r)
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.WarnContext(ctx, "OPDS: entity not found",
+				slog.String(otelkeys.EntityType, entityType),
+				logAttr,
+			)
+			http.NotFound(w, r)
+		} else {
+			slog.ErrorContext(ctx, "OPDS: failed to fetch entity",
+				slog.String(otelkeys.EntityType, entityType),
+				logAttr,
+				slog.Any(otelkeys.Error, err),
+			)
+			writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "", "Failed to fetch entity")
+		}
 		return
 	}
 	h.writeBooksForEntity(w, r, pathPrefix+entityID, titleFn(entity),
