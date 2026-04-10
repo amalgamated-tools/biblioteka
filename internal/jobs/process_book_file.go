@@ -97,6 +97,15 @@ func processBookFile(ctx context.Context, database *db.DB, extractor *metadata.E
 
 	authorName, title := resolveAuthorAndTitle(meta, pathInfo, title)
 
+	// User-supplied overrides from the upload endpoint take precedence over
+	// everything extracted from the file or derived from the path.
+	if p.OverrideTitle != "" {
+		title = p.OverrideTitle
+	}
+	if p.OverrideAuthor != "" {
+		authorName = p.OverrideAuthor
+	}
+
 	filePath, skip, err := maybeReorganizeFile(ctx, database, p.Path, p.LibraryRoot, authorName, title, p.LibraryID, organizationType, lookup)
 	if err != nil {
 		return fmt.Errorf("failed to reorganize file: %w", err)
