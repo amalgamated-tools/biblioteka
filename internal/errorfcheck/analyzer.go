@@ -9,7 +9,6 @@ import (
 	"go/token"
 	"go/types"
 	"strconv"
-	"strings"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -28,8 +27,13 @@ func run(pass *analysis.Pass) (any, error) {
 	insp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	nodeFilter := []ast.Node{(*ast.CallExpr)(nil)}
 
-	// Build set of generated files to skip.
-	generated := generatedFiles(pass)
+	// Build set of generated files to skip using the stdlib check.
+	generated := make(map[string]bool)
+	for _, f := range pass.Files {
+		if ast.IsGenerated(f) {
+			generated[pass.Fset.Position(f.Pos()).Filename] = true
+		}
+	}
 
 	insp.Preorder(nodeFilter, func(n ast.Node) {
 		call, ok := n.(*ast.CallExpr)
@@ -139,32 +143,6 @@ func hasFormatVerb(s string) bool {
 		// treat it conservatively — if there's any unescaped '%', we assume the
 		// caller may have intended a verb and skip the report to avoid false positives.
 		return true
-	}
-	return false
-}
-
-// generatedFiles returns a set of absolute filenames that contain a
-// "// Code generated ... DO NOT EDIT." comment, following the Go convention
-// for generated files (see https://go.dev/s/generatedcode).
-func generatedFiles(pass *analysis.Pass) map[string]bool {
-	m := make(map[string]bool)
-	for _, f := range pass.Files {
-		if isGenerated(f) {
-			m[pass.Fset.Position(f.Pos()).Filename] = true
-		}
-	}
-	return m
-}
-
-// isGenerated reports whether the file contains a comment matching the Go
-// generated-file convention: "// Code generated ... DO NOT EDIT."
-func isGenerated(f *ast.File) bool {
-	for _, cg := range f.Comments {
-		for _, c := range cg.List {
-			if strings.HasPrefix(c.Text, "// Code generated") && strings.HasSuffix(c.Text, "DO NOT EDIT.") {
-				return true
-			}
-		}
 	}
 	return false
 }
