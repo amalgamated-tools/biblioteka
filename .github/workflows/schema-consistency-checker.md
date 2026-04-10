@@ -106,8 +106,8 @@ Set a boolean flag for each layer (`true` = changed, `false` = unchanged).
 
 **Early exit**: If **none** of the five layers have any changed files, call the `noop` safe-output tool and stop immediately. Do not proceed to analysis.
 
-```
-noop message: "✅ No schema-related files changed in the last 24 hours. Schema Consistency Checker has nothing to analyze today."
+```json
+{"noop": {"message": "✅ No schema-related files changed in the last 24 hours. Schema Consistency Checker has nothing to analyze today."}}
 ```
 
 **Partial run**: If only some layers changed, skip the analysis sections for unchanged layers and note which layers were skipped in the report. For example, if only `LAYER_HANDLERS` and `LAYER_FRONTEND` changed, skip Analysis Area 1 (DB Migrations vs Go DB Layer) and focus only on Area 2 (Go Handler DTOs vs TypeScript) and Area 4 (Go DB Types vs Handler DTO Mappings).
@@ -481,6 +481,12 @@ A successful run:
 - ✅ Finds at least one category of inconsistencies OR confirms consistency
 - ✅ Creates a detailed discussion report with actionable recommendations, OR calls `noop` if no inconsistencies are found
 
-**Important**: You **MUST** call exactly one safe-output tool before finishing. If no schema-related files changed in the last 24 hours, or if analysis finds zero inconsistencies, call `noop` with a descriptive status message. Otherwise, create a discussion report.
+**Important**: You **MUST** call exactly one terminal safe-output (`noop` or `create-discussion`) before finishing. Ancillary calls like `upload-asset` or `close-discussion` are allowed alongside the terminal output. If no schema-related files changed in the last 24 hours, or if analysis finds zero inconsistencies, call `noop` with a descriptive status message. Otherwise, create a discussion report.
 
-Begin your analysis now. Check the cache, choose a strategy, execute it, and report your findings in a discussion.
+Example noop output:
+
+```json
+{"noop": {"message": "✅ Schema consistency check complete: no inconsistencies found across analyzed layers."}}
+```
+
+Begin your analysis now. Check the cache, choose a strategy, execute it, and either create a discussion report with your findings or call `noop` with a descriptive status message when there are no relevant changes or no inconsistencies.
