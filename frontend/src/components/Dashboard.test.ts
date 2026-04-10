@@ -211,7 +211,9 @@ describe("Dashboard", () => {
       },
     ];
     // Never resolves, so totalBooks stays null → "…"
-    vi.mocked(getTotalBooksCount).mockReturnValue(new Promise<number>(() => {}));
+    vi.mocked(getTotalBooksCount).mockReturnValue(
+      new Promise<number>(() => {}),
+    );
     render(Dashboard);
     await tick();
 
