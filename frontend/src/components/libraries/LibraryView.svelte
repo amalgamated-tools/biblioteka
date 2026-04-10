@@ -26,7 +26,9 @@
   }
 
   $effect(() => {
-    routerStore.setPageTitle(library ? `${library.name}${APP_TITLE_SUFFIX}` : null);
+    routerStore.setPageTitle(
+      library ? `${library.name}${APP_TITLE_SUFFIX}` : null,
+    );
   });
 </script>
 
