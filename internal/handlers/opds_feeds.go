@@ -168,17 +168,9 @@ func (h *OPDSHandler) writeNamedEntityNavFeed(
 
 func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
 	h.writeNamedEntityNavFeed(w, r, "authors", "Authors",
-		func(ctx context.Context, limit, offset int) ([]opdspkg.NavEntity, int, error) {
-			authors, total, err := h.DB.ListAuthorsPaginated(ctx, limit, offset)
-			if err != nil {
-				return nil, 0, err
-			}
-			entities := make([]opdspkg.NavEntity, len(authors))
-			for i, a := range authors {
-				entities[i] = opdspkg.NavEntity{ID: a.ID, Name: a.Name, Updated: a.UpdatedAt.Format(time.RFC3339)}
-			}
-			return entities, total, nil
-		},
+		adaptNavEntities(h.DB.ListAuthorsPaginated, func(a db.Author) opdspkg.NavEntity {
+			return opdspkg.NavEntity{ID: a.ID, Name: a.Name, Updated: a.UpdatedAt.Format(time.RFC3339)}
+		}),
 	)
 }
 
@@ -203,17 +195,9 @@ func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, author
 
 func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
 	h.writeNamedEntityNavFeed(w, r, "series", "Series",
-		func(ctx context.Context, limit, offset int) ([]opdspkg.NavEntity, int, error) {
-			seriesList, total, err := h.DB.ListSeriesPaginated(ctx, limit, offset)
-			if err != nil {
-				return nil, 0, err
-			}
-			entities := make([]opdspkg.NavEntity, len(seriesList))
-			for i, s := range seriesList {
-				entities[i] = opdspkg.NavEntity{ID: s.ID, Name: s.Name, Updated: s.UpdatedAt.Format(time.RFC3339)}
-			}
-			return entities, total, nil
-		},
+		adaptNavEntities(h.DB.ListSeriesPaginated, func(s db.Series) opdspkg.NavEntity {
+			return opdspkg.NavEntity{ID: s.ID, Name: s.Name, Updated: s.UpdatedAt.Format(time.RFC3339)}
+		}),
 	)
 }
 
