@@ -23,8 +23,10 @@
   let createKeyLoading = $state(false);
   const newKeyCopyState = new CopyTimeoutState();
 
-  onDestroy(() => newKeyCopyState.clear());
-  onDestroy(() => tokenList.copy.clear());
+  onDestroy(() => {
+    newKeyCopyState.clear();
+    tokenList.copy.clear();
+  });
 
   onMount(() => {
     void tokenList.load();
