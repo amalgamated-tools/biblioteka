@@ -4,7 +4,14 @@ import { userEvent } from "@testing-library/user-event";
 import type { BookSummary } from "../../types";
 
 vi.mock("lucide-svelte", () => ({ BookOpen: () => {}, Mail: () => {} }));
-vi.mock("./EmailBookModal.svelte", () => ({ default: () => {} }));
+
+let emailModalRendered = false;
+vi.mock("./EmailBookModal.svelte", () => ({
+  default: () => {
+    emailModalRendered = true;
+    return {};
+  },
+}));
 
 import BookCard from "./BookCard.svelte";
 
@@ -27,7 +34,10 @@ const baseBook: BookSummary = {
 };
 
 describe("BookCard", () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    emailModalRendered = false;
+  });
 
   it("renders the book title in a heading", () => {
     render(BookCard, { book: baseBook });
@@ -94,13 +104,12 @@ describe("BookCard", () => {
     ).toHaveAttribute("title", "Email this book");
   });
 
-  it("clicking the email button shows the email modal", async () => {
+  it("clicking the email button renders the email modal", async () => {
     const user = userEvent.setup();
     render(BookCard, { book: baseBook });
+    expect(emailModalRendered).toBe(false);
     const btn = screen.getByRole("button", { name: /email the hobbit/i });
     await user.click(btn);
-    // The mock modal renders nothing visible, but we verify it was triggered
-    // by checking the button is still present (not replaced).
-    expect(btn).toBeInTheDocument();
+    expect(emailModalRendered).toBe(true);
   });
 });

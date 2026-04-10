@@ -242,3 +242,39 @@ func TestHandleEmailBookFile_FileNotOnDisk(t *testing.T) {
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
+
+func TestHandleEmailBookFile_FileTooLarge(t *testing.T) {
+	h, userID := setupBookFileHandler(t)
+
+	// Configure SMTP.
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyHost, "smtp.example.com"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyPort, "587"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyFrom, "noreply@example.com"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyTLS, "starttls"))
+
+	h.SendMailFunc = func(_ context.Context, _ string, _ netsmtp.Auth, _, _ string, _ []byte, _ string) error {
+		return nil
+	}
+
+	// Create a book file record with a size exceeding the limit.
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "large.epub")
+	require.NoError(t, os.WriteFile(filePath, []byte("small"), 0o600))
+
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Large Book"})
+	require.NoError(t, err)
+	// Record file_size as 30 MB (exceeds 25 MB limit).
+	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "large.epub", 30*1024*1024, nil, filePath)
+	require.NoError(t, err)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/book-files/"+bf.ID+"/email", bytes.NewBufferString(`{"to":"reader@example.com"}`))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleBookFile(w, r)
+
+	require.Equal(t, http.StatusRequestEntityTooLarge, w.Code)
+	var resp errorResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Contains(t, resp.Error, "too large")
+}

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"io"
+	"mime"
 	"mime/multipart"
 	"mime/quotedprintable"
 	"net/textproto"
@@ -34,12 +36,58 @@ func MIMETypeForFileType(fileType string) string {
 	return "application/octet-stream"
 }
 
+// sanitizeFilename strips control characters (including CR/LF) from a
+// filename so it is safe to embed in email headers.
+func sanitizeFilename(name string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f {
+			return -1 // drop control chars
+		}
+		return r
+	}, name)
+}
+
+// lineWrapWriter wraps an io.Writer and inserts CRLF every `width` bytes,
+// as required by RFC 2045 for base64 content-transfer-encoding.
+type lineWrapWriter struct {
+	w     io.Writer
+	width int
+	col   int
+}
+
+func (lw *lineWrapWriter) Write(p []byte) (int, error) {
+	written := 0
+	for len(p) > 0 {
+		remaining := lw.width - lw.col
+		if remaining <= 0 {
+			if _, err := lw.w.Write([]byte("\r\n")); err != nil {
+				return written, err
+			}
+			lw.col = 0
+			remaining = lw.width
+		}
+		chunk := p
+		if len(chunk) > remaining {
+			chunk = p[:remaining]
+		}
+		n, err := lw.w.Write(chunk)
+		written += n
+		lw.col += n
+		p = p[n:]
+		if err != nil {
+			return written, err
+		}
+	}
+	return written, nil
+}
+
 // BuildAttachmentMessage constructs an RFC 5322 multipart/mixed email message
 // that carries filename as a base64-encoded attachment. The plain-text body is
 // a short human-readable note. params supplies the envelope From header.
-func BuildAttachmentMessage(params SendParams, to, filename, fileType string, data []byte) []byte {
+func BuildAttachmentMessage(params SendParams, to, filename, fileType string, data []byte) ([]byte, error) {
 	mimeType := MIMETypeForFileType(fileType)
-	subject := fmt.Sprintf("Book: %s", filename)
+	safeName := sanitizeFilename(filename)
+	subject := mime.QEncoding.Encode("UTF-8", "Book: "+safeName)
 
 	var buf bytes.Buffer
 	mw := multipart.NewWriter(&buf)
@@ -57,27 +105,45 @@ func BuildAttachmentMessage(params SendParams, to, filename, fileType string, da
 	textHeader := textproto.MIMEHeader{}
 	textHeader.Set("Content-Type", "text/plain; charset=UTF-8")
 	textHeader.Set("Content-Transfer-Encoding", "quoted-printable")
-	pw, _ := mw.CreatePart(textHeader)
+	pw, err := mw.CreatePart(textHeader)
+	if err != nil {
+		return nil, fmt.Errorf("create text part: %w", err)
+	}
 	qpw := quotedprintable.NewWriter(pw)
-	fmt.Fprintf(qpw, "Please find attached: %s\r\n", filename)
-	qpw.Close()
+	if _, err := fmt.Fprintf(qpw, "Please find attached: %s\r\n", safeName); err != nil {
+		return nil, fmt.Errorf("write text body: %w", err)
+	}
+	if err := qpw.Close(); err != nil {
+		return nil, fmt.Errorf("close quoted-printable writer: %w", err)
+	}
 
-	// Attachment part.
+	// Attachment part — stream base64 through a line-wrapping writer to
+	// avoid duplicating the entire payload as a single encoded string.
 	attachHeader := textproto.MIMEHeader{}
 	attachHeader.Set("Content-Type", mimeType)
 	attachHeader.Set("Content-Transfer-Encoding", "base64")
-	attachHeader.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
-	ap, _ := mw.CreatePart(attachHeader)
-	encoded := base64.StdEncoding.EncodeToString(data)
-	// Wrap base64 at 76 characters per line as recommended by RFC 2045.
-	for len(encoded) > 76 {
-		fmt.Fprintf(ap, "%s\r\n", encoded[:76])
-		encoded = encoded[76:]
+	attachHeader.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": safeName}))
+	ap, err := mw.CreatePart(attachHeader)
+	if err != nil {
+		return nil, fmt.Errorf("create attachment part: %w", err)
 	}
-	if len(encoded) > 0 {
-		fmt.Fprintf(ap, "%s\r\n", encoded)
+	lw := &lineWrapWriter{w: ap, width: 76}
+	b64w := base64.NewEncoder(base64.StdEncoding, lw)
+	if _, err := b64w.Write(data); err != nil {
+		return nil, fmt.Errorf("write base64 data: %w", err)
+	}
+	if err := b64w.Close(); err != nil {
+		return nil, fmt.Errorf("close base64 encoder: %w", err)
+	}
+	// Ensure a trailing CRLF after the last base64 line.
+	if lw.col > 0 {
+		if _, err := ap.Write([]byte("\r\n")); err != nil {
+			return nil, fmt.Errorf("write trailing CRLF: %w", err)
+		}
 	}
 
-	mw.Close()
-	return buf.Bytes()
+	if err := mw.Close(); err != nil {
+		return nil, fmt.Errorf("close multipart writer: %w", err)
+	}
+	return buf.Bytes(), nil
 }

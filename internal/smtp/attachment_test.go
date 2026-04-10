@@ -41,7 +41,8 @@ func TestBuildAttachmentMessage(t *testing.T) {
 		TLS:        "starttls",
 	}
 	data := []byte("fake epub content")
-	msg := BuildAttachmentMessage(params, "reader@example.com", "MyBook.epub", "epub", data)
+	msg, err := BuildAttachmentMessage(params, "reader@example.com", "MyBook.epub", "epub", data)
+	require.NoError(t, err)
 
 	msgStr := string(msg)
 
@@ -51,7 +52,7 @@ func TestBuildAttachmentMessage(t *testing.T) {
 	require.Contains(t, msgStr, "MIME-Version: 1.0\r\n")
 	require.Contains(t, msgStr, "multipart/mixed")
 	require.Contains(t, msgStr, "Content-Type: application/epub+zip")
-	require.Contains(t, msgStr, `attachment; filename="MyBook.epub"`)
+	require.Contains(t, msgStr, "filename=MyBook.epub")
 	require.Contains(t, msgStr, "base64")
 }
 
@@ -63,7 +64,8 @@ func TestBuildAttachmentMessage_DisplayNameFrom(t *testing.T) {
 		TLS:        "starttls",
 	}
 	data := []byte("content")
-	msg := BuildAttachmentMessage(params, "reader@example.com", "Book.pdf", "pdf", data)
+	msg, err := BuildAttachmentMessage(params, "reader@example.com", "Book.pdf", "pdf", data)
+	require.NoError(t, err)
 
 	msgStr := string(msg)
 	require.True(t,
@@ -81,8 +83,60 @@ func TestBuildAttachmentMessage_UnknownFileType(t *testing.T) {
 		TLS:        "starttls",
 	}
 	data := []byte("binary content")
-	msg := BuildAttachmentMessage(params, "reader@example.com", "Book.xyz", "xyz", data)
+	msg, err := BuildAttachmentMessage(params, "reader@example.com", "Book.xyz", "xyz", data)
+	require.NoError(t, err)
 
 	msgStr := string(msg)
 	require.Contains(t, msgStr, "Content-Type: application/octet-stream")
+}
+
+func TestBuildAttachmentMessage_ControlCharsStripped(t *testing.T) {
+	params := SendParams{
+		Addr:       "smtp.example.com:587",
+		From:       "noreply@example.com",
+		FromHeader: "noreply@example.com",
+		TLS:        "starttls",
+	}
+	data := []byte("content")
+	msg, err := BuildAttachmentMessage(params, "reader@example.com", "bad\r\nfile.epub", "epub", data)
+	require.NoError(t, err)
+
+	msgStr := string(msg)
+	// The filename should have CR/LF stripped — no bare CRLF in the subject line value.
+	require.Contains(t, msgStr, "badfile.epub")
+	require.NotContains(t, msgStr, "bad\r\nfile")
+}
+
+func TestBuildAttachmentMessage_NonASCIISubjectEncoded(t *testing.T) {
+	params := SendParams{
+		Addr:       "smtp.example.com:587",
+		From:       "noreply@example.com",
+		FromHeader: "noreply@example.com",
+		TLS:        "starttls",
+	}
+	data := []byte("content")
+	msg, err := BuildAttachmentMessage(params, "reader@example.com", "Ünïcödé.epub", "epub", data)
+	require.NoError(t, err)
+
+	msgStr := string(msg)
+	// Subject should be RFC 2047 Q-encoded for non-ASCII chars.
+	require.Contains(t, msgStr, "=?UTF-8?q?")
+}
+
+func TestSanitizeFilename(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"normal.epub", "normal.epub"},
+		{"has\r\nnewlines.epub", "hasnewlines.epub"},
+		{"has\ttab.epub", "hastab.epub"},
+		{"has\x00null.epub", "hasnull.epub"},
+		{"Ünïcödé.epub", "Ünïcödé.epub"}, // non-ASCII preserved
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			require.Equal(t, tt.want, sanitizeFilename(tt.input))
+		})
+	}
 }
