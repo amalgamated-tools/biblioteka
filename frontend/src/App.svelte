@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import { authStore } from "./stores/auth.svelte";
-  import { routerStore } from "./stores/router.svelte";
+  import { routerStore, APP_TITLE_SUFFIX } from "./stores/router.svelte";
   import { libraryStore } from "./stores/libraries.svelte";
   import Auth from "./components/Auth.svelte";
   import Dashboard from "./components/Dashboard.svelte";
@@ -44,7 +44,7 @@
         (l) => l.id === routerStore.subPath,
       );
       if (lib) {
-        title = `${lib.name} – biblioteka`;
+        title = `${lib.name}${APP_TITLE_SUFFIX}`;
       }
     }
     document.title = title;
