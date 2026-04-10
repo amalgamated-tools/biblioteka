@@ -160,7 +160,7 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 	// Increment the download count (best-effort; a failure here should not
 	// prevent the download from completing).
 	if incErr := h.DB.IncrementBookFileDownloadCount(ctx, fileID); incErr != nil {
-		slog.WarnContext(ctx, "failed to increment download count",
+		slog.WarnContext(ctx, "OPDS: failed to increment download count",
 			slog.String(otelkeys.BookFileID, fileID),
 			slog.Any(otelkeys.Error, incErr),
 		)

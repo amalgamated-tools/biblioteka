@@ -85,7 +85,7 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 	// Increment the download count (best-effort; a failure here should not
 	// prevent the download from completing).
 	if incErr := h.DB.IncrementBookFileDownloadCount(r.Context(), target.ID); incErr != nil {
-		slog.WarnContext(r.Context(), "failed to increment download count",
+		slog.WarnContext(r.Context(), "kobo download: failed to increment download count",
 			slog.String(otelkeys.BookFileID, target.ID),
 			slog.Any(otelkeys.Error, incErr),
 		)

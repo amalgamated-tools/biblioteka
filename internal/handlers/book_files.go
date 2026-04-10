@@ -148,7 +148,14 @@ func (h *BookFileHandler) downloadBookFile(w http.ResponseWriter, r *http.Reques
 		}
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			slog.WarnContext(ctx, "failed to close book file",
+				slog.String(otelkeys.BookFileID, id),
+				slog.Any(otelkeys.Error, closeErr),
+			)
+		}
+	}()
 
 	stat, err := f.Stat()
 	if err != nil {

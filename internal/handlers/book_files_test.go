@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -98,12 +99,14 @@ func TestDownloadBookFile_FileNotOnDisk(t *testing.T) {
 	h, userID := setupBookFileHandler(t)
 
 	// Create a library with a path that contains the book file path.
-	_, err := h.DB.CreateLibrary(t.Context(), "test-lib", `["/tmp/testlib"]`, "none", false)
+	libDir := t.TempDir()
+	_, err := h.DB.CreateLibrary(t.Context(), "test-lib", `["`+libDir+`"]`, "none", false)
 	require.NoError(t, err, "create library")
 
 	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
-	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/tmp/testlib/gunslinger.epub")
+	filePath := filepath.Join(libDir, "gunslinger.epub")
+	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, filePath)
 	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/book-files/"+bf.ID+"/download", nil)
@@ -122,7 +125,9 @@ func TestDownloadBookFile_PathForbidden(t *testing.T) {
 	// No libraries defined, so any path is outside allowed directories.
 	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
 	require.NoError(t, err, "create book")
-	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/tmp/evil/gunslinger.epub")
+	outsideDir := t.TempDir()
+	filePath := filepath.Join(outsideDir, "gunslinger.epub")
+	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, filePath)
 	require.NoError(t, err, "create book file")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/book-files/"+bf.ID+"/download", nil)
