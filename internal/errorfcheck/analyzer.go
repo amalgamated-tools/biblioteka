@@ -58,7 +58,11 @@ func run(pass *analysis.Pass) (any, error) {
 		}
 
 		if !hasFormatVerb(fmtStr) {
-			pass.Reportf(call.Pos(), "fmt.Errorf with no format verbs; use errors.New instead")
+			if len(call.Args) > 1 {
+				pass.Reportf(call.Pos(), "fmt.Errorf format string has no verbs but has extra arguments; add format verbs (e.g. %%w) or remove extra arguments")
+			} else {
+				pass.Reportf(call.Pos(), "fmt.Errorf with no format verbs; use errors.New instead")
+			}
 		}
 	})
 
@@ -131,8 +135,9 @@ func hasFormatVerb(s string) bool {
 			i++ // skip the second '%'
 			continue
 		}
-		// A lone '%' at end of string or '%' followed by a non-'%' character
-		// is a format verb.
+		// A lone '%' at end of string is malformed (not a real verb), but we
+		// treat it conservatively — if there's any unescaped '%', we assume the
+		// caller may have intended a verb and skip the report to avoid false positives.
 		return true
 	}
 	return false
