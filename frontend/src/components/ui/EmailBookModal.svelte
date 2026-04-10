@@ -82,13 +82,13 @@
 </script>
 
 <!-- Modal wrapper -->
+<svelte:window onkeydown={handleKeydown} />
 <div
   role="dialog"
   aria-modal="true"
   aria-labelledby="email-modal-title"
   tabindex="-1"
   class="fixed inset-0 z-50 flex items-center justify-center p-4"
-  onkeydown={handleKeydown}
 >
   <!-- Backdrop -->
   <div

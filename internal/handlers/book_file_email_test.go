@@ -223,10 +223,10 @@ func TestHandleEmailBookFile_FileNotOnDisk(t *testing.T) {
 	h, userID := setupBookFileHandler(t)
 
 	// Configure SMTP.
-	require.NoError(t, h.DB.SetSetting(t.Context(), "smtp_host", "smtp.example.com"))
-	require.NoError(t, h.DB.SetSetting(t.Context(), "smtp_port", "587"))
-	require.NoError(t, h.DB.SetSetting(t.Context(), "smtp_from", "noreply@example.com"))
-	require.NoError(t, h.DB.SetSetting(t.Context(), "smtp_tls", "starttls"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyHost, "smtp.example.com"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyPort, "587"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyFrom, "noreply@example.com"))
+	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyTLS, "starttls"))
 
 	h.SendMailFunc = func(_ context.Context, _ string, _ netsmtp.Auth, _, _ string, _ []byte, _ string) error {
 		return nil
@@ -250,7 +250,7 @@ func TestHandleEmailBookFile_FileNotOnDisk(t *testing.T) {
 
 	h.HandleBookFile(w, r)
 
-	require.Equal(t, http.StatusInternalServerError, w.Code)
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestHandleEmailBookFile_FileTooLarge(t *testing.T) {
