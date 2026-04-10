@@ -33,3 +33,4 @@ exiftool/
 node_modules/
 docs/graph/graph.html
 docs/graph/cache/
+docs/graph/.graphify_python
