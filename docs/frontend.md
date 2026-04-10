@@ -70,7 +70,7 @@ frontend/
       copyTimeout.svelte.ts   `CopyTimeoutState` class — auto-resetting copied-ID feedback state
       copyTimeout.test.ts     Unit tests for `CopyTimeoutState`
       timeoutState.svelte.ts  `TimeoutState<T>` base class — shared timer infrastructure for `AutoDismissTimer` and `CopyTimeoutState`
-      timeoutState.test.ts    Unit tests for `TimeoutState`
+      timeoutState.test.ts    Unit tests for `TimeoutState<T>`
       tokenList.svelte.ts     `TokenListState<T>` class — load/delete lifecycle for token-like lists
       tokenList.test.ts       Unit tests for `TokenListState`
       validation.ts           Composable form-validation rule functions
@@ -680,7 +680,7 @@ Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback af
 
 Always call `clear()` from `onDestroy` to prevent timer leaks. Both `AutoDismissTimer` and `CopyTimeoutState` inherit this method — components using either class call the same `clear()` API.
 
-Do **not** use `TimeoutState` directly. Extend it in a new subclass when you need auto-resetting reactive state with a different `T`. For boolean visibility (`true`/`false`) use `AutoDismissTimer`; for string-or-null item tracking use `CopyTimeoutState`.
+Do **not** use `TimeoutState` directly in components. Extend it in a new subclass when you need auto-resetting reactive state with a different `T`. For boolean visibility (`true`/`false`) use `AutoDismissTimer`; for string-or-null item tracking use `CopyTimeoutState`.
 
 ## TypeScript types
 
