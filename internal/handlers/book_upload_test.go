@@ -298,7 +298,6 @@ func TestHandleUpload_EnqueueFailureCleansStagedFile(t *testing.T) {
 	// Track staged files by intercepting the enqueue — since enqueueing fails
 	// before the response is written, we instead check via the library's
 	// .uploads directory after the request.
-	d := newTestDB(t)
 	// Use the same library dir from the main handler.
 	libs, err := h.DB.ListLibraries(t.Context())
 	require.NoError(t, err)
@@ -316,7 +315,7 @@ func TestHandleUpload_EnqueueFailureCleansStagedFile(t *testing.T) {
 
 	h.HandleUpload(w, r)
 
-	require.Equal(t, http.StatusInternalServerError, w.Code)
+	require.Equal(t, http.StatusServiceUnavailable, w.Code)
 
 	// The staging directory may not have been created at all, or it was created
 	// and the file was cleaned up. Either way, no .epub file should remain.
@@ -326,8 +325,25 @@ func TestHandleUpload_EnqueueFailureCleansStagedFile(t *testing.T) {
 			require.False(t, strings.HasSuffix(e.Name(), ".epub"), "staged epub should be removed after enqueue failure")
 		}
 	}
-	// Suppress unused variable warning for d.
-	_ = d
+}
+
+func TestHandleUpload_InvalidISBN(t *testing.T) {
+	h, userID, libraryID := setupUploadHandler(t)
+
+	r := makeUploadRequest(t, "/api/books/upload", "book.epub", []byte("content"), map[string]string{
+		"library_id": libraryID,
+		"isbn":       "not-a-valid-isbn",
+	})
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleUpload(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+
+	var resp errorResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Contains(t, resp.Error, "invalid isbn")
 }
 
 func TestHandleUpload_AllSupportedExtensions(t *testing.T) {
@@ -489,7 +505,12 @@ func (r *errAfterNReader) Read(p []byte) (int, error) {
 	if r.pos >= r.errAfter {
 		return 0, fmt.Errorf("simulated read error")
 	}
-	n := copy(p, r.data[r.pos:])
+	remaining := r.errAfter - r.pos
+	src := r.data[r.pos:]
+	if len(src) > remaining {
+		src = src[:remaining]
+	}
+	n := copy(p, src)
 	r.pos += n
 	if r.pos >= r.errAfter {
 		return n, fmt.Errorf("simulated read error")
