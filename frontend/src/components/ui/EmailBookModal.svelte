@@ -23,23 +23,33 @@
   let successMessage: string | null = $state(null);
 
   $effect(() => {
+    let active = true;
+
     loading = true;
     loadError = null;
+
     api
       .getBook(bookId)
       .then((b) => {
+        if (!active) return;
         book = b;
         if (b.files.length > 0) {
           selectedFileId = b.files[0].id;
         }
       })
       .catch((e) => {
+        if (!active) return;
         loadError =
           e instanceof Error ? e.message : "Failed to load book details";
       })
       .finally(() => {
+        if (!active) return;
         loading = false;
       });
+
+    return () => {
+      active = false;
+    };
   });
 
   function fileLabel(f: BookFile): string {

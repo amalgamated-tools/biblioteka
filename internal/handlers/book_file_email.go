@@ -80,6 +80,24 @@ func (h *BookFileHandler) handleEmailBookFile(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	allowed, pathErr := isBookFilePathAllowed(r.Context(), h.DB, bf.FilePath)
+	if pathErr != nil {
+		slog.ErrorContext(r.Context(), "failed to validate book file path",
+			slog.String(otelkeys.BookFileID, id),
+			slog.Any(otelkeys.Error, pathErr),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to validate file path")
+		return
+	}
+	if !allowed {
+		slog.WarnContext(r.Context(), "email blocked: file path outside library roots",
+			slog.String(otelkeys.BookFileID, id),
+			slog.String(otelkeys.Path, bf.FilePath),
+		)
+		writeError(r.Context(), w, http.StatusForbidden, "file path is outside allowed library directories")
+		return
+	}
+
 	cfg := smtp.ResolveConfig(r.Context(), h.DB.GetSetting)
 	if cfg.Host == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "SMTP is not configured")

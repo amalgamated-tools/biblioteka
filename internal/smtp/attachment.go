@@ -10,6 +10,7 @@ import (
 	"mime/quotedprintable"
 	"net/textproto"
 	"strings"
+	"time"
 )
 
 // fileTypeMIME maps Biblioteka file_type values to MIME content types.
@@ -96,6 +97,7 @@ func BuildAttachmentMessage(params SendParams, to, filename, fileType string, da
 	// RFC 5322 message headers.
 	fmt.Fprintf(&buf, "From: %s\r\n", params.FromHeader)
 	fmt.Fprintf(&buf, "To: %s\r\n", to)
+	fmt.Fprintf(&buf, "Date: %s\r\n", time.Now().UTC().Format(time.RFC1123Z))
 	fmt.Fprintf(&buf, "Subject: %s\r\n", subject)
 	fmt.Fprintf(&buf, "MIME-Version: 1.0\r\n")
 	fmt.Fprintf(&buf, "Content-Type: multipart/mixed; boundary=%q\r\n", boundary)

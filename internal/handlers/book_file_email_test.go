@@ -18,7 +18,7 @@ import (
 )
 
 // setupEmailHandler creates a BookFileHandler with SMTP configured in DB,
-// a book, and a real file on disk.
+// a book, and a real file on disk inside a registered library root.
 func setupEmailHandler(t *testing.T) (*BookFileHandler, string, *db.BookFile, string) {
 	t.Helper()
 	h, userID := setupBookFileHandler(t)
@@ -29,10 +29,12 @@ func setupEmailHandler(t *testing.T) (*BookFileHandler, string, *db.BookFile, st
 	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyFrom, "noreply@example.com"))
 	require.NoError(t, h.DB.SetSetting(t.Context(), smtp.SettingKeyTLS, "starttls"))
 
-	// Write a real file to a temp directory.
+	// Write a real file to a temp directory and register it as a library root.
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "test.epub")
 	require.NoError(t, os.WriteFile(filePath, []byte("fake epub bytes"), 0o600))
+	_, err := h.DB.CreateLibrary(t.Context(), "test-lib", `["`+dir+`"]`, "none", false)
+	require.NoError(t, err, "create library")
 
 	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Test Book"})
 	require.NoError(t, err, "create book")
@@ -155,6 +157,8 @@ func TestHandleEmailBookFile_SMTPNotConfigured(t *testing.T) {
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "test.epub")
 	require.NoError(t, os.WriteFile(filePath, []byte("content"), 0o600))
+	_, err := h.DB.CreateLibrary(t.Context(), "test-lib", `["`+dir+`"]`, "none", false)
+	require.NoError(t, err, "create library")
 	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Test Book"})
 	require.NoError(t, err)
 	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "test.epub", 7, nil, filePath)
@@ -228,10 +232,16 @@ func TestHandleEmailBookFile_FileNotOnDisk(t *testing.T) {
 		return nil
 	}
 
-	// Create a book file record with a path that does not exist on disk.
+	// Create a book file record with a path that does not exist on disk,
+	// but register the parent directory as a library root so path validation passes.
+	dir := t.TempDir()
+	ghostPath := filepath.Join(dir, "ghost.epub")
+	_, err := h.DB.CreateLibrary(t.Context(), "test-lib", `["`+dir+`"]`, "none", false)
+	require.NoError(t, err, "create library")
+
 	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Ghost Book"})
 	require.NoError(t, err)
-	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "ghost.epub", 0, nil, "/nonexistent/path/ghost.epub")
+	bf, err := h.DB.CreateBookFile(t.Context(), book.ID, "epub", "ghost.epub", 0, nil, ghostPath)
 	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPost, "/api/book-files/"+bf.ID+"/email", bytes.NewBufferString(`{"to":"reader@example.com"}`))
@@ -260,6 +270,8 @@ func TestHandleEmailBookFile_FileTooLarge(t *testing.T) {
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "large.epub")
 	require.NoError(t, os.WriteFile(filePath, []byte("small"), 0o600))
+	_, err := h.DB.CreateLibrary(t.Context(), "test-lib", `["`+dir+`"]`, "none", false)
+	require.NoError(t, err, "create library")
 
 	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Large Book"})
 	require.NoError(t, err)
