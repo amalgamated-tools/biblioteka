@@ -7,7 +7,6 @@ import {
   waitFor,
 } from "@testing-library/svelte";
 import { tick } from "svelte";
-import type { PaginatedBooks } from "../types";
 
 vi.mock("../stores/libraries.svelte", () => ({
   libraryStore: {
@@ -24,9 +23,7 @@ vi.mock("../stores/router.svelte", () => ({
 }));
 
 vi.mock("../lib/api", () => ({
-  listBooks: vi
-    .fn()
-    .mockResolvedValue({ books: [], total: 0, limit: 1, offset: 0 }),
+  getTotalBooksCount: vi.fn().mockResolvedValue(0),
 }));
 
 vi.mock("lucide-svelte", () => ({
@@ -39,18 +36,13 @@ vi.mock("lucide-svelte", () => ({
 import Dashboard from "./Dashboard.svelte";
 import { libraryStore } from "../stores/libraries.svelte";
 import { routerStore } from "../stores/router.svelte";
-import { listBooks } from "../lib/api";
+import { getTotalBooksCount } from "../lib/api";
 
 describe("Dashboard", () => {
   beforeEach(() => {
     vi.mocked(libraryStore).loaded = false;
     vi.mocked(libraryStore).libraries = [];
-    vi.mocked(listBooks).mockResolvedValue({
-      books: [],
-      total: 0,
-      limit: 1,
-      offset: 0,
-    });
+    vi.mocked(getTotalBooksCount).mockResolvedValue(0);
   });
 
   afterEach(() => {
@@ -219,7 +211,9 @@ describe("Dashboard", () => {
       },
     ];
     // Never resolves, so totalBooks stays null → "…"
-    vi.mocked(listBooks).mockReturnValue(new Promise<PaginatedBooks>(() => {}));
+    vi.mocked(getTotalBooksCount).mockReturnValue(
+      new Promise<number>(() => {}),
+    );
     render(Dashboard);
     await tick();
 
@@ -239,18 +233,13 @@ describe("Dashboard", () => {
         updated_at: "2026-01-01T00:00:00Z",
       },
     ];
-    vi.mocked(listBooks).mockResolvedValue({
-      books: [],
-      total: 500,
-      limit: 1,
-      offset: 0,
-    });
+    vi.mocked(getTotalBooksCount).mockResolvedValue(500);
     render(Dashboard);
 
     await waitFor(() => {
       expect(screen.getByText("500")).toBeInTheDocument();
     });
 
-    expect(listBooks).toHaveBeenCalledWith(1, 0);
+    expect(getTotalBooksCount).toHaveBeenCalled();
   });
 });

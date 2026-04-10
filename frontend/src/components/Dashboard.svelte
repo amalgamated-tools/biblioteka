@@ -3,7 +3,7 @@
   import { LayoutDashboard, Library, Plus, ArrowRight } from "lucide-svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { routerStore } from "../stores/router.svelte";
-  import { listBooks } from "../lib/api";
+  import { getTotalBooksCount } from "../lib/api";
 
   let totalBooks = $state<number | null>(null);
 
@@ -14,10 +14,9 @@
   });
 
   onMount(() => {
-    // Fetch a single book to retrieve the total count for the dashboard.
-    listBooks(1, 0)
-      .then((data) => {
-        totalBooks = data.total;
+    getTotalBooksCount()
+      .then((count) => {
+        totalBooks = count;
       })
       .catch((err) => {
         console.error("Failed to fetch total books count:", err);
