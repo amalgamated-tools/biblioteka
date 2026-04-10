@@ -268,7 +268,7 @@
     <div
       class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden"
     >
-      <table class="w-full text-sm">
+      <table class="w-full text-sm" aria-label="Books">
         <thead>
           <tr
             class="border-b border-ink-100 dark:border-ink-800 text-left text-ink-500 dark:text-ink-300"
@@ -354,6 +354,10 @@
       <button
         onclick={prevPage}
         disabled={currentPage <= 1}
+        aria-label="Previous page, page {Math.max(
+          1,
+          currentPage - 1,
+        )} of {totalPages}"
         class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-400 dark:border-ink-400 transition-colors
           {currentPage <= 1
           ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
@@ -362,12 +366,16 @@
         <ChevronLeft class="w-4 h-4" aria-hidden="true" />
         Previous
       </button>
-      <span class="text-sm text-ink-500 dark:text-ink-300">
+      <span aria-atomic="true" class="text-sm text-ink-500 dark:text-ink-300">
         Page {currentPage} of {totalPages}
       </span>
       <button
         onclick={nextPage}
         disabled={currentPage >= totalPages}
+        aria-label="Next page, page {Math.min(
+          totalPages,
+          currentPage + 1,
+        )} of {totalPages}"
         class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-400 dark:border-ink-400 transition-colors
           {currentPage >= totalPages
           ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
