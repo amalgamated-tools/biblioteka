@@ -99,3 +99,14 @@ export async function deleteBookFile(id: string): Promise<void> {
 export function bookFileDownloadUrl(id: string): string {
   return `/api/book-files/${id}/download`;
 }
+
+export async function emailBookFile(
+  bookFileId: string,
+  to: string,
+): Promise<{ message: string }> {
+  return request<{ message: string }>(
+    "POST",
+    `/api/book-files/${bookFileId}/email`,
+    { to },
+  );
+}
