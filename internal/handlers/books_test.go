@@ -3,7 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -453,7 +453,7 @@ func TestCreateBook_EnqueuesGoodreadsJob(t *testing.T) {
 
 func TestCreateBook_EnqueueFailureDoesNotFailRequest(t *testing.T) {
 	h, userID := setupBookHandler(t)
-	enq := &mockEnqueuer{err: fmt.Errorf("redis unavailable")}
+	enq := &mockEnqueuer{err: errors.New("redis unavailable")}
 	h.Enqueuer = enq
 
 	body := mustMarshal(t, bookRequest{Title: "The Martian"})

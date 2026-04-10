@@ -86,3 +86,11 @@ export async function getBookFile(id: string): Promise<BookFile> {
 export async function deleteBookFile(id: string): Promise<void> {
   await request<void>("DELETE", `/api/book-files/${id}`);
 }
+
+/**
+ * Returns the URL for downloading a book file.
+ * This URL can be used directly in an anchor tag or window.open().
+ */
+export function bookFileDownloadUrl(id: string): string {
+  return `/api/book-files/${id}/download`;
+}
