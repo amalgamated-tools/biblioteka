@@ -45,7 +45,7 @@ func (h *AuthHandler) getMe(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusNotFound, "user not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to get user",
+		slog.ErrorContext(r.Context(), "failed to fetch current user",
 			slog.String(otelkeys.UserID, userID),
 			slog.Any(otelkeys.Error, err),
 		)

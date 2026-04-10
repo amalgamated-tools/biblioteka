@@ -91,7 +91,7 @@
     <div role="group" aria-labelledby="sidebar-home-heading">
       <h2
         id="sidebar-home-heading"
-        class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
+        class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-400"
       >
         Home
       </h2>
@@ -130,7 +130,7 @@
       <div class="flex items-center justify-between px-3 mb-2">
         <h2
           id="sidebar-libraries-heading"
-          class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
+          class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-400"
         >
           Libraries
         </h2>

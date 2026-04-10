@@ -9,6 +9,12 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// Well-known setting keys shared across packages.
+const (
+	SettingWatchFolderPath      = "watch_folder_path"
+	SettingWatchFolderLibraryID = "watch_folder_library_id"
+)
+
 // Setting holds a configuration key-value pair for bulk saves.
 type Setting struct {
 	Key   string

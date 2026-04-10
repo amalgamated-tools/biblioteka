@@ -33,7 +33,7 @@ export type SettingsSubPath =
   | "api-keys"
   | "kobo";
 
-const APP_TITLE_SUFFIX = " – biblioteka";
+export const APP_TITLE_SUFFIX = " – biblioteka";
 
 const viewTitles: Record<AppView, string> = {
   dashboard: `Dashboard${APP_TITLE_SUFFIX}`,
@@ -63,6 +63,9 @@ class RouterStore {
     new SvelteURLSearchParams(_initialHash.params.toString()),
   );
 
+  /** Optional override for the page title, set by view components (e.g. library name). */
+  private _titleOverride: string | null = $state(null);
+
   /** Whether the current hash maps to a known view */
   isKnownView: boolean = $derived.by(() => {
     const segment = this.hash.split("/")[0];
@@ -83,8 +86,9 @@ class RouterStore {
     return parts.length > 1 ? parts.slice(1).join("/") : "";
   });
 
-  /** Page title reflecting the current view and settings sub-page */
+  /** Page title reflecting the current view, settings sub-page, or a component override. */
   pageTitle: string = $derived.by(() => {
+    if (this._titleOverride !== null) return this._titleOverride;
     if (!this.isKnownView) return `Page Not Found${APP_TITLE_SUFFIX}`;
     if (this.currentView === "settings" && this.subPath) {
       const subTitle = settingsSubTitles[this.subPath as SettingsSubPath];
@@ -98,16 +102,27 @@ class RouterStore {
     if (typeof window !== "undefined") {
       window.addEventListener("hashchange", () => {
         const { path, params } = parseHash();
+        this._titleOverride = null;
         this.hash = path;
         this.queryParams = new SvelteURLSearchParams(params.toString());
       });
     }
   }
 
+  /**
+   * Override the page title for the current view. Pass `null` to clear
+   * the override and fall back to the default view-based title.
+   * The override is automatically cleared on navigation.
+   */
+  setPageTitle(title: string | null): void {
+    this._titleOverride = title;
+  }
+
   /** Navigate by setting the hash, optionally with query parameters. */
   navigate(path: string, params?: Record<string, string>): void {
     const sp = new SvelteURLSearchParams(params);
     const qs = sp.size > 0 ? `?${sp.toString()}` : "";
+    this._titleOverride = null;
     window.location.hash = `#${path}${qs}`;
     this.hash = path.replace(/^#\/?/, "");
     this.queryParams = sp;

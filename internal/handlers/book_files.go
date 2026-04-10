@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"errors"
 	"log/slog"
+	"mime"
 	"net/http"
+	"os"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -13,21 +17,32 @@ type BookFileHandler struct {
 	DB *db.DB
 }
 
-// HandleBookFile handles GET/DELETE /api/book-files/{id}.
+// HandleBookFile handles GET/DELETE /api/book-files/{id} and GET /api/book-files/{id}/download.
 func (h *BookFileHandler) HandleBookFile(w http.ResponseWriter, r *http.Request) {
-	id, ok := extractPathID(r.URL.Path, "/api/book-files/")
+	id, sub, ok := extractPathSegments(r.URL.Path, "/api/book-files/")
 	if !ok {
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid book file ID")
 		return
 	}
 
-	switch r.Method {
-	case http.MethodGet:
-		h.getBookFile(w, r, id)
-	case http.MethodDelete:
-		h.deleteBookFile(w, r, id)
+	switch sub {
+	case "":
+		switch r.Method {
+		case http.MethodGet:
+			h.getBookFile(w, r, id)
+		case http.MethodDelete:
+			h.deleteBookFile(w, r, id)
+		default:
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
+	case "download":
+		if r.Method != http.MethodGet {
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		h.downloadBookFile(w, r, id)
 	default:
-		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}
 }
 
@@ -76,4 +91,97 @@ func (h *BookFileHandler) deleteBookFile(w http.ResponseWriter, r *http.Request,
 			return map[string]any{"book_id": bf.BookID, "file_name": bf.FileName, "file_type": bf.FileType}
 		},
 	)
+}
+
+// downloadBookFile serves the actual book file content for download and increments
+// the download count.
+//
+//	@Summary		Download a book file
+//	@Description	Serves the book file content for download and increments the download count
+//	@Tags			BookFiles
+//	@Produce		octet-stream
+//	@Security		BearerAuth
+//	@Failure		401	{object}	errorResponse
+//	@Param			id	path		string	true	"Book File ID"
+//	@Success		200	"File content"
+//	@Failure		400	{object}	errorResponse
+//	@Failure		403	{object}	errorResponse
+//	@Failure		404	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Router			/book-files/{id}/download [get]
+func (h *BookFileHandler) downloadBookFile(w http.ResponseWriter, r *http.Request, id string) {
+	ctx := r.Context()
+
+	bf, err := h.DB.GetBookFile(ctx, id)
+	if handleDBErr(ctx, w, err, "book file") {
+		return
+	}
+
+	allowed, pathErr := isBookFilePathAllowed(ctx, h.DB, bf.FilePath)
+	if pathErr != nil {
+		slog.ErrorContext(ctx, "failed to validate book file path",
+			slog.String(otelkeys.BookFileID, id),
+			slog.Any(otelkeys.Error, pathErr),
+		)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to validate file path")
+		return
+	}
+	if !allowed {
+		slog.WarnContext(ctx, "download blocked: file path outside library roots",
+			slog.String(otelkeys.BookFileID, id),
+			slog.String(otelkeys.Path, bf.FilePath),
+		)
+		writeError(ctx, w, http.StatusForbidden, "file path is outside allowed library directories")
+		return
+	}
+
+	f, err := os.Open(bf.FilePath)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to open book file",
+			slog.String(otelkeys.BookFileID, id),
+			slog.Any(otelkeys.Error, err),
+		)
+		if errors.Is(err, os.ErrNotExist) {
+			writeError(ctx, w, http.StatusNotFound, "book file not found on disk")
+		} else {
+			writeError(ctx, w, http.StatusInternalServerError, "failed to read file")
+		}
+		return
+	}
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			slog.WarnContext(ctx, "failed to close book file",
+				slog.String(otelkeys.BookFileID, id),
+				slog.Any(otelkeys.Error, closeErr),
+			)
+		}
+	}()
+
+	stat, err := f.Stat()
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to stat book file",
+			slog.String(otelkeys.BookFileID, id),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(ctx, w, http.StatusInternalServerError, "failed to read file")
+		return
+	}
+
+	// Increment the download count (best-effort; a failure here should not
+	// prevent the download from completing).
+	if incErr := h.DB.IncrementBookFileDownloadCount(ctx, id); incErr != nil {
+		slog.WarnContext(ctx, "failed to increment download count",
+			slog.String(otelkeys.BookFileID, id),
+			slog.Any(otelkeys.Error, incErr),
+		)
+	}
+
+	mimeType := opdspkg.MIMETypeForFileType(bf.FileType)
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
+
+	w.Header().Set("Content-Type", mimeType)
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": bf.FileName}))
+	http.ServeContent(w, r, bf.FileName, stat.ModTime(), f)
 }

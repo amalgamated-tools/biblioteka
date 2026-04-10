@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -163,7 +163,7 @@ func TestStreamEvents_BookNotFound(t *testing.T) {
 
 func TestFetchMetadata_EnqueueError(t *testing.T) {
 	d := newTestDB(t)
-	enq := &mockEnqueuer{err: fmt.Errorf("redis unavailable")}
+	enq := &mockEnqueuer{err: errors.New("redis unavailable")}
 	h := &MetadataHandler{DB: d, Enqueuer: enq}
 	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
 	require.NoError(t, err)
