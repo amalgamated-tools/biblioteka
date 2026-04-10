@@ -273,7 +273,7 @@ Individual physical files (EPUB, MOBI, PDF, AZW3) linked to a book record.
 | `file_size` | INTEGER | NOT NULL | —        | File size in bytes                                  |
 | `file_hash` | TEXT    | NULL     | NULL     | Content hash (e.g. `"sha256:abc123…"`)             |
 | `file_path`      | TEXT    | NOT NULL | —        | Absolute path to the file on the server filesystem        |
-| `download_count` | INTEGER | NOT NULL | `0`      | Number of times this file has been downloaded or emailed |
+| `download_count` | INTEGER (SQLite) / BIGINT (PostgreSQL) | NOT NULL | `0`      | Number of times this file has been downloaded |
 | `created_at`     | DATETIME| NOT NULL | `now()`  | Creation time                                             |
 | `updated_at`     | DATETIME| NOT NULL | `now()`  | Last update time                                          |
 

@@ -1977,10 +1977,10 @@ Get a single book file by ID.
 | `book_id`        | string   | ID of the parent book |
 | `file_type`      | string   | Format identifier: `epub`, `mobi`, `pdf`, or `azw3` |
 | `file_name`      | string   | Filename on disk (basename only) |
-| `file_size`      | integer? | File size in bytes; `null` when not recorded |
+| `file_size`      | integer  | File size in bytes |
 | `file_hash`      | string?  | Content hash (e.g. `sha256:abc123…`); `null` when not recorded |
 | `file_path`      | string   | Absolute path to the file on the server's filesystem |
-| `download_count` | integer  | Number of times this file has been downloaded or emailed |
+| `download_count` | integer  | Number of times this file has been downloaded |
 | `created_at`     | string   | Timestamp when the record was created (ISO 8601) |
 | `updated_at`     | string   | Timestamp when the record was last updated (ISO 8601) |
 
@@ -1988,7 +1988,7 @@ Get a single book file by ID.
 
 ### `GET /api/book-files/{id}/download` 🔒
 
-Download the raw file content for a book file. The response is the binary file content with an appropriate `Content-Type` header. The `download_count` for the file is incremented atomically on each successful download (best-effort; a counter failure does not block the response).
+Download the raw file content for a book file. The response is the binary file content with an appropriate `Content-Type` header. The `download_count` for the file is incremented best-effort at the start of each download request; a counter failure does not block the response.
 
 **Path parameter:** `{id}` — book file ID.
 
@@ -2035,6 +2035,7 @@ Send a book file as an email attachment to a specified address. Requires SMTP to
 | `403 Forbidden` | File path is outside all configured library roots |
 | `404 Not Found` | Book file record not found, or file no longer exists on disk |
 | `413 Request Entity Too Large` | File exceeds the 25 MB attachment limit |
+| `500 Internal Server Error` | Unexpected server error (path validation, message build, or file read failure) |
 | `502 Bad Gateway` | SMTP server rejected or failed to deliver the message |
 
 > A successful send is recorded in the audit log as `book_file.emailed`.
