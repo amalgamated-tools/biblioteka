@@ -108,7 +108,13 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if handleDBErr(r.Context(), w, h.DB.SetAdmin(r.Context(), targetID, req.IsAdmin), "user") {
+	if err := h.DB.SetAdmin(r.Context(), targetID, req.IsAdmin); err != nil {
+		slog.ErrorContext(r.Context(), "failed to update admin status",
+			slog.String(otelkeys.TargetID, targetID),
+			slog.Bool(otelkeys.IsAdmin, req.IsAdmin),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update admin status")
 		return
 	}
 
