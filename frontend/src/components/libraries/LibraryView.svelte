@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Library } from "../../types";
-  import { routerStore } from "../../stores/router.svelte";
+  import { routerStore, APP_TITLE_SUFFIX } from "../../stores/router.svelte";
   import { libraryStore } from "../../stores/libraries.svelte";
   import { Library as LibraryIcon, Settings2 } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
@@ -24,6 +24,12 @@
   function handleBooksFound() {
     libraryStore.clearScanning(libraryId);
   }
+
+  $effect(() => {
+    routerStore.setPageTitle(
+      library ? `${library.name}${APP_TITLE_SUFFIX}` : null,
+    );
+  });
 </script>
 
 <div class="animate-fade-in">

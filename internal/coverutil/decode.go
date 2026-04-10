@@ -26,7 +26,7 @@ func DecodeDataURL(raw string) (string, []byte, error) {
 
 	header := strings.TrimPrefix(meta, "data:")
 	if !strings.HasSuffix(header, ";base64") {
-		return "", nil, fmt.Errorf("unsupported data URL encoding")
+		return "", nil, errors.New("unsupported data URL encoding")
 	}
 
 	mimeType := strings.TrimSuffix(header, ";base64")

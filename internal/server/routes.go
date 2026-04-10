@@ -41,6 +41,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/config/oidc", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
 	s.mux.Handle("/api/config/smtp", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
 	s.mux.Handle("/api/config/smtp/test", s.requireJWTAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
+	s.mux.Handle("/api/config/watch-folder", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleWatchFolderConfig)))
 
 	// Protected admin routes (JWT-only: user management)
 	s.mux.Handle("/api/admin/users", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
@@ -59,6 +60,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/series/", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeries)))
 
 	// Protected book routes
+	s.mux.Handle("/api/books/upload", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleUpload)))
 	s.mux.Handle("/api/books", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBooks)))
 	s.mux.Handle("/api/books/", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBookRoutes)))
 

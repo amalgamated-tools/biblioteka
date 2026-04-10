@@ -25,6 +25,7 @@ vi.mock("./settings/UsersTab.svelte", () => ({ default: () => {} }));
 vi.mock("./settings/PreferencesTab.svelte", () => ({ default: () => {} }));
 vi.mock("./settings/APIKeysTab.svelte", () => ({ default: () => {} }));
 vi.mock("./settings/KoboTab.svelte", () => ({ default: () => {} }));
+vi.mock("./settings/WatchFolderTab.svelte", () => ({ default: () => {} }));
 
 vi.mock("lucide-svelte", () => ({
   Mail: () => {},
@@ -34,6 +35,7 @@ vi.mock("lucide-svelte", () => ({
   Send: () => {},
   KeyRound: () => {},
   BookOpen: () => {},
+  FolderSearch: () => {},
 }));
 
 import Settings from "./Settings.svelte";
@@ -81,6 +83,7 @@ describe("Settings navigation", () => {
 
     expect(screen.queryByRole("link", { name: /OIDC \/ SSO/i })).toBeNull();
     expect(screen.queryByRole("link", { name: /Email \/ SMTP/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Watch Folder/i })).toBeNull();
     expect(screen.queryByRole("link", { name: /Users/i })).toBeNull();
   });
 
@@ -99,6 +102,9 @@ describe("Settings navigation", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Email \/ SMTP/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Watch Folder/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Users/i })).toBeInTheDocument();
   });

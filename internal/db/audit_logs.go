@@ -21,6 +21,7 @@ const (
 	AuditActionBookFileCreated         = "book_file.created"
 	AuditActionBookFileDeleted         = "book_file.deleted"
 	AuditActionBookUpdated             = "book.updated"
+	AuditActionBookUploaded            = "book.uploaded"
 	AuditActionKoboTokenCreated        = "kobo_token.created"
 	AuditActionKoboTokenDeleted        = "kobo_token.deleted"
 	AuditActionKOSyncCredentialDeleted = "kosync_credential.deleted"
@@ -40,6 +41,7 @@ const (
 	AuditActionSMTPConfigUpdated       = "smtp.config_updated"
 	AuditActionUserProfileUpdated      = "user.profile_updated"
 	AuditActionUserSignedUp            = "user.signed_up"
+	AuditActionWatchFolderUpdated      = "watch_folder.config_updated"
 )
 
 // AuditLog represents a single audit log entry.

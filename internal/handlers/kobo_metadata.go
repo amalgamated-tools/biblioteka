@@ -36,27 +36,9 @@ func (h *KoboHandler) HandleBookMetadata(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	authors, err := h.DB.GetBookAuthors(r.Context(), bookID)
+	rels, err := h.DB.LoadBookRelations(r.Context(), bookID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to fetch authors for kobo metadata",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
-		return
-	}
-	files, err := h.DB.ListBookFiles(r.Context(), bookID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to fetch files for kobo metadata",
-			slog.String(otelkeys.BookID, bookID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
-		return
-	}
-	series, err := h.DB.GetBookSeries(r.Context(), bookID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to fetch series for kobo metadata",
+		slog.ErrorContext(r.Context(), "failed to load book relations for kobo metadata",
 			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
 		)
@@ -65,6 +47,6 @@ func (h *KoboHandler) HandleBookMetadata(w http.ResponseWriter, r *http.Request)
 	}
 
 	base := schemeAndHost(r)
-	downloadURLs := kobo.DownloadURLs(base, tokenValue, bookID, files)
-	writeKoboJSON(w, http.StatusOK, []any{kobo.BookMetadata(book, authors, series, downloadURLs)})
+	downloadURLs := kobo.DownloadURLs(base, tokenValue, bookID, rels.Files)
+	writeKoboJSON(w, http.StatusOK, []any{kobo.BookMetadata(book, rels.Authors, rels.Series, downloadURLs)})
 }

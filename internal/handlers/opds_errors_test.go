@@ -84,6 +84,46 @@ func TestSearch_DBError(t *testing.T) {
 	parseOPDSFeed(t, w.Body.Bytes())
 }
 
+// --- writeEntityBooksFeed error paths (getFn returns non-sql.ErrNoRows) ---
+
+func TestAuthorBooks_DBError(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := t.Context()
+
+	// Create an author so the ID is valid, then close DB to trigger a real DB error.
+	author, err := h.DB.CreateAuthor(ctx, "DB Error Author", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
+	require.NoError(t, h.DB.Close(), "close db")
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/authors/"+author.ID, nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.AcqContentType, ct)
+	parseOPDSFeed(t, w.Body.Bytes())
+}
+
+func TestSeriesBooks_DBError(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := t.Context()
+
+	// Create a series so the ID is valid, then close DB to trigger a real DB error.
+	series, err := h.DB.CreateSeries(ctx, "DB Error Series", nil, nil, nil)
+	require.NoError(t, err, "create series")
+	require.NoError(t, h.DB.Close(), "close db")
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/series/"+series.ID, nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.Equal(t, opdspkg.AcqContentType, ct)
+	parseOPDSFeed(t, w.Body.Bytes())
+}
+
 // --- bookEntries error paths ---
 
 func TestBookEntries_AuthorLoadError(t *testing.T) {

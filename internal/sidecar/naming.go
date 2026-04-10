@@ -1,6 +1,7 @@
 package sidecar
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -21,7 +22,7 @@ func validateBaseName(baseName string) error {
 
 func sidecarTarget(bookFilePath, organizationType string) (dir string, baseName string, err error) {
 	if bookFilePath == "" {
-		return "", "", fmt.Errorf("book file path is required")
+		return "", "", errors.New("book file path is required")
 	}
 
 	dir = filepath.Dir(bookFilePath)

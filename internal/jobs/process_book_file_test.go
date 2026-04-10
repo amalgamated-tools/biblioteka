@@ -1,7 +1,7 @@
 package jobs
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -400,7 +400,7 @@ func TestProcessBookFile_EnqueueFailureDoesNotFailProcessing(t *testing.T) {
 	epubPath := filepath.Join(dir, "test-fail-enqueue.epub")
 	testutils.MakeTestEPUB(t, epubPath, "Fail Enqueue Test", "Test Author", "urn:isbn:9780000000003")
 
-	enq := &genericMockEnqueuer{err: fmt.Errorf("redis unavailable")}
+	enq := &genericMockEnqueuer{err: errors.New("redis unavailable")}
 
 	err = ProcessBookFile(t.Context(), database, ext, enq, ProcessFilePayload{
 		Path:     epubPath,
@@ -416,4 +416,190 @@ func TestProcessBookFile_EnqueueFailureDoesNotFailProcessing(t *testing.T) {
 	require.NoError(t, err, "list books")
 	require.Len(t, books, 1)
 	require.Equal(t, "Fail Enqueue Test", books[0].Title)
+}
+
+func TestProcessBookFile_OverrideTitle(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	require.NoError(t, err, "new extractor")
+	defer ext.Close(t.Context())
+
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "original.epub")
+	testutils.MakeTestEPUB(t, epubPath, "Metadata Title", "Some Author", "urn:isbn:9780000000001")
+
+	epubInfo, err := os.Stat(epubPath)
+	require.NoError(t, err, "stat epub")
+
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:          epubPath,
+		FileName:      "original.epub",
+		FileType:      "epub",
+		FileSize:      epubInfo.Size(),
+		OverrideTitle: "User Supplied Title",
+	})
+	require.NoError(t, err, "ProcessBookFile()")
+
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.Equal(t, "User Supplied Title", books[0].Title, "override title should take precedence over extracted metadata")
+}
+
+func TestProcessBookFile_OverrideAuthor(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	require.NoError(t, err, "new extractor")
+	defer ext.Close(t.Context())
+
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "book.epub")
+	testutils.MakeTestEPUB(t, epubPath, "Some Title", "Embedded Author", "urn:isbn:9780000000002")
+
+	epubInfo, err := os.Stat(epubPath)
+	require.NoError(t, err, "stat epub")
+
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:           epubPath,
+		FileName:       "book.epub",
+		FileType:       "epub",
+		FileSize:       epubInfo.Size(),
+		OverrideAuthor: "User Supplied Author",
+	})
+	require.NoError(t, err, "ProcessBookFile()")
+
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+
+	bookAuthors, err := database.GetBookAuthors(t.Context(), books[0].ID)
+	require.NoError(t, err, "get book authors")
+	require.Len(t, bookAuthors, 1)
+	require.Equal(t, "User Supplied Author", bookAuthors[0].Name, "override author should take precedence over extracted metadata")
+}
+
+func TestProcessBookFile_OverrideDescription(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	require.NoError(t, err, "new extractor")
+	defer ext.Close(t.Context())
+
+	dir := t.TempDir()
+	// Use a plain file so extraction fails gracefully and we rely entirely on
+	// the override values.
+	bookPath := filepath.Join(dir, "book.pdf")
+	err = os.WriteFile(bookPath, []byte("not a real pdf"), 0o644)
+	require.NoError(t, err, "write test file")
+
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:                bookPath,
+		FileName:            "book.pdf",
+		FileType:            "pdf",
+		FileSize:            14,
+		OverrideTitle:       "Override Book",
+		OverrideDescription: "A compelling description",
+		OverrideLanguage:    "fr",
+		OverridePublisher:   "Test Publisher",
+	})
+	require.NoError(t, err, "ProcessBookFile()")
+
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+
+	require.Equal(t, "Override Book", books[0].Title)
+	require.NotNil(t, books[0].Description)
+	require.Equal(t, "A compelling description", *books[0].Description)
+	require.NotNil(t, books[0].Language)
+	require.Equal(t, "fr", *books[0].Language)
+	require.NotNil(t, books[0].Publisher)
+	require.Equal(t, "Test Publisher", *books[0].Publisher)
+}
+
+func TestProcessBookFile_OverrideISBN13(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	require.NoError(t, err, "new extractor")
+	defer ext.Close(t.Context())
+
+	dir := t.TempDir()
+	bookPath := filepath.Join(dir, "book.pdf")
+	err = os.WriteFile(bookPath, []byte("not a real pdf"), 0o644)
+	require.NoError(t, err, "write test file")
+
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:          bookPath,
+		FileName:      "book.pdf",
+		FileType:      "pdf",
+		FileSize:      14,
+		OverrideTitle: "ISBN Override Book",
+		OverrideISBN:  "9780000000001",
+	})
+	require.NoError(t, err, "ProcessBookFile()")
+
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].ISBN13)
+	require.Equal(t, "9780000000001", *books[0].ISBN13)
+	require.Nil(t, books[0].ISBN10)
+}
+
+func TestProcessBookFile_OverrideISBN10(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	require.NoError(t, err, "new extractor")
+	defer ext.Close(t.Context())
+
+	dir := t.TempDir()
+	bookPath := filepath.Join(dir, "book.pdf")
+	err = os.WriteFile(bookPath, []byte("not a real pdf"), 0o644)
+	require.NoError(t, err, "write test file")
+
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:          bookPath,
+		FileName:      "book.pdf",
+		FileType:      "pdf",
+		FileSize:      14,
+		OverrideTitle: "ISBN10 Override Book",
+		OverrideISBN:  "0306406152",
+	})
+	require.NoError(t, err, "ProcessBookFile()")
+
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].ISBN10)
+	require.Equal(t, "0306406152", *books[0].ISBN10)
+	require.Nil(t, books[0].ISBN13)
+}
+
+func TestProcessBookFile_OverrideTitleEmptyStringIsIgnored(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	require.NoError(t, err, "new extractor")
+	defer ext.Close(t.Context())
+
+	dir := t.TempDir()
+	// Name the file "Embedded Title.epub" so the filename-derived title is
+	// "Embedded Title" regardless of whether ExifTool is available.
+	epubPath := filepath.Join(dir, "Embedded Title.epub")
+	testutils.MakeTestEPUB(t, epubPath, "Embedded Title", "Author", "urn:isbn:9780000000003")
+
+	epubInfo, err := os.Stat(epubPath)
+	require.NoError(t, err, "stat epub")
+
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:          epubPath,
+		FileName:      "Embedded Title.epub",
+		FileType:      "epub",
+		FileSize:      epubInfo.Size(),
+		OverrideTitle: "", // empty — should not override
+	})
+	require.NoError(t, err, "ProcessBookFile()")
+
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.Equal(t, "Embedded Title", books[0].Title, "empty override title should not replace extracted metadata")
 }
