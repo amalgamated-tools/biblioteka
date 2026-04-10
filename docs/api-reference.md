@@ -641,6 +641,7 @@ Return the current watch folder configuration.
 | `200 OK` | Current watch folder configuration (may have empty `path` and `library_id` if not set) |
 | `401 Unauthorized` | Missing or invalid JWT |
 | `403 Forbidden` | Caller is not an admin |
+| `500 Internal Server Error` | Failed to verify admin permissions due to an unexpected server/database error |
 
 ---
 
@@ -1598,13 +1599,14 @@ data: {"event":"complete","source":"goodreads","metadata_id":"d1e2f3..."}
 | `message` | string | Human-readable status message (present on `progress`, `error`, and `not_found`) |
 | `metadata_id` | string | ID of the newly created metadata candidate (present on `complete` only) |
 
-The stream also sends `: heartbeat` comment lines every 15 seconds to keep the connection alive through proxies. The connection closes automatically after 2 minutes or on a terminal event (`complete`, `error`, `not_found`).
+The stream also sends `: heartbeat` comment lines every 15 seconds to keep the connection alive through proxies. The connection remains open until a terminal event (`complete`, `error`, `not_found`) is sent or the client disconnects, although proxies or other infrastructure may still impose their own timeouts.
 
 | Status | Description |
 |--------|-------------|
 | `200 OK` | SSE stream opened |
 | `401 Unauthorized` | Missing or invalid token |
 | `404 Not Found` | Book not found |
+| `500 Internal Server Error` | Response writer does not support streaming |
 | `503 Service Unavailable` | Event streaming not configured (Redis pub/sub not available) |
 
 ---
@@ -1621,13 +1623,13 @@ After a successful apply, the candidate's `status` changes to `"applied"` and th
 
 **Request body:** none
 
-**Response body (`200`):** Updated book object (same schema as [`GET /api/books/{id}`](#get-apibooksid-)).
+**Response body (`200`):** Updated book object (same schema as the items in [`GET /api/books`](#get-apibooks-) — core fields only, without `authors`, `series`, or `files`).
 
 > A successful apply is recorded in the audit log as `metadata.applied`.
 
 | Status | Description |
 |--------|-------------|
-| `200 OK` | Metadata applied; updated book returned |
+| `200 OK` | Metadata applied; updated book summary returned |
 | `401 Unauthorized` | Missing or invalid token |
 | `404 Not Found` | Book not found, or no pending metadata candidate for this user |
 | `500 Internal Server Error` | Failed to update the book or mark the candidate as applied |
