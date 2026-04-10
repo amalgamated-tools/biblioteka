@@ -740,13 +740,13 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `book.created`         | `book`        | Book created via `POST /api/books` |
 | `book.updated`         | `book`        | Book updated via `PUT /api/books/{id}` |
 | `book.deleted`         | `book`        | Book deleted via `DELETE /api/books/{id}` |
+| `book.uploaded`        | `book_upload` | Book file uploaded via `POST /api/books/upload` (`entity_type` is `book_upload`; do not infer it from the `action` prefix) |
 | `author.created`       | `author`      | Author created via `POST /api/authors` |
 | `author.updated`       | `author`      | Author updated via `PUT /api/authors/{id}` |
 | `author.deleted`       | `author`      | Author deleted via `DELETE /api/authors/{id}` |
 | `series.created`       | `series`      | Series created via `POST /api/series` |
 | `series.updated`       | `series`      | Series updated via `PUT /api/series/{id}` |
 | `series.deleted`       | `series`      | Series deleted via `DELETE /api/series/{id}` |
-| `book.uploaded`        | `book_upload` | Book file uploaded via `POST /api/books/upload` |
 | `book_file.created`    | `book_file`   | File attached via `POST /api/books/{id}/files` |
 | `book_file.deleted`    | `book_file`   | File deleted via `DELETE /api/book-files/{id}` |
 | `api_key.created`      | `api_key`     | API key created via `POST /api/api-keys` |
@@ -1330,9 +1330,9 @@ Delete a book. Returns `204 No Content`.
 
 ### `POST /api/books/upload` 🔒
 
-Upload a book file to a library. The file is staged on disk and processed **asynchronously** by a background worker that extracts metadata, organises the file into the library's directory layout, and creates a book record. The endpoint returns `202 Accepted` immediately — the book will appear in the library once processing completes.
+Upload a book file to a library. The file is staged on disk and processed **asynchronously** by a background worker that extracts metadata, organizes the file into the library's directory layout, and creates a book record. The endpoint returns `202 Accepted` immediately — the book will appear in the library once processing completes.
 
-> **Requires:** Background processing must be configured. If the background worker is unavailable the endpoint returns `503 Service Unavailable`.
+> **Requires:** Background processing must be configured. If background processing is not configured, or the upload job cannot be enqueued for background processing, the endpoint returns `503 Service Unavailable`.
 
 **Content type:** `multipart/form-data`
 
@@ -1367,7 +1367,7 @@ Upload a book file to a library. The file is staged on disk and processed **asyn
 | Field        | Type   | Description |
 |--------------|--------|-------------|
 | `message`    | string | Human-readable status message |
-| `file_name`  | string | Sanitised file name as stored on disk |
+| `file_name`  | string | Basename of the uploaded file name, with any path components removed |
 | `file_type`  | string | Detected format: `epub`, `mobi`, `azw3`, or `pdf` |
 | `library_id` | string | ID of the target library |
 
@@ -1379,6 +1379,7 @@ Upload a book file to a library. The file is staged on disk and processed **asyn
 | `401` | Missing or invalid authentication token |
 | `404` | Library with the given `library_id` not found |
 | `413` | File exceeds the 500 MB limit |
+| `500` | Server error while staging the file or querying library configuration |
 | `503` | Background processing is not configured, or the job queue is unavailable |
 
 **Example curl:**
