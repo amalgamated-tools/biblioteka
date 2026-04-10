@@ -31,3 +31,5 @@ internal/server/dist/*
 !internal/server/dist/.gitkeep
 exiftool/
 node_modules/
+docs/graph/graph.html
+docs/graph/cache/
