@@ -292,7 +292,7 @@
               role="link"
               tabindex="0"
               onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
+                if (e.key === "Enter") {
                   e.preventDefault();
                   routerStore.navigate(`books/${book.id}`);
                 }
