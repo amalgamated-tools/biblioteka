@@ -30,4 +30,15 @@ else
     exit 1
 fi
 
+# graphify
+if command -v graphify >/dev/null 2>&1; then
+    echo "graphify $(graphify --version) already installed"
+elif command -v pip >/dev/null 2>&1; then
+    echo "Installing graphify via pip..."
+    pip install graphify
+else
+    echo "Error: pip not found. Install graphify manually: https://graphify.net/"
+    exit 1
+fi
+
 echo "==> Bootstrap complete"
