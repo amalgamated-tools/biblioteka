@@ -80,7 +80,7 @@
       <AlertBanner variant="error">{usersError}</AlertBanner>
     {:else}
       <div class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="w-full text-sm" aria-label="Users">
           <thead>
             <tr
               class="text-left text-ink-500 dark:text-ink-300 border-b border-ink-100 dark:border-ink-800"

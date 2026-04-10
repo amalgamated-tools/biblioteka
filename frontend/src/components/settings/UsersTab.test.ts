@@ -23,6 +23,26 @@ describe("UsersTab accessibility", () => {
     cleanup();
   });
 
+  it("labels the users table with aria-label (WCAG 1.3.1)", () => {
+    render(UsersTab, {
+      props: {
+        cachedUsers: [
+          {
+            id: "1",
+            name: "Admin User",
+            email: "admin@example.com",
+            is_admin: true,
+            oidc_linked: false,
+            created_at: "2026-01-01T00:00:00Z",
+          },
+        ],
+        onUsersLoaded: () => {},
+      },
+    });
+
+    expect(screen.getByRole("table", { name: "Users" })).toBeInTheDocument();
+  });
+
   it("marks each table header as a column header", () => {
     render(UsersTab, {
       props: {

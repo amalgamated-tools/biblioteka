@@ -33,7 +33,7 @@ export type SettingsSubPath =
   | "api-keys"
   | "kobo";
 
-const APP_TITLE_SUFFIX = " – biblioteka";
+export const APP_TITLE_SUFFIX = " – biblioteka";
 
 const viewTitles: Record<AppView, string> = {
   dashboard: `Dashboard${APP_TITLE_SUFFIX}`,
