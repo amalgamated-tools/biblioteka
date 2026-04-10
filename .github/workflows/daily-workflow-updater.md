@@ -203,7 +203,7 @@ git status
 - PR is created only when `actions-lock.json` changes
 - `.lock.yml` files are never included in the PR
 - PR description clearly shows what was updated
-- **Every run calls exactly one safe-output tool**: either `create_pull_request` (when updates are found) or `noop` (when no updates are needed or an error occurs)
+- **Every run calls exactly one safe-output tool**: either `create-pull-request` (when updates are found) or `noop` (when no updates are needed or an error occurs)
 
 Good luck keeping our GitHub Actions up to date!
 
