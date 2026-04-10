@@ -142,6 +142,16 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate ISBN synchronously so the client gets immediate feedback
+	// before the file is staged to disk.
+	isbnRaw := strings.TrimSpace(r.FormValue("isbn"))
+	if isbnRaw != "" {
+		if exif.NormalizeISBN(isbnRaw) == "" {
+			writeError(r.Context(), w, http.StatusBadRequest, "invalid isbn: must be a valid ISBN-10 or ISBN-13")
+			return
+		}
+	}
+
 	stagingDir := filepath.Join(libraryRoot, uploadStagingDir)
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		slog.ErrorContext(r.Context(), "failed to create upload staging directory",
@@ -174,15 +184,6 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := auth.UserIDFromContext(r.Context())
-
-	// Validate ISBN synchronously so the client gets immediate feedback.
-	isbnRaw := strings.TrimSpace(r.FormValue("isbn"))
-	if isbnRaw != "" {
-		if exif.NormalizeISBN(isbnRaw) == "" {
-			writeError(r.Context(), w, http.StatusBadRequest, "invalid isbn: must be a valid ISBN-10 or ISBN-13")
-			return
-		}
-	}
 
 	payload := jobs.ProcessFilePayload{
 		Path:                stagingPath,
