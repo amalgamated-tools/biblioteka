@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
-	"errors"
 	"log/slog"
 	"net/http"
 
@@ -110,13 +108,7 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.DB.SetAdmin(r.Context(), targetID, req.IsAdmin); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "user not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to set admin status", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update admin status")
+	if handleDBErr(r.Context(), w, h.DB.SetAdmin(r.Context(), targetID, req.IsAdmin), "user") {
 		return
 	}
 

@@ -87,16 +87,7 @@ func (h *AuthHandler) updateProfile(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "updating user profile", slog.String(otelkeys.UserID, userID))
 
 	user, err := h.DB.UpdateName(r.Context(), userID, req.Name)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "user not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to update user profile",
-			slog.String(otelkeys.UserID, userID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update profile")
+	if handleDBErr(r.Context(), w, err, "user") {
 		return
 	}
 
