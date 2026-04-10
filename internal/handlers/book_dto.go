@@ -27,28 +27,30 @@ type bookSeriesEntryDTO struct {
 }
 
 type bookFileDTO struct {
-	ID        string       `json:"id"`
-	BookID    string       `json:"book_id"`
-	FileType  string       `json:"file_type"`
-	FileName  string       `json:"file_name"`
-	FileSize  int64        `json:"file_size"`
-	FileHash  *string      `json:"file_hash"`
-	FilePath  string       `json:"file_path"`
-	CreatedAt db.Timestamp `json:"created_at"`
-	UpdatedAt db.Timestamp `json:"updated_at"`
+	ID            string       `json:"id"`
+	BookID        string       `json:"book_id"`
+	FileType      string       `json:"file_type"`
+	FileName      string       `json:"file_name"`
+	FileSize      int64        `json:"file_size"`
+	FileHash      *string      `json:"file_hash"`
+	FilePath      string       `json:"file_path"`
+	DownloadCount int64        `json:"download_count"`
+	CreatedAt     db.Timestamp `json:"created_at"`
+	UpdatedAt     db.Timestamp `json:"updated_at"`
 }
 
 func toBookFileDTO(bf *db.BookFile) bookFileDTO {
 	return bookFileDTO{
-		ID:        bf.ID,
-		BookID:    bf.BookID,
-		FileType:  bf.FileType,
-		FileName:  bf.FileName,
-		FileSize:  bf.FileSize,
-		FileHash:  bf.FileHash,
-		FilePath:  bf.FilePath,
-		CreatedAt: bf.CreatedAt,
-		UpdatedAt: bf.UpdatedAt,
+		ID:            bf.ID,
+		BookID:        bf.BookID,
+		FileType:      bf.FileType,
+		FileName:      bf.FileName,
+		FileSize:      bf.FileSize,
+		FileHash:      bf.FileHash,
+		FilePath:      bf.FilePath,
+		DownloadCount: bf.DownloadCount,
+		CreatedAt:     bf.CreatedAt,
+		UpdatedAt:     bf.UpdatedAt,
 	}
 }
 

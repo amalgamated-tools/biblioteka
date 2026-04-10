@@ -21,6 +21,7 @@ import {
   createBookFile,
   getBookFile,
   deleteBookFile,
+  bookFileDownloadUrl,
   clearToken,
 } from "../api";
 import type {
@@ -101,6 +102,7 @@ const fakeBookFile: BookFile = {
   file_size: 1024,
   file_hash: null,
   file_path: "/books/test.epub",
+  download_count: 0,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
 };
@@ -322,6 +324,13 @@ describe("Books API", () => {
       expect(url).toBe("/api/book-files/f1");
       expect(options.method).toBe("DELETE");
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe("bookFileDownloadUrl", () => {
+    it("returns the download URL for a book file", () => {
+      const url = bookFileDownloadUrl("f1");
+      expect(url).toBe("/api/book-files/f1/download");
     });
   });
 });
