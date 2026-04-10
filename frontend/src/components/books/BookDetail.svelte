@@ -5,6 +5,7 @@
   import {
     BookOpen,
     ArrowLeft,
+    Download,
     Pencil,
     FileText,
     User,
@@ -22,21 +23,32 @@
   let book: Book | null = $state(null);
   let loading = $state(true);
   let error: string | null = $state(null);
+  let fetchSeq = 0;
 
   $effect(() => {
     loadBook(bookId);
   });
 
   async function loadBook(id: string) {
+    const seq = ++fetchSeq;
     loading = true;
     error = null;
     try {
-      book = await api.getBook(id);
+      const result = await api.getBook(id);
+      if (seq !== fetchSeq) return;
+      book = result;
     } catch (e) {
+      if (seq !== fetchSeq) return;
       error = e instanceof Error ? e.message : "Failed to load book";
     } finally {
-      loading = false;
+      if (seq === fetchSeq) loading = false;
     }
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 </script>
 
@@ -206,18 +218,40 @@
               <FileText class="w-4 h-4 inline mr-1.5" aria-hidden="true" />
               Files
             </h2>
-            <ul class="space-y-2 text-sm">
+            <ul class="space-y-3 text-sm">
               {#each book.files as file (file.id)}
                 <li
-                  class="flex items-center justify-between text-ink-700 dark:text-ink-200"
+                  class="flex items-center justify-between gap-4 p-3 rounded-xl bg-ink-50 dark:bg-ink-800/50 border border-ink-100 dark:border-ink-800"
                 >
-                  <span class="truncate" title={file.file_path}
-                    >{file.file_name}</span
+                  <div class="min-w-0 flex-1">
+                    <span
+                      class="font-medium text-ink-900 dark:text-cream-100 truncate block"
+                      title={file.file_path}>{file.file_name}</span
+                    >
+                    <div
+                      class="flex items-center gap-3 mt-1 text-xs text-ink-500 dark:text-ink-400"
+                    >
+                      <span
+                        class="uppercase font-medium text-accent-600 dark:text-accent-400"
+                        >{file.file_type}</span
+                      >
+                      <span>{formatFileSize(file.file_size)}</span>
+                      <span
+                        >{file.download_count}
+                        {file.download_count === 1
+                          ? "download"
+                          : "downloads"}</span
+                      >
+                    </div>
+                  </div>
+                  <a
+                    href={api.bookFileDownloadUrl(file.id)}
+                    class="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-accent-600 text-white hover:bg-accent-700 transition-colors"
+                    download
                   >
-                  <span
-                    class="text-xs text-ink-400 dark:text-ink-500 uppercase ml-2 flex-shrink-0"
-                    >{file.file_type}</span
-                  >
+                    <Download class="w-4 h-4" aria-hidden="true" />
+                    Download
+                  </a>
                 </li>
               {/each}
             </ul>

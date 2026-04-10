@@ -126,3 +126,36 @@ func TestGetFilesForBooks(t *testing.T) {
 	require.Len(t, got[book2.ID], 1)
 	require.Equal(t, "wizard-and-glass.epub", got[book2.ID][0].FileName)
 }
+
+func TestIncrementBookFileDownloadCount(t *testing.T) {
+	d := newTestDB(t)
+
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "The Gunslinger"})
+	require.NoError(t, err, "CreateBook() error")
+	bf, err := d.CreateBookFile(t.Context(), book.ID, "epub", "gunslinger.epub", 1024, nil, "/books/gunslinger.epub")
+	require.NoError(t, err, "CreateBookFile() error")
+	require.Equal(t, int64(0), bf.DownloadCount)
+
+	// Increment once.
+	err = d.IncrementBookFileDownloadCount(t.Context(), bf.ID)
+	require.NoError(t, err, "IncrementBookFileDownloadCount() first call error")
+
+	got, err := d.GetBookFile(t.Context(), bf.ID)
+	require.NoError(t, err, "GetBookFile() after first increment error")
+	require.Equal(t, int64(1), got.DownloadCount)
+
+	// Increment again.
+	err = d.IncrementBookFileDownloadCount(t.Context(), bf.ID)
+	require.NoError(t, err, "IncrementBookFileDownloadCount() second call error")
+
+	got, err = d.GetBookFile(t.Context(), bf.ID)
+	require.NoError(t, err, "GetBookFile() after second increment error")
+	require.Equal(t, int64(2), got.DownloadCount)
+}
+
+func TestIncrementBookFileDownloadCount_NotFound(t *testing.T) {
+	d := newTestDB(t)
+
+	err := d.IncrementBookFileDownloadCount(t.Context(), "nonexistent-id")
+	require.ErrorIs(t, err, sql.ErrNoRows)
+}

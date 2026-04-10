@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -60,10 +59,9 @@ func toAuditLogDTO(e *db.AuditLog) auditLogDTO {
 //	@Tags			Admin
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			limit	query		int	false	"Max entries to return (default 50)"
-//	@Param			offset	query		int	false	"Entries to skip (default 0)"
+//	@Param			limit	query		int	false	"Max entries to return (default 50, max 200; invalid or out-of-range values are silently clamped)"
+//	@Param			offset	query		int	false	"Entries to skip (default 0; invalid or negative values are silently ignored)"
 //	@Success		200		{object}	auditLogListDTO
-//	@Failure		400		{object}	errorResponse
 //	@Failure		401		{object}	errorResponse
 //	@Failure		403		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse
@@ -78,32 +76,7 @@ func (h *AuditLogHandler) HandleAuditLogs(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	const defaultLimit = 50
-	const maxLimit = 200
-
-	limit := defaultLimit
-	offset := 0
-
-	if v := r.URL.Query().Get("limit"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1 {
-			writeError(r.Context(), w, http.StatusBadRequest, "invalid limit parameter")
-			return
-		}
-		if n > maxLimit {
-			n = maxLimit
-		}
-		limit = n
-	}
-
-	if v := r.URL.Query().Get("offset"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 0 {
-			writeError(r.Context(), w, http.StatusBadRequest, "invalid offset parameter")
-			return
-		}
-		offset = n
-	}
+	limit, offset := parseLimitOffset(r, defaultPageLimit, maxPageLimit)
 
 	slog.DebugContext(r.Context(), "listing audit logs",
 		slog.Int(otelkeys.Limit, limit),

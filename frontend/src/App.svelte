@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import { authStore } from "./stores/auth.svelte";
-  import { routerStore } from "./stores/router.svelte";
+  import { routerStore, APP_TITLE_SUFFIX } from "./stores/router.svelte";
   import { libraryStore } from "./stores/libraries.svelte";
   import Auth from "./components/Auth.svelte";
   import Dashboard from "./components/Dashboard.svelte";
@@ -32,7 +32,22 @@
 
   // Update document title to reflect the current view (WCAG 2.4.2)
   $effect(() => {
-    document.title = routerStore.pageTitle;
+    let title = routerStore.pageTitle;
+    // Include the library name in the page title when viewing a specific library.
+    if (
+      routerStore.currentView === "libraries" &&
+      routerStore.subPath &&
+      routerStore.subPath !== "new" &&
+      !routerStore.subPath.startsWith("edit/")
+    ) {
+      const lib = libraryStore.libraries.find(
+        (l) => l.id === routerStore.subPath,
+      );
+      if (lib) {
+        title = `${lib.name}${APP_TITLE_SUFFIX}`;
+      }
+    }
+    document.title = title;
   });
 
   // Close the mobile sidebar whenever the active route changes.
