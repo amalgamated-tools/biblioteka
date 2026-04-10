@@ -2463,7 +2463,7 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `books.test.ts`
 
-`frontend/src/lib/api/books.test.ts` exercises the `api/books.ts` sub-module end-to-end. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Fifteen tests across fourteen `describe` blocks inside a parent `Books API` block:
+`frontend/src/lib/api/books.test.ts` exercises the `api/books.ts` sub-module end-to-end. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Eighteen tests across sixteen `describe` blocks inside a parent `Books API` block:
 
 **`listBooks` (three tests):**
 - Asserts `GET /api/books?limit=50&offset=0` is issued with default parameters and the paginated response is returned.
@@ -2497,6 +2497,8 @@ The following test suites cover reactive stores and the API client. Unlike the a
 **`deleteBookFile` (one test):** Asserts `DELETE /api/book-files/:id` is issued and the function resolves `undefined`.
 
 **`bookFileDownloadUrl` (one test):** Asserts the pure helper returns `/api/book-files/:id/download` without making any HTTP requests.
+
+**`emailBookFile` (one test):** Asserts `POST /api/book-files/:id/email` is issued with `{ to: "..." }` in the request body and the `{ message: "..." }` response is returned.
 
 > **Mocking note:** `fetch` is globally stubbed in `beforeEach` via `vi.stubGlobal("fetch", fetchMock)` and unset in `afterEach` with `vi.unstubAllGlobals()`. Shared helper utilities `mockFetchResponse` and `mockNoContentResponse` from `./testUtils` keep individual tests concise.
 
