@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -13,8 +14,8 @@ import (
 const JobScanWatchFolder = "scan:watch-folder"
 
 const (
-	settingWatchFolderPath      = "watch_folder_path"
-	settingWatchFolderLibraryID = "watch_folder_library_id"
+	settingWatchFolderPath      = db.SettingWatchFolderPath
+	settingWatchFolderLibraryID = db.SettingWatchFolderLibraryID
 )
 
 // SettingGetter is the subset of db.DB needed to read settings.
