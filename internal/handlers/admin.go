@@ -115,7 +115,11 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusNotFound, "user not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to set admin status", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to update admin status",
+			slog.String(otelkeys.TargetID, targetID),
+			slog.Bool(otelkeys.IsAdmin, req.IsAdmin),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update admin status")
 		return
 	}
