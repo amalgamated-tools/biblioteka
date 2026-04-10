@@ -746,6 +746,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `series.created`       | `series`      | Series created via `POST /api/series` |
 | `series.updated`       | `series`      | Series updated via `PUT /api/series/{id}` |
 | `series.deleted`       | `series`      | Series deleted via `DELETE /api/series/{id}` |
+| `book.uploaded`        | `book_upload` | Book file uploaded via `POST /api/books/upload` |
 | `book_file.created`    | `book_file`   | File attached via `POST /api/books/{id}/files` |
 | `book_file.deleted`    | `book_file`   | File deleted via `DELETE /api/book-files/{id}` |
 | `api_key.created`      | `api_key`     | API key created via `POST /api/api-keys` |
@@ -1324,6 +1325,72 @@ Update a book's metadata. This is a **full replacement** — every field not inc
 Delete a book. Returns `204 No Content`.
 
 > **Cascade:** Deleting a book also removes all associated `book_files`, `book_authors`, `book_series`, and `library_books` records. See [Cascade Deletion Summary](database-schema.md#cascade-deletion-summary).
+
+---
+
+### `POST /api/books/upload` 🔒
+
+Upload a book file to a library. The file is staged on disk and processed **asynchronously** by a background worker that extracts metadata, organises the file into the library's directory layout, and creates a book record. The endpoint returns `202 Accepted` immediately — the book will appear in the library once processing completes.
+
+> **Requires:** Background processing must be configured. If the background worker is unavailable the endpoint returns `503 Service Unavailable`.
+
+**Content type:** `multipart/form-data`
+
+**Supported file types:** `.epub`, `.mobi`, `.azw3`, `.pdf`
+
+**Maximum upload size:** 500 MB
+
+**Form fields:**
+
+| Field         | Type   | Required | Description |
+|---------------|--------|----------|-------------|
+| `file`        | file   | ✓        | The book file to upload |
+| `library_id`  | string | ✓        | ID of the target library |
+| `title`       | string |          | Title override — takes precedence over metadata extracted from the file |
+| `author`      | string |          | Author override — takes precedence over extracted metadata |
+| `description` | string |          | Description override |
+| `isbn`        | string |          | ISBN override (ISBN-10 or ISBN-13); validated immediately and returns `400` if invalid |
+| `language`    | string |          | Language override |
+| `publisher`   | string |          | Publisher override |
+
+**Response body (`202 Accepted`):**
+
+```json
+{
+  "message": "file accepted for processing",
+  "file_name": "my-book.epub",
+  "file_type": "epub",
+  "library_id": "<library-id>"
+}
+```
+
+| Field        | Type   | Description |
+|--------------|--------|-------------|
+| `message`    | string | Human-readable status message |
+| `file_name`  | string | Sanitised file name as stored on disk |
+| `file_type`  | string | Detected format: `epub`, `mobi`, `azw3`, or `pdf` |
+| `library_id` | string | ID of the target library |
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Missing `library_id` or `file`; unsupported file type; or invalid ISBN |
+| `401` | Missing or invalid authentication token |
+| `404` | Library with the given `library_id` not found |
+| `413` | File exceeds the 500 MB limit |
+| `503` | Background processing is not configured, or the job queue is unavailable |
+
+**Example curl:**
+
+```bash
+curl -X POST https://your-server/api/books/upload \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@/path/to/book.epub" \
+  -F "library_id=<library-id>" \
+  -F "title=My Book" \
+  -F "author=Jane Smith"
+```
 
 ---
 
