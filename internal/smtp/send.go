@@ -77,7 +77,7 @@ func Send(ctx context.Context, addr string, auth netsmtp.Auth, from, to string, 
 		}
 		defer client.Close()
 		defer cleanup()
-		return send(client, a, from, to, msg)
+		return send(client, auth, from, to, msg)
 	case "starttls":
 		conn, err := netDialer.DialContext(ctx, "tcp", addr)
 		if err != nil {
@@ -92,7 +92,7 @@ func Send(ctx context.Context, addr string, auth netsmtp.Auth, from, to string, 
 		if err := client.StartTLS(tlsConfig); err != nil {
 			return fmt.Errorf("STARTTLS failed: %w", err)
 		}
-		return send(client, a, from, to, msg)
+		return send(client, auth, from, to, msg)
 	case "none":
 		conn, err := netDialer.DialContext(ctx, "tcp", addr)
 		if err != nil {
@@ -104,7 +104,7 @@ func Send(ctx context.Context, addr string, auth netsmtp.Auth, from, to string, 
 		}
 		defer client.Close()
 		defer cleanup()
-		return send(client, a, from, to, msg)
+		return send(client, auth, from, to, msg)
 	default:
 		return fmt.Errorf("unsupported TLS mode %q", tlsMode)
 	}
