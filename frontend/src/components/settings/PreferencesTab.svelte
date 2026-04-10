@@ -51,9 +51,7 @@
         <p class="text-xs text-ink-500 dark:text-ink-300 mt-2">
           Choose how you prefer biblioteka to appear
         </p>
-        <span role="status" aria-live="polite" class="sr-only"
-          >{themeAnnouncement}</span
-        >
+        <span role="status" class="sr-only">{themeAnnouncement}</span>
       </fieldset>
     </div>
   </div>

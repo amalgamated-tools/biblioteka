@@ -10,28 +10,29 @@ import (
 
 // BookFile represents a row in the book_files table.
 type BookFile struct {
-	ID        string    `json:"id"`
-	BookID    string    `json:"book_id"`
-	FileType  string    `json:"file_type"`
-	FileName  string    `json:"file_name"`
-	FileSize  int64     `json:"file_size"`
-	FileHash  *string   `json:"file_hash"`
-	FilePath  string    `json:"file_path"`
-	CreatedAt Timestamp `json:"created_at"`
-	UpdatedAt Timestamp `json:"updated_at"`
+	ID            string    `json:"id"`
+	BookID        string    `json:"book_id"`
+	FileType      string    `json:"file_type"`
+	FileName      string    `json:"file_name"`
+	FileSize      int64     `json:"file_size"`
+	FileHash      *string   `json:"file_hash"`
+	FilePath      string    `json:"file_path"`
+	DownloadCount int64     `json:"download_count"`
+	CreatedAt     Timestamp `json:"created_at"`
+	UpdatedAt     Timestamp `json:"updated_at"`
 }
 
-const bookFileColumns = `id, book_id, file_type, file_name, file_size, file_hash, file_path, created_at, updated_at`
+const bookFileColumns = `id, book_id, file_type, file_name, file_size, file_hash, file_path, download_count, created_at, updated_at`
 
 func scanBookFile(row interface{ Scan(...any) error }) (*BookFile, error) {
 	return scanRow(row, func(bf *BookFile) []any {
-		return []any{&bf.ID, &bf.BookID, &bf.FileType, &bf.FileName, &bf.FileSize, &bf.FileHash, &bf.FilePath, &bf.CreatedAt, &bf.UpdatedAt}
+		return []any{&bf.ID, &bf.BookID, &bf.FileType, &bf.FileName, &bf.FileSize, &bf.FileHash, &bf.FilePath, &bf.DownloadCount, &bf.CreatedAt, &bf.UpdatedAt}
 	})
 }
 
 // bookFileColumnsWithPrefix returns book_files columns with a table alias prefix.
 func bookFileColumnsWithPrefix(prefix string) string {
-	return prefix + "id, " + prefix + "book_id, " + prefix + "file_type, " + prefix + "file_name, " + prefix + "file_size, " + prefix + "file_hash, " + prefix + "file_path, " + prefix + "created_at, " + prefix + "updated_at"
+	return prefix + "id, " + prefix + "book_id, " + prefix + "file_type, " + prefix + "file_name, " + prefix + "file_size, " + prefix + "file_hash, " + prefix + "file_path, " + prefix + "download_count, " + prefix + "created_at, " + prefix + "updated_at"
 }
 
 // CreateBookFile inserts a new book file record and returns it.
@@ -121,4 +122,11 @@ func (d *DB) GetFilesForBooks(ctx context.Context, bookIDs []string) (map[string
 		result[bf.BookID] = append(result[bf.BookID], *bf)
 	}
 	return result, rows.Err()
+}
+
+// IncrementBookFileDownloadCount atomically increments the download_count for the
+// given book file by 1. Returns sql.ErrNoRows if the file does not exist.
+func (d *DB) IncrementBookFileDownloadCount(ctx context.Context, id string) error {
+	slog.DebugContext(ctx, "db: incrementing book file download count", slog.String(otelkeys.BookFileID, id))
+	return d.execAffected(ctx, `UPDATE book_files SET download_count = download_count + 1 WHERE id = $1`, id)
 }

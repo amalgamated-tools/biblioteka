@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,26 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
+
+// adaptNavEntities wraps a paginated list function so its results are converted
+// to []opds.NavEntity for use with writeNamedEntityNavFeed. The toEntity
+// callback maps each element of the source slice to an opds.NavEntity.
+func adaptNavEntities[T any](
+	listFn func(ctx context.Context, limit, offset int) ([]T, int, error),
+	toEntity func(T) opds.NavEntity,
+) func(ctx context.Context, limit, offset int) ([]opds.NavEntity, int, error) {
+	return func(ctx context.Context, limit, offset int) ([]opds.NavEntity, int, error) {
+		items, total, err := listFn(ctx, limit, offset)
+		if err != nil {
+			return nil, 0, err
+		}
+		entities := make([]opds.NavEntity, len(items))
+		for i, item := range items {
+			entities[i] = toEntity(item)
+		}
+		return entities, total, nil
+	}
+}
 
 // writeOPDSError writes an error response for OPDS endpoints as a minimal Atom feed,
 // so that OPDS clients always receive XML instead of JSON when an error occurs.
