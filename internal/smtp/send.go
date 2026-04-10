@@ -53,9 +53,9 @@ func newClientWithContext(ctx context.Context, conn net.Conn, host string) (*net
 	return client, func() { close(done) }, nil
 }
 
-// Send dials addr, negotiates TLS according to tlsMode, authenticates with a
-// if non-nil, and delivers a single message from → to.
-func Send(ctx context.Context, addr string, a netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
+// Send dials addr, negotiates TLS according to tlsMode, authenticates using
+// auth if non-nil, and delivers a single message from → to.
+func Send(ctx context.Context, addr string, auth netsmtp.Auth, from, to string, msg []byte, tlsMode string) error {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		return fmt.Errorf("invalid address: %w", err)
@@ -77,7 +77,7 @@ func Send(ctx context.Context, addr string, a netsmtp.Auth, from, to string, msg
 		}
 		defer client.Close()
 		defer cleanup()
-		return send(client, a, from, to, msg)
+		return send(client, auth, from, to, msg)
 	case "starttls":
 		conn, err := netDialer.DialContext(ctx, "tcp", addr)
 		if err != nil {
@@ -92,7 +92,7 @@ func Send(ctx context.Context, addr string, a netsmtp.Auth, from, to string, msg
 		if err := client.StartTLS(tlsConfig); err != nil {
 			return fmt.Errorf("STARTTLS failed: %w", err)
 		}
-		return send(client, a, from, to, msg)
+		return send(client, auth, from, to, msg)
 	case "none":
 		conn, err := netDialer.DialContext(ctx, "tcp", addr)
 		if err != nil {
@@ -104,7 +104,7 @@ func Send(ctx context.Context, addr string, a netsmtp.Auth, from, to string, msg
 		}
 		defer client.Close()
 		defer cleanup()
-		return send(client, a, from, to, msg)
+		return send(client, auth, from, to, msg)
 	default:
 		return fmt.Errorf("unsupported TLS mode %q", tlsMode)
 	}
