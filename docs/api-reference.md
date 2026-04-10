@@ -1988,7 +1988,7 @@ Get a single book file by ID.
 
 ### `GET /api/book-files/{id}/download` 🔒
 
-Download the raw file content for a book file. The response is the binary file content with an appropriate `Content-Type` header. The `download_count` for the file is incremented best-effort at the start of each download request; a counter failure does not block the response.
+Download the raw file content for a book file. The response is the binary file content with an appropriate `Content-Type` header. The `download_count` for the file is incremented best-effort at the start of each download request; a counter failure does not block the response. The endpoint supports HTTP range requests (`Range` header); clients may receive `206 Partial Content` for partial or resumed downloads.
 
 **Path parameter:** `{id}` — book file ID.
 
@@ -2035,7 +2035,7 @@ Send a book file as an email attachment to a specified address. Requires SMTP to
 | `403 Forbidden` | File path is outside all configured library roots |
 | `404 Not Found` | Book file record not found, or file no longer exists on disk |
 | `413 Request Entity Too Large` | File exceeds the 25 MB attachment limit |
-| `500 Internal Server Error` | Unexpected server error (path validation, message build, or file read failure) |
+| `500 Internal Server Error` | Unexpected server error (path validation, SMTP validation, message build, or file read failure) |
 | `502 Bad Gateway` | SMTP server rejected or failed to deliver the message |
 
 > A successful send is recorded in the audit log as `book_file.emailed`.
