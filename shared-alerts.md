@@ -1,58 +1,26 @@
-# Shared Alerts — Cross-Orchestrator Coordination
-**Last updated:** 2026-04-09T23:44Z by agent-performance-analyzer
+# Shared Alerts
+**Updated:** 2026-04-10T23:44Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### ⚠️ CRITICAL: update-docs Duplicate PR Creation (Apr 8, Day 2)
-- **Issue**: 3 identical PRs opened in ~2 hours (#1538, #1539, #1547)
-- **Title**: "docs: document TimeoutState base class, ThemePreference type, and TRUSTED_PROXIES rate limiter"
-- **Root cause**: TOCTOU race — multiple Test workflow completions trigger concurrent update-docs runs; dedup check passes before sibling opens its PR
-- **Action needed**: Implement lock-based or post-create dedup check in update-docs workflow
-- **Raised by**: agent-performance-analyzer (Apr 8); escalated Apr 9
+### CRITICAL: Noop Omission Epidemic (Apr 10)
+- 4 agents: daily-nitpick-reviewer, dead-code-remover, daily-file-diet, code-simplifier
+- All ran successfully but omitted noop call; generated failure issues #1629 #1615 #1614 #1613
+- Fix PRs #1635 #1636 awaiting merge; need to extend fix to all 4 agents
 
-### ⚠️ MEDIUM: GH_AW_AGENT_TOKEN Permission Failure (from Apr 6, Day 4)
-- **Issue**: Workflows fail to assign Copilot to issues
-- **Error**: ERR_PERMISSION: copilot coding agent is not available
-- **Tracking**: Issues #1452 (old), #1551 (Apr 8)
-- **Impact**: Auto-fix pipeline degraded; issues sit unassigned
-- **Action needed**: Verify GH_AW_AGENT_TOKEN has Copilot assignment scope + org plan check
-- **Raised by**: agent-performance-analyzer
+### CRITICAL: Duplicate Code Detector Missing API Key (Apr 10)
+- CODEX_API_KEY / OPENAI_API_KEY secret not configured
+- Run 24267037507 — hard fail every day until secret added
 
-### ⚠️ PENDING MERGE: merge-conflict-resolver Config Bug (Apr 8)
-- **Issue**: push_to_pull_request_branch fails when triggered via workflow_dispatch
-- **Tracking**: Issue #1541 (open), Fix PR #1544 (open, Copilot-authored)
-- **Action needed**: Review and merge PR #1544
-- **Raised by**: agent-performance-analyzer
+### MEDIUM: Daily Accessibility Review Crash (Apr 10)
+- Run 51 failed; orphan process termination; was OK Apr 6-9 (runs 47-50)
+- Investigate crash/OOM
 
-### ⚠️ PENDING MERGE: daily-malicious-code-scan Compilation (Apr 8)
-- **Issue**: Compiled: No despite successful runs
-- **Fix PR #1545**: Open, Copilot-authored, awaiting merge
-- **Raised by**: agent-performance-analyzer
+### PENDING MERGE: daily-team-evolution-insights Fix PR #1635 (Apr 9)
+### PENDING MERGE: code-simplifier Noop Fix PR #1636 (Apr 10)
 
-### 🟡 LOW: daily-workflow-updater Phantom Failure (Apr 8)
-- **Issue**: Run 24134169785 shows success but created issue #1526
-- **Status**: Assigned to Copilot; expires Apr 15
-- **Raised by**: agent-performance-analyzer
-
-### 🟡 NEW: daily-repo-chronicle Zero Runs (Apr 9)
-- **Issue**: No runs observed Apr 3-4; scheduled daily but appears inactive
-- **Status**: Under observation; no issue created yet
-- **Action needed**: Check if workflow is disabled, check triggers
-- **Raised by**: agent-performance-analyzer
-
-## Resolved Alerts
-
-### ✅ RESOLVED: All Workflows Now Compiled (Apr 7)
-- Was: 🟠 6 uncompiled workflows (Apr 3-7)
-- Now: 32/33 compiled (1 fix PR still open)
-- Resolved: 2026-04-07
-
-### ✅ RESOLVED: daily-doc-updater PR Volume Escalation (Apr 4-6)
-- Was CRITICAL; issue #1381 closed Apr 6
-- Daily doc updater now creates 1 targeted PR
-- Resolved: 2026-04-06
-
-### ✅ RESOLVED: Copilot PR Queue Backlog (Apr 7)
-- Was: 14 open Copilot PRs
-- Now: ~6 open PRs (significant reduction)
-- Resolved: 2026-04-08
+## Resolved
+- update-docs duplicate PR race condition: RESOLVED Apr 10
+- All workflows compiled: RESOLVED Apr 7
+- daily-doc-updater PR volume escalation: RESOLVED Apr 6
+- Copilot PR queue backlog: RESOLVED Apr 8

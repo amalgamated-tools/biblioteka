@@ -1,62 +1,26 @@
-# Agent Performance — 2026-04-09
-**Workflow:** agent-performance-analyzer
-**Run timestamp:** 2026-04-09T23:44Z
+# Agent Performance — 2026-04-10
+**Run:** 2026-04-10T23:44Z
 
-## Ecosystem Snapshot
-- 24 workflows tracked (31 in Mar-23 inventory; 7 inactive/manual)
-- 13/13 scheduled daily runs: 100% success rate (Apr 4 baseline)
-- Active open issues carried from Apr 8: 5 tracked
-- Open agent PRs awaiting merge: ~4-6 (fix PRs #1544, #1545 + update-docs duplicates)
-- PR merge rate: 84% (1.85h avg merge time) — ecosystem healthy
-- Average agent quality score: 82.2/100
+## Snapshot
+- 19 scheduled workflows; 68% success rate today (2 hard fails + 4 noop-omission fails)
+- PR merge rate: 84% — healthy
+- Top performers: agentic-maintenance (A+), daily-doc-updater (A), daily-grumpy-reviewer (A)
 
-## Top Performers (A-grade)
-- agentic-maintenance: A+ (11 runs/day, 100%, infrastructure backbone)
-- daily-accessibility-review: A (2 issues/day, consistent, targeted)
-- code-simplifier: A (PRs created, 100% success)
-- dead-code-remover: A (sustained)
-- daily-security-review: A (sustained)
-- daily-grumpy-reviewer: A (sustained)
-- daily-nitpick-reviewer: A (sustained)
-- daily-documentation-updater: A (sustained improvement since Apr 6 fix)
-- ci-coach: A- (noop when no issues - correct behavior)
-- schema-consistency-checker: A- (2 actionable issues/day)
-- daily-semgrep-scan: A- (100% success, appropriate noop)
+## CRITICAL: Noop Omission Epidemic (Apr 10, Day 1)
+- 4 agents completed but forgot to call noop: daily-nitpick-reviewer (24 turns, 2.45M tokens!), dead-code-remover (17t, 734k), daily-file-diet (10t, 431k), code-simplifier
+- Copilot fix PRs: #1635, #1636 (partial) — need merge + extend to remaining 2 agents
+- Fix: Add mandatory noop instruction to ALL reviewer/analyzer prompts
 
-## ⚠️ CRITICAL (Day 2): update-docs Duplicate PR Race Condition
-- 3 identical PRs (#1538, #1539, #1547) still open/unresolved
-- Root cause: TOCTOU race — concurrent Test completions trigger simultaneous runs
-- No fix applied yet; dedup logic inadequate for race window
-- Action: Implement lock-based or post-create dedup check
+## CRITICAL: Duplicate Code Detector Hard Fail
+- Error: CODEX_API_KEY / OPENAI_API_KEY not configured — fails daily
+- Fix: Configure secret in repo/org settings (5 min operational fix)
 
-## ⚠️ MEDIUM (Day 4): GH_AW_AGENT_TOKEN Copilot Assignment
-- Day 4 without resolution
-- Issues #1452 (old) + #1551 (Apr 8) both open
-- Copilot auto-fix pipeline degraded; affects duplicate-code-detector + daily-workflow-updater
-- Action: Verify org plan + GH_AW_AGENT_TOKEN scope
+## MEDIUM: Daily Accessibility Review Crash (Run 51, Apr 10)
+- Orphan process termination; was succeeding runs 47-50 (Apr 6-9)
+- Investigate crash/OOM cause
 
-## ⚠️ PENDING: merge-conflict-resolver Fix PR #1544
-- Config bug: push_to_pull_request_branch fails in workflow_dispatch
-- Fix open, awaiting merge
+## Pending Merges: #1635, #1636 (Copilot noop fixes)
 
-## ⚠️ PENDING: daily-malicious-code-scan Fix PR #1545
-- Compilation flag issue; runs succeed but compiled=No in status
-- Fix open, awaiting merge
-
-## 🟡 MONITORING: daily-workflow-updater Phantom Failure
-- Issue #1526, Copilot-assigned, expires Apr 15
-- Run 24134169785 shows outer GHA success but inner step failure
-
-## 🟡 NEW: daily-repo-chronicle Zero Runs
-- Zero runs observed in Apr 3-4 tracking window
-- Schedule: daily — should be running; possible silent failure
-- No issue created yet; recommend investigation
-
-## Issues Created This Run
-- None (existing tracking issues cover active findings)
-- Discussion: Created weekly performance report
-
-## Performance Trend
-- Apr 3→Apr 4: 100% success rate stable
-- daily-doc-updater: 8 issues Apr 3 → 16 PRs Apr 4 → fixed Apr 6 (oscillation pattern)
-- PR queue: 14 open (Apr 7) → ~6 open (Apr 8) — significant improvement
+## Resolved This Period
+- update-docs duplicate PRs: RESOLVED (1 targeted PR today)
+- Copilot PR backlog: RESOLVED (~5 open, down from 14)
