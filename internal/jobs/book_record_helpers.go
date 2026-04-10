@@ -151,9 +151,11 @@ func createBookRecord(ctx context.Context, database *db.DB, title string, meta *
 		description = &v
 	}
 	if p.OverrideISBN != "" {
+		// Always clear the extracted ISBNs when the caller provided an override,
+		// regardless of whether normalization succeeds.
+		isbn10 = nil
+		isbn13 = nil
 		if normalizedISBN := exif.NormalizeISBN(p.OverrideISBN); normalizedISBN != "" {
-			isbn10 = nil
-			isbn13 = nil
 			switch len(normalizedISBN) {
 			case 10:
 				isbn10 = &normalizedISBN

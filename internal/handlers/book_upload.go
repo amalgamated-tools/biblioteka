@@ -15,6 +15,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/exif"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -33,8 +34,8 @@ const (
 )
 
 // uploadSupportedExtensions maps lower-case file extensions to their file type
-// labels. Kept in sync with jobs.supportedExtensions intentionally as a copy so
-// the handlers package does not import jobs solely for this small map.
+// labels. Kept in sync with jobs.supportedExtensions intentionally as a copy in
+// this package.
 var uploadSupportedExtensions = map[string]string{
 	".epub": "epub",
 	".mobi": "mobi",
@@ -99,6 +100,11 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid multipart form")
 		return
 	}
+	defer func() {
+		if r.MultipartForm != nil {
+			_ = r.MultipartForm.RemoveAll()
+		}
+	}()
 
 	libraryID := strings.TrimSpace(r.FormValue("library_id"))
 	if libraryID == "" {
@@ -169,6 +175,15 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 
 	userID := auth.UserIDFromContext(r.Context())
 
+	// Validate ISBN synchronously so the client gets immediate feedback.
+	isbnRaw := strings.TrimSpace(r.FormValue("isbn"))
+	if isbnRaw != "" {
+		if exif.NormalizeISBN(isbnRaw) == "" {
+			writeError(r.Context(), w, http.StatusBadRequest, "invalid isbn: must be a valid ISBN-10 or ISBN-13")
+			return
+		}
+	}
+
 	payload := jobs.ProcessFilePayload{
 		Path:                stagingPath,
 		FileName:            filename,
@@ -201,7 +216,7 @@ func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 				slog.Any(otelkeys.Error, rmErr),
 			)
 		}
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to queue file for processing")
+		writeError(r.Context(), w, http.StatusServiceUnavailable, "failed to queue file for processing")
 		return
 	}
 
