@@ -29,6 +29,7 @@ The following endpoints use a stricter JWT-only check and **do not accept API ke
 | `GET /api/config/status` | Sensitive config visibility requires a JWT |
 | `GET /api/config/oidc`, `PUT /api/config/oidc` | Sensitive server config; admin only |
 | `GET /api/config/smtp`, `PUT /api/config/smtp`, `POST /api/config/smtp/test` | Sensitive server config; admin only |
+| `GET /api/config/watch-folder`, `PUT /api/config/watch-folder` | Sensitive server config; admin only |
 | `GET /api/admin/users`, `PUT /api/admin/users/{id}` | User management; admin only |
 | `GET /api/opds/credentials`, `PUT /api/opds/credentials`, `DELETE /api/opds/credentials` | Credential management requires a JWT |
 | `GET /api/api-keys`, `POST /api/api-keys`, `DELETE /api/api-keys/{id}` | API key management requires a JWT to prevent key self-escalation |
@@ -617,6 +618,73 @@ Send a test email to the authenticated admin's registered email address using th
 
 ---
 
+### `GET /api/config/watch-folder` 🔒 **Admin** · **JWT only**
+
+Return the current watch folder configuration.
+
+**Response body (`200`):**
+
+```json
+{
+  "path": "/mnt/inbox",
+  "library_id": "a1b2c3d4e5f6..."
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `path` | string | Absolute path to the watch folder; empty string when not configured |
+| `library_id` | string | ID of the library new files are imported into; empty string when not configured |
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Current watch folder configuration (may have empty `path` and `library_id` if not set) |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `403 Forbidden` | Caller is not an admin |
+
+---
+
+### `PUT /api/config/watch-folder` 🔒 **Admin** · **JWT only**
+
+Update (or clear) the watch folder configuration. The watch folder is a directory the server monitors for newly added book files; any file dropped there is automatically imported into the associated library.
+
+**Request body:**
+
+```json
+{
+  "path": "/mnt/inbox",
+  "library_id": "a1b2c3d4e5f6..."
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `path` | string | | Absolute path to the watch folder. Send an empty string to **clear** the configuration. |
+| `library_id` | string | | ID of the library to import files into. Required when `path` is non-empty. |
+
+**Behavior:**
+
+- If `path` is empty, both `path` and `library_id` are cleared and the watch folder is disabled. The response body contains `{ "message": "Watch folder configuration cleared" }`.
+- If `path` is non-empty it must be an absolute path to an existing directory. The server validates the path (with a 5-second timeout to guard against slow NFS/SMB mounts).
+- `library_id` must refer to an existing library when `path` is set.
+- A successful update is recorded in the audit log as `watch_folder.config_updated`.
+
+**Response body (`200`):**
+
+```json
+{ "message": "Watch folder configuration saved successfully" }
+```
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Configuration saved or cleared |
+| `400 Bad Request` | Path is not absolute; path does not exist or is not a directory; `library_id` is missing or refers to a non-existent library |
+| `401 Unauthorized` | Missing or invalid JWT |
+| `403 Forbidden` | Caller is not an admin |
+| `500 Internal Server Error` | Path validation timed out; database error |
+
+---
+
 ## Admin
 
 ### `GET /api/admin/users` 🔒 **Admin** · **JWT only**
@@ -762,6 +830,10 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
 | `user.profile_updated` | `user`        | Display name changed via `PUT /api/auth/me` |
 | `smtp.config_updated`  | `config`      | SMTP settings saved via `PUT /api/config/smtp` |
+| `watch_folder.config_updated` | `config` | Watch folder settings saved via `PUT /api/config/watch-folder` |
+| `metadata.fetch_requested` | `book`   | Metadata enrichment job enqueued via `POST /api/books/{id}/metadata/fetch` |
+| `metadata.applied`     | `book`        | Pending metadata applied to a book via `POST /api/books/{id}/metadata/apply` |
+| `metadata.rejected`    | `book`        | Pending metadata discarded via `POST /api/books/{id}/metadata/reject` |
 
 | Status | Description |
 |--------|-------------|
@@ -1392,6 +1464,194 @@ curl -X POST https://your-server/api/books/upload \
   -F "title=My Book" \
   -F "author=Jane Smith"
 ```
+
+---
+
+### `GET /api/books/{id}/metadata` 🔒
+
+Return the most recent **pending** (unreviewed) metadata candidate for a book. Metadata candidates are fetched from Goodreads by the background enrichment job triggered via [`POST /api/books/{id}/metadata/fetch`](#post-apibooksidmetadatafetch-).
+
+**Path parameter:** `{id}` — book ID.
+
+**Response body (`200`):**
+
+```json
+{
+  "id": "d1e2f3...",
+  "book_id": "a1b2c3...",
+  "status": "pending",
+  "source": "goodreads",
+  "title": "Dune",
+  "description": "A science fiction epic set on the desert planet Arrakis.",
+  "asin": "B00B7NWYBW",
+  "isbn10": "0441013597",
+  "isbn13": "9780441013593",
+  "goodreads_id": "234225",
+  "hardcover_id": null,
+  "google_books_id": null,
+  "publication_date": "1965-08-01",
+  "publisher": "Chilton Books",
+  "language": "en",
+  "cover_image_url": "https://i.gr-assets.com/images/S/...",
+  "author_name": "Frank Herbert",
+  "created_at": "2026-03-14T02:00:00Z",
+  "updated_at": "2026-03-14T02:00:00Z"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Opaque metadata record ID |
+| `book_id` | string? | ID of the parent book; `null` if the book was deleted |
+| `status` | string | Always `"pending"` for this endpoint (`"applied"` or `"rejected"` records are not returned) |
+| `source` | string | Always `"goodreads"` |
+| `title` | string? | Proposed book title |
+| `description` | string? | Book description / blurb |
+| `asin` | string? | Amazon Standard Identification Number |
+| `isbn10` | string? | ISBN-10 |
+| `isbn13` | string? | ISBN-13 |
+| `goodreads_id` | string? | Goodreads book ID |
+| `hardcover_id` | string? | Hardcover book ID |
+| `google_books_id` | string? | Google Books volume ID |
+| `publication_date` | string? | Publication date (ISO 8601 date string, e.g. `"1965-08-01"`) |
+| `publisher` | string? | Publisher name |
+| `language` | string? | ISO 639-1 language code (e.g. `"en"`) |
+| `cover_image_url` | string? | URL of the cover image |
+| `author_name` | string? | Author name as provided by the metadata source |
+| `created_at` | string | Timestamp when the record was created (ISO 8601) |
+| `updated_at` | string | Timestamp when the record was last updated (ISO 8601) |
+
+> **User isolation:** Only metadata candidates owned by the authenticated user are returned.
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Pending metadata candidate |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Book not found, or no pending metadata candidate exists for this user |
+| `500 Internal Server Error` | Database error |
+
+---
+
+### `POST /api/books/{id}/metadata/fetch` 🔒
+
+Enqueue a background job that searches Goodreads for metadata matching this book. When the job completes, the result appears as a pending candidate retrievable via [`GET /api/books/{id}/metadata`](#get-apibooksidmetadata-). Progress can be streamed in real time via [`GET /api/books/{id}/metadata/events`](#get-apibooksidmetadataevents-).
+
+This endpoint is **idempotent**: if a pending candidate already exists for the user, or if the job is already running, the server returns `202` without enqueueing a duplicate job.
+
+**Path parameter:** `{id}` — book ID.
+
+**Request body:** none
+
+**Response body (`202`):**
+
+```json
+{ "task_id": "abc123...", "status": "enqueued" }
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `task_id` | string | Background task ID (empty string when `status` is `"already_exists"` or `"already_running"`) |
+| `status` | string | `"enqueued"` — job queued; `"already_exists"` — pending candidate already exists; `"already_running"` — job is already in the queue |
+
+> A successful enqueue is recorded in the audit log as `metadata.fetch_requested`.
+
+| Status | Description |
+|--------|-------------|
+| `202 Accepted` | Job enqueued or already in progress |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Book not found |
+| `500 Internal Server Error` | Failed to enqueue job or check existing state |
+| `503 Service Unavailable` | Background worker not configured |
+
+---
+
+### `GET /api/books/{id}/metadata/events` 🔒
+
+Open a [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) (SSE) stream that delivers real-time progress updates for the active metadata enrichment job. The recommended workflow is:
+
+1. Open this SSE connection.
+2. After the connection is established, POST to `/api/books/{id}/metadata/fetch` to start the job.
+3. Listen for events on the SSE stream; close the connection on a terminal event.
+
+**Path parameter:** `{id}` — book ID.
+
+**Response headers:**
+
+| Header | Value |
+|--------|-------|
+| `Content-Type` | `text/event-stream` |
+| `Cache-Control` | `no-cache` |
+| `Connection` | `keep-alive` |
+
+Each SSE message is a JSON object in the `data:` field:
+
+```
+data: {"event":"progress","source":"goodreads","message":"Searching Goodreads..."}
+
+data: {"event":"complete","source":"goodreads","metadata_id":"d1e2f3..."}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `event` | string | `"progress"` — intermediate update; `"complete"` — job succeeded; `"error"` — job failed; `"not_found"` — no Goodreads match found |
+| `source` | string | Always `"goodreads"` |
+| `message` | string | Human-readable status message (present on `progress`, `error`, and `not_found`) |
+| `metadata_id` | string | ID of the newly created metadata candidate (present on `complete` only) |
+
+The stream also sends `: heartbeat` comment lines every 15 seconds to keep the connection alive through proxies. The connection closes automatically after 2 minutes or on a terminal event (`complete`, `error`, `not_found`).
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | SSE stream opened |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Book not found |
+| `503 Service Unavailable` | Event streaming not configured (Redis pub/sub not available) |
+
+---
+
+### `POST /api/books/{id}/metadata/apply` 🔒
+
+Apply the pending metadata candidate to the book. All non-null, non-empty fields from the candidate overwrite the corresponding book fields (falling back to the existing book values for any blank or absent metadata field). Authors are **not** updated by this endpoint — manage author associations via [`PUT /api/books/{id}/authors`](#put-apibooksidauthors-).
+
+After a successful apply, the candidate's `status` changes to `"applied"` and the pending record no longer appears in [`GET /api/books/{id}/metadata`](#get-apibooksidmetadata-).
+
+> **Note:** The frontend typically uses a manual field-by-field workflow (copy fields into the edit form, save via `PUT /api/books/{id}`, then call `POST /api/books/{id}/metadata/reject`). Use this endpoint for programmatic or CLI-driven one-shot applies.
+
+**Path parameter:** `{id}` — book ID.
+
+**Request body:** none
+
+**Response body (`200`):** Updated book object (same schema as [`GET /api/books/{id}`](#get-apibooksid-)).
+
+> A successful apply is recorded in the audit log as `metadata.applied`.
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Metadata applied; updated book returned |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Book not found, or no pending metadata candidate for this user |
+| `500 Internal Server Error` | Failed to update the book or mark the candidate as applied |
+
+---
+
+### `POST /api/books/{id}/metadata/reject` 🔒
+
+Discard the pending metadata candidate without modifying the book. The candidate's `status` changes to `"rejected"` and it no longer appears in [`GET /api/books/{id}/metadata`](#get-apibooksidmetadata-).
+
+**Path parameter:** `{id}` — book ID.
+
+**Request body:** none
+
+**Response:** `204 No Content`
+
+> A successful rejection is recorded in the audit log as `metadata.rejected`.
+
+| Status | Description |
+|--------|-------------|
+| `204 No Content` | Candidate rejected |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Book not found, or no pending metadata candidate for this user |
+| `500 Internal Server Error` | Database error |
 
 ---
 
