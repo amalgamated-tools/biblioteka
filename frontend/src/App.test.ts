@@ -36,6 +36,7 @@ vi.mock("./stores/auth.svelte", () => ({
 
 vi.mock("./stores/router.svelte", () => ({
   routerStore: routerStoreMock,
+  APP_TITLE_SUFFIX: " – biblioteka",
 }));
 
 vi.mock("./stores/libraries.svelte", () => ({

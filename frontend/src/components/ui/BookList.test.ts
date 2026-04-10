@@ -102,7 +102,7 @@ describe("BookList table view accessibility", () => {
 describe("BookList pagination accessibility", () => {
   afterEach(() => cleanup());
 
-  it("pagination counter has aria-live='polite' (WCAG 4.1.3)", async () => {
+  it("pagination counter has aria-atomic but no duplicate aria-live (WCAG 4.1.3)", async () => {
     const manyBooks: PaginatedBooks = {
       books: Array.from({ length: 2 }, (_, i) => ({
         id: `b${i}`,
@@ -131,7 +131,7 @@ describe("BookList pagination accessibility", () => {
     await tick();
 
     const pageCounter = screen.getByText(/Page 1 of/);
-    expect(pageCounter).toHaveAttribute("aria-live", "polite");
+    expect(pageCounter).not.toHaveAttribute("aria-live");
     expect(pageCounter).toHaveAttribute("aria-atomic", "true");
   });
 
