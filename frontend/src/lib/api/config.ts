@@ -44,5 +44,9 @@ export async function getWatchFolderConfig(): Promise<WatchFolderConfig> {
 export async function setWatchFolderConfig(
   config: SetWatchFolderConfigInput,
 ): Promise<{ message: string }> {
-  return request<{ message: string }>("PUT", "/api/config/watch-folder", config);
+  return request<{ message: string }>(
+    "PUT",
+    "/api/config/watch-folder",
+    config,
+  );
 }
