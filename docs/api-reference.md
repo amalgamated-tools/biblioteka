@@ -749,6 +749,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `series.deleted`       | `series`      | Series deleted via `DELETE /api/series/{id}` |
 | `book_file.created`    | `book_file`   | File attached via `POST /api/books/{id}/files` |
 | `book_file.deleted`    | `book_file`   | File deleted via `DELETE /api/book-files/{id}` |
+| `book_file.emailed`    | `book_file`   | File emailed via `POST /api/book-files/{id}/email` |
 | `api_key.created`      | `api_key`     | API key created via `POST /api/api-keys` |
 | `api_key.deleted`      | `api_key`     | API key revoked via `DELETE /api/api-keys/{id}` |
 | `opds_credential.updated` | `opds_credential` | OPDS credentials set via `PUT /api/opds/credentials` |
@@ -1964,22 +1965,79 @@ Get a single book file by ID.
   "file_size": 524288,
   "file_hash": "sha256:abc123...",
   "file_path": "/mnt/books/fiction/Austen/Pride and Prejudice.epub",
+  "download_count": 3,
   "created_at": "2026-03-14T02:00:00Z",
   "updated_at": "2026-03-14T02:00:00Z"
 }
 ```
 
-| Field        | Type     | Description |
-|--------------|----------|-------------|
-| `id`         | string   | Opaque book-file ID |
-| `book_id`    | string   | ID of the parent book |
-| `file_type`  | string   | Format identifier: `epub`, `mobi`, `pdf`, or `azw3` |
-| `file_name`  | string   | Filename on disk (basename only) |
-| `file_size`  | integer? | File size in bytes; `null` when not recorded |
-| `file_hash`  | string?  | Content hash (e.g. `sha256:abc123…`); `null` when not recorded |
-| `file_path`  | string   | Absolute path to the file on the server's filesystem |
-| `created_at` | string   | Timestamp when the record was created (ISO 8601) |
-| `updated_at` | string   | Timestamp when the record was last updated (ISO 8601) |
+| Field            | Type     | Description |
+|------------------|----------|-------------|
+| `id`             | string   | Opaque book-file ID |
+| `book_id`        | string   | ID of the parent book |
+| `file_type`      | string   | Format identifier: `epub`, `mobi`, `pdf`, or `azw3` |
+| `file_name`      | string   | Filename on disk (basename only) |
+| `file_size`      | integer? | File size in bytes; `null` when not recorded |
+| `file_hash`      | string?  | Content hash (e.g. `sha256:abc123…`); `null` when not recorded |
+| `file_path`      | string   | Absolute path to the file on the server's filesystem |
+| `download_count` | integer  | Number of times this file has been downloaded or emailed |
+| `created_at`     | string   | Timestamp when the record was created (ISO 8601) |
+| `updated_at`     | string   | Timestamp when the record was last updated (ISO 8601) |
+
+---
+
+### `GET /api/book-files/{id}/download` 🔒
+
+Download the raw file content for a book file. The response is the binary file content with an appropriate `Content-Type` header. The `download_count` for the file is incremented atomically on each successful download (best-effort; a counter failure does not block the response).
+
+**Path parameter:** `{id}` — book file ID.
+
+**Response `200 OK`:**
+
+| Header | Value |
+|--------|-------|
+| `Content-Type` | MIME type matching the file format (e.g. `application/epub+zip` for EPUB, `application/pdf` for PDF) |
+| `Content-Disposition` | `attachment; filename="<file_name>"` |
+
+**Error responses:**
+
+| Status | Meaning |
+|--------|---------|
+| `403 Forbidden` | File path is outside all configured library roots |
+| `404 Not Found` | Book file record not found, or file no longer exists on disk |
+| `500 Internal Server Error` | Unexpected server error |
+
+---
+
+### `POST /api/book-files/{id}/email` 🔒
+
+Send a book file as an email attachment to a specified address. Requires SMTP to be configured in the server settings. The file must be ≤ 25 MB; larger files are rejected with `413`.
+
+**Path parameter:** `{id}` — book file ID.
+
+**Request body:**
+
+| Field | Type   | Required | Description |
+|-------|--------|----------|-------------|
+| `to`  | string | ✓        | Recipient email address (RFC 5322 format) |
+
+**Response `200 OK`:**
+
+```json
+{ "message": "Email sent successfully" }
+```
+
+**Error responses:**
+
+| Status | Meaning |
+|--------|---------|
+| `400 Bad Request` | Missing or invalid `to` address; SMTP not configured or misconfigured |
+| `403 Forbidden` | File path is outside all configured library roots |
+| `404 Not Found` | Book file record not found, or file no longer exists on disk |
+| `413 Request Entity Too Large` | File exceeds the 25 MB attachment limit |
+| `502 Bad Gateway` | SMTP server rejected or failed to deliver the message |
+
+> A successful send is recorded in the audit log as `book_file.emailed`.
 
 ---
 

@@ -272,9 +272,10 @@ Individual physical files (EPUB, MOBI, PDF, AZW3) linked to a book record.
 | `file_name` | TEXT    | NOT NULL | —        | Filename on disk (e.g. `"dune.epub"`)               |
 | `file_size` | INTEGER | NOT NULL | —        | File size in bytes                                  |
 | `file_hash` | TEXT    | NULL     | NULL     | Content hash (e.g. `"sha256:abc123…"`)             |
-| `file_path` | TEXT    | NOT NULL | —        | Absolute path to the file on the server filesystem  |
-| `created_at`| DATETIME| NOT NULL | `now()`  | Creation time                                       |
-| `updated_at`| DATETIME| NOT NULL | `now()`  | Last update time                                    |
+| `file_path`      | TEXT    | NOT NULL | —        | Absolute path to the file on the server filesystem        |
+| `download_count` | INTEGER | NOT NULL | `0`      | Number of times this file has been downloaded or emailed |
+| `created_at`     | DATETIME| NOT NULL | `now()`  | Creation time                                             |
+| `updated_at`     | DATETIME| NOT NULL | `now()`  | Last update time                                          |
 
 **Notes:**
 - Supported `file_type` values (matched by the scanner): `epub`, `mobi`, `pdf`, `azw3`.
@@ -533,7 +534,7 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `books.go` | `Book` struct; core CRUD: `CreateBook`, `CreateBookWithFile`, `GetBook`, `ListBooks`, `ListBooksByLibrary[Paginated]`, `UpdateBook`, `DeleteBook`, `AddBookToLibrary`, `RemoveBookFromLibrary` |
 | `book_queries.go` | Additional book list/search queries: `ListBooksPaginated`, `ListRecentBooks`, `ListBooksByAuthor[Paginated]`, `ListBooksBySeries[Paginated]`, `SearchBooks` |
 | `book_relations.go` | Book–author and book–series associations: `GetBookAuthors`, `SetBookAuthors`, `GetBookSeries`, `SetBookSeries`, `GetAuthorsForBooks` |
-| `book_files.go` | `BookFile` struct; file lifecycle: `CreateBookFile`, `GetBookFile`, `ListBookFiles`, `GetBookFileByPath`, `DeleteBookFile`, `GetFilesForBooks` |
+| `book_files.go` | `BookFile` struct; file lifecycle: `CreateBookFile`, `GetBookFile`, `ListBookFiles`, `GetBookFileByPath`, `DeleteBookFile`, `GetFilesForBooks`, `IncrementBookFileDownloadCount` |
 | `authors.go` | `Author` struct; `CreateAuthor`, `GetAuthor[ByName]`, `ListAuthors[Paginated]`, `UpdateAuthor`, `FindOrCreateAuthor`, `DeleteAuthor` |
 | `series.go` | `Series` / `BookSeriesEntry` structs; `CreateSeries`, `GetSeries`, `GetSeriesByName`, `ListSeries[Paginated]`, `UpdateSeries`, `FindOrCreateSeries`, `DeleteSeries` |
 | `libraries.go` | `Library` struct; `CreateLibrary`, `GetLibrary`, `ListLibraries`, `UpdateLibrary`, `DeleteLibrary` |
