@@ -59,10 +59,9 @@ func toAuditLogDTO(e *db.AuditLog) auditLogDTO {
 //	@Tags			Admin
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			limit	query		int	false	"Max entries to return (default 50)"
-//	@Param			offset	query		int	false	"Entries to skip (default 0)"
+//	@Param			limit	query		int	false	"Max entries to return (default 50, max 200; invalid or out-of-range values are silently clamped)"
+//	@Param			offset	query		int	false	"Entries to skip (default 0; invalid or negative values are silently ignored)"
 //	@Success		200		{object}	auditLogListDTO
-//	@Failure		400		{object}	errorResponse
 //	@Failure		401		{object}	errorResponse
 //	@Failure		403		{object}	errorResponse
 //	@Failure		500		{object}	errorResponse

@@ -85,7 +85,7 @@ func TestHandleAuditLogs_DefaultPagination(t *testing.T) {
 
 	var resp auditLogListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	require.Equal(t, 50, resp.Limit)
+	require.Equal(t, defaultPageLimit, resp.Limit)
 	require.Equal(t, 0, resp.Offset)
 }
 
@@ -119,7 +119,7 @@ func TestHandleAuditLogs_LimitCappedAtMax(t *testing.T) {
 
 	var resp auditLogListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	require.Equal(t, 200, resp.Limit)
+	require.Equal(t, maxPageLimit, resp.Limit)
 }
 
 func TestHandleAuditLogs_InvalidLimitFallsBackToDefault(t *testing.T) {
@@ -135,7 +135,7 @@ func TestHandleAuditLogs_InvalidLimitFallsBackToDefault(t *testing.T) {
 
 	var resp auditLogListDTO
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
-	require.Equal(t, 50, resp.Limit, "invalid limit should fall back to default")
+	require.Equal(t, defaultPageLimit, resp.Limit, "invalid limit should fall back to default")
 }
 
 func TestHandleAuditLogs_InvalidOffsetFallsBackToDefault(t *testing.T) {
