@@ -9,6 +9,7 @@ vi.mock("../../stores/router.svelte", () => ({
     navigate: vi.fn(),
     setPageTitle: vi.fn(),
   },
+  APP_TITLE_SUFFIX: " – biblioteka",
 }));
 
 vi.mock("../../stores/libraries.svelte", () => ({
@@ -135,13 +136,13 @@ describe("LibraryView", () => {
     );
   });
 
-  it("does not set the page title when library is null", async () => {
+  it("clears the page title when library is null", async () => {
     render(LibraryView, {
       props: { library: null, libraryId: "lib-1", error: null },
     });
     await tick();
 
-    expect(routerStore.setPageTitle).not.toHaveBeenCalled();
+    expect(routerStore.setPageTitle).toHaveBeenCalledWith(null);
   });
 
   it("calls listLibraryBooks on mount", async () => {
