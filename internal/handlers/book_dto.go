@@ -124,10 +124,15 @@ type bookDTO struct {
 	UpdatedAt       db.Timestamp         `json:"updated_at"`
 }
 
-// loadBookDTO builds a bookDTO for b by issuing three additional DB queries:
-// GetBookAuthors, GetBookSeries, and ListBookFiles.
+// loadBookDTO builds a bookDTO for b by loading all related entities via
+// [db.DB.LoadBookRelations] (authors, series, and files in one call).
 func (h *BookHandler) loadBookDTO(ctx context.Context, b *db.Book) (bookDTO, error) {
-	dto := bookDTO{
+	rels, err := h.DB.LoadBookRelations(ctx, b.ID)
+	if err != nil {
+		return bookDTO{}, err
+	}
+
+	return bookDTO{
 		ID:              b.ID,
 		Title:           b.Title,
 		Description:     b.Description,
@@ -141,30 +146,10 @@ func (h *BookHandler) loadBookDTO(ctx context.Context, b *db.Book) (bookDTO, err
 		Publisher:       b.Publisher,
 		Language:        b.Language,
 		CoverImageURL:   b.CoverImageURL,
-		Authors:         []authorDTO{},
-		Series:          []bookSeriesEntryDTO{},
-		Files:           []bookFileDTO{},
+		Authors:         mapSlice(rels.Authors, toAuthorDTO),
+		Series:          mapSlice(rels.Series, toBookSeriesEntryDTO),
+		Files:           mapSlice(rels.Files, toBookFileDTO),
 		CreatedAt:       b.CreatedAt,
 		UpdatedAt:       b.UpdatedAt,
-	}
-
-	authors, err := h.DB.GetBookAuthors(ctx, b.ID)
-	if err != nil {
-		return bookDTO{}, err
-	}
-	dto.Authors = mapSlice(authors, toAuthorDTO)
-
-	entries, err := h.DB.GetBookSeries(ctx, b.ID)
-	if err != nil {
-		return bookDTO{}, err
-	}
-	dto.Series = mapSlice(entries, toBookSeriesEntryDTO)
-
-	files, err := h.DB.ListBookFiles(ctx, b.ID)
-	if err != nil {
-		return bookDTO{}, err
-	}
-	dto.Files = mapSlice(files, toBookFileDTO)
-
-	return dto, nil
+	}, nil
 }
