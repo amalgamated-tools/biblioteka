@@ -10,6 +10,7 @@ vi.mock("lucide-svelte", () => ({
   List: () => {},
   ChevronLeft: () => {},
   ChevronRight: () => {},
+  Mail: () => {},
 }));
 
 const emptyBooks: PaginatedBooks = {
