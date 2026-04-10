@@ -48,6 +48,7 @@ func TestBuildAttachmentMessage(t *testing.T) {
 
 	require.Contains(t, msgStr, "From: noreply@example.com\r\n")
 	require.Contains(t, msgStr, "To: reader@example.com\r\n")
+	require.Contains(t, msgStr, "Date: ")
 	require.Contains(t, msgStr, "Subject: Book: MyBook.epub\r\n")
 	require.Contains(t, msgStr, "MIME-Version: 1.0\r\n")
 	require.Contains(t, msgStr, "multipart/mixed")

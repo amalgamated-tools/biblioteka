@@ -90,6 +90,12 @@ describe("BookCard", () => {
     expect(screen.queryByText("Allen & Unwin")).toBeNull();
   });
 
+  it("renders as a link to the book detail view", () => {
+    render(BookCard, { book: baseBook });
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", "#books/b1");
+  });
+
   it("renders an email button with accessible label", () => {
     render(BookCard, { book: baseBook });
     expect(
