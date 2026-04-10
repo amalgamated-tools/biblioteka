@@ -3,25 +3,16 @@ package opds
 import (
 	"strconv"
 	"strings"
-)
 
-// fileTypeMIME maps Biblioteka file_type values to their MIME types.
-var fileTypeMIME = map[string]string{
-	"epub": "application/epub+zip",
-	"pdf":  "application/pdf",
-	"mobi": "application/x-mobipocket-ebook",
-	"azw3": "application/vnd.amazon.ebook",
-	"cbz":  "application/vnd.comicbook+zip",
-	"cbr":  "application/vnd.comicbook-rar",
-	"fb2":  "application/x-fictionbook+xml",
-	"txt":  "text/plain",
-	"djvu": "image/vnd.djvu",
-}
+	"github.com/amalgamated-tools/biblioteka/internal/filetype"
+)
 
 // MIMETypeForFileType returns the MIME type for a given file type string.
 // If the file type is not recognized, it returns an empty string.
+// This delegates to the shared filetype package which is the single source of
+// truth for Biblioteka file-type-to-MIME mappings.
 func MIMETypeForFileType(fileType string) string {
-	return fileTypeMIME[strings.ToLower(fileType)]
+	return filetype.MIMEType(fileType)
 }
 
 // PaginationLinks builds the self/previous/next link set for paginated OPDS
