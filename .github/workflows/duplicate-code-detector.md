@@ -6,31 +6,22 @@ on:
   schedule: daily
 permissions:
   contents: read
-  actions: read
   issues: read
   pull-requests: read
-  discussions: read
-engine: copilot
-features:
-  dangerous-permissions-write: true
-tools:
-  serena: ["go", "typescript"]
-  github:
-    lockdown: false
-    toolsets: [default, discussions]  
+engine: codex
+imports:
+  - shared/go-source-analysis.md
 safe-outputs:
   create-issue:
     expires: 2d
-    title-prefix: "chore: Duplicate Code Detected"
-    labels: [code-quality, automated-analysis, cookie, needs-refactoring]
-    assignees: [copilot]
+    title-prefix: "[duplicate-code] "
+    labels: [code-quality, automated-analysis, cookie]
+    assignees: copilot
     group: true
     max: 3
 timeout-minutes: 15
 strict: true
-imports:
-  - shared/mood.md
-source: github/gh-aw/.github/workflows/duplicate-code-detector.md@852cb06ad52958b402ed982b69957ffc57ca0619
+source: github/gh-aw/.github/workflows/duplicate-code-detector.md@e61c83d853eb02c9bc88b90efd1f913a3334db60
 ---
 
 # Duplicate Code Detection
@@ -63,9 +54,9 @@ Activate the project in Serena:
 
 Identify and analyze modified files:
 - Determine files changed in the recent commits
-- **ONLY analyze .go, .ts, and .svelte files** - exclude all other file types
-- **Exclude JavaScript files** from analysis (files matching patterns: `*.js`, `*.mjs`, `*.jsx`, `*.cjs`)
-- **Exclude test files** from analysis (files matching patterns: `*_test.go`, `*.test.ts`, `*.spec.ts`, or located in directories named `test`, `tests`, `__tests__`, or `spec`)
+- **ONLY analyze .go and .cjs files** - exclude all other file types
+- **Exclude JavaScript files except .cjs** from analysis (files matching patterns: `*.js`, `*.mjs`, `*.jsx`, `*.ts`, `*.tsx`)
+- **Exclude test files** from analysis (files matching patterns: `*_test.go`, `*.test.js`, `*.test.cjs`, `*.spec.js`, `*.spec.cjs`, `*.test.ts`, `*.spec.ts`, `*_test.py`, `test_*.py`, or located in directories named `test`, `tests`, `__tests__`, or `spec`)
 - **Exclude workflow files** from analysis (files under `.github/workflows/*`)
 - Use `get_symbols_overview` to understand file structure
 - Use `read_file` to examine modified file contents
@@ -117,6 +108,20 @@ Create separate issues for each distinct duplication pattern found (maximum 3 pa
 - Limit to the top 3 most significant patterns if more are found
 - Use the `create_issue` tool from safe-outputs MCP **once for each pattern**
 
+**When No Issues Are Found**:
+
+**YOU MUST CALL** the `noop` tool when analysis completes without finding significant duplication:
+
+```json
+{
+  "noop": {
+    "message": "✅ Duplicate code analysis complete. Analyzed [N] files changed recently. No significant duplication detected (threshold: >10 lines or 3+ similar patterns)."
+  }
+}
+```
+
+**DO NOT just write this message in your output text** - you MUST actually invoke the `noop` tool. The workflow will fail if you don't call either `create_issue` or `noop`.
+
 **Issue Contents for Each Pattern**:
 - **Executive Summary**: Brief description of this specific duplication pattern
 - **Duplication Details**: Specific locations and code blocks for this pattern only
@@ -138,8 +143,8 @@ Create separate issues for each distinct duplication pattern found (maximum 3 pa
 
 - Standard boilerplate code (imports, exports, etc.)
 - Test setup/teardown code (acceptable duplication in tests)
-- **JavaScript files** (files matching: `*.js`, `*.mjs`, `*.jsx`, `*.cjs`)
-- **All test files** (files matching: `*_test.go`, `*.test.ts`, `*.spec.ts`, or in `test/`, `tests/`, `__tests__/`, `spec/` directories)
+- **JavaScript files except .cjs** (files matching: `*.js`, `*.mjs`, `*.jsx`, `*.ts`, `*.tsx`)
+- **All test files** (files matching: `*_test.go`, `*.test.js`, `*.test.cjs`, `*.spec.js`, `*.spec.cjs`, `*.test.ts`, `*.spec.ts`, `*_test.py`, `test_*.py`, or in `test/`, `tests/`, `__tests__/`, `spec/` directories)
 - **All workflow files** (files under `.github/workflows/*`)
 - Configuration files with similar structure
 - Language-specific patterns (constructors, getters/setters)
@@ -147,10 +152,10 @@ Create separate issues for each distinct duplication pattern found (maximum 3 pa
 
 ### Analysis Depth
 
-- **File Type Restriction**: ONLY analyze .go, .ts, and .svelte files - ignore all other file types
-- **Primary Focus**: All .go, .ts, and .svelte files changed in the current push (excluding test files and workflow files)
-- **Secondary Analysis**: Check for duplication with existing .go, .ts, and .svelte codebase (excluding test files and workflow files)
-- **Cross-Reference**: Look for patterns across .go, .ts, and .svelte files in the repository
+- **File Type Restriction**: ONLY analyze .go and .cjs files - ignore all other file types
+- **Primary Focus**: All .go and .cjs files changed in the current push (excluding test files and workflow files)
+- **Secondary Analysis**: Check for duplication with existing .go and .cjs codebase (excluding test files and workflow files)
+- **Cross-Reference**: Look for patterns across .go and .cjs files in the repository
 - **Historical Context**: Consider if duplication is new or existing
 
 ## Issue Template
@@ -206,16 +211,6 @@ For each distinct duplication pattern found, create a separate issue using this 
 - [ ] Update tests
 - [ ] Verify no functionality broken
 
-## Resolution Tracking
-
-When this issue is resolved, close it using **Close as completed** (not "Close as not planned").
-The [Duplicate Code Issue Closure Tracker](/.github/workflows/duplicate-code-closure-tracker.yml)
-workflow will automatically apply the `auto-closed: fixed` label, which feeds the resolution-rate
-dashboard for this detector.
-
-If the duplication is intentional or not worth refactoring, close with **Close as not planned**
-instead — the tracker will apply `auto-closed: wontfix`.
-
 ## Analysis Metadata
 
 - **Analyzed Files**: [count]
@@ -251,16 +246,7 @@ instead — the tracker will apply `auto-closed: wontfix`.
 - Suggest practical refactoring approaches
 - Assign issue to @copilot for automated remediation
 - Use descriptive titles that clearly identify the specific pattern (e.g., "Duplicate Code: Error Handling Pattern in Parser Module")
-
-### Closure Tracking
-
-To track resolution rates and provide visibility into issue progress:
-
-- **Before creating new issues**, search GitHub for existing open `chore: Duplicate Code Detected` issues with the `needs-refactoring` label. For each existing open issue, check whether the duplicate pattern it describes still exists in the codebase:
-  - If the code duplication **has been fixed**: add the comment "✅ Duplication resolved — closing." and close the issue.
-  - If the duplication **still exists**: leave the issue open and skip creating a duplicate.
-- **When creating new issues**, always include the `needs-refactoring` label (automatically applied via safe-outputs config). This label signals that the issue is awaiting refactoring work.
-- Once a refactoring PR that references one of these issues is merged, the issue should be closed by the PR author with the label `auto-closed: fixed` to distinguish automated closures from manual ones.
+- **If no significant duplication found, call `noop` tool** - never complete without calling either `create_issue` or `noop`
 
 ## Tool Usage Sequence
 
