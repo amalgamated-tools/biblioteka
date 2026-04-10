@@ -40,16 +40,7 @@ func (h *AuthHandler) getMe(w http.ResponseWriter, r *http.Request) {
 	slog.DebugContext(r.Context(), "fetching current user", slog.String(otelkeys.UserID, userID))
 
 	user, err := h.DB.GetUserByID(r.Context(), userID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(r.Context(), w, http.StatusNotFound, "user not found")
-			return
-		}
-		slog.ErrorContext(r.Context(), "failed to get user",
-			slog.String(otelkeys.UserID, userID),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to get user")
+	if handleDBErr(r.Context(), w, err, "user") {
 		return
 	}
 
