@@ -9,10 +9,28 @@ vi.mock("../../lib/api", () => ({
   }),
   setWatchFolderConfig: vi
     .fn()
-    .mockResolvedValue({ message: "Watch folder configuration saved successfully" }),
+    .mockResolvedValue({
+      message: "Watch folder configuration saved successfully",
+    }),
   listLibraries: vi.fn().mockResolvedValue([
-    { id: "lib-1", name: "My Library", paths: ["/books"], organization_type: "none", monitored: true, created_at: "", updated_at: "" },
-    { id: "lib-2", name: "Archive", paths: ["/archive"], organization_type: "none", monitored: false, created_at: "", updated_at: "" },
+    {
+      id: "lib-1",
+      name: "My Library",
+      paths: ["/books"],
+      organization_type: "none",
+      monitored: true,
+      created_at: "",
+      updated_at: "",
+    },
+    {
+      id: "lib-2",
+      name: "Archive",
+      paths: ["/archive"],
+      organization_type: "none",
+      monitored: false,
+      created_at: "",
+      updated_at: "",
+    },
   ]),
 }));
 
@@ -21,7 +39,11 @@ vi.mock("lucide-svelte", () => ({
 }));
 
 import WatchFolderTab from "./WatchFolderTab.svelte";
-import { getWatchFolderConfig, setWatchFolderConfig, listLibraries } from "../../lib/api";
+import {
+  getWatchFolderConfig,
+  setWatchFolderConfig,
+  listLibraries,
+} from "../../lib/api";
 
 describe("WatchFolderTab rendering", () => {
   afterEach(() => {
@@ -148,7 +170,9 @@ describe("WatchFolderTab form validation", () => {
     await tick();
     await tick();
 
-    expect(screen.getByText("Watch folder configuration saved successfully")).toBeInTheDocument();
+    expect(
+      screen.getByText("Watch folder configuration saved successfully"),
+    ).toBeInTheDocument();
   });
 
   it("shows error banner when setWatchFolderConfig rejects", async () => {
