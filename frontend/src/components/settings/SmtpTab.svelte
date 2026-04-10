@@ -47,7 +47,9 @@
 
   let smtpSubmitLabel = $derived.by(() => {
     if (smtpStatus.loading) return "Saving...";
-    return smtpStatus.configured ? "Update Configuration" : "Save Configuration";
+    return smtpStatus.configured
+      ? "Update Configuration"
+      : "Save Configuration";
   });
 
   onMount(async () => {
@@ -165,12 +167,15 @@
     </div>
 
     {#if testMessageTimer.visible && smtpStatus.testMessage}
-      <AlertBanner variant="success" class="mb-4">{smtpStatus.testMessage}</AlertBanner
+      <AlertBanner variant="success" class="mb-4"
+        >{smtpStatus.testMessage}</AlertBanner
       >
     {/if}
 
     {#if testErrorTimer.visible && smtpStatus.testError}
-      <AlertBanner variant="error" class="mb-4">{smtpStatus.testError}</AlertBanner>
+      <AlertBanner variant="error" class="mb-4"
+        >{smtpStatus.testError}</AlertBanner
+      >
     {/if}
 
     <div class="mb-4">
@@ -344,7 +349,11 @@
       {/if}
 
       {#if !smtpStatus.envOverride}
-        <Button type="submit" disabled={smtpStatus.loading} class="w-full px-4 py-2.5">
+        <Button
+          type="submit"
+          disabled={smtpStatus.loading}
+          class="w-full px-4 py-2.5"
+        >
           {smtpSubmitLabel}
         </Button>
       {/if}
