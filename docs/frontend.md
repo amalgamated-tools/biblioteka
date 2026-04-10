@@ -24,7 +24,7 @@ frontend/
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
       Books.svelte        Book listing and detail view; reads `initialOffset` from the URL hash query string (`#books?offset=48`) and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
-      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries) plus a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); Total Books is fetched from the API via `listBooks(1, 0)` on mount and shows "…" while the request is in flight (falls back to `0` on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
+      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries) plus a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); Total Books is fetched from the API via `getTotalBooksCount()` on mount and shows "…" while the request is in flight (falls back to `0` on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
@@ -2236,6 +2236,24 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 > **Mocking note:** The test file mocks `authStore`, `libraryStore`, `api.getVersion`, and all `lucide-svelte` icon components. The icon mocks are necessary because Lucide icons are ESM-only packages that cannot render in JSDOM; replacing them with no-ops keeps the test focused on DOM structure. `afterEach(cleanup)` prevents DOM leakage between tests.
 
+#### `Dashboard.test.ts`
+
+`frontend/src/components/Dashboard.test.ts` verifies the behavior and accessibility of the home screen, covering both the onboarding empty state and the stats grid. Eleven tests in one `Dashboard` describe block:
+
+1. **`renders the Dashboard heading`** — asserts a `<h1>` heading with text `"Dashboard"` is present on mount.
+2. **`shows the onboarding card when libraries are loaded and empty`** — seeds `libraryStore.loaded = true` with no libraries; asserts the `"Get started with Biblioteka"` heading is rendered.
+3. **`shows 'Add Your First Library' button in empty state`** — same setup; asserts the onboarding call-to-action button is visible.
+4. **`navigates to libraries/new when the onboarding button is clicked`** — clicks the button; asserts `routerStore.navigate` is called with `"libraries/new"`.
+5. **`shows stats grid when libraries exist`** — seeds one library; asserts "Total Books" and "Libraries" stat labels appear and no unexpected stats are rendered.
+6. **`does not show the onboarding card when libraries exist`** — seeds one library; asserts the "Get started" heading is absent.
+7. **`uses semantic dl/dt/dd structure for stat cards`** — asserts each stat uses a `<dl>/<dt>/<dd>` description-list structure so screen readers can announce the label–value pairs correctly (WCAG 1.3.1).
+8. **`shows the library count in the stats grid`** — seeds two libraries; asserts the numeric value `"2"` is rendered in the stats grid.
+9. **`triggers libraryStore.load() when libraries are not yet loaded`** — mounts with `libraryStore.loaded = false`; asserts `libraryStore.load` is called.
+10. **`shows loading placeholder while total books is being fetched`** — `getTotalBooksCount` never resolves; asserts the placeholder text `"…"` is visible while the request is in flight.
+11. **`shows the real total books count after fetching`** — `getTotalBooksCount` resolves to `500`; asserts the value `"500"` appears in the stats grid and `getTotalBooksCount` was called.
+
+> **Mocking note:** `libraryStore`, `routerStore`, `getTotalBooksCount` (from `../lib/api`), and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries` and resets `getTotalBooksCount` to resolve `0`. `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
+
 #### `LibraryForm.test.ts`
 
 `frontend/src/components/libraries/LibraryForm.test.ts` verifies the accessibility attributes on the library create/edit form (WCAG 1.3.1, 3.3.1, 4.1.2). Tests are organised in three `describe` blocks.
@@ -2442,6 +2460,47 @@ The following test suites cover reactive stores and the API client. Unlike the a
 **`OPDS Credentials API` (three tests):** covers `getOpdsCredential` (GET), `setOpdsCredential` (PUT with request body), and `deleteOpdsCredential` (DELETE resolves `void` on `204 No Content`).
 
 **`KOSync Credentials API` (three tests):** covers `getKosyncCredential` (GET), `setKosyncCredential` (PUT with request body), and `deleteKosyncCredential` (DELETE resolves `void` on `204 No Content`).
+
+### `books.test.ts`
+
+`frontend/src/lib/api/books.test.ts` exercises the `api/books.ts` sub-module end-to-end. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Eighteen tests across sixteen `describe` blocks inside a parent `Books API` block:
+
+**`listBooks` (three tests):**
+- Asserts `GET /api/books?limit=50&offset=0` is issued with default parameters and the paginated response is returned.
+- Asserts custom `limit`, `offset`, and `query` values are forwarded as query-string parameters.
+- Asserts the `query` parameter is omitted when the query string is empty.
+
+**`getTotalBooksCount` (one test):** Asserts the helper issues `GET /api/books?limit=1&offset=0` and returns the `total` field from the response — confirming that the total count is derived from the cheapest possible paginated request.
+
+**`getBook` (one test):** Asserts `GET /api/books/:id` is issued and the book object is returned.
+
+**`createBook` (one test):** Asserts `POST /api/books` is issued with the input serialized as JSON and the created book is returned.
+
+**`updateBook` (one test):** Asserts `PUT /api/books/:id` is issued with the updated fields and the updated book is returned.
+
+**`deleteBook` (one test):** Asserts `DELETE /api/books/:id` is issued and the function resolves `undefined`.
+
+**`getBookAuthors` (one test):** Asserts `GET /api/books/:id/authors` is issued and the authors array is returned.
+
+**`setBookAuthors` (one test):** Asserts `PUT /api/books/:id/authors` is issued with `{ author_ids: [...] }` and the updated authors array is returned.
+
+**`getBookSeries` (one test):** Asserts `GET /api/books/:id/series` is issued and the series entries array is returned.
+
+**`setBookSeries` (one test):** Asserts `PUT /api/books/:id/series` is issued with `{ entries: [...] }` and the updated series entries are returned.
+
+**`listBookFiles` (one test):** Asserts `GET /api/books/:id/files` is issued and the files array is returned.
+
+**`createBookFile` (one test):** Asserts `POST /api/books/:id/files` is issued with the file input and the created file record is returned.
+
+**`getBookFile` (one test):** Asserts `GET /api/book-files/:id` is issued and the file record is returned.
+
+**`deleteBookFile` (one test):** Asserts `DELETE /api/book-files/:id` is issued and the function resolves `undefined`.
+
+**`bookFileDownloadUrl` (one test):** Asserts the pure helper returns `/api/book-files/:id/download` without making any HTTP requests.
+
+**`emailBookFile` (one test):** Asserts `POST /api/book-files/:id/email` is issued with `{ to: "..." }` in the request body and the `{ message: "..." }` response is returned.
+
+> **Mocking note:** `fetch` is globally stubbed in `beforeEach` via `vi.stubGlobal("fetch", fetchMock)` and unset in `afterEach` with `vi.unstubAllGlobals()`. Shared helper utilities `mockFetchResponse` and `mockNoContentResponse` from `./testUtils` keep individual tests concise.
 
 ### `clipboard.test.ts`
 
