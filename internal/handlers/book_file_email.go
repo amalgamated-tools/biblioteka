@@ -13,6 +13,10 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/smtp"
 )
 
+// maxEmailAttachmentSize is the maximum file size (in bytes) allowed for
+// email attachments. Files larger than this are rejected with 413.
+const maxEmailAttachmentSize int64 = 25 * 1024 * 1024 // 25 MB
+
 // emailBookFileRequest is the request body for the email book file endpoint.
 type emailBookFileRequest struct {
 	To string `json:"to"`
@@ -32,6 +36,7 @@ type emailBookFileRequest struct {
 //	@Failure		400		{object}	errorResponse
 //	@Failure		401		{object}	errorResponse
 //	@Failure		404		{object}	errorResponse
+//	@Failure		413		{object}	errorResponse
 //	@Failure		502		{object}	errorResponse
 //	@Router			/book-files/{id}/email [post]
 func (h *BookFileHandler) handleEmailBookFile(w http.ResponseWriter, r *http.Request, id string) {
@@ -63,6 +68,15 @@ func (h *BookFileHandler) handleEmailBookFile(w http.ResponseWriter, r *http.Req
 
 	bf, err := h.DB.GetBookFile(r.Context(), id)
 	if handleDBErr(r.Context(), w, err, "book file") {
+		return
+	}
+
+	if bf.FileSize > maxEmailAttachmentSize {
+		slog.WarnContext(r.Context(), "book file too large for email attachment",
+			slog.String(otelkeys.BookFileID, id),
+			slog.Int64(otelkeys.FileSize, bf.FileSize),
+		)
+		writeError(r.Context(), w, http.StatusRequestEntityTooLarge, "file is too large to email (maximum 25 MB)")
 		return
 	}
 
@@ -99,7 +113,15 @@ func (h *BookFileHandler) handleEmailBookFile(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	msg := smtp.BuildAttachmentMessage(params, to, bf.FileName, bf.FileType, data)
+	msg, err := smtp.BuildAttachmentMessage(params, to, bf.FileName, bf.FileType, data)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to build email message",
+			slog.String(otelkeys.BookFileID, id),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to build email message")
+		return
+	}
 
 	send := smtp.Send
 	if h.SendMailFunc != nil {
