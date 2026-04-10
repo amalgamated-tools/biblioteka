@@ -2,7 +2,7 @@ name: E2E Tests
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'cmd/**'
       - 'internal/**'
@@ -11,12 +11,12 @@ on:
       - 'e2e/**'
       - 'go.mod'
       - 'go.sum'
-      # docs/docs.go is auto-generated Swagger code imported by internal/server;
+      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
       # a bad regeneration would break the Go binary build
-      - 'docs/docs.go'
+      - 'docs/swagger/docs.go'
       - '.github/workflows/e2etest.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'cmd/**'
       - 'internal/**'
@@ -25,25 +25,28 @@ on:
       - 'e2e/**'
       - 'go.mod'
       - 'go.sum'
-      # docs/docs.go is auto-generated Swagger code imported by internal/server;
+      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
       # a bad regeneration would break the Go binary build
-      - 'docs/docs.go'
+      - 'docs/swagger/docs.go'
       - '.github/workflows/e2etest.yml'
 
 permissions:
   contents: read
 
 # Cancel in-progress runs for the same branch/PR when a new push arrives.
-# Main and develop branch runs are never cancelled so merge results are always recorded.
+# Main branch runs are never cancelled so merge results are always recorded.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   e2e:
     runs-on: ubuntu-latest
     name: E2E Tests
-    timeout-minutes: 45
+    # The full job (build frontend + Go binary + Playwright install + tests)
+    # completes in ~10-15 minutes with warm caches. 30 minutes gives a 2×
+    # safety margin while still catching hung runners much earlier than 45.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
@@ -112,3 +115,11 @@ jobs:
           path: e2e/playwright-report/
           # 3 days is sufficient for post-failure review; saves artifact storage.
           retention-days: 3
+
+      - name: Upload Playwright test results on failure
+        if: failure()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: playwright-test-results-${{ github.run_id }}
+          path: e2e/test-results/
+          retention-days: 7

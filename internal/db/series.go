@@ -8,6 +8,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// Sentinel errors returned by series write operations.
 var (
 	ErrSeriesNameExists  = errors.New("series name already exists")
 	ErrInvalidSeriesName = errors.New("invalid series name")
@@ -17,6 +18,7 @@ var (
 // collapsing internal runs to a single space while preserving capitalization.
 func NormalizeSeriesName(name string) string { return normalizeName(name) }
 
+// Series represents a row in the series table.
 type Series struct {
 	ID            string    `json:"id"`
 	Name          string    `json:"name"`
@@ -46,27 +48,23 @@ func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
 	return &s, nil
 }
 
+// CreateSeries inserts a new series with the given name and optional external
+// IDs. The name is normalized before storage. Returns ErrSeriesNameExists if
+// a series with an equivalent normalized name already exists.
 func (d *DB) CreateSeries(ctx context.Context, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
-	name = NormalizeSeriesName(name)
-	if name == "" {
-		return nil, ErrInvalidSeriesName
-	}
-	slog.DebugContext(ctx, "db: creating series", slog.String(otelkeys.Name, name))
-	s, err := scanSeries(d.QueryRowContext(ctx,
-		`INSERT INTO series (name, goodreads_id, hardcover_id, google_books_id) VALUES ($1, $2, $3, $4) RETURNING `+seriesColumns,
-		name, goodreadsID, hardcoverID, googleBooksID,
-	))
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrSeriesNameExists
-		}
-		return nil, err
-	}
-	return s, nil
+	return namedEntityCreate(ctx, "series", name, NormalizeSeriesName, ErrInvalidSeriesName, ErrSeriesNameExists,
+		func(ctx context.Context, n string) (*Series, error) {
+			return scanSeries(d.QueryRowContext(ctx,
+				`INSERT INTO series (name, goodreads_id, hardcover_id, google_books_id) VALUES ($1, $2, $3, $4) RETURNING `+seriesColumns,
+				n, goodreadsID, hardcoverID, googleBooksID,
+			))
+		},
+	)
 }
 
+// GetSeries retrieves a series by its UUID. Returns sql.ErrNoRows if not found.
 func (d *DB) GetSeries(ctx context.Context, id string) (*Series, error) {
-	slog.DebugContext(ctx, "db: fetching series", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: fetching series", slog.String(otelkeys.SeriesID, id))
 	return scanSeries(d.QueryRowContext(ctx,
 		`SELECT `+seriesColumns+` FROM series WHERE id = $1`,
 		id,
@@ -87,6 +85,7 @@ func (d *DB) GetSeriesByName(ctx context.Context, name string) (*Series, error) 
 	))
 }
 
+// ListSeries returns all series ordered by name.
 func (d *DB) ListSeries(ctx context.Context) ([]Series, error) {
 	slog.DebugContext(ctx, "db: listing series")
 	return listAll(ctx, d, seriesListQuery{}, scanSeries)
@@ -101,26 +100,18 @@ func (d *DB) ListSeriesPaginated(ctx context.Context, limit, offset int) ([]Seri
 	return listPaginated(ctx, d, seriesListQuery{}, limit, offset, scanSeries)
 }
 
+// UpdateSeries replaces the name and external IDs of the series identified by
+// id. The name is normalized. Returns sql.ErrNoRows if the series does not
+// exist, or ErrSeriesNameExists if the new name conflicts with another series.
 func (d *DB) UpdateSeries(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID *string) (*Series, error) {
-	name = NormalizeSeriesName(name)
-	if name == "" {
-		return nil, ErrInvalidSeriesName
-	}
-	slog.DebugContext(ctx, "db: updating series",
-		slog.String(otelkeys.ID, id),
-		slog.String(otelkeys.Name, name),
+	return namedEntityUpdate(ctx, "series", id, name, NormalizeSeriesName, ErrInvalidSeriesName, ErrSeriesNameExists,
+		func(ctx context.Context, entityID, n string) (*Series, error) {
+			return scanSeries(d.QueryRowContext(ctx,
+				`UPDATE series SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+seriesColumns,
+				n, goodreadsID, hardcoverID, googleBooksID, entityID,
+			))
+		},
 	)
-	s, err := scanSeries(d.QueryRowContext(ctx,
-		`UPDATE series SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, updated_at = `+d.now()+` WHERE id = $5 RETURNING `+seriesColumns,
-		name, goodreadsID, hardcoverID, googleBooksID, id,
-	))
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrSeriesNameExists
-		}
-		return nil, err
-	}
-	return s, nil
 }
 
 // FindOrCreateSeries looks up a series by name (case-insensitive) and returns
@@ -136,7 +127,9 @@ func (d *DB) FindOrCreateSeries(ctx context.Context, name string) (*Series, erro
 	)
 }
 
+// DeleteSeries removes the series with the given ID. Returns sql.ErrNoRows if
+// no matching series exists.
 func (d *DB) DeleteSeries(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "db: deleting series", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: deleting series", slog.String(otelkeys.SeriesID, id))
 	return d.execAffected(ctx, `DELETE FROM series WHERE id = $1`, id)
 }

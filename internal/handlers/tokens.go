@@ -2,7 +2,11 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -10,6 +14,35 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
+
+const maxTokenSizeBytes = 64 * 1024
+
+// generateRandomHex generates n random bytes and returns them as a lowercase
+// hex-encoded string. It wraps crypto/rand.Read and returns an error if the
+// random source fails.
+func generateRandomHex(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate random bytes: %w", err)
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// generateBase64Token generates a cryptographically random token of n bytes
+// and returns it as a Base64-encoded string.
+func generateBase64Token(n int) (string, error) {
+	if n <= 0 {
+		return "", errors.New("generate token: n must be positive")
+	}
+	if n > maxTokenSizeBytes {
+		return "", fmt.Errorf("generate token: n too large (max %d bytes)", maxTokenSizeBytes)
+	}
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("generate token: %w", err)
+	}
+	return base64.StdEncoding.EncodeToString(buf), nil
+}
 
 // tokenError wraps an error with a client-facing message so that
 // handleTokenCreate can surface distinct HTTP responses for different failure
@@ -19,7 +52,11 @@ type tokenError struct {
 	message string
 }
 
+// Error implements the error interface by delegating to the wrapped error.
 func (e *tokenError) Error() string { return e.err.Error() }
+
+// Unwrap returns the underlying error so that errors.Is and errors.As can
+// inspect the error chain.
 func (e *tokenError) Unwrap() error { return e.err }
 
 // tokenOps captures the token-type-specific details for token create handlers.
@@ -40,8 +77,9 @@ type tokenOps struct {
 // decode name → validate → create (generate+hash+persist) → audit → respond.
 //
 // If the create closure returns a *tokenError, its message is used as the
-// client-facing HTTP error and the log message. Otherwise a generic
-// "failed to create <resource>" message is used for both.
+// client-facing HTTP error response. Otherwise a generic
+// "failed to create <resource>" message is used for the client response.
+// The log message is always the fixed string "failed to create token".
 func handleTokenCreate(ops tokenOps, w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name string `json:"name"`
@@ -64,7 +102,10 @@ func handleTokenCreate(ops tokenOps, w http.ResponseWriter, r *http.Request) {
 		if errors.As(err, &te) {
 			msg = te.message
 		}
-		slog.ErrorContext(ctx, msg, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to create token",
+			slog.String(otelkeys.Resource, ops.resource),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(ctx, w, http.StatusInternalServerError, msg)
 		return
 	}

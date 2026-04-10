@@ -24,6 +24,7 @@ export const LIBRARY_ORGANIZATION_OPTIONS = [
 
 export interface User {
   id: string;
+  name: string;
   email: string;
   oidc_linked: boolean;
   is_admin: boolean;
@@ -59,10 +60,10 @@ export interface Author {
 
 export interface AuthorInput {
   name: string;
-  goodreads_id?: string;
-  hardcover_id?: string;
-  google_books_id?: string;
-  image_url?: string;
+  goodreads_id?: string | null;
+  hardcover_id?: string | null;
+  google_books_id?: string | null;
+  image_url?: string | null;
 }
 
 export interface Series {
@@ -77,9 +78,9 @@ export interface Series {
 
 export interface SeriesInput {
   name: string;
-  goodreads_id?: string;
-  hardcover_id?: string;
-  google_books_id?: string;
+  goodreads_id?: string | null;
+  hardcover_id?: string | null;
+  google_books_id?: string | null;
 }
 
 export interface BookSeriesEntry {
@@ -95,6 +96,7 @@ export interface BookFile {
   file_size: number;
   file_hash: string | null;
   file_path: string;
+  download_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -103,7 +105,7 @@ export interface BookFileInput {
   file_type: string;
   file_name: string;
   file_size: number;
-  file_hash?: string;
+  file_hash?: string | null;
   file_path: string;
 }
 
@@ -133,17 +135,17 @@ export interface Book extends BookSummary {
 
 export interface BookInput {
   title: string;
-  description?: string;
-  asin?: string;
-  isbn10?: string;
-  isbn13?: string;
-  goodreads_id?: string;
-  hardcover_id?: string;
-  google_books_id?: string;
-  publication_date?: string;
-  publisher?: string;
-  language?: string;
-  cover_image_url?: string;
+  description?: string | null;
+  asin?: string | null;
+  isbn10?: string | null;
+  isbn13?: string | null;
+  goodreads_id?: string | null;
+  hardcover_id?: string | null;
+  google_books_id?: string | null;
+  publication_date?: string | null;
+  publisher?: string | null;
+  language?: string | null;
+  cover_image_url?: string | null;
 }
 
 export interface PaginatedBooks {
@@ -196,6 +198,18 @@ export interface SetSMTPConfigInput {
   password: string;
   from: string;
   tls: string;
+}
+
+// Watch Folder Config
+
+export interface WatchFolderConfig {
+  path: string;
+  library_id: string;
+}
+
+export interface SetWatchFolderConfigInput {
+  path: string;
+  library_id: string;
 }
 
 // Admin - User Management
@@ -263,6 +277,38 @@ export interface KosyncCredential {
 export interface KosyncCredentialInput {
   username: string;
   password: string;
+}
+
+// Remote Metadata
+
+export interface RemoteMetadata {
+  id: string;
+  book_id: string | null;
+  status: string;
+  source: string;
+  title: string | null;
+  description: string | null;
+  asin: string | null;
+  isbn10: string | null;
+  isbn13: string | null;
+  goodreads_id: string | null;
+  hardcover_id: string | null;
+  google_books_id: string | null;
+  publication_date: string | null;
+  publisher: string | null;
+  language: string | null;
+  cover_image_url: string | null;
+  author_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MetadataProgressEvent {
+  event: "progress" | "complete" | "not_found" | "error";
+  source?: string;
+  step?: string;
+  message?: string;
+  metadata_id?: string;
 }
 
 // Audit Logs

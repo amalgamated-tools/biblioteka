@@ -11,16 +11,23 @@ import {
   setToken,
   clearToken,
   hasToken,
+  getToken,
   ApiError,
   signup,
   login,
   getMe,
   getOidcEnabled,
+  getSignupEnabled,
   changePassword,
+  updateProfile,
+  logout,
   getConfigStatus,
   getOidcConfig,
   setOidcConfig,
   createOidcLinkNonce,
+  getSmtpConfig,
+  setSmtpConfig,
+  testSmtpConfig,
   listUsers,
   setUserAdmin,
   getAuditLogs,
@@ -31,8 +38,6 @@ import {
   setKosyncCredential,
   deleteKosyncCredential,
 } from "./api";
-
-const TOKEN_KEY = "biblioteka_token";
 
 let fetchMock: Mock;
 
@@ -60,22 +65,22 @@ function mockFetchResponse(
 
 describe("Token management", () => {
   beforeEach(() => {
-    localStorage.clear();
-  });
-
-  it("setToken stores token in localStorage", () => {
-    setToken("test-token");
-    expect(localStorage.getItem(TOKEN_KEY)).toBe("test-token");
-  });
-
-  it("clearToken removes token from localStorage", () => {
-    localStorage.setItem(TOKEN_KEY, "test-token");
     clearToken();
-    expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+  });
+
+  it("setToken stores token in memory", () => {
+    setToken("test-token");
+    expect(getToken()).toBe("test-token");
+  });
+
+  it("clearToken clears the in-memory token", () => {
+    setToken("test-token");
+    clearToken();
+    expect(getToken()).toBeNull();
   });
 
   it("hasToken returns true when token exists", () => {
-    localStorage.setItem(TOKEN_KEY, "test-token");
+    setToken("test-token");
     expect(hasToken()).toBe(true);
   });
 
@@ -84,7 +89,7 @@ describe("Token management", () => {
   });
 
   it("hasToken returns false for empty string", () => {
-    localStorage.setItem(TOKEN_KEY, "");
+    setToken("");
     expect(hasToken()).toBe(false);
   });
 });
@@ -101,7 +106,7 @@ describe("ApiError", () => {
 
 describe("request (via API functions)", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -237,12 +242,12 @@ describe("request (via API functions)", () => {
 
 describe("Auth API functions", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
 
-  it("signup stores token and returns result", async () => {
+  it("signup stores token in memory and returns result", async () => {
     const authResp = {
       token: "new-token",
       user: { id: "1", email: "a@b.com" },
@@ -251,10 +256,10 @@ describe("Auth API functions", () => {
 
     const result = await signup("Name", "a@b.com", "pass");
     expect(result).toEqual(authResp);
-    expect(localStorage.getItem(TOKEN_KEY)).toBe("new-token");
+    expect(getToken()).toBe("new-token");
   });
 
-  it("login stores token and returns result", async () => {
+  it("login stores token in memory and returns result", async () => {
     const authResp = {
       token: "login-token",
       user: { id: "2", email: "b@c.com" },
@@ -263,7 +268,7 @@ describe("Auth API functions", () => {
 
     const result = await login("b@c.com", "pass");
     expect(result).toEqual(authResp);
-    expect(localStorage.getItem(TOKEN_KEY)).toBe("login-token");
+    expect(getToken()).toBe("login-token");
   });
 
   it("getOidcEnabled returns true when enabled", async () => {
@@ -291,6 +296,31 @@ describe("Auth API functions", () => {
     expect(result).toBe(false);
   });
 
+  it("getSignupEnabled returns true when enabled", async () => {
+    mockFetchResponse({ enabled: true });
+
+    const result = await getSignupEnabled();
+    expect(result).toBe(true);
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/auth/signup/enabled");
+    expect(options.method).toBe("GET");
+  });
+
+  it("getSignupEnabled returns false when disabled", async () => {
+    mockFetchResponse({ enabled: false });
+
+    const result = await getSignupEnabled();
+    expect(result).toBe(false);
+  });
+
+  it("getSignupEnabled returns false for unexpected response", async () => {
+    mockFetchResponse({});
+
+    const result = await getSignupEnabled();
+    expect(result).toBe(false);
+  });
+
   it("changePassword sends PUT request", async () => {
     setToken("tok");
     mockFetchResponse({ message: "ok" });
@@ -309,7 +339,7 @@ describe("Auth API functions", () => {
 
 describe("Config API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -356,7 +386,7 @@ describe("Config API", () => {
 
 describe("Admin API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -383,7 +413,7 @@ describe("Admin API", () => {
 
 describe("Audit Logs API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -410,7 +440,7 @@ describe("Audit Logs API", () => {
 
 describe("OPDS Credentials API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -474,7 +504,7 @@ describe("OPDS Credentials API", () => {
 
 describe("KOSync Credentials API", () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearToken();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -533,5 +563,106 @@ describe("KOSync Credentials API", () => {
     const [url, options] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/kosync/credentials");
     expect(options.method).toBe("DELETE");
+  });
+});
+
+describe("Auth extended API", () => {
+  beforeEach(() => {
+    clearToken();
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  it("updateProfile sends PUT /api/auth/me with name and returns updated user", async () => {
+    const user = {
+      id: "1",
+      name: "New Name",
+      email: "a@b.com",
+      oidc_linked: false,
+      is_admin: false,
+    };
+    mockFetchResponse(user);
+
+    const result = await updateProfile("New Name");
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/auth/me");
+    expect(options.method).toBe("PUT");
+    expect(JSON.parse(options.body)).toEqual({ name: "New Name" });
+    expect(result).toEqual(user);
+  });
+
+  it("logout sends POST /api/auth/logout", async () => {
+    mockFetchResponse({ message: "ok" });
+
+    await logout();
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/auth/logout");
+    expect(options.method).toBe("POST");
+  });
+
+  it("logout resolves void even when the request fails", async () => {
+    fetchMock.mockRejectedValue(new Error("network error"));
+
+    await expect(logout()).resolves.toBeUndefined();
+  });
+});
+
+describe("SMTP Config API", () => {
+  beforeEach(() => {
+    clearToken();
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  it("getSmtpConfig calls GET /api/config/smtp", async () => {
+    const config = {
+      host: "smtp.example.com",
+      port: "587",
+      username: "user",
+      password_set: true,
+      from: "noreply@example.com",
+      tls: "starttls",
+      env_override: false,
+    };
+    mockFetchResponse(config);
+
+    const result = await getSmtpConfig();
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/config/smtp");
+    expect(options.method).toBe("GET");
+    expect(result).toEqual(config);
+  });
+
+  it("setSmtpConfig sends PUT /api/config/smtp with config body", async () => {
+    mockFetchResponse({ message: "ok" });
+
+    const input = {
+      host: "smtp.example.com",
+      port: "587",
+      username: "user",
+      password: "secret",
+      from: "noreply@example.com",
+      tls: "starttls",
+    };
+    await setSmtpConfig(input);
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/config/smtp");
+    expect(options.method).toBe("PUT");
+    expect(JSON.parse(options.body)).toEqual(input);
+  });
+
+  it("testSmtpConfig sends POST /api/config/smtp/test", async () => {
+    mockFetchResponse({ message: "email sent" });
+
+    const result = await testSmtpConfig();
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/config/smtp/test");
+    expect(options.method).toBe("POST");
+    expect(result.message).toBe("email sent");
   });
 });

@@ -1,0 +1,211 @@
+package handlers
+
+import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/amalgamated-tools/biblioteka/internal/db"
+	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
+
+	"github.com/stretchr/testify/require"
+)
+
+// --- Pagination ---
+
+func TestAllBooks_Pagination(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := t.Context()
+
+	// Create enough books to have a second page (opdspkg.PageSize is 50).
+	for i := range 55 {
+		_, err := h.DB.CreateBook(ctx, db.BookInput{Title: "Book " + padInt(i)})
+		require.NoError(t, err, "create book %d", i)
+	}
+
+	// Page 1: should have "next" link but no "previous" link.
+	r := httptest.NewRequest(http.MethodGet, "/opds/all?page=1", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	feed := parseOPDSFeed(t, w.Body.Bytes())
+	require.Len(t, feed.Entries, 50)
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelNext), "page 1: missing next link")
+	require.Nil(t, findLink(feed.Links, opdspkg.RelPrevious))
+
+	// Page 2: should have "previous" link but no "next" link.
+	r2 := httptest.NewRequest(http.MethodGet, "/opds/all?page=2", nil)
+	w2 := httptest.NewRecorder()
+	h.HandleOPDS(w2, r2)
+
+	require.Equal(t, http.StatusOK, w2.Code)
+
+	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
+	require.Len(t, feed2.Entries, 5)
+	require.NotNil(t, findLink(feed2.Links, opdspkg.RelPrevious), "page 2: missing previous link")
+	require.Nil(t, findLink(feed2.Links, opdspkg.RelNext))
+}
+
+// --- X-Forwarded-Proto ---
+
+func TestBaseURL_XForwardedProto(t *testing.T) {
+	h := setupOPDSHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/opds", nil)
+	r.Header.Set("X-Forwarded-Proto", "https")
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	feed := parseOPDSFeed(t, w.Body.Bytes())
+	selfLink := findLink(feed.Links, opdspkg.RelSelf)
+	require.NotNil(t, selfLink)
+	require.True(t, strings.HasPrefix(selfLink.Href, "https://"))
+}
+
+func TestBaseURL_InvalidXForwardedProto(t *testing.T) {
+	h := setupOPDSHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/opds", nil)
+	r.Header.Set("X-Forwarded-Proto", "javascript:")
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	feed := parseOPDSFeed(t, w.Body.Bytes())
+	selfLink := findLink(feed.Links, opdspkg.RelSelf)
+	require.NotNil(t, selfLink)
+	// Should fallback to http, not use the injected value.
+	require.False(t, strings.HasPrefix(selfLink.Href, "javascript:"))
+}
+
+// --- Helper unit tests ---
+
+func TestParsePage(t *testing.T) {
+	tests := []struct {
+		query string
+		want  int
+	}{
+		{"", 1},
+		{"?page=1", 1},
+		{"?page=3", 3},
+		{"?page=0", 1},
+		{"?page=-1", 1},
+		{"?page=abc", 1},
+	}
+
+	for _, tt := range tests {
+		r := httptest.NewRequest(http.MethodGet, "/opds/all"+tt.query, nil)
+		got := parsePage(r)
+		require.Equal(t, tt.want, got)
+	}
+}
+
+func TestPaginationLinks(t *testing.T) {
+	// Single page: no next or previous.
+	links := opdspkg.PaginationLinks("/opds/all", 1, 10, 50, opdspkg.AcqContentType)
+	require.Nil(t, findLink(links, opdspkg.RelNext))
+	require.Nil(t, findLink(links, opdspkg.RelPrevious))
+
+	// First of multiple pages: next but no previous.
+	links = opdspkg.PaginationLinks("/opds/all", 1, 100, 50, opdspkg.AcqContentType)
+	require.NotNil(t, findLink(links, opdspkg.RelNext), "first page: should have next link")
+	require.Nil(t, findLink(links, opdspkg.RelPrevious))
+
+	// Middle page: both next and previous.
+	links = opdspkg.PaginationLinks("/opds/all", 2, 150, 50, opdspkg.AcqContentType)
+	require.NotNil(t, findLink(links, opdspkg.RelNext), "middle page: should have next link")
+	require.NotNil(t, findLink(links, opdspkg.RelPrevious), "middle page: should have previous link")
+
+	// Last page: previous but no next.
+	links = opdspkg.PaginationLinks("/opds/all", 2, 100, 50, opdspkg.AcqContentType)
+	require.Nil(t, findLink(links, opdspkg.RelNext))
+	require.NotNil(t, findLink(links, opdspkg.RelPrevious), "last page: should have previous link")
+}
+
+func TestPaginationLinks_SearchURL(t *testing.T) {
+	// URLs with existing query params should use "&" not "?" for page param.
+	links := opdspkg.PaginationLinks("/opds/search?q=test", 1, 100, 50, opdspkg.AcqContentType)
+	selfLink := findLink(links, opdspkg.RelSelf)
+	require.NotNil(t, selfLink)
+	require.NotContains(t, selfLink.Href, "?q=test?page=")
+	require.Contains(t, selfLink.Href, "&page=")
+}
+
+// padInt zero-pads an integer to 3 digits for consistent sorting.
+func padInt(n int) string {
+	return fmt.Sprintf("%03d", n)
+}
+
+// --- Authors/Series pagination ---
+
+func TestAuthorsFeed_Pagination(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := t.Context()
+
+	const totalAuthors = opdspkg.PageSize + 5
+	for i := range totalAuthors {
+		_, err := h.DB.CreateAuthor(ctx, fmt.Sprintf("Author %03d", i), nil, nil, nil, nil)
+		require.NoError(t, err, "create author %d", i)
+	}
+
+	// Page 1: should have next link but no previous.
+	r := httptest.NewRequest(http.MethodGet, "/opds/authors?page=1", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	feed := parseOPDSFeed(t, w.Body.Bytes())
+	require.Len(t, feed.Entries, opdspkg.PageSize)
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelNext), "page 1: missing next link")
+	require.Nil(t, findLink(feed.Links, opdspkg.RelPrevious))
+
+	// Page 2: should have previous link but no next.
+	r2 := httptest.NewRequest(http.MethodGet, "/opds/authors?page=2", nil)
+	w2 := httptest.NewRecorder()
+	h.HandleOPDS(w2, r2)
+
+	require.Equal(t, http.StatusOK, w2.Code)
+	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
+	require.Len(t, feed2.Entries, totalAuthors-opdspkg.PageSize)
+	require.NotNil(t, findLink(feed2.Links, opdspkg.RelPrevious), "page 2: missing previous link")
+	require.Nil(t, findLink(feed2.Links, opdspkg.RelNext))
+}
+
+func TestSeriesFeed_Pagination(t *testing.T) {
+	h := setupOPDSHandler(t)
+	ctx := t.Context()
+
+	const totalSeries = opdspkg.PageSize + 5
+	for i := range totalSeries {
+		_, err := h.DB.CreateSeries(ctx, fmt.Sprintf("Series %03d", i), nil, nil, nil)
+		require.NoError(t, err, "create series %d", i)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/opds/series?page=1", nil)
+	w := httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	feed := parseOPDSFeed(t, w.Body.Bytes())
+	require.Len(t, feed.Entries, opdspkg.PageSize)
+	require.NotNil(t, findLink(feed.Links, opdspkg.RelNext), "page 1: missing next link")
+	require.Nil(t, findLink(feed.Links, opdspkg.RelPrevious))
+
+	// Page 2: should have previous link but no next.
+	r2 := httptest.NewRequest(http.MethodGet, "/opds/series?page=2", nil)
+	w2 := httptest.NewRecorder()
+	h.HandleOPDS(w2, r2)
+
+	require.Equal(t, http.StatusOK, w2.Code)
+	feed2 := parseOPDSFeed(t, w2.Body.Bytes())
+	require.Len(t, feed2.Entries, totalSeries-opdspkg.PageSize)
+	require.NotNil(t, findLink(feed2.Links, opdspkg.RelPrevious), "page 2: missing previous link")
+	require.Nil(t, findLink(feed2.Links, opdspkg.RelNext))
+}

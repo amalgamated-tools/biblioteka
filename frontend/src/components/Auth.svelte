@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { BookCheck } from "lucide-svelte";
   import { authStore } from "../stores/auth.svelte";
-  import { getOidcEnabled } from "../lib/api";
+  import { getOidcEnabled, getSignupEnabled } from "../lib/api";
   import { required, minLength, validate } from "../lib/validation";
   import AlertBanner from "./ui/AlertBanner.svelte";
   import Button from "./ui/Button.svelte";
@@ -15,9 +15,11 @@
   let error: string | null = $state(null);
   let loading = $state(false);
   let oidcEnabled = $state(false);
+  let signupEnabled = $state(true);
 
   function handleTabKeydown(event: KeyboardEvent) {
     if (loading) return;
+    if (!signupEnabled) return;
     if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
       event.preventDefault();
       isLogin = !isLogin;
@@ -37,8 +39,16 @@
   onMount(async () => {
     try {
       oidcEnabled = await getOidcEnabled();
-    } catch {
-      // OIDC not available
+    } catch (e) {
+      console.error("Failed to check OIDC status", e);
+    }
+    try {
+      signupEnabled = await getSignupEnabled();
+      if (!signupEnabled) {
+        isLogin = true;
+      }
+    } catch (e) {
+      console.error("Failed to check signup status", e);
     }
   });
 
@@ -95,14 +105,14 @@
       <div
         class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-accent-500 to-accent-700 rounded-2xl mb-4 shadow-lg shadow-accent-500/20 dark:shadow-accent-500/10"
       >
-        <BookCheck class="w-8 h-8 text-white" />
+        <BookCheck class="w-8 h-8 text-white" aria-hidden="true" />
       </div>
       <h1
         class="text-4xl font-display font-bold text-ink-900 dark:text-cream-100 mb-2"
       >
         biblioteka
       </h1>
-      <p class="text-ink-400 dark:text-ink-400 font-body">
+      <p class="text-ink-500 dark:text-ink-300 font-body">
         Your personal digital library
       </p>
     </div>
@@ -126,7 +136,7 @@
           </div>
           <div class="relative flex justify-center text-sm">
             <span
-              class="px-3 bg-white dark:bg-ink-900 text-ink-400 dark:text-ink-400"
+              class="px-3 bg-white dark:bg-ink-900 text-ink-500 dark:text-ink-300"
               >or</span
             >
           </div>
@@ -150,24 +160,26 @@
           onclick={() => (isLogin = true)}
           class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {isLogin
             ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
-            : 'text-ink-400 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'}"
+            : 'text-ink-500 dark:text-ink-300 hover:text-ink-700 dark:hover:text-ink-200'}"
         >
           Login
         </button>
-        <button
-          id="signup-tab"
-          role="tab"
-          aria-selected={!isLogin}
-          aria-controls="signup-panel"
-          tabindex={!isLogin ? 0 : -1}
-          disabled={loading}
-          onclick={() => (isLogin = false)}
-          class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {!isLogin
-            ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
-            : 'text-ink-400 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'}"
-        >
-          Sign Up
-        </button>
+        {#if signupEnabled}
+          <button
+            id="signup-tab"
+            role="tab"
+            aria-selected={!isLogin}
+            aria-controls="signup-panel"
+            tabindex={!isLogin ? 0 : -1}
+            disabled={loading}
+            onclick={() => (isLogin = false)}
+            class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all {!isLogin
+              ? 'bg-white dark:bg-ink-700 text-ink-900 dark:text-cream-100 shadow-sm'
+              : 'text-ink-500 dark:text-ink-300 hover:text-ink-700 dark:hover:text-ink-200'}"
+          >
+            Sign Up
+          </button>
+        {/if}
       </div>
 
       <div
@@ -229,82 +241,84 @@
         </form>
       </div>
 
-      <div
-        id="signup-panel"
-        role="tabpanel"
-        aria-labelledby="signup-tab"
-        hidden={isLogin}
-      >
-        <form onsubmit={handleSubmit} class="space-y-4">
-          <div>
-            <label
-              for="signup-name"
-              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-            >
-              Name
-            </label>
-            <TextInput
-              id="signup-name"
-              type="text"
-              bind:value={name}
-              autocomplete="name"
-              class="w-full py-3"
-              placeholder="Your name"
+      {#if signupEnabled}
+        <div
+          id="signup-panel"
+          role="tabpanel"
+          aria-labelledby="signup-tab"
+          hidden={isLogin}
+        >
+          <form onsubmit={handleSubmit} class="space-y-4">
+            <div>
+              <label
+                for="signup-name"
+                class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+              >
+                Name
+              </label>
+              <TextInput
+                id="signup-name"
+                type="text"
+                bind:value={name}
+                autocomplete="name"
+                class="w-full py-3"
+                placeholder="Your name"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label
+                for="signup-email"
+                class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+              >
+                Email
+              </label>
+              <TextInput
+                id="signup-email"
+                type="email"
+                bind:value={email}
+                autocomplete="email"
+                class="w-full py-3"
+                placeholder="you@example.com"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label
+                for="signup-password"
+                class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+              >
+                Password
+              </label>
+              <TextInput
+                id="signup-password"
+                type="password"
+                bind:value={password}
+                autocomplete="new-password"
+                class="w-full py-3"
+                placeholder="••••••••"
+                disabled={loading}
+              />
+            </div>
+
+            {#if error && !isLogin}
+              <AlertBanner variant="error" testId="auth-error" role="alert"
+                >{error}</AlertBanner
+              >
+            {/if}
+
+            <Button
+              type="submit"
               disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label
-              for="signup-email"
-              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+              class="w-full py-3 px-4 active:scale-[0.98]"
             >
-              Email
-            </label>
-            <TextInput
-              id="signup-email"
-              type="email"
-              bind:value={email}
-              autocomplete="email"
-              class="w-full py-3"
-              placeholder="you@example.com"
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label
-              for="signup-password"
-              class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
-            >
-              Password
-            </label>
-            <TextInput
-              id="signup-password"
-              type="password"
-              bind:value={password}
-              autocomplete="new-password"
-              class="w-full py-3"
-              placeholder="••••••••"
-              disabled={loading}
-            />
-          </div>
-
-          {#if error && !isLogin}
-            <AlertBanner variant="error" testId="auth-error" role="alert"
-              >{error}</AlertBanner
-            >
-          {/if}
-
-          <Button
-            type="submit"
-            disabled={loading}
-            class="w-full py-3 px-4 active:scale-[0.98]"
-          >
-            {loading ? "Processing..." : "Create Account"}
-          </Button>
-        </form>
-      </div>
+              {loading ? "Processing..." : "Create Account"}
+            </Button>
+          </form>
+        </div>
+      {/if}
     </div>
   </main>
 </div>

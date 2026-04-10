@@ -1,3 +1,7 @@
+// Package worker manages Redis-backed background job processing via asynq.
+// It exposes a Worker type that wraps an asynq server, client, and scheduler,
+// and provides helpers for registering one-off job handlers and recurring
+// cron-scheduled tasks.
 package worker
 
 import (
@@ -65,7 +69,7 @@ func (w *Worker) RegisterSchedule(cronspec, jobName string, payload any) (string
 	if err != nil {
 		return "", fmt.Errorf("marshal payload for %s: %w", jobName, err)
 	}
-	task := asynq.NewTask(jobName, body, asynq.MaxRetry(DefaultMaxRetry), asynq.Queue(QueueName), asynq.Unique(24*time.Hour))
+	task := asynq.NewTask(jobName, body, asynq.MaxRetry(DefaultMaxRetry), asynq.Queue(QueueName))
 	entryID, err := w.scheduler.Register(cronspec, task)
 	if err != nil {
 		return "", fmt.Errorf("register schedule %s %q: %w", jobName, cronspec, err)

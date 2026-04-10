@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -79,27 +80,39 @@ func (h *SeriesHandler) HandleSeriesList(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// HandleSeries handles GET/PUT/DELETE /api/series/{id}.
+// HandleSeries handles requests under /api/series/{id} and /api/series/{id}/books.
 func (h *SeriesHandler) HandleSeries(w http.ResponseWriter, r *http.Request) {
-	id, ok := extractPathID(r.URL.Path, "/api/series/")
+	id, sub, ok := extractPathSegments(r.URL.Path, "/api/series/")
 	if !ok {
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid series ID")
 		return
 	}
 
-	switch r.Method {
-	case http.MethodGet:
-		h.getSeries(w, r, id)
-	case http.MethodPut:
-		h.updateSeries(w, r, id)
-	case http.MethodDelete:
-		h.deleteSeries(w, r, id)
+	switch sub {
+	case "":
+		switch r.Method {
+		case http.MethodGet:
+			h.getSeries(w, r, id)
+		case http.MethodPut:
+			h.updateSeries(w, r, id)
+		case http.MethodDelete:
+			h.deleteSeries(w, r, id)
+		default:
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
+	case "books":
+		switch r.Method {
+		case http.MethodGet:
+			h.listSeriesBooks(w, r, id)
+		default:
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
 	default:
-		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}
 }
 
-// listSeries godoc
+// listSeries returns all series.
 //
 //	@Summary		List series
 //	@Description	Returns all series
@@ -114,7 +127,7 @@ func (h *SeriesHandler) listSeries(w http.ResponseWriter, r *http.Request) {
 	listEntities(w, r, "series", h.DB.ListSeries, toSeriesDTO)
 }
 
-// createSeries godoc
+// createSeries creates a new series.
 //
 //	@Summary		Create a series
 //	@Description	Create a new series
@@ -133,7 +146,7 @@ func (h *SeriesHandler) createSeries(w http.ResponseWriter, r *http.Request) {
 	createNamedEntity(h.seriesOps(), w, r)
 }
 
-// getSeries godoc
+// getSeries returns a single series by ID.
 //
 //	@Summary		Get a series
 //	@Description	Returns a single series by ID
@@ -151,7 +164,7 @@ func (h *SeriesHandler) getSeries(w http.ResponseWriter, r *http.Request, id str
 	getNamedEntity(h.seriesOps(), w, r, id)
 }
 
-// updateSeries godoc
+// updateSeries updates an existing series.
 //
 //	@Summary		Update a series
 //	@Description	Update an existing series
@@ -172,7 +185,7 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 	updateNamedEntity(h.seriesOps(), w, r, id)
 }
 
-// deleteSeries godoc
+// deleteSeries deletes a series by ID.
 //
 //	@Summary		Delete a series
 //	@Description	Delete a series by ID
@@ -186,9 +199,34 @@ func (h *SeriesHandler) updateSeries(w http.ResponseWriter, r *http.Request, id 
 //	@Failure		500	{object}	errorResponse
 //	@Router			/series/{id} [delete]
 func (h *SeriesHandler) deleteSeries(w http.ResponseWriter, r *http.Request, id string) {
-	deleteResource(h.DB, w, r, id, "series", otelkeys.SeriesID,
+	deleteResource(h.DB, w, r, id, "series", "series", otelkeys.SeriesID,
 		h.DB.GetSeries, h.DB.DeleteSeries,
 		db.AuditActionSeriesDeleted,
 		func(s *db.Series) map[string]any { return map[string]any{"name": s.Name} },
+	)
+}
+
+// listSeriesBooks returns paginated books belonging to the specified series.
+//
+//	@Summary		List books in a series
+//	@Description	Returns paginated books for a specific series, ordered by position then title
+//	@Tags			Series
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string	true	"Series ID"
+//	@Param			limit	query		int		false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int		false	"Number of items to skip (default 0)"
+//	@Success		200		{object}	bookListDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/series/{id}/books [get]
+func (h *SeriesHandler) listSeriesBooks(w http.ResponseWriter, r *http.Request, seriesID string) {
+	listParentBooks(w, r, seriesID,
+		slog.String(otelkeys.SeriesID, seriesID),
+		h.DB.ListBooksBySeriesPaginated,
+		h.DB.GetSeries,
+		"series",
 	)
 }

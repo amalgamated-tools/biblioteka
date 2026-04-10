@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestWriteCover_ValidDataURL(t *testing.T) {
@@ -14,28 +16,16 @@ func TestWriteCover_ValidDataURL(t *testing.T) {
 	dataURL := "data:image/jpeg;base64," + encoded
 
 	filename, mimeType, err := WriteCover(dir, dataURL, "")
-	if err != nil {
-		t.Fatalf("WriteCover: %v", err)
-	}
-	if filename != "cover.jpg" {
-		t.Errorf("filename = %q, want %q", filename, "cover.jpg")
-	}
-	if mimeType != "image/jpeg" {
-		t.Errorf("mimeType = %q, want %q", mimeType, "image/jpeg")
-	}
+	require.NoError(t, err, "WriteCover")
+	require.Equal(t, "cover.jpg", filename, "filename")
+	require.Equal(t, "image/jpeg", mimeType, "mimeType")
 
 	written, err := os.ReadFile(filepath.Join(dir, "cover.jpg"))
-	if err != nil {
-		t.Fatalf("read cover.jpg: %v", err)
-	}
+	require.NoError(t, err, "read cover.jpg")
 
-	if len(written) != len(imageData) {
-		t.Errorf("cover.jpg size = %d, want %d", len(written), len(imageData))
-	}
+	require.Len(t, written, len(imageData), "cover.jpg size")
 	for i := range imageData {
-		if written[i] != imageData[i] {
-			t.Fatalf("cover.jpg byte %d = %x, want %x", i, written[i], imageData[i])
-		}
+		require.Equal(t, imageData[i], written[i])
 	}
 }
 
@@ -46,19 +36,12 @@ func TestWriteCover_PNGDataURL_WritesAsPNG(t *testing.T) {
 	dataURL := "data:image/png;base64," + encoded
 
 	filename, mimeType, err := WriteCover(dir, dataURL, "")
-	if err != nil {
-		t.Fatalf("WriteCover: %v", err)
-	}
-	if filename != "cover.png" {
-		t.Errorf("filename = %q, want %q", filename, "cover.png")
-	}
-	if mimeType != "image/png" {
-		t.Errorf("mimeType = %q, want %q", mimeType, "image/png")
-	}
+	require.NoError(t, err, "WriteCover")
+	require.Equal(t, "cover.png", filename, "filename")
+	require.Equal(t, "image/png", mimeType, "mimeType")
 
-	if _, err := os.Stat(filepath.Join(dir, "cover.png")); err != nil {
-		t.Errorf("cover.png not found: %v", err)
-	}
+	_, err = os.Stat(filepath.Join(dir, "cover.png"))
+	require.NoError(t, err, "cover.png not found")
 }
 
 func TestWriteCover_WebPDataURL(t *testing.T) {
@@ -68,15 +51,9 @@ func TestWriteCover_WebPDataURL(t *testing.T) {
 	dataURL := "data:image/webp;base64," + encoded
 
 	filename, mimeType, err := WriteCover(dir, dataURL, "")
-	if err != nil {
-		t.Fatalf("WriteCover: %v", err)
-	}
-	if filename != "cover.webp" {
-		t.Errorf("filename = %q, want %q", filename, "cover.webp")
-	}
-	if mimeType != "image/webp" {
-		t.Errorf("mimeType = %q, want %q", mimeType, "image/webp")
-	}
+	require.NoError(t, err, "WriteCover")
+	require.Equal(t, "cover.webp", filename, "filename")
+	require.Equal(t, "image/webp", mimeType, "mimeType")
 }
 
 func TestWriteCover_AVIFDataURL(t *testing.T) {
@@ -86,15 +63,9 @@ func TestWriteCover_AVIFDataURL(t *testing.T) {
 	dataURL := "data:image/avif;base64," + encoded
 
 	filename, mimeType, err := WriteCover(dir, dataURL, "")
-	if err != nil {
-		t.Fatalf("WriteCover: %v", err)
-	}
-	if filename != "cover.avif" {
-		t.Errorf("filename = %q, want %q", filename, "cover.avif")
-	}
-	if mimeType != "image/avif" {
-		t.Errorf("mimeType = %q, want %q", mimeType, "image/avif")
-	}
+	require.NoError(t, err, "WriteCover")
+	require.Equal(t, "cover.avif", filename, "filename")
+	require.Equal(t, "image/avif", mimeType, "mimeType")
 }
 
 func TestWriteCover_UnsupportedFormat(t *testing.T) {
@@ -104,17 +75,13 @@ func TestWriteCover_UnsupportedFormat(t *testing.T) {
 	dataURL := "data:image/gif;base64," + encoded
 
 	_, _, err := WriteCover(dir, dataURL, "")
-	if err == nil {
-		t.Fatal("expected error for unsupported image format")
-	}
+	require.Error(t, err, "expected error for unsupported image format")
 }
 
 func TestWriteCover_InvalidDataURL(t *testing.T) {
 	dir := t.TempDir()
 	_, _, err := WriteCover(dir, "https://example.com/image.jpg", "")
-	if err == nil {
-		t.Fatal("expected error for non-data URL")
-	}
+	require.Error(t, err, "expected error for non-data URL")
 }
 
 func TestWriteCover_OverwritesExisting(t *testing.T) {
@@ -122,48 +89,36 @@ func TestWriteCover_OverwritesExisting(t *testing.T) {
 	coverPath := filepath.Join(dir, "cover.jpg")
 
 	// Write an initial file.
-	if err := os.WriteFile(coverPath, []byte("old"), 0o644); err != nil {
-		t.Fatalf("setup: %v", err)
-	}
+	require.NoError(t, os.WriteFile(coverPath, []byte("old"), 0o644), "setup")
 
 	imageData := []byte{0xFF, 0xD8}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
-	if _, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded, ""); err != nil {
-		t.Fatalf("WriteCover: %v", err)
-	}
+	_, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded, "")
+	require.NoError(t, err, "WriteCover")
 
 	written, err := os.ReadFile(coverPath)
-	if err != nil {
-		t.Fatalf("read cover.jpg: %v", err)
-	}
-	if string(written) == "old" {
-		t.Error("cover.jpg was not overwritten")
-	}
+	require.NoError(t, err, "read cover.jpg")
+	require.NotEqual(t, "old", string(written), "cover.jpg was not overwritten")
 }
 
 func TestWriteCover_RemovesStaleFormats(t *testing.T) {
 	dir := t.TempDir()
 
 	for _, ext := range []string{".jpg", ".png"} {
-		if err := os.WriteFile(filepath.Join(dir, "cover"+ext), []byte("old"), 0o644); err != nil {
-			t.Fatalf("setup %s: %v", ext, err)
-		}
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "cover"+ext), []byte("old"), 0o644), "setup %s", ext)
 	}
 
 	imageData := []byte{0x52, 0x49, 0x46, 0x46}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
-	if _, _, err := WriteCover(dir, "data:image/webp;base64,"+encoded, ""); err != nil {
-		t.Fatalf("WriteCover: %v", err)
-	}
+	_, _, err := WriteCover(dir, "data:image/webp;base64,"+encoded, "")
+	require.NoError(t, err, "WriteCover")
 
 	for _, ext := range []string{".jpg", ".png"} {
-		if _, err := os.Stat(filepath.Join(dir, "cover"+ext)); !os.IsNotExist(err) {
-			t.Errorf("cover%s should have been removed, err=%v", ext, err)
-		}
+		_, err = os.Stat(filepath.Join(dir, "cover"+ext))
+		require.True(t, os.IsNotExist(err), "cover%s should have been removed", ext)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "cover.webp")); err != nil {
-		t.Errorf("cover.webp not found: %v", err)
-	}
+	_, err = os.Stat(filepath.Join(dir, "cover.webp"))
+	require.NoError(t, err, "cover.webp not found")
 }
 
 func TestWriteCover_CustomBaseName(t *testing.T) {
@@ -173,20 +128,14 @@ func TestWriteCover_CustomBaseName(t *testing.T) {
 	dataURL := "data:image/jpeg;base64," + encoded
 
 	filename, _, err := WriteCover(dir, dataURL, "Alice's Adventures in Wonderland by Lewis Carroll")
-	if err != nil {
-		t.Fatalf("WriteCover: %v", err)
-	}
+	require.NoError(t, err, "WriteCover")
 	expected := "Alice's Adventures in Wonderland by Lewis Carroll.jpg"
-	if filename != expected {
-		t.Errorf("filename = %q, want %q", filename, expected)
-	}
-	if _, err := os.Stat(filepath.Join(dir, expected)); err != nil {
-		t.Errorf("expected file not found: %v", err)
-	}
+	require.Equal(t, expected, filename, "filename")
+	_, err = os.Stat(filepath.Join(dir, expected))
+	require.NoError(t, err, "expected file not found")
 	// Default "cover.jpg" should NOT exist.
-	if _, err := os.Stat(filepath.Join(dir, "cover.jpg")); !os.IsNotExist(err) {
-		t.Errorf("cover.jpg should not exist when using custom baseName")
-	}
+	_, err = os.Stat(filepath.Join(dir, "cover.jpg"))
+	require.True(t, os.IsNotExist(err), "cover.jpg should not exist when using custom baseName")
 }
 
 func TestWriteCover_CustomBaseName_RemovesStaleFormats(t *testing.T) {
@@ -194,22 +143,17 @@ func TestWriteCover_CustomBaseName_RemovesStaleFormats(t *testing.T) {
 	stem := "My Book"
 
 	// Pre-create stale files.
-	if err := os.WriteFile(filepath.Join(dir, stem+".png"), []byte("old"), 0o644); err != nil {
-		t.Fatalf("setup: %v", err)
-	}
+	require.NoError(t, os.WriteFile(filepath.Join(dir, stem+".png"), []byte("old"), 0o644), "setup")
 
 	imageData := []byte{0xFF, 0xD8}
 	encoded := base64.StdEncoding.EncodeToString(imageData)
-	if _, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded, stem); err != nil {
-		t.Fatalf("WriteCover: %v", err)
-	}
+	_, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded, stem)
+	require.NoError(t, err, "WriteCover")
 
-	if _, err := os.Stat(filepath.Join(dir, stem+".png")); !os.IsNotExist(err) {
-		t.Errorf("%s.png should have been removed", stem)
-	}
-	if _, err := os.Stat(filepath.Join(dir, stem+".jpg")); err != nil {
-		t.Errorf("%s.jpg not found: %v", stem, err)
-	}
+	_, err = os.Stat(filepath.Join(dir, stem+".png"))
+	require.True(t, os.IsNotExist(err), "%s.png should have been removed", stem)
+	_, err = os.Stat(filepath.Join(dir, stem+".jpg"))
+	require.NoError(t, err, "%s.jpg not found", stem)
 }
 
 func TestWriteCover_InvalidBaseName(t *testing.T) {
@@ -218,7 +162,5 @@ func TestWriteCover_InvalidBaseName(t *testing.T) {
 	encoded := base64.StdEncoding.EncodeToString(imageData)
 
 	_, _, err := WriteCover(dir, "data:image/jpeg;base64,"+encoded, "../escape")
-	if err == nil {
-		t.Fatal("expected error for invalid base name")
-	}
+	require.Error(t, err, "expected error for invalid base name")
 }

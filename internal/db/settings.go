@@ -9,6 +9,12 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// Well-known setting keys shared across packages.
+const (
+	SettingWatchFolderPath      = "watch_folder_path"
+	SettingWatchFolderLibraryID = "watch_folder_library_id"
+)
+
 // Setting holds a configuration key-value pair for bulk saves.
 type Setting struct {
 	Key   string
@@ -40,15 +46,7 @@ func (d *DB) SetSettings(ctx context.Context, settings []Setting) error {
 	if err != nil {
 		return fmt.Errorf("db: begin settings transaction: %w", err)
 	}
-	committed := false
-	defer func() {
-		if committed {
-			return
-		}
-		if rollbackErr := tx.Rollback(); rollbackErr != nil && rollbackErr != sql.ErrTxDone {
-			slog.WarnContext(ctx, "db: failed to roll back settings transaction", slog.Any(otelkeys.Error, rollbackErr))
-		}
-	}()
+	defer deferRollback(ctx, tx)
 
 	for _, setting := range settings {
 		slog.DebugContext(ctx, "db: saving setting", slog.String(otelkeys.Key, setting.Key))
@@ -60,7 +58,6 @@ func (d *DB) SetSettings(ctx context.Context, settings []Setting) error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("db: commit settings transaction: %w", err)
 	}
-	committed = true
 	return nil
 }
 

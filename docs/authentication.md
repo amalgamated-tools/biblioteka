@@ -13,7 +13,7 @@ Send a `POST /api/auth/signup` request. The first account created is automatical
 ```bash
 curl -X POST http://localhost:8080/api/auth/signup \
   -H "Content-Type: application/json" \
-  -d '{"name":"Alice","email":"alice@example.com","password":"s3cr3t!"}'
+  -d '{"name":"Alice","email":"alice@example.com","password":"s3cr3t!1"}'
 ```
 
 The response includes a short-lived JWT and a `biblioteka_token` HttpOnly session cookie:
@@ -23,6 +23,7 @@ The response includes a short-lived JWT and a `biblioteka_token` HttpOnly sessio
   "token": "<jwt>",
   "user": {
     "id": "<id>",
+    "name": "Alice",
     "email": "alice@example.com",
     "oidc_linked": false,
     "is_admin": true
@@ -35,7 +36,7 @@ The response includes a short-lived JWT and a `biblioteka_token` HttpOnly sessio
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"alice@example.com","password":"s3cr3t!"}'
+  -d '{"email":"alice@example.com","password":"s3cr3t!1"}'
 ```
 
 ### Using the JWT
@@ -49,14 +50,37 @@ curl http://localhost:8080/api/books \
 
 Browser clients receive the token in both the JSON body and as an HttpOnly `SameSite=Strict` cookie (`biblioteka_token`). The cookie is used automatically for browser-based access to protected server-side paths such as `/asynqmon/`.
 
+### Update profile
+
+Change your display name:
+
+```bash
+curl -X PUT http://localhost:8080/api/auth/me \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice Wonderland"}'
+```
+
+Returns the updated user object.
+
 ### Change password
 
 ```bash
 curl -X PUT http://localhost:8080/api/auth/password \
   -H "Authorization: Bearer <jwt>" \
   -H "Content-Type: application/json" \
-  -d '{"currentPassword":"s3cr3t!","newPassword":"b3tt3rS3cr3t!"}'
+  -d '{"currentPassword":"s3cr3t!1","newPassword":"b3tt3rS3cr3t!"}'
 ```
+
+### Password security properties
+
+| Property | Detail |
+|----------|--------|
+| Minimum length | [NIST SP 800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html) recommends a minimum of 8 characters; this server currently enforces a minimum of 8 bytes because password length validation is byte-counted |
+| Maximum length | 72 bytes (bcrypt silently truncates inputs longer than 72 bytes; any two passwords sharing the same first 72 bytes would be treated as identical — this cap prevents that collision) |
+| Storage | bcrypt hash with work factor 12; plaintext is never persisted |
+| Work factor rationale | Cost 12 is used instead of bcrypt's default (cost 10) because modern hardware can brute-force cost-10 hashes significantly faster than when the default was standardized |
+| Timing safety | Protocol-layer credential endpoints (OPDS, KOSync) perform a constant-time dummy bcrypt comparison when a username is not found to mitigate timing-based enumeration; the main login endpoint (`POST /api/auth/login`) does not currently apply this protection |
 
 ---
 
@@ -257,11 +281,13 @@ If a user signs in via OIDC and no existing account has that `sub` claim, the se
 |----------|-------|
 | Algorithm | HS256 |
 | Expiry | 24 hours |
-| Secret | Configured via `JWT_SECRET` environment variable |
+| Secret | Configured via `JWT_SECRET` environment variable; minimum recommended length is **32 characters** |
 | Cookie name | `biblioteka_token` |
 | Cookie flags | `HttpOnly`, `SameSite=Strict`, `Secure` (when `SECURE_COOKIES=true`) |
 
 > **Security note:** Keep `JWT_SECRET` secret and rotate it periodically. Rotating the secret immediately invalidates all existing tokens, forcing all users to log in again. The default value `change-me-in-production` must not be used in production.
+>
+> If `JWT_SECRET` is set but shorter than 32 characters, the server logs a warning at startup because a short secret weakens HMAC-SHA256 signing. Use `openssl rand -hex 32` to generate a strong 64-character secret.
 
 ---
 
@@ -281,7 +307,7 @@ Use JWT tokens (from login/signup) for interactive browser sessions.
 
 ### Key format
 
-Every API key begins with the prefix `bib_` followed by 32 lowercase hexadecimal characters (128 bits of entropy), for example:
+Every API key begins with the prefix `bib_` followed by 40 lowercase hexadecimal characters (160 bits of entropy), for example:
 
 ```
 bib_a3f2c8e1d074b651...
@@ -289,7 +315,7 @@ bib_a3f2c8e1d074b651...
 
 Only the `bib_` prefix and the first 12 hex characters (the *key prefix*) are stored in plaintext for identification in the UI. The remainder is stored only as a SHA-256 hash — the full key is never retrievable after creation.
 
-> **Why SHA-256 and not bcrypt or Argon2?** API keys are 128-bit cryptographically random values, not user-chosen passwords. An attacker cannot brute-force 128 bits of randomness regardless of how fast or slow the hash function is, so the added computational cost of a password-hashing algorithm would provide no security benefit. SHA-256 is the appropriate choice for high-entropy tokens.
+> **Why SHA-256 and not bcrypt or Argon2?** API keys are 160-bit cryptographically random values, not user-chosen passwords. An attacker cannot brute-force 160 bits of randomness regardless of how fast or slow the hash function is, so the added computational cost of a password-hashing algorithm would provide no security benefit. SHA-256 is the appropriate choice for high-entropy tokens.
 
 ### Using an API key
 
@@ -316,8 +342,8 @@ To manage keys programmatically, see the [API Keys endpoints](api-reference.md#a
 
 | Property | Detail |
 |----------|--------|
-| Entropy | 128 bits (cryptographically random) |
-| Storage | SHA-256 hash only — plaintext key is never persisted after creation (SHA-256 is appropriate because keys are 128-bit random values, not passwords) |
+| Entropy | 160 bits (cryptographically random; meets [NIST SP 800-63B §5.1.2.1](https://pages.nist.gov/800-63-3/sp800-63b.html) ≥ 20-byte minimum for look-up secrets) |
+| Storage | SHA-256 hash only — plaintext key is never persisted after creation (SHA-256 is appropriate because keys are 160-bit random values, not passwords) |
 | Scope | Tied to the creating user; inherits that user's permissions |
 | Transmission | HTTPS only in production; `Authorization` header only (cookies rejected) |
 | Visibility | Key prefix (`bib_XXXXXXXXXXXX`) shown in the UI for identification |
@@ -337,3 +363,23 @@ Signup, login, logout, all OIDC auth endpoints (`/api/auth/oidc/login`, `/api/au
 | Burst | 10 requests |
 | Scope | Per client IP address |
 | Response on limit | `429 Too Many Requests` |
+
+### Client IP detection and `TRUSTED_PROXIES`
+
+By default the rate limiter identifies clients by `RemoteAddr` (the direct TCP peer) and **ignores** the `X-Forwarded-For` header. This is the safe default when Biblioteka is exposed directly to the internet, because an attacker could inject arbitrary IP values through `X-Forwarded-For` to bypass per-IP limits.
+
+When Biblioteka runs behind a reverse proxy (nginx, Caddy, Traefik, etc.), the proxy's IP would be the direct peer, causing all clients to share a single rate-limit bucket. Set the `TRUSTED_PROXIES` environment variable to unlock `X-Forwarded-For` processing:
+
+```
+TRUSTED_PROXIES=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+```
+
+When `TRUSTED_PROXIES` is set, the rate limiter:
+
+1. Checks whether `RemoteAddr` falls within a trusted CIDR range.
+2. If it does, walks the `X-Forwarded-For` list from right to left, stopping at the rightmost IP that is **not** in a trusted range — that IP is used as the client identifier.
+3. If `RemoteAddr` is not trusted, `X-Forwarded-For` is still ignored and `RemoteAddr` is used directly.
+
+This "rightmost untrusted" strategy prevents a client from spoofing its IP by prepending values to the `X-Forwarded-For` header: only the IP added by the trusted proxy at the network boundary is honored.
+
+> **Security note:** Only include CIDRs that correspond to your own reverse proxies in `TRUSTED_PROXIES`. Setting this to `0.0.0.0/0` effectively trusts every peer and allows any client to spoof its IP address, bypassing rate limiting entirely. See also the `TRUSTED_PROXIES` entry in [Environment variables](deployment.md#environment-variables).

@@ -2,21 +2,21 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/stretchr/testify/require"
 )
 
 func setupAuthorHandler(t *testing.T) (*AuthorHandler, string) {
 	t.Helper()
 	d := newTestDB(t)
 	h := &AuthorHandler{DB: d}
-	user, err := d.CreateUser(context.Background(), "Test User", "test@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	user, err := d.CreateUser(t.Context(), "Test User", "test@example.com", "password1")
+	require.NoError(t, err, "create user")
 	return h, user.ID
 }
 
@@ -30,17 +30,11 @@ func TestCreateAuthor_Handler(t *testing.T) {
 
 	h.HandleAuthors(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var dto authorDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dto); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if dto.Name != "Stephen King" {
-		t.Errorf("name = %q, want %q", dto.Name, "Stephen King")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dto), "unmarshal")
+	require.Equal(t, "Stephen King", dto.Name)
 }
 
 func TestCreateAuthor_MissingName(t *testing.T) {
@@ -53,9 +47,7 @@ func TestCreateAuthor_MissingName(t *testing.T) {
 
 	h.HandleAuthors(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateAuthor_WhitespaceOnlyName(t *testing.T) {
@@ -68,18 +60,14 @@ func TestCreateAuthor_WhitespaceOnlyName(t *testing.T) {
 
 	h.HandleAuthors(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpdateAuthor_WhitespaceOnlyName(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
 
 	body := mustMarshal(t, authorRequest{Name: "   "})
 	r := httptest.NewRequest(http.MethodPut, "/api/authors/"+a.ID, bytes.NewReader(body))
@@ -88,9 +76,7 @@ func TestUpdateAuthor_WhitespaceOnlyName(t *testing.T) {
 
 	h.HandleAuthor(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestCreateAuthor_Duplicate(t *testing.T) {
@@ -107,20 +93,16 @@ func TestCreateAuthor_Duplicate(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	h.HandleAuthors(w2, r2)
 
-	if w2.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusConflict)
-	}
+	require.Equal(t, http.StatusConflict, w2.Code)
 }
 
 func TestListAuthors_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	if _, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil); err != nil {
-		t.Fatalf("create author: %v", err)
-	}
-	if _, err := h.DB.CreateAuthor(context.Background(), "Brandon Sanderson", nil, nil, nil, nil); err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	_, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
+	_, err = h.DB.CreateAuthor(t.Context(), "Brandon Sanderson", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors", nil)
 	r = withUserID(r, userID)
@@ -128,26 +110,18 @@ func TestListAuthors_Handler(t *testing.T) {
 
 	h.HandleAuthors(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var dtos []authorDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if len(dtos) != 2 {
-		t.Errorf("len = %d, want 2", len(dtos))
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
+	require.Len(t, dtos, 2)
 }
 
 func TestGetAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID, nil)
 	r = withUserID(r, userID)
@@ -155,9 +129,7 @@ func TestGetAuthor_Handler(t *testing.T) {
 
 	h.HandleAuthor(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestGetAuthor_NotFound(t *testing.T) {
@@ -169,18 +141,14 @@ func TestGetAuthor_NotFound(t *testing.T) {
 
 	h.HandleAuthor(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestDeleteAuthor_Handler(t *testing.T) {
 	h, userID := setupAuthorHandler(t)
 
-	a, err := h.DB.CreateAuthor(context.Background(), "Stephen King", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/authors/"+a.ID, nil)
 	r = withUserID(r, userID)
@@ -188,9 +156,7 @@ func TestDeleteAuthor_Handler(t *testing.T) {
 
 	h.HandleAuthor(w, r)
 
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
-	}
+	require.Equal(t, http.StatusNoContent, w.Code)
 }
 
 func TestDeleteAuthor_NotFound(t *testing.T) {
@@ -202,15 +168,69 @@ func TestDeleteAuthor_NotFound(t *testing.T) {
 
 	h.HandleAuthor(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 
 	var resp errorResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.Error != "author not found" {
-		t.Errorf("error = %q, want %q", resp.Error, "author not found")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, "author not found", resp.Error)
+}
+
+func TestListAuthorBooks_Handler(t *testing.T) {
+	h, userID := setupAuthorHandler(t)
+
+	a, err := h.DB.CreateAuthor(t.Context(), "Stephen King", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
+
+	b1, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Gunslinger"})
+	require.NoError(t, err, "create book")
+	b2, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "The Drawing of the Three"})
+	require.NoError(t, err, "create book")
+
+	require.NoError(t, h.DB.SetBookAuthors(t.Context(), b1.ID, []string{a.ID}), "set book authors")
+	require.NoError(t, h.DB.SetBookAuthors(t.Context(), b2.ID, []string{a.ID}), "set book authors")
+
+	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID+"/books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleAuthor(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var result bookListDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "unmarshal")
+	require.Equal(t, 2, result.Total)
+	require.Len(t, result.Books, 2)
+}
+
+func TestListAuthorBooks_AuthorNotFound(t *testing.T) {
+	h, userID := setupAuthorHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/api/authors/nonexistent/books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleAuthor(w, r)
+
+	require.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestListAuthorBooks_Empty(t *testing.T) {
+	h, userID := setupAuthorHandler(t)
+
+	a, err := h.DB.CreateAuthor(t.Context(), "Unknown Author", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
+
+	r := httptest.NewRequest(http.MethodGet, "/api/authors/"+a.ID+"/books", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleAuthor(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var result bookListDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result), "unmarshal")
+	require.Equal(t, 0, result.Total)
+	require.NotNil(t, result.Books)
 }

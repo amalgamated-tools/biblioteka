@@ -1,257 +1,227 @@
 package jobs
 
 import (
-	"context"
-	"database/sql"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
+	"github.com/stretchr/testify/require"
 )
+
+func TestProcessBookFile_EPUB3CoverExtractedOnImport(t *testing.T) {
+	database := newTestDB(t)
+	ext, err := metadata.NewExtractor(t.Context())
+	require.NoError(t, err, "new extractor")
+	defer ext.Close(t.Context())
+
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "epub3-with-cover.epub")
+	testPNG := testutils.TinyPNG()
+
+	testutils.MakeTestEPUBWithOptions(t, epubPath, "EPUB3 Cover Book", "Some Author", "urn:isbn:9780000000099", testutils.EPUBOptions{
+		Version:        "3.0",
+		EPUB3Cover:     true,
+		CoverImageData: testPNG,
+		CoverImageHref: "images/cover.png",
+		CoverMediaType: "image/png",
+	})
+
+	epubInfo, err := os.Stat(epubPath)
+	require.NoError(t, err, "stat epub")
+
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:     epubPath,
+		FileName: "epub3-with-cover.epub",
+		FileType: "epub",
+		FileSize: epubInfo.Size(),
+	})
+	require.NoError(t, err, "ProcessBookFile()")
+
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].CoverImageURL, "expected EPUB3 book to have a cover image URL after import")
+	require.True(t, strings.HasPrefix(*books[0].CoverImageURL, "data:image/png;base64,"))
+}
 
 func TestProcessBookFile_NilDatabase(t *testing.T) {
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	err = ProcessBookFile(context.Background(), nil, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), nil, ext, nil, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
 		FileName: "test.epub",
 		FileType: "epub",
 	})
-	if err == nil {
-		t.Fatal("expected error for nil database")
-	}
+	require.Error(t, err, "expected error for nil database")
 }
 
 func TestProcessBookFile_NilExtractor(t *testing.T) {
 	database := newTestDB(t)
 
-	err := ProcessBookFile(context.Background(), database, nil, ProcessFilePayload{
+	err := ProcessBookFile(t.Context(), database, nil, nil, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
 		FileName: "test.epub",
 		FileType: "epub",
 	})
-	if err == nil {
-		t.Fatal("expected error for nil extractor")
-	}
+	require.Error(t, err, "expected error for nil extractor")
 }
 
 func TestProcessBookFile_EmptyPath(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     "",
 		FileName: "test.epub",
 		FileType: "epub",
 	})
-	if err == nil {
-		t.Fatal("expected error for empty path")
-	}
+	require.Error(t, err, "expected error for empty path")
 }
 
 func TestProcessBookFile_WhitespacePath(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     "   ",
 		FileName: "test.epub",
 		FileType: "epub",
 	})
-	if err == nil {
-		t.Fatal("expected error for whitespace-only path")
-	}
+	require.Error(t, err, "expected error for whitespace-only path")
 }
 
 func TestProcessBookFile_EmptyFileName(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
 		FileName: "",
 		FileType: "epub",
 	})
-	if err == nil {
-		t.Fatal("expected error for empty file name")
-	}
+	require.Error(t, err, "expected error for empty file name")
 }
 
 func TestProcessBookFile_EmptyFileType(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     "/tmp/test.epub",
 		FileName: "test.epub",
 		FileType: "",
 	})
-	if err == nil {
-		t.Fatal("expected error for empty file type")
-	}
+	require.Error(t, err, "expected error for empty file type")
 }
 
 func TestProcessBookFile_TitleFromFilename(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	// Use a non-epub file so metadata extraction fails and title comes from filename
 	dir := t.TempDir()
 	path := filepath.Join(dir, "My Cool Book.pdf")
 	// Create an empty file so the path exists (extraction will fail but that's OK)
-	if err := os.WriteFile(path, []byte("not a real pdf"), 0o644); err != nil {
-		t.Fatalf("write test file: %v", err)
-	}
+	err = os.WriteFile(path, []byte("not a real pdf"), 0o644)
+	require.NoError(t, err, "write test file")
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     path,
 		FileName: "My Cool Book.pdf",
 		FileType: "pdf",
 		FileSize: 14,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	// Extension should be stripped since it matches fileType
-	if books[0].Title != "My Cool Book" {
-		t.Errorf("expected title %q, got %q", "My Cool Book", books[0].Title)
-	}
+	require.Equal(t, "My Cool Book", books[0].Title)
 }
 
 func TestProcessBookFile_TitleFromFilename_NoExtensionMatch(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "noext")
-	if err := os.WriteFile(path, []byte("content"), 0o644); err != nil {
-		t.Fatalf("write test file: %v", err)
-	}
+	err = os.WriteFile(path, []byte("content"), 0o644)
+	require.NoError(t, err, "write test file")
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     path,
 		FileName: "noext",
 		FileType: "pdf",
 		FileSize: 7,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 	// No extension to strip, so title is the full filename
-	if books[0].Title != "noext" {
-		t.Errorf("expected title %q, got %q", "noext", books[0].Title)
-	}
+	require.Equal(t, "noext", books[0].Title)
 }
 
 func TestProcessBookFile_ExistingAuthorReused(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	// Pre-create the author
-	_, err = database.CreateAuthor(context.Background(), "F. Scott Fitzgerald", nil, nil, nil, nil)
-	if err != nil {
-		t.Fatalf("create author: %v", err)
-	}
+	_, err = database.CreateAuthor(t.Context(), "F. Scott Fitzgerald", nil, nil, nil, nil)
+	require.NoError(t, err, "create author")
 
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "gatsby.epub")
 	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "gatsby.epub",
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	// Should have reused the existing author, not created a duplicate
-	authors, err := database.ListAuthors(context.Background())
-	if err != nil {
-		t.Fatalf("list authors: %v", err)
-	}
-	if len(authors) != 1 {
-		t.Fatalf("expected 1 author (reused), got %d", len(authors))
-	}
+	authors, err := database.ListAuthors(t.Context())
+	require.NoError(t, err, "list authors")
+	require.Len(t, authors, 1, "expected 1 author (reused)")
 
 	// Verify the book is associated with the existing author
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	bookAuthors, err := database.GetBookAuthors(context.Background(), books[0].ID)
-	if err != nil {
-		t.Fatalf("get book authors: %v", err)
-	}
-	if len(bookAuthors) != 1 {
-		t.Fatalf("expected 1 book author, got %d", len(bookAuthors))
-	}
-	if bookAuthors[0].Name != "F. Scott Fitzgerald" {
-		t.Errorf("expected author %q, got %q", "F. Scott Fitzgerald", bookAuthors[0].Name)
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	bookAuthors, err := database.GetBookAuthors(t.Context(), books[0].ID)
+	require.NoError(t, err, "get book authors")
+	require.Len(t, bookAuthors, 1, "expected 1 book author")
+	require.Equal(t, "F. Scott Fitzgerald", bookAuthors[0].Name)
 }
 
 func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
@@ -262,34 +232,25 @@ func TestProcessBookFile_PersistsEmbeddedCover(t *testing.T) {
 		CoverImageHref: "images/cover.jpg",
 		CoverMediaType: "image/jpeg",
 	})
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "cover.epub",
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-	if books[0].CoverImageURL == nil || !strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,") {
-		t.Fatalf("expected embedded cover data URL, got %#v", books[0].CoverImageURL)
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].CoverImageURL, "expected embedded cover data URL")
+	require.True(t, strings.HasPrefix(*books[0].CoverImageURL, "data:image/jpeg;base64,"))
 }
 
 func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
@@ -297,579 +258,348 @@ func TestProcessBookFile_NoAuthorInMetadata(t *testing.T) {
 	// Empty creator means no author in metadata
 	testutils.MakeTestEPUB(t, epubPath, "Anonymous Work", "", "some-id-123")
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "noauthor.epub",
 		FileType: "epub",
 		FileSize: 512,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	// No author should be created
-	authors, err := database.ListAuthors(context.Background())
-	if err != nil {
-		t.Fatalf("list authors: %v", err)
-	}
-	if len(authors) != 0 {
-		t.Errorf("expected 0 authors, got %d", len(authors))
-	}
+	authors, err := database.ListAuthors(t.Context())
+	require.NoError(t, err, "list authors")
+	require.Len(t, authors, 0)
 
 	// Book should still be created
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-	if books[0].Title != "Anonymous Work" {
-		t.Errorf("expected title %q, got %q", "Anonymous Work", books[0].Title)
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.Equal(t, "Anonymous Work", books[0].Title)
 }
 
 func TestProcessBookFile_MetadataExtractionFails(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	// Create a file that isn't a valid EPUB — extraction will fail
 	dir := t.TempDir()
 	path := filepath.Join(dir, "broken.epub")
-	if err := os.WriteFile(path, []byte("not a valid epub"), 0o644); err != nil {
-		t.Fatalf("write broken.epub: %v", err)
-	}
+	err = os.WriteFile(path, []byte("not a valid epub"), 0o644)
+	require.NoError(t, err, "write broken.epub")
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     path,
 		FileName: "broken.epub",
 		FileType: "epub",
 		FileSize: 16,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
 	// Book should still be created with filename-derived title
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-	if books[0].Title != "broken" {
-		t.Errorf("expected title %q, got %q", "broken", books[0].Title)
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.Equal(t, "broken", books[0].Title)
 }
 
 func TestProcessBookFile_ISBN10(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
 	dir := t.TempDir()
 	epubPath := filepath.Join(dir, "isbn10.epub")
 	testutils.MakeTestEPUB(t, epubPath, "ISBN10 Book", "Author", "isbn:0-306-40615-2")
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
 		Path:     epubPath,
 		FileName: "isbn10.epub",
 		FileType: "epub",
 		FileSize: 1024,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-	if books[0].ISBN10 == nil || *books[0].ISBN10 != "0306406152" {
-		t.Errorf("expected ISBN10 %q, got %v", "0306406152", books[0].ISBN10)
-	}
-	if books[0].ISBN13 != nil {
-		t.Errorf("expected ISBN13 nil, got %v", books[0].ISBN13)
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].ISBN10)
+	require.Equal(t, "0306406152", *books[0].ISBN10)
+	require.Nil(t, books[0].ISBN13)
 }
 
-func TestProcessBookFile_OrganizeFiles(t *testing.T) {
+func TestProcessBookFile_EnqueuesGoodreadsWithUserID(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	// Create a library root with a book file at the top level.
-	root := t.TempDir()
-	epubPath := filepath.Join(root, "The Great Gatsby.epub")
-	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+	user, err := database.CreateUser(t.Context(), "Test User", "test@example.com", "hashedpass")
+	require.NoError(t, err, "create user")
 
-	// Create a library with book_per_folder organization.
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
-	if err != nil {
-		t.Fatalf("create library: %v", err)
-	}
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "test-enqueue.epub")
+	testutils.MakeTestEPUB(t, epubPath, "Enqueue Test", "Test Author", "urn:isbn:9780000000001")
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
-		Path:        epubPath,
-		FileName:    "The Great Gatsby.epub",
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
+	enq := &genericMockEnqueuer{}
+
+	err = ProcessBookFile(t.Context(), database, ext, enq, ProcessFilePayload{
+		Path:     epubPath,
+		FileName: "test-enqueue.epub",
+		FileType: "epub",
+		FileSize: 1024,
+		UserID:   user.ID,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	// Verify the original file was moved.
-	if _, err := os.Stat(epubPath); !os.IsNotExist(err) {
-		t.Error("expected original file to be removed after reorganization")
-	}
-
-	// Verify the file was moved to the expected Author/Title/ structure.
-	expectedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "The Great Gatsby.epub")
-	if _, err := os.Stat(expectedPath); err != nil {
-		t.Fatalf("expected reorganized file at %q, got error: %v", expectedPath, err)
-	}
-
-	// Verify book_files.file_path matches the new location.
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-	files, err := database.ListBookFiles(context.Background(), books[0].ID)
-	if err != nil {
-		t.Fatalf("list book files: %v", err)
-	}
-	if len(files) != 1 {
-		t.Fatalf("expected 1 file, got %d", len(files))
-	}
-	if files[0].FilePath != expectedPath {
-		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
-	}
+	enq.mu.Lock()
+	defer enq.mu.Unlock()
+	require.Len(t, enq.jobs, 1, "expected exactly one enqueued job")
+	require.Equal(t, JobEnrichGoodreads, enq.jobs[0].Name)
 }
 
-func TestProcessBookFile_OrganizeFiles_BookPerFile(t *testing.T) {
+func TestProcessBookFile_SkipsEnqueueWithoutUserID(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	root := t.TempDir()
-	epubPath := filepath.Join(root, "The Great Gatsby.epub")
-	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "test-no-user.epub")
+	testutils.MakeTestEPUB(t, epubPath, "No User Test", "Test Author", "urn:isbn:9780000000002")
 
-	// Create a library with book_per_file organization (flat Author/ structure).
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
-	if err != nil {
-		t.Fatalf("create library: %v", err)
-	}
+	enq := &genericMockEnqueuer{}
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
-		Path:        epubPath,
-		FileName:    "The Great Gatsby.epub",
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
+	err = ProcessBookFile(t.Context(), database, ext, enq, ProcessFilePayload{
+		Path:     epubPath,
+		FileName: "test-no-user.epub",
+		FileType: "epub",
+		FileSize: 1024,
+		// UserID intentionally empty
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	// Verify the file was moved to Author/ (no title subfolder).
-	expectedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby.epub")
-	if _, err := os.Stat(expectedPath); err != nil {
-		t.Fatalf("expected reorganized file at %q, got error: %v", expectedPath, err)
-	}
-
-	// Verify book_files.file_path matches the new location.
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-	files, err := database.ListBookFiles(context.Background(), books[0].ID)
-	if err != nil {
-		t.Fatalf("list book files: %v", err)
-	}
-	if len(files) != 1 {
-		t.Fatalf("expected 1 file, got %d", len(files))
-	}
-	if files[0].FilePath != expectedPath {
-		t.Errorf("expected file path %q, got %q", expectedPath, files[0].FilePath)
-	}
+	enq.mu.Lock()
+	defer enq.mu.Unlock()
+	require.Empty(t, enq.jobs, "expected no enqueued jobs when UserID is empty")
 }
 
-func TestProcessBookFile_OrganizeFiles_None(t *testing.T) {
+func TestProcessBookFile_EnqueueFailureDoesNotFailProcessing(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	root := t.TempDir()
-	epubPath := filepath.Join(root, "The Great Gatsby.epub")
-	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+	user, err := database.CreateUser(t.Context(), "Test User", "fail@example.com", "hashedpass")
+	require.NoError(t, err, "create user")
 
-	// Create a library with no file organization.
-	lib, err := database.CreateLibrary(context.Background(), "Unorganized", `["`+root+`"]`, db.LibraryOrganizationNone, false)
-	if err != nil {
-		t.Fatalf("create library: %v", err)
-	}
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "test-fail-enqueue.epub")
+	testutils.MakeTestEPUB(t, epubPath, "Fail Enqueue Test", "Test Author", "urn:isbn:9780000000003")
 
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
-		Path:        epubPath,
-		FileName:    "The Great Gatsby.epub",
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
+	enq := &genericMockEnqueuer{err: errors.New("redis unavailable")}
+
+	err = ProcessBookFile(t.Context(), database, ext, enq, ProcessFilePayload{
+		Path:     epubPath,
+		FileName: "test-fail-enqueue.epub",
+		FileType: "epub",
+		FileSize: 1024,
+		UserID:   user.ID,
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile should succeed even when enqueue fails")
 
-	// Verify the file was NOT moved — it should remain at its original path.
-	if _, err := os.Stat(epubPath); err != nil {
-		t.Fatalf("expected file to remain at %q, got error: %v", epubPath, err)
-	}
-
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-	files, err := database.ListBookFiles(context.Background(), books[0].ID)
-	if err != nil {
-		t.Fatalf("list book files: %v", err)
-	}
-	if len(files) != 1 {
-		t.Fatalf("expected 1 file, got %d", len(files))
-	}
-	if files[0].FilePath != epubPath {
-		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
-	}
+	// Verify the book was still created
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.Equal(t, "Fail Enqueue Test", books[0].Title)
 }
 
-func TestProcessBookFile_NonExistentLibrarySkipsOrganization(t *testing.T) {
+func TestProcessBookFile_OverrideTitle(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	root := t.TempDir()
-	epubPath := filepath.Join(root, "The Great Gatsby.epub")
-	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "original.epub")
+	testutils.MakeTestEPUB(t, epubPath, "Metadata Title", "Some Author", "urn:isbn:9780000000001")
 
-	// Use a non-existent library ID — lookup should fail gracefully and
-	// skip file organization rather than error out.
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
-		Path:        epubPath,
-		FileName:    "The Great Gatsby.epub",
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   "nonexistent-library-id",
-		LibraryRoot: root,
+	epubInfo, err := os.Stat(epubPath)
+	require.NoError(t, err, "stat epub")
+
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:          epubPath,
+		FileName:      "original.epub",
+		FileType:      "epub",
+		FileSize:      epubInfo.Size(),
+		OverrideTitle: "User Supplied Title",
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	// File should NOT have been moved since library lookup failed.
-	if _, err := os.Stat(epubPath); err != nil {
-		t.Fatalf("expected file to remain at %q, got error: %v", epubPath, err)
-	}
-
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-	files, err := database.ListBookFiles(context.Background(), books[0].ID)
-	if err != nil {
-		t.Fatalf("list book files: %v", err)
-	}
-	if len(files) != 1 {
-		t.Fatalf("expected 1 file, got %d", len(files))
-	}
-	if files[0].FilePath != epubPath {
-		t.Errorf("expected file path %q, got %q", epubPath, files[0].FilePath)
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.Equal(t, "User Supplied Title", books[0].Title, "override title should take precedence over extracted metadata")
 }
 
-func TestProcessBookFile_NoLibraryIDSkipsOrganization(t *testing.T) {
+func TestProcessBookFile_OverrideAuthor(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	root := t.TempDir()
-	epubPath := filepath.Join(root, "The Great Gatsby.epub")
-	testutils.MakeTestEPUB(t, epubPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+	dir := t.TempDir()
+	epubPath := filepath.Join(dir, "book.epub")
+	testutils.MakeTestEPUB(t, epubPath, "Some Title", "Embedded Author", "urn:isbn:9780000000002")
 
-	// No library ID — organization type stays empty, no file moves.
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
-		Path:        epubPath,
-		FileName:    "The Great Gatsby.epub",
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryRoot: root,
+	epubInfo, err := os.Stat(epubPath)
+	require.NoError(t, err, "stat epub")
+
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:           epubPath,
+		FileName:       "book.epub",
+		FileType:       "epub",
+		FileSize:       epubInfo.Size(),
+		OverrideAuthor: "User Supplied Author",
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	// File should remain in place.
-	if _, err := os.Stat(epubPath); err != nil {
-		t.Fatalf("expected file to remain at %q, got error: %v", epubPath, err)
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+
+	bookAuthors, err := database.GetBookAuthors(t.Context(), books[0].ID)
+	require.NoError(t, err, "get book authors")
+	require.Len(t, bookAuthors, 1)
+	require.Equal(t, "User Supplied Author", bookAuthors[0].Name, "override author should take precedence over extracted metadata")
 }
 
-func TestProcessBookFile_ContinuesFromReorganizedPathWhenSourceMoved(t *testing.T) {
+func TestProcessBookFile_OverrideDescription(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	root := t.TempDir()
-	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
-	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
+	dir := t.TempDir()
+	// Use a plain file so extraction fails gracefully and we rely entirely on
+	// the override values.
+	bookPath := filepath.Join(dir, "book.pdf")
+	err = os.WriteFile(bookPath, []byte("not a real pdf"), 0o644)
+	require.NoError(t, err, "write test file")
 
-	if err := os.MkdirAll(filepath.Dir(reorganizedPath), 0o755); err != nil {
-		t.Fatalf("mkdir reorganized dir: %v", err)
-	}
-	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
-	if err != nil {
-		t.Fatalf("create library: %v", err)
-	}
-
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
-		Path:        originalPath,
-		FileName:    filepath.Base(originalPath),
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:                bookPath,
+		FileName:            "book.pdf",
+		FileType:            "pdf",
+		FileSize:            14,
+		OverrideTitle:       "Override Book",
+		OverrideDescription: "A compelling description",
+		OverrideLanguage:    "fr",
+		OverridePublisher:   "Test Publisher",
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
 
-	files, err := database.ListBookFiles(context.Background(), books[0].ID)
-	if err != nil {
-		t.Fatalf("list book files: %v", err)
-	}
-	if len(files) != 1 {
-		t.Fatalf("expected 1 file, got %d", len(files))
-	}
-	if files[0].FilePath != reorganizedPath {
-		t.Errorf("expected file path %q, got %q", reorganizedPath, files[0].FilePath)
-	}
+	require.Equal(t, "Override Book", books[0].Title)
+	require.NotNil(t, books[0].Description)
+	require.Equal(t, "A compelling description", *books[0].Description)
+	require.NotNil(t, books[0].Language)
+	require.Equal(t, "fr", *books[0].Language)
+	require.NotNil(t, books[0].Publisher)
+	require.Equal(t, "Test Publisher", *books[0].Publisher)
 }
 
-func TestProcessBookFile_ContinuesFromFlatReorganizedPathWhenSourceMoved(t *testing.T) {
+func TestProcessBookFile_OverrideISBN13(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	root := t.TempDir()
-	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
-	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "F. Scott Fitzgerald - The Great Gatsby.epub")
+	dir := t.TempDir()
+	bookPath := filepath.Join(dir, "book.pdf")
+	err = os.WriteFile(bookPath, []byte("not a real pdf"), 0o644)
+	require.NoError(t, err, "write test file")
 
-	if err := os.MkdirAll(filepath.Dir(reorganizedPath), 0o755); err != nil {
-		t.Fatalf("mkdir reorganized dir: %v", err)
-	}
-	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
-	if err != nil {
-		t.Fatalf("create library: %v", err)
-	}
-
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
-		Path:        originalPath,
-		FileName:    filepath.Base(originalPath),
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:          bookPath,
+		FileName:      "book.pdf",
+		FileType:      "pdf",
+		FileSize:      14,
+		OverrideTitle: "ISBN Override Book",
+		OverrideISBN:  "9780000000001",
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-
-	files, err := database.ListBookFiles(context.Background(), books[0].ID)
-	if err != nil {
-		t.Fatalf("list book files: %v", err)
-	}
-	if len(files) != 1 {
-		t.Fatalf("expected 1 file, got %d", len(files))
-	}
-	if files[0].FilePath != reorganizedPath {
-		t.Errorf("expected file path %q, got %q", reorganizedPath, files[0].FilePath)
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].ISBN13)
+	require.Equal(t, "9780000000001", *books[0].ISBN13)
+	require.Nil(t, books[0].ISBN10)
 }
 
-func TestProcessBookFile_FlatRecoveryDoesNotUseFolderCandidate(t *testing.T) {
+func TestProcessBookFile_OverrideISBN10(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	root := t.TempDir()
-	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
-	flatPath := filepath.Join(root, "F. Scott Fitzgerald", "F. Scott Fitzgerald - The Great Gatsby.epub")
-	folderPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
+	dir := t.TempDir()
+	bookPath := filepath.Join(dir, "book.pdf")
+	err = os.WriteFile(bookPath, []byte("not a real pdf"), 0o644)
+	require.NoError(t, err, "write test file")
 
-	if err := os.MkdirAll(filepath.Dir(flatPath), 0o755); err != nil {
-		t.Fatalf("mkdir flat dir: %v", err)
-	}
-	if err := os.MkdirAll(filepath.Dir(folderPath), 0o755); err != nil {
-		t.Fatalf("mkdir folder dir: %v", err)
-	}
-	testutils.MakeTestEPUB(t, flatPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-	testutils.MakeTestEPUB(t, folderPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
-
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFile, false)
-	if err != nil {
-		t.Fatalf("create library: %v", err)
-	}
-
-	err = ProcessBookFile(context.Background(), database, ext, ProcessFilePayload{
-		Path:        originalPath,
-		FileName:    filepath.Base(originalPath),
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:          bookPath,
+		FileName:      "book.pdf",
+		FileType:      "pdf",
+		FileSize:      14,
+		OverrideTitle: "ISBN10 Override Book",
+		OverrideISBN:  "0306406152",
 	})
-	if err != nil {
-		t.Fatalf("ProcessBookFile() error: %v", err)
-	}
+	require.NoError(t, err, "ProcessBookFile()")
 
-	books, err := database.ListBooks(context.Background())
-	if err != nil {
-		t.Fatalf("list books: %v", err)
-	}
-	if len(books) != 1 {
-		t.Fatalf("expected 1 book, got %d", len(books))
-	}
-
-	files, err := database.ListBookFiles(context.Background(), books[0].ID)
-	if err != nil {
-		t.Fatalf("list book files: %v", err)
-	}
-	if len(files) != 1 {
-		t.Fatalf("expected 1 file, got %d", len(files))
-	}
-	if files[0].FilePath != flatPath {
-		t.Errorf("expected file path %q, got %q", flatPath, files[0].FilePath)
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].ISBN10)
+	require.Equal(t, "0306406152", *books[0].ISBN10)
+	require.Nil(t, books[0].ISBN13)
 }
 
-func TestResolveSourcePath_ReturnsErrorWhenCandidateLookupFails(t *testing.T) {
+func TestProcessBookFile_OverrideTitleEmptyStringIsIgnored(t *testing.T) {
 	database := newTestDB(t)
 	ext, err := metadata.NewExtractor(t.Context())
-	if err != nil {
-		t.Fatalf("new extractor: %v", err)
-	}
+	require.NoError(t, err, "new extractor")
 	defer ext.Close(t.Context())
 
-	root := t.TempDir()
-	originalPath := filepath.Join(root, "F. Scott Fitzgerald - The Great Gatsby.epub")
-	reorganizedPath := filepath.Join(root, "F. Scott Fitzgerald", "The Great Gatsby", "F. Scott Fitzgerald - The Great Gatsby.epub")
+	dir := t.TempDir()
+	// Name the file "Embedded Title.epub" so the filename-derived title is
+	// "Embedded Title" regardless of whether ExifTool is available.
+	epubPath := filepath.Join(dir, "Embedded Title.epub")
+	testutils.MakeTestEPUB(t, epubPath, "Embedded Title", "Author", "urn:isbn:9780000000003")
 
-	// Create the file at the reorganized location only (source is "missing").
-	if err := os.MkdirAll(filepath.Dir(reorganizedPath), 0o755); err != nil {
-		t.Fatalf("mkdir reorganized dir: %v", err)
-	}
-	testutils.MakeTestEPUB(t, reorganizedPath, "The Great Gatsby", "F. Scott Fitzgerald", "urn:isbn:9780743273565")
+	epubInfo, err := os.Stat(epubPath)
+	require.NoError(t, err, "stat epub")
 
-	lib, err := database.CreateLibrary(context.Background(), "Fiction", `["`+root+`"]`, db.LibraryOrganizationBookPerFolder, false)
-	if err != nil {
-		t.Fatalf("create library: %v", err)
-	}
+	err = ProcessBookFile(t.Context(), database, ext, nil, ProcessFilePayload{
+		Path:          epubPath,
+		FileName:      "Embedded Title.epub",
+		FileType:      "epub",
+		FileSize:      epubInfo.Size(),
+		OverrideTitle: "", // empty — should not override
+	})
+	require.NoError(t, err, "ProcessBookFile()")
 
-	candidateLookupErr := errors.New("candidate lookup failed")
-	lookup := func(ctx context.Context, database *db.DB, path string) (*db.BookFile, error) {
-		switch path {
-		case originalPath:
-			return nil, sql.ErrNoRows
-		case reorganizedPath:
-			return nil, candidateLookupErr
-		default:
-			return database.GetBookFileByPath(ctx, path)
-		}
-	}
-
-	err = processBookFile(context.Background(), database, ext, ProcessFilePayload{
-		Path:        originalPath,
-		FileName:    filepath.Base(originalPath),
-		FileType:    "epub",
-		FileSize:    1024,
-		LibraryID:   lib.ID,
-		LibraryRoot: root,
-	}, lookup)
-	if err == nil {
-		t.Fatalf("expected processBookFile() to return an error when candidate lookup fails due to DB error")
-	}
-	if !strings.Contains(err.Error(), candidateLookupErr.Error()) {
-		t.Fatalf("expected error to include %q, got %v", candidateLookupErr.Error(), err)
-	}
+	books, err := database.ListBooks(t.Context())
+	require.NoError(t, err, "list books")
+	require.Len(t, books, 1)
+	require.Equal(t, "Embedded Title", books[0].Title, "empty override title should not replace extracted metadata")
 }

@@ -11,6 +11,7 @@
     Send,
     KeyRound,
     BookOpen,
+    FolderSearch,
   } from "lucide-svelte";
   import AccountTab from "./settings/AccountTab.svelte";
   import OidcTab from "./settings/OidcTab.svelte";
@@ -19,6 +20,7 @@
   import PreferencesTab from "./settings/PreferencesTab.svelte";
   import APIKeysTab from "./settings/APIKeysTab.svelte";
   import KoboTab from "./settings/KoboTab.svelte";
+  import WatchFolderTab from "./settings/WatchFolderTab.svelte";
 
   type SettingsTab =
     | "account"
@@ -27,7 +29,8 @@
     | "smtp"
     | "users"
     | "api-keys"
-    | "kobo";
+    | "kobo"
+    | "watch-folder";
 
   type TabDef = { key: SettingsTab; label: string; icon: typeof Mail };
 
@@ -41,6 +44,7 @@
   const adminTabs: TabDef[] = [
     { key: "oidc", label: "OIDC / SSO", icon: Shield },
     { key: "smtp", label: "Email / SMTP", icon: Send },
+    { key: "watch-folder", label: "Watch Folder", icon: FolderSearch },
     { key: "users", label: "Users", icon: Users },
   ];
 
@@ -94,7 +98,7 @@
     >
       Settings
     </h1>
-    <p class="text-sm text-ink-400 dark:text-ink-400">
+    <p class="text-sm text-ink-500 dark:text-ink-300">
       Manage your account and preferences
     </p>
   </div>
@@ -113,9 +117,9 @@
             aria-current={isActive ? "page" : undefined}
             class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isActive
               ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+              : 'text-ink-500 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-ink-800'}"
           >
-            <Icon class="w-5 h-5" />
+            <Icon class="w-5 h-5" aria-hidden="true" />
             {tab.label}
           </a>
         {/each}
@@ -123,7 +127,7 @@
           <div class="hidden sm:flex items-center gap-2 px-4 pt-3 pb-1">
             <hr class="flex-1 border-ink-200 dark:border-ink-700" />
             <span
-              class="text-xs font-medium uppercase text-ink-400 dark:text-ink-500"
+              class="text-xs font-medium uppercase text-ink-500 dark:text-ink-300"
               >Admin</span
             >
             <hr class="flex-1 border-ink-200 dark:border-ink-700" />
@@ -139,9 +143,9 @@
               aria-current={isActive ? "page" : undefined}
               class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap sm:whitespace-normal transition-all {isActive
                 ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600 dark:bg-accent-800/20 dark:text-accent-400'
-                : 'text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800'}"
+                : 'text-ink-500 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-ink-800'}"
             >
-              <Icon class="w-5 h-5" />
+              <Icon class="w-5 h-5" aria-hidden="true" />
               {tab.label}
             </a>
           {/each}
@@ -171,6 +175,10 @@
 
       {#if activeTab === "smtp" && isAdmin}
         <SmtpTab initialSmtpConfigured={smtpConfigured} />
+      {/if}
+
+      {#if activeTab === "watch-folder" && isAdmin}
+        <WatchFolderTab />
       {/if}
 
       {#if activeTab === "users" && isAdmin}

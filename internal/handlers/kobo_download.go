@@ -42,6 +42,23 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Re-validate that the stored file path is still within an allowed library
+	// root. This catches pre-existing rows that may reference paths outside
+	// library directories, and handles symlink-aware canonicalization.
+	allowed, pathErr := isBookFilePathAllowed(r.Context(), h.DB, target.FilePath)
+	if pathErr != nil {
+		slog.ErrorContext(r.Context(), "failed to validate book file path for kobo download", slog.Any(otelkeys.Error, pathErr))
+		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
+		return
+	}
+	if !allowed {
+		slog.WarnContext(r.Context(), "kobo download blocked: file path outside library roots",
+			slog.String(otelkeys.Path, target.FilePath),
+		)
+		writeKoboJSON(w, http.StatusForbidden, map[string]any{})
+		return
+	}
+
 	f, err := os.Open(target.FilePath)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to open book file for kobo download",
@@ -55,14 +72,35 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			slog.WarnContext(r.Context(), "kobo download: failed to close book file",
+				slog.String(otelkeys.BookFileID, target.ID),
+				slog.Any(otelkeys.Error, closeErr),
+			)
+		}
+	}()
 
 	stat, err := f.Stat()
 	if err != nil {
+		slog.ErrorContext(r.Context(), "kobo download: failed to stat book file",
+			slog.String(otelkeys.BookFileID, target.ID),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
 		return
 	}
 
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": target.FileName}))
+
+	// Increment the download count (best-effort; a failure here should not
+	// prevent the download from completing).
+	if incErr := h.DB.IncrementBookFileDownloadCount(r.Context(), target.ID); incErr != nil {
+		slog.WarnContext(r.Context(), "kobo download: failed to increment download count",
+			slog.String(otelkeys.BookFileID, target.ID),
+			slog.Any(otelkeys.Error, incErr),
+		)
+	}
+
 	http.ServeContent(w, r, target.FileName, stat.ModTime(), f)
 }

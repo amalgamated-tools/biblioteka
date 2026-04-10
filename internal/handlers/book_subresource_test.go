@@ -9,6 +9,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // fakeItem is a simple entity used by book_subresource tests.
@@ -36,22 +38,12 @@ func TestRespondBookSubResource(t *testing.T) {
 		w := httptest.NewRecorder()
 		respondBookSubResource(t.Context(), w, "book-1", getFn, toFakeItemDTO, "fake items")
 
-		if w.Code != http.StatusOK {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
 		var dtos []fakeItemDTO
-		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if len(dtos) != 2 {
-			t.Fatalf("len = %d, want 2", len(dtos))
-		}
-		if dtos[0].Name != "Alpha" {
-			t.Errorf("dtos[0].Name = %q, want %q", dtos[0].Name, "Alpha")
-		}
-		if dtos[1].Name != "Beta" {
-			t.Errorf("dtos[1].Name = %q, want %q", dtos[1].Name, "Beta")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
+		require.Len(t, dtos, 2)
+		require.Equal(t, "Alpha", dtos[0].Name)
+		require.Equal(t, "Beta", dtos[1].Name)
 	})
 
 	t.Run("empty result returns empty JSON array", func(t *testing.T) {
@@ -62,16 +54,10 @@ func TestRespondBookSubResource(t *testing.T) {
 		w := httptest.NewRecorder()
 		respondBookSubResource(t.Context(), w, "book-1", getFn, toFakeItemDTO, "fake items")
 
-		if w.Code != http.StatusOK {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
 		var dtos []fakeItemDTO
-		if err := json.Unmarshal(w.Body.Bytes(), &dtos); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if len(dtos) != 0 {
-			t.Errorf("len = %d, want 0", len(dtos))
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &dtos), "unmarshal")
+		require.Len(t, dtos, 0)
 	})
 
 	t.Run("getFn error returns 500", func(t *testing.T) {
@@ -82,16 +68,10 @@ func TestRespondBookSubResource(t *testing.T) {
 		w := httptest.NewRecorder()
 		respondBookSubResource(t.Context(), w, "book-1", getFn, toFakeItemDTO, "fake items")
 
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-		}
+		require.Equal(t, http.StatusInternalServerError, w.Code)
 		var resp errorResponse
-		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if resp.Error != "failed to get fake items" {
-			t.Errorf("error = %q, want %q", resp.Error, "failed to get fake items")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+		require.Equal(t, "failed to get fake items", resp.Error)
 	})
 
 	t.Run("bookID is forwarded to getFn", func(t *testing.T) {
@@ -104,9 +84,7 @@ func TestRespondBookSubResource(t *testing.T) {
 		w := httptest.NewRecorder()
 		respondBookSubResource(t.Context(), w, "book-xyz", getFn, toFakeItemDTO, "fake items")
 
-		if capturedID != "book-xyz" {
-			t.Errorf("capturedID = %q, want %q", capturedID, "book-xyz")
-		}
+		require.Equal(t, "book-xyz", capturedID)
 	})
 }
 
@@ -137,12 +115,9 @@ func TestPutBookSubResource(t *testing.T) {
 			"fake items",
 		)
 
-		if w.Code != http.StatusOK {
-			t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-		}
-		if len(capturedPayload) != 1 || capturedPayload[0] != "id-1" {
-			t.Errorf("capturedPayload = %v, want [id-1]", capturedPayload)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Len(t, capturedPayload, 1)
+		require.Equal(t, "id-1", capturedPayload[0])
 	})
 
 	t.Run("invalid JSON body returns 400", func(t *testing.T) {
@@ -159,9 +134,7 @@ func TestPutBookSubResource(t *testing.T) {
 			"fake items",
 		)
 
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-		}
+		require.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
 	t.Run("setFn error returns 500", func(t *testing.T) {
@@ -181,16 +154,10 @@ func TestPutBookSubResource(t *testing.T) {
 			"fake items",
 		)
 
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-		}
+		require.Equal(t, http.StatusInternalServerError, w.Code)
 		var resp errorResponse
-		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if resp.Error != "failed to set fake items" {
-			t.Errorf("error = %q, want %q", resp.Error, "failed to set fake items")
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+		require.Equal(t, "failed to set fake items", resp.Error)
 	})
 
 	t.Run("getFn error after set returns 500", func(t *testing.T) {
@@ -210,8 +177,6 @@ func TestPutBookSubResource(t *testing.T) {
 			"fake items",
 		)
 
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-		}
+		require.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 }

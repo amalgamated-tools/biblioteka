@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type mockKoboTokenChecker struct {
@@ -39,55 +41,41 @@ func TestKoboTokenAuthMiddleware_ValidToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if gotPath != "/v1/library/sync" {
-		t.Errorf("path = %q, want /v1/library/sync", gotPath)
-	}
-	if gotUserID != "user-1" {
-		t.Errorf("userID = %q, want user-1", gotUserID)
-	}
-	if gotToken != "abc123" {
-		t.Errorf("token = %q, want abc123", gotToken)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "/v1/library/sync", gotPath)
+	require.Equal(t, "user-1", gotUserID)
+	require.Equal(t, "abc123", gotToken)
 }
 
 func TestKoboTokenAuthMiddleware_InvalidToken(t *testing.T) {
 	checker := &mockKoboTokenChecker{tokens: map[string]*KoboTokenResult{}}
 
 	handler := KoboTokenAuthMiddleware(checker)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Fatal("handler should not be called for invalid token")
+		require.Fail(t, "handler should not be called for invalid token")
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/kobo/badtoken/v1/initialization", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 
 	var body map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
-		t.Fatalf("response is not valid JSON: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body), "response is not valid JSON")
 }
 
 func TestKoboTokenAuthMiddleware_EmptyToken(t *testing.T) {
 	checker := &mockKoboTokenChecker{tokens: map[string]*KoboTokenResult{}}
 
 	handler := KoboTokenAuthMiddleware(checker)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Fatal("handler should not be called for empty token")
+		require.Fail(t, "handler should not be called for empty token")
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/kobo/", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestKoboTokenAuthMiddleware_TokenWithNoSubPath(t *testing.T) {
@@ -107,10 +95,6 @@ func TestKoboTokenAuthMiddleware_TokenWithNoSubPath(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if gotPath != "/" {
-		t.Errorf("path = %q, want /", gotPath)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "/", gotPath)
 }

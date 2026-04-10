@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -29,7 +30,7 @@ func NewScanLibraryHandler(enqueuer Enqueuer) func(ctx context.Context, payload 
 		}
 
 		if p.LibraryID == "" {
-			return fmt.Errorf("scan library payload: library_id is required")
+			return errors.New("scan library payload: library_id is required")
 		}
 
 		slog.InfoContext(ctx, "starting library scan", slog.String(otelkeys.LibraryID, p.LibraryID))

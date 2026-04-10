@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRequestIDHandler_GeneratesID(t *testing.T) {
@@ -17,16 +18,9 @@ func TestRequestIDHandler_GeneratesID(t *testing.T) {
 	w := httptest.NewRecorder()
 	RequestIDHandler(next).ServeHTTP(w, r)
 
-	if gotID == "" {
-		t.Error("expected a non-empty request ID to be generated")
-	}
-	if w.Header().Get(RequestID) == "" {
-		t.Error("expected X-Request-ID response header to be set")
-	}
-	if w.Header().Get(RequestID) != gotID {
-		t.Errorf("response header X-Request-ID = %q, context request ID = %q; want them equal",
-			w.Header().Get(RequestID), gotID)
-	}
+	require.NotEqual(t, "", gotID)
+	require.NotEqual(t, "", w.Header().Get(RequestID))
+	require.Equal(t, gotID, w.Header().Get(RequestID), "response header X-Request-ID and context request ID should be equal")
 }
 
 func TestRequestIDHandler_UsesExistingID(t *testing.T) {
@@ -41,12 +35,8 @@ func TestRequestIDHandler_UsesExistingID(t *testing.T) {
 	w := httptest.NewRecorder()
 	RequestIDHandler(next).ServeHTTP(w, r)
 
-	if gotID != existingID {
-		t.Errorf("GetRequestID() = %q, want %q", gotID, existingID)
-	}
-	if w.Header().Get(RequestID) != existingID {
-		t.Errorf("response X-Request-ID = %q, want %q", w.Header().Get(RequestID), existingID)
-	}
+	require.Equal(t, existingID, gotID)
+	require.Equal(t, existingID, w.Header().Get(RequestID))
 }
 
 func TestWithRequestID(t *testing.T) {
@@ -54,32 +44,7 @@ func TestWithRequestID(t *testing.T) {
 	ctx := WithRequestID(r.Context(), "test-id-123")
 
 	got := GetRequestID(ctx)
-	if got != "test-id-123" {
-		t.Errorf("GetRequestID() = %q, want %q", got, "test-id-123")
-	}
-}
-
-func TestForward_SetsHeader(t *testing.T) {
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	ctx := WithRequestID(r.Context(), "forwarded-id")
-	r = r.WithContext(ctx)
-
-	Forward(r)
-
-	if r.Header.Get(RequestID) != "forwarded-id" {
-		t.Errorf("Header X-Request-ID = %q, want %q", r.Header.Get(RequestID), "forwarded-id")
-	}
-}
-
-func TestForward_NoIDDoesNothing(t *testing.T) {
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	// No request ID in context
-
-	Forward(r)
-
-	if r.Header.Get(RequestID) != "" {
-		t.Errorf("expected empty X-Request-ID header, got %q", r.Header.Get(RequestID))
-	}
+	require.Equal(t, "test-id-123", got)
 }
 
 func TestLoggingMiddleware_CallsNext(t *testing.T) {
@@ -93,12 +58,8 @@ func TestLoggingMiddleware_CallsNext(t *testing.T) {
 	w := httptest.NewRecorder()
 	LoggingMiddleware(next).ServeHTTP(w, r)
 
-	if !called {
-		t.Error("next handler was not called")
-	}
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.True(t, called)
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 // --- Mock types for statusRecorder tests ---
@@ -137,9 +98,7 @@ func TestLoggingMiddleware_PreservesStatus(t *testing.T) {
 	w := httptest.NewRecorder()
 	LoggingMiddleware(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestLoggingMiddleware_ImplicitOKOnWrite(t *testing.T) {
@@ -151,9 +110,7 @@ func TestLoggingMiddleware_ImplicitOKOnWrite(t *testing.T) {
 	w := httptest.NewRecorder()
 	LoggingMiddleware(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 }
 
 // --- statusRecorder unit tests ---
@@ -164,12 +121,8 @@ func TestStatusRecorder_WriteHeader(t *testing.T) {
 
 	rec.WriteHeader(http.StatusCreated)
 
-	if rec.statusCode != http.StatusCreated {
-		t.Errorf("statusCode = %d, want %d", rec.statusCode, http.StatusCreated)
-	}
-	if w.Code != http.StatusCreated {
-		t.Errorf("underlying Code = %d, want %d", w.Code, http.StatusCreated)
-	}
+	require.Equal(t, http.StatusCreated, rec.statusCode)
+	require.Equal(t, http.StatusCreated, w.Code)
 }
 
 func TestStatusRecorder_WriteWithoutHeader(t *testing.T) {
@@ -177,15 +130,9 @@ func TestStatusRecorder_WriteWithoutHeader(t *testing.T) {
 	rec := &statusRecorder{ResponseWriter: w}
 
 	n, err := rec.Write([]byte("data"))
-	if err != nil {
-		t.Fatalf("Write error: %v", err)
-	}
-	if n != 4 {
-		t.Errorf("Write returned %d, want 4", n)
-	}
-	if rec.statusCode != http.StatusOK {
-		t.Errorf("statusCode = %d, want %d", rec.statusCode, http.StatusOK)
-	}
+	require.NoError(t, err, "Write error")
+	require.Equal(t, 4, n)
+	require.Equal(t, http.StatusOK, rec.statusCode)
 }
 
 func TestStatusRecorder_Flush_WithFlusher(t *testing.T) {
@@ -195,9 +142,7 @@ func TestStatusRecorder_Flush_WithFlusher(t *testing.T) {
 
 	rec.Flush()
 
-	if !fr.flushed {
-		t.Error("expected Flush to be delegated to underlying flusher")
-	}
+	require.True(t, fr.flushed)
 }
 
 func TestStatusRecorder_Flush_WithoutFlusher(t *testing.T) {
@@ -214,15 +159,9 @@ func TestStatusRecorder_Hijack_NotSupported(t *testing.T) {
 
 	conn, buf, err := rec.Hijack()
 
-	if conn != nil {
-		t.Error("expected nil conn")
-	}
-	if buf != nil {
-		t.Error("expected nil buf")
-	}
-	if !errors.Is(err, http.ErrNotSupported) {
-		t.Errorf("err = %v, want %v", err, http.ErrNotSupported)
-	}
+	require.Nil(t, conn)
+	require.Nil(t, buf)
+	require.ErrorIs(t, err, http.ErrNotSupported)
 }
 
 func TestStatusRecorder_Push_NotSupported(t *testing.T) {
@@ -231,7 +170,56 @@ func TestStatusRecorder_Push_NotSupported(t *testing.T) {
 
 	err := rec.Push("/resource", nil)
 
-	if !errors.Is(err, http.ErrNotSupported) {
-		t.Errorf("err = %v, want %v", err, http.ErrNotSupported)
-	}
+	require.ErrorIs(t, err, http.ErrNotSupported)
+}
+
+// --- SecurityHeadersMiddleware tests ---
+
+func TestSecurityHeadersMiddleware_SetsHeaders(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	w := httptest.NewRecorder()
+	SecurityHeadersMiddleware(next).ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, globalCSP, w.Header().Get("Content-Security-Policy"))
+	require.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
+	require.Equal(t, "DENY", w.Header().Get("X-Frame-Options"))
+}
+
+func TestSecurityHeadersMiddleware_HeadersCanBeOverridden(t *testing.T) {
+	overrideCSP := "default-src 'none';"
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		// Simulate a route handler that overrides the global CSP.
+		w.Header().Set("Content-Security-Policy", overrideCSP)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/swagger/", nil)
+	w := httptest.NewRecorder()
+	SecurityHeadersMiddleware(next).ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, overrideCSP, w.Header().Get("Content-Security-Policy"))
+	// Other security headers should still be set by the global middleware.
+	require.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
+	require.Equal(t, "DENY", w.Header().Get("X-Frame-Options"))
+}
+
+func TestSecurityHeadersMiddleware_CallsNext(t *testing.T) {
+	called := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	SecurityHeadersMiddleware(next).ServeHTTP(w, r)
+
+	require.True(t, called)
+	require.Equal(t, http.StatusNoContent, w.Code)
 }

@@ -22,8 +22,11 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
 	s.mux.HandleFunc("/api/auth/logout", s.authLimiter.Limit(s.authHandler.Logout))
 
-	// OIDC auth routes — always registered, check handler at request time
+	// Public informational endpoints (not rate-limited, read-only)
+	s.mux.HandleFunc("/api/auth/signup/enabled", s.handleSignupEnabled)
 	s.mux.HandleFunc("/api/auth/oidc/enabled", s.handleOIDCEnabled)
+
+	// OIDC auth routes — always registered, check handler at request time
 	s.mux.HandleFunc("/api/auth/oidc/login", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Login)))
 	s.mux.HandleFunc("/api/auth/oidc/callback", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Callback)))
 	s.mux.HandleFunc("/api/auth/oidc/link", s.authLimiter.Limit(s.oidcRoute((*handlers.OIDCHandler).Link)))
@@ -38,6 +41,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/config/oidc", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleOIDCConfig)))
 	s.mux.Handle("/api/config/smtp", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleSMTPConfig)))
 	s.mux.Handle("/api/config/smtp/test", s.requireJWTAuth(s.authLimiter.Limit(s.configHandler.HandleSMTPTest)))
+	s.mux.Handle("/api/config/watch-folder", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleWatchFolderConfig)))
 
 	// Protected admin routes (JWT-only: user management)
 	s.mux.Handle("/api/admin/users", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
@@ -56,6 +60,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/series/", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeries)))
 
 	// Protected book routes
+	s.mux.Handle("/api/books/upload", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleUpload)))
 	s.mux.Handle("/api/books", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBooks)))
 	s.mux.Handle("/api/books/", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBookRoutes)))
 
@@ -161,29 +166,22 @@ func (s *Server) oidcRoute(fn func(*handlers.OIDCHandler, http.ResponseWriter, *
 	}
 }
 
-// handleOIDCEnabled godoc
+// handleOIDCEnabled reports whether OIDC authentication is configured on this server.
 //
 //	@Summary		Check if OIDC is enabled
 //	@Description	Returns whether OIDC authentication is configured on this server
 //	@Tags			System
 //	@Produce		json
-//	@Success		200	{object}	oidcEnabledResponse
+//	@Success		200	{object}	enabledResponse
 //	@Router			/auth/oidc/enabled [get]
 func (s *Server) handleOIDCEnabled(w http.ResponseWriter, r *http.Request) {
-	if !checkSystemEndpointMethod(w, r, "failed to encode OIDC enabled method not allowed response", http.MethodGet, http.MethodHead) {
+	if !checkSystemEndpointMethod(w, r, http.MethodGet, http.MethodHead) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	resp := oidcEnabledResponse{
+	writeSystemJSON(r.Context(), w, http.StatusOK, enabledResponse{
 		Enabled: s.oidcHandler != nil,
-	}
-
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), "failed to encode OIDC enabled response", slog.Any(otelkeys.Error, err))
-	}
+	})
 }
 
 type healthResponse struct {
@@ -194,11 +192,29 @@ type versionResponse struct {
 	Version string `json:"version"`
 }
 
-type oidcEnabledResponse struct {
+type enabledResponse struct {
 	Enabled bool `json:"enabled"`
 }
 
-// handleHealth godoc
+// handleSignupEnabled reports whether new user self-registration is permitted on this server.
+//
+//	@Summary		Check if signup is enabled
+//	@Description	Returns whether new user signup is permitted on this server
+//	@Tags			System
+//	@Produce		json
+//	@Success		200	{object}	enabledResponse
+//	@Router			/auth/signup/enabled [get]
+func (s *Server) handleSignupEnabled(w http.ResponseWriter, r *http.Request) {
+	if !checkSystemEndpointMethod(w, r, http.MethodGet, http.MethodHead) {
+		return
+	}
+
+	writeSystemJSON(r.Context(), w, http.StatusOK, enabledResponse{
+		Enabled: !s.authHandler.DisableSignup,
+	})
+}
+
+// handleHealth returns the server's health status.
 //
 //	@Summary		Health check
 //	@Description	Returns server health status
@@ -207,26 +223,28 @@ type oidcEnabledResponse struct {
 //	@Success		200	{object}	healthResponse
 //	@Router			/health [get]
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	if !checkSystemEndpointMethod(w, r, "failed to encode health method not allowed response", http.MethodGet, http.MethodHead) {
+	if !checkSystemEndpointMethod(w, r, http.MethodGet, http.MethodHead) {
 		return
 	}
 
+	writeSystemJSON(r.Context(), w, http.StatusOK, healthResponse{Status: "ok"})
+}
+
+// writeSystemJSON encodes data as JSON and writes it with the given status code.
+// This is a server-package equivalent of handlers.writeJSON for system endpoints.
+func writeSystemJSON(ctx context.Context, w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 
-	resp := healthResponse{
-		Status: "ok",
-	}
-
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), "failed to encode health response", slog.Any(otelkeys.Error, err))
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		slog.ErrorContext(ctx, "failed to encode JSON response", slog.Any(otelkeys.Error, err))
 	}
 }
 
 // checkSystemEndpointMethod validates that the request method is one of the allowed methods.
 // If not, it writes a JSON 405 Method Not Allowed response and returns false.
 // Callers should return immediately when this function returns false.
-func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, logMessage string, allowedMethods ...string) bool {
+func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, allowedMethods ...string) bool {
 	if slices.Contains(allowedMethods, r.Method) {
 		return true
 	}
@@ -240,13 +258,19 @@ func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, logMessag
 	}
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), logMessage, slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(
+			r.Context(),
+			"failed to encode method not allowed response",
+			slog.Any(otelkeys.Error, err),
+			slog.String(otelkeys.Path, r.URL.Path),
+			slog.String(otelkeys.Method, r.Method),
+		)
 	}
 
 	return false
 }
 
-// handleVersion godoc
+// handleVersion returns the running server version string.
 //
 //	@Summary		Get server version
 //	@Description	Returns the server version
@@ -255,18 +279,9 @@ func checkSystemEndpointMethod(w http.ResponseWriter, r *http.Request, logMessag
 //	@Success		200	{object}	versionResponse
 //	@Router			/version [get]
 func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
-	if !checkSystemEndpointMethod(w, r, "failed to encode version method not allowed response", http.MethodGet, http.MethodHead) {
+	if !checkSystemEndpointMethod(w, r, http.MethodGet, http.MethodHead) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	resp := versionResponse{
-		Version: s.version,
-	}
-
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.ErrorContext(r.Context(), "failed to encode version response", slog.Any(otelkeys.Error, err))
-	}
+	writeSystemJSON(r.Context(), w, http.StatusOK, versionResponse{Version: s.version})
 }

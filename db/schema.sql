@@ -130,15 +130,6 @@ CREATE INDEX idx_opds_credentials_user_id ON opds_credentials (user_id);
 CREATE UNIQUE INDEX idx_book_files_file_path ON book_files(file_path);
 CREATE UNIQUE INDEX idx_authors_name_ci ON authors (LOWER(name));
 CREATE UNIQUE INDEX idx_series_name_ci ON series (LOWER(name));
-CREATE TABLE kobo_tokens (
-	id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-	user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	name TEXT NOT NULL,
-	token TEXT NOT NULL,
-	created_at DATETIME NOT NULL DEFAULT (datetime('now'))
-, token_hash TEXT);
-CREATE UNIQUE INDEX idx_kobo_tokens_token ON kobo_tokens (token);
-CREATE INDEX idx_kobo_tokens_user_id ON kobo_tokens (user_id);
 CREATE TABLE kosync_credentials (
     id           TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     user_id      TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -176,7 +167,6 @@ CREATE TABLE kobo_reading_states (
 );
 CREATE INDEX idx_kobo_reading_states_user_updated ON kobo_reading_states (user_id, updated_at);
 CREATE INDEX idx_books_updated_at_id ON books (updated_at, id);
-CREATE UNIQUE INDEX idx_kobo_tokens_token_hash ON kobo_tokens (token_hash);
 CREATE TABLE goodreads_metadata (
 	id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
 	user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -204,10 +194,19 @@ CREATE TABLE goodreads_metadata (
 , hardcover_id TEXT, google_books_id TEXT);
 CREATE INDEX idx_goodreads_metadata_user_id
 	ON goodreads_metadata (user_id);
-CREATE INDEX idx_goodreads_metadata_user_status_created_at_id
+CREATE INDEX idx_goodreads_metadata_user_status_created_at_id_desc
 	ON goodreads_metadata (user_id, status, created_at DESC, id DESC);
-CREATE INDEX idx_goodreads_metadata_user_created_at_id
+CREATE INDEX idx_goodreads_metadata_user_created_at_id_desc
 	ON goodreads_metadata (user_id, created_at DESC, id DESC);
+CREATE TABLE IF NOT EXISTS "kobo_tokens" (
+	id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+	user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	name TEXT NOT NULL,
+	token_hash TEXT NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX idx_kobo_tokens_token_hash ON kobo_tokens (token_hash);
+CREATE INDEX idx_kobo_tokens_user_id ON kobo_tokens (user_id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20260214235625_create_migrations_table'),
@@ -237,4 +236,7 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260317010000_add_kobo_token_hash'),
   ('20260323120000_drop_num_pages_from_books'),
   ('20260323120001_create_goodreads_metadata_table'),
-  ('20260323120002_add_hardcover_google_to_goodreads_metadata');
+  ('20260323120002_add_hardcover_google_to_goodreads_metadata'),
+  ('20260403225916_rename_goodreads_metadata_indexes'),
+  ('20260405190333_drop_kobo_tokens_token_column'),
+  ('20260406000710_kobo_tokens_token_hash_not_null');

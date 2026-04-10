@@ -1,3 +1,6 @@
+// Package auth provides JWT token management, API-key validation, per-IP rate
+// limiting, and protocol-specific authentication middleware for OPDS, KOSync,
+// and Kobo clients.
 package auth
 
 import (
@@ -15,6 +18,7 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
+// Sentinel errors returned by JWTManager.ValidateToken and the auth middleware.
 var (
 	ErrInvalidToken = errors.New("invalid token")
 	ErrExpiredToken = errors.New("token expired")
@@ -32,6 +36,10 @@ type JWTManager struct {
 	oidcKey []byte // HKDF-derived sub-key for OIDC state signing
 	ttl     time.Duration
 }
+
+// MinSecretLength is the minimum recommended length (in bytes) for a
+// JWT signing secret. Secrets shorter than this weaken HMAC-SHA256.
+const MinSecretLength = 32
 
 // NewJWTManager creates a new JWTManager. If secret is empty, a random one is generated
 // (tokens will not survive server restarts).

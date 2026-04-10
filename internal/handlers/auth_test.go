@@ -2,51 +2,39 @@ package handlers
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
-	_ "modernc.org/sqlite"
+	"github.com/stretchr/testify/require"
 )
 
-// newTestDB creates an in-memory SQLite database with all real migrations applied.
-func newTestDB(t *testing.T) *db.DB {
+func newAuthHandler(t *testing.T) *AuthHandler {
 	t.Helper()
-	sqlDB, err := sql.Open("sqlite", ":memory:")
-	if err != nil {
-		t.Fatalf("newTestDB: open: %v", err)
-	}
-	if err := db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite); err != nil {
-		_ = sqlDB.Close()
-		t.Fatalf("newTestDB: migrations: %v", err)
-	}
-	t.Cleanup(func() { _ = sqlDB.Close() })
-	return &db.DB{DB: sqlDB, Dialect: db.DialectSQLite}
+	return &AuthHandler{DB: newTestDB(t), JWT: newTestJWT(t)}
 }
 
-func newTestJWT(t *testing.T) *auth.JWTManager {
+// mustSignup creates a new user via the signup endpoint and returns the auth response.
+// It fails the test if signup does not return 201 Created.
+func mustSignup(t *testing.T, h *AuthHandler, name, email, password string) authResponse {
 	t.Helper()
-	jm, err := auth.NewJWTManager("testsecret", time.Hour)
-	if err != nil {
-		t.Fatalf("newTestJWT: %v", err)
-	}
-	return jm
-}
-
-// withUserID returns a copy of r with the user ID injected into the context.
-func withUserID(r *http.Request, userID string) *http.Request {
-	ctx := auth.ContextWithUserID(r.Context(), userID)
-	return r.WithContext(ctx)
+	body, err := json.Marshal(map[string]string{"name": name, "email": email, "password": password})
+	require.NoError(t, err)
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.Signup(w, r)
+	require.Equal(t, http.StatusCreated, w.Code)
+	var resp authResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	return resp
 }
 
 func TestSignup_Success(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	body := `{"name":"Alice","email":"alice@example.com","password":"secret123"}`
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
@@ -55,24 +43,15 @@ func TestSignup_Success(t *testing.T) {
 
 	h.Signup(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 	var resp authResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.Token == "" {
-		t.Error("expected non-empty token")
-	}
-	if resp.User.Email != "alice@example.com" {
-		t.Errorf("email = %q, want %q", resp.User.Email, "alice@example.com")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.NotEqual(t, "", resp.Token)
+	require.Equal(t, "alice@example.com", resp.User.Email)
 }
 
 func TestSignup_MissingFields(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	tests := []struct {
 		name string
@@ -87,16 +66,13 @@ func TestSignup_MissingFields(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(tt.body))
 			w := httptest.NewRecorder()
 			h.Signup(w, r)
-			if w.Code != http.StatusBadRequest {
-				t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-			}
+			require.Equal(t, http.StatusBadRequest, w.Code)
 		})
 	}
 }
 
 func TestSignup_ShortPassword(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	body := `{"name":"Alice","email":"alice@example.com","password":"123"}`
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
@@ -104,321 +80,242 @@ func TestSignup_ShortPassword(t *testing.T) {
 
 	h.Signup(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestSignup_DuplicateEmail(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	body := `{"name":"Alice","email":"alice@example.com","password":"secret123"}`
-	// First signup succeeds
+	// First signup succeeds.
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("first signup failed: %s", w.Body.String())
-	}
+	require.Equal(t, http.StatusCreated, w.Code)
 
-	// Second signup with same email should fail
+	// Second signup with same email should fail.
 	r2 := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
 	w2 := httptest.NewRecorder()
 	h.Signup(w2, r2)
-	if w2.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusConflict)
-	}
+	require.Equal(t, http.StatusConflict, w2.Code)
 }
 
 func TestSignup_InvalidBody(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString("not json"))
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestSignup_MethodNotAllowed(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/auth/signup", nil)
 	w := httptest.NewRecorder()
 	h.Signup(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestSignup_Disabled(t *testing.T) {
+	h := newAuthHandler(t)
+	h.DisableSignup = true
+
+	body := `{"name":"Alice","email":"alice@example.com","password":"secret123"}`
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.Signup(w, r)
+
+	require.Equal(t, http.StatusForbidden, w.Code)
+	var resp map[string]string
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Equal(t, "signup is disabled", resp["error"])
 }
 
 func TestLogin_Success(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
-
-	signupBody := `{"name":"Bob","email":"bob@example.com","password":"secret123"}`
-	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
-	w := httptest.NewRecorder()
-	h.Signup(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("signup failed: %s", w.Body.String())
-	}
+	h := newAuthHandler(t)
+	mustSignup(t, h, "Bob", "bob@example.com", "secret123")
 
 	loginBody := `{"email":"bob@example.com","password":"secret123"}`
-	r2 := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
-	w2 := httptest.NewRecorder()
-	h.Login(w2, r2)
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
+	w := httptest.NewRecorder()
+	h.Login(w, r)
 
-	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp authResponse
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.Token == "" {
-		t.Error("expected non-empty token")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.NotEqual(t, "", resp.Token)
 }
 
 func TestLogin_WrongPassword(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
-
-	signupBody := `{"name":"Carol","email":"carol@example.com","password":"correctpw"}`
-	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
-	w := httptest.NewRecorder()
-	h.Signup(w, r)
+	h := newAuthHandler(t)
+	mustSignup(t, h, "Carol", "carol@example.com", "correctpw")
 
 	loginBody := `{"email":"carol@example.com","password":"wrongpw12"}`
-	r2 := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
-	w2 := httptest.NewRecorder()
-	h.Login(w2, r2)
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
+	w := httptest.NewRecorder()
+	h.Login(w, r)
 
-	if w2.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusUnauthorized)
-	}
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
 func TestLogin_UserNotFound(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	body := `{"email":"nobody@example.com","password":"password1"}`
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 	h.Login(w, r)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
 func TestLogin_MissingFields(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	body := `{"email":"","password":""}`
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 	h.Login(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestLogin_MethodNotAllowed(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/auth/login", nil)
 	w := httptest.NewRecorder()
 	h.Login(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestMe_Success(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
+	signupResp := mustSignup(t, h, "Dave", "dave@example.com", "secret123")
 
-	// Sign up to create a user
-	signupBody := `{"name":"Dave","email":"dave@example.com","password":"secret123"}`
-	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
+	r := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
+	r = withUserID(r, signupResp.User.ID)
 	w := httptest.NewRecorder()
-	h.Signup(w, r)
-	var signupResp authResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &signupResp)
+	h.Me(w, r)
 
-	r2 := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
-	r2 = withUserID(r2, signupResp.User.ID)
-	w2 := httptest.NewRecorder()
-	h.Me(w2, r2)
-
-	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp userDTO
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.Email != "dave@example.com" {
-		t.Errorf("email = %q, want %q", resp.Email, "dave@example.com")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, "dave@example.com", resp.Email)
+	require.Equal(t, "Dave", resp.Name)
 }
 
 func TestMe_UserNotFound(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
 	r = withUserID(r, "nonexistent-user-id")
 	w := httptest.NewRecorder()
 	h.Me(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestMe_EmptyUserID(t *testing.T) {
+	h := newAuthHandler(t)
+
+	// Inject an empty user ID via the proper context key; lookup will fail.
+	r := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
+	r = withUserID(r, "")
+	w := httptest.NewRecorder()
+	h.Me(w, r)
+
+	// GetUserByID("") returns sql.ErrNoRows which the handler maps to 404.
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestMe_MethodNotAllowed(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/me", nil)
 	w := httptest.NewRecorder()
 	h.Me(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestChangePassword_Success(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
+	signupResp := mustSignup(t, h, "Eve", "eve@example.com", "oldpassword")
 
-	// Sign up
-	signupBody := `{"name":"Eve","email":"eve@example.com","password":"oldpassword"}`
-	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
-	w := httptest.NewRecorder()
-	h.Signup(w, r)
-	var signupResp authResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &signupResp)
-
-	// Change password
+	// Change password.
 	changeBody := `{"currentPassword":"oldpassword","newPassword":"newpassword1"}`
-	r2 := httptest.NewRequest(http.MethodPut, "/api/auth/password", bytes.NewBufferString(changeBody))
-	r2 = withUserID(r2, signupResp.User.ID)
-	w2 := httptest.NewRecorder()
-	h.ChangePassword(w2, r2)
+	r := httptest.NewRequest(http.MethodPut, "/api/auth/password", bytes.NewBufferString(changeBody))
+	r = withUserID(r, signupResp.User.ID)
+	w := httptest.NewRecorder()
+	h.ChangePassword(w, r)
+	require.Equal(t, http.StatusOK, w.Code)
 
-	if w2.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
+	// Verify audit log was created
+	logs, _, err := h.DB.ListAuditLogs(t.Context(), 10, 0)
+	require.NoError(t, err)
+	found := false
+	for _, l := range logs {
+		if l.Action == db.AuditActionPasswordChanged && l.EntityID == signupResp.User.ID {
+			found = true
+			break
+		}
 	}
+	require.True(t, found, "expected audit log entry for password change")
 
-	// Verify new password works at login
+	// Verify new password works at login.
 	loginBody := `{"email":"eve@example.com","password":"newpassword1"}`
-	r3 := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
-	w3 := httptest.NewRecorder()
-	h.Login(w3, r3)
-	if w3.Code != http.StatusOK {
-		t.Errorf("login with new password: status = %d, want %d", w3.Code, http.StatusOK)
-	}
+	r2 := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
+	w2 := httptest.NewRecorder()
+	h.Login(w2, r2)
+	require.Equal(t, http.StatusOK, w2.Code)
 }
 
-func TestChangePassword_WrongCurrentPassword(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+func TestChangePassword_Invalid(t *testing.T) {
+	h := newAuthHandler(t)
+	signupResp := mustSignup(t, h, "Frank", "frank@example.com", "correctpw")
 
-	signupBody := `{"name":"Frank","email":"frank@example.com","password":"correctpw"}`
-	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
-	w := httptest.NewRecorder()
-	h.Signup(w, r)
-	var signupResp authResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &signupResp)
-
-	changeBody := `{"currentPassword":"wrongpassword","newPassword":"newpassword1"}`
-	r2 := httptest.NewRequest(http.MethodPut, "/api/auth/password", bytes.NewBufferString(changeBody))
-	r2 = withUserID(r2, signupResp.User.ID)
-	w2 := httptest.NewRecorder()
-	h.ChangePassword(w2, r2)
-
-	if w2.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusUnauthorized)
+	tests := []struct {
+		name       string
+		body       string
+		wantStatus int
+	}{
+		{"wrong current password", `{"currentPassword":"wrongpassword","newPassword":"newpassword1"}`, http.StatusUnauthorized},
+		{"short new password", `{"currentPassword":"correctpw","newPassword":"abc"}`, http.StatusBadRequest},
+		{"missing fields", `{"currentPassword":"","newPassword":""}`, http.StatusBadRequest},
 	}
-}
-
-func TestChangePassword_ShortNewPassword(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
-
-	signupBody := `{"name":"Grace","email":"grace@example.com","password":"correctpw"}`
-	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
-	w := httptest.NewRecorder()
-	h.Signup(w, r)
-	var signupResp authResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &signupResp)
-
-	changeBody := `{"currentPassword":"correctpw","newPassword":"abc"}`
-	r2 := httptest.NewRequest(http.MethodPut, "/api/auth/password", bytes.NewBufferString(changeBody))
-	r2 = withUserID(r2, signupResp.User.ID)
-	w2 := httptest.NewRecorder()
-	h.ChangePassword(w2, r2)
-
-	if w2.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusBadRequest)
-	}
-}
-
-func TestChangePassword_MissingFields(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
-
-	signupBody := `{"name":"Hank","email":"hank@example.com","password":"correctpw"}`
-	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
-	w := httptest.NewRecorder()
-	h.Signup(w, r)
-	var signupResp authResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &signupResp)
-
-	changeBody := `{"currentPassword":"","newPassword":""}`
-	r2 := httptest.NewRequest(http.MethodPut, "/api/auth/password", bytes.NewBufferString(changeBody))
-	r2 = withUserID(r2, signupResp.User.ID)
-	w2 := httptest.NewRecorder()
-	h.ChangePassword(w2, r2)
-
-	if w2.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w2.Code, http.StatusBadRequest)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPut, "/api/auth/password", bytes.NewBufferString(tt.body))
+			r = withUserID(r, signupResp.User.ID)
+			w := httptest.NewRecorder()
+			h.ChangePassword(w, r)
+			require.Equal(t, tt.wantStatus, w.Code)
+		})
 	}
 }
 
 func TestChangePassword_MethodNotAllowed(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/auth/password", nil)
 	w := httptest.NewRecorder()
 	h.ChangePassword(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 // --- Set-Cookie header assertions ---
 
 // assertAuthCookie checks that the response contains a Set-Cookie header for
 // the auth cookie with the expected attributes.
-func assertAuthCookie(t *testing.T, w *httptest.ResponseRecorder, wantValue bool) {
+func assertAuthCookie(t *testing.T, w *httptest.ResponseRecorder) {
 	t.Helper()
 	cookies := w.Result().Cookies()
 	var found *http.Cookie
@@ -428,26 +325,15 @@ func assertAuthCookie(t *testing.T, w *httptest.ResponseRecorder, wantValue bool
 			break
 		}
 	}
-	if found == nil {
-		t.Fatal("expected Set-Cookie header for auth cookie, but none found")
-	}
-	if wantValue && found.Value == "" {
-		t.Error("expected non-empty cookie value")
-	}
-	if found.HttpOnly != true {
-		t.Error("expected HttpOnly to be true")
-	}
-	if found.SameSite != http.SameSiteStrictMode {
-		t.Errorf("SameSite = %v, want StrictMode", found.SameSite)
-	}
-	if found.Path != "/" {
-		t.Errorf("Path = %q, want %q", found.Path, "/")
-	}
+	require.NotNil(t, found)
+	require.NotEmpty(t, found.Value)
+	require.True(t, found.HttpOnly)
+	require.Equal(t, http.SameSiteStrictMode, found.SameSite)
+	require.Equal(t, "/", found.Path)
 }
 
 func TestSignup_SetsCookie(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	body := `{"name":"CookieUser","email":"cookie@example.com","password":"secret123"}`
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(body))
@@ -456,48 +342,32 @@ func TestSignup_SetsCookie(t *testing.T) {
 
 	h.Signup(w, r)
 
-	if w.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusCreated, w.Body.String())
-	}
-	assertAuthCookie(t, w, true)
+	require.Equal(t, http.StatusCreated, w.Code)
+	assertAuthCookie(t, w)
 }
 
 func TestLogin_SetsCookie(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
-
-	// Create user first
-	signupBody := `{"name":"CookieLogin","email":"cookielogin@example.com","password":"secret123"}`
-	r := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewBufferString(signupBody))
-	w := httptest.NewRecorder()
-	h.Signup(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("signup failed: %s", w.Body.String())
-	}
+	h := newAuthHandler(t)
+	mustSignup(t, h, "CookieLogin", "cookielogin@example.com", "secret123")
 
 	loginBody := `{"email":"cookielogin@example.com","password":"secret123"}`
-	r2 := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
-	w2 := httptest.NewRecorder()
-	h.Login(w2, r2)
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(loginBody))
+	w := httptest.NewRecorder()
+	h.Login(w, r)
 
-	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
-	assertAuthCookie(t, w2, true)
+	require.Equal(t, http.StatusOK, w.Code)
+	assertAuthCookie(t, w)
 }
 
 func TestLogout_ClearsCookie(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
 	r.Header.Set("Origin", "http://"+r.Host)
 	w := httptest.NewRecorder()
 	h.Logout(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	cookies := w.Result().Cookies()
 	var found *http.Cookie
@@ -507,42 +377,91 @@ func TestLogout_ClearsCookie(t *testing.T) {
 			break
 		}
 	}
-	if found == nil {
-		t.Fatal("expected Set-Cookie header for auth cookie on logout, but none found")
-	}
-	if found.MaxAge != -1 {
-		t.Errorf("MaxAge = %d, want -1 (cookie deletion)", found.MaxAge)
-	}
-	if found.Value != "" {
-		t.Errorf("cookie value = %q, want empty", found.Value)
-	}
+	require.NotNil(t, found)
+	require.Equal(t, -1, found.MaxAge)
+	require.Equal(t, "", found.Value)
 }
 
 func TestLogout_MethodNotAllowed(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+	h := newAuthHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/auth/logout", nil)
 	w := httptest.NewRecorder()
 	h.Logout(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
-func TestMe_EmptyUserID(t *testing.T) {
-	d := newTestDB(t)
-	h := &AuthHandler{DB: d, JWT: newTestJWT(t)}
+func TestUpdateProfile_Success(t *testing.T) {
+	h := newAuthHandler(t)
+	signupResp := mustSignup(t, h, "Original Name", "profile@example.com", "secret123")
+	require.Equal(t, "Original Name", signupResp.User.Name)
 
-	// Inject an empty user ID via the proper context key; lookup will fail.
-	r := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
-	r = withUserID(r, "")
+	// Update the display name.
+	updateBody := `{"name":"Updated Name"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/auth/me", bytes.NewBufferString(updateBody))
+	r = withUserID(r, signupResp.User.ID)
 	w := httptest.NewRecorder()
 	h.Me(w, r)
 
-	// GetUserByID("") returns sql.ErrNoRows which the handler maps to 404.
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	require.Equal(t, http.StatusOK, w.Code, "body: %s", w.Body.String())
+	var resp userDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Equal(t, "Updated Name", resp.Name)
+	require.Equal(t, "profile@example.com", resp.Email)
+
+	// Verify the name persisted via GET /api/auth/me.
+	r2 := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
+	r2 = withUserID(r2, signupResp.User.ID)
+	w2 := httptest.NewRecorder()
+	h.Me(w2, r2)
+
+	require.Equal(t, http.StatusOK, w2.Code)
+	var getResp userDTO
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &getResp))
+	require.Equal(t, "Updated Name", getResp.Name)
+}
+
+func TestUpdateProfile_EmptyName(t *testing.T) {
+	h := newAuthHandler(t)
+	signupResp := mustSignup(t, h, "Alice", "alice2@example.com", "secret123")
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{"empty string", `{"name":""}`},
+		{"whitespace only", `{"name":"   "}`},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPut, "/api/auth/me", bytes.NewBufferString(tt.body))
+			r = withUserID(r, signupResp.User.ID)
+			w := httptest.NewRecorder()
+			h.Me(w, r)
+			require.Equal(t, http.StatusBadRequest, w.Code)
+		})
+	}
+}
+
+func TestUpdateProfile_MethodNotAllowed(t *testing.T) {
+	h := newAuthHandler(t)
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/auth/me", nil)
+	w := httptest.NewRecorder()
+	h.Me(w, r)
+
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestUpdateProfile_UserNotFound(t *testing.T) {
+	h := newAuthHandler(t)
+
+	body := `{"name":"New Name"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/auth/me", bytes.NewBufferString(body))
+	r = withUserID(r, "nonexistent-id")
+	w := httptest.NewRecorder()
+	h.Me(w, r)
+
+	require.Equal(t, http.StatusNotFound, w.Code)
 }

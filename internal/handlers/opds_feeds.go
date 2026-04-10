@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -9,73 +11,75 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 func (h *OPDSHandler) rootFeed(w http.ResponseWriter, r *http.Request) {
 	baseURL := opdsBaseURL(r)
-	feed := &opdsFeed{
-		XMLNS:     xmlnsAtom,
-		XMLNSOPDS: xmlnsOPDS,
+	now := time.Now().UTC().Format(time.RFC3339)
+	feed := &opdspkg.Feed{
+		XMLNS:     opdspkg.XMLNSAtom,
+		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        baseURL + "/",
 		Title:     "Biblioteka OPDS Catalog",
-		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links: []opdsLink{
-			{Rel: relSelf, Href: baseURL, Type: opdsNavContentType},
-			{Rel: relStart, Href: baseURL, Type: opdsNavContentType},
-			{Rel: relSearch, Href: baseURL + "/search", Type: opdsSearchType},
+		Updated:   now,
+		Links: []opdspkg.Link{
+			{Rel: opdspkg.RelSelf, Href: baseURL, Type: opdspkg.NavContentType},
+			{Rel: opdspkg.RelStart, Href: baseURL, Type: opdspkg.NavContentType},
+			{Rel: opdspkg.RelSearch, Href: baseURL + "/search", Type: opdspkg.SearchType},
 		},
-		Entries: []opdsEntry{
+		Entries: []opdspkg.Entry{
 			{
 				Title:   "All Books",
 				ID:      baseURL + "/all",
-				Updated: time.Now().UTC().Format(time.RFC3339),
-				Content: &opdsContent{Type: "text", Value: "Browse all books"},
-				Links:   []opdsLink{{Rel: relSubsection, Href: baseURL + "/all", Type: opdsAcqContentType}},
+				Updated: now,
+				Content: &opdspkg.Content{Type: "text", Value: "Browse all books"},
+				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/all", Type: opdspkg.AcqContentType}},
 			},
 			{
 				Title:   "Recent Books",
 				ID:      baseURL + "/recent",
-				Updated: time.Now().UTC().Format(time.RFC3339),
-				Content: &opdsContent{Type: "text", Value: "Recently added books"},
-				Links:   []opdsLink{{Rel: relSubsection, Href: baseURL + "/recent", Type: opdsAcqContentType}},
+				Updated: now,
+				Content: &opdspkg.Content{Type: "text", Value: "Recently added books"},
+				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/recent", Type: opdspkg.AcqContentType}},
 			},
 			{
 				Title:   "Authors",
 				ID:      baseURL + "/authors",
-				Updated: time.Now().UTC().Format(time.RFC3339),
-				Content: &opdsContent{Type: "text", Value: "Browse by author"},
-				Links:   []opdsLink{{Rel: relSubsection, Href: baseURL + "/authors", Type: opdsNavContentType}},
+				Updated: now,
+				Content: &opdspkg.Content{Type: "text", Value: "Browse by author"},
+				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/authors", Type: opdspkg.NavContentType}},
 			},
 			{
 				Title:   "Series",
 				ID:      baseURL + "/series",
-				Updated: time.Now().UTC().Format(time.RFC3339),
-				Content: &opdsContent{Type: "text", Value: "Browse by series"},
-				Links:   []opdsLink{{Rel: relSubsection, Href: baseURL + "/series", Type: opdsNavContentType}},
+				Updated: now,
+				Content: &opdspkg.Content{Type: "text", Value: "Browse by series"},
+				Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: baseURL + "/series", Type: opdspkg.NavContentType}},
 			},
 		},
 	}
-	writeOPDSFeed(r, w, opdsNavContentType, feed)
+	writeOPDSFeed(r, w, opdspkg.NavContentType, feed)
 }
 
 // writeBooksFeed is a shared helper for book-listing OPDS acquisition feeds.
 // selfPath is the path after /opds (e.g. "/all" or "/authors/<id>").
-// extraLinks are appended after the pagination links (e.g. a relStart link back to root).
+// extraLinks are appended after the pagination links (e.g. an opdspkg.RelStart link back to root).
 // listFn must return (books, totalCount, error) for the given limit and offset.
 func (h *OPDSHandler) writeBooksFeed(
 	w http.ResponseWriter, r *http.Request,
 	selfPath, title string,
-	extraLinks []opdsLink,
+	extraLinks []opdspkg.Link,
 	listFn func(ctx context.Context, limit, offset int) ([]db.Book, int, error),
 ) {
 	ctx := r.Context()
 	baseURL := opdsBaseURL(r)
 	page := parsePage(r)
-	offset := (page - 1) * opdsPageSize
+	offset := (page - 1) * opdspkg.PageSize
 	selfURL := baseURL + selfPath
 
-	books, total, err := listFn(ctx, opdsPageSize, offset)
+	books, total, err := listFn(ctx, opdspkg.PageSize, offset)
 	if err != nil {
 		slog.ErrorContext(
 			ctx,
@@ -84,23 +88,24 @@ func (h *OPDSHandler) writeBooksFeed(
 			slog.String(otelkeys.Title, title),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, selfURL, "Failed to list books")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, selfURL, "Failed to list books")
 		return
 	}
 
 	entries := h.bookEntries(ctx, books, baseURL)
-	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsAcqContentType)
+	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.AcqContentType)
 	links = append(links, extraLinks...)
-	feed := &opdsFeed{
-		XMLNS:     xmlnsAtom,
-		XMLNSOPDS: xmlnsOPDS,
+	now := time.Now().UTC().Format(time.RFC3339)
+	feed := &opdspkg.Feed{
+		XMLNS:     opdspkg.XMLNSAtom,
+		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        selfURL,
 		Title:     title,
-		Updated:   time.Now().UTC().Format(time.RFC3339),
+		Updated:   now,
 		Links:     links,
 		Entries:   entries,
 	}
-	writeOPDSFeed(r, w, opdsAcqContentType, feed)
+	writeOPDSFeed(r, w, opdspkg.AcqContentType, feed)
 }
 
 func (h *OPDSHandler) allBooks(w http.ResponseWriter, r *http.Request) {
@@ -111,126 +116,144 @@ func (h *OPDSHandler) recentBooks(w http.ResponseWriter, r *http.Request) {
 	h.writeBooksFeed(w, r, "/recent", "Recent Books", nil, h.DB.ListRecentBooks)
 }
 
-func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
+// writeNamedEntityNavFeed is a shared helper for paginated OPDS navigation feeds
+// that list named entities (authors, series, etc.).
+// pathSegment is the path component after /opds (e.g. "authors" or "series").
+// listFn must return (entities, totalCount, error) for the given limit and offset.
+func (h *OPDSHandler) writeNamedEntityNavFeed(
+	w http.ResponseWriter, r *http.Request,
+	pathSegment, title string,
+	listFn func(ctx context.Context, limit, offset int) ([]opdspkg.NavEntity, int, error),
+) {
 	ctx := r.Context()
 	baseURL := opdsBaseURL(r)
 	page := parsePage(r)
-	offset := (page - 1) * opdsPageSize
+	offset := (page - 1) * opdspkg.PageSize
+	selfURL := baseURL + "/" + pathSegment
 
-	authors, total, err := h.DB.ListAuthorsPaginated(ctx, opdsPageSize, offset)
+	entities, total, err := listFn(ctx, opdspkg.PageSize, offset)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list authors", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, baseURL+"/authors", "failed to list authors")
+		slog.ErrorContext(ctx, "OPDS: failed to list entities",
+			slog.String(otelkeys.EntityType, pathSegment),
+			slog.String(otelkeys.URL, selfURL),
+			slog.String(otelkeys.Title, title),
+			slog.Any(otelkeys.Error, err),
+		)
+		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.NavContentType, selfURL, fmt.Sprintf("Failed to list %s", pathSegment))
 		return
 	}
-
-	entries := make([]opdsEntry, 0, len(authors))
-	for _, a := range authors {
-		entries = append(entries, opdsEntry{
-			Title:   a.Name,
-			ID:      baseURL + "/authors/" + a.ID,
-			Updated: a.UpdatedAt.Format(time.RFC3339),
-			Links: []opdsLink{
-				{Rel: relSubsection, Href: baseURL + "/authors/" + a.ID, Type: opdsAcqContentType},
-			},
+	entries := make([]opdspkg.Entry, 0, len(entities))
+	for _, e := range entities {
+		entryURL := selfURL + "/" + e.ID
+		entries = append(entries, opdspkg.Entry{
+			Title:   e.Name,
+			ID:      entryURL,
+			Updated: e.Updated,
+			Links:   []opdspkg.Link{{Rel: opdspkg.RelSubsection, Href: entryURL, Type: opdspkg.AcqContentType}},
 		})
 	}
 
-	selfURL := baseURL + "/authors"
-	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsNavContentType)
-	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
+	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.NavContentType)
+	links = append(links, opdspkg.Link{Rel: opdspkg.RelStart, Href: baseURL, Type: opdspkg.NavContentType})
 
-	feed := &opdsFeed{
-		XMLNS:   xmlnsAtom,
+	now := time.Now().UTC().Format(time.RFC3339)
+	feed := &opdspkg.Feed{
+		XMLNS:   opdspkg.XMLNSAtom,
 		ID:      selfURL,
-		Title:   "Authors",
-		Updated: time.Now().UTC().Format(time.RFC3339),
+		Title:   title,
+		Updated: now,
 		Links:   links,
 		Entries: entries,
 	}
-	writeOPDSFeed(r, w, opdsNavContentType, feed)
+	writeOPDSFeed(r, w, opdspkg.NavContentType, feed)
 }
 
-func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
-	ctx := r.Context()
-	author, err := h.DB.GetAuthor(ctx, authorID)
-	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: author not found",
-			slog.String(otelkeys.AuthorID, authorID),
-			slog.Any(otelkeys.Error, err),
-		)
-		http.NotFound(w, r)
-		return
-	}
+func toNavEntity(id, name string, updatedAt db.Timestamp) opdspkg.NavEntity {
+	return opdspkg.NavEntity{ID: id, Name: name, Updated: updatedAt.Format(time.RFC3339)}
+}
 
-	baseURL := opdsBaseURL(r)
-	extraLinks := []opdsLink{{Rel: relStart, Href: baseURL, Type: opdsNavContentType}}
-	h.writeBooksFeed(w, r, "/authors/"+authorID, "Books by "+author.Name, extraLinks,
-		func(c context.Context, limit, offset int) ([]db.Book, int, error) {
-			return h.DB.ListBooksByAuthorPaginated(c, authorID, limit, offset)
-		},
+func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
+	h.writeNamedEntityNavFeed(w, r, "authors", "Authors",
+		adaptNavEntities(h.DB.ListAuthorsPaginated, func(a db.Author) opdspkg.NavEntity {
+			return toNavEntity(a.ID, a.Name, a.UpdatedAt)
+		}),
 	)
 }
 
 func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	baseURL := opdsBaseURL(r)
-	page := parsePage(r)
-	offset := (page - 1) * opdsPageSize
+	h.writeNamedEntityNavFeed(w, r, "series", "Series",
+		adaptNavEntities(h.DB.ListSeriesPaginated, func(s db.Series) opdspkg.NavEntity {
+			return toNavEntity(s.ID, s.Name, s.UpdatedAt)
+		}),
+	)
+}
 
-	seriesList, total, err := h.DB.ListSeriesPaginated(ctx, opdsPageSize, offset)
+// writeEntityBooksFeed fetches an entity by ID and renders an OPDS acquisition feed
+// of its books. Returns 404 if the entity is not found.
+func writeEntityBooksFeed[T any](
+	h *OPDSHandler,
+	w http.ResponseWriter, r *http.Request,
+	entityID string,
+	getFn func(ctx context.Context, id string) (*T, error),
+	logAttr slog.Attr,
+	entityType string,
+	pathPrefix string,
+	titleFn func(*T) string,
+	listFn func(ctx context.Context, id string, limit, offset int) ([]db.Book, int, error),
+) {
+	ctx := r.Context()
+	entity, err := getFn(ctx, entityID)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: failed to list series", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsNavContentType, baseURL+"/series", "Failed to list series")
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.WarnContext(ctx, "OPDS: entity not found",
+				slog.String(otelkeys.EntityType, entityType),
+				logAttr,
+			)
+			http.NotFound(w, r)
+		} else {
+			slog.ErrorContext(ctx, "OPDS: failed to fetch entity",
+				slog.String(otelkeys.EntityType, entityType),
+				logAttr,
+				slog.Any(otelkeys.Error, err),
+			)
+			writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, opdsBaseURL(r)+pathPrefix+entityID, "Failed to fetch entity")
+		}
 		return
 	}
+	h.writeBooksForEntity(w, r, pathPrefix+entityID, titleFn(entity),
+		func(c context.Context, limit, offset int) ([]db.Book, int, error) {
+			return listFn(c, entityID, limit, offset)
+		},
+	)
+}
 
-	entries := make([]opdsEntry, 0, len(seriesList))
-	for _, s := range seriesList {
-		entries = append(entries, opdsEntry{
-			Title:   s.Name,
-			ID:      baseURL + "/series/" + s.ID,
-			Updated: s.UpdatedAt.Format(time.RFC3339),
-			Links: []opdsLink{
-				{Rel: relSubsection, Href: baseURL + "/series/" + s.ID, Type: opdsAcqContentType},
-			},
-		})
-	}
-
-	selfURL := baseURL + "/series"
-	links := paginationLinks(selfURL, page, total, opdsPageSize, opdsNavContentType)
-	links = append(links, opdsLink{Rel: relStart, Href: baseURL, Type: opdsNavContentType})
-
-	feed := &opdsFeed{
-		XMLNS:   xmlnsAtom,
-		ID:      selfURL,
-		Title:   "Series",
-		Updated: time.Now().UTC().Format(time.RFC3339),
-		Links:   links,
-		Entries: entries,
-	}
-	writeOPDSFeed(r, w, opdsNavContentType, feed)
+func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
+	writeEntityBooksFeed(h, w, r, authorID,
+		h.DB.GetAuthor, slog.String(otelkeys.AuthorID, authorID), "author", "/authors/",
+		func(a *db.Author) string { return "Books by " + a.Name },
+		h.DB.ListBooksByAuthorPaginated,
+	)
 }
 
 func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, seriesID string) {
-	ctx := r.Context()
-	series, err := h.DB.GetSeries(ctx, seriesID)
-	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: series not found",
-			slog.String(otelkeys.SeriesID, seriesID),
-			slog.Any(otelkeys.Error, err),
-		)
-		http.NotFound(w, r)
-		return
-	}
-
-	baseURL := opdsBaseURL(r)
-	extraLinks := []opdsLink{{Rel: relStart, Href: baseURL, Type: opdsNavContentType}}
-	h.writeBooksFeed(w, r, "/series/"+seriesID, series.Name, extraLinks,
-		func(c context.Context, limit, offset int) ([]db.Book, int, error) {
-			return h.DB.ListBooksBySeriesPaginated(c, seriesID, limit, offset)
-		},
+	writeEntityBooksFeed(h, w, r, seriesID,
+		h.DB.GetSeries, slog.String(otelkeys.SeriesID, seriesID), "series", "/series/",
+		func(s *db.Series) string { return s.Name },
+		h.DB.ListBooksBySeriesPaginated,
 	)
+}
+
+// writeBooksForEntity is a shared helper for entity-scoped OPDS book feeds
+// (e.g. books by a given author, or books in a given series). It appends an
+// opdspkg.RelStart link back to the OPDS root and delegates to writeBooksFeed.
+func (h *OPDSHandler) writeBooksForEntity(
+	w http.ResponseWriter, r *http.Request,
+	pathSegment, title string,
+	listFn func(ctx context.Context, limit, offset int) ([]db.Book, int, error),
+) {
+	baseURL := opdsBaseURL(r)
+	extraLinks := []opdspkg.Link{{Rel: opdspkg.RelStart, Href: baseURL, Type: opdspkg.NavContentType}}
+	h.writeBooksFeed(w, r, pathSegment, title, extraLinks, listFn)
 }
 
 func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
@@ -238,26 +261,27 @@ func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
 	baseURL := opdsBaseURL(r)
 	query := r.URL.Query().Get("q")
 	page := parsePage(r)
-	offset := (page - 1) * opdsPageSize
+	offset := (page - 1) * opdspkg.PageSize
 
-	books, total, err := h.DB.SearchBooks(ctx, query, opdsPageSize, offset)
+	books, total, err := h.DB.SearchBooks(ctx, query, opdspkg.PageSize, offset)
 	if err != nil {
 		slog.ErrorContext(ctx, "OPDS: search failed", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, baseURL+"/search", "Search failed")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, baseURL+"/search", "Search failed")
 		return
 	}
 
 	entries := h.bookEntries(ctx, books, baseURL)
 	escapedQuery := url.QueryEscape(query)
 	selfURL := baseURL + "/search?q=" + escapedQuery
-	feed := &opdsFeed{
-		XMLNS:     xmlnsAtom,
-		XMLNSOPDS: xmlnsOPDS,
+	now := time.Now().UTC().Format(time.RFC3339)
+	feed := &opdspkg.Feed{
+		XMLNS:     opdspkg.XMLNSAtom,
+		XMLNSOPDS: opdspkg.XMLNSOPDS,
 		ID:        selfURL,
 		Title:     fmt.Sprintf("Search: %s", query),
-		Updated:   time.Now().UTC().Format(time.RFC3339),
-		Links:     paginationLinks(baseURL+"/search?q="+escapedQuery, page, total, opdsPageSize, opdsAcqContentType),
+		Updated:   now,
+		Links:     opdspkg.PaginationLinks(baseURL+"/search?q="+escapedQuery, page, total, opdspkg.PageSize, opdspkg.AcqContentType),
 		Entries:   entries,
 	}
-	writeOPDSFeed(r, w, opdsAcqContentType, feed)
+	writeOPDSFeed(r, w, opdspkg.AcqContentType, feed)
 }

@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/hibiken/asynq"
+
+	"github.com/stretchr/testify/require"
 )
 
 const testRedisURL = "redis://192.0.2.1:6379" // TEST-NET (RFC 5737) — guaranteed non-routable
@@ -15,9 +17,7 @@ const testRedisURL = "redis://192.0.2.1:6379" // TEST-NET (RFC 5737) — guarant
 func newTestWorker(t *testing.T) *Worker {
 	t.Helper()
 	w, err := New(testRedisURL)
-	if err != nil {
-		t.Fatalf("New(%q): %v", testRedisURL, err)
-	}
+	require.NoError(t, err, "New(%q)", testRedisURL)
 	t.Cleanup(func() {
 		if err := w.Close(); err != nil {
 			t.Logf("cleanup Close: %v", err)
@@ -30,52 +30,36 @@ func newTestWorker(t *testing.T) *Worker {
 // given a syntactically valid Redis URL.
 func TestNew_ValidURL(t *testing.T) {
 	w := newTestWorker(t)
-	if w.client == nil {
-		t.Error("client is nil")
-	}
-	if w.mux == nil {
-		t.Error("mux is nil")
-	}
-	if w.scheduler == nil {
-		t.Error("scheduler is nil")
-	}
-	if w.redisOpt == nil {
-		t.Error("redisOpt is nil")
-	}
+	require.NotNil(t, w.client, "client")
+	require.NotNil(t, w.mux, "mux")
+	require.NotNil(t, w.scheduler, "scheduler")
+	require.NotNil(t, w.redisOpt, "redisOpt")
 }
 
 // TestNew_InvalidURL verifies that New returns an error for a non-Redis URI.
 func TestNew_InvalidURL(t *testing.T) {
 	_, err := New("not-a-valid-redis-url")
-	if err == nil {
-		t.Fatal("expected error for invalid Redis URL, got nil")
-	}
+	require.Error(t, err, "expected error for invalid Redis URL, got nil")
 }
 
 // TestNew_EmptyURL verifies that New returns an error for an empty string.
 func TestNew_EmptyURL(t *testing.T) {
 	_, err := New("")
-	if err == nil {
-		t.Fatal("expected error for empty Redis URL, got nil")
-	}
+	require.Error(t, err, "expected error for empty Redis URL, got nil")
 }
 
 // TestNew_WrongScheme verifies that New returns an error when the URL uses an
 // unsupported scheme such as http://.
 func TestNew_WrongScheme(t *testing.T) {
 	_, err := New("http://localhost:6379")
-	if err == nil {
-		t.Fatal("expected error for http:// URL, got nil")
-	}
+	require.Error(t, err, "expected error for http:// URL, got nil")
 }
 
 // TestRedisConnOpt verifies that RedisConnOpt returns the option that was
 // created during construction.
 func TestRedisConnOpt(t *testing.T) {
 	w := newTestWorker(t)
-	if w.RedisConnOpt() == nil {
-		t.Error("RedisConnOpt returned nil")
-	}
+	require.NotNil(t, w.RedisConnOpt(), "RedisConnOpt returned nil")
 }
 
 // TestRegister verifies that Register stores a handler in the mux and that the
@@ -87,23 +71,17 @@ func TestRegister(t *testing.T) {
 	var gotPayload []byte
 	// ctx here is only used for the registration-time debug log.
 	// The handler receives the context from ProcessTask, not this one.
-	w.Register(context.Background(), "test:register", func(_ context.Context, payload []byte) error {
+	w.Register(t.Context(), "test:register", func(_ context.Context, payload []byte) error {
 		called = true
 		gotPayload = payload
 		return nil
 	})
 
 	task := asynq.NewTask("test:register", []byte(`{"hello":"world"}`))
-	if err := w.mux.ProcessTask(context.Background(), task); err != nil {
-		t.Fatalf("ProcessTask: %v", err)
-	}
+	require.NoError(t, w.mux.ProcessTask(t.Context(), task), "ProcessTask")
 
-	if !called {
-		t.Error("expected handler to be called, but it was not")
-	}
-	if string(gotPayload) != `{"hello":"world"}` {
-		t.Errorf("handler received payload %q, want %q", gotPayload, `{"hello":"world"}`)
-	}
+	require.True(t, called, "expected handler to be called")
+	require.Equal(t, `{"hello":"world"}`, string(gotPayload), "handler payload")
 }
 
 // TestRegister_HandlerError verifies that an error returned by a registered
@@ -112,15 +90,13 @@ func TestRegister_HandlerError(t *testing.T) {
 	w := newTestWorker(t)
 
 	sentinel := errors.New("handler error")
-	w.Register(context.Background(), "test:fail", func(_ context.Context, _ []byte) error {
+	w.Register(t.Context(), "test:fail", func(_ context.Context, _ []byte) error {
 		return sentinel
 	})
 
 	task := asynq.NewTask("test:fail", nil)
-	err := w.mux.ProcessTask(context.Background(), task)
-	if !errors.Is(err, sentinel) {
-		t.Errorf("ProcessTask returned %v, want %v", err, sentinel)
-	}
+	err := w.mux.ProcessTask(t.Context(), task)
+	require.ErrorIs(t, err, sentinel, "ProcessTask error")
 }
 
 // TestRegister_NilPayload verifies that a handler registered via Register
@@ -129,21 +105,15 @@ func TestRegister_NilPayload(t *testing.T) {
 	w := newTestWorker(t)
 
 	var called bool
-	w.Register(context.Background(), "test:nil-payload", func(_ context.Context, payload []byte) error {
+	w.Register(t.Context(), "test:nil-payload", func(_ context.Context, payload []byte) error {
 		called = true
-		if payload != nil && len(payload) != 0 {
-			t.Errorf("handler received payload %q, want nil or empty", payload)
-		}
+		require.True(t, payload == nil || len(payload) == 0, "handler received payload %q, want nil or empty", payload)
 		return nil
 	})
 
 	task := asynq.NewTask("test:nil-payload", nil)
-	if err := w.mux.ProcessTask(context.Background(), task); err != nil {
-		t.Fatalf("ProcessTask: %v", err)
-	}
-	if !called {
-		t.Error("expected handler to be called")
-	}
+	require.NoError(t, w.mux.ProcessTask(t.Context(), task), "ProcessTask")
+	require.True(t, called, "expected handler to be called")
 }
 
 // TestRegisterSchedule verifies that a valid cron expression and
@@ -152,12 +122,8 @@ func TestRegisterSchedule(t *testing.T) {
 	w := newTestWorker(t)
 
 	entryID, err := w.RegisterSchedule("@every 1m", "test:sched", map[string]string{"k": "v"})
-	if err != nil {
-		t.Fatalf("RegisterSchedule: %v", err)
-	}
-	if entryID == "" {
-		t.Error("expected non-empty entry ID")
-	}
+	require.NoError(t, err, "RegisterSchedule")
+	require.NotEmpty(t, entryID, "expected non-empty entry ID")
 }
 
 // TestRegisterSchedule_NilPayload verifies that nil is accepted as a payload
@@ -166,12 +132,8 @@ func TestRegisterSchedule_NilPayload(t *testing.T) {
 	w := newTestWorker(t)
 
 	entryID, err := w.RegisterSchedule("@every 1h", "test:sched-nil", nil)
-	if err != nil {
-		t.Fatalf("RegisterSchedule with nil payload: %v", err)
-	}
-	if entryID == "" {
-		t.Error("expected non-empty entry ID for nil payload")
-	}
+	require.NoError(t, err, "RegisterSchedule with nil payload")
+	require.NotEmpty(t, entryID, "expected non-empty entry ID for nil payload")
 }
 
 // TestRegisterSchedule_DistinctIDs verifies that separate schedules for
@@ -181,40 +143,26 @@ func TestRegisterSchedule_DistinctIDs(t *testing.T) {
 	w := newTestWorker(t)
 
 	var called1, called2 bool
-	w.Register(context.Background(), "test:multi-a", func(_ context.Context, _ []byte) error {
+	w.Register(t.Context(), "test:multi-a", func(_ context.Context, _ []byte) error {
 		called1 = true
 		return nil
 	})
-	w.Register(context.Background(), "test:multi-b", func(_ context.Context, _ []byte) error {
+	w.Register(t.Context(), "test:multi-b", func(_ context.Context, _ []byte) error {
 		called2 = true
 		return nil
 	})
 
 	id1, err := w.RegisterSchedule("@every 1m", "test:multi-a", nil)
-	if err != nil {
-		t.Fatalf("first RegisterSchedule: %v", err)
-	}
+	require.NoError(t, err, "first RegisterSchedule")
 	id2, err := w.RegisterSchedule("@every 2m", "test:multi-b", nil)
-	if err != nil {
-		t.Fatalf("second RegisterSchedule: %v", err)
-	}
-	if id1 == id2 {
-		t.Errorf("expected distinct entry IDs, got %q for both", id1)
-	}
+	require.NoError(t, err, "second RegisterSchedule")
+	require.NotEqual(t, id1, id2, "expected distinct entry IDs")
 
 	// Verify both handlers are actually wired up.
-	if err := w.mux.ProcessTask(context.Background(), asynq.NewTask("test:multi-a", nil)); err != nil {
-		t.Fatalf("ProcessTask for multi-a: %v", err)
-	}
-	if err := w.mux.ProcessTask(context.Background(), asynq.NewTask("test:multi-b", nil)); err != nil {
-		t.Fatalf("ProcessTask for multi-b: %v", err)
-	}
-	if !called1 {
-		t.Error("handler for test:multi-a was not called")
-	}
-	if !called2 {
-		t.Error("handler for test:multi-b was not called")
-	}
+	require.NoError(t, w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-a", nil)), "ProcessTask for multi-a")
+	require.NoError(t, w.mux.ProcessTask(t.Context(), asynq.NewTask("test:multi-b", nil)), "ProcessTask for multi-b")
+	require.True(t, called1, "handler for test:multi-a was not called")
+	require.True(t, called2, "handler for test:multi-b was not called")
 }
 
 // TestRegisterSchedule_InvalidCronspec verifies that an unparseable cron
@@ -223,9 +171,7 @@ func TestRegisterSchedule_InvalidCronspec(t *testing.T) {
 	w := newTestWorker(t)
 
 	_, err := w.RegisterSchedule("not a valid cron expression", "test:sched", nil)
-	if err == nil {
-		t.Fatal("expected error for invalid cron spec, got nil")
-	}
+	require.Error(t, err, "expected error for invalid cron spec, got nil")
 }
 
 // TestRegisterSchedule_NonMarshalablePayload verifies that a payload that
@@ -235,9 +181,7 @@ func TestRegisterSchedule_NonMarshalablePayload(t *testing.T) {
 	w := newTestWorker(t)
 
 	_, err := w.RegisterSchedule("@every 1m", "test:sched", make(chan int))
-	if err == nil {
-		t.Fatal("expected error for non-marshalable payload, got nil")
-	}
+	require.Error(t, err, "expected error for non-marshalable payload, got nil")
 }
 
 // TestEnqueue_NonMarshalablePayload verifies that Enqueue returns an error
@@ -246,19 +190,15 @@ func TestRegisterSchedule_NonMarshalablePayload(t *testing.T) {
 func TestEnqueue_NonMarshalablePayload(t *testing.T) {
 	w := newTestWorker(t)
 
-	_, err := w.Enqueue(context.Background(), "test:enqueue", make(chan int))
-	if err == nil {
-		t.Fatal("expected error for non-marshalable payload, got nil")
-	}
+	_, err := w.Enqueue(t.Context(), "test:enqueue", make(chan int))
+	require.Error(t, err, "expected error for non-marshalable payload, got nil")
 }
 
 // TestClose verifies that Close can be called on a newly-created Worker that
 // has never been started without panicking.
 func TestClose(t *testing.T) {
 	w, err := New(testRedisURL)
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
+	require.NoError(t, err, "New")
 	if err := w.Close(); err != nil {
 		// asynq.Client.Close() may error when Redis is unreachable.
 		// Accept in unit-test environments; live-Redis path belongs in integration tests.

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -82,27 +83,39 @@ func (h *AuthorHandler) HandleAuthors(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// HandleAuthor handles GET/PUT/DELETE /api/authors/{id}.
+// HandleAuthor handles requests under /api/authors/{id} and /api/authors/{id}/books.
 func (h *AuthorHandler) HandleAuthor(w http.ResponseWriter, r *http.Request) {
-	id, ok := extractPathID(r.URL.Path, "/api/authors/")
+	id, sub, ok := extractPathSegments(r.URL.Path, "/api/authors/")
 	if !ok {
 		writeError(r.Context(), w, http.StatusBadRequest, "invalid author ID")
 		return
 	}
 
-	switch r.Method {
-	case http.MethodGet:
-		h.getAuthor(w, r, id)
-	case http.MethodPut:
-		h.updateAuthor(w, r, id)
-	case http.MethodDelete:
-		h.deleteAuthor(w, r, id)
+	switch sub {
+	case "":
+		switch r.Method {
+		case http.MethodGet:
+			h.getAuthor(w, r, id)
+		case http.MethodPut:
+			h.updateAuthor(w, r, id)
+		case http.MethodDelete:
+			h.deleteAuthor(w, r, id)
+		default:
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
+	case "books":
+		switch r.Method {
+		case http.MethodGet:
+			h.listAuthorBooks(w, r, id)
+		default:
+			writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		}
 	default:
-		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		writeError(r.Context(), w, http.StatusNotFound, "not found")
 	}
 }
 
-// listAuthors godoc
+// listAuthors returns all authors.
 //
 //	@Summary		List authors
 //	@Description	Returns all authors
@@ -117,7 +130,7 @@ func (h *AuthorHandler) listAuthors(w http.ResponseWriter, r *http.Request) {
 	listEntities(w, r, "authors", h.DB.ListAuthors, toAuthorDTO)
 }
 
-// createAuthor godoc
+// createAuthor creates a new author.
 //
 //	@Summary		Create an author
 //	@Description	Create a new author
@@ -136,7 +149,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 	createNamedEntity(h.authorOps(), w, r)
 }
 
-// getAuthor godoc
+// getAuthor returns a single author by ID.
 //
 //	@Summary		Get an author
 //	@Description	Returns a single author by ID
@@ -154,7 +167,7 @@ func (h *AuthorHandler) getAuthor(w http.ResponseWriter, r *http.Request, id str
 	getNamedEntity(h.authorOps(), w, r, id)
 }
 
-// updateAuthor godoc
+// updateAuthor updates an existing author.
 //
 //	@Summary		Update an author
 //	@Description	Update an existing author
@@ -175,7 +188,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 	updateNamedEntity(h.authorOps(), w, r, id)
 }
 
-// deleteAuthor godoc
+// deleteAuthor deletes an author by ID.
 //
 //	@Summary		Delete an author
 //	@Description	Delete an author by ID
@@ -189,9 +202,34 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request, id 
 //	@Failure		500	{object}	errorResponse
 //	@Router			/authors/{id} [delete]
 func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request, id string) {
-	deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
+	deleteResource(h.DB, w, r, id, "author", "author", otelkeys.AuthorID,
 		h.DB.GetAuthor, h.DB.DeleteAuthor,
 		db.AuditActionAuthorDeleted,
 		func(a *db.Author) map[string]any { return map[string]any{"name": a.Name} },
+	)
+}
+
+// listAuthorBooks returns paginated books by the specified author.
+//
+//	@Summary		List books by author
+//	@Description	Returns paginated books for a specific author
+//	@Tags			Authors
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string	true	"Author ID"
+//	@Param			limit	query		int		false	"Max items per page (default 50, max 200)"
+//	@Param			offset	query		int		false	"Number of items to skip (default 0)"
+//	@Success		200		{object}	bookListDTO
+//	@Failure		400		{object}	errorResponse
+//	@Failure		401		{object}	errorResponse
+//	@Failure		404		{object}	errorResponse
+//	@Failure		500		{object}	errorResponse
+//	@Router			/authors/{id}/books [get]
+func (h *AuthorHandler) listAuthorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
+	listParentBooks(w, r, authorID,
+		slog.String(otelkeys.AuthorID, authorID),
+		h.DB.ListBooksByAuthorPaginated,
+		h.DB.GetAuthor,
+		"author",
 	)
 }

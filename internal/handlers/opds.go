@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -26,7 +27,7 @@ type OPDSHandler struct {
 func (h *OPDSHandler) HandleOPDS(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
-		writeOPDSError(r, w, http.StatusMethodNotAllowed, opdsNavContentType, "urn:biblioteka:opds:error", "Method not allowed")
+		writeOPDSError(r, w, http.StatusMethodNotAllowed, opdspkg.NavContentType, "urn:biblioteka:opds:error", "Method not allowed")
 		return
 	}
 
@@ -79,16 +80,16 @@ func (h *OPDSHandler) openSearchDescription(w http.ResponseWriter, r *http.Reque
 	}
 
 	desc := osDesc{
-		XMLNS:       xmlnsOpenSearch,
+		XMLNS:       opdspkg.XMLNSOpenSearch,
 		ShortName:   "Biblioteka",
 		Description: "Search books in Biblioteka",
 		URL: osURL{
-			Type:     opdsAcqContentType,
+			Type:     opdspkg.AcqContentType,
 			Template: baseURL + "/search?q={searchTerms}",
 		},
 	}
 
-	w.Header().Set("Content-Type", opdsSearchType)
+	w.Header().Set("Content-Type", opdspkg.SearchType)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(xml.Header))
 	enc := xml.NewEncoder(w)
@@ -109,7 +110,25 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 		return
 	}
 
-	mimeType := fileTypeMIME[strings.ToLower(bf.FileType)]
+	// Re-validate that the stored file path is still within an allowed library
+	// root. This catches pre-existing rows that may reference paths outside
+	// library directories, and handles symlink-aware canonicalization.
+	allowed, pathErr := isBookFilePathAllowed(ctx, h.DB, bf.FilePath)
+	if pathErr != nil {
+		slog.ErrorContext(ctx, "OPDS: failed to validate book file path", slog.Any(otelkeys.Error, pathErr))
+		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "urn:biblioteka:opds:error", "Failed to validate file path")
+		return
+	}
+	if !allowed {
+		slog.WarnContext(ctx, "OPDS download blocked: file path outside library roots",
+			slog.String(otelkeys.BookFileID, fileID),
+			slog.String(otelkeys.Path, bf.FilePath),
+		)
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	mimeType := opdspkg.MIMETypeForFileType(bf.FileType)
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
 	}
@@ -123,7 +142,14 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 		http.NotFound(w, r)
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			slog.WarnContext(ctx, "OPDS: failed to close book file",
+				slog.String(otelkeys.BookFileID, fileID),
+				slog.Any(otelkeys.Error, closeErr),
+			)
+		}
+	}()
 
 	stat, err := f.Stat()
 	if err != nil {
@@ -131,12 +157,22 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 			slog.String(otelkeys.BookFileID, fileID),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeOPDSError(r, w, http.StatusInternalServerError, opdsAcqContentType, "urn:biblioteka:opds:error", "Failed to read file")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "urn:biblioteka:opds:error", "Failed to read file")
 		return
 	}
 
 	w.Header().Set("Content-Type", mimeType)
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": bf.FileName}))
+
+	// Increment the download count (best-effort; a failure here should not
+	// prevent the download from completing).
+	if incErr := h.DB.IncrementBookFileDownloadCount(ctx, fileID); incErr != nil {
+		slog.WarnContext(ctx, "OPDS: failed to increment download count",
+			slog.String(otelkeys.BookFileID, fileID),
+			slog.Any(otelkeys.Error, incErr),
+		)
+	}
+
 	http.ServeContent(w, r, bf.FileName, stat.ModTime(), f)
 }
 
@@ -190,12 +226,20 @@ func (h *OPDSHandler) serveCover(w http.ResponseWriter, r *http.Request, bookID 
 		return
 	}
 
+	if !isSafeCoverRedirectURL(*book.CoverImageURL) {
+		slog.WarnContext(ctx, "OPDS: unsafe cover image URL scheme rejected",
+			slog.String(otelkeys.BookID, bookID),
+			slog.String(otelkeys.URL, *book.CoverImageURL),
+		)
+		http.NotFound(w, r)
+		return
+	}
 	http.Redirect(w, r, *book.CoverImageURL, http.StatusTemporaryRedirect)
 }
 
 // bookEntries converts a slice of books into OPDS entry elements, including
 // authors and download links for each book. Uses batch queries to avoid N+1.
-func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL string) []opdsEntry {
+func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL string) []opdspkg.Entry {
 	if len(books) == 0 {
 		return nil
 	}
@@ -223,22 +267,22 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 		filesByBook = nil
 	}
 
-	entries := make([]opdsEntry, 0, len(books))
+	entries := make([]opdspkg.Entry, 0, len(books))
 	for _, book := range books {
-		entry := opdsEntry{
+		entry := opdspkg.Entry{
 			Title:   book.Title,
 			ID:      baseURL + "/books/" + book.ID,
 			Updated: book.UpdatedAt.Format(time.RFC3339),
 		}
 
 		if book.Description != nil && *book.Description != "" {
-			entry.Content = &opdsContent{Type: "text", Value: *book.Description}
+			entry.Content = &opdspkg.Content{Type: "text", Value: *book.Description}
 		}
 
 		// Add authors from batch result.
 		if authorsByBook != nil {
 			for _, a := range authorsByBook[book.ID] {
-				entry.Authors = append(entry.Authors, opdsAuthor{Name: a.Name})
+				entry.Authors = append(entry.Authors, opdspkg.Author{Name: a.Name})
 			}
 		}
 
@@ -250,8 +294,8 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 			if strings.HasPrefix(coverURL, "data:") {
 				coverURL = baseURL + "/covers/" + book.ID
 			}
-			entry.Links = append(entry.Links, opdsLink{
-				Rel:  relImage,
+			entry.Links = append(entry.Links, opdspkg.Link{
+				Rel:  opdspkg.RelImage,
 				Href: coverURL,
 				Type: coverType,
 			})
@@ -260,12 +304,12 @@ func (h *OPDSHandler) bookEntries(ctx context.Context, books []db.Book, baseURL 
 		// Add download links from batch result.
 		if filesByBook != nil {
 			for _, f := range filesByBook[book.ID] {
-				mimeType := fileTypeMIME[strings.ToLower(f.FileType)]
+				mimeType := opdspkg.MIMETypeForFileType(f.FileType)
 				if mimeType == "" {
 					mimeType = "application/octet-stream"
 				}
-				entry.Links = append(entry.Links, opdsLink{
-					Rel:  relAcquisition,
+				entry.Links = append(entry.Links, opdspkg.Link{
+					Rel:  opdspkg.RelAcquisition,
 					Href: baseURL + "/download/" + f.ID,
 					Type: mimeType,
 				})

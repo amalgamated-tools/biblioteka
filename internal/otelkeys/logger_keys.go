@@ -1,3 +1,7 @@
+// Package otelkeys defines string constants for all structured log field keys
+// used in slog calls throughout the Biblioteka codebase. Centralizing keys
+// here ensures consistent field naming across all packages and enables
+// reliable log querying and alerting.
 package otelkeys
 
 // This file defines common attribute keys for structured logging and telemetry.
@@ -60,6 +64,7 @@ const (
 	Issuer              string = "issuer"
 	IssuerURL           string = "issuer_url"
 	Job                 string = "job"
+	JWTSecretLength     string = "jwt_secret_length"
 	Key                 string = "key"
 	KoboTokenID         string = "kobo_token_id"
 	KOSyncUsername      string = "kosync_username"
@@ -67,11 +72,14 @@ const (
 	LibrariesEnqueued   string = "libraries_enqueued"
 	LibraryID           string = "library_id"
 	LibraryName         string = "library_name"
+	LibraryPaths        string = "library_paths"
 	LibraryRoot         string = "library_root"
 	Limit               string = "limit"
 	Line                string = "line"
+	LookupStrategy      string = "lookup_strategy"
 	MediaType           string = "media_type"
 	MetaContent         string = "meta_content"
+	MetadataSource      string = "metadata_source"
 	MetaName            string = "meta_name"
 	MIMEType            string = "mime_type"
 	Method              string = "method"
@@ -86,6 +94,8 @@ const (
 	PathsEnqueued       string = "paths_enqueued"
 	Port                string = "port"
 	Properties          string = "properties"
+	Protocol            string = "protocol"
+	PubSubChannel       string = "pubsub_channel"
 	Query               string = "query"
 	Reason              string = "reason"
 	RedirectURI         string = "redirect_uri"
@@ -93,6 +103,7 @@ const (
 	RemoteAddr          string = "remote_addr"
 	RequestID           string = "request_id"
 	Resource            string = "resource"
+	SearchTitle         string = "search_title"
 	SeriesCount         string = "series_count"
 	SeriesID            string = "series_id"
 	Source              string = "source"
@@ -114,6 +125,7 @@ const (
 	Username            string = "username"
 	Value               string = "value"
 	Version             string = "version"
+	WatchFolderPath     string = "watch_folder_path"
 	WorkID              string = "work_id"
 	WorkLegacyID        string = "work_legacy_id"
 )

@@ -65,6 +65,4 @@ nav:
       - Observability: observability.md
 
 exclude_docs: |
-  docs.go
-  swagger.json
-  swagger.yaml
+  swagger/**

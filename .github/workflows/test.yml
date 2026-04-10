@@ -11,9 +11,9 @@ on:
       - 'go.mod'
       - 'go.sum'
       - '.golangci.yml'
-      # docs/docs.go is auto-generated Swagger code imported by internal/server;
+      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
       # a bad regeneration would break compilation but wouldn't touch internal/**
-      - 'docs/docs.go'
+      - 'docs/swagger/docs.go'
       - '.github/workflows/test.yml'
   pull_request:
     branches: [main]
@@ -25,9 +25,9 @@ on:
       - 'go.mod'
       - 'go.sum'
       - '.golangci.yml'
-      # docs/docs.go is auto-generated Swagger code imported by internal/server;
+      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
       # a bad regeneration would break compilation but wouldn't touch internal/**
-      - 'docs/docs.go'
+      - 'docs/swagger/docs.go'
       - '.github/workflows/test.yml'
 
 permissions:
@@ -88,7 +88,14 @@ jobs:
 
       - name: Run frontend tests
         working-directory: ./frontend
-        run: pnpm run test
+        run: pnpm exec vitest run --coverage
+
+      - name: Upload frontend coverage report
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 14
 
       # Build last: catches Vite-specific bundling errors after all source-level
       # checks have passed, so fast-failing checks above aren't blocked by a
@@ -179,7 +186,74 @@ jobs:
           exiftool -ver
 
       - name: Run Go tests
-        run: go test ./...
+        run: go test -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Display Go coverage summary
+        run: go tool cover -func=coverage.out | awk '/^total:/{print $NF}'
+
+      - name: Upload Go coverage report
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: go-coverage
+          path: coverage.out
+          retention-days: 14
+
+      - name: Check for known vulnerabilities
+        run: |
+          # govulncheck exit codes: 0 = no vulns, 3 = vulns found, other = error.
+          # Stdlib vulns require a Go toolchain update and cannot be fixed in-repo,
+          # so we only fail on non-stdlib (third-party) vulnerabilities.
+          set +e
+          go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 -format json ./... > vulncheck.json 2>vulncheck.stderr
+          rc=$?
+          set -e
+
+          if [ "$rc" -eq 0 ]; then
+            echo "No vulnerabilities found."
+            exit 0
+          fi
+
+          # Any exit code other than 3 is an execution error — fail hard.
+          if [ "$rc" -ne 3 ]; then
+            echo "::error::govulncheck failed with exit code $rc"
+            cat vulncheck.stderr
+            exit 1
+          fi
+
+          # Count non-stdlib findings (module path is not "stdlib").
+          # Fail closed: if jq parsing fails, treat as non-stdlib to avoid masking issues.
+          if ! jq_out=$(jq -r 'select(.finding != null) | .finding.trace[0].module' vulncheck.json 2>/dev/null); then
+            non_stdlib=1
+          else
+            non_stdlib=$(echo "$jq_out" | (grep -cv '^stdlib$' || echo 0))
+          fi
+
+          # Render a human-readable summary from the JSON instead of re-running govulncheck.
+          summary=$(jq -r '
+            select(.finding != null)
+            | .finding as $f
+            | ($f.osv // "unknown") as $osv
+            | ($f.trace[0].module // "unknown") as $module
+            | ($f.trace[0].package // "unknown") as $package
+            | "- \($osv) | module: \($module) | package: \($package)"
+          ' vulncheck.json 2>/dev/null)
+
+          if [ -n "$summary" ]; then
+            echo "Vulnerability summary:"
+            echo "$summary"
+          else
+            echo "Vulnerabilities were detected, but no summary could be rendered from vulncheck.json."
+            echo "Raw govulncheck JSON output:"
+            cat vulncheck.json
+          fi
+
+          if [ "$non_stdlib" -gt 0 ]; then
+            echo "::error::Non-stdlib vulnerabilities found"
+            exit 1
+          fi
+
+          echo "::warning::Only Go stdlib vulnerabilities found (requires Go toolchain update to fix)"
+          exit 0
 
   go-all:
     needs: [go-lint, go-test]
@@ -195,3 +269,108 @@ jobs:
             echo "One or more Go jobs failed"
             exit 1
           fi
+
+  coverage-comment:
+    needs: [go-test, frontend-checks]
+    if: >-
+      always()
+      && github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && needs.go-test.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v5
+        with:
+          go-version: 1.26.1
+
+      - name: Download Go coverage report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: go-coverage
+
+      - name: Extract Go coverage total
+        id: go-coverage
+        run: |
+          PCT=$(go tool cover -func=coverage.out | awk '/^total:/{print $3}')
+          echo "pct=${PCT}" >> "$GITHUB_OUTPUT"
+
+      - name: Download frontend coverage report
+        id: frontend-download
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          name: frontend-coverage
+          path: frontend-coverage
+
+      - name: Extract frontend coverage total
+        id: frontend-coverage
+        if: steps.frontend-download.outcome == 'success'
+        run: |
+          PCT=$(node -e "
+            const fs = require('fs');
+            try {
+              const summary = JSON.parse(fs.readFileSync('frontend-coverage/coverage-summary.json', 'utf8'));
+              console.log(summary.total.lines.pct + '%');
+            } catch { console.log('N/A'); }
+          ")
+          echo "pct=${PCT}" >> "$GITHUB_OUTPUT"
+
+      - name: Post coverage comment
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const MARKER = '<!-- gh-coverage-comment -->';
+            const goPct = '${{ steps.go-coverage.outputs.pct }}';
+            const frontendPct = '${{ steps.frontend-coverage.outputs.pct }}' || 'N/A';
+            const rows = [
+              `| Go backend | ${goPct} |`,
+            ];
+            if (frontendPct && frontendPct !== 'N/A') {
+              rows.push(`| Frontend | ${frontendPct} |`);
+            }
+            const body = [
+              MARKER,
+              '## Test Coverage',
+              '',
+              '| Component | Coverage |',
+              '|-----------|----------|',
+              ...rows,
+              '',
+              '_Coverage is measured for all packages under `./...`. Frontend coverage details are available in the `frontend-coverage` artifact._',
+            ].join('\n');
+
+            try {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              const existing = comments.find(c =>
+                c.user.login === 'github-actions[bot]' && c.body.startsWith(MARKER)
+              );
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body,
+                });
+              }
+            } catch (e) {
+              core.warning(`Could not post coverage comment: ${e.message}`);
+            }

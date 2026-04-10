@@ -2,9 +2,34 @@ package handlers
 
 import (
 	"encoding/base64"
-	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
+
+func TestIsSafeCoverRedirectURL(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want bool
+	}{
+		{"https is allowed", "https://example.com/cover.jpg", true},
+		{"https with path and query", "https://cdn.example.com/img.png?v=1", true},
+		{"http is rejected", "http://example.com/cover.jpg", false},
+		{"protocol-relative is rejected", "//example.com/cover.jpg", false},
+		{"javascript is rejected", "javascript:alert(1)", false},
+		{"data URL is rejected", "data:image/png;base64,abc", false},
+		{"empty string is rejected", "", false},
+		{"relative path is rejected", "/cover.jpg", false},
+		{"ftp is rejected", "ftp://example.com/cover.jpg", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, isSafeCoverRedirectURL(tt.url))
+		})
+	}
+}
 
 func TestDataURLMIMEType(t *testing.T) {
 	tests := []struct {
@@ -66,12 +91,8 @@ func TestDataURLMIMEType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotMIME, gotOK := dataURLMIMEType(tt.input)
-			if gotOK != tt.wantOK {
-				t.Fatalf("dataURLMIMEType(%q) ok = %v, want %v", tt.input, gotOK, tt.wantOK)
-			}
-			if gotMIME != tt.wantMIME {
-				t.Errorf("dataURLMIMEType(%q) mime = %q, want %q", tt.input, gotMIME, tt.wantMIME)
-			}
+			require.Equal(t, tt.wantOK, gotOK)
+			require.Equal(t, tt.wantMIME, gotMIME)
 		})
 	}
 }
@@ -167,9 +188,7 @@ func TestCoverMIMETypeExtended(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := coverMIMEType(tt.input)
-			if got != tt.want {
-				t.Errorf("coverMIMEType(%q) = %q, want %q", tt.input, got, tt.want)
-			}
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -180,35 +199,21 @@ func TestDecodeDataURL(t *testing.T) {
 		encoded := "data:image/png;base64," + base64.StdEncoding.EncodeToString(payload)
 
 		mime, got, err := decodeDataURL(encoded)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if mime != "image/png" {
-			t.Errorf("mime = %q, want %q", mime, "image/png")
-		}
-		if string(got) != string(payload) {
-			t.Errorf("data = %q, want %q", got, payload)
-		}
+		require.NoError(t, err)
+		require.Equal(t, "image/png", mime)
+		require.Equal(t, string(payload), string(got))
 	})
 
 	t.Run("not a data URL returns ErrNotDataURL", func(t *testing.T) {
 		_, _, err := decodeDataURL("https://example.com/image.png")
-		if err == nil {
-			t.Fatal("expected error for non-data URL, got nil")
-		}
-		if !errors.Is(err, errNotDataURL) {
-			t.Errorf("want errNotDataURL, got %v", err)
-		}
+		require.Error(t, err, "expected error for non-data URL, got nil")
+		require.ErrorIs(t, err, errNotDataURL)
 	})
 
 	t.Run("empty string returns ErrNotDataURL", func(t *testing.T) {
 		_, _, err := decodeDataURL("")
-		if err == nil {
-			t.Fatal("expected error for empty string, got nil")
-		}
-		if !errors.Is(err, errNotDataURL) {
-			t.Errorf("want errNotDataURL, got %v", err)
-		}
+		require.Error(t, err, "expected error for empty string, got nil")
+		require.ErrorIs(t, err, errNotDataURL)
 	})
 
 	t.Run("valid base64 JPEG data URL", func(t *testing.T) {
@@ -216,21 +221,13 @@ func TestDecodeDataURL(t *testing.T) {
 		encoded := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(payload)
 
 		mime, got, err := decodeDataURL(encoded)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if mime != "image/jpeg" {
-			t.Errorf("mime = %q, want %q", mime, "image/jpeg")
-		}
-		if len(got) != len(payload) {
-			t.Errorf("decoded len = %d, want %d", len(got), len(payload))
-		}
+		require.NoError(t, err)
+		require.Equal(t, "image/jpeg", mime)
+		require.Len(t, got, len(payload))
 	})
 
 	t.Run("invalid base64 payload returns error", func(t *testing.T) {
 		_, _, err := decodeDataURL("data:image/png;base64,!!!invalid!!!")
-		if err == nil {
-			t.Fatal("expected error for invalid base64, got nil")
-		}
+		require.Error(t, err, "expected error for invalid base64, got nil")
 	})
 }

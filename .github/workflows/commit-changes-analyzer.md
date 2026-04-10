@@ -13,6 +13,7 @@ permissions:
   discussions: read
   issues: read
   pull-requests: read
+tracker-id: commit-changes-analyzer
 engine:
   id: copilot
 tools:
@@ -24,7 +25,7 @@ tools:
 safe-outputs:
   create-discussion:
     expires: 1d
-    category: "announcements"
+    category: "audits"
     max: 1
 timeout-minutes: 30
 imports:

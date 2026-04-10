@@ -24,20 +24,20 @@ frontend/
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
       Books.svelte        Book listing and detail view; reads `initialOffset` from the URL hash query string (`#books?offset=48`) and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
-      Dashboard.svelte    Home screen; library overview
+      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries) plus a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); Total Books is fetched from the API via `listBooks(1, 0)` on mount and shows "…" while the request is in flight (falls back to `0` on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
       Sidebar.svelte      Navigation sidebar; fetches and displays the running server version; uses `<a href>` anchor links for all navigation items; the brand name is rendered as `<p>` (not `<h1>`) to avoid duplicate top-level headings (WCAG 1.3.1); icon-only action links (Create library, Library settings) carry `aria-label`, and the Create-library icon explicitly carries `aria-hidden="true"` (WCAG 4.1.2); the Library-settings link aria-label includes the library name (e.g. "Library settings for Fiction") so each link has a unique, descriptive name (WCAG 2.4.6); the Library-settings link always carries at least `opacity-30` so it is visible when focused via keyboard (WCAG 2.4.7); nav link clusters are wrapped in `role="group"` containers labelled by `<h2>` group headings (WCAG 1.3.1)
       libraries/          Reusable sub-components for the Libraries view
-        LibraryForm.svelte   Create / edit library form; the "Monitor for new content" toggle uses `role="switch"` and explicit `aria-checked` to communicate on/off state to assistive technologies (WCAG 4.1.2)
+        LibraryForm.svelte   Create / edit library form; the "Monitor for new content" toggle uses `role="switch"` and explicit `aria-checked` to communicate on/off state to assistive technologies (WCAG 4.1.2); delete library action uses the `DeleteConfirmation` component for an accessible inline confirmation with keyboard-focus management and Escape-to-dismiss (WCAG 4.1.2)
         LibraryView.svelte   Library detail with book listing
       settings/           Tab sub-components for the Settings page (see Settings component architecture below)
-        AccountTab.svelte       Account & password management; OIDC linking
+        AccountTab.svelte       Account management: view email, edit display name, change password, and link OIDC account
         APIKeysTab.svelte       Create and revoke long-lived API keys (`bib_` prefix); delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         KoboTab.svelte          Kobo sync token management; displays setup instructions; delete actions use an inline `role="alertdialog"` confirmation with keyboard-focus management and Escape-to-dismiss instead of `window.confirm()` (WCAG 4.1.2)
         OidcTab.svelte          Admin: OIDC / SSO provider configuration
-        PreferencesTab.svelte   Display theme selection
+        PreferencesTab.svelte   Display theme selection; announces the new theme to screen readers via a `role="status"` live region so assistive technologies are notified without moving focus (WCAG 4.1.3)
         SmtpTab.svelte          Admin: SMTP mail server configuration
         UsersTab.svelte         Admin: user list and admin-role toggling; all `<th>` column headers carry `scope="col"` (WCAG 1.3.1); the role-toggle button carries an action-oriented `aria-label` describing the operation it will perform (WCAG 4.1.2)
       ui/                 Generic reusable UI components
@@ -45,17 +45,36 @@ frontend/
         BookCard.svelte      Card widget displaying a single book summary
         BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states
         Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
-        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes
+        DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
+        TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3); border uses `border-ink-400 dark:border-ink-400` to meet the Non-text Contrast minimum (WCAG 1.4.11)
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
-      actions.ts          Svelte action utilities (`autofocusFirstButton`)
-      api.ts            Centralised API client
-      api.test.ts       API client unit tests
-      actions.ts        Svelte actions for DOM interactions (`autofocusFirstButton`)
-      clipboard.ts      Async clipboard helper with `execCommand` fallback
-      clipboard.test.ts Clipboard helper unit tests
-      validation.ts     Composable form-validation rule functions
-      validation.test.ts Form-validation unit tests
+      actions.ts              Svelte action utilities (`autofocusFirstButton`)
+      api.ts                  Barrel re-export; re-exports every symbol from `api/` sub-modules
+      api.test.ts             API client unit tests; imports from the barrel and covers core, auth, config, admin, and credentials sub-modules
+      api/                    Domain-specific API sub-modules
+        core.ts               Token storage, `ApiError`, `request`, `getVersion`
+        auth.ts               `signup`, `login`, `logout`, `getMe`, OIDC helpers, `changePassword`
+        config.ts             OIDC + SMTP server configuration
+        admin.ts              User management and audit logs
+        credentials.ts        OPDS + KOSync credentials
+        libraries.ts          Library CRUD + paginated book listing
+        authors.ts            Author CRUD + author–book relationships
+        series.ts             Series CRUD + series–book relationships
+        books.ts              Book CRUD, associations, and file management
+        tokens.ts             API keys, Kobo tokens
+      autoDismissTimer.svelte.ts  `AutoDismissTimer` class — temporary visibility state with auto-dismiss timeout
+      autoDismissTimer.test.ts    Unit tests for `AutoDismissTimer`
+      clipboard.ts            Async clipboard helper with `execCommand` fallback
+      clipboard.test.ts       Clipboard helper unit tests
+      copyTimeout.svelte.ts   `CopyTimeoutState` class — auto-resetting copied-ID feedback state
+      copyTimeout.test.ts     Unit tests for `CopyTimeoutState`
+      timeoutState.svelte.ts  `TimeoutState<T>` base class — shared timer infrastructure for `AutoDismissTimer` and `CopyTimeoutState`
+      timeoutState.test.ts    Unit tests for `TimeoutState<T>`
+      tokenList.svelte.ts     `TokenListState<T>` class — load/delete lifecycle for token-like lists
+      tokenList.test.ts       Unit tests for `TokenListState`
+      validation.ts           Composable form-validation rule functions
+      validation.test.ts      Form-validation unit tests
   vite.config.ts      Vite configuration: build output, dev proxy, Vitest setup, and the restoreGitkeep plugin
 ```
 
@@ -65,42 +84,88 @@ All global state is managed through **Svelte 5 reactive class stores** in `front
 
 ### Pattern
 
+Most stores that manage a list of entities (authors, series, etc.) extend the generic `CrudStore<T, TInput>` base class defined in `frontend/src/stores/crudStore.svelte.ts`. This base class provides the common `load`, `add`, `edit`, and `remove` operations so individual stores only need to supply the API wiring and any domain-specific accessors.
+
 ```ts
-// frontend/src/stores/example.svelte.ts
-import type { Foo } from "../types";
-import * as api from "../lib/api";
-
-class ExampleStore {
-  // $state.raw for arrays: tracks only the reference, not contents.
-  // Avoids deep-proxy overhead and suppresses Svelte's mutation warnings
-  // when the array is replaced wholesale.
-  items: Foo[] = $state.raw([]);
-  loading = $state(false);
-  loaded  = $state(false);
-
-  async load(): Promise<void> {
-    // Idempotency guard: skip if a fetch is already in flight or the data
-    // has been loaded at least once. This makes it safe to call load() from
-    // multiple components or from onMount in a component that may re-mount.
-    if (this.loading || this.loaded) return;
-    this.loading = true;
-    try {
-      this.items = await api.listFoos();
-      this.loaded = true;
-    } catch {
-      // Silently fail — individual pages can handle errors
-    } finally {
-      this.loading = false;
-    }
-  }
-
-  async add(input: FooInput): Promise<Foo> { … }
-  async edit(id: string, input: FooInput): Promise<Foo> { … }
-  async remove(id: string): Promise<void> { … }
+// frontend/src/stores/crudStore.svelte.ts — the shared base class
+export interface CrudOps<T, TInput> {
+  list:   () => Promise<T[]>;
+  create: (input: TInput) => Promise<T>;
+  update: (id: string, input: TInput) => Promise<T>;
+  delete: (id: string) => Promise<void>;
 }
 
-export const exampleStore = new ExampleStore();
+export class CrudStore<T extends { id: string }, TInput> {
+  items: T[] = $state.raw([]);
+  loading = $state(false);
+  loaded  = $state(false);
+  error: string | null = $state(null);
+
+  private readonly ops: CrudOps<T, TInput>;
+
+  constructor(ops: CrudOps<T, TInput>) { this.ops = ops; }
+
+  async load():                             Promise<void> { … }
+  async add(input: TInput):                 Promise<T>    { … }
+  async edit(id: string, input: TInput):    Promise<T>    { … }
+  async remove(id: string):                 Promise<void> { … }
+}
 ```
+
+The `error` field is set when `load()` fails and cleared before each operation. If the rejection value is an `Error` instance, its `message` is used; otherwise the fallback string `"Failed to load"` is stored. Because `loaded` remains `false` after a failed `load()`, the idempotency guard allows a retry — callers can re-invoke `load()` after displaying the error and the store will attempt the fetch again.
+
+**Displaying load errors from a `CrudStore`-based store:**
+
+```svelte
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { authorStore } from "../stores/authors.svelte";
+
+  onMount(() => { authorStore.load(); });
+</script>
+
+{#if authorStore.error}
+  <p role="alert" class="text-danger-600">{authorStore.error}</p>
+{/if}
+
+{#if authorStore.loading}
+  <p>Loading…</p>
+{:else}
+  {#each authorStore.authors as author}
+    <p>{author.name}</p>
+  {/each}
+{/if}
+```
+
+A concrete store extends `CrudStore` and passes the relevant API functions to the constructor:
+
+```ts
+// frontend/src/stores/authors.svelte.ts
+import type { Author, AuthorInput } from "../types";
+import * as api from "../lib/api";
+import { CrudStore } from "./crudStore.svelte";
+
+class AuthorStore extends CrudStore<Author, AuthorInput> {
+  constructor() {
+    super({
+      list:   api.listAuthors,
+      create: api.createAuthor,
+      update: api.updateAuthor,
+      delete: api.deleteAuthor,
+    });
+  }
+
+  // Named accessor keeps call sites readable: authorStore.authors
+  get authors(): Author[] { return this.items; }
+  set authors(v: Author[]) { this.items = v; }
+}
+
+export const authorStore = new AuthorStore();
+```
+
+For stores with additional state beyond basic CRUD (e.g. scan tracking in `libraryStore`), the store may need a fully hand-rolled class instead. `libraryStore` is an example of a store that is currently implemented that way because its `add` flow also maintains scan-tracking state and behavior beyond the base CRUD pattern. If your domain-specific state fits naturally alongside the base CRUD operations, extend `CrudStore` (as `seriesStore` does); otherwise, implement the class directly with `$state` fields.
+
+> **When NOT to extend `CrudStore`**: Use a plain class with `$state` directly for stores that are not entity-list stores (e.g. `authStore`, `routerStore`, `themeStore`).
 
 > **Why classes instead of writable stores?**  
 > Svelte 5 introduces fine-grained reactivity via `$state` runes. Using a class groups related state and methods together and makes the reactive surface explicit. It is the idiomatic Svelte 5 approach and replaces the `writable`/`readable` store API from Svelte 4.
@@ -260,11 +325,37 @@ When a view component renders, it reads `routerStore.subPath` as a `$derived` va
 
 ## API client
 
-All HTTP calls go through `frontend/src/lib/api.ts`. This module:
+All HTTP calls go through `frontend/src/lib/api.ts`, which is a barrel re-export of ten domain-specific sub-modules under `frontend/src/lib/api/`. The barrel preserves all existing import paths so no call-site changes are required when the internal structure evolves.
 
-- Stores the JWT token in `localStorage` and attaches it as the `Authorization: Bearer` header on every authenticated request.
-- Throws a typed `Error` with the server's `error` message on non-2xx responses.
-- Exports a function per API resource (e.g. `listBooks`, `createBook`, `updateBook`, `deleteBook`).
+### Module overview
+
+| Sub-module | Contents |
+|------------|----------|
+| `api/core.ts` | Token storage (`setToken`, `clearToken`, `hasToken`, `getToken`), `ApiError`, the `request` helper, `getVersion` |
+| `api/auth.ts` | `signup`, `login`, `logout`, `getMe`, OIDC helpers, `changePassword` |
+| `api/config.ts` | OIDC + SMTP server configuration |
+| `api/admin.ts` | User management (`listUsers`, `setUserAdmin`) and audit logs (`getAuditLogs`) |
+| `api/credentials.ts` | OPDS and KOSync credential operations |
+| `api/libraries.ts` | Library CRUD + paginated book listing |
+| `api/authors.ts` | Author CRUD + author–book relationships |
+| `api/series.ts` | Series CRUD + series–book relationships |
+| `api/books.ts` | Book CRUD, associations, and file management |
+| `api/tokens.ts` | API key and Kobo token management |
+
+Each sub-module imports `request` (and `setToken` where needed) from `./core`; there are no circular dependencies.
+
+### Core module
+
+`api/core.ts` contains the building blocks used by all other sub-modules:
+
+- **Token storage** — Stores the JWT in an in-memory module variable (not `localStorage`) to prevent XSS from leaking credentials. The server sets an `HttpOnly` cookie (`biblioteka_token`) for session persistence across page reloads. Use `setToken`, `clearToken`, `hasToken`, and `getToken` to manage the in-memory token.
+- **`ApiError`** — A typed subclass of `Error` that carries a numeric `status` field (the HTTP status code). Catch `ApiError` when you need to branch on a specific status code.
+- **`request<T>`** — The shared fetch wrapper. It attaches the `Authorization: Bearer` header when a token is stored and throws `ApiError` on any non-2xx response.
+- **`getVersion`** — Fetches the server version from `GET /api/version`.
+
+### Usage
+
+Import from the barrel (`../lib/api`) — not from the individual sub-modules — so that call sites do not depend on the internal file layout:
 
 ```ts
 // Example usage inside a store method
@@ -273,11 +364,27 @@ import * as api from "../lib/api";
 const book = await api.createBook({ title: "Dune", … });
 ```
 
-Never call `fetch` directly from components or stores — always go through `api.ts`.
+Never call `fetch` directly from components or stores — always go through the API modules.
+
+### `ApiError` handling
+
+```ts
+import { ApiError, login } from "../lib/api";
+
+try {
+  await login(email, password);
+} catch (err) {
+  if (err instanceof ApiError && err.status === 401) {
+    // handle wrong credentials
+  } else {
+    throw err;
+  }
+}
+```
 
 ## Utility modules
 
-Two small utility modules live in `frontend/src/lib/` alongside `api.ts`.
+Several utility modules live in `frontend/src/lib/` alongside `api.ts`.
 
 ### `validation.ts`
 
@@ -331,57 +438,288 @@ It throws an `Error` if the active path fails:
 
 Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs, share links, etc.) to the clipboard. Do **not** inline `navigator.clipboard.writeText` calls in components, as the fallback path would not be covered.
 
-## TypeScript types
+### `autoDismissTimer.svelte.ts`
 
-Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping shared/exported types in one file gives every component, store, and the API module a single import path, while `frontend/src/lib/api.ts` may still define small module-local helper types for its own internal use.
+`frontend/src/lib/autoDismissTimer.svelte.ts` exports `AutoDismissTimer`, a Svelte 5 class that extends `TimeoutState<boolean>` and tracks whether a transient message (success, error, or informational) should be visible and automatically hides it after a configurable duration.
 
-Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to `types.ts`.
+**Constructor:**
 
-## Utility modules
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `duration` | `number` | `3000` | Time in milliseconds before `visible` auto-resets to `false` |
 
-Two small utility modules live in `frontend/src/lib/` alongside `api.ts`.
+**Reactive public fields:**
 
-### `validation.ts`
+| Field | Type | Description |
+|-------|------|-------------|
+| `visible` | `boolean` | `true` while the message should be displayed; `false` otherwise |
 
-Composable form-validation helpers. A `ValidationRule` is a function `(value: string) => string | null` that returns an error message or `null` when the value passes; helpers like `required`, `minLength`, and `matches` create these rules, and `validate` runs one or more rules and returns the first error (or `null`).
+**Methods:**
 
-| Export | Signature | Description |
-|--------|-----------|-------------|
-| `ValidationRule` | `type` | A validation rule function |
-| `required` | `(message?: string) => ValidationRule` | Fails when the trimmed value is empty |
-| `minLength` | `(min: number, message?: string) => ValidationRule` | Fails when the value is shorter than `min` characters |
-| `matches` | `(other: string, message?: string) => ValidationRule` | Fails when the value does not equal `other` |
-| `validate` | `(value: string, rules: ValidationRule[]) => string \| null` | Runs rules in order; returns the first error or `null` |
+| Method | Description |
+|--------|-------------|
+| `show()` | Sets `visible` to `true`, cancels any running timer, and starts a new auto-reset timer |
+| `clear()` | Cancels the pending timer and sets `visible` to `false` immediately |
+
+Always call `clear()` from `onDestroy` to prevent timer leaks when the component is unmounted before the timeout fires.
 
 **Usage:**
 
-```ts
-import { validate, required, minLength, matches } from "../lib/validation";
+```svelte
+<script lang="ts">
+  import { onDestroy } from "svelte";
+  import { AutoDismissTimer } from "../lib/autoDismissTimer.svelte";
 
-const passwordError = validate(password, [
-  required("Password is required"),
-  minLength(8, "Password must be at least 8 characters"),
-]);
+  const successTimer = new AutoDismissTimer(); // auto-hides after 3 s
 
-const confirmError = validate(confirm, [
-  required("Please confirm your password"),
-  matches(password, "Passwords do not match"),
-]);
+  onDestroy(() => successTimer.clear());
+
+  async function handleSave() {
+    await saveSettings();
+    successTimer.show();
+  }
+</script>
+
+<button onclick={() => void handleSave()}>Save</button>
+
+{#if successTimer.visible}
+  <p role="status">Settings saved.</p>
+{/if}
 ```
 
-Store the result in a `$state` variable and bind it to a `TextInput` with `aria-invalid` and `aria-describedby` to surface inline errors accessibly (see [Form accessibility](#form-accessibility)).
+Use `AutoDismissTimer` whenever a component shows a transient success or informational message that should disappear automatically. Avoid inlining `setTimeout` calls in components for this pattern, because they are easy to duplicate and easy to forget to clean up; prefer `AutoDismissTimer` for consistency and safe cancellation via `clear()`.
 
-### `clipboard.ts`
+### `tokenList.svelte.ts`
 
-A single exported async function that copies text to the system clipboard.
+`frontend/src/lib/tokenList.svelte.ts` exports the generic `TokenListState<T extends { id: string }>` class, which manages the load/delete lifecycle for lists of token-like resources (API keys, Kobo tokens, etc.). It encapsulates loading state, inline delete-confirmation flow, and error state using Svelte 5 `$state` runes. The type parameter must include an `id: string` field, because the class uses `item.id` to identify and remove deleted entries from the in-memory list.
 
-```ts
-import { copyToClipboard } from "../lib/clipboard";
+**`TokenListOps<T extends { id: string }>` interface** — passed to the constructor:
 
-await copyToClipboard(apiKey);
+| Field | Type | Description |
+|-------|------|-------------|
+| `load` | `() => Promise<T[]>` | Fetches the full list of items; each item must have an `id: string` field |
+| `delete` | `(id: string) => Promise<void>` | Deletes the item with the given ID |
+| `loadError` | `string` | Fallback error message shown when `load` rejects without an `Error` object |
+| `deleteError` | `string` | Fallback error message shown when `delete` rejects without an `Error` object |
+
+**Reactive public fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `items` | `T[]` | The loaded list; replaced wholesale on each `load` call and filtered after a successful delete |
+| `loading` | `boolean` | `true` while `load()` is in progress |
+| `error` | `string \| null` | Load or delete error message; `null` when no error is present |
+| `pendingDelete` | `{ id: string; name: string } \| null` | The item currently awaiting confirmation; `null` when no delete is in progress |
+| `copy` | `CopyTimeoutState` | Integrated copy-to-clipboard feedback state; use `tokenList.copy.set(id)` after a clipboard write, check `tokenList.copy.copiedId` to drive per-row "Copied!" feedback, and call `tokenList.copy.clear()` from `onDestroy` |
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `load()` | Fetches items; sets `loading = true` and clears `error` before the call |
+| `handleDelete(id, name)` | Begins the confirmation flow by setting `pendingDelete` |
+| `cancelDelete(onAfterClear?)` | Clears `pendingDelete`, waits for a DOM tick, then calls the optional `onAfterClear` callback |
+| `cancelDeleteWithFocus()` | Clears `pendingDelete` and returns keyboard focus to the trigger button (`[data-delete-trigger="${id}"]`) |
+| `confirmDelete()` | Clears `pendingDelete` immediately (closes the dialog), then calls `ops.delete`; on success removes the item from `items`, on failure sets `error` |
+
+Components that render a delete confirmation dialog should add `data-delete-trigger="${item.id}"` to the Delete button so that `cancelDeleteWithFocus` can restore focus when the user dismisses the dialog.
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import { onMount, onDestroy } from "svelte";
+  import { TokenListState } from "../lib/tokenList.svelte";
+  import { listAPIKeys, deleteAPIKey } from "../lib/api";
+  import { copyToClipboard } from "../lib/clipboard";
+  import type { APIKey } from "../types";
+
+  const tokenList = new TokenListState<APIKey>({
+    load: listAPIKeys,
+    delete: deleteAPIKey,
+    loadError: "Failed to load API keys",
+    deleteError: "Failed to delete API key",
+  });
+
+  onMount(() => void tokenList.load());
+  // Clear the copy timer when the component unmounts to prevent leaks
+  onDestroy(() => tokenList.copy.clear());
+
+  async function handleCopy(id: string, value: string) {
+    try {
+      await copyToClipboard(value);
+      tokenList.copy.set(id);
+    } catch (err) {
+      tokenList.error =
+        err instanceof Error ? err.message : "Failed to copy to clipboard";
+    }
+  }
+</script>
+
+{#if tokenList.error}
+  <AlertBanner variant="error">{tokenList.error}</AlertBanner>
+{/if}
+
+{#each tokenList.items as key}
+  <button onclick={() => void handleCopy(key.id, key.key_prefix)}>
+    {tokenList.copy.copiedId === key.id ? "Copied!" : "Copy"}
+  </button>
+  <button
+    data-delete-trigger={key.id}
+    onclick={() => tokenList.handleDelete(key.id, key.name)}
+  >
+    Delete
+  </button>
+{/each}
+
+{#if tokenList.pendingDelete}
+  <div
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby={`delete-api-key-title-${tokenList.pendingDelete.id}`}
+    tabindex="-1"
+    onkeydown={(event) =>
+      event.key === "Escape" && tokenList.cancelDeleteWithFocus()}
+  >
+    <p id={`delete-api-key-title-${tokenList.pendingDelete.id}`}>
+      Delete "{tokenList.pendingDelete.name}"?
+    </p>
+    <button autofocus onclick={() => tokenList.cancelDeleteWithFocus()}>Cancel</button>
+    <button onclick={() => tokenList.confirmDelete()}>Confirm</button>
+  </div>
+{/if}
 ```
 
-`copyToClipboard` uses the modern async Clipboard API (`navigator.clipboard.writeText`) when available. In environments where the Clipboard API is absent, it falls back to `document.execCommand('copy')`. It throws an `Error` if the active path fails — if the Clipboard API is present but the browser denies permission, the rejection propagates directly without attempting the `execCommand` fallback.
+Use `TokenListState` whenever a settings tab manages a list of user-owned tokens. Do **not** re-implement the load/delete/confirmation flow inline in components. The `copy` field is already composed in — there is no need to create a separate `CopyTimeoutState` for per-row clipboard feedback.
+
+### `copyTimeout.svelte.ts`
+
+`frontend/src/lib/copyTimeout.svelte.ts` exports `CopyTimeoutState`, a class that extends `TimeoutState<string | null>` and manages the "copied" UI feedback state — tracking which item was most recently copied to the clipboard and automatically clearing that state after a configurable duration.
+
+**Constructor:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `duration` | `number` | `2000` | Time in milliseconds before `copiedId` auto-resets to `null` |
+
+**Reactive public fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `copiedId` | `string \| null` | ID of the most recently copied item; `null` when no copy feedback is active |
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `set(id)` | Marks `id` as copied, cancels any running timer, and starts a new auto-reset timer |
+| `clear()` | Cancels the pending timer and resets `copiedId` to `null` immediately |
+
+Always call `clear()` from `onDestroy` to prevent timer leaks when the component is unmounted before the timeout fires.
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import { onDestroy } from "svelte";
+  import { CopyTimeoutState } from "../lib/copyTimeout.svelte";
+  import { copyToClipboard } from "../lib/clipboard";
+
+  const copyState = new CopyTimeoutState(); // auto-resets after 2 s
+  let copyError: string | null = null;
+
+  onDestroy(() => copyState.clear());
+
+  async function handleCopy(id: string, value: string) {
+    try {
+      copyError = null;
+      await copyToClipboard(value);
+      copyState.set(id);
+    } catch {
+      copyError = "Could not copy to clipboard. Please try again.";
+    }
+  }
+</script>
+
+{#if copyError}
+  <p role="alert" class="text-sm text-red-600">{copyError}</p>
+{/if}
+
+{#each items as item}
+  <button onclick={() => { void handleCopy(item.id, item.token); }}>
+    {copyState.copiedId === item.id ? "Copied!" : "Copy"}
+  </button>
+{/each}
+```
+
+Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback after a clipboard write. Do **not** manage copy timers inline with `setTimeout` in components.
+
+### `timeoutState.svelte.ts`
+
+`frontend/src/lib/timeoutState.svelte.ts` exports `TimeoutState<T>`, the shared base class for `AutoDismissTimer` and `CopyTimeoutState`. It manages a protected reactive `value` that reverts to an `idleValue` after a configurable `duration`. Subclasses expose domain-specific public getters and trigger methods on top of this shared timer infrastructure.
+
+**Constructor:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `idleValue` | `T` | The value `value` reverts to after the timeout fires or `clear()` is called |
+| `duration` | `number` | Time in milliseconds before `value` resets to `idleValue` |
+
+**Protected API (for subclasses):**
+
+| Member | Description |
+|--------|-------------|
+| `value` | The reactive `$state` field; exposed as a domain-specific public getter in each subclass |
+| `activate(activeValue)` | Sets `value` to `activeValue`, cancels any running timer, and starts a new auto-reset timer |
+
+**Public API:**
+
+| Method | Description |
+|--------|-------------|
+| `clear()` | Cancels any pending timeout and resets `value` to `idleValue` immediately |
+
+Always call `clear()` from `onDestroy` to prevent timer leaks. Both `AutoDismissTimer` and `CopyTimeoutState` inherit this method — components using either class call the same `clear()` API.
+
+Do **not** use `TimeoutState` directly in components. Extend it in a new subclass when you need auto-resetting reactive state with a different `T`. For boolean visibility (`true`/`false`) use `AutoDismissTimer`; for string-or-null item tracking use `CopyTimeoutState`.
+
+## TypeScript types
+
+Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping shared/exported types in one file gives every component, store, and the API modules a single import path, while individual sub-modules under `frontend/src/lib/api/` may still define small module-local helper types for their own internal use.
+
+Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to `types.ts`.
+
+### Nullable optional fields in input types
+
+Input interfaces (e.g. `AuthorInput`, `SeriesInput`, `BookInput`, `BookFileInput`) use `?: string | null` for optional nullable fields, mirroring their counterpart response types. The current PUT update handlers decode both key-omission and explicit `null` into a nil `*string`, which writes `NULL` to the database column — there is no distinction between "leave unchanged" and "clear this field":
+
+```ts
+// Both of these result in goodreads_id being set to NULL in the database:
+const input: AuthorInput = { name: "Ursula K. Le Guin" };                       // key omitted
+const input: AuthorInput = { name: "Ursula K. Le Guin", goodreads_id: null };    // explicit null
+```
+
+> **Note:** The `?: string | null` typing mirrors the response type's nullability and keeps the door open for future PATCH-style handling where `undefined` ("no-op") would be distinguishable from `null` ("clear"). That distinction would require changes to the Go backend (e.g., a custom JSON unmarshaler or a wrapper type). Until then, omission and `null` behave identically.
+
+When adding a new input interface, always match the nullability of the corresponding response interface — if the response field is `string | null`, the input field should be `?: string | null`.
+
+## Adding a new API function
+
+1. Identify the right sub-module in `frontend/src/lib/api/`. Use the module overview table above as your guide (e.g., a new book endpoint goes in `books.ts`; a new auth endpoint goes in `auth.ts`).
+2. Add the exported function to that sub-module. Import `request` from `./core`:
+
+   ```ts
+   // frontend/src/lib/api/books.ts
+   import { request } from "./core";
+
+   export async function archiveBook(id: string): Promise<void> {
+     await request<void>("POST", `/api/books/${id}/archive`);
+   }
+   ```
+
+3. The barrel (`api.ts`) already re-exports every symbol from every sub-module via `export * from "./api/<module>"`, so the new function is immediately available to all existing import sites — **no changes to `api.ts` are needed**.
+4. Add a test in `frontend/src/lib/api.test.ts` covering the new function.
+
+> **Do not add new functions directly to `api.ts`** — that file is a barrel only. Adding logic there breaks the modular structure.
 
 ## Adding a new store
 
@@ -467,7 +805,7 @@ Padding is intentionally left to the caller via the `class` prop to avoid Tailwi
 
 ### `TextInput.svelte`
 
-A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding.
+A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1.
 
 **Props:**
 
@@ -652,11 +990,81 @@ A styled button with three visual variants. Use this instead of a raw `<button>`
 ```
 
 Padding is intentionally left to the caller via the `class` prop to avoid Tailwind cascade conflicts.
+
+---
+
+### `DeleteConfirmation.svelte`
+
+An accessible inline delete-confirmation dialog that replaces the current item's Delete button with a two-button (`Delete` / `Cancel`) confirmation row. Use this whenever a destructive action requires a user confirmation step. It implements the full accessible pattern — `role="alertdialog"`, autofocus on open, and Escape-to-dismiss — so consumers do not need to repeat any of that boilerplate.
+
+**Props:**
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `itemId` | `string` | ✓ | Unique ID of the item being deleted. Used to generate a stable `aria-labelledby` value. |
+| `itemName` | `string` | ✓ | Human-readable name shown in the `"Delete "{itemName}"?"` label. |
+| `onConfirm` | `() => void` | ✓ | Called when the user clicks **Delete**. |
+| `onCancel` | `() => void` | ✓ | Called when the user clicks **Cancel** or presses Escape. Should restore focus to the original trigger button. |
+| `class` | `string` | | Additional Tailwind classes appended to the wrapper. |
+
+**Behavior:**
+
+- Renders a `role="alertdialog"` container (not `role="dialog"`) so screen readers announce its content immediately.
+- Uses `use:autofocusFirstButton` to move keyboard focus into the dialog when it mounts.
+- An `onkeydown` Escape handler calls `onCancel` to dismiss the dialog.
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import { tick } from "svelte";
+  import DeleteConfirmation from "./ui/DeleteConfirmation.svelte";
+
+  // These come from your component's props or local state:
+  const itemId = "item-123";
+  const item = { name: "Example item" };
+  const api = {
+    async deleteItem(id: string) { /* your delete logic */ }
+  };
+
+  let showDeleteConfirm = $state(false);
+  let deleteButtonEl: HTMLButtonElement | null = $state(null);
+
+  async function handleDelete() {
+    await api.deleteItem(itemId);
+    showDeleteConfirm = false;
+  }
+
+  async function cancelDelete() {
+    showDeleteConfirm = false;
+    await tick(); // wait for Svelte to re-mount the trigger button
+    deleteButtonEl?.focus(); // restore focus to the trigger
+  }
+</script>
+
+{#if showDeleteConfirm}
+  <DeleteConfirmation
+    {itemId}
+    itemName={item.name}
+    onConfirm={handleDelete}
+    onCancel={cancelDelete}
+  />
+{:else}
+  <button
+    bind:this={deleteButtonEl}
+    data-delete-trigger={itemId}
+    onclick={() => (showDeleteConfirm = true)}
+  >Delete</button>
+{/if}
+```
+
+`LibraryForm.svelte`, `APIKeysTab.svelte`, and `KoboTab.svelte` are canonical reference implementations.
+
 ---
 
 ### `TextInput.svelte`
 
-A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent.
+A styled text input that forwards all standard HTML `<input>` attributes. Use this instead of a raw `<input>` element so focus-ring, border, dark-mode, and disabled styles are consistent. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` (not `dark:placeholder:text-ink-500`) to satisfy the WCAG 1.4.3 Contrast Minimum (Level AA) for non-active UI text. The border uses `border-ink-400 dark:border-ink-400` to satisfy the WCAG 1.4.11 Non-text Contrast minimum of 3:1 in both light and dark modes.
 
 **Props:**
 
@@ -695,10 +1103,10 @@ For inline validation errors, pass `aria-invalid` and `aria-describedby` through
 
 | Component | Route | Visibility | Responsibility |
 |-----------|-------|------------|----------------|
-| `AccountTab.svelte` | `settings/account` | All users | Change password; link OIDC account |
+| `AccountTab.svelte` | `settings/account` | All users | View email; edit display name via `PUT /api/auth/me`; change password; link OIDC account |
 | `APIKeysTab.svelte` | `settings/api-keys` | All users | Create and revoke long-lived API keys (`bib_` prefix); uses inline `role="alertdialog"` confirmations for delete actions |
 | `KoboTab.svelte` | `settings/kobo` | All users | Create and revoke Kobo sync tokens; copy device sync URL; uses inline `role="alertdialog"` confirmations for delete actions |
-| `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme |
+| `PreferencesTab.svelte` | `settings/preferences` | All users | Choose light / dark / auto theme; announces the selected theme via a `role="status"` live region (WCAG 4.1.3) |
 | `OidcTab.svelte` | `settings/oidc` | Admins only | Configure OIDC / SSO provider |
 | `SmtpTab.svelte` | `settings/smtp` | Admins only | Configure SMTP mail server |
 | `UsersTab.svelte` | `settings/users` | Admins only | List users; toggle admin role |
@@ -825,6 +1233,7 @@ $effect(() => {
 | `books` | `All Books – biblioteka` |
 | `my-library` | `My Library – biblioteka` |
 | `libraries` | `Libraries – biblioteka` |
+| `libraries/{id}` | `{library name} – biblioteka` (set via `setPageTitle`) |
 | `settings` (no sub-path) | `Settings – biblioteka` |
 | `settings/account` | `Account Settings – biblioteka` |
 | `settings/preferences` | `Preferences – biblioteka` |
@@ -833,7 +1242,9 @@ $effect(() => {
 | `settings/users` | `User Management – biblioteka` |
 | `settings/api-keys` | `API Keys – biblioteka` |
 | `settings/kobo` | `Kobo Sync – biblioteka` |
-| Unknown hash | `biblioteka` |
+| Unknown hash | `Page Not Found – biblioteka` |
+
+**Dynamic page titles** — Views that display a named resource (such as a specific library) can call `routerStore.setPageTitle(title)` to override the default view title. The override is automatically cleared on navigation. For example, `LibraryView.svelte` sets the title to the library name when the library prop resolves.
 
 **When adding a new view or settings tab**, update both the corresponding union type (`AppView` or `SettingsSubPath`) and the matching title lookup table in `router.svelte.ts`. If you skip the lookup entry, `pageTitle` falls back to the top-level view title, which may be insufficiently descriptive.
 
@@ -906,6 +1317,128 @@ Key details:
 | `aria-label={...lib.name...}` | Unique, descriptive label per library (WCAG 2.4.6) |
 
 **Rule:** Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so focus is always visible. If you add a new icon-only action link to the sidebar, follow the same resting-opacity pattern.
+
+### Dark-mode placeholder contrast (`TextInput.svelte`)
+
+**WCAG criterion:** [1.4.3 Contrast (Minimum)](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html) (Level AA)
+
+Placeholder text is a visual hint; it is not required for understanding the form, but it must still be readable. WCAG 1.4.3 requires a contrast ratio of at least 4.5:1 for normal-weight text below 18 pt (or 3:1 for large / bold text). In dark mode, the background of `TextInput` is `dark:bg-ink-800`. Using `dark:placeholder:text-ink-500` produced a contrast ratio below 4.5:1 against that background — a Level AA violation. The fix uses `dark:placeholder:text-ink-300` instead, which meets the required ratio.
+
+The relevant `$derived` class string in `TextInput.svelte`:
+
+```svelte
+const stateClasses = $derived(
+  disabled
+    ? "bg-ink-50 dark:bg-ink-800 text-ink-500 dark:text-ink-400 cursor-not-allowed"
+    : "bg-white text-ink-900 focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none dark:bg-ink-800 dark:text-cream-100 placeholder:text-ink-500 dark:placeholder:text-ink-300",
+);
+```
+
+| Token | Mode | Role |
+|-------|------|------|
+| `placeholder:text-ink-500` | Light | Placeholder text on `bg-white` — sufficient contrast |
+| `dark:placeholder:text-ink-300` | Dark | Placeholder text on `dark:bg-ink-800` — meets 4.5:1 minimum (WCAG 1.4.3) |
+
+**Rule:** When using placeholder text on a dark background, always use `dark:placeholder:text-ink-300` (or lighter). Never use `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800` — the resulting contrast ratio is insufficient.
+
+### Form control border contrast (`TextInput.svelte`)
+
+**WCAG criterion:** [1.4.11 Non-text Contrast](https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html) (Level AA)
+
+The visible boundary of a form control (e.g. the border of a text input or a bordered button) must have a contrast ratio of at least 3:1 against the adjacent background. WCAG 1.4.11 covers all states of UI components: default, hover, focus, and disabled.
+
+`TextInput.svelte` uses `border-ink-400` in both light and dark modes. In light mode (`bg-white`), `ink-400` provides sufficient contrast against the white background. In dark mode (`dark:bg-ink-800`), the same `dark:border-ink-400` class is applied explicitly — overriding Tailwind's default dark-mode cascade — to ensure the border remains perceivable.
+
+The border class on `TextInput.svelte`:
+
+```svelte
+<input
+  class="px-4 border border-ink-400 dark:border-ink-400 rounded-xl transition-all {stateClasses} ..."
+/>
+```
+
+The same `border-ink-400 dark:border-ink-400` pattern must be applied to any inline form control (`<input>`, `<select>`, bordered `<button>`, etc.) that does not use the reusable `TextInput` component — for example, the TLS Mode `<select>` in `SmtpTab.svelte`, the File Organization `<select>` in `LibraryForm.svelte`, and bordered pagination buttons (Previous/Next) in `BookList.svelte`.
+
+| Class | Mode | Adjacent background | Requirement |
+|-------|------|---------------------|-------------|
+| `border-ink-400` | Light | `bg-white` | Meets WCAG 1.4.11 ≥ 3:1 |
+| `dark:border-ink-400` | Dark | `dark:bg-ink-800` | Meets WCAG 1.4.11 ≥ 3:1 |
+
+**Rule:** All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. In light mode, do not use `border-ink-200` on `bg-white`; in dark mode, do not use `dark:border-ink-700` on `dark:bg-ink-800` — those are the low-contrast combinations that fail the 3:1 non-text contrast requirement.
+
+### Live region for theme change announcements (`PreferencesTab.svelte`)
+
+**WCAG criterion:** [4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html) (Level AA)
+
+When a user selects a new theme (light, dark, or auto), the UI updates visually but no element receives focus. Without an explicit live region, screen-reader users receive no feedback that their action succeeded. `PreferencesTab.svelte` uses a `role="status"` element — an implicit `aria-live="polite"` live region — to announce the change in a non-intrusive way.
+
+**Implementation in `PreferencesTab.svelte`:**
+
+```svelte
+<script lang="ts">
+  import { themeStore, type ThemePreference } from "../../stores/theme.svelte";
+
+  let themeAnnouncement = $state("");
+
+  function setTheme(t: ThemePreference) {
+    themeStore.set(t);
+    themeAnnouncement = "";           // reset first so the same message re-triggers
+    const label = t === "auto" ? "follow system settings" : t;
+    setTimeout(() => {
+      themeAnnouncement = `Theme changed to ${label}`;
+    }, 0);                            // defer one macrotask so the DOM reset is flushed
+  }
+</script>
+
+<!-- Visually hidden; content is announced politely by screen readers -->
+<span role="status" class="sr-only">{themeAnnouncement}</span>
+```
+
+Key details:
+
+| Element / technique | Purpose |
+|---|---|
+| `role="status"` | Declares an implicit `aria-live="polite"` live region; screen readers announce its content after the current interaction completes without interrupting ongoing speech |
+| `class="sr-only"` | Hides the element visually (absolute position, 1 px × 1 px) while keeping it in the accessibility tree |
+| `themeAnnouncement = ""` then `setTimeout(..., 0)` | Resetting the text before setting it again ensures repeated selections of the same theme still trigger a fresh announcement; the 0 ms timeout flushes the Svelte reactivity cycle so the empty string reaches the DOM before the new message |
+| `"follow system settings"` for `auto` | Human-readable label; `"auto"` alone would be ambiguous to a screen-reader user unfamiliar with the UI option names |
+
+**Rule:** Whenever a user action produces a transient status change that is not communicated by focus movement or a visible heading update, add a `role="status"` live region with `class="sr-only"`. Use `role="alert"` (assertive) only for urgent errors that must interrupt the user immediately. Reset the live-region text to `""` before updating it to guarantee re-announcement when the same message is emitted twice in a row.
+
+### Reduced-motion support (`index.css`)
+
+**WCAG criterion:** [2.3.3 Animation from Interactions](https://www.w3.org/WAI/WCAG21/Understanding/animation-from-interactions.html) (Level AAA) — also a widely adopted best practice for users with vestibular disorders even below AAA compliance.
+
+`frontend/src/index.css` applies a global `@media (prefers-reduced-motion: reduce)` rule that overrides all CSS animations, transitions, and scroll behaviour for users who have enabled the "reduce motion" accessibility preference in their operating system or browser:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+Setting durations to `0.01ms` (instead of `0`) avoids edge cases in some browsers where zero-duration animations never fire `animationend` events, which can leave UI state stuck. The `!important` declarations ensure no component-level Tailwind or inline style can accidentally override the user's preference.
+
+**Rule:** Do not add CSS animations that cannot be suppressed by `prefers-reduced-motion`. Every animation class (e.g. `animate-fade-in`, `animate-spin`) is automatically suppressed by this global rule, as is any animation applied by a Svelte component `<style>` block, because the `!important` declarations override all non-`!important` `animation-*` and `transition-*` properties site-wide. The main exceptions are motion driven outside normal CSS rules — for example JavaScript/Web Animations API animations — or unusual inline `!important` overrides. Adding a component-level `@media (prefers-reduced-motion: reduce)` guard is optional belt-and-suspenders practice, not a requirement.
+
+### Live regions in `BookList.svelte`
+
+`BookList.svelte` uses two distinct live-region techniques to keep screen-reader users informed of page state changes without moving keyboard focus:
+
+1. **Loading state** — The initial-load `<p role="status">Loading books...</p>` uses `role="status"` (implicit `aria-live="polite"`) so assistive technologies announce the loading message after any current speech completes. No explicit `aria-live` attribute is needed because `role="status"` already implies it.
+
+2. **Scan-in-progress and pagination count** — The "Scanning library…" message and the "Showing X–Y of Z books" pagination summary both carry `aria-live="polite"` and `aria-atomic="true"`. `aria-atomic="true"` ensures the entire text string is re-read as a unit when the count updates (e.g. going from page 1 to page 2), rather than announcing only the changed numbers.
+
+**Rule:** Use `role="status"` for state messages that appear on initial render and that you own via markup (`role` implies the live region). Use explicit `aria-live="polite"` with `aria-atomic="true"` for messages whose text content changes dynamically in-place (e.g. a count or progress string that updates repeatedly).
 
 ### ARIA landmarks
 
@@ -1197,6 +1730,71 @@ When there is only one input in the list, omit the index to keep the label natur
 - Every `<input>` and `<select>` must have either a linked `<label for="...">` or an `aria-label` / `aria-labelledby`.
 - `title` attributes are not a substitute for `aria-label`; they are advisory only and are not reliably announced.
 
+### Decorative icons alongside visible text
+
+**WCAG criterion:** [1.1.1 Non-text Content](https://www.w3.org/WAI/WCAG21/Understanding/non-text-content.html) (Level A)
+
+When a Lucide icon appears next to a visible text label — for example, a nav link "Dashboard" with a `<LayoutDashboard>` icon, or a page heading "Books" with a `<BookOpen>` icon — the icon is purely **decorative**: the adjacent text already conveys the meaning to the user. Unless hidden, the SVG node is exposed to the accessibility tree as an unlabelled image node, causing screen readers to announce noise like "image" or the SVG's internal title alongside the text.
+
+Add `aria-hidden="true"` to the icon element to remove it from the accessibility tree and prevent the redundant announcement:
+
+```svelte
+<!-- Nav link: icon is decorative; the text "Dashboard" is the accessible label -->
+<a href="#dashboard">
+  <LayoutDashboard class="w-5 h-5" aria-hidden="true" />
+  Dashboard
+</a>
+
+<!-- Page heading: icon is decorative; the h1 text provides the heading -->
+<h1>
+  <BookOpen class="w-6 h-6" aria-hidden="true" />
+  Books
+</h1>
+
+<!-- Standalone decorative illustration (purely decorative exception, WCAG 1.1.1):
+     no adjacent text; icon adds no information, so hide it from the accessibility tree / assistive technologies via aria-hidden="true". -->
+<Library class="w-16 h-16 text-ink-300" aria-hidden="true" />
+```
+
+This pattern applies in either of the following situations:
+
+**Situation A — Icon alongside visible text (all of the following must hold):**
+
+1. An icon appears alongside a visible text label in the same element or immediately adjacent.
+2. The visible text already fully communicates the meaning to a sighted user.
+3. The icon adds no information beyond what the text conveys.
+
+**Situation B — Standalone decorative illustration (both of the following must hold):**
+
+1. The icon is a purely decorative standalone graphic (e.g., an empty-state illustration) with no adjacent text.
+2. It conveys no information by itself.
+
+If the icon conveys information that the text does not (e.g., a warning triangle icon next to a plain number indicating an error count), it is **not** decorative — give it an accessible name with `aria-label` or `aria-labelledby` (typically with `role="img"`), or include a `<title>` element inside the `<svg>` to provide an accessible description.
+
+#### Affected components
+
+The following components apply this pattern. When you add icons to any of these components or create a new component that matches the pattern above, follow the same convention:
+
+| Component | Icons hidden |
+|---|---|
+| `Auth.svelte` | `BookCheck` (app logo alongside the app name heading) |
+| `Sidebar.svelte` | `BookCheck`, `LayoutDashboard`, `BookOpen`, `Library`, `SettingsIcon`, `LogOut` (nav-link icons alongside their text labels) |
+| `Dashboard.svelte` | `LayoutDashboard`, `Library`, `Plus`, `ArrowRight` |
+| `Books.svelte` | `BookOpen` (page-heading icon) |
+| `Libraries.svelte` | `LibraryIcon` (empty-state illustration), `Plus` (button with visible text) |
+| `MyLibrary.svelte` | `Library` (page-heading icon and empty-state illustration) |
+| `settings/AccountTab.svelte` | `Mail`, `User`, `Link` ×2, `Lock` (section-heading icons) |
+| `settings/APIKeysTab.svelte` | `KeyRound` (section-heading icon), `Copy`, `Trash2` (buttons with adjacent text) |
+| `settings/PreferencesTab.svelte` | `Palette` (section-heading icon) |
+| `settings/OidcTab.svelte` | `Shield` (section-heading icon) |
+| `settings/KoboTab.svelte` | `BookOpen` (section-heading icon), `Trash2`, `Copy` |
+| `settings/SmtpTab.svelte` | `Send`, `Mail` |
+| `settings/UsersTab.svelte` | `Users` (section-heading icon) |
+| `ui/BookCard.svelte` | `BookOpen` (decorative cover placeholder) |
+| `ui/BookList.svelte` | `BookOpen` ×2, `LayoutGrid`, `List`, `ChevronLeft`, `ChevronRight` |
+| `libraries/LibraryView.svelte` | `LibraryIcon` (heading alongside visible library name) |
+| `libraries/LibraryForm.svelte` | `FolderOpen`, `Plus` (add folder), `Trash2` (delete) |
+
 ### Maintaining accessibility
 
 When editing the app shell or adding new persistent navigation elements:
@@ -1214,7 +1812,12 @@ When editing the app shell or adding new persistent navigation elements:
 11. Sidebar navigation groups must use `role="group"` with `aria-labelledby` pointing to a native `<h2>` heading so screen readers announce the section name. See [Labelled navigation groups](#labelled-navigation-groups-sidebarsvelte) above.
 12. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
 13. Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so the element is visible when focused. When the action is context-sensitive (e.g. per-library settings links), include the context in the `aria-label` so each link has a unique, descriptive name. See [Focus visible — Library settings link](#focus-visible--library-settings-link-sidebarsvelte) above.
-14. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+14. When using `TextInput` (or any input) with a `placeholder` on a dark background, use `dark:placeholder:text-ink-300` or lighter — never `dark:placeholder:text-ink-500` or darker on `dark:bg-ink-800`. See [Dark-mode placeholder contrast](#dark-mode-placeholder-contrast-textinputsvelte) above.
+15. All form inputs and bordered interactive elements must use `border-ink-400 dark:border-ink-400` (or a higher-contrast token) for their default border. In light mode, do not use `border-ink-200` on `bg-white`; in dark mode, do not use `dark:border-ink-700` on `dark:bg-ink-800`. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
+16. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
+17. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
+18. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
+19. Do not add animations or transitions that cannot be suppressed by the global `prefers-reduced-motion` rule in `index.css`. Tailwind animation utilities (e.g. `animate-fade-in`, `animate-spin`) and ordinary CSS animations, including custom `@keyframes` used from component `<style>` blocks, are suppressible via that global override. Add a component-level `@media (prefers-reduced-motion: reduce)` guard only when motion is driven outside normal CSS animation/transition rules (for example, via JavaScript) or when local `!important` styles would otherwise bypass the global override. See [Reduced-motion support](#reduced-motion-support-indexcss) above.
 
 ### Form accessibility
 
@@ -1403,7 +2006,8 @@ When adding or editing a form component:
 7. Password inputs (`type="password"`) carry `autocomplete="current-password"` or `autocomplete="new-password"` as appropriate.
 8. Toggle switches (`<input type="checkbox">` styled as a switch) carry both `role="switch"` and `aria-checked={booleanState}`. Use an explicit `for`/`id` label association. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) above.
 9. Tab-style widgets that show/hide panels use the ARIA tablist/tab/tabpanel pattern with roving tabindex, `aria-selected`, `aria-controls`/`aria-labelledby`, and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-10. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
+10. Form inputs use `border-ink-400 dark:border-ink-400` for their border — in light mode, avoid `border-ink-200` on `bg-white`; in dark mode, avoid `dark:border-ink-700` on `dark:bg-ink-800`. Prefer the reusable `TextInput` component; when writing an inline `<input>` directly, apply this class manually. See [Form control border contrast](#form-control-border-contrast-textinputsvelte) above.
+11. Run `pnpm run check` after your changes — `svelte-check` will catch missing `alt` on images and some label issues.
 
 ### Inline confirmation dialogs for destructive actions
 
@@ -1465,12 +2069,15 @@ Use a piece of reactive state (`pendingDeleteKey`, `pendingDeleteToken`, etc.) t
 {/if}
 ```
 
-`APIKeysTab.svelte` and `KoboTab.svelte` are the canonical reference implementations.
+**Preferred approach:** Use the [`DeleteConfirmation.svelte`](#deleteconfirmationsvelte) UI component — it encapsulates the `role="alertdialog"`, autofocus, and Escape-to-dismiss boilerplate so you only need to supply `itemId`, `itemName`, `onConfirm`, and `onCancel`. `LibraryForm.svelte`, `APIKeysTab.svelte`, and `KoboTab.svelte` are the canonical reference implementations.
+
+If you cannot use `DeleteConfirmation` (e.g., the confirmation UI needs a non-standard layout), implement the inline pattern manually using the code skeleton above as a starting point.
 
 #### `autofocusFirstButton` Svelte action (`lib/actions.ts`)
 
 `autofocusFirstButton` is a Svelte action that moves keyboard focus to the first `<button>` inside a container after the next microtask, ensuring child elements have rendered before focus is requested:
 
+```ts
 import { autofocusFirstButton } from "../../lib/actions"; // adjust path to match your component's depth
 
 // In a template:
@@ -1479,7 +2086,7 @@ import { autofocusFirstButton } from "../../lib/actions"; // adjust path to matc
 
 Apply `use:autofocusFirstButton` to the confirmation dialog container so focus is moved into it automatically when it mounts. This satisfies the keyboard-focus management requirement for modal and inline dialog patterns.
 
-**Note:** `autofocusFirstButton` focuses the first `<button>` in DOM order. If you want focus to land on the safer Cancel option, place Cancel before Delete in the DOM. The current `APIKeysTab` and `KoboTab` implementations focus the Delete button first; this is a known P2 issue.
+**Note:** `autofocusFirstButton` focuses the first `<button>` in DOM order. If you want focus to land on the safer Cancel option, place Cancel before Delete in the DOM. The current implementations focus the Delete button first; this is a known P2 issue.
 
 #### Guidelines
 
@@ -1489,89 +2096,6 @@ Apply `use:autofocusFirstButton` to the confirmation dialog container so focus i
 - Add `use:autofocusFirstButton` to the dialog container so keyboard focus enters the dialog when it opens.
 - Add an `onkeydown` Escape handler to dismiss the dialog; call the cancel function.
 - Add `data-delete-trigger` on the original trigger button so focus can be restored on cancel (WCAG 2.4.3 Focus Order).
-- Keep only one confirmation dialog open at a time — the pending state should be a single nullable value, not an array.
-
-### Inline confirmation dialogs for destructive actions
-
-**WCAG criterion:** [4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) / [2.1.1 Keyboard](https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html) (Level A)
-
-Destructive actions such as deleting an API key or Kobo sync token must not use `window.confirm()`. The browser's native confirm dialog has no ARIA role, no focus management, is not styleable, and produces inconsistent screen reader behaviour across browsers. Instead, render an inline `role="alertdialog"` directly in the component.
-
-#### Pattern
-
-Use a piece of reactive state (`pendingDeleteKey`, `pendingDeleteToken`, etc.) to track which item is pending deletion. When the user clicks the initial delete trigger, set that state; the row or card swaps its delete button for an inline confirmation:
-
-```svelte
-<script lang="ts">
-  import { tick } from "svelte";
-  import { autofocusFirstButton } from "../../lib/actions";
-
-  let pendingDeleteKey: { id: string; name: string } | null = $state(null);
-
-  function handleDeleteAPIKey(id: string, name: string) {
-    pendingDeleteKey = { id, name };
-  }
-
-  async function confirmDeleteAPIKey() {
-    if (!pendingDeleteKey) return;
-    const { id } = pendingDeleteKey;
-    pendingDeleteKey = null;
-    await deleteAPIKey(id);
-    // filter item from list…
-  }
-
-  async function cancelDeleteAPIKey() {
-    pendingDeleteKey = null;
-    await tick();
-    document.querySelector<HTMLElement>(`[data-delete-trigger="${pendingDeleteKey?.id}"]`)?.focus();
-  }
-</script>
-
-{#if pendingDeleteKey?.id === key.id}
-  <div
-    role="alertdialog"
-    aria-modal="false"
-    aria-label={`Delete "${key.name}"?`}
-    use:autofocusFirstButton
-    onkeydown={(e) => { if (e.key === "Escape") cancelDeleteAPIKey(); }}
-  >
-    <span>Delete "{key.name}"?</span>
-    <button onclick={confirmDeleteAPIKey}>Delete</button>
-    <button onclick={cancelDeleteAPIKey}>Cancel</button>
-  </div>
-{:else}
-  <button
-    data-delete-trigger={key.id}
-    onclick={() => handleDeleteAPIKey(key.id, key.name)}
-    aria-label={`Delete API key ${key.name}`}
-  >…</button>
-{/if}
-```
-
-`APIKeysTab.svelte` and `KoboTab.svelte` are the canonical reference implementations. `LibraryForm.svelte` also uses this pattern via a `showDeleteConfirm` boolean toggle.
-
-#### `autofocusFirstButton` Svelte action (`lib/actions.ts`)
-
-`autofocusFirstButton` is a Svelte action that moves keyboard focus to the first `<button>` inside a container after the next microtask, ensuring child elements have rendered before focus is requested:
-
-```ts
-import { autofocusFirstButton } from "../lib/actions";
-
-// In a template:
-// <div use:autofocusFirstButton>…</div>
-```
-
-Apply `use:autofocusFirstButton` to the confirmation dialog container so focus is moved into it automatically when it mounts. This satisfies the keyboard-focus management requirement for modal and inline dialog patterns.
-
-**Note:** `autofocusFirstButton` focuses the first `<button>` in DOM order. Place the least-destructive action (Cancel) before the destructive action (Delete) in the DOM if you want focus to land on the safer option. The current implementations focus the Delete button first; this is a known P2 issue.
-
-#### Guidelines
-
-- Never use `window.confirm()` for destructive confirmations.
-- Use `role="alertdialog"` (not `role="dialog"`) for inline confirmations — `alertdialog` causes screen readers to announce its content immediately.
-- Add `use:autofocusFirstButton` to the dialog container so keyboard focus enters the dialog when it opens.
-- Add an `onkeydown` Escape handler to dismiss the dialog; call the cancel function.
-- Add `data-delete-trigger` on the original trigger button so focus can be restored on cancel.
 - Keep only one confirmation dialog open at a time — the pending state should be a single nullable value, not an array.
 
 ### Table accessibility
@@ -1742,6 +2266,20 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 > **Testing note:** Each test calls `await tick()` after `render()` to flush Svelte 5 reactive state before asserting. `afterEach(cleanup)` removes the rendered component from JSDOM between tests.
 
+#### `TextInput.test.ts`
+
+`frontend/src/components/ui/TextInput.test.ts` verifies ARIA forwarding and accessibility-critical styling on the reusable text input (WCAG 1.4.3, 4.1.2). The key accessibility test:
+
+1. **`uses ink-300 for dark-mode placeholder contrast (WCAG 1.4.3)`** — renders `TextInput` without a `disabled` prop and asserts the class string of the underlying `<input>` contains `dark:placeholder:text-ink-300` and does **not** contain `dark:placeholder:text-ink-500`. This pins the contrast fix introduced in PR #1512 and prevents regressions.
+
+Additional tests verify attribute forwarding:
+
+2. **`forwards placeholder attribute`** — asserts a `placeholder` prop is applied to the underlying element.
+3. **`forwards aria-describedby attribute`** — asserts the ARIA attribute reaches the underlying element, enabling inline error association patterns.
+4. **`forwards id attribute`** — asserts `id` forwarding so explicit `<label for>` associations work correctly.
+
+> **Testing note:** `afterEach(cleanup)` removes rendered components between tests.
+
 #### `APIKeysTab.test.ts`
 
 `frontend/src/components/settings/APIKeysTab.test.ts` verifies the inline destructive confirmation dialog in the API keys settings tab (WCAG 2.1.1, 3.3.4, 4.1.2). Seven tests in the **"APIKeysTab delete confirmation"** `describe` block:
@@ -1808,6 +2346,21 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 > **Mocking note:** The test file mocks `api.listKoboTokens`, `api.createKoboToken`, `api.deleteKoboToken`, `clipboard.copyToClipboard`, and all `lucide-svelte` icon components. `afterEach` calls `cleanup()` and `vi.clearAllMocks()`.
 
+#### `PreferencesTab.test.ts`
+
+`frontend/src/components/settings/PreferencesTab.test.ts` verifies the theme selection controls and the screen-reader live region in the preferences settings tab (WCAG 4.1.2, 4.1.3). Eight tests are included in the `PreferencesTab` describe block:
+
+1. **`renders all three theme buttons`** — asserts the three toggle buttons (light, dark, auto) are present in the DOM with the correct accessible names.
+2. **`renders a fieldset with a Theme legend`** — asserts the theme buttons are grouped inside a `<fieldset>` with a `<legend>` whose text is "Theme", providing the group a programmatic label (WCAG 1.3.1).
+3. **`sets aria-pressed='true' on the active theme button`** — seeds `themeStore.preference` as `"dark"` and asserts only the dark button carries `aria-pressed="true"` (WCAG 4.1.2).
+4. **`sets aria-pressed='false' on inactive theme buttons`** — with the dark theme active, asserts the light and auto buttons carry `aria-pressed="false"`.
+5. **`calls themeStore.set with the correct theme when a button is clicked`** — clicks the light button and asserts `themeStore.set` is called with `"light"`.
+6. **`calls themeStore.set with 'dark' when the dark button is clicked`** — clicks the dark button and asserts `themeStore.set` is called with `"dark"`.
+7. **`announces theme change to screen readers via a live region`** — uses fake timers, clicks the dark button, advances timers by 0 ms, then asserts the `role="status"` element contains the text `"Theme changed to dark"` (WCAG 4.1.3).
+8. **`announces 'follow system settings' when auto theme is selected`** — clicks the auto button and asserts the live region text is `"Theme changed to follow system settings"`, verifying that the human-readable label is used instead of the raw `"auto"` value.
+
+> **Testing note:** Tests 7 and 8 use `vi.useFakeTimers()` to control the `setTimeout(..., 0)` call inside `setTheme` and `await tick()` to flush Svelte 5 reactivity before asserting the live region text. `vi.useRealTimers()` is called in `afterEach` to restore the real clock after every test. The test file mocks `themeStore` and all `lucide-svelte` icon components; `afterEach` calls `cleanup()`, `vi.clearAllMocks()`, and `vi.useRealTimers()`.
+
 ---
 
 ## Unit tests
@@ -1843,8 +2396,8 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 **`init` (nine tests) — application startup authentication flow:**
 
-1. **`sets loading to false when no token and no cookie`** — no token in localStorage, `getMe()` returns 401; asserts `loading` is `false` and `user` is `null`.
-2. **`fetches user when token exists`** — token in localStorage, `getMe()` resolves; asserts `user` is populated and `loading` is `false`.
+1. **`sets loading to false when no token and no cookie`** — no in-memory token, `getMe()` returns 401; asserts `loading` is `false` and `user` is `null`.
+2. **`fetches user when token exists`** — in-memory token set, `getMe()` resolves; asserts `user` is populated and `loading` is `false`.
 3. **`clears token and retries when getMe returns 401 with token`** — stale token case; asserts `clearToken()` is called and `getMe()` is called twice.
 4. **`clears stale token and authenticates via cookie on retry`** — first `getMe()` rejects with 401, second resolves with an OIDC user; asserts the user is set from the cookie session.
 5. **`preserves token on transient network error`** — `getMe()` rejects with a generic `Error` (not `ApiError`); asserts `clearToken()` is **not** called.
@@ -1863,9 +2416,9 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `api.test.ts`
 
-`frontend/src/lib/api.test.ts` exercises the centralised API client (`frontend/src/lib/api.ts`). `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into nine `describe` blocks:
+`frontend/src/lib/api.test.ts` exercises the centralised API client. Because `api.ts` is now a barrel re-export of `frontend/src/lib/api/` sub-modules, the tests import from the barrel and cover the core, auth, config, admin, and credentials sub-modules. `fetch` is replaced with a Vitest stub so no real HTTP requests are made. Tests are grouped into nine `describe` blocks:
 
-**`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying `localStorage` read/write semantics, including the edge case of an empty string being treated as "no token".
+**`Token management` (five tests):** covers `setToken`, `clearToken`, `hasToken` — verifying in-memory token read/write semantics, including the edge case of an empty string being treated as "no token".
 
 **`ApiError` (one test):** asserts the custom error class has the correct `name`, `message`, `status`, and prototype chain.
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Library } from "../../types";
-  import { routerStore } from "../../stores/router.svelte";
+  import { routerStore, APP_TITLE_SUFFIX } from "../../stores/router.svelte";
   import { libraryStore } from "../../stores/libraries.svelte";
   import { Library as LibraryIcon, Settings2 } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
@@ -24,6 +24,12 @@
   function handleBooksFound() {
     libraryStore.clearScanning(libraryId);
   }
+
+  $effect(() => {
+    routerStore.setPageTitle(
+      library ? `${library.name}${APP_TITLE_SUFFIX}` : null,
+    );
+  });
 </script>
 
 <div class="animate-fade-in">
@@ -31,7 +37,10 @@
     <div
       class="w-10 h-10 bg-accent-100 dark:bg-accent-800/20 rounded-xl flex items-center justify-center"
     >
-      <LibraryIcon class="w-5 h-5 text-accent-600 dark:text-accent-400" />
+      <LibraryIcon
+        class="w-5 h-5 text-accent-600 dark:text-accent-400"
+        aria-hidden="true"
+      />
     </div>
     <h1
       class="text-3xl font-display font-bold text-ink-900 dark:text-cream-100"
@@ -44,7 +53,7 @@
       title="Library settings"
       aria-label="Library settings"
     >
-      <Settings2 class="w-5 h-5" />
+      <Settings2 class="w-5 h-5" aria-hidden="true" />
     </button>
   </div>
 

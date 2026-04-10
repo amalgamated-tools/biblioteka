@@ -26,6 +26,11 @@ safe-outputs:
     reviewers: [copilot]
     draft: false
     auto-merge: true
+  create-issue:
+    labels: [documentation, automation]
+    max: 2
+  add-comment:
+    max: 2
 
 tools:
   cache-memory: true
@@ -33,7 +38,7 @@ tools:
     toolsets: [default]
   edit:
   bash:
-    - "find docs -name '*.md' -o -name '*.mdx'"
+    - "find docs -name '*.md'"
     - "find docs -maxdepth 1 -ls"
     - "find docs -name '*.md' -exec cat {} +"
     - "grep -r '*' docs"
@@ -81,14 +86,14 @@ Create a summary of changes that should be documented.
 
 ### 3. Review Documentation Instructions
 
-**IMPORTANT**: Before making any documentation changes, you MUST read and follow the documentation guidelines:
+**IMPORTANT**: Before making any documentation changes, review the existing documentation structure:
 
 ```bash
-# Load the documentation instructions
-cat .github/instructions/documentation.instructions.md
+# List all documentation files
+ls docs/*.md
 ```
 
-The documentation follows the **Diátaxis framework** with four distinct types:
+The documentation uses **mkdocs-material** and lives in the `docs/` directory as a flat collection of Markdown files. The project uses the **Diátaxis framework** with four distinct types:
 - **Tutorials** (Learning-Oriented): Guide beginners through achieving specific outcomes
 - **How-to Guides** (Goal-Oriented): Solve specific real-world problems
 - **Reference** (Information-Oriented): Provide accurate technical descriptions
@@ -97,13 +102,12 @@ The documentation follows the **Diátaxis framework** with four distinct types:
 Pay special attention to:
 - The tone and voice guidelines (neutral, technical, not promotional)
 - Proper use of headings (markdown syntax, not bold text)
-- Code samples with appropriate language tags (use `aw` for agentic workflows)
-- Astro Starlight syntax for callouts, tabs, and cards
-- Minimal use of components (prefer standard markdown)
+- Code samples with appropriate language tags
+- Plain Markdown formatting (no MDX or component syntax)
 
 ### 4. Identify Documentation Gaps
 
-Review the documentation in the `docs/src/content/docs/` directory:
+Review the documentation in the `docs/` directory:
 
 - Check if new features are already documented
 - Identify which documentation files need updates
@@ -113,27 +117,60 @@ Review the documentation in the `docs/src/content/docs/` directory:
 Use bash commands to explore documentation structure:
 
 ```bash
-find docs/src/content/docs -name '*.md' -o -name '*.mdx'
+find docs -name '*.md'
 ```
+
+#### 4a. Lookback Window: Skip Recently-Documented Files
+
+For each documentation file you plan to update, check whether a doc PR for that file has already been **merged** in the last 48 hours. This prevents re-documenting the same file if a previous run already handled it.
+
+Use `search_pull_requests` with a query like:
+`repo:${{ github.repository }} is:pr is:merged merged:>=YYYY-MM-DDTHH:MM:SSZ label:documentation label:automation in:title "docs"`
+(Replace `YYYY-MM-DDTHH:MM:SSZ` with the UTC timestamp 48 hours ago, computed as: current UTC time minus 48 hours, formatted as `2006-01-02T15:04:05Z`. For example, if now is `2026-04-06T10:00:00Z`, use `2026-04-04T10:00:00Z`.)
+
+For each candidate file, check the merged PR list for a PR whose **title contains the filename** (e.g., `kobo.md`, `frontend.md`) **or** whose title prefix matches `docs(daily):` (the standardized prefix for this workflow) **or** `docs:` (the prefix used by the `update-docs` sibling workflow). Match as a case-insensitive substring. If a merged doc PR for that file is found within 48 hours:
+- **Skip** that file and log: `LOOKBACK SKIP [file]: merged doc PR #N found within 48 hours`
+
+#### 4b. Cross-Agent Awareness: Skip Files with Open Sibling PRs
+
+In addition to the merged-PR lookback, check whether a **sibling automation agent** has an **open** PR for the same file. This prevents `daily-doc-updater` and the `update-docs` workflow from creating overlapping PRs simultaneously.
+
+Search for open PRs from the `update-docs` sibling workflow:
+```
+repo:${{ github.repository }} is:pr is:open label:documentation label:automation "docs" in:title
+```
+
+Exclude PRs whose title starts with `docs(daily):` (those belong to this workflow). For each remaining open PR, check whether the PR body or title mentions the same documentation file you intend to update (e.g., `api-reference.md`, `kobo.md`). If a sibling PR already covers the file:
+- **Skip** that file and log: `SIBLING SKIP [file]: open sibling PR #N from update-docs already covers this file`
+
+Only proceed with files that do **not** have a recently merged doc PR (4a) **and** do **not** have an open sibling PR (4b).
 
 ### 5. Update Documentation
 
 For each missing or incomplete feature documentation:
 
 1. **Determine the correct file** based on the feature type:
-   - CLI commands → `docs/src/content/docs/setup/cli.md`
-   - Workflow reference → `docs/src/content/docs/reference/`
-   - How-to guides → `docs/src/content/docs/guides/`
-   - Samples → `docs/src/content/docs/samples/`
+   - API reference → `docs/api-reference.md` or `docs/api.md`
+   - Authentication → `docs/authentication.md`
+   - Deployment → `docs/deployment.md`
+   - Administration → `docs/administration.md`
+   - Database → `docs/database-schema.md`
+   - Metadata extraction → `docs/metadata.md`
+   - Background jobs → `docs/background-jobs.md`
+   - Frontend → `docs/frontend.md`
+   - OPDS → `docs/opds.md`
+   - Kobo sync → `docs/kobo.md`
+   - KOReader sync → `docs/koreader.md`
+   - Observability → `docs/observability.md`
 
-2. **Follow documentation guidelines** from `.github/instructions/documentation.instructions.md`
+2. **Follow documentation guidelines**: neutral, technical tone; plain Markdown
 
 3. **Update the appropriate file(s)** using the edit tool:
    - Add new sections for new features
    - Update existing sections for modified features
    - Add deprecation notices for removed features
    - Include code examples with proper syntax highlighting
-   - Use appropriate Astro Starlight components (callouts, tabs, cards) sparingly
+   - Use standard Markdown formatting (no MDX or component syntax)
 
 4. **Maintain consistency** with existing documentation style:
    - Use the same tone and voice
@@ -141,7 +178,70 @@ For each missing or incomplete feature documentation:
    - Use similar examples
    - Match the level of detail
 
-### 6. Create Pull Request
+### 6. Deduplication, Per-Run Cap, and Volume Check
+
+Before creating any pull requests, perform the following checks **in order**:
+
+#### 6a. Deduplication Guard
+
+For each documentation change you plan to create a PR for, use the standardized PR title format `docs(daily): <summary>` and search for an existing **open** PR with a matching title. Derive the search terms from the proposed PR title: use the fixed `docs(daily):` prefix and 2–3 significant words from the remainder. For example, for a proposed PR titled `docs(daily): decorative icon aria-hidden pattern`, search:
+`repo:${{ github.repository }} is:pr is:open in:title "docs(daily): decorative icon"`
+
+- **If a matching open PR is found**: skip this change and log `DEDUP SKIP [title]: open PR #N already exists`. Do **not** create a new PR for this change.
+- **If no matching open PR is found**: proceed with this change.
+
+Apply this check to every candidate PR before proceeding to the cap check below, and use the same `docs(daily): <summary>` format consistently in any related lookback searches and PR-title guidance.
+
+> **Note**: The cross-agent sibling PR check in Step 4b already filters files that the `update-docs` workflow is actively covering. Step 6a focuses on deduplication of this workflow's own `docs(daily):` PRs.
+
+#### 6b. Per-Run Hard Cap (8 PRs)
+
+After deduplication, count the remaining candidate PRs:
+
+1. **If the candidate count is ≤ 8**: proceed to create all candidate PRs normally (go to Step 7).
+
+2. **If the candidate count is > 8**: apply the hard cap:
+   - Select the **first 8 candidates** (prioritize changes to files most recently updated).
+   - For the **remaining candidates** (those over the cap), do **not** create PRs. Instead, collect them into a summary list.
+   - **Find or create a tracking issue**:
+     - Search for an existing tracking issue: `repo:${{ github.repository }} is:issue is:open label:automation label:documentation "daily-doc-updater overflow" in:title`
+     - **If found**: use the `add_comment` safe-outputs MCP tool to post a comment listing the skipped candidates.
+     - **If not found**: use the `create_issue` safe-outputs MCP tool to create an issue titled `daily-doc-updater overflow: pending documentation changes (YYYY-MM-DD)` (replace YYYY-MM-DD with today's date in UTC) with body:
+       ```
+       The daily-doc-updater hit the 8-PR-per-run cap. The following documentation changes were deferred:
+
+       <list each skipped change as a bullet: file, scope, and the triggering merged PR>
+
+       These will be picked up in a future run once the queue clears.
+       ```
+     - Label the issue `documentation` and `automation`.
+   - After posting the overflow summary, create only the first 8 PRs (proceed to Step 7).
+
+#### 6c. Daily Volume Alert (Threshold Monitor)
+
+After deduplication and capping, count how many `docs(daily):` PRs this workflow has already opened **today** (across all runs) using `search_pull_requests`:
+`repo:${{ github.repository }} is:pr in:title "docs(daily):" label:automation label:documentation created:>=YYYY-MM-DD` (replace YYYY-MM-DD with today's date in UTC)
+
+- **If the daily count is ≥ 12**, raise a threshold alert:
+  - Search for an existing alert issue: `repo:${{ github.repository }} is:issue is:open label:automation label:documentation "daily-doc-updater volume alert" in:title created:>=YYYY-MM-DD`
+  - **If found**: use `add_comment` to add a comment with the updated count.
+  - **If not found**: use `create_issue` to create a GitHub issue titled `⚠️ daily-doc-updater volume alert: ≥12 PRs opened today (YYYY-MM-DD)` with body:
+    ```
+    The daily-doc-updater has opened 12 or more pull requests today, which exceeds the monitoring threshold.
+
+    **Action required**: Review whether the PR volume is expected.
+    - The per-run hard cap is 8 PRs. If the daily count is still ≥ 12, multiple runs may have fired.
+    - Consider increasing the lookback window or narrowing the scope of changes.
+
+    Today's count: <replace with the actual count>
+    Per-run cap: 8
+    Alert threshold: 12
+    ```
+  - Label the issue `documentation` and `automation`.
+  - Continue creating the (already-capped) PRs as usual (the alert is informational, not a blocker).
+- **If the daily count is < 12**, proceed normally.
+
+### 7. Create Pull Request
 
 If you made any documentation changes:
 
@@ -158,7 +258,7 @@ If you made any documentation changes:
    - Links to relevant merged PRs that triggered the updates
    - Any notes about features that need further review
 
-**PR Title Format**: `[docs] Update documentation for features from [date]`
+**PR Title Format**: `docs(daily): <brief scope-specific description>`
 
 **PR Description Template**:
 ```markdown
@@ -186,7 +286,7 @@ This PR updates the documentation based on features merged in the last 24 hours.
 [Any additional notes or features that need manual review]
 ```
 
-### 7. Handle Edge Cases
+### 8. Handle Edge Cases
 
 - **No recent changes**: If there are no merged PRs in the last 24 hours, exit gracefully without creating a PR
 - **Already documented**: If all features are already documented, exit gracefully
@@ -199,7 +299,7 @@ This PR updates the documentation based on features merged in the last 24 hours.
 - **Follow Guidelines**: Strictly adhere to the documentation instructions
 - **Be Selective**: Only document features that affect users (skip internal refactoring unless it's significant)
 - **Be Clear**: Write clear, concise documentation that helps users
-- **Use Proper Format**: Use the correct Diátaxis category and Astro Starlight syntax
+- **Use Proper Format**: Use the correct Diátaxis category and standard Markdown syntax
 - **Link References**: Include links to relevant PRs and issues where appropriate
 - **Test Understanding**: If unsure about a feature, review the code changes in detail
 
@@ -212,4 +312,11 @@ This PR updates the documentation based on features merged in the last 24 hours.
 - Always read the documentation instructions before making changes
 - Focus on user-facing features and changes that affect the developer experience
 
-Good luck! Your documentation updates help keep our project accessible and up-to-date.
+## Per-Run Volume Guard
+
+**Hard cap: 8 PRs per run.** Before making any documentation changes, estimate how many candidates this run will produce.
+
+- If you estimate **> 8 PRs**, apply the hard cap from Step 6b immediately: process only the first 8 candidates and post the overflow summary on a tracking issue. Do **not** exceed 8 PRs in a single run under any circumstances.
+- If you estimate **≤ 8 PRs**, proceed normally.
+
+> **Note**: This per-run cap is enforced in Step 6b (before PR creation). The cumulative daily alert in Step 6c is a separate monitoring signal that tracks the total `docs(daily):` PRs opened across *all* runs today.

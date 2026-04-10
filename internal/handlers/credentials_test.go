@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 // inMemoryCredStore is a simple in-memory credential store used to test the
@@ -67,9 +69,7 @@ func makeTestCredOps(t *testing.T) (credentialOps, string) {
 	t.Helper()
 	d := newTestDB(t)
 	user, err := d.CreateUser(t.Context(), "CredUser", "cred@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, err, "create user")
 
 	store := newInMemoryCredStore()
 
@@ -98,9 +98,7 @@ func TestHandleCredentials_MethodNotAllowed(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 // ---- getCredential ----
@@ -114,9 +112,7 @@ func TestGetCredential_NotFound(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestGetCredential_Error(t *testing.T) {
@@ -135,9 +131,7 @@ func TestGetCredential_Error(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestGetCredential_Success(t *testing.T) {
@@ -149,9 +143,7 @@ func TestGetCredential_Success(t *testing.T) {
 	putR = withUserID(putR, userID)
 	putW := httptest.NewRecorder()
 	handleCredentials(ops, putW, putR)
-	if putW.Code != http.StatusOK {
-		t.Fatalf("PUT setup failed: status=%d body=%s", putW.Code, putW.Body.String())
-	}
+	require.Equal(t, http.StatusOK, putW.Code)
 
 	// Now GET it.
 	r := httptest.NewRequest(http.MethodGet, "/api/credentials", nil)
@@ -160,17 +152,11 @@ func TestGetCredential_Success(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.Username != "myuser" {
-		t.Errorf("username = %q, want %q", resp.Username, "myuser")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, "myuser", resp.Username)
 }
 
 // ---- upsertCredential ----
@@ -185,9 +171,7 @@ func TestUpsertCredential_EmptyUsername(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpsertCredential_UsernameTooLong(t *testing.T) {
@@ -201,9 +185,7 @@ func TestUpsertCredential_UsernameTooLong(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpsertCredential_PasswordTooShort(t *testing.T) {
@@ -216,9 +198,7 @@ func TestUpsertCredential_PasswordTooShort(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpsertCredential_InvalidJSON(t *testing.T) {
@@ -230,9 +210,7 @@ func TestUpsertCredential_InvalidJSON(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpsertCredential_Conflict(t *testing.T) {
@@ -253,9 +231,7 @@ func TestUpsertCredential_Conflict(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusConflict, w.Body.String())
-	}
+	require.Equal(t, http.StatusConflict, w.Code)
 }
 
 func TestUpsertCredential_DBError(t *testing.T) {
@@ -275,9 +251,7 @@ func TestUpsertCredential_DBError(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestUpsertCredential_Success(t *testing.T) {
@@ -290,17 +264,11 @@ func TestUpsertCredential_Success(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.Username != "myuser" {
-		t.Errorf("username = %q, want %q", resp.Username, "myuser")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, "myuser", resp.Username)
 }
 
 func TestUpsertCredential_UsernameNormalized(t *testing.T) {
@@ -314,17 +282,11 @@ func TestUpsertCredential_UsernameNormalized(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.Username != "myuser" {
-		t.Errorf("username = %q, want lowercase trimmed %q", resp.Username, "myuser")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, "myuser", resp.Username)
 }
 
 func TestUpsertCredential_WithDeriveKey(t *testing.T) {
@@ -342,12 +304,8 @@ func TestUpsertCredential_WithDeriveKey(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
-	if derivedKey != "derived:validpassword" {
-		t.Errorf("deriveKey was not called with plaintext password; got %q", derivedKey)
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "derived:validpassword", derivedKey)
 }
 
 // ---- deleteCredential ----
@@ -361,9 +319,7 @@ func TestDeleteCredential_NotFound(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestDeleteCredential_FetchError(t *testing.T) {
@@ -382,9 +338,7 @@ func TestDeleteCredential_FetchError(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestDeleteCredential_DeleteError(t *testing.T) {
@@ -406,9 +360,7 @@ func TestDeleteCredential_DeleteError(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
-	}
+	require.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestDeleteCredential_DeleteNotFound(t *testing.T) {
@@ -430,9 +382,7 @@ func TestDeleteCredential_DeleteNotFound(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestDeleteCredential_Success(t *testing.T) {
@@ -444,9 +394,7 @@ func TestDeleteCredential_Success(t *testing.T) {
 	putR = withUserID(putR, userID)
 	putW := httptest.NewRecorder()
 	handleCredentials(ops, putW, putR)
-	if putW.Code != http.StatusOK {
-		t.Fatalf("PUT setup failed: status=%d body=%s", putW.Code, putW.Body.String())
-	}
+	require.Equal(t, http.StatusOK, putW.Code)
 
 	// Now delete it.
 	r := httptest.NewRequest(http.MethodDelete, "/api/credentials", nil)
@@ -455,7 +403,5 @@ func TestDeleteCredential_Success(t *testing.T) {
 
 	handleCredentials(ops, w, r)
 
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNoContent, w.Body.String())
-	}
+	require.Equal(t, http.StatusNoContent, w.Code)
 }

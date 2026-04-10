@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -22,16 +23,29 @@ type ProcessFilePayload struct {
 	FileSize    int64  `json:"file_size"`
 	LibraryID   string `json:"library_id,omitempty"`
 	LibraryRoot string `json:"library_root,omitempty"`
+	UserID      string `json:"user_id,omitempty"`
+
+	// Optional metadata overrides supplied by the caller (e.g. from the upload
+	// endpoint). Non-empty values take precedence over anything extracted from
+	// the file or derived from the file path.
+	OverrideTitle       string `json:"override_title,omitempty"`
+	OverrideAuthor      string `json:"override_author,omitempty"`
+	OverrideDescription string `json:"override_description,omitempty"`
+	OverrideISBN        string `json:"override_isbn,omitempty"`
+	OverrideLanguage    string `json:"override_language,omitempty"`
+	OverridePublisher   string `json:"override_publisher,omitempty"`
 }
 
 // NewProcessFileHandler returns a worker.Func that extracts metadata for a file
 // and then creates a book and book_file record for it. The extracted metadata
 // is used to populate the book fields (title, authors, series, etc.).
-func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(ctx context.Context, payload []byte) error {
+// The enqueuer is optional; when non-nil, a Goodreads enrichment job is
+// enqueued after a book record is successfully created.
+func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor, enqueuer Enqueuer) func(ctx context.Context, payload []byte) error {
 	if extractor == nil {
 		return func(ctx context.Context, payload []byte) error {
 			slog.ErrorContext(ctx, "process:file handler misconfigured: metadata extractor is nil")
-			return fmt.Errorf("process file handler misconfigured: metadata extractor is nil")
+			return errors.New("process file handler misconfigured: metadata extractor is nil")
 		}
 	}
 
@@ -52,6 +66,6 @@ func NewProcessFileHandler(database *db.DB, extractor *metadata.Extractor) func(
 			slog.String(otelkeys.FileType, p.FileType),
 			slog.Int64(otelkeys.FileSize, p.FileSize),
 		)
-		return ProcessBookFile(ctx, database, extractor, p)
+		return ProcessBookFile(ctx, database, extractor, enqueuer, p)
 	}
 }

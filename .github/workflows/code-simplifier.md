@@ -91,16 +91,31 @@ If **no files were changed in the last 24 hours**, exit gracefully without creat
 Code simplifier has nothing to process today.
 ```
 
+If **files were changed**, group them by **module/package** (two-level directory path). This grouping drives the focused analysis in Phase 2 and avoids loading unnecessary context.
+
+```bash
+# Summarize changed files by two-level module path
+git log --since="24 hours ago" --pretty=format:"%H" --no-merges \
+  | xargs -r git diff-tree --no-commit-id -r --name-only \
+  | grep -v -E '(\.lock(\.ya?ml)?$|_test\.|\.gen\.go|vendor/)' \
+  | awk -F/ 'NF>=2{print $1"/"$2} NF==1{print $1}' | sort | uniq -c | sort -rn
+```
+
+Record the affected modules list (e.g., `internal/handlers`, `frontend/src`). Also note which **file types** (languages) are present by inspecting the file extensions (e.g., `.go` → Go, `.ts`/`.tsx` → TypeScript). Both the module list and language set are used in Phase 2 to limit context loading.
+
 If **files were changed**, proceed to Phase 2.
 
 ## Phase 2: Analyze and Simplify Code
 
 ### 2.1 Review Project Standards
 
-Before simplifying, review the project's coding standards from relevant documentation:
-- Check for style guides, coding conventions, or contribution guidelines in the repository
-- Look for language-specific conventions (e.g., `STYLE.md`, `CONTRIBUTING.md`, `README.md`)
-- Identify established patterns in the codebase
+Before simplifying, review **only the documentation relevant to the file types that changed** (identified in Phase 1.3). Do not read docs for languages or tools that are not present in the changed file set:
+
+- If changed files include **Go** (`.go`): check `CONTRIBUTING.md`, `CLAUDE.md`, or any Go-specific style notes
+- If changed files include **TypeScript/JavaScript** (`.ts`, `.tsx`, `.js`, `.jsx`): check frontend conventions in `CONTRIBUTING.md` or `README.md`
+- If changed files include **Python**, **Rust**, or another language: check only the relevant section of the contribution guide for that language
+- **Skip** reading docs for languages not represented in the changed file set
+- Look for established patterns **only within the affected modules** identified in Phase 1.3 — do not load the entire codebase for context
 
 ### 2.2 Simplification Principles
 
@@ -152,6 +167,8 @@ For each changed file:
    - How can complexity be reduced?
    - What patterns should be applied?
    - Will this maintain all functionality?
+
+**Module-scoped analysis**: When reading supporting context (e.g., sibling files, shared helpers), limit reads to files **within the same module/package** as the changed file. Do not traverse the full codebase to gather context — use only what is directly needed to understand and improve the changed file.
 
 ### 2.4 Apply Simplifications
 

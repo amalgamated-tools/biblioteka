@@ -12,9 +12,7 @@ import (
 func Test_GetBookByASIN(t *testing.T) {
 	var response GetBookByAsinResponse
 	err := json.Unmarshal(GetBookByAsin_B08FHBV4ZX, &response)
-	if err != nil {
-		t.Fatalf("failed to unmarshal JSON response: %v", err)
-	}
+	require.NoError(t, err, "failed to unmarshal JSON response")
 	client := &Client{
 		client: &mockGraphQLClient{
 			handler: func(req *graphql.Request, resp *graphql.Response) error {
@@ -26,14 +24,10 @@ func Test_GetBookByASIN(t *testing.T) {
 	}
 
 	r, err := client.GetBookByASIN(t.Context(), response.GetBookByAsin.Work.BestBook.Details.Asin)
-	if err != nil {
-		t.Fatalf("failed to search by ASIN: %v", err)
-	}
+	require.NoError(t, err, "failed to search by ASIN")
 
 	expected, err := loadBookResult(t.Context(), response.GetBookByAsin.Work)
-	if err != nil {
-		t.Fatalf("failed to load expected BookResult from response: %v", err)
-	}
+	require.NoError(t, err, "failed to load expected BookResult from response")
 
 	require.Equal(t, expected, r)
 	require.Equal(t, expected.WorkID, r.WorkID)
@@ -62,17 +56,13 @@ func Test_GetBookByASINError(t *testing.T) {
 	}
 
 	_, err := client.GetBookByASIN(t.Context(), "mock-asin")
-	if err == nil {
-		t.Fatalf("expected error, got nil")
-	}
+	require.Error(t, err, "expected error, got nil")
 }
 
 func Test_GetBook(t *testing.T) {
 	var response GetBookResponse
 	err := json.Unmarshal(GetBook_7WmufEffpivF1XTp, &response)
-	if err != nil {
-		t.Fatalf("failed to unmarshal JSON response: %v", err)
-	}
+	require.NoError(t, err, "failed to unmarshal JSON response")
 	client := &Client{
 		client: &mockGraphQLClient{
 			handler: func(req *graphql.Request, resp *graphql.Response) error {
@@ -84,14 +74,10 @@ func Test_GetBook(t *testing.T) {
 	}
 
 	r, err := client.GetBookByID(t.Context(), response.GetBook.Work.BestBook.Id)
-	if err != nil {
-		t.Fatalf("failed to search by ID: %v", err)
-	}
+	require.NoError(t, err, "failed to search by ID")
 
 	expected, err := loadBookResult(t.Context(), response.GetBook.Work)
-	if err != nil {
-		t.Fatalf("failed to load expected BookResult from response: %v", err)
-	}
+	require.NoError(t, err, "failed to load expected BookResult from response")
 
 	require.Equal(t, expected, r)
 	require.Equal(t, expected.WorkID, r.WorkID)

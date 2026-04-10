@@ -59,17 +59,21 @@
     <div
       class="flex flex-col items-center justify-center py-24 animate-fade-in"
     >
-      <LibraryIcon class="w-16 h-16 text-ink-200 dark:text-ink-700 mb-6" />
+      <h1 class="sr-only">Libraries</h1>
+      <LibraryIcon
+        class="w-16 h-16 text-ink-200 dark:text-ink-700 mb-6"
+        aria-hidden="true"
+      />
       {#if libraryStore.libraries.length === 0}
         <button
           onclick={() => routerStore.navigate("libraries/new")}
           class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-600 to-accent-700 text-white rounded-xl hover:from-accent-700 hover:to-accent-800 transition-all text-base font-semibold shadow-md shadow-accent-600/20 hover:shadow-lg hover:shadow-accent-600/30 active:scale-[0.98]"
         >
-          <Plus class="w-5 h-5" />
+          <Plus class="w-5 h-5" aria-hidden="true" />
           Add A Library
         </button>
       {:else}
-        <p class="text-ink-400 dark:text-ink-400">
+        <p class="text-ink-500 dark:text-ink-300">
           Select a library from the sidebar or create a new one.
         </p>
       {/if}

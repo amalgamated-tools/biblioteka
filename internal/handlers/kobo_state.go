@@ -11,6 +11,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/kobo"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
@@ -55,7 +56,7 @@ func (h *KoboHandler) getBookState(w http.ResponseWriter, r *http.Request, userI
 		}
 	}
 
-	writeKoboJSON(w, http.StatusOK, []any{koboReadingStateResponse(state)})
+	writeKoboJSON(w, http.StatusOK, []any{kobo.ReadingStateResponse(state)})
 }
 
 type koboStateUpdateRequest struct {
@@ -93,7 +94,7 @@ func (h *KoboHandler) updateBookState(w http.ResponseWriter, r *http.Request, us
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to fetch book for kobo state update",
-			slog.String(otelkeys.ID, bookID),
+			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{"RequestResult": "ServerError"})
@@ -123,10 +124,8 @@ func (h *KoboHandler) updateBookState(w http.ResponseWriter, r *http.Request, us
 
 	state, err := h.DB.UpsertKoboReadingState(r.Context(), userID, bookID, status, percentRead, locationValue, locationType, locationSource)
 	if err != nil {
-		// Treat missing books (e.g., foreign key violations or not-found translations) as a 404-style response
-		if errors.Is(err, sql.ErrNoRows) ||
-			strings.Contains(err.Error(), "FOREIGN KEY constraint failed") ||
-			strings.Contains(err.Error(), "violates foreign key constraint") {
+		// Treat missing books (FK violation race) as a 404-style response.
+		if errors.Is(err, db.ErrBookNotFound) {
 			writeKoboJSON(w, http.StatusNotFound, map[string]any{"RequestResult": "NotFound"})
 			return
 		}
@@ -150,48 +149,4 @@ func (h *KoboHandler) updateBookState(w http.ResponseWriter, r *http.Request, us
 			},
 		},
 	})
-}
-
-func koboReadingStateResponse(state *db.KoboReadingState) map[string]any {
-	now := time.Now().UTC().Format(time.RFC3339)
-
-	updatedAt := now
-	if !state.UpdatedAt.IsZero() {
-		updatedAt = state.UpdatedAt.UTC().Format(time.RFC3339)
-	}
-	createdAt := updatedAt
-	if !state.CreatedAt.IsZero() {
-		createdAt = state.CreatedAt.UTC().Format(time.RFC3339)
-	}
-
-	statusInfo := map[string]any{
-		"LastModified":        updatedAt,
-		"Status":              state.Status,
-		"TimesStartedReading": 0,
-	}
-
-	currentBookmark := map[string]any{
-		"LastModified": updatedAt,
-	}
-	if state.PercentRead != nil {
-		currentBookmark["ProgressPercent"] = *state.PercentRead
-		currentBookmark["ContentSourceProgressPercent"] = *state.PercentRead
-	}
-	if state.LocationValue != nil && state.LocationType != nil && state.LocationSource != nil {
-		currentBookmark["Location"] = map[string]any{
-			"Value":  *state.LocationValue,
-			"Type":   *state.LocationType,
-			"Source": *state.LocationSource,
-		}
-	}
-
-	return map[string]any{
-		"EntitlementId":     state.BookID,
-		"Created":           createdAt,
-		"LastModified":      updatedAt,
-		"PriorityTimestamp": updatedAt,
-		"StatusInfo":        statusInfo,
-		"Statistics":        map[string]any{"LastModified": updatedAt},
-		"CurrentBookmark":   currentBookmark,
-	}
 }

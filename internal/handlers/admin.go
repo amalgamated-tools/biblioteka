@@ -40,7 +40,7 @@ func toAdminUserDTO(u *db.User) adminUserDTO {
 	}
 }
 
-// HandleListUsers godoc
+// HandleListUsers returns the full list of users in the system (admin only).
 //
 //	@Summary		List all users
 //	@Description	Returns a list of all users (admin only)
@@ -58,8 +58,6 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "admin listing users", slog.String(otelkeys.CallerID, userID))
 	if !requireAdmin(h.DB, w, r) {
 		return
 	}
@@ -67,7 +65,7 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	listEntities(w, r, "users", h.DB.ListUsers, toAdminUserDTO)
 }
 
-// HandleSetAdmin godoc
+// HandleSetAdmin updates the admin status of the specified user (admin only).
 //
 //	@Summary		Set user admin status
 //	@Description	Change a user's admin status (admin only)
@@ -90,18 +88,11 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !requireAdmin(h.DB, w, r) {
+		return
+	}
+
 	callerID := auth.UserIDFromContext(r.Context())
-	slog.DebugContext(r.Context(), "setting admin status", slog.String(otelkeys.CallerID, callerID))
-	isAdmin, err := h.DB.IsAdmin(r.Context(), callerID)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to check admin status", slog.Any(otelkeys.Error, err))
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to verify permissions")
-		return
-	}
-	if !isAdmin {
-		writeError(r.Context(), w, http.StatusForbidden, "admin access required")
-		return
-	}
 
 	targetID, ok := extractPathID(r.URL.Path, "/api/admin/users/")
 	if !ok {
@@ -124,7 +115,11 @@ func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 			writeError(r.Context(), w, http.StatusNotFound, "user not found")
 			return
 		}
-		slog.ErrorContext(r.Context(), "failed to set admin status", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(r.Context(), "failed to update admin status",
+			slog.String(otelkeys.TargetID, targetID),
+			slog.Bool(otelkeys.IsAdmin, req.IsAdmin),
+			slog.Any(otelkeys.Error, err),
+		)
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to update admin status")
 		return
 	}

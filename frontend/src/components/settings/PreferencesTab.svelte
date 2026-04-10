@@ -1,8 +1,19 @@
 <script lang="ts">
-  import { themeStore } from "../../stores/theme.svelte";
+  import { themeStore, type ThemePreference } from "../../stores/theme.svelte";
   import { Palette } from "lucide-svelte";
 
   const themes = ["light", "dark", "auto"] as const;
+
+  let themeAnnouncement = $state("");
+
+  function setTheme(t: ThemePreference) {
+    themeStore.set(t);
+    themeAnnouncement = "";
+    const label = t === "auto" ? "follow system settings" : t;
+    setTimeout(() => {
+      themeAnnouncement = `Theme changed to ${label}`;
+    }, 0);
+  }
 </script>
 
 <div
@@ -12,7 +23,7 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <Palette class="w-5 h-5 text-accent-600" />
+      <Palette class="w-5 h-5 text-accent-600" aria-hidden="true" />
       Display Preferences
     </h2>
     <div class="space-y-6">
@@ -27,7 +38,7 @@
             <button
               type="button"
               aria-pressed={themeStore.preference === t}
-              onclick={() => themeStore.set(t)}
+              onclick={() => setTheme(t)}
               class="px-5 py-2.5 rounded-xl font-medium capitalize transition-all {themeStore.preference ===
               t
                 ? 'bg-accent-600 text-white shadow-md shadow-accent-600/20'
@@ -37,9 +48,10 @@
             </button>
           {/each}
         </div>
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-2">
+        <p class="text-xs text-ink-500 dark:text-ink-300 mt-2">
           Choose how you prefer biblioteka to appear
         </p>
+        <span role="status" class="sr-only">{themeAnnouncement}</span>
       </fieldset>
     </div>
   </div>

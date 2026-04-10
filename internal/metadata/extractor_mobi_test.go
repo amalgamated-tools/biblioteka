@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/testutils"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestExtractMetadata_MOBI(t *testing.T) {
@@ -25,22 +27,12 @@ func TestExtractMetadata_MOBI(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), mobiPath)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	require.NoError(t, err, "extract")
 
-	if meta.Title != "MOBI Title" {
-		t.Errorf("expected title %q, got %q", "MOBI Title", meta.Title)
-	}
-	if meta.Author != "MOBI Author" {
-		t.Errorf("expected author %q, got %q", "MOBI Author", meta.Author)
-	}
-	if meta.ASIN != "B08FHBV4ZX" {
-		t.Errorf("expected ASIN %q, got %q", "B08FHBV4ZX", meta.ASIN)
-	}
-	if meta.Publisher != "Test Publisher" {
-		t.Errorf("expected publisher %q, got %q", "Test Publisher", meta.Publisher)
-	}
+	require.Equal(t, "MOBI Title", meta.Title)
+	require.Equal(t, "MOBI Author", meta.Author)
+	require.Equal(t, "B08FHBV4ZX", meta.ASIN)
+	require.Equal(t, "Test Publisher", meta.Publisher)
 }
 
 func TestExtractMetadata_MOBIWithCover(t *testing.T) {
@@ -54,22 +46,15 @@ func TestExtractMetadata_MOBIWithCover(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), mobiPath)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	require.NoError(t, err, "extract")
 
-	if !strings.HasPrefix(meta.CoverImageURL, "data:image/jpeg;base64,") {
-		t.Errorf("expected JPEG data URL, got %q", meta.CoverImageURL)
-	}
+	require.True(t, strings.HasPrefix(meta.CoverImageURL, "data:image/jpeg;base64,"))
 
 	b64 := strings.TrimPrefix(meta.CoverImageURL, "data:image/jpeg;base64,")
 	imgBytes, err := base64.StdEncoding.DecodeString(b64)
-	if err != nil {
-		t.Fatalf("invalid base64 in cover data URL: %v", err)
-	}
-	if _, _, err := image.Decode(bytes.NewReader(imgBytes)); err != nil {
-		t.Fatalf("cover base64 does not decode as a valid image: %v", err)
-	}
+	require.NoError(t, err, "invalid base64 in cover data URL")
+	_, _, err = image.Decode(bytes.NewReader(imgBytes))
+	require.NoError(t, err, "cover base64 does not decode as a valid image")
 }
 
 func TestExtractMetadata_AZW3(t *testing.T) {
@@ -83,14 +68,8 @@ func TestExtractMetadata_AZW3(t *testing.T) {
 	defer ext.Close(t.Context())
 
 	meta, err := ext.ExtractMetadata(t.Context(), azw3Path)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	require.NoError(t, err, "extract")
 
-	if meta.Title != "AZW3 Title" {
-		t.Errorf("expected title %q, got %q", "AZW3 Title", meta.Title)
-	}
-	if meta.Author != "AZW3 Author" {
-		t.Errorf("expected author %q, got %q", "AZW3 Author", meta.Author)
-	}
+	require.Equal(t, "AZW3 Title", meta.Title)
+	require.Equal(t, "AZW3 Author", meta.Author)
 }

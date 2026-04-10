@@ -1,35 +1,46 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { tick } from "svelte";
-import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
+import { cleanup, render, screen } from "@testing-library/svelte";
+import userEvent from "@testing-library/user-event";
+import type { User } from "./types";
+
+const authStoreMock = vi.hoisted(() => ({
+  loading: false,
+  user: {
+    id: "1",
+    name: "Test User",
+    email: "test@example.com",
+    oidc_linked: false,
+    is_admin: false,
+  } as User | null,
+  init: vi.fn(),
+}));
+
+const routerStoreMock = vi.hoisted(() => ({
+  currentView: "dashboard" as string,
+  hash: "dashboard",
+  subPath: "",
+  isKnownView: true,
+  pageTitle: "Dashboard – biblioteka",
+  navigate: vi.fn(),
+}));
+
+const libraryStoreMock = vi.hoisted(() => ({
+  loaded: true,
+  libraries: [] as Array<{ id: string; name: string }>,
+}));
 
 vi.mock("./stores/auth.svelte", () => ({
-  authStore: {
-    loading: false,
-    user: {
-      id: "1",
-      email: "test@example.com",
-      oidc_linked: false,
-      is_admin: false,
-    },
-    init: vi.fn(),
-  },
+  authStore: authStoreMock,
 }));
 
 vi.mock("./stores/router.svelte", () => ({
-  routerStore: {
-    currentView: "dashboard",
-    hash: "dashboard",
-    isKnownView: true,
-    pageTitle: "Dashboard – biblioteka",
-    navigate: vi.fn(),
-  },
+  routerStore: routerStoreMock,
+  APP_TITLE_SUFFIX: " – biblioteka",
 }));
 
 vi.mock("./stores/libraries.svelte", () => ({
-  libraryStore: {
-    loaded: true,
-    libraries: [],
-  },
+  libraryStore: libraryStoreMock,
 }));
 
 vi.mock("./components/Auth.svelte", () => ({ default: () => {} }));
@@ -46,6 +57,14 @@ import App from "./App.svelte";
 describe("App", () => {
   afterEach(() => {
     cleanup();
+    // Restore mocks to defaults
+    routerStoreMock.currentView = "dashboard";
+    routerStoreMock.hash = "dashboard";
+    routerStoreMock.subPath = "";
+    routerStoreMock.isKnownView = true;
+    routerStoreMock.pageTitle = "Dashboard – biblioteka";
+    libraryStoreMock.loaded = true;
+    libraryStoreMock.libraries = [];
   });
 
   it("sets document.title from routerStore.pageTitle on mount", async () => {
@@ -66,6 +85,7 @@ describe("App", () => {
   });
 
   it("provides a functional skip link that moves focus to the main content", async () => {
+    const user = userEvent.setup();
     const { container } = render(App);
 
     const skipLink = screen.getByRole("link", {
@@ -90,8 +110,80 @@ describe("App", () => {
     skipLink.focus();
     expect(document.activeElement).toBe(skipLink);
 
-    await fireEvent.click(skipLink);
+    await user.click(skipLink);
 
     expect(document.activeElement).toBe(main);
+  });
+
+  it("sets inert on main and header when the mobile sidebar is open", async () => {
+    const user = userEvent.setup();
+    render(App);
+    await tick();
+
+    const main = screen.getByRole("main") as HTMLElement;
+    const header = screen.getByRole("banner", {
+      name: "Mobile header",
+    }) as HTMLElement;
+
+    // Svelte 5 sets the DOM property (not the HTML attribute), so we assert
+    // on the property directly — jsdom does not reflect .inert back to an
+    // attribute, making toHaveAttribute("inert") unreliable here.
+    expect(main.inert).toBe(false);
+    expect(header.inert).toBe(false);
+
+    const openMenuButton = screen.getByRole("button", { name: "Open menu" });
+    await user.click(openMenuButton);
+    await tick();
+
+    expect(main.inert).toBe(true);
+    expect(header.inert).toBe(true);
+  });
+
+  it("hides the decorative spinner from screen readers and exposes the loading message as a status", async () => {
+    authStoreMock.loading = true;
+    authStoreMock.user = null;
+
+    try {
+      const { container } = render(App);
+      await tick();
+
+      // The decorative spinner container must be hidden from screen readers.
+      const spinnerContainer = container.querySelector('[aria-hidden="true"]');
+      expect(spinnerContainer).not.toBeNull();
+
+      // The loading message must carry role="status" so assistive technology
+      // announces it as a live status notification.
+      const statusEl = screen.getByRole("status");
+      expect(statusEl.textContent?.trim()).toBe("Loading your library…");
+    } finally {
+      authStoreMock.loading = false;
+      authStoreMock.user = {
+        id: "1",
+        name: "Test User",
+        email: "test@example.com",
+        oidc_linked: false,
+        is_admin: false,
+      };
+    }
+  });
+
+  it("includes the library name in document.title when viewing a specific library (WCAG 2.4.2)", async () => {
+    routerStoreMock.currentView = "libraries";
+    routerStoreMock.hash = "libraries/lib-123";
+    routerStoreMock.subPath = "lib-123";
+    routerStoreMock.pageTitle = "Libraries – biblioteka";
+    libraryStoreMock.libraries = [{ id: "lib-123", name: "Fiction" }];
+
+    try {
+      render(App);
+      await tick();
+      expect(document.title).toBe("Fiction – biblioteka");
+    } finally {
+      routerStoreMock.currentView = "dashboard";
+      routerStoreMock.hash = "dashboard";
+      routerStoreMock.subPath = "";
+      routerStoreMock.pageTitle = "Dashboard – biblioteka";
+      libraryStoreMock.libraries = [];
+    }
   });
 });

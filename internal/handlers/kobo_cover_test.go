@@ -1,0 +1,142 @@
+package handlers
+
+import (
+	"encoding/base64"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/testutils"
+
+	"github.com/stretchr/testify/require"
+)
+
+// TestHandleCoverImage_JPEGDataURL verifies that a JPEG data URL cover
+// is served with a recognized image Content-Type.
+func TestHandleCoverImage_JPEGDataURL(t *testing.T) {
+	t.Parallel()
+
+	h, _ := setupKoboHandler(t)
+
+	// Create a PNG-encoded image wrapped as JPEG in the data URL prefix.
+	// The server detects the actual MIME type from the image bytes,
+	// so the response will be image/png regardless of the declared JPEG prefix.
+	pngBytes := testutils.TinyPNG()
+	jpegDataURL := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(pngBytes)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "JPEG Cover Book", CoverImageURL: &jpegDataURL})
+	require.NoError(t, err, "create book")
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+	w := httptest.NewRecorder()
+	h.HandleCoverImage(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.True(t, strings.HasPrefix(ct, "image/"))
+}
+
+// TestHandleCoverImage_PNGDataURL verifies that a PNG data URL cover is
+// served with the correct Content-Type.
+func TestHandleCoverImage_PNGDataURL(t *testing.T) {
+	t.Parallel()
+
+	h, _ := setupKoboHandler(t)
+
+	pngBytes := testutils.TinyPNG()
+	pngDataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "PNG Cover Book", CoverImageURL: &pngDataURL})
+	require.NoError(t, err, "create book")
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+	w := httptest.NewRecorder()
+	h.HandleCoverImage(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	ct := w.Header().Get("Content-Type")
+	require.True(t, strings.HasPrefix(ct, "image/png"))
+}
+
+// TestHandleCoverImage_InvalidDataURL verifies that a malformed data URL
+// results in a 400 or 500 error response.
+func TestHandleCoverImage_InvalidDataURL(t *testing.T) {
+	t.Parallel()
+
+	h, _ := setupKoboHandler(t)
+
+	// Malformed data URL: not valid base64.
+	badURL := "data:image/png;base64,!notvalidbase64!"
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Bad Cover Book", CoverImageURL: &badURL})
+	require.NoError(t, err, "create book")
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+	w := httptest.NewRecorder()
+	h.HandleCoverImage(w, r)
+
+	// Should return an error status for invalid base64.
+	require.NotEqual(t, http.StatusOK, w.Code)
+}
+
+// TestHandleCoverImage_MissingPathSegments verifies that an incomplete path
+// returns an error.
+func TestHandleCoverImage_MissingPathSegments(t *testing.T) {
+	t.Parallel()
+
+	h, _ := setupKoboHandler(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/", nil)
+	w := httptest.NewRecorder()
+	h.HandleCoverImage(w, r)
+
+	require.NotEqual(t, http.StatusOK, w.Code)
+}
+
+// TestHandleCoverImage_HTTPSRedirect verifies that an https:// cover URL
+// results in a redirect to that URL.
+func TestHandleCoverImage_HTTPSRedirect(t *testing.T) {
+	t.Parallel()
+
+	h, _ := setupKoboHandler(t)
+
+	coverURL := "https://example.com/cover.jpg"
+	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "External Cover Book", CoverImageURL: &coverURL})
+	require.NoError(t, err, "create book")
+
+	r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+	w := httptest.NewRecorder()
+	h.HandleCoverImage(w, r)
+
+	require.Equal(t, http.StatusTemporaryRedirect, w.Code)
+	require.Equal(t, coverURL, w.Header().Get("Location"))
+}
+
+// TestHandleCoverImage_UnsafeCoverURL verifies that non-https URLs are rejected
+// with 404 to prevent open redirect attacks.
+func TestHandleCoverImage_UnsafeCoverURL(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name string
+		url  string
+	}{
+		{name: "http", url: "http://evil.com/cover.jpg"},
+		{name: "protocol-relative", url: "//evil.com/cover.jpg"},
+		{name: "javascript", url: "javascript:alert(1)"},
+		{name: "ftp", url: "ftp://example.com/cover.jpg"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			h, _ := setupKoboHandler(t)
+			book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Unsafe Cover Book", CoverImageURL: &tc.url})
+			require.NoError(t, err, "create book")
+
+			r := httptest.NewRequest(http.MethodGet, "/covers/"+book.ID+"/600/800/false/image.jpg", nil)
+			w := httptest.NewRecorder()
+			h.HandleCoverImage(w, r)
+
+			require.Equal(t, http.StatusNotFound, w.Code)
+		})
+	}
+}

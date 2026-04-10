@@ -1,3 +1,7 @@
+// Package exif implements a long-running ExifTool subprocess wrapper that
+// extracts and writes book metadata for EPUB, MOBI, AZW3, and PDF files.
+// The wrapper keeps a single ExifTool process alive for the application
+// lifetime, communicating over stdin/stdout using ExifTool's -stay_open protocol.
 package exif
 
 import (
@@ -199,6 +203,14 @@ func (e *Exiftool) markDead() {
 	}
 }
 
+// ExtractMetadataFromFile extracts metadata from the given file by sending it
+// to the long-running ExifTool subprocess. The method is safe to call
+// concurrently, but must not be called after Close.
+//
+// Returns ErrDead if the Exiftool instance has been poisoned by a previous
+// protocol error, ErrNotExist if the file does not exist, ErrNotFile if the
+// path is a directory, or an error if the ExifTool subprocess returns an
+// error response.
 func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*ExifToolOutput, error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -223,7 +235,7 @@ func (e *Exiftool) ExtractMetadataFromFile(ctx context.Context, file string) (*E
 	fileFormat := filepath.Ext(file)
 	if fileFormat == "" {
 		slog.WarnContext(ctx, "file has no extension, can't determine format", slog.String(otelkeys.Path, file))
-		return nil, fmt.Errorf("can't extract metadata from file without extension")
+		return nil, errors.New("can't extract metadata from file without extension")
 	}
 
 	for _, curA := range extractArgs {

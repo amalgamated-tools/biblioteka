@@ -1,9 +1,14 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { authStore } from "../../stores/auth.svelte";
-  import { changePassword, createOidcLinkNonce } from "../../lib/api";
+  import {
+    changePassword,
+    createOidcLinkNonce,
+    updateProfile,
+  } from "../../lib/api";
   import { required, minLength, matches, validate } from "../../lib/validation";
-  import { Lock, Mail, Link } from "lucide-svelte";
+  import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
+  import { Lock, Mail, Link, User } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
@@ -18,13 +23,25 @@
   let newPassword = $state("");
   let confirmPassword = $state("");
   let passwordError: string | null = $state(null);
-  let passwordSuccess = $state(false);
   let passwordLoading = $state(false);
   let linkSsoLoading = $state(false);
-  let successTimer: ReturnType<typeof setTimeout> | undefined;
+  const successTimer = new AutoDismissTimer();
+
+  let displayName = $state(authStore.user?.name ?? "");
+  let nameError: string | null = $state(null);
+  let nameLoading = $state(false);
+  const nameSuccessTimer = new AutoDismissTimer();
+
+  // Keep displayName in sync when the auth store user loads or updates externally.
+  $effect(() => {
+    if (authStore.user && !nameLoading) {
+      displayName = authStore.user.name;
+    }
+  });
 
   onDestroy(() => {
-    if (successTimer) clearTimeout(successTimer);
+    successTimer.clear();
+    nameSuccessTimer.clear();
   });
 
   async function handleLinkSso() {
@@ -40,10 +57,33 @@
     }
   }
 
+  async function handleNameUpdate(e: SubmitEvent) {
+    e.preventDefault();
+    nameError = null;
+    nameSuccessTimer.clear();
+
+    nameError = validate(displayName, [required("Display name is required")]);
+    if (nameError) return;
+
+    nameLoading = true;
+    try {
+      const updated = await updateProfile(displayName);
+      if (authStore.user) {
+        authStore.user = { ...authStore.user, name: updated.name };
+      }
+      nameSuccessTimer.show();
+    } catch (err) {
+      nameError =
+        err instanceof Error ? err.message : "Failed to update display name";
+    } finally {
+      nameLoading = false;
+    }
+  }
+
   async function handlePasswordChange(e: SubmitEvent) {
     e.preventDefault();
     passwordError = null;
-    passwordSuccess = false;
+    successTimer.clear();
 
     passwordError =
       validate(currentPassword, [required("Current password is required")]) ??
@@ -60,11 +100,10 @@
 
     try {
       await changePassword(currentPassword, newPassword);
-      passwordSuccess = true;
+      successTimer.show();
       currentPassword = "";
       newPassword = "";
       confirmPassword = "";
-      successTimer = setTimeout(() => (passwordSuccess = false), 3000);
     } catch (err) {
       passwordError =
         err instanceof Error ? err.message : "Failed to update password";
@@ -81,7 +120,7 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <Mail class="w-5 h-5 text-accent-600" />
+      <Mail class="w-5 h-5 text-accent-600" aria-hidden="true" />
       Account Information
     </h2>
     <div class="space-y-4">
@@ -102,7 +141,7 @@
         />
         <p
           id="email-display-hint"
-          class="text-xs text-ink-400 dark:text-ink-500 mt-1"
+          class="text-xs text-ink-500 dark:text-ink-300 mt-1"
         >
           Contact support to change your email address
         </p>
@@ -112,12 +151,58 @@
 
   <hr class="border-ink-100 dark:border-ink-800" />
 
+  <div>
+    <h2
+      class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
+    >
+      <User class="w-5 h-5 text-accent-600" aria-hidden="true" />
+      Display Name
+    </h2>
+    <form
+      onsubmit={handleNameUpdate}
+      aria-label="Update display name"
+      class="space-y-4"
+    >
+      <div>
+        <label
+          for="display-name"
+          class="block text-sm font-medium text-ink-600 dark:text-ink-300 mb-2"
+        >
+          Name
+        </label>
+        <TextInput
+          id="display-name"
+          type="text"
+          bind:value={displayName}
+          autocomplete="name"
+          class="w-full py-2.5"
+          placeholder="Your name"
+          disabled={nameLoading}
+        />
+      </div>
+
+      {#if nameError}
+        <AlertBanner variant="error">{nameError}</AlertBanner>
+      {/if}
+
+      {#if nameSuccessTimer.visible}
+        <AlertBanner variant="success">Display name updated</AlertBanner>
+      {/if}
+
+      <Button type="submit" disabled={nameLoading} class="w-full px-4 py-2.5">
+        {nameLoading ? "Saving..." : "Save Name"}
+      </Button>
+    </form>
+  </div>
+
+  <hr class="border-ink-100 dark:border-ink-800" />
+
   {#if oidcConfigured}
     <div>
       <h2
         class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
       >
-        <Link class="w-5 h-5 text-accent-600" />
+        <Link class="w-5 h-5 text-accent-600" aria-hidden="true" />
         Single Sign-On
       </h2>
       {#if authStore.user?.oidc_linked}
@@ -129,7 +214,7 @@
             SSO Connected
           </span>
         </div>
-        <p class="text-xs text-ink-400 dark:text-ink-500 mt-2">
+        <p class="text-xs text-ink-500 dark:text-ink-300 mt-2">
           Your account is linked to your SSO provider. You can log in with
           either your password or SSO.
         </p>
@@ -139,7 +224,7 @@
             >{authStore.oidcLinkError}</AlertBanner
           >
         {/if}
-        <p class="text-sm text-ink-500 dark:text-ink-400 mb-4">
+        <p class="text-sm text-ink-500 dark:text-ink-300 mb-4">
           Link your account to the SSO provider to enable single sign-on login.
         </p>
         <Button
@@ -147,7 +232,7 @@
           disabled={linkSsoLoading}
           class="inline-flex items-center gap-2 px-4 py-2.5"
         >
-          <Link class="w-4 h-4" />
+          <Link class="w-4 h-4" aria-hidden="true" />
           {linkSsoLoading ? "Redirecting..." : "Link SSO Account"}
         </Button>
       {/if}
@@ -160,10 +245,14 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <Lock class="w-5 h-5 text-accent-600" />
+      <Lock class="w-5 h-5 text-accent-600" aria-hidden="true" />
       Change Password
     </h2>
-    <form onsubmit={handlePasswordChange} class="space-y-4">
+    <form
+      onsubmit={handlePasswordChange}
+      aria-label="Change password"
+      class="space-y-4"
+    >
       <div>
         <label
           for="current-password"
@@ -222,7 +311,7 @@
         <AlertBanner variant="error">{passwordError}</AlertBanner>
       {/if}
 
-      {#if passwordSuccess}
+      {#if successTimer.visible}
         <AlertBanner variant="success"
           >Password updated successfully</AlertBanner
         >

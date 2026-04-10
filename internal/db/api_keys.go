@@ -53,7 +53,7 @@ func (d *DB) ListAPIKeys(ctx context.Context, userID string) ([]APIKey, error) {
 
 // GetAPIKey returns a single API key by ID and user ID.
 func (d *DB) GetAPIKey(ctx context.Context, id, userID string) (*APIKey, error) {
-	slog.DebugContext(ctx, "db: fetching api key", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: fetching api key", slog.String(otelkeys.APIKeyID, id))
 	return scanAPIKey(d.QueryRowContext(ctx,
 		`SELECT `+apiKeyColumns+` FROM api_keys WHERE id = $1 AND user_id = $2`,
 		id, userID,
@@ -64,7 +64,7 @@ func (d *DB) GetAPIKey(ctx context.Context, id, userID string) (*APIKey, error) 
 // Returns sql.ErrNoRows if the key doesn't exist or doesn't belong to the user.
 func (d *DB) DeleteAPIKey(ctx context.Context, id, userID string) error {
 	slog.DebugContext(ctx, "db: deleting api key",
-		slog.String(otelkeys.ID, id),
+		slog.String(otelkeys.APIKeyID, id),
 		slog.String(otelkeys.UserID, userID),
 	)
 	return d.execAffected(ctx, `DELETE FROM api_keys WHERE id = $1 AND user_id = $2`, id, userID)

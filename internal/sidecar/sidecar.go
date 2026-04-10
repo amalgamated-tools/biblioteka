@@ -1,3 +1,7 @@
+// Package sidecar writes companion files (cover image and OPF metadata) next
+// to a book file on disk. The sidecar naming strategy adapts to the library
+// organization type so that multiple books in a shared author directory do not
+// overwrite each other's sidecar files.
 package sidecar
 
 import (

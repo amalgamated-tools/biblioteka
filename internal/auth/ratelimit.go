@@ -2,9 +2,11 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,32 +20,56 @@ type visitor struct {
 
 // RateLimiter implements a per-IP token-bucket rate limiter.
 type RateLimiter struct {
-	mu       sync.Mutex
-	visitors map[string]*visitor
+	mu          sync.Mutex
+	visitors    map[string]*visitor
+	nextCleanup time.Time
 
-	rate    float64 // tokens added per second
-	burst   int     // max tokens (bucket size)
-	cleanup time.Duration
-	done    chan struct{}
+	rate           float64 // tokens added per second
+	burst          int     // max tokens (bucket size)
+	cleanup        time.Duration
+	trustedProxies []*net.IPNet
 }
 
 // NewRateLimiter creates a rate limiter that allows `rate` requests per second
 // with a maximum burst size. Stale entries are cleaned up periodically.
+// X-Forwarded-For is ignored; use NewRateLimiterWithTrustedProxies to enable it.
 func NewRateLimiter(rate float64, burst int) *RateLimiter {
-	rl := &RateLimiter{
-		visitors: make(map[string]*visitor),
-		rate:     rate,
-		burst:    burst,
-		cleanup:  5 * time.Minute,
-		done:     make(chan struct{}),
-	}
-	go rl.cleanupLoop()
-	return rl
+	return newRateLimiter(rate, burst, nil)
 }
 
-// Stop shuts down the background cleanup goroutine.
-func (rl *RateLimiter) Stop() {
-	close(rl.done)
+// NewRateLimiterWithTrustedProxies creates a rate limiter that trusts the
+// X-Forwarded-For header only when the direct peer (RemoteAddr) is within one
+// of the given CIDR ranges. When trusted, the rightmost non-trusted IP in the
+// chain is used as the client IP. This prevents spoofing by untrusted clients.
+func NewRateLimiterWithTrustedProxies(rate float64, burst int, trustedProxies []*net.IPNet) *RateLimiter {
+	return newRateLimiter(rate, burst, trustedProxies)
+}
+
+func newRateLimiter(rate float64, burst int, trustedProxies []*net.IPNet) *RateLimiter {
+	cleanup := 5 * time.Minute
+	// Defensive copy to prevent caller mutation from causing data races.
+	var copied []*net.IPNet
+	if len(trustedProxies) > 0 {
+		copied = make([]*net.IPNet, len(trustedProxies))
+		copy(copied, trustedProxies)
+	}
+	return &RateLimiter{
+		visitors:       make(map[string]*visitor),
+		nextCleanup:    time.Now().Add(cleanup),
+		rate:           rate,
+		burst:          burst,
+		cleanup:        cleanup,
+		trustedProxies: copied,
+	}
+}
+
+func (rl *RateLimiter) cleanupVisitors(now time.Time) {
+	staleBefore := now.Add(-rl.cleanup)
+	for key, v := range rl.visitors {
+		if v.lastSeen.Before(staleBefore) {
+			delete(rl.visitors, key)
+		}
+	}
 }
 
 // allow checks whether the given key (IP) is allowed to proceed.
@@ -52,6 +78,11 @@ func (rl *RateLimiter) allow(key string) bool {
 	defer rl.mu.Unlock()
 
 	now := time.Now()
+	if !now.Before(rl.nextCleanup) {
+		rl.cleanupVisitors(now)
+		rl.nextCleanup = now.Add(rl.cleanup)
+	}
+
 	v, exists := rl.visitors[key]
 	if !exists {
 		rl.visitors[key] = &visitor{
@@ -77,39 +108,9 @@ func (rl *RateLimiter) allow(key string) bool {
 	return true
 }
 
-// cleanupLoop removes stale visitor entries periodically.
-func (rl *RateLimiter) cleanupLoop() {
-	ticker := time.NewTicker(rl.cleanup)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-rl.done:
-			return
-		case <-ticker.C:
-			rl.mu.Lock()
-			cutoff := time.Now().Add(-rl.cleanup)
-			for ip, v := range rl.visitors {
-				if v.lastSeen.Before(cutoff) {
-					delete(rl.visitors, ip)
-				}
-			}
-			rl.mu.Unlock()
-		}
-	}
-}
-
-// ipFromRequest extracts the client IP from the request, preferring
-// X-Forwarded-For if present.
+// ipFromRequest extracts the client IP from RemoteAddr. X-Forwarded-For is
+// ignored; use ipFromRequestTrusted when the server is behind trusted proxies.
 func ipFromRequest(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		// Take the first (client) IP
-		for i := 0; i < len(xff); i++ {
-			if xff[i] == ',' {
-				return xff[:i]
-			}
-		}
-		return xff
-	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr
@@ -117,10 +118,101 @@ func ipFromRequest(r *http.Request) string {
 	return host
 }
 
+// isTrusted reports whether ip falls within any of the given CIDR ranges.
+func isTrusted(ip net.IP, cidrs []*net.IPNet) bool {
+	for _, cidr := range cidrs {
+		if cidr == nil {
+			continue
+		}
+		if cidr.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+// ipFromRequestTrusted extracts the client IP by walking the X-Forwarded-For
+// chain from right to left, skipping IPs that fall within trustedProxies. It
+// only inspects X-Forwarded-For when the direct peer (RemoteAddr) is itself
+// trusted. Returns the first non-trusted IP, or RemoteAddr if none is found.
+func ipFromRequestTrusted(r *http.Request, trustedProxies []*net.IPNet) string {
+	remoteHost := ipFromRequest(r)
+	remoteIP := net.ParseIP(remoteHost)
+
+	// If RemoteAddr is not a trusted proxy, X-Forwarded-For cannot be trusted.
+	if remoteIP == nil || !isTrusted(remoteIP, trustedProxies) {
+		return remoteHost
+	}
+
+	xff := r.Header.Get("X-Forwarded-For")
+	if xff == "" {
+		return remoteHost
+	}
+
+	// Split X-Forwarded-For into individual IPs, walk from right to left.
+	parts := strings.Split(xff, ",")
+	for i := len(parts) - 1; i >= 0; i-- {
+		candidate := strings.TrimSpace(parts[i])
+		if candidate == "" {
+			continue
+		}
+		ip := net.ParseIP(candidate)
+		if ip == nil {
+			// Try ip:port format (e.g. "1.2.3.4:80").
+			host, _, err := net.SplitHostPort(candidate)
+			if err == nil {
+				ip = net.ParseIP(host)
+				if ip != nil && !isTrusted(ip, trustedProxies) {
+					return host
+				}
+			}
+			if ip == nil {
+				// Unparseable entry — skip it. Do not use the raw string
+				// as a rate-limit key; it may be attacker-controlled.
+				continue
+			}
+		}
+		if !isTrusted(ip, trustedProxies) {
+			return candidate
+		}
+	}
+
+	// Every valid IP in the chain was trusted, or no valid IP was found —
+	// fall back to RemoteAddr.
+	return remoteHost
+}
+
+// ParseTrustedProxyCIDRs parses a comma-separated list of CIDR strings into
+// a slice of *net.IPNet. It returns an error for any invalid CIDR notation.
+func ParseTrustedProxyCIDRs(raw string) ([]*net.IPNet, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	parts := strings.Split(raw, ",")
+	cidrs := make([]*net.IPNet, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		_, cidr, err := net.ParseCIDR(p)
+		if err != nil {
+			return nil, fmt.Errorf("parsing CIDR %q: %w", p, err)
+		}
+		cidrs = append(cidrs, cidr)
+	}
+	return cidrs, nil
+}
+
 // Limit wraps an http.HandlerFunc with per-IP rate limiting.
 func (rl *RateLimiter) Limit(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := ipFromRequest(r)
+		var ip string
+		if rl.trustedProxies != nil {
+			ip = ipFromRequestTrusted(r, rl.trustedProxies)
+		} else {
+			ip = ipFromRequest(r)
+		}
 		if !rl.allow(ip) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusTooManyRequests)

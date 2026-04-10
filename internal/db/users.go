@@ -109,7 +109,7 @@ func (d *DB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 
 // GetUserByID returns a user by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
-	slog.DebugContext(ctx, "db: fetching user by ID", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: fetching user by ID", slog.String(otelkeys.UserID, id))
 	return scanUser(d.QueryRowContext(ctx,
 		`SELECT `+userColumns+` FROM users WHERE id = $1`,
 		id,
@@ -129,6 +129,16 @@ func (d *DB) GetUserByOIDCSubject(ctx context.Context, subject string) (*User, e
 func (d *DB) LinkOIDCSubject(ctx context.Context, userID, oidcSubject string) error {
 	slog.DebugContext(ctx, "db: linking OIDC subject", slog.String(otelkeys.UserID, userID))
 	return d.execAffected(ctx, `UPDATE users SET oidc_subject = $1 WHERE id = $2`, oidcSubject, userID)
+}
+
+// UpdateName updates the display name of a user.
+// Returns sql.ErrNoRows if the user does not exist.
+func (d *DB) UpdateName(ctx context.Context, userID, name string) (*User, error) {
+	slog.DebugContext(ctx, "db: updating user name", slog.String(otelkeys.UserID, userID))
+	return scanUser(d.QueryRowContext(ctx,
+		`UPDATE users SET name = $1 WHERE id = $2 RETURNING `+userColumns,
+		name, userID,
+	))
 }
 
 // UpdatePassword updates a user's password hash.

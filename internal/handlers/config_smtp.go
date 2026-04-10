@@ -14,6 +14,7 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/smtp"
 )
 
 type smtpConfigResponse struct {
@@ -36,8 +37,6 @@ type setSMTPConfigRequest struct {
 }
 
 // HandleSMTPConfig dispatches GET and PUT requests for /api/config/smtp.
-//
-// HandleSMTPConfig godoc
 //
 //	@Summary		Get or update SMTP configuration
 //	@Description	GET returns current SMTP config (admin only). PUT updates SMTP config (admin only).
@@ -98,14 +97,14 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 	if username == "" {
 		password = ""
 	} else if password == "" {
-		existingUsername, err := h.DB.GetSetting(r.Context(), settingSMTPUsername)
+		existingUsername, err := h.DB.GetSetting(r.Context(), smtp.SettingKeyUsername)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			slog.ErrorContext(r.Context(), "failed to load existing SMTP username", slog.Any(otelkeys.Error, err))
 			writeError(r.Context(), w, http.StatusInternalServerError, "failed to load SMTP configuration")
 			return
 		}
 
-		existingPassword, err := h.DB.GetSetting(r.Context(), settingSMTPPassword)
+		existingPassword, err := h.DB.GetSetting(r.Context(), smtp.SettingKeyPassword)
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
 				slog.ErrorContext(r.Context(), "failed to load existing SMTP password", slog.Any(otelkeys.Error, err))
@@ -117,7 +116,7 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	params, err := validateSMTPForSend(smtpConfig{
+	params, err := smtp.ValidateForSend(smtp.Config{
 		Host:     host,
 		Port:     strings.TrimSpace(req.Port),
 		Username: username,
@@ -126,23 +125,29 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		TLS:      strings.TrimSpace(req.TLS),
 	})
 	if err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
+		var ve *smtp.ValidationError
+		if errors.As(err, &ve) {
+			writeError(r.Context(), w, http.StatusBadRequest, ve.Error())
+			return
+		}
+		slog.ErrorContext(r.Context(), "unexpected SMTP validation error", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to validate SMTP configuration")
 		return
 	}
 
 	slog.DebugContext(r.Context(), "saving SMTP config",
 		slog.String(otelkeys.Address, host),
-		slog.String(otelkeys.Email, params.From),
+		slog.String(otelkeys.Email, params.FromHeader),
 	)
 
 	_, port, _ := net.SplitHostPort(params.Addr)
 	if err := h.DB.SetSettings(r.Context(), []db.Setting{
-		{Key: settingSMTPHost, Value: host},
-		{Key: settingSMTPPort, Value: port},
-		{Key: settingSMTPUsername, Value: username},
-		{Key: settingSMTPPassword, Value: password},
-		{Key: settingSMTPFrom, Value: params.From},
-		{Key: settingSMTPTLS, Value: params.TLS},
+		{Key: smtp.SettingKeyHost, Value: host},
+		{Key: smtp.SettingKeyPort, Value: port},
+		{Key: smtp.SettingKeyUsername, Value: username},
+		{Key: smtp.SettingKeyPassword, Value: password},
+		{Key: smtp.SettingKeyFrom, Value: params.FromHeader},
+		{Key: smtp.SettingKeyTLS, Value: params.TLS},
 	}); err != nil {
 		slog.ErrorContext(r.Context(), "failed to save SMTP configuration", slog.Any(otelkeys.Error, err))
 		writeError(r.Context(), w, http.StatusInternalServerError, "failed to save SMTP configuration")
@@ -151,7 +156,7 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionSMTPConfigUpdated, "config", "smtp", map[string]any{
 		"host": host,
-		"from": params.From,
+		"from": params.FromHeader,
 	})
 
 	msg := "SMTP configuration saved successfully"
@@ -162,8 +167,6 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleSMTPTest sends a test email to the admin user's email address.
-//
-// HandleSMTPTest godoc
 //
 //	@Summary		Send SMTP test email
 //	@Description	Sends a test email to the authenticated admin user's email address (admin only)
@@ -226,34 +229,40 @@ func (h *ConfigHandler) HandleSMTPTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params, err := validateSMTPForSend(cfg)
+	params, err := smtp.ValidateForSend(cfg)
 	if err != nil {
-		writeError(r.Context(), w, http.StatusBadRequest, err.Error())
+		var ve *smtp.ValidationError
+		if errors.As(err, &ve) {
+			writeError(r.Context(), w, http.StatusBadRequest, ve.Error())
+			return
+		}
+		slog.ErrorContext(r.Context(), "unexpected SMTP validation error", slog.Any(otelkeys.Error, err))
+		writeError(r.Context(), w, http.StatusInternalServerError, "failed to validate SMTP configuration")
 		return
 	}
 
 	to := user.Email
 	msg := fmt.Sprintf(
 		"From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s",
-		params.From,
+		params.FromHeader,
 		to,
 		"Biblioteka SMTP Test",
 		"This is a test email from Biblioteka to confirm your SMTP settings are working correctly.",
 	)
 
-	send := sendMail
+	send := smtp.Send
 	if h.SendMailFunc != nil {
 		send = h.SendMailFunc
 	}
 	if err := send(r.Context(), params.Addr, params.Auth, params.From, to, []byte(msg), params.TLS); err != nil {
 		slog.ErrorContext(r.Context(), "failed to send test email",
-			slog.String(otelkeys.Email, to),
+			slog.String(otelkeys.Email, redactEmail(to)),
 			slog.Any(otelkeys.Error, err),
 		)
 		writeError(r.Context(), w, http.StatusBadGateway, "failed to send test email")
 		return
 	}
 
-	slog.InfoContext(r.Context(), "test email sent", slog.String(otelkeys.Email, to))
+	slog.InfoContext(r.Context(), "test email sent", slog.String(otelkeys.Email, redactEmail(to)))
 	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": fmt.Sprintf("Test email sent to %s", to)})
 }

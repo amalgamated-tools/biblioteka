@@ -1,7 +1,6 @@
 package sidecar
 
 import (
-	"context"
 	"encoding/base64"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/exif"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWriteSidecarFiles_BothFiles(t *testing.T) {
@@ -26,14 +26,12 @@ func TestWriteSidecarFiles_BothFiles(t *testing.T) {
 		ISBN10:          "1234567890",
 	}
 
-	WriteSidecarFiles(context.Background(), bookPath, meta, "Test Book", "Test Author", db.LibraryOrganizationBookPerFolder)
+	WriteSidecarFiles(t.Context(), bookPath, meta, "Test Book", "Test Author", db.LibraryOrganizationBookPerFolder)
 
-	if _, err := os.Stat(filepath.Join(dir, "cover.jpg")); err != nil {
-		t.Errorf("cover.jpg not found: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(dir, "metadata.opf")); err != nil {
-		t.Errorf("metadata.opf not found: %v", err)
-	}
+	_, err := os.Stat(filepath.Join(dir, "cover.jpg"))
+	require.NoError(t, err, "cover.jpg not found")
+	_, err = os.Stat(filepath.Join(dir, "metadata.opf"))
+	require.NoError(t, err, "metadata.opf not found")
 }
 
 func TestWriteSidecarFiles_NoCover(t *testing.T) {
@@ -44,34 +42,30 @@ func TestWriteSidecarFiles_NoCover(t *testing.T) {
 		Language:    "en",
 	}
 
-	WriteSidecarFiles(context.Background(), bookPath, meta, "No Cover Book", "Author", db.LibraryOrganizationBookPerFolder)
+	WriteSidecarFiles(t.Context(), bookPath, meta, "No Cover Book", "Author", db.LibraryOrganizationBookPerFolder)
 
 	for _, ext := range []string{".jpg", ".png", ".webp", ".avif"} {
 		name := "cover" + ext
-		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
-			t.Errorf("%s should not exist when no cover data URL", name)
-		}
+		_, err := os.Stat(filepath.Join(dir, name))
+		require.True(t, os.IsNotExist(err), "%s should not exist when no cover data URL", name)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "metadata.opf")); err != nil {
-		t.Errorf("metadata.opf not found: %v", err)
-	}
+	_, err := os.Stat(filepath.Join(dir, "metadata.opf"))
+	require.NoError(t, err, "metadata.opf not found")
 }
 
 func TestWriteSidecarFiles_NilMetadata(t *testing.T) {
 	dir := t.TempDir()
 	bookPath := filepath.Join(dir, "Title Only.epub")
 
-	WriteSidecarFiles(context.Background(), bookPath, nil, "Title Only", "", db.LibraryOrganizationBookPerFolder)
+	WriteSidecarFiles(t.Context(), bookPath, nil, "Title Only", "", db.LibraryOrganizationBookPerFolder)
 
 	for _, ext := range []string{".jpg", ".png", ".webp", ".avif"} {
 		name := "cover" + ext
-		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
-			t.Errorf("%s should not exist with nil metadata", name)
-		}
+		_, err := os.Stat(filepath.Join(dir, name))
+		require.True(t, os.IsNotExist(err), "%s should not exist with nil metadata", name)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "metadata.opf")); err != nil {
-		t.Errorf("metadata.opf not found: %v", err)
-	}
+	_, err := os.Stat(filepath.Join(dir, "metadata.opf"))
+	require.NoError(t, err, "metadata.opf not found")
 }
 
 func TestWriteSidecarFiles_BookPerFileUsesBookFilename(t *testing.T) {
@@ -86,19 +80,15 @@ func TestWriteSidecarFiles_BookPerFileUsesBookFilename(t *testing.T) {
 	}
 
 	baseName := "Alice's Adventures in Wonderland by Lewis Carroll"
-	WriteSidecarFiles(context.Background(), bookPath, meta, "Alice's Adventures in Wonderland", "Lewis Carroll", db.LibraryOrganizationBookPerFile)
+	WriteSidecarFiles(t.Context(), bookPath, meta, "Alice's Adventures in Wonderland", "Lewis Carroll", db.LibraryOrganizationBookPerFile)
 
-	if _, err := os.Stat(filepath.Join(dir, baseName+".jpg")); err != nil {
-		t.Errorf("expected %s.jpg: %v", baseName, err)
-	}
-	if _, err := os.Stat(filepath.Join(dir, baseName+".opf")); err != nil {
-		t.Errorf("expected %s.opf: %v", baseName, err)
-	}
+	_, err := os.Stat(filepath.Join(dir, baseName+".jpg"))
+	require.NoError(t, err, "expected %s.jpg", baseName)
+	_, err = os.Stat(filepath.Join(dir, baseName+".opf"))
+	require.NoError(t, err, "expected %s.opf", baseName)
 	// Default names should NOT exist.
-	if _, err := os.Stat(filepath.Join(dir, "cover.jpg")); !os.IsNotExist(err) {
-		t.Errorf("cover.jpg should not exist with custom baseName")
-	}
-	if _, err := os.Stat(filepath.Join(dir, "metadata.opf")); !os.IsNotExist(err) {
-		t.Errorf("metadata.opf should not exist with custom baseName")
-	}
+	_, err = os.Stat(filepath.Join(dir, "cover.jpg"))
+	require.True(t, os.IsNotExist(err), "cover.jpg should not exist with custom baseName")
+	_, err = os.Stat(filepath.Join(dir, "metadata.opf"))
+	require.True(t, os.IsNotExist(err), "metadata.opf should not exist with custom baseName")
 }

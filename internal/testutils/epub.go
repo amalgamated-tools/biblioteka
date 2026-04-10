@@ -106,6 +106,8 @@ func init() {
 	}
 }
 
+// TinyPNG returns a copy of a 1×1 pixel white PNG image as raw bytes.
+// It is useful in tests that need a valid PNG without caring about its content.
 func TinyPNG() []byte {
 	return append([]byte(nil), tinyPNG...)
 }

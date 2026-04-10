@@ -1,40 +1,23 @@
 import type { Author, AuthorInput } from "../types";
 import * as api from "../lib/api";
+import { CrudStore } from "./crudStore.svelte";
 
-class AuthorStore {
-  authors: Author[] = $state.raw([]);
-  loading = $state(false);
-  loaded = $state(false);
-
-  async load(): Promise<void> {
-    if (this.loading || this.loaded) return;
-    this.loading = true;
-    try {
-      const data = await api.listAuthors();
-      this.authors = data;
-      this.loaded = true;
-    } catch {
-      // Silently fail — individual pages can handle errors
-    } finally {
-      this.loading = false;
-    }
+class AuthorStore extends CrudStore<Author, AuthorInput> {
+  constructor() {
+    super({
+      list: api.listAuthors,
+      create: api.createAuthor,
+      update: api.updateAuthor,
+      delete: api.deleteAuthor,
+    });
   }
 
-  async add(input: AuthorInput): Promise<Author> {
-    const created = await api.createAuthor(input);
-    this.authors = [...this.authors, created];
-    return created;
+  get authors(): Author[] {
+    return this.items;
   }
 
-  async edit(id: string, input: AuthorInput): Promise<Author> {
-    const updated = await api.updateAuthor(id, input);
-    this.authors = this.authors.map((a) => (a.id === id ? updated : a));
-    return updated;
-  }
-
-  async remove(id: string): Promise<void> {
-    await api.deleteAuthor(id);
-    this.authors = this.authors.filter((a) => a.id !== id);
+  set authors(v: Author[]) {
+    this.items = v;
   }
 }
 

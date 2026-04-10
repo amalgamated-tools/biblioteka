@@ -3,64 +3,50 @@
   import type { APIKey } from "../../types";
   import { copyToClipboard } from "../../lib/clipboard";
   import { KeyRound, Copy, Trash2 } from "lucide-svelte";
-  import { onDestroy, onMount, tick } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
-  import { autofocusFirstButton } from "../../lib/actions";
+  import DeleteConfirmation from "../ui/DeleteConfirmation.svelte";
+  import { TokenListState } from "../../lib/tokenList.svelte";
+  import { CopyTimeoutState } from "../../lib/copyTimeout.svelte";
 
-  let apiKeyList: APIKey[] = $state.raw([]);
-  let apiKeysLoading = $state(false);
-  let apiKeysError: string | null = $state(null);
+  const tokenList = new TokenListState<APIKey>({
+    load: listAPIKeys,
+    delete: deleteAPIKey,
+    loadError: "Failed to load API keys",
+    deleteError: "Failed to delete API key",
+  });
+
   let newKeyName = $state("");
   let newlyCreatedKey: string | null = $state(null);
   let createKeyLoading = $state(false);
-  let keyCopied = $state(false);
-  let keyCopiedTimeout: number | null = null;
-  let pendingDeleteKey: { id: string; name: string } | null = $state(null);
+  const newKeyCopyState = new CopyTimeoutState();
 
-  function clearCopyTimeout() {
-    if (keyCopiedTimeout !== null) {
-      clearTimeout(keyCopiedTimeout);
-      keyCopiedTimeout = null;
-    }
-  }
-
-  onDestroy(clearCopyTimeout);
-
-  onMount(() => {
-    void loadAPIKeys();
+  onDestroy(() => {
+    newKeyCopyState.clear();
+    tokenList.copy.clear();
   });
 
-  async function loadAPIKeys() {
-    apiKeysLoading = true;
-    apiKeysError = null;
-    try {
-      apiKeyList = await listAPIKeys();
-    } catch (err) {
-      apiKeysError =
-        err instanceof Error ? err.message : "Failed to load API keys";
-    } finally {
-      apiKeysLoading = false;
-    }
-  }
+  onMount(() => {
+    void tokenList.load();
+  });
 
   async function handleCreateAPIKey(e: SubmitEvent) {
     e.preventDefault();
     if (!newKeyName.trim()) return;
 
     createKeyLoading = true;
-    apiKeysError = null;
+    tokenList.error = null;
     newlyCreatedKey = null;
     // Reset any previous "copied" state when starting to create a new key
-    clearCopyTimeout();
-    keyCopied = false;
+    newKeyCopyState.clear();
 
     try {
       const result = await createAPIKey(newKeyName.trim());
       newlyCreatedKey = result.key;
       newKeyName = "";
-      apiKeyList = [
+      tokenList.items = [
         {
           id: result.id,
           name: result.name,
@@ -68,58 +54,25 @@
           last_used_at: result.last_used_at,
           created_at: result.created_at,
         },
-        ...apiKeyList,
+        ...tokenList.items,
       ];
     } catch (err) {
-      apiKeysError =
+      tokenList.error =
         err instanceof Error ? err.message : "Failed to create API key";
     } finally {
       createKeyLoading = false;
     }
   }
 
-  function handleDeleteAPIKey(id: string, name: string) {
-    pendingDeleteKey = { id, name };
-  }
-
-  async function cancelDeleteAPIKey() {
-    const id = pendingDeleteKey?.id;
-    pendingDeleteKey = null;
-    await tick();
-    if (id) {
-      const trigger = document.querySelector<HTMLElement>(
-        `[data-delete-trigger="${id}"]`,
-      );
-      trigger?.focus();
-    }
-  }
-
-  async function confirmDeleteAPIKey() {
-    if (!pendingDeleteKey) return;
-    const { id } = pendingDeleteKey;
-    pendingDeleteKey = null;
-    apiKeysError = null;
-    try {
-      await deleteAPIKey(id);
-      apiKeyList = apiKeyList.filter((k) => k.id !== id);
-    } catch (err) {
-      apiKeysError =
-        err instanceof Error ? err.message : "Failed to delete API key";
-    }
-  }
-
-  async function handleCopyKey(text: string) {
+  async function handleCopyKey(text: string): Promise<boolean> {
     try {
       await copyToClipboard(text);
-      keyCopied = true;
-      clearCopyTimeout();
-      keyCopiedTimeout = window.setTimeout(() => {
-        keyCopied = false;
-        keyCopiedTimeout = null;
-      }, 2000);
+      newKeyCopyState.set("new-key");
+      return true;
     } catch {
-      apiKeysError =
+      tokenList.error =
         "Failed to copy to clipboard. Please select and copy the key manually.";
+      return false;
     }
   }
 </script>
@@ -131,10 +84,10 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4 flex items-center gap-2"
     >
-      <KeyRound class="w-5 h-5 text-accent-600" />
+      <KeyRound class="w-5 h-5 text-accent-600" aria-hidden="true" />
       API Keys
     </h2>
-    <p class="text-sm text-ink-500 dark:text-ink-400 mb-6">
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-6">
       Create API keys to authenticate programmatic requests. Keys are shown only
       once at creation.
     </p>
@@ -177,38 +130,42 @@
           </code>
           <button
             onclick={async () => {
-              await handleCopyKey(newlyCreatedKey!);
-              if (keyCopied) {
+              const ok = await handleCopyKey(newlyCreatedKey!);
+              if (ok) {
                 newlyCreatedKey = null;
               }
             }}
-            class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {keyCopied
+            aria-label={newKeyCopyState.copiedId !== null
+              ? "API key copied"
+              : "Copy API key"}
+            class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {newKeyCopyState.copiedId !==
+            null
               ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
               : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
           >
-            <Copy class="w-4 h-4" />
-            {keyCopied ? "Copied" : "Copy"}
+            <Copy class="w-4 h-4" aria-hidden="true" />
+            {newKeyCopyState.copiedId !== null ? "Copied" : "Copy"}
           </button>
         </div>
       </div>
     {/if}
 
-    {#if apiKeysError}
-      <AlertBanner variant="error" class="mb-4">{apiKeysError}</AlertBanner>
+    {#if tokenList.error}
+      <AlertBanner variant="error" class="mb-4">{tokenList.error}</AlertBanner>
     {/if}
 
-    {#if apiKeysLoading}
-      <p class="text-ink-400 dark:text-ink-400">Loading API keys...</p>
-    {:else if apiKeyList.length === 0}
-      <p class="text-sm text-ink-400 dark:text-ink-500">
+    {#if tokenList.loading}
+      <p class="text-ink-500 dark:text-ink-300">Loading API keys...</p>
+    {:else if tokenList.items.length === 0}
+      <p class="text-sm text-ink-500 dark:text-ink-300">
         No API keys yet. Create one above to get started.
       </p>
     {:else}
       <div class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="w-full text-sm" aria-label="API keys">
           <thead>
             <tr
-              class="text-left text-ink-400 dark:text-ink-400 border-b border-ink-100 dark:border-ink-800"
+              class="text-left text-ink-500 dark:text-ink-300 border-b border-ink-100 dark:border-ink-800"
             >
               <th scope="col" class="pb-3 font-medium">Name</th>
               <th scope="col" class="pb-3 font-medium">Key</th>
@@ -220,7 +177,7 @@
             </tr>
           </thead>
           <tbody>
-            {#each apiKeyList as key (key.id)}
+            {#each tokenList.items as key (key.id)}
               <tr
                 class="border-b border-ink-50 dark:border-ink-800 hover:bg-ink-50/50 dark:hover:bg-ink-800/50 transition-colors"
               >
@@ -229,62 +186,35 @@
                 >
                 <td class="py-3">
                   <code
-                    class="px-2 py-1 bg-ink-50 dark:bg-ink-800 rounded text-xs font-mono text-ink-500 dark:text-ink-400"
+                    class="px-2 py-1 bg-ink-50 dark:bg-ink-800 rounded text-xs font-mono text-ink-500 dark:text-ink-300"
                   >
                     {key.key_prefix}...
                   </code>
                 </td>
-                <td class="py-3 text-ink-400 dark:text-ink-500"
+                <td class="py-3 text-ink-500 dark:text-ink-300"
                   >{new Date(key.created_at).toLocaleDateString()}</td
                 >
-                <td class="py-3 text-ink-400 dark:text-ink-500">
+                <td class="py-3 text-ink-500 dark:text-ink-300">
                   {key.last_used_at
                     ? new Date(key.last_used_at).toLocaleDateString()
                     : "Never"}
                 </td>
                 <td class="py-3 text-right">
-                  {#if pendingDeleteKey?.id === key.id}
-                    <div
-                      class="flex items-center justify-end gap-2 animate-scale-in"
-                      role="alertdialog"
-                      aria-modal="false"
-                      aria-labelledby={`delete-key-confirm-label-${key.id}`}
-                      tabindex="-1"
-                      use:autofocusFirstButton
-                      onkeydown={(e: KeyboardEvent) => {
-                        if (e.key === "Escape") cancelDeleteAPIKey();
-                      }}
-                    >
-                      <span
-                        id={`delete-key-confirm-label-${key.id}`}
-                        class="text-xs text-danger-600 dark:text-red-400"
-                        >Delete "{key.name}"?</span
-                      >
-                      <Button
-                        type="button"
-                        variant="danger"
-                        onclick={confirmDeleteAPIKey}
-                        class="px-3 py-1 text-xs"
-                      >
-                        Delete
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onclick={cancelDeleteAPIKey}
-                        class="px-3 py-1 text-xs"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+                  {#if tokenList.pendingDelete?.id === key.id}
+                    <DeleteConfirmation
+                      itemId={key.id}
+                      itemName={key.name}
+                      onConfirm={tokenList.confirmDelete}
+                      onCancel={tokenList.cancelDeleteWithFocus}
+                    />
                   {:else}
                     <button
                       data-delete-trigger={key.id}
-                      onclick={() => handleDeleteAPIKey(key.id, key.name)}
+                      onclick={() => tokenList.handleDelete(key.id, key.name)}
                       aria-label={`Delete API key ${key.name} (${key.key_prefix}...)`}
                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                     >
-                      <Trash2 class="w-3.5 h-3.5" />
+                      <Trash2 class="w-3.5 h-3.5" aria-hidden="true" />
                       Delete
                     </button>
                   {/if}

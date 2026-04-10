@@ -190,5 +190,32 @@ describe("router store", () => {
       setHash("#books?offset=48");
       expect(routerStore.pageTitle).toBe("All Books – biblioteka");
     });
+
+    it("uses titleOverride when set via setPageTitle", () => {
+      setHash("#libraries/abc123");
+      routerStore.setPageTitle("Science Fiction – biblioteka");
+      expect(routerStore.pageTitle).toBe("Science Fiction – biblioteka");
+    });
+
+    it("clears titleOverride when setPageTitle is called with null", () => {
+      setHash("#libraries/abc123");
+      routerStore.setPageTitle("Science Fiction – biblioteka");
+      routerStore.setPageTitle(null);
+      expect(routerStore.pageTitle).toBe("Libraries – biblioteka");
+    });
+
+    it("clears titleOverride on hashchange", () => {
+      setHash("#libraries/abc123");
+      routerStore.setPageTitle("Science Fiction – biblioteka");
+      setHash("#books");
+      expect(routerStore.pageTitle).toBe("All Books – biblioteka");
+    });
+
+    it("clears titleOverride on navigate", () => {
+      setHash("#libraries/abc123");
+      routerStore.setPageTitle("Science Fiction – biblioteka");
+      routerStore.navigate("dashboard");
+      expect(routerStore.pageTitle).toBe("Dashboard – biblioteka");
+    });
   });
 });

@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 // setupAuditLogHandler creates a DB with an admin user (first user) and a regular user,
@@ -17,14 +18,10 @@ func setupAuditLogHandler(t *testing.T) (*AuditLogHandler, string, string) {
 	d := newTestDB(t)
 	h := &AuditLogHandler{DB: d}
 
-	admin, err := d.CreateUser(context.Background(), "Admin", "admin@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create admin: %v", err)
-	}
-	regular, err := d.CreateUser(context.Background(), "Regular", "regular@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create regular user: %v", err)
-	}
+	admin, err := d.CreateUser(t.Context(), "Admin", "admin@example.com", "password1")
+	require.NoError(t, err, "create admin")
+	regular, err := d.CreateUser(t.Context(), "Regular", "regular@example.com", "password1")
+	require.NoError(t, err, "create regular user")
 	return h, admin.ID, regular.ID
 }
 
@@ -32,13 +29,9 @@ func TestHandleAuditLogs_AdminSuccess(t *testing.T) {
 	h, adminID, _ := setupAuditLogHandler(t)
 
 	// Seed a couple of audit log entries.
-	ctx := context.Background()
-	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-1", nil); err != nil {
-		t.Fatalf("create audit log: %v", err)
-	}
-	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionLibraryCreated, "library", "lib-1", nil); err != nil {
-		t.Fatalf("create audit log: %v", err)
-	}
+	ctx := t.Context()
+	require.NoError(t, h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-1", nil), "create audit log")
+	require.NoError(t, h.DB.CreateAuditLog(ctx, adminID, db.AuditActionLibraryCreated, "library", "lib-1", nil), "create audit log")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs", nil)
 	r = withUserID(r, adminID)
@@ -46,21 +39,13 @@ func TestHandleAuditLogs_AdminSuccess(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 	// CreateUser itself may generate audit entries; just verify we got at least 2 from our inserts.
-	if len(resp.Entries) < 2 {
-		t.Errorf("expected at least 2 entries, got %d", len(resp.Entries))
-	}
-	if resp.Total < 2 {
-		t.Errorf("expected total >= 2, got %d", resp.Total)
-	}
+	require.GreaterOrEqual(t, len(resp.Entries), 2, "expected at least 2 entries")
+	require.GreaterOrEqual(t, resp.Total, 2, "expected total >= 2")
 }
 
 func TestHandleAuditLogs_NonAdminForbidden(t *testing.T) {
@@ -72,9 +57,7 @@ func TestHandleAuditLogs_NonAdminForbidden(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusForbidden, w.Body.String())
-	}
+	require.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestHandleAuditLogs_MethodNotAllowed(t *testing.T) {
@@ -86,9 +69,7 @@ func TestHandleAuditLogs_MethodNotAllowed(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestHandleAuditLogs_DefaultPagination(t *testing.T) {
@@ -100,20 +81,12 @@ func TestHandleAuditLogs_DefaultPagination(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.Limit != 50 {
-		t.Errorf("limit = %d, want 50", resp.Limit)
-	}
-	if resp.Offset != 0 {
-		t.Errorf("offset = %d, want 0", resp.Offset)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, defaultPageLimit, resp.Limit)
+	require.Equal(t, 0, resp.Offset)
 }
 
 func TestHandleAuditLogs_CustomPagination(t *testing.T) {
@@ -125,20 +98,12 @@ func TestHandleAuditLogs_CustomPagination(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.Limit != 10 {
-		t.Errorf("limit = %d, want 10", resp.Limit)
-	}
-	if resp.Offset != 5 {
-		t.Errorf("offset = %d, want 5", resp.Offset)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, 10, resp.Limit)
+	require.Equal(t, 5, resp.Offset)
 }
 
 func TestHandleAuditLogs_LimitCappedAtMax(t *testing.T) {
@@ -150,20 +115,14 @@ func TestHandleAuditLogs_LimitCappedAtMax(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if resp.Limit != 200 {
-		t.Errorf("limit = %d, want 200 (max)", resp.Limit)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, maxPageLimit, resp.Limit)
 }
 
-func TestHandleAuditLogs_InvalidLimit(t *testing.T) {
+func TestHandleAuditLogs_InvalidLimitFallsBackToDefault(t *testing.T) {
 	h, adminID, _ := setupAuditLogHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs?limit=abc", nil)
@@ -172,12 +131,14 @@ func TestHandleAuditLogs_InvalidLimit(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp auditLogListDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, defaultPageLimit, resp.Limit, "invalid limit should fall back to default")
 }
 
-func TestHandleAuditLogs_InvalidOffset(t *testing.T) {
+func TestHandleAuditLogs_InvalidOffsetFallsBackToDefault(t *testing.T) {
 	h, adminID, _ := setupAuditLogHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs?offset=abc", nil)
@@ -186,12 +147,14 @@ func TestHandleAuditLogs_InvalidOffset(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp auditLogListDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, 0, resp.Offset, "invalid offset should fall back to default")
 }
 
-func TestHandleAuditLogs_NegativeOffset(t *testing.T) {
+func TestHandleAuditLogs_NegativeOffsetFallsBackToDefault(t *testing.T) {
 	h, adminID, _ := setupAuditLogHandler(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs?offset=-1", nil)
@@ -200,9 +163,11 @@ func TestHandleAuditLogs_NegativeOffset(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp auditLogListDTO
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Equal(t, 0, resp.Offset, "negative offset should fall back to default")
 }
 
 func TestHandleAuditLogs_EmptyList(t *testing.T) {
@@ -216,27 +181,19 @@ func TestHandleAuditLogs_EmptyList(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if len(resp.Entries) != 0 {
-		t.Errorf("expected 0 entries, got %d", len(resp.Entries))
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
+	require.Len(t, resp.Entries, 0)
 }
 
 func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 	h, adminID, _ := setupAuditLogHandler(t)
 
 	meta := map[string]any{"title": "Go Programming", "isbn": "978-0-123"}
-	ctx := context.Background()
-	if err := h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-meta-1", meta); err != nil {
-		t.Fatalf("create audit log with metadata: %v", err)
-	}
+	ctx := t.Context()
+	require.NoError(t, h.DB.CreateAuditLog(ctx, adminID, db.AuditActionBookCreated, "book", "book-meta-1", meta), "create audit log with metadata")
 
 	r := httptest.NewRequest(http.MethodGet, "/api/audit-logs", nil)
 	r = withUserID(r, adminID)
@@ -244,39 +201,25 @@ func TestHandleAuditLogs_WithMetadata(t *testing.T) {
 
 	h.HandleAuditLogs(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp auditLogListDTO
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "unmarshal")
 
 	// Find the entry we inserted with metadata.
 	var found bool
 	for _, e := range resp.Entries {
 		if e.EntityID == "book-meta-1" {
 			found = true
-			if e.Metadata == nil {
-				t.Fatal("expected metadata to be non-nil")
-			}
+			require.NotNil(t, e.Metadata)
 			var m map[string]any
-			if err := json.Unmarshal(e.Metadata, &m); err != nil {
-				t.Fatalf("unmarshal metadata: %v", err)
-			}
-			if m["title"] != "Go Programming" {
-				t.Errorf("metadata title = %v, want %q", m["title"], "Go Programming")
-			}
-			if m["isbn"] != "978-0-123" {
-				t.Errorf("metadata isbn = %v, want %q", m["isbn"], "978-0-123")
-			}
+			require.NoError(t, json.Unmarshal(e.Metadata, &m), "unmarshal metadata")
+			require.Equal(t, "Go Programming", m["title"])
+			require.Equal(t, "978-0-123", m["isbn"])
 			break
 		}
 	}
-	if !found {
-		t.Error("audit log entry with entity_id=book-meta-1 not found")
-	}
+	require.True(t, found)
 }
 
 func TestToAuditLogDTO_NilMetadata(t *testing.T) {
@@ -291,12 +234,8 @@ func TestToAuditLogDTO_NilMetadata(t *testing.T) {
 
 	dto := toAuditLogDTO(entry)
 
-	if dto.ID != "log-1" {
-		t.Errorf("ID = %q, want %q", dto.ID, "log-1")
-	}
-	if dto.Metadata != nil {
-		t.Errorf("Metadata = %s, want nil", string(dto.Metadata))
-	}
+	require.Equal(t, "log-1", dto.ID)
+	require.Nil(t, dto.Metadata)
 }
 
 func TestToAuditLogDTO_EmptyMetadata(t *testing.T) {
@@ -312,9 +251,7 @@ func TestToAuditLogDTO_EmptyMetadata(t *testing.T) {
 
 	dto := toAuditLogDTO(entry)
 
-	if dto.Metadata != nil {
-		t.Errorf("Metadata = %s, want nil for empty string", string(dto.Metadata))
-	}
+	require.Nil(t, dto.Metadata)
 }
 
 func TestToAuditLogDTO_ValidMetadata(t *testing.T) {
@@ -330,27 +267,13 @@ func TestToAuditLogDTO_ValidMetadata(t *testing.T) {
 
 	dto := toAuditLogDTO(entry)
 
-	if dto.Metadata == nil {
-		t.Fatal("Metadata should not be nil")
-	}
+	require.NotNil(t, dto.Metadata)
 
 	var m map[string]any
-	if err := json.Unmarshal(dto.Metadata, &m); err != nil {
-		t.Fatalf("unmarshal metadata: %v", err)
-	}
-	if m["title"] != "Test Book" {
-		t.Errorf("metadata title = %v, want %q", m["title"], "Test Book")
-	}
-	if m["pages"] != float64(42) {
-		t.Errorf("metadata pages = %v, want 42", m["pages"])
-	}
-	if dto.Action != db.AuditActionBookCreated {
-		t.Errorf("Action = %q, want %q", dto.Action, db.AuditActionBookCreated)
-	}
-	if dto.EntityType != "book" {
-		t.Errorf("EntityType = %q, want %q", dto.EntityType, "book")
-	}
-	if dto.EntityID != "book-3" {
-		t.Errorf("EntityID = %q, want %q", dto.EntityID, "book-3")
-	}
+	require.NoError(t, json.Unmarshal(dto.Metadata, &m), "unmarshal metadata")
+	require.Equal(t, "Test Book", m["title"])
+	require.Equal(t, float64(42), m["pages"])
+	require.Equal(t, db.AuditActionBookCreated, dto.Action)
+	require.Equal(t, "book", dto.EntityType)
+	require.Equal(t, "book-3", dto.EntityID)
 }

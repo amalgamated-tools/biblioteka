@@ -130,6 +130,8 @@ make run
 
 ### Development Mode (hot-reload)
 
+**Additional prerequisite:** [goreman](https://github.com/mattn/goreman) — install with `go install github.com/mattn/goreman@latest`.
+
 ```bash
 # Install frontend dependencies
 cd frontend && pnpm install && cd ..
@@ -152,8 +154,9 @@ Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be 
 | `PORT` | `8080` | HTTP listen port (overrides `-port` flag) |
 | `DATABASE_URL` | *(empty – SQLite)* | PostgreSQL connection string |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
-| `JWT_SECRET` | — | **Required in production** – random secret for signing tokens |
+| `JWT_SECRET` | — | **Required in production** – random secret for signing tokens (minimum 32 characters recommended; a shorter value logs a startup warning) |
 | `SECURE_COOKIES` | `true` | Marks session cookies as `Secure`. Set to `false` for local HTTP development (the provided `.env.sample` defaults to `false`) |
+| `DISABLE_SIGNUP` | `false` | Set to `true` to disable public self-registration. When set, `POST /api/auth/signup` returns `403 Forbidden` and the Sign Up tab is hidden in the UI. Useful for single-user or invite-only deployments. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `LOG_FORMAT` | `json` | `json` or `text` |
 | `OIDC_ISSUER_URL` | *(empty)* | OIDC provider issuer URL |
@@ -168,6 +171,7 @@ Copy `.env.sample` to `.env` and adjust as needed. The `PORT` value can also be 
 | `SMTP_TLS` | `starttls` | TLS mode: `none`, `starttls`, or `tls` |
 | `TELEMETRY_ENABLED` | `false` | Send anonymous usage telemetry on first startup (opt-in, disabled by default) |
 | `TELEMETRY_ENDPOINT` | *(internal default)* | Override the anonymous telemetry collection endpoint |
+| `TRUSTED_PROXIES` | *(empty)* | Comma-separated CIDR ranges of trusted reverse proxies (e.g. `10.0.0.0/8,172.16.0.0/12`). When set, the rate limiter uses the rightmost non-trusted IP from `X-Forwarded-For`. When unset, `X-Forwarded-For` is ignored and `RemoteAddr` is used directly |
 | `POSTGRES_PASSWORD` | — | PostgreSQL password; used by the `docker-compose.postgres.yml` Docker Compose file |
 
 ## Admin

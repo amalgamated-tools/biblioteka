@@ -7,98 +7,48 @@
   import type { KoboToken } from "../../types";
   import { copyToClipboard } from "../../lib/clipboard";
   import { BookOpen, Copy, Trash2 } from "lucide-svelte";
-  import { onDestroy, onMount, tick } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
-  import { autofocusFirstButton } from "../../lib/actions";
+  import DeleteConfirmation from "../ui/DeleteConfirmation.svelte";
+  import { TokenListState } from "../../lib/tokenList.svelte";
 
   type KoboTokenDisplay = KoboToken & { token?: string };
 
-  let tokenList: KoboTokenDisplay[] = $state.raw([]);
-  let tokensLoading = $state(false);
-  let tokensError: string | null = $state(null);
-  let newTokenName = $state("");
-  let createTokenLoading = $state(false);
-
-  // Per-token "copied" state
-  let copiedTokenId: string | null = $state(null);
-  let copiedTimeout: number | null = null;
-  let liveMessage = $state("");
-  let pendingDeleteToken: { id: string; name: string } | null = $state(null);
-
-  function clearCopyTimeout() {
-    if (copiedTimeout !== null) {
-      clearTimeout(copiedTimeout);
-      copiedTimeout = null;
-    }
-  }
-
-  onDestroy(clearCopyTimeout);
-
-  onMount(() => {
-    void loadTokens();
+  const tokenList = new TokenListState<KoboTokenDisplay>({
+    load: listKoboTokens,
+    delete: deleteKoboToken,
+    loadError: "Failed to load Kobo tokens",
+    deleteError: "Failed to delete Kobo token",
   });
 
-  async function loadTokens() {
-    tokensLoading = true;
-    tokensError = null;
-    try {
-      tokenList = await listKoboTokens();
-    } catch (err) {
-      tokensError =
-        err instanceof Error ? err.message : "Failed to load Kobo tokens";
-    } finally {
-      tokensLoading = false;
-    }
-  }
+  let newTokenName = $state("");
+  let createTokenLoading = $state(false);
+  let liveMessage = $state("");
+
+  onDestroy(() => tokenList.copy.clear());
+
+  onMount(() => {
+    void tokenList.load();
+  });
 
   async function handleCreateToken(e: SubmitEvent) {
     e.preventDefault();
     if (!newTokenName.trim()) return;
 
     createTokenLoading = true;
-    tokensError = null;
+    tokenList.error = null;
 
     try {
       const token = await createKoboToken(newTokenName.trim());
       newTokenName = "";
-      tokenList = [token, ...tokenList];
+      tokenList.items = [token, ...tokenList.items];
     } catch (err) {
-      tokensError =
+      tokenList.error =
         err instanceof Error ? err.message : "Failed to create Kobo token";
     } finally {
       createTokenLoading = false;
-    }
-  }
-
-  function handleDeleteToken(id: string, name: string) {
-    pendingDeleteToken = { id, name };
-  }
-
-  async function cancelDeleteToken() {
-    const id = pendingDeleteToken?.id;
-    pendingDeleteToken = null;
-    await tick();
-    if (id) {
-      const trigger = document.querySelector<HTMLElement>(
-        `[data-delete-trigger="${id}"]`,
-      );
-      trigger?.focus();
-    }
-  }
-
-  async function confirmDeleteToken() {
-    if (!pendingDeleteToken) return;
-    const { id } = pendingDeleteToken;
-    pendingDeleteToken = null;
-    tokensError = null;
-    try {
-      await deleteKoboToken(id);
-      tokenList = tokenList.filter((t) => t.id !== id);
-    } catch (err) {
-      tokensError =
-        err instanceof Error ? err.message : "Failed to delete Kobo token";
     }
   }
 
@@ -112,20 +62,15 @@
     tokenId: string,
     tokenName: string,
   ) {
-    tokensError = null;
+    tokenList.error = null;
 
     try {
       await copyToClipboard(text);
 
-      copiedTokenId = tokenId;
       liveMessage = `Copied sync URL for ${tokenName}`;
-      clearCopyTimeout();
-      copiedTimeout = window.setTimeout(() => {
-        copiedTokenId = null;
-        copiedTimeout = null;
-      }, 2000);
+      tokenList.copy.set(tokenId);
     } catch (err) {
-      tokensError =
+      tokenList.error =
         err instanceof Error
           ? `Failed to copy to clipboard: ${err.message}`
           : "Failed to copy to clipboard. Your browser may not support clipboard access.";
@@ -140,10 +85,10 @@
     <h2
       class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-2 flex items-center gap-2"
     >
-      <BookOpen class="w-5 h-5 text-accent-600" />
+      <BookOpen class="w-5 h-5 text-accent-600" aria-hidden="true" />
       Kobo Sync
     </h2>
-    <p class="text-sm text-ink-500 dark:text-ink-400 mb-6">
+    <p class="text-sm text-ink-500 dark:text-ink-300 mb-6">
       Sync your library to a Kobo e-reader. Create a token below, then set the
       <strong>API endpoint</strong> in your Kobo's
       <code class="px-1 py-0.5 bg-ink-100 dark:bg-ink-800 rounded text-xs"
@@ -172,19 +117,19 @@
       </Button>
     </form>
 
-    {#if tokensError}
-      <AlertBanner variant="error" class="mb-4">{tokensError}</AlertBanner>
+    {#if tokenList.error}
+      <AlertBanner variant="error" class="mb-4">{tokenList.error}</AlertBanner>
     {/if}
 
-    {#if tokensLoading}
-      <p class="text-ink-400 dark:text-ink-400">Loading Kobo tokens...</p>
-    {:else if tokenList.length === 0}
-      <p class="text-sm text-ink-400 dark:text-ink-500">
+    {#if tokenList.loading}
+      <p class="text-ink-500 dark:text-ink-300">Loading Kobo tokens...</p>
+    {:else if tokenList.items.length === 0}
+      <p class="text-sm text-ink-500 dark:text-ink-300">
         No Kobo tokens yet. Create one above to get started.
       </p>
     {:else}
       <div class="space-y-3">
-        {#each tokenList as token (token.id)}
+        {#each tokenList.items as token (token.id)}
           {@const url = syncURL(token)}
           <div
             class="border border-ink-100 dark:border-ink-800 rounded-xl p-4 flex flex-col gap-2 hover:bg-ink-50/50 dark:hover:bg-ink-800/30 transition-colors"
@@ -195,53 +140,26 @@
                 >{token.name}</span
               >
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="text-xs text-ink-400 dark:text-ink-500"
+                <span class="text-xs text-ink-500 dark:text-ink-300"
                   >Created {new Date(
                     token.created_at,
                   ).toLocaleDateString()}</span
                 >
-                {#if pendingDeleteToken?.id === token.id}
-                  <div
-                    class="flex items-center gap-2 animate-scale-in"
-                    role="alertdialog"
-                    aria-modal="false"
-                    aria-labelledby={`delete-token-confirm-label-${token.id}`}
-                    tabindex="-1"
-                    use:autofocusFirstButton
-                    onkeydown={(e: KeyboardEvent) => {
-                      if (e.key === "Escape") cancelDeleteToken();
-                    }}
-                  >
-                    <span
-                      id={`delete-token-confirm-label-${token.id}`}
-                      class="text-xs text-danger-600 dark:text-red-400"
-                      >Delete "{token.name}"?</span
-                    >
-                    <Button
-                      type="button"
-                      variant="danger"
-                      onclick={confirmDeleteToken}
-                      class="px-3 py-1 text-xs"
-                    >
-                      Delete
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onclick={cancelDeleteToken}
-                      class="px-3 py-1 text-xs"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
+                {#if tokenList.pendingDelete?.id === token.id}
+                  <DeleteConfirmation
+                    itemId={token.id}
+                    itemName={token.name}
+                    onConfirm={tokenList.confirmDelete}
+                    onCancel={tokenList.cancelDeleteWithFocus}
+                  />
                 {:else}
                   <button
                     data-delete-trigger={token.id}
-                    onclick={() => handleDeleteToken(token.id, token.name)}
+                    onclick={() => tokenList.handleDelete(token.id, token.name)}
                     aria-label={`Delete token ${token.name} (created ${new Date(token.created_at).toLocaleDateString()})`}
                     class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-danger-600 hover:bg-danger-50 dark:text-red-400 dark:hover:bg-danger-700/10 transition-colors"
                   >
-                    <Trash2 class="w-3.5 h-3.5" />
+                    <Trash2 class="w-3.5 h-3.5" aria-hidden="true" />
                     Delete
                   </button>
                 {/if}
@@ -257,32 +175,28 @@
                 </code>
                 <button
                   onclick={() => handleCopyURL(url, token.id, token.name)}
-                  aria-label={copiedTokenId === token.id
+                  aria-label={tokenList.copy.copiedId === token.id
                     ? `Copied sync URL for ${token.name}`
                     : `Copy sync URL for ${token.name}`}
-                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {copiedTokenId ===
-                  token.id
+                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors {tokenList
+                    .copy.copiedId === token.id
                     ? 'bg-success-100 text-success-700 dark:bg-green-900/40 dark:text-green-400'
                     : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700'}"
                 >
-                  <Copy class="w-4 h-4" />
-                  {copiedTokenId === token.id ? "Copied" : "Copy"}
+                  <Copy class="w-4 h-4" aria-hidden="true" />
+                  {tokenList.copy.copiedId === token.id ? "Copied" : "Copy"}
                 </button>
               {:else}
                 <div
-                  class="flex-1 px-3 py-2 bg-ink-50 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 rounded-lg text-xs text-ink-500 dark:text-ink-400"
+                  class="flex-1 px-3 py-2 bg-ink-50 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 rounded-lg text-xs text-ink-500 dark:text-ink-300"
                 >
                   Token hidden. Create a new token to get a fresh sync URL.
                 </div>
                 <button
                   type="button"
-                  aria-disabled="true"
+                  disabled
                   aria-label={`Copy unavailable for ${token.name} — token value is only shown once`}
-                  onclick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500 cursor-not-allowed"
+                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500"
                 >
                   <Copy class="w-4 h-4" aria-hidden="true" />
                   Copy
@@ -298,7 +212,7 @@
   </div>
 
   <div
-    class="border-t border-ink-100 dark:border-ink-800 pt-4 text-sm text-ink-500 dark:text-ink-400 space-y-2"
+    class="border-t border-ink-100 dark:border-ink-800 pt-4 text-sm text-ink-500 dark:text-ink-300 space-y-2"
   >
     <p class="font-medium text-ink-700 dark:text-ink-300">Setup instructions</p>
     <ol class="list-decimal list-inside space-y-1">

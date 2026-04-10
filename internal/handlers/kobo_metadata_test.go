@@ -1,0 +1,124 @@
+package handlers
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
+	"testing"
+
+	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/stretchr/testify/require"
+)
+
+// TestHandleBookMetadata_CoverURLIncluded verifies that a book with a cover
+// image URL includes it in the Kobo metadata response.
+func TestHandleBookMetadata_CoverURLIncluded(t *testing.T) {
+	t.Parallel()
+
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	coverURL := "https://example.com/cover.jpg"
+	book, err := h.DB.CreateBook(context.Background(), db.BookInput{Title: "Cover URL Book", CoverImageURL: &coverURL})
+	require.NoError(t, err, "create book")
+	// A book file is required for metadata to be returned.
+	_, err = h.DB.CreateBookFile(
+		context.Background(), book.ID, "epub", "cover-book.epub", 1024, nil,
+		filepath.Join(t.TempDir(), "cover-book.epub"),
+	)
+	require.NoError(t, err, "create book file")
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/metadata", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var results []map[string]any
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
+	require.Len(t, results, 1)
+	require.Equal(t, "Cover URL Book", results[0]["Title"])
+	coverImageID, ok := results[0]["CoverImageId"].(string)
+	require.True(t, ok, "CoverImageId should be a string")
+	require.NotEmpty(t, coverImageID)
+}
+
+// TestHandleBookMetadata_MultipleEntitlementsEachHaveMetadata verifies that
+// requesting metadata for multiple books returns each book's metadata.
+func TestHandleBookMetadata_MultipleEntitlementsEachHaveMetadata(t *testing.T) {
+	t.Parallel()
+
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	// Create a book with a file so metadata is returned.
+	book, err := h.DB.CreateBook(context.Background(), db.BookInput{Title: "Book Alpha"})
+	require.NoError(t, err, "create book")
+	_, err = h.DB.CreateBookFile(
+		context.Background(), book.ID, "epub", "alpha.epub", 512, nil,
+		filepath.Join(t.TempDir(), "alpha.epub"),
+	)
+	require.NoError(t, err, "create book file")
+
+	// Fetch metadata for just the first book.
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/metadata", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var results []map[string]any
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
+	require.Len(t, results, 1)
+	require.Equal(t, "Book Alpha", results[0]["Title"])
+}
+
+// TestHandleBookMetadata_ContainsEntitlementID verifies that the metadata
+// response includes an EntitlementId derived from the book ID.
+func TestHandleBookMetadata_ContainsEntitlementID(t *testing.T) {
+	t.Parallel()
+
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	book, err := h.DB.CreateBook(context.Background(), db.BookInput{Title: "Entitlement Book"})
+	require.NoError(t, err, "create book")
+	_, err = h.DB.CreateBookFile(
+		context.Background(), book.ID, "epub", "entitlement.epub", 512, nil,
+		filepath.Join(t.TempDir(), "entitlement.epub"),
+	)
+	require.NoError(t, err, "create book file")
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/"+book.ID+"/metadata", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	var results []map[string]any
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&results), "decode")
+	require.NotEmpty(t, results)
+	require.Equal(t, "Entitlement Book", results[0]["Title"])
+	require.Equal(t, book.ID, results[0]["EntitlementId"])
+}
+
+// TestHandleBookMetadata_EmptyBookID verifies that a non-existent book ID
+// returns a 404.
+func TestHandleBookMetadata_EmptyBookID(t *testing.T) {
+	t.Parallel()
+
+	h, userID := setupKoboHandler(t)
+	handler := koboDeviceHandler(h)
+	tokenValue := createTestKoboToken(t, h, userID)
+
+	r := httptest.NewRequest(http.MethodGet, "/kobo/"+tokenValue+"/v1/library/nonexistent-id/metadata", nil)
+	r.Host = "localhost:8080"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusNotFound, w.Code)
+}

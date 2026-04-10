@@ -86,7 +86,7 @@ Paginated responses include envelope fields alongside the data array:
 | `limit`  | integer | Effective limit used for this page |
 | `offset` | integer | Effective offset used for this page |
 
-**Behavior:** Most paginated endpoints (`GET /api/books`, `GET /api/libraries/{id}/books`) use `parseLimitOffset`, which **silently clamps** out-of-range values — a non-integer or negative `offset` falls back to `0`, and a `limit` below `1` falls back to `50`. The `GET /api/audit-logs` endpoint uses stricter validation and returns `400 Bad Request` for a non-integer or out-of-range `limit`/`offset`.
+**Behavior:** Most paginated endpoints (`GET /api/books`, `GET /api/libraries/{id}/books`, `GET /api/authors/{id}/books`, `GET /api/series/{id}/books`) use `parseLimitOffset`, which **silently clamps** out-of-range values — a non-integer or negative `offset` falls back to `0`, and a `limit` below `1` falls back to `50`. The `GET /api/audit-logs` endpoint uses stricter validation and returns `400 Bad Request` for a non-integer or out-of-range `limit`/`offset`.
 
 ---
 
@@ -104,7 +104,7 @@ Create a new user account. The first user to sign up automatically becomes an ad
 |------------|--------|----------|-----------------------|
 | `name`     | string | ✓        | Display name          |
 | `email`    | string | ✓        | Email address         |
-| `password` | string | ✓        | Password (min 6 chars) |
+| `password` | string | ✓        | Password (min 8 chars) |
 
 **Responses:**
 
@@ -112,8 +112,11 @@ Create a new user account. The first user to sign up automatically becomes an ad
 |--------|-------------|
 | `201 Created` | Account created; returns token and user object |
 | `400 Bad Request` | Missing or invalid fields |
+| `403 Forbidden` | Signup is disabled on this server (`DISABLE_SIGNUP=true`) |
 | `409 Conflict` | Email already registered |
 | `429 Too Many Requests` | Rate limit exceeded |
+
+> **Self-registration control:** Server operators can set `DISABLE_SIGNUP=true` to prevent new accounts from being created. When disabled, the sign-up form is hidden in the UI and all `POST` requests to this endpoint return `403 Forbidden`. Check the current state with [`GET /api/auth/signup/enabled`](#get-apiauthsignupenabled).
 
 **Response body (`201`):**
 
@@ -122,12 +125,29 @@ Create a new user account. The first user to sign up automatically becomes an ad
   "token": "<jwt>",
   "user": {
     "id": "<id>",
+    "name": "Alice",
     "email": "alice@example.com",
     "oidc_linked": false,
     "is_admin": true
   }
 }
 ```
+
+---
+
+### `GET /api/auth/signup/enabled`
+
+Returns whether new user self-registration is currently permitted on this server. Also accepts `HEAD` (returns headers only, no body). No authentication required.
+
+**Response body (`200`):**
+
+```json
+{ "enabled": true }
+```
+
+| Field     | Type    | Description |
+|-----------|---------|-------------|
+| `enabled` | boolean | `true` when `POST /api/auth/signup` accepts new registrations; `false` when `DISABLE_SIGNUP=true` is set |
 
 ---
 
@@ -150,6 +170,7 @@ Authenticate with email and password.
 | `400 Bad Request` | Missing fields |
 | `401 Unauthorized` | Invalid credentials or OIDC-only account |
 | `429 Too Many Requests` | Rate limit exceeded |
+| `500 Internal Server Error` | Database or token generation error |
 
 **Response body (`200`):** Same shape as signup response above.
 
@@ -164,6 +185,7 @@ Return the currently authenticated user's profile.
 ```json
 {
   "id": "<id>",
+  "name": "Alice",
   "email": "alice@example.com",
   "oidc_linked": false,
   "is_admin": true
@@ -173,9 +195,33 @@ Return the currently authenticated user's profile.
 | Field         | Type    | Description |
 |---------------|---------|-------------|
 | `id`          | string  | Opaque user ID |
+| `name`        | string  | User's display name |
 | `email`       | string  | User's email address |
 | `oidc_linked` | boolean | `true` when the account has an OIDC/SSO identity linked; `false` for local-only accounts |
 | `is_admin`    | boolean | `true` when the user has admin privileges |
+
+---
+
+### `PUT /api/auth/me` 🔒
+
+Update the authenticated user's display name.
+
+**Request body:**
+
+| Field  | Type   | Required | Description |
+|--------|--------|----------|-------------|
+| `name` | string | ✓        | New display name (must be non-blank) |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `200 OK` | Name updated; returns updated user object |
+| `400 Bad Request` | Missing or blank `name` |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Authenticated user no longer exists |
+
+**Response body (`200`):** Same shape as `GET /api/auth/me` above, with the updated `name`.
 
 ---
 
@@ -196,7 +242,8 @@ Change the authenticated user's password. Not supported for OIDC-only accounts.
 |--------|-------------|
 | `200 OK` | Password updated |
 | `400 Bad Request` | Missing fields, invalid password, or OIDC-only account |
-| `401 Unauthorized` | Missing or invalid JWT, or current password is incorrect |
+| `401 Unauthorized` | Missing or invalid JWT, current password is incorrect, or user no longer exists |
+| `500 Internal Server Error` | Database or password hashing error |
 
 ---
 
@@ -514,7 +561,7 @@ All six fields (`host`, `port`, `username`, `password`, `from`, `tls`) are writt
 | `port` | string | | SMTP port; defaults to `"587"` when omitted |
 | `username` | string | | SMTP authentication username; leave empty for unauthenticated SMTP |
 | `password` | string | ✓* | SMTP authentication password; required when `username` is set and no password is currently stored |
-| `from` | string | ✓ | Envelope `From` address (must be a plain `user@host` address without a display name) |
+| `from` | string | ✓ | Envelope `From` address; accepts a bare address (e.g. `no-reply@example.com`) or RFC 5322 format with a display name (e.g. `"Biblioteka" <no-reply@example.com>`) |
 | `tls` | string | | `"none"`, `"starttls"` (default), or `"tls"` |
 
 \* Required when `username` is set and no password is currently stored; may be omitted to preserve an existing password for the same username.
@@ -522,7 +569,7 @@ All six fields (`host`, `port`, `username`, `password`, `from`, `tls`) are writt
 **Validation rules:**
 - `host` must be a valid hostname or IP address — no scheme (`smtp://`), embedded port, or path component.
 - Authenticated SMTP (`username` set) without TLS is only allowed for localhost/loopback addresses. Use `starttls` or `tls` for remote servers.
-- `from` must be a valid RFC 5321 email address without a display name (e.g. `"Alice <alice@example.com>"` is rejected).
+- `from` must be a valid email address parseable by RFC 5322 — either a bare address (`user@host`) or a display-name form (`"Display Name" <user@host>`). The display name is preserved in the message `From:` header; the bare address is used for the SMTP envelope.
 
 **Responses:**
 
@@ -618,6 +665,18 @@ Grant or revoke admin privileges for a user. Admins cannot change their own admi
 { "message": "admin status updated" }
 ```
 
+**Error responses:**
+
+| Status | Description |
+|--------|-------------|
+| `400 Bad Request` | Request body is invalid or missing required fields |
+| `400 Bad Request` | Caller attempted to change their own admin status |
+| `401 Unauthorized` | JWT is missing, malformed, or invalid, or the JWT is valid but the calling user's account no longer exists |
+| `403 Forbidden` | Caller is not an admin |
+| `404 Not Found` | Target user not found |
+| `405 Method Not Allowed` | Method is not `PUT` |
+| `500 Internal Server Error` | Database error or failed to update the user's admin status |
+
 ---
 
 ### `GET /api/audit-logs` 🔒 **Admin**
@@ -681,6 +740,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `book.created`         | `book`        | Book created via `POST /api/books` |
 | `book.updated`         | `book`        | Book updated via `PUT /api/books/{id}` |
 | `book.deleted`         | `book`        | Book deleted via `DELETE /api/books/{id}` |
+| `book.uploaded`        | `book_upload` | Book file uploaded via `POST /api/books/upload` (`entity_type` is `book_upload`; do not infer it from the `action` prefix) |
 | `author.created`       | `author`      | Author created via `POST /api/authors` |
 | `author.updated`       | `author`      | Author updated via `PUT /api/authors/{id}` |
 | `author.deleted`       | `author`      | Author deleted via `DELETE /api/authors/{id}` |
@@ -698,7 +758,9 @@ Return a paginated list of all audit log entries. Each entry records an action p
 | `kosync_credential.updated` | `kosync_credential` | KOSync credentials set or updated via `PUT /api/kosync/credentials` |
 | `kosync_credential.deleted` | `kosync_credential` | KOSync credentials removed via `DELETE /api/kosync/credentials` |
 | `user.signed_up`       | `user`        | New account created via `POST /api/auth/signup` |
+| `user.password_changed` | `user`       | Password changed via `PUT /api/auth/password` |
 | `user.admin_updated`   | `user`        | Admin status changed via `PUT /api/admin/users/{id}` |
+| `user.profile_updated` | `user`        | Display name changed via `PUT /api/auth/me` |
 | `smtp.config_updated`  | `config`      | SMTP settings saved via `PUT /api/config/smtp` |
 
 | Status | Description |
@@ -920,6 +982,32 @@ Delete an author. Returns `204 No Content`.
 
 ---
 
+### `GET /api/authors/{id}/books` 🔒
+
+List all books associated with an author, with pagination. Results are sorted by `title` ascending.
+
+**Path parameters:** `{id}` — Author resource ID.
+
+**Query parameters:**
+
+| Parameter | Type    | Default | Description |
+|-----------|---------|---------|-------------|
+| `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
+| `offset`  | integer | `0`     | Number of books to skip |
+
+**Response body (`200`):** Paginated books object (same envelope and book summary shape as [`GET /api/books`](#get-apibooks)).
+
+If no associated books are found (`total: 0`), Biblioteka first checks whether the author ID exists. If the author does not exist, the response is `404 Not Found`; otherwise, the response is `200 OK` with an empty `books` array and `total: 0`.
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `404` | Author not found when no books are associated with the given ID and the author does not exist |
+| `500` | Unexpected server error |
+
+---
+
 ## Series
 
 ### `GET /api/series` 🔒
@@ -1011,16 +1099,45 @@ Delete a series. Returns `204 No Content`.
 
 ---
 
+### `GET /api/series/{id}/books` 🔒
+
+List all books in a series, with pagination. Results are ordered by series position ascending, then by `title` ascending. Books with no assigned position appear last on PostgreSQL and first on SQLite.
+
+**Path parameters:** `{id}` — Series resource ID.
+
+**Query parameters:**
+
+| Parameter | Type    | Default | Description |
+|-----------|---------|---------|-------------|
+| `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
+| `offset`  | integer | `0`     | Number of books to skip |
+
+**Response body (`200`):** Paginated books object (same envelope and book summary shape as [`GET /api/books`](#get-apibooks)).
+
+If no associated books are found (`total: 0`), Biblioteka first checks whether the series ID exists. If the series does not exist, the response is `404 Not Found`; otherwise, the response is `200 OK` with an empty `books` array and `total: 0`.
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `404` | Series not found when no books are associated with the given ID and the series does not exist |
+| `500` | Unexpected server error |
+
+---
+
 ## Books
 
 ### `GET /api/books` 🔒
 
 List books (summary objects — no nested authors, series, or files), with pagination. Results are sorted by `title` ascending.
 
+When the `query` parameter is provided, its value is trimmed first. If the trimmed value is non-empty, the endpoint performs a case-insensitive substring search on the `title` and `description` fields and returns only matching books, still paginated. If `query` is omitted or trims to an empty string (for example, `query=%20%20`), all books are returned.
+
 **Query parameters:**
 
 | Parameter | Type    | Default | Description |
 |-----------|---------|---------|-------------|
+| `query`   | string  | _(none)_ | Substring to search across `title` and `description` (case-insensitive). The value is trimmed; only non-empty trimmed values trigger search. If omitted or blank after trimming, all books are returned. |
 | `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
 | `offset`  | integer | `0`     | Number of books to skip |
 
@@ -1211,6 +1328,73 @@ Delete a book. Returns `204 No Content`.
 
 ---
 
+### `POST /api/books/upload` 🔒
+
+Upload a book file to a library. The file is staged on disk and processed **asynchronously** by a background worker that extracts metadata, organizes the file into the library's directory layout, and creates a book record. The endpoint returns `202 Accepted` immediately — the book will appear in the library once processing completes.
+
+> **Requires:** Background processing must be configured. If background processing is not configured, or the upload job cannot be enqueued for background processing, the endpoint returns `503 Service Unavailable`.
+
+**Content type:** `multipart/form-data`
+
+**Supported file types:** `.epub`, `.mobi`, `.azw3`, `.pdf`
+
+**Maximum upload size:** 500 MB
+
+**Form fields:**
+
+| Field         | Type   | Required | Description |
+|---------------|--------|----------|-------------|
+| `file`        | file   | ✓        | The book file to upload |
+| `library_id`  | string | ✓        | ID of the target library |
+| `title`       | string |          | Title override — takes precedence over metadata extracted from the file |
+| `author`      | string |          | Author override — takes precedence over extracted metadata |
+| `description` | string |          | Description override |
+| `isbn`        | string |          | ISBN override (ISBN-10 or ISBN-13); validated immediately and returns `400` if invalid |
+| `language`    | string |          | Language override |
+| `publisher`   | string |          | Publisher override |
+
+**Response body (`202 Accepted`):**
+
+```json
+{
+  "message": "file accepted for processing",
+  "file_name": "my-book.epub",
+  "file_type": "epub",
+  "library_id": "<library-id>"
+}
+```
+
+| Field        | Type   | Description |
+|--------------|--------|-------------|
+| `message`    | string | Human-readable status message |
+| `file_name`  | string | Basename of the uploaded file name, with any path components removed |
+| `file_type`  | string | Detected format: `epub`, `mobi`, `azw3`, or `pdf` |
+| `library_id` | string | ID of the target library |
+
+**Errors:**
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Missing `library_id` or `file`; unsupported file type; or invalid ISBN |
+| `401` | Missing or invalid authentication token |
+| `404` | Library with the given `library_id` not found |
+| `413` | File exceeds the 500 MB limit |
+| `500` | Server error while staging the file or querying library configuration |
+| `503` | Background processing is not configured, or the job queue is unavailable |
+
+**Example curl:**
+
+```bash
+curl -X POST https://your-server/api/books/upload \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@/path/to/book.epub" \
+  -F "library_id=<library-id>" \
+  -F "title=My Book" \
+  -F "author=Jane Smith"
+```
+
+---
+
 ### `GET /api/books/{id}/authors` 🔒
 
 List the authors linked to a book. Results are sorted by `name` ascending.
@@ -1356,7 +1540,7 @@ Create or replace the current user's OPDS credential. If a credential already ex
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `username` | string | ✓ | OPDS username (case-insensitive, trimmed) |
-| `password` | string | ✓ | OPDS password (min 6 chars) |
+| `password` | string | ✓ | OPDS password (min 8 chars) |
 
 **Responses:**
 
@@ -1530,8 +1714,8 @@ Serve a book's cover image. When the stored `cover_image_url` is a `data:` URL (
 | Status | Description |
 |--------|-------------|
 | `200 OK` | Image bytes; `Content-Type` is set to the detected image MIME type (e.g. `image/jpeg`, `image/png`) |
-| `307 Temporary Redirect` | Cover URL is a plain HTTP/HTTPS URL; client is redirected there |
-| `404 Not Found` | Book not found or no cover image set |
+| `307 Temporary Redirect` | Cover URL is a plain `https://` URL; client is redirected there. Non-HTTPS URLs (e.g. `http://`) stored in `cover_image_url` are rejected and return `404` instead |
+| `404 Not Found` | Book not found, no cover image set, or stored `cover_image_url` is rejected because it is not HTTPS |
 | `500 Internal Server Error` | Stored data URL is malformed or its payload is not a valid image |
 
 See [Cover images](opds.md#cover-images) in the OPDS guide for MIME-type detection rules and details on the `data:` URL content-sniffing behaviour.
@@ -1664,7 +1848,7 @@ Create or update the current user's KOSync credentials.
 | Field      | Type   | Required | Description |
 |------------|--------|----------|-------------|
 | `username` | string | ✓ | KOSync username (max 256 chars, case-insensitive, globally unique) |
-| `password` | string | ✓ | KOSync password (min 6 chars) |
+| `password` | string | ✓ | KOSync password (min 8 chars) |
 
 **Response `200 OK`:** Same shape as `GET /api/kosync/credentials`.
 

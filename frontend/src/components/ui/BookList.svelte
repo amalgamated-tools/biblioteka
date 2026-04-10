@@ -10,6 +10,7 @@
   } from "lucide-svelte";
   import AlertBanner from "./AlertBanner.svelte";
   import BookCard from "./BookCard.svelte";
+  import { routerStore } from "../../stores/router.svelte";
 
   interface Props {
     fetchBooks: (limit: number, offset: number) => Promise<PaginatedBooks>;
@@ -180,7 +181,9 @@
     class="bg-white dark:bg-ink-900 rounded-2xl p-8 shadow-sm border border-ink-100 dark:border-ink-800"
   >
     <div class="text-center py-8">
-      <p class="text-ink-400 dark:text-ink-400">Loading books...</p>
+      <p role="status" class="text-ink-500 dark:text-ink-300">
+        Loading books...
+      </p>
     </div>
   </div>
 {:else if total === 0}
@@ -196,19 +199,20 @@
         <p
           aria-live="polite"
           aria-atomic="true"
-          class="text-ink-400 dark:text-ink-400 text-lg"
+          class="text-ink-500 dark:text-ink-300 text-lg"
         >
           Scanning library...
         </p>
-        <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
+        <p class="text-ink-500 dark:text-ink-300 text-sm mt-1">
           Books will appear here once the scan completes.
         </p>
       {:else}
         <BookOpen
           class="w-12 h-12 text-ink-200 dark:text-ink-700 mx-auto mb-4"
+          aria-hidden="true"
         />
-        <p class="text-ink-400 dark:text-ink-400 text-lg">No books yet.</p>
-        <p class="text-ink-300 dark:text-ink-500 text-sm mt-1">
+        <p class="text-ink-500 dark:text-ink-300 text-lg">No books yet.</p>
+        <p class="text-ink-500 dark:text-ink-300 text-sm mt-1">
           Books will appear here once they are added to your libraries.
         </p>
       {/if}
@@ -217,7 +221,11 @@
 {:else}
   <!-- Toolbar -->
   <div class="flex items-center justify-between mb-4">
-    <p class="text-sm text-ink-400 dark:text-ink-500">
+    <p
+      aria-live="polite"
+      aria-atomic="true"
+      class="text-sm text-ink-500 dark:text-ink-300"
+    >
       Showing {rangeStart}–{rangeEnd} of {total} books
     </p>
     <div class="flex items-center gap-1">
@@ -230,7 +238,7 @@
         aria-label="Grid view"
         aria-pressed={viewMode === "grid"}
       >
-        <LayoutGrid class="w-4 h-4" />
+        <LayoutGrid class="w-4 h-4" aria-hidden="true" />
       </button>
       <button
         onclick={() => (viewMode = "table")}
@@ -241,7 +249,7 @@
         aria-label="Table view"
         aria-pressed={viewMode === "table"}
       >
-        <List class="w-4 h-4" />
+        <List class="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   </div>
@@ -260,10 +268,10 @@
     <div
       class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 overflow-hidden"
     >
-      <table class="w-full text-sm">
+      <table class="w-full text-sm" aria-label="Books">
         <thead>
           <tr
-            class="border-b border-ink-100 dark:border-ink-800 text-left text-ink-400 dark:text-ink-500"
+            class="border-b border-ink-100 dark:border-ink-800 text-left text-ink-500 dark:text-ink-300"
           >
             <th scope="col" class="px-4 py-3 font-medium">Title</th>
             <th scope="col" class="px-4 py-3 font-medium hidden sm:table-cell"
@@ -280,7 +288,16 @@
         <tbody>
           {#each books as book (book.id)}
             <tr
-              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors"
+              onclick={() => routerStore.navigate(`books/${book.id}`)}
+              role="link"
+              tabindex="0"
+              onkeydown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  routerStore.navigate(`books/${book.id}`);
+                }
+              }}
+              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
@@ -297,6 +314,7 @@
                     >
                       <BookOpen
                         class="w-4 h-4 text-ink-300 dark:text-ink-600"
+                        aria-hidden="true"
                       />
                     </div>
                   {/if}
@@ -309,17 +327,17 @@
                 </div>
               </td>
               <td
-                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden sm:table-cell truncate max-w-[200px]"
+                class="px-4 py-3 text-ink-500 dark:text-ink-300 hidden sm:table-cell truncate max-w-[200px]"
               >
                 {book.publisher ?? "—"}
               </td>
               <td
-                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden md:table-cell"
+                class="px-4 py-3 text-ink-500 dark:text-ink-300 hidden md:table-cell"
               >
                 {book.language ?? "—"}
               </td>
               <td
-                class="px-4 py-3 text-ink-500 dark:text-ink-400 hidden lg:table-cell"
+                class="px-4 py-3 text-ink-500 dark:text-ink-300 hidden lg:table-cell"
               >
                 {book.publication_date ?? "—"}
               </td>
@@ -336,27 +354,35 @@
       <button
         onclick={prevPage}
         disabled={currentPage <= 1}
-        class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-200 dark:border-ink-700 transition-colors
+        aria-label="Previous page, page {Math.max(
+          1,
+          currentPage - 1,
+        )} of {totalPages}"
+        class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-400 dark:border-ink-400 transition-colors
           {currentPage <= 1
           ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
           : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
       >
-        <ChevronLeft class="w-4 h-4" />
+        <ChevronLeft class="w-4 h-4" aria-hidden="true" />
         Previous
       </button>
-      <span class="text-sm text-ink-500 dark:text-ink-400">
+      <span aria-atomic="true" class="text-sm text-ink-500 dark:text-ink-300">
         Page {currentPage} of {totalPages}
       </span>
       <button
         onclick={nextPage}
         disabled={currentPage >= totalPages}
-        class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-200 dark:border-ink-700 transition-colors
+        aria-label="Next page, page {Math.min(
+          totalPages,
+          currentPage + 1,
+        )} of {totalPages}"
+        class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-ink-400 dark:border-ink-400 transition-colors
           {currentPage >= totalPages
           ? 'text-ink-300 dark:text-ink-600 cursor-not-allowed'
           : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800'}"
       >
         Next
-        <ChevronRight class="w-4 h-4" />
+        <ChevronRight class="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   {/if}

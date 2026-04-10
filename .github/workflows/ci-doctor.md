@@ -2,7 +2,7 @@
 description: Investigates failed CI workflows to identify root causes and patterns, creating issues with diagnostic information
 on:
   workflow_run:
-    workflows: ["CI"]  # Monitor the CI workflow specifically
+    workflows: ["Test"]  # Monitor the Test workflow specifically
     types:
       - completed
     branches:
@@ -29,7 +29,7 @@ engine:
 safe-outputs:
   create-issue:
     expires: 1d
-    title-prefix: "[CI Failure Doctor] "
+    title-prefix: "fix(ci): "
     labels: [cookie]
     close-older-issues: true
   add-comment:

@@ -17,6 +17,10 @@ import (
 	"github.com/sblinch/mobi"
 )
 
+// GetMobiCover extracts the cover image from a MOBI or AZW3 file and returns
+// it as a base64-encoded data URL (data:image/jpeg;base64,...). The raw cover
+// bytes are decoded as an image and re-encoded to JPEG to normalize the
+// format. Returns ErrNoCover if the file has no embedded cover image.
 func GetMobiCover(ctx context.Context, path string) (string, error) {
 	e, err := mobi.NewReader(path)
 	if err != nil {

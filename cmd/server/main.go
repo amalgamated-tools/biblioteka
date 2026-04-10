@@ -8,10 +8,12 @@ import (
 	"os"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/goodreads"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/metadata"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
 	"github.com/amalgamated-tools/biblioteka/internal/server"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 	"golang.org/x/sync/errgroup"
@@ -99,13 +101,36 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		defer extractor.Close(cancelCtx)
 
 		w.Register(cancelCtx, jobs.JobScanPath, jobs.NewScanPathHandler(w))
-		w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database, extractor))
+		w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database, extractor, w))
 		w.Register(cancelCtx, jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
 		w.Register(cancelCtx, jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
+
+		w.Register(cancelCtx, jobs.JobScanWatchFolder, jobs.NewScanWatchFolderHandler(database, w))
+
+		grClient := goodreads.NewClient()
+
+		// Create a pub/sub publisher for metadata enrichment progress events.
+		var publisher pubsub.Publisher
+		psClient, psErr := pubsub.NewClient(redisURL)
+		if psErr != nil {
+			slog.WarnContext(cancelCtx, "failed to create pubsub publisher; metadata progress events disabled",
+				slog.Any(otelkeys.Error, psErr),
+			)
+		} else {
+			publisher = psClient
+			defer func() { _ = psClient.Close() }()
+		}
+
+		w.Register(cancelCtx, jobs.JobEnrichGoodreads, jobs.NewEnrichGoodreadsHandler(database, grClient, publisher))
 
 		if _, err := w.RegisterSchedule("@every 24h", jobs.JobScanLibraries, struct{}{}); err != nil {
 			slog.ErrorContext(cancelCtx, "failed to schedule scan:libraries job", slog.Any(otelkeys.Error, err))
 			return fmt.Errorf("failed to schedule scan:libraries job: %w", err)
+		}
+
+		if _, err := w.RegisterSchedule("@every 1m", jobs.JobScanWatchFolder, struct{}{}); err != nil {
+			slog.ErrorContext(cancelCtx, "failed to schedule scan:watch-folder job", slog.Any(otelkeys.Error, err))
+			return fmt.Errorf("failed to schedule scan:watch-folder job: %w", err)
 		}
 	}
 

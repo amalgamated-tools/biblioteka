@@ -32,6 +32,7 @@ func normalizeName(name string) string {
 // "de la Cruz" are stored as-is.
 func NormalizeAuthorName(name string) string { return normalizeName(name) }
 
+// Author represents a row in the authors table.
 type Author struct {
 	ID            string    `json:"id"`
 	Name          string    `json:"name"`
@@ -62,29 +63,23 @@ func scanAuthor(row interface{ Scan(...any) error }) (*Author, error) {
 	return &a, nil
 }
 
+// CreateAuthor inserts a new author with the given name and optional external
+// IDs. The name is normalized before storage. Returns ErrAuthorNameExists if
+// an author with an equivalent normalized name already exists.
 func (d *DB) CreateAuthor(ctx context.Context, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {
-	name = NormalizeAuthorName(name)
-	if name == "" {
-		slog.WarnContext(ctx, "db: rejecting author with blank name after normalization")
-		return nil, ErrInvalidAuthorName
-	}
-	slog.DebugContext(ctx, "db: creating author", slog.String(otelkeys.Name, name))
-
-	a, err := scanAuthor(d.QueryRowContext(ctx,
-		`INSERT INTO authors (name, goodreads_id, hardcover_id, google_books_id, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING `+authorColumns,
-		name, goodreadsID, hardcoverID, googleBooksID, imageURL,
-	))
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrAuthorNameExists
-		}
-		return nil, err
-	}
-	return a, nil
+	return namedEntityCreate(ctx, "author", name, NormalizeAuthorName, ErrInvalidAuthorName, ErrAuthorNameExists,
+		func(ctx context.Context, n string) (*Author, error) {
+			return scanAuthor(d.QueryRowContext(ctx,
+				`INSERT INTO authors (name, goodreads_id, hardcover_id, google_books_id, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING `+authorColumns,
+				n, goodreadsID, hardcoverID, googleBooksID, imageURL,
+			))
+		},
+	)
 }
 
+// GetAuthor retrieves an author by its UUID. Returns sql.ErrNoRows if not found.
 func (d *DB) GetAuthor(ctx context.Context, id string) (*Author, error) {
-	slog.DebugContext(ctx, "db: fetching author", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: fetching author", slog.String(otelkeys.AuthorID, id))
 	return scanAuthor(d.QueryRowContext(ctx,
 		`SELECT `+authorColumns+` FROM authors WHERE id = $1`,
 		id,
@@ -102,6 +97,7 @@ func (d *DB) GetAuthorByName(ctx context.Context, name string) (*Author, error) 
 	))
 }
 
+// ListAuthors returns all authors ordered by name.
 func (d *DB) ListAuthors(ctx context.Context) ([]Author, error) {
 	slog.DebugContext(ctx, "db: listing authors")
 	return listAll(ctx, d, authorListQuery{}, scanAuthor)
@@ -116,27 +112,18 @@ func (d *DB) ListAuthorsPaginated(ctx context.Context, limit, offset int) ([]Aut
 	return listPaginated(ctx, d, authorListQuery{}, limit, offset, scanAuthor)
 }
 
+// UpdateAuthor replaces the name and external IDs of the author identified by
+// id. The name is normalized. Returns sql.ErrNoRows if the author does not
+// exist, or ErrAuthorNameExists if the new name conflicts with another author.
 func (d *DB) UpdateAuthor(ctx context.Context, id, name string, goodreadsID, hardcoverID, googleBooksID, imageURL *string) (*Author, error) {
-	name = NormalizeAuthorName(name)
-	if name == "" {
-		slog.WarnContext(ctx, "db: rejecting author update with blank name after normalization")
-		return nil, ErrInvalidAuthorName
-	}
-	slog.DebugContext(ctx, "db: updating author",
-		slog.String(otelkeys.ID, id),
-		slog.String(otelkeys.Name, name),
+	return namedEntityUpdate(ctx, "author", id, name, NormalizeAuthorName, ErrInvalidAuthorName, ErrAuthorNameExists,
+		func(ctx context.Context, entityID, n string) (*Author, error) {
+			return scanAuthor(d.QueryRowContext(ctx,
+				`UPDATE authors SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, image_url = $5, updated_at = `+d.now()+` WHERE id = $6 RETURNING `+authorColumns,
+				n, goodreadsID, hardcoverID, googleBooksID, imageURL, entityID,
+			))
+		},
 	)
-	a, err := scanAuthor(d.QueryRowContext(ctx,
-		`UPDATE authors SET name = $1, goodreads_id = $2, hardcover_id = $3, google_books_id = $4, image_url = $5, updated_at = `+d.now()+` WHERE id = $6 RETURNING `+authorColumns,
-		name, goodreadsID, hardcoverID, googleBooksID, imageURL, id,
-	))
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrAuthorNameExists
-		}
-		return nil, err
-	}
-	return a, nil
 }
 
 // FindOrCreateAuthor looks up an author by name (case-insensitive) and returns
@@ -152,7 +139,9 @@ func (d *DB) FindOrCreateAuthor(ctx context.Context, name string) (*Author, erro
 	)
 }
 
+// DeleteAuthor removes the author with the given ID. Returns sql.ErrNoRows if
+// no matching author exists.
 func (d *DB) DeleteAuthor(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "db: deleting author", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: deleting author", slog.String(otelkeys.AuthorID, id))
 	return d.execAffected(ctx, `DELETE FROM authors WHERE id = $1`, id)
 }

@@ -1,17 +1,16 @@
 ---
 description: |
   This workflow keeps docs synchronized with code changes.
-  Triggered on every push to main, it analyzes diffs to identify changed entities and
-  updates corresponding documentation. Maintains consistent style (precise, active voice,
-  plain English), ensures single source of truth, and creates draft PRs with documentation
-  updates. Supports documentation-as-code philosophy.
+  Triggered after the Test CI workflow completes on main, it analyzes diffs to identify changed entities and
+  updates corresponding documentation, proceeding only when the upstream workflow succeeded via the job `if` condition.
+  Maintains consistent style (precise, active voice, plain English), ensures single source of truth, and creates
+  draft PRs with documentation updates. Supports documentation-as-code philosophy.
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Test"]
+    types: [completed]
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
   workflow_dispatch:
 
 concurrency:
@@ -76,7 +75,7 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 
 2. **Documentation Assessment**
 
-   - Review existing documentation structure (look for docs/, documentation/, or similar directories)
+   - Review existing documentation structure in the `docs/` directory (flat Markdown files built with mkdocs-material)
    - Assess documentation quality against style guidelines:
      - Diátaxis framework (tutorials, how-to guides, technical reference, explanation)
      - Google Developer Style Guide principles
@@ -86,8 +85,8 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 
 3. **Create or Update Documentation**
 
-   - Use Markdown (.md) format wherever possible
-   - Fall back to MDX only when interactive components are indispensable
+   - Use Markdown (.md) format
+   - Do not use MDX — the project uses standard Markdown with mkdocs-material
    - Follow progressive disclosure: high-level concepts first, detailed examples second
    - Ensure content is accessible and internationalization-ready
    - Create clear, actionable documentation that serves both newcomers and power users
@@ -122,13 +121,28 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
    - If a PR has been stuck after multiple retry attempts, add a comment explaining the blocker and leave it for maintainer review.
    - Note: only one PR branch push is permitted per run; address the next PR on the subsequent workflow trigger.
 
+8. **Cross-Agent Awareness Check**
+
+   Before creating any new documentation PR, check whether a sibling automation agent has already opened a PR for the same files. This prevents two agents from creating overlapping PRs for the same documentation.
+
+   Search for open PRs from the `daily-doc-updater` sibling workflow:
+   ```
+   repo:${{ github.repository }} is:pr is:open label:documentation label:automation "docs(daily):" in:title
+   ```
+
+   For each documentation file you intend to change, scan the body and title of the open sibling PRs for the filename (e.g., `api-reference.md`, `kobo.md`). If a sibling PR that already covers the same file is found:
+   - **Skip** creating a separate PR for that file and log: `SIBLING SKIP [file]: open sibling PR #N from daily-doc-updater already covers this file`
+   - If the sibling PR covers only some of the needed changes, note the sibling PR number in your own PR description so reviewers can coordinate.
+
+   Apply this check to every candidate file before proceeding to PR creation.
+
 ### Output Requirements
 
 - **Create Draft Pull Requests**: When documentation needs updates, create focused draft pull requests with clear descriptions. Pull request titles **must** use a semantic [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) style that passes the `amannn/action-semantic-pull-request` check. For this workflow, titles must be of the form `docs: <short description>` (e.g., `docs(api): update authentication endpoint reference`).
 
 ### Technical Implementation
 
-- **Hosting**: Prepare documentation for GitHub Pages deployment with branch-based workflows
+- **Hosting**: Documentation is built with mkdocs-material and deployed to GitHub Pages
 - **Automation**: Implement linting and style checking for documentation consistency
 
 ### Error Handling
@@ -138,10 +152,21 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 
 ### Exit Conditions
 
+When any of the following conditions are met, you **MUST** call the `noop` safe-output tool with a brief explanation before exiting. Failing to call any safe-output tool will cause the workflow to report a failure.
+
 - Exit if the repository has no implementation code yet (empty repository)
 - Exit if no code changes require documentation updates
 - Exit if all documentation is already up-to-date and comprehensive
+- Exit if no open documentation PRs need maintenance
+
+Example noop output:
+
+```json
+{"noop": {"message": "No action needed: all documentation is up-to-date with the latest code changes."}}
+```
 
 > NOTE: Never make direct pushes to main. Always create a pull request for documentation changes.
 
 > NOTE: Treat documentation gaps like failing tests.
+
+> **Important**: You MUST call exactly one safe-output tool before finishing. If documentation updates are needed, create a pull request. If no updates are needed, call `noop` with a status message. Do NOT end without calling a safe-output tool.

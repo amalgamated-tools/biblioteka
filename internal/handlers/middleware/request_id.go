@@ -9,6 +9,10 @@ import (
 
 type contextKey string
 
+// RequestID is the HTTP header name used to propagate request identifiers
+// between clients and the server. Incoming requests that already carry this
+// header have their value preserved; otherwise a new UUID is generated. If
+// UUID generation fails, the ID falls back to the literal string "none".
 const RequestID = "X-Request-ID"
 
 // RequestIDKey is the context key for the X-Request-ID value
@@ -52,13 +56,4 @@ func GetRequestID(ctx context.Context) string {
 // set to the specified value. If a RequestID already exists, it will be overwritten.
 func WithRequestID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, ctxRequestIDKey, id)
-}
-
-// Forward is a request hook that looks for X-Request-Id in the incoming context and adds it to r's headers.
-func Forward(r *http.Request) {
-	ctx := r.Context()
-
-	if reqID := GetRequestID(ctx); reqID != "" {
-		r.Header.Set(RequestID, reqID)
-	}
 }

@@ -33,6 +33,9 @@ func LibraryOrganizationTypeNames() []string {
 	return cpy
 }
 
+// IsValidLibraryOrganizationType reports whether organizationType is one of
+// the recognized library organization type values (book_per_folder,
+// book_per_file, or none).
 func IsValidLibraryOrganizationType(organizationType string) bool {
 	return slices.Contains(libraryOrganizationTypes, organizationType)
 }
@@ -60,12 +63,9 @@ func (libraryListQuery) orderBy(d *DB) string {
 
 // scanLibrary scans a library row into a Library struct.
 func scanLibrary(row interface{ Scan(...any) error }) (*Library, error) {
-	var lib Library
-	err := row.Scan(&lib.ID, &lib.Name, &lib.Paths, &lib.OrganizationType, &lib.Monitored, &lib.CreatedAt, &lib.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &lib, nil
+	return scanRow(row, func(lib *Library) []any {
+		return []any{&lib.ID, &lib.Name, &lib.Paths, &lib.OrganizationType, &lib.Monitored, &lib.CreatedAt, &lib.UpdatedAt}
+	})
 }
 
 // CreateLibrary inserts a new library and returns it.
@@ -87,7 +87,7 @@ func (d *DB) CreateLibrary(ctx context.Context, name, paths, organizationType st
 
 // GetLibrary returns a library by ID, or sql.ErrNoRows if not found.
 func (d *DB) GetLibrary(ctx context.Context, id string) (*Library, error) {
-	slog.DebugContext(ctx, "db: fetching library", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: fetching library", slog.String(otelkeys.LibraryID, id))
 	return scanLibrary(d.QueryRowContext(ctx,
 		`SELECT `+libraryColumns+` FROM libraries WHERE id = $1`,
 		id,
@@ -105,7 +105,7 @@ func (d *DB) ListLibraries(ctx context.Context) ([]Library, error) {
 // Returns ErrLibraryNameExists if the new name conflicts with another library.
 func (d *DB) UpdateLibrary(ctx context.Context, id, name, paths, organizationType string, monitored bool) (*Library, error) {
 	slog.DebugContext(ctx, "db: updating library",
-		slog.String(otelkeys.ID, id),
+		slog.String(otelkeys.LibraryID, id),
 		slog.String(otelkeys.Name, name),
 	)
 	lib, err := scanLibrary(d.QueryRowContext(ctx,
@@ -124,7 +124,7 @@ func (d *DB) UpdateLibrary(ctx context.Context, id, name, paths, organizationTyp
 // DeleteLibrary removes a library by ID.
 // Returns sql.ErrNoRows if the library doesn't exist.
 func (d *DB) DeleteLibrary(ctx context.Context, id string) error {
-	slog.DebugContext(ctx, "db: deleting library", slog.String(otelkeys.ID, id))
+	slog.DebugContext(ctx, "db: deleting library", slog.String(otelkeys.LibraryID, id))
 	return d.execAffected(ctx, `DELETE FROM libraries WHERE id = $1`, id)
 }
 
@@ -135,6 +135,15 @@ func isUniqueViolation(err error) bool {
 	// PostgreSQL: "duplicate key value violates unique constraint ..."
 	return strings.Contains(msg, "UNIQUE constraint failed") ||
 		strings.Contains(msg, "duplicate key value violates unique constraint")
+}
+
+// isForeignKeyViolation reports whether err is a foreign-key constraint violation.
+func isForeignKeyViolation(err error) bool {
+	msg := err.Error()
+	// SQLite: "FOREIGN KEY constraint failed"
+	// PostgreSQL: "violates foreign key constraint ..."
+	return strings.Contains(msg, "FOREIGN KEY constraint failed") ||
+		strings.Contains(msg, "violates foreign key constraint")
 }
 
 // isColumnUniqueViolation reports whether err is a unique constraint violation

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -64,16 +65,50 @@ func scanGoodreadsMetadata(row interface{ Scan(...any) error }) (*GoodreadsMetad
 	return &gm, nil
 }
 
-// TODO(#1099): wire up Goodreads metadata API — CreateGoodreadsMetadata, GetGoodreadsMetadata,
-// ListGoodreadsMetadataByUser, ListGoodreadsMetadataByStatus, UpdateGoodreadsMetadataStatus,
-// and DeleteGoodreadsMetadata have no HTTP handlers or routes yet.
+// GoodreadsMetadataInput holds the optional fields for creating a goodreads_metadata row.
+type GoodreadsMetadataInput struct {
+	BookID                  *string
+	Title                   *string
+	Description             *string
+	ASIN                    *string
+	ISBN10                  *string
+	ISBN13                  *string
+	GoodreadsID             *string
+	HardcoverID             *string
+	GoogleBooksID           *string
+	PublicationDate         *string
+	Publisher               *string
+	Language                *string
+	CoverImageURL           *string
+	AuthorName              *string
+	AuthorGoodreadsID       *string
+	AuthorImageURL          *string
+	GoodreadsWorkID         *string
+	GoodreadsBookLegacyID   *int64
+	GoodreadsWorkLegacyID   *int64
+	GoodreadsAuthorLegacyID *int64
+}
+
+// GetPendingGoodreadsMetadataByBook returns the most recent pending
+// goodreads_metadata row for the given book and user, or sql.ErrNoRows if none
+// exists.
+func (d *DB) GetPendingGoodreadsMetadataByBook(ctx context.Context, userID, bookID string) (*GoodreadsMetadata, error) {
+	slog.DebugContext(ctx, "db: fetching pending goodreads metadata by book",
+		slog.String(otelkeys.BookID, bookID),
+		slog.String(otelkeys.UserID, userID),
+	)
+	return scanGoodreadsMetadata(d.QueryRowContext(ctx,
+		`SELECT `+goodreadsMetadataColumns+` FROM goodreads_metadata WHERE user_id = $1 AND book_id = $2 AND status = $3 ORDER BY created_at DESC, id DESC LIMIT 1`,
+		userID, bookID, GoodreadsMetadataStatusPending,
+	))
+}
 
 // CreateGoodreadsMetadata inserts a new goodreads_metadata row and returns it.
-func (d *DB) CreateGoodreadsMetadata(ctx context.Context, userID string, bookID, title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL, authorName, authorGoodreadsID, authorImageURL, goodreadsWorkID *string, goodreadsBookLegacyID, goodreadsWorkLegacyID, goodreadsAuthorLegacyID *int64) (*GoodreadsMetadata, error) {
+func (d *DB) CreateGoodreadsMetadata(ctx context.Context, userID string, input GoodreadsMetadataInput) (*GoodreadsMetadata, error) {
 	slog.DebugContext(ctx, "db: creating goodreads metadata", slog.String(otelkeys.UserID, userID))
 	return scanGoodreadsMetadata(d.QueryRowContext(ctx,
 		`INSERT INTO goodreads_metadata (user_id, book_id, title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url, author_name, author_goodreads_id, author_image_url, goodreads_work_id, goodreads_book_legacy_id, goodreads_work_legacy_id, goodreads_author_legacy_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING `+goodreadsMetadataColumns,
-		userID, bookID, title, description, asin, isbn10, isbn13, goodreadsID, hardcoverID, googleBooksID, publicationDate, publisher, language, coverImageURL, authorName, authorGoodreadsID, authorImageURL, goodreadsWorkID, goodreadsBookLegacyID, goodreadsWorkLegacyID, goodreadsAuthorLegacyID,
+		userID, input.BookID, input.Title, input.Description, input.ASIN, input.ISBN10, input.ISBN13, input.GoodreadsID, input.HardcoverID, input.GoogleBooksID, input.PublicationDate, input.Publisher, input.Language, input.CoverImageURL, input.AuthorName, input.AuthorGoodreadsID, input.AuthorImageURL, input.GoodreadsWorkID, input.GoodreadsBookLegacyID, input.GoodreadsWorkLegacyID, input.GoodreadsAuthorLegacyID,
 	))
 }
 
@@ -103,17 +138,7 @@ func (d *DB) ListGoodreadsMetadataByUser(ctx context.Context, userID string, lim
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var results []GoodreadsMetadata
-	for rows.Next() {
-		gm, err := scanGoodreadsMetadata(rows)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, *gm)
-	}
-	return results, rows.Err()
+	return collectRows(rows, scanGoodreadsMetadata)
 }
 
 // ListGoodreadsMetadataByStatus returns goodreads_metadata rows for a user filtered by status.
@@ -131,28 +156,18 @@ func (d *DB) ListGoodreadsMetadataByStatus(ctx context.Context, userID, status s
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var results []GoodreadsMetadata
-	for rows.Next() {
-		gm, err := scanGoodreadsMetadata(rows)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, *gm)
-	}
-	return results, rows.Err()
+	return collectRows(rows, scanGoodreadsMetadata)
 }
 
 // ErrInvalidGoodreadsMetadataStatus is returned when an invalid status is passed.
-var ErrInvalidGoodreadsMetadataStatus = fmt.Errorf("db: invalid goodreads_metadata status")
+var ErrInvalidGoodreadsMetadataStatus = errors.New("db: invalid goodreads_metadata status")
 
 // UpdateGoodreadsMetadataStatus updates the status of a goodreads_metadata row for the given user.
 func (d *DB) UpdateGoodreadsMetadataStatus(ctx context.Context, userID, id, status string) (*GoodreadsMetadata, error) {
 	switch status {
 	case GoodreadsMetadataStatusPending, GoodreadsMetadataStatusApplied, GoodreadsMetadataStatusRejected:
 	default:
-		return nil, fmt.Errorf("%w: %q", ErrInvalidGoodreadsMetadataStatus, status)
+		return nil, fmt.Errorf("invalid goodreads_metadata status %q: %w", status, ErrInvalidGoodreadsMetadataStatus)
 	}
 	slog.DebugContext(ctx, "db: updating goodreads metadata status",
 		slog.String(otelkeys.GoodreadsMetadataID, id),

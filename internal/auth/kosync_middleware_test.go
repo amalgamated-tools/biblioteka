@@ -6,10 +6,11 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mockKOSyncChecker implements KOSyncCredentialChecker for testing.
@@ -35,9 +36,7 @@ func (m *mockKOSyncChecker) GetKOSyncCredential(_ context.Context, username stri
 func newKOSyncCheckerWithUser(t *testing.T, username, authKey, userID string) *mockKOSyncChecker {
 	t.Helper()
 	hash, err := bcrypt.GenerateFromPassword([]byte(authKey), bcrypt.MinCost)
-	if err != nil {
-		t.Fatalf("bcrypt hash: %v", err)
-	}
+	require.NoError(t, err, "bcrypt hash")
 	return &mockKOSyncChecker{
 		creds: map[string]*ProtocolCredentialResult{
 			username: {UserID: userID, PasswordHash: string(hash)},
@@ -58,15 +57,9 @@ func TestKOSyncHeaderAuth_MissingHeaders(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
-	if !strings.Contains(w.Body.String(), "Unauthorized") {
-		t.Errorf("body should contain 'Unauthorized', got %q", w.Body.String())
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+	require.Contains(t, w.Body.String(), "Unauthorized")
 }
 
 func TestKOSyncHeaderAuth_MissingAuthKey(t *testing.T) {
@@ -84,12 +77,8 @@ func TestKOSyncHeaderAuth_MissingAuthKey(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
 func TestKOSyncHeaderAuth_UnknownUsername(t *testing.T) {
@@ -107,12 +96,8 @@ func TestKOSyncHeaderAuth_UnknownUsername(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
 func TestKOSyncHeaderAuth_WrongKey(t *testing.T) {
@@ -130,12 +115,8 @@ func TestKOSyncHeaderAuth_WrongKey(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
 func TestKOSyncHeaderAuth_Success(t *testing.T) {
@@ -153,12 +134,8 @@ func TestKOSyncHeaderAuth_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if gotUserID != "user-1" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "user-1")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "user-1", gotUserID)
 }
 
 func TestKOSyncHeaderAuth_UsernameLowercased(t *testing.T) {
@@ -176,12 +153,8 @@ func TestKOSyncHeaderAuth_UsernameLowercased(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if gotUserID != "user-1" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "user-1")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "user-1", gotUserID)
 }
 
 func TestKOSyncHeaderAuth_DBError(t *testing.T) {
@@ -199,10 +172,6 @@ func TestKOSyncHeaderAuth_DBError(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusServiceUnavailable {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusServiceUnavailable)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusServiceUnavailable, w.Code)
 }

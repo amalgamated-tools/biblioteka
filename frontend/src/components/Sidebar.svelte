@@ -46,13 +46,18 @@
   }
 </script>
 
+<svelte:window
+  onkeydown={(e) => {
+    if (open && e.key === "Escape") onClose();
+  }}
+/>
+
 <!-- Mobile overlay backdrop -->
 {#if open}
   <button
     class="fixed inset-0 z-40 bg-ink-900/60 dark:bg-ink-950/70 backdrop-blur-sm md:hidden"
     onclick={onClose}
     aria-label="Close sidebar"
-    tabindex="-1"
   ></button>
 {/if}
 
@@ -67,11 +72,13 @@
       <div
         class="w-10 h-10 bg-gradient-to-br from-accent-500 to-accent-700 rounded-xl flex items-center justify-center shadow-lg shadow-accent-700/20"
       >
-        <BookCheck class="w-5 h-5 text-white" />
+        <BookCheck class="w-5 h-5 text-white" aria-hidden="true" />
       </div>
       <div>
         <p class="text-lg font-display font-bold tracking-tight">biblioteka</p>
-        <p class="text-xs text-ink-400 truncate">{authStore.user?.email}</p>
+        <p class="text-xs text-ink-400 truncate">
+          {authStore.user?.name || authStore.user?.email}
+        </p>
       </div>
     </div>
   </div>
@@ -84,7 +91,7 @@
     <div role="group" aria-labelledby="sidebar-home-heading">
       <h2
         id="sidebar-home-heading"
-        class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
+        class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-400"
       >
         Home
       </h2>
@@ -98,7 +105,7 @@
             : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
           onclick={onClose}
         >
-          <LayoutDashboard class="w-5 h-5" />
+          <LayoutDashboard class="w-5 h-5" aria-hidden="true" />
           Dashboard
         </a>
         {#if libraryStore.libraries.length > 0}
@@ -111,7 +118,7 @@
               : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
             onclick={onClose}
           >
-            <BookOpen class="w-5 h-5" />
+            <BookOpen class="w-5 h-5" aria-hidden="true" />
             All Books
           </a>
         {/if}
@@ -123,7 +130,7 @@
       <div class="flex items-center justify-between px-3 mb-2">
         <h2
           id="sidebar-libraries-heading"
-          class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-500"
+          class="text-[10px] font-semibold uppercase tracking-[0.15em] text-ink-400"
         >
           Libraries
         </h2>
@@ -153,6 +160,7 @@
             >
               <Library
                 class="w-4 h-4 flex-shrink-0 text-ink-500 group-hover:text-accent-400 transition-colors"
+                aria-hidden="true"
               />
               <span class="truncate flex-1 text-left">{lib.name}</span>
             </a>
@@ -162,7 +170,7 @@
               aria-label={`Library settings for ${lib.name}`}
               onclick={onClose}
             >
-              <Settings2 class="w-3.5 h-3.5" />
+              <Settings2 class="w-3.5 h-3.5" aria-hidden="true" />
             </a>
           </div>
         {/each}
@@ -181,14 +189,14 @@
             : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
           onclick={onClose}
         >
-          <SettingsIcon class="w-5 h-5" />
+          <SettingsIcon class="w-5 h-5" aria-hidden="true" />
           Settings
         </a>
       </div>
     </div>
   </nav>
   <div class="px-5 py-2 border-t border-ink-800/60">
-    <p class="text-[10px] text-ink-600 text-center tracking-wider uppercase">
+    <p class="text-[10px] text-ink-300 text-center tracking-wider uppercase">
       {version ? `v${version}` : ""}
     </p>
   </div>
@@ -199,7 +207,7 @@
       onclick={handleLogout}
       class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm text-ink-400 hover:bg-ink-800/70 hover:text-white transition-all"
     >
-      <LogOut class="w-5 h-5" />
+      <LogOut class="w-5 h-5" aria-hidden="true" />
       Logout
     </button>
   </div>

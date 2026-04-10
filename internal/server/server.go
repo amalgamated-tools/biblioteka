@@ -1,3 +1,6 @@
+// Package server wires together the HTTP server, all handler structs,
+// middleware chains (auth, rate limiting, request IDs, logging, tracing),
+// and serves the embedded Svelte frontend as a single self-contained binary.
 package server
 
 import (
@@ -19,9 +22,10 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/handlers/middleware"
 	"github.com/amalgamated-tools/biblioteka/internal/otel"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/pubsub"
 	"github.com/amalgamated-tools/biblioteka/internal/worker"
 
-	_ "github.com/amalgamated-tools/biblioteka/docs"
+	_ "github.com/amalgamated-tools/biblioteka/docs/swagger"
 
 	"github.com/justinas/alice"
 	"golang.org/x/sync/errgroup"
@@ -51,8 +55,6 @@ type ShutdownFunc func(context.Context) error
 
 // Server represents the HTTP server with embedded frontend
 type Server struct {
-	addr string
-
 	Address string
 	port    int
 	version string
@@ -100,7 +102,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	if s.port == 0 {
 		s.port = 8080
 	}
-	s.Address = net.JoinHostPort("0.0.0.0", strconv.Itoa(s.port))
+	if s.Address == "" {
+		s.Address = net.JoinHostPort("0.0.0.0", strconv.Itoa(s.port))
+	}
 
 	if s.DB == nil {
 		database, err := db.SetupDatabase(ctx)
@@ -123,6 +127,10 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 
 		if jwtSecret == "" {
 			slog.InfoContext(ctx, "WARNING: JWT_SECRET not set, using random secret. Existing JWT tokens will become invalid after a server restart; all users will need to log in again.")
+		} else if len(jwtSecret) < auth.MinSecretLength {
+			slog.WarnContext(ctx, "JWT_SECRET is shorter than the recommended minimum of 32 characters; a short secret weakens HMAC-SHA256 signing",
+				slog.Int(otelkeys.JWTSecretLength, len(jwtSecret)),
+			)
 		}
 	}
 
@@ -141,13 +149,29 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	}
 
 	if s.authLimiter == nil {
-		s.authLimiter = auth.NewRateLimiter(5, 10)
+		var trustedProxies []*net.IPNet
+		if raw := os.Getenv("TRUSTED_PROXIES"); raw != "" {
+			var err error
+			trustedProxies, err = auth.ParseTrustedProxyCIDRs(raw)
+			if err != nil {
+				return nil, fmt.Errorf("invalid TRUSTED_PROXIES: %w", err)
+			}
+			slog.InfoContext(ctx, "rate limiter trusting proxies from X-Forwarded-For", slog.Int(otelkeys.Count, len(trustedProxies)))
+		}
+		if len(trustedProxies) > 0 {
+			s.authLimiter = auth.NewRateLimiterWithTrustedProxies(5, 10, trustedProxies)
+		} else {
+			s.authLimiter = auth.NewRateLimiter(5, 10)
+		}
 	}
 
 	// Determine cookie security mode: secure by default, can be disabled for local dev
 	secureCookies := os.Getenv("SECURE_COOKIES") != "false"
 
-	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT, SecureCookies: secureCookies}
+	// Disable signup if DISABLE_SIGNUP=true; signup is enabled by default.
+	disableSignup := os.Getenv("DISABLE_SIGNUP") == "true"
+
+	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT, SecureCookies: secureCookies, DisableSignup: disableSignup}
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}
 	s.libraryHandler = &handlers.LibraryHandler{DB: s.DB}
 	if s.Worker != nil {
@@ -156,6 +180,32 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.authorHandler = &handlers.AuthorHandler{DB: s.DB}
 	s.seriesHandler = &handlers.SeriesHandler{DB: s.DB}
 	s.bookHandler = &handlers.BookHandler{DB: s.DB}
+
+	// Always wire MetadataHandler so GET/apply/reject endpoints work without
+	// a background worker. Only Enqueuer and Subscriber are conditional.
+	metadataHandler := &handlers.MetadataHandler{DB: s.DB}
+	if s.Worker != nil {
+		s.bookHandler.Enqueuer = s.Worker
+		metadataHandler.Enqueuer = s.Worker
+
+		// Create a pub/sub subscriber for SSE metadata events.
+		redisURL := os.Getenv("REDIS_URL")
+		if redisURL == "" {
+			redisURL = "redis://localhost:6379"
+		}
+		psClient, err := pubsub.NewClient(redisURL)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to create pubsub client for metadata events; SSE streaming disabled",
+				slog.Any(otelkeys.Error, err),
+			)
+		} else {
+			s.shutdownFuncs = append(s.shutdownFuncs, func(_ context.Context) error {
+				return psClient.Close()
+			})
+			metadataHandler.Subscriber = psClient
+		}
+	}
+	s.bookHandler.MetadataHandler = metadataHandler
 	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
@@ -188,7 +238,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		clientSecret := os.Getenv("OIDC_CLIENT_SECRET")
 		redirectURI := os.Getenv("OIDC_REDIRECT_URI")
 		if clientID == "" || clientSecret == "" || redirectURI == "" {
-			return nil, fmt.Errorf("OIDC_ISSUER_URL is set but one or more of OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, or OIDC_REDIRECT_URI is missing")
+			return nil, errors.New("OIDC_ISSUER_URL is set but one or more of OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, or OIDC_REDIRECT_URI is missing")
 		}
 		oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, issuer, clientID, clientSecret, redirectURI, secureCookies)
 		if err != nil {
@@ -215,6 +265,9 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	return s, nil
 }
 
+// Run starts the HTTP server, applies request-ID, tracing, and logging
+// middleware, and blocks until ctx is cancelled or a fatal server error
+// occurs. A graceful shutdown is attempted with a ShutdownGracePeriod timeout.
 func (s *Server) Run(ctx context.Context) error {
 	newctx, span := otel.StartTracer(ctx, "server.Run")
 	defer span.End()
@@ -226,6 +279,7 @@ func (s *Server) Run(ctx context.Context) error {
 		middleware.RequestIDHandler,
 		otel.TraceMiddleware,
 		middleware.LoggingMiddleware,
+		middleware.SecurityHeadersMiddleware,
 	).Then(s.mux)
 
 	s.httpServer = &http.Server{
@@ -284,6 +338,9 @@ type protocolCredDBAdapter struct {
 	db *db.DB
 }
 
+// GetOPDSCredential looks up the OPDS credential for the given username and
+// returns the associated user ID and bcrypt-hashed password for the auth
+// middleware to verify. Returns sql.ErrNoRows (wrapped) when not found.
 func (a *protocolCredDBAdapter) GetOPDSCredential(ctx context.Context, username string) (*auth.ProtocolCredentialResult, error) {
 	cred, err := a.db.GetOPDSCredentialByUsername(ctx, username)
 	if err != nil {
@@ -309,6 +366,9 @@ func (a *protocolCredDBAdapter) GetOPDSCredential(ctx context.Context, username 
 	}, nil
 }
 
+// GetKOSyncCredential looks up the KOSync credential for the given username
+// and returns the associated user ID and bcrypt-hashed password for the auth
+// middleware to verify. Returns sql.ErrNoRows (wrapped) when not found.
 func (a *protocolCredDBAdapter) GetKOSyncCredential(ctx context.Context, username string) (*auth.ProtocolCredentialResult, error) {
 	cred, err := a.db.GetKOSyncCredentialByUsername(ctx, username)
 	if err != nil {
@@ -339,6 +399,10 @@ type koboDBAdapter struct {
 	db *db.DB
 }
 
+// GetKoboTokenByToken hashes the raw Kobo token and looks up the matching
+// record, returning the associated user ID for injection into the request
+// context by KoboAuthMiddleware. Returns sql.ErrNoRows (wrapped) when the
+// token is not found.
 func (a *koboDBAdapter) GetKoboTokenByToken(ctx context.Context, token string) (*auth.KoboTokenResult, error) {
 	tokenHash := auth.HashKoboToken(token)
 	t, err := a.db.GetKoboTokenByHash(ctx, tokenHash)

@@ -148,6 +148,7 @@ Before going live, verify each item:
 - [ ] **PostgreSQL backups** — if using PostgreSQL, schedule regular `pg_dump` backups of the `biblioteka` database.
 - [ ] **SQLite backups** — if using SQLite, back up the Docker volume (`biblioteka-data`) or the `*.db` file.
 - [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to keep anonymous telemetry disabled (default). Set to `true` to enable it.
+- [ ] **`TRUSTED_PROXIES`** — set to your reverse-proxy CIDR(s) if behind nginx/Caddy/Traefik. Leave unset if deploying without a proxy (direct exposure).
 - [ ] **SMTP** — if you want email delivery, configure the variables below (or use the admin UI under *Settings → Email*). Environment variables take precedence over UI settings when `SMTP_HOST` is set; unset `SMTP_HOST` to switch back to UI-managed config.
 
   | Variable | Default | Notes |
@@ -157,7 +158,7 @@ Before going live, verify each item:
   | `SMTP_TLS` | `starttls` | TLS mode: `none`, `starttls`, or `tls`. Authenticated SMTP (`SMTP_USERNAME` set) without TLS is only permitted for loopback addresses |
   | `SMTP_USERNAME` | *(empty)* | Auth username; leave empty for unauthenticated relay |
   | `SMTP_PASSWORD` | *(empty)* | Auth password; required when `SMTP_USERNAME` is set |
-  | `SMTP_FROM` | *(empty)* | Envelope `From` address (e.g. `biblioteka@example.com`); required when `SMTP_HOST` is set |
+  | `SMTP_FROM` | *(empty)* | Sender address for outgoing mail; accepts a bare address (e.g. `biblioteka@example.com`) or RFC 5322 display-name format (e.g. `"Biblioteka" <biblioteka@example.com>`); required when `SMTP_HOST` is set |
 
   These can be passed via a `.env` file or exported in your shell before running `docker compose up`.
 
@@ -167,10 +168,11 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `JWT_SECRET` | **Yes** | Random secret for signing JWTs; leaked tokens are valid until they expire |
+| `JWT_SECRET` | **Yes** | Random secret for signing JWTs (minimum 32 characters recommended; a shorter value logs a startup warning); leaked tokens are valid until they expire |
 | `SECURE_COOKIES` | **Yes** (set to `true`) | Prevents cookies being sent over HTTP |
 | `DATABASE_URL` | No | Omit for SQLite; set to a PostgreSQL DSN for Postgres |
 | `REDIS_URL` | No | Defaults to `redis://localhost:6379` |
+| `TRUSTED_PROXIES` | No | Comma-separated CIDR ranges of trusted reverse proxies (e.g. `10.0.0.0/8,172.16.0.0/12`). When set, the rate limiter uses the rightmost non-trusted IP from `X-Forwarded-For`. When unset, `X-Forwarded-For` is ignored and `RemoteAddr` is used directly. |
 
 ## Reverse Proxy Setup
 
@@ -256,6 +258,24 @@ gunzip < biblioteka-20260314.sql.gz | \
    ```
 
 Database migrations run automatically on startup — no separate migration step is needed.
+
+## HTTP Security Headers
+
+Biblioteka sets the following HTTP security headers on every response via the `SecurityHeadersMiddleware`:
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data: https://fonts.gstatic.com;` | Restricts external resource origins; `'unsafe-inline'` is required by the frontend theme bootstrap and limits (but does not eliminate) inline XSS protection |
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing |
+| `X-Frame-Options` | `DENY` | Blocks framing (clickjacking protection) |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer information sent in cross-origin requests |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Disables browser feature access not needed by the application |
+
+The CSP permits the embedded frontend's inline theme bootstrap script and Google Fonts resources required by the SPA. Individual route handlers (such as the Swagger UI) may override the CSP with a more permissive or restrictive value for their specific use case; all other security headers remain in effect.
+
+No additional reverse proxy configuration is required to enable these headers — the application server sets them directly.
+
+---
 
 ## Health Check
 

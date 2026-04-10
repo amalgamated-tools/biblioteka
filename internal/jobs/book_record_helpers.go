@@ -144,20 +144,47 @@ func createBookRecord(ctx context.Context, database *db.DB, title string, meta *
 		}
 	}
 
+	// User-supplied overrides take precedence over anything extracted from the
+	// file. ISBN overrides replace whichever extracted ISBN was set.
+	if p.OverrideDescription != "" {
+		v := p.OverrideDescription
+		description = &v
+	}
+	if p.OverrideISBN != "" {
+		// Always clear the extracted ISBNs when the caller provided an override,
+		// regardless of whether normalization succeeds.
+		isbn10 = nil
+		isbn13 = nil
+		if normalizedISBN := exif.NormalizeISBN(p.OverrideISBN); normalizedISBN != "" {
+			switch len(normalizedISBN) {
+			case 10:
+				isbn10 = &normalizedISBN
+			case 13:
+				isbn13 = &normalizedISBN
+			}
+		}
+	}
+	if p.OverrideLanguage != "" {
+		v := p.OverrideLanguage
+		language = &v
+	}
+	if p.OverridePublisher != "" {
+		v := p.OverridePublisher
+		publisher = &v
+	}
+
 	book, _, err := database.CreateBookWithFile(
 		ctx,
-		title,
-		description,
-		nil,
-		isbn10,
-		isbn13,
-		nil,
-		nil,
-		nil,
-		publicationDate,
-		publisher,
-		language,
-		coverImageURL,
+		db.BookInput{
+			Title:           title,
+			Description:     description,
+			ISBN10:          isbn10,
+			ISBN13:          isbn13,
+			PublicationDate: publicationDate,
+			Publisher:       publisher,
+			Language:        language,
+			CoverImageURL:   coverImageURL,
+		},
 		p.FileType,
 		p.FileName,
 		p.FileSize,

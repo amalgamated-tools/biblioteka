@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import { authStore } from "./stores/auth.svelte";
-  import { routerStore } from "./stores/router.svelte";
+  import { routerStore, APP_TITLE_SUFFIX } from "./stores/router.svelte";
   import { libraryStore } from "./stores/libraries.svelte";
   import Auth from "./components/Auth.svelte";
   import Dashboard from "./components/Dashboard.svelte";
@@ -32,7 +32,22 @@
 
   // Update document title to reflect the current view (WCAG 2.4.2)
   $effect(() => {
-    document.title = routerStore.pageTitle;
+    let title = routerStore.pageTitle;
+    // Include the library name in the page title when viewing a specific library.
+    if (
+      routerStore.currentView === "libraries" &&
+      routerStore.subPath &&
+      routerStore.subPath !== "new" &&
+      !routerStore.subPath.startsWith("edit/")
+    ) {
+      const lib = libraryStore.libraries.find(
+        (l) => l.id === routerStore.subPath,
+      );
+      if (lib) {
+        title = `${lib.name}${APP_TITLE_SUFFIX}`;
+      }
+    }
+    document.title = title;
   });
 
   // Close the mobile sidebar whenever the active route changes.
@@ -68,10 +83,9 @@
     class="min-h-screen bg-cream-50 dark:bg-ink-950 flex items-center justify-center relative bg-texture"
   >
     <div class="text-center animate-fade-in">
-      <div class="relative w-16 h-16 mx-auto mb-6">
+      <div class="relative w-16 h-16 mx-auto mb-6" aria-hidden="true">
         <div
-          class="absolute inset-0 rounded-2xl bg-accent-500/20 dark:bg-accent-500/10"
-          style="animation: spin-slow 3s linear infinite"
+          class="absolute inset-0 rounded-2xl bg-accent-500/20 dark:bg-accent-500/10 animate-spin-slow"
         ></div>
         <div
           class="absolute inset-1 rounded-xl bg-accent-600 flex items-center justify-center"
@@ -79,7 +93,10 @@
           <span class="text-white font-display text-2xl font-bold">B</span>
         </div>
       </div>
-      <p class="text-ink-400 dark:text-ink-300 font-body text-sm tracking-wide">
+      <p
+        role="status"
+        class="text-ink-500 dark:text-ink-300 font-body text-sm tracking-wide"
+      >
         Loading your library…
       </p>
     </div>
@@ -95,6 +112,7 @@
         document.getElementById("main-content")?.focus();
       }}
       class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-accent-600 focus:px-4 focus:py-2 focus:font-semibold focus:text-white"
+      inert={sidebarOpen}
     >
       Skip to main content
     </a>
@@ -112,13 +130,14 @@
     <header
       aria-label="Mobile header"
       class="sticky top-0 z-30 flex items-center gap-3 bg-cream-50/90 dark:bg-ink-950/90 backdrop-blur-md border-b border-ink-100 dark:border-ink-800 px-4 py-3 md:hidden"
+      inert={sidebarOpen}
     >
       <button
         onclick={() => (sidebarOpen = true)}
         class="p-1.5 rounded-lg text-ink-500 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
         aria-label="Open menu"
       >
-        <Menu class="w-6 h-6" />
+        <Menu class="w-6 h-6" aria-hidden="true" />
       </button>
       <span
         class="text-lg font-display font-bold text-ink-900 dark:text-cream-100"
@@ -126,7 +145,12 @@
       >
     </header>
 
-    <main id="main-content" tabindex="-1" class="md:ml-64 p-4 md:p-8">
+    <main
+      id="main-content"
+      tabindex="-1"
+      class="md:ml-64 p-4 md:p-8"
+      inert={sidebarOpen}
+    >
       <div class="max-w-6xl mx-auto animate-fade-in">
         {#if routerStore.isKnownView === false}
           <NotFound />

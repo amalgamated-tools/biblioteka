@@ -2,13 +2,14 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setupKOSyncHandler(t *testing.T) (*KOSyncHandler, string) {
@@ -16,10 +17,8 @@ func setupKOSyncHandler(t *testing.T) (*KOSyncHandler, string) {
 	d := newTestDB(t)
 	h := &KOSyncHandler{DB: d}
 
-	user, err := d.CreateUser(context.Background(), "KOUser", "ko@example.com", "password1")
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	user, err := d.CreateUser(t.Context(), "KOUser", "ko@example.com", "password1")
+	require.NoError(t, err, "create user")
 	return h, user.ID
 }
 
@@ -34,9 +33,7 @@ func TestKOSyncCredentials_MethodNotAllowed(t *testing.T) {
 
 	h.HandleKOSyncCredentials(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestKOSyncCredentials_GetNotFound(t *testing.T) {
@@ -48,9 +45,7 @@ func TestKOSyncCredentials_GetNotFound(t *testing.T) {
 
 	h.HandleKOSyncCredentials(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusNotFound, w.Body.String())
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestKOSyncCredentials_Put_Success(t *testing.T) {
@@ -63,17 +58,11 @@ func TestKOSyncCredentials_Put_Success(t *testing.T) {
 
 	h.HandleKOSyncCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if resp.Username != "myreader" {
-		t.Errorf("Username = %q, want %q", resp.Username, "myreader")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "decode response")
+	require.Equal(t, "myreader", resp.Username)
 }
 
 func TestKOSyncCredentials_Put_LowercasesUsername(t *testing.T) {
@@ -86,17 +75,11 @@ func TestKOSyncCredentials_Put_LowercasesUsername(t *testing.T) {
 
 	h.HandleKOSyncCredentials(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if resp.Username != "myreader" {
-		t.Errorf("Username = %q, want %q (should be lowercase)", resp.Username, "myreader")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "decode response")
+	require.Equal(t, "myreader", resp.Username)
 }
 
 func TestKOSyncCredentials_Put_EmptyUsername(t *testing.T) {
@@ -109,9 +92,7 @@ func TestKOSyncCredentials_Put_EmptyUsername(t *testing.T) {
 
 	h.HandleKOSyncCredentials(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestKOSyncCredentials_Put_ShortPassword(t *testing.T) {
@@ -124,9 +105,7 @@ func TestKOSyncCredentials_Put_ShortPassword(t *testing.T) {
 
 	h.HandleKOSyncCredentials(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestKOSyncCredentials_Put_UsernameTooLong(t *testing.T) {
@@ -140,9 +119,7 @@ func TestKOSyncCredentials_Put_UsernameTooLong(t *testing.T) {
 
 	h.HandleKOSyncCredentials(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusBadRequest, w.Body.String())
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestKOSyncCredentials_Get_AfterPut(t *testing.T) {
@@ -154,26 +131,18 @@ func TestKOSyncCredentials_Get_AfterPut(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w, r)
-	if w.Code != http.StatusOK {
-		t.Fatalf("PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Fetch
 	r2 := httptest.NewRequest(http.MethodGet, "/api/kosync/credentials", nil)
 	r2 = withUserID(r2, userID)
 	w2 := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w2, r2)
-	if w2.Code != http.StatusOK {
-		t.Errorf("GET status = %d, want %d; body: %s", w2.Code, http.StatusOK, w2.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w2.Code)
 
 	var resp credentialResponse
-	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode GET response: %v", err)
-	}
-	if resp.Username != "myreader" {
-		t.Errorf("Username = %q, want %q", resp.Username, "myreader")
-	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp), "decode GET response")
+	require.Equal(t, "myreader", resp.Username)
 }
 
 func TestKOSyncCredentials_Delete(t *testing.T) {
@@ -185,27 +154,21 @@ func TestKOSyncCredentials_Delete(t *testing.T) {
 	r = withUserID(r, userID)
 	w := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w, r)
-	if w.Code != http.StatusOK {
-		t.Fatalf("PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// Delete
 	r2 := httptest.NewRequest(http.MethodDelete, "/api/kosync/credentials", nil)
 	r2 = withUserID(r2, userID)
 	w2 := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w2, r2)
-	if w2.Code != http.StatusNoContent {
-		t.Errorf("DELETE status = %d, want %d; body: %s", w2.Code, http.StatusNoContent, w2.Body.String())
-	}
+	require.Equal(t, http.StatusNoContent, w2.Code)
 
 	// Confirm gone
 	r3 := httptest.NewRequest(http.MethodGet, "/api/kosync/credentials", nil)
 	r3 = withUserID(r3, userID)
 	w3 := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w3, r3)
-	if w3.Code != http.StatusNotFound {
-		t.Errorf("GET after DELETE status = %d, want %d", w3.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w3.Code)
 }
 
 func TestKOSyncCredentials_Delete_NotFound(t *testing.T) {
@@ -217,23 +180,17 @@ func TestKOSyncCredentials_Delete_NotFound(t *testing.T) {
 
 	h.HandleKOSyncCredentials(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestKOSyncCredentials_UsernameConflict(t *testing.T) {
 	d := newTestDB(t)
 	h := &KOSyncHandler{DB: d}
 
-	user1, err := d.CreateUser(context.Background(), "User1", "u1@example.com", "pw")
-	if err != nil {
-		t.Fatalf("create user1: %v", err)
-	}
-	user2, err := d.CreateUser(context.Background(), "User2", "u2@example.com", "pw")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	user1, err := d.CreateUser(t.Context(), "User1", "u1@example.com", "pw")
+	require.NoError(t, err, "create user1")
+	user2, err := d.CreateUser(t.Context(), "User2", "u2@example.com", "pw")
+	require.NoError(t, err, "create user2")
 
 	// user1 claims "shared"
 	body := `{"username":"shared","password":"secretpass"}`
@@ -241,18 +198,14 @@ func TestKOSyncCredentials_UsernameConflict(t *testing.T) {
 	r = withUserID(r, user1.ID)
 	w := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w, r)
-	if w.Code != http.StatusOK {
-		t.Fatalf("user1 PUT status = %d; body: %s", w.Code, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	// user2 tries to claim "shared"
 	r2 := httptest.NewRequest(http.MethodPut, "/api/kosync/credentials", bytes.NewBufferString(body))
 	r2 = withUserID(r2, user2.ID)
 	w2 := httptest.NewRecorder()
 	h.HandleKOSyncCredentials(w2, r2)
-	if w2.Code != http.StatusConflict {
-		t.Errorf("user2 PUT status = %d, want %d", w2.Code, http.StatusConflict)
-	}
+	require.Equal(t, http.StatusConflict, w2.Code)
 }
 
 // ---- KOReader kosync protocol endpoints ----
@@ -266,9 +219,7 @@ func TestKOSyncUserCreate_AlwaysReturnsConflict(t *testing.T) {
 
 	h.HandleKOSyncUserCreate(w, r)
 
-	if w.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d (409 tells KOReader to proceed to auth)", w.Code, http.StatusConflict)
-	}
+	require.Equal(t, http.StatusConflict, w.Code)
 }
 
 func TestKOSyncUserCreate_MethodNotAllowed(t *testing.T) {
@@ -278,9 +229,7 @@ func TestKOSyncUserCreate_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleKOSyncUserCreate(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestKOSyncUserAuth_Success(t *testing.T) {
@@ -293,17 +242,11 @@ func TestKOSyncUserAuth_Success(t *testing.T) {
 
 	h.HandleKOSyncUserAuth(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if resp["authorized"] != "OK" {
-		t.Errorf("authorized = %q, want %q", resp["authorized"], "OK")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "decode response")
+	require.Equal(t, "OK", resp["authorized"])
 }
 
 func TestKOSyncUserAuth_MethodNotAllowed(t *testing.T) {
@@ -314,9 +257,7 @@ func TestKOSyncUserAuth_MethodNotAllowed(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.HandleKOSyncUserAuth(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestKOSyncProgress_Put_Success(t *testing.T) {
@@ -329,29 +270,15 @@ func TestKOSyncProgress_Put_Success(t *testing.T) {
 
 	h.HandleKOSyncProgress(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp kosyncProgressResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if resp.Document != "abc123" {
-		t.Errorf("Document = %q, want %q", resp.Document, "abc123")
-	}
-	if resp.Progress != "/body/p[5]" {
-		t.Errorf("Progress = %q, want %q", resp.Progress, "/body/p[5]")
-	}
-	if resp.Percentage != 0.42 {
-		t.Errorf("Percentage = %v, want 0.42", resp.Percentage)
-	}
-	if resp.Device != "MyKindle" {
-		t.Errorf("Device = %q, want %q", resp.Device, "MyKindle")
-	}
-	if resp.Timestamp == 0 {
-		t.Error("Timestamp should not be zero")
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp), "decode response")
+	require.Equal(t, "abc123", resp.Document)
+	require.Equal(t, "/body/p[5]", resp.Progress)
+	require.Equal(t, 0.42, resp.Percentage)
+	require.Equal(t, "MyKindle", resp.Device)
+	require.NotEqual(t, 0, resp.Timestamp)
 }
 
 func TestKOSyncProgress_Put_MissingDocument(t *testing.T) {
@@ -364,9 +291,7 @@ func TestKOSyncProgress_Put_MissingDocument(t *testing.T) {
 
 	h.HandleKOSyncProgress(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestKOSyncProgress_Put_MissingProgress(t *testing.T) {
@@ -379,9 +304,7 @@ func TestKOSyncProgress_Put_MissingProgress(t *testing.T) {
 
 	h.HandleKOSyncProgress(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestKOSyncProgress_Put_DocumentContainsSlash(t *testing.T) {
@@ -394,9 +317,7 @@ func TestKOSyncProgress_Put_DocumentContainsSlash(t *testing.T) {
 
 	h.HandleKOSyncProgress(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestKOSyncProgress_Get_Success(t *testing.T) {
@@ -408,9 +329,7 @@ func TestKOSyncProgress_Get_Success(t *testing.T) {
 	rPut = withUserID(rPut, userID)
 	wPut := httptest.NewRecorder()
 	h.HandleKOSyncProgress(wPut, rPut)
-	if wPut.Code != http.StatusOK {
-		t.Fatalf("PUT status = %d; body: %s", wPut.Code, wPut.Body.String())
-	}
+	require.Equal(t, http.StatusOK, wPut.Code)
 
 	// Now GET
 	rGet := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/syncs/progress/%s", "doc42"), nil)
@@ -418,20 +337,12 @@ func TestKOSyncProgress_Get_Success(t *testing.T) {
 	wGet := httptest.NewRecorder()
 	h.HandleKOSyncProgress(wGet, rGet)
 
-	if wGet.Code != http.StatusOK {
-		t.Errorf("GET status = %d, want %d; body: %s", wGet.Code, http.StatusOK, wGet.Body.String())
-	}
+	require.Equal(t, http.StatusOK, wGet.Code)
 
 	var resp kosyncProgressResponse
-	if err := json.Unmarshal(wGet.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode GET response: %v", err)
-	}
-	if resp.Document != "doc42" {
-		t.Errorf("Document = %q, want %q", resp.Document, "doc42")
-	}
-	if resp.Progress != "/body/p[3]" {
-		t.Errorf("Progress = %q, want %q", resp.Progress, "/body/p[3]")
-	}
+	require.NoError(t, json.Unmarshal(wGet.Body.Bytes(), &resp), "decode GET response")
+	require.Equal(t, "doc42", resp.Document)
+	require.Equal(t, "/body/p[3]", resp.Progress)
 }
 
 func TestKOSyncProgress_Get_NotFound(t *testing.T) {
@@ -443,9 +354,7 @@ func TestKOSyncProgress_Get_NotFound(t *testing.T) {
 
 	h.HandleKOSyncProgress(w, r)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestKOSyncProgress_Get_MissingDocumentInPath(t *testing.T) {
@@ -457,9 +366,7 @@ func TestKOSyncProgress_Get_MissingDocumentInPath(t *testing.T) {
 
 	h.HandleKOSyncProgress(w, r)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestKOSyncProgress_MethodNotAllowed(t *testing.T) {
@@ -471,23 +378,17 @@ func TestKOSyncProgress_MethodNotAllowed(t *testing.T) {
 
 	h.HandleKOSyncProgress(w, r)
 
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
-	}
+	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestKOSyncProgress_IsolatedByUser(t *testing.T) {
 	d := newTestDB(t)
 	h := &KOSyncHandler{DB: d}
 
-	user1, err := d.CreateUser(context.Background(), "User1", "u1@example.com", "pw")
-	if err != nil {
-		t.Fatalf("create user1: %v", err)
-	}
-	user2, err := d.CreateUser(context.Background(), "User2", "u2@example.com", "pw")
-	if err != nil {
-		t.Fatalf("create user2: %v", err)
-	}
+	user1, err := d.CreateUser(t.Context(), "User1", "u1@example.com", "pw")
+	require.NoError(t, err, "create user1")
+	user2, err := d.CreateUser(t.Context(), "User2", "u2@example.com", "pw")
+	require.NoError(t, err, "create user2")
 
 	// user1 writes progress
 	putBody := `{"document":"shared-doc","progress":"/body/p[1]","percentage":0.1}`
@@ -495,16 +396,12 @@ func TestKOSyncProgress_IsolatedByUser(t *testing.T) {
 	rPut = withUserID(rPut, user1.ID)
 	wPut := httptest.NewRecorder()
 	h.HandleKOSyncProgress(wPut, rPut)
-	if wPut.Code != http.StatusOK {
-		t.Fatalf("user1 PUT status = %d", wPut.Code)
-	}
+	require.Equal(t, http.StatusOK, wPut.Code)
 
 	// user2 cannot see user1's progress
 	rGet := httptest.NewRequest(http.MethodGet, "/api/syncs/progress/shared-doc", nil)
 	rGet = withUserID(rGet, user2.ID)
 	wGet := httptest.NewRecorder()
 	h.HandleKOSyncProgress(wGet, rGet)
-	if wGet.Code != http.StatusNotFound {
-		t.Errorf("user2 GET status = %d, want %d (progress must be isolated)", wGet.Code, http.StatusNotFound)
-	}
+	require.Equal(t, http.StatusNotFound, wGet.Code)
 }

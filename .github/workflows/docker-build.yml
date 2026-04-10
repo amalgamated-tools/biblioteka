@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
     # Skip docs-only changes — they don't affect the container image
-    # Except for generated Swagger docs in docs/docs.go, which affect the binary
+    # Except for generated Swagger docs in docs/swagger/docs.go, which affect the binary
     paths:
       - 'cmd/**'
       - 'internal/**'
-      - 'docs/docs.go'
+      - 'docs/swagger/docs.go'
       - 'frontend/**'
       - 'db/**'
       - 'go.mod'
@@ -24,6 +24,13 @@ env:
   REGISTRY: ghcr.io
   # GHCR requires lowercase image names
   IMAGE_NAME: ${{ github.repository }}
+
+# Cancel an in-progress build when a newer push arrives on the same ref.
+# Release events are never cancelled — the image must be published before
+# release consumers can pull it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
 
 jobs:
   build:

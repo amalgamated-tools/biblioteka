@@ -1,30 +1,22 @@
 package db
 
 import (
-	"context"
 	"database/sql"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	s, err := d.CreateSeries(context.Background(), "The Dark Tower", new("dt-123"), nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() error: %v", err)
-	}
-	if s.ID == "" {
-		t.Error("CreateSeries() returned empty ID")
-	}
-	if s.Name != "The Dark Tower" {
-		t.Errorf("Name = %q, want %q", s.Name, "The Dark Tower")
-	}
-	if s.GoodreadsID == nil || *s.GoodreadsID != "dt-123" {
-		t.Errorf("GoodreadsID = %v, want %q", s.GoodreadsID, "dt-123")
-	}
-	if s.CreatedAt.IsZero() {
-		t.Error("CreatedAt is zero")
-	}
+	s, err := d.CreateSeries(t.Context(), "The Dark Tower", new("dt-123"), nil, nil)
+	require.NoError(t, err, "CreateSeries() error")
+	require.NotEqual(t, "", s.ID)
+	require.Equal(t, "The Dark Tower", s.Name)
+	require.NotNil(t, s.GoodreadsID)
+	require.Equal(t, "dt-123", *s.GoodreadsID)
+	require.False(t, s.CreatedAt.IsZero())
 }
 
 func TestCreateSeries_NormalizesWhitespace(t *testing.T) {
@@ -41,13 +33,9 @@ func TestCreateSeries_NormalizesWhitespace(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			s, err := d.CreateSeries(context.Background(), tt.input, nil, nil, nil)
-			if err != nil {
-				t.Fatalf("CreateSeries(%q) error: %v", tt.input, err)
-			}
-			if s.Name != tt.want {
-				t.Errorf("CreateSeries(%q).Name = %q, want %q", tt.input, s.Name, tt.want)
-			}
+			s, err := d.CreateSeries(t.Context(), tt.input, nil, nil, nil)
+			require.NoError(t, err, "CreateSeries(%q) error", tt.input)
+			require.Equal(t, tt.want, s.Name)
 		})
 	}
 }
@@ -55,55 +43,41 @@ func TestCreateSeries_NormalizesWhitespace(t *testing.T) {
 func TestCreateSeries_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("first CreateSeries() error: %v", err)
-	}
+	_, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "first CreateSeries() error")
 
-	_, err = d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
-	if err != ErrSeriesNameExists {
-		t.Errorf("expected ErrSeriesNameExists, got %v", err)
-	}
+	_, err = d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.ErrorIs(t, err, ErrSeriesNameExists)
 }
 
 func TestCreateSeries_DuplicateNameCaseInsensitive(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.CreateSeries(context.Background(), "Mistborn", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("first CreateSeries() error: %v", err)
-	}
+	_, err := d.CreateSeries(t.Context(), "Mistborn", nil, nil, nil)
+	require.NoError(t, err, "first CreateSeries() error")
 
-	_, err = d.CreateSeries(context.Background(), "mistborn", nil, nil, nil)
-	if err != ErrSeriesNameExists {
-		t.Errorf("expected ErrSeriesNameExists, got %v", err)
-	}
+	_, err = d.CreateSeries(t.Context(), "mistborn", nil, nil, nil)
+	require.ErrorIs(t, err, ErrSeriesNameExists)
 }
 
 func TestCreateSeries_BlankName(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, name := range []string{"", " ", "  \t  "} {
-		_, err := d.CreateSeries(context.Background(), name, nil, nil, nil)
-		if err != ErrInvalidSeriesName {
-			t.Errorf("CreateSeries(%q) = %v, want ErrInvalidSeriesName", name, err)
-		}
+		_, err := d.CreateSeries(t.Context(), name, nil, nil, nil)
+		require.ErrorIs(t, err, ErrInvalidSeriesName)
 	}
 }
 
 func TestUpdateSeries_BlankName(t *testing.T) {
 	d := newTestDB(t)
 
-	s, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() error: %v", err)
-	}
+	s, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() error")
 
 	for _, name := range []string{"", " ", "  \t  "} {
-		_, err := d.UpdateSeries(context.Background(), s.ID, name, nil, nil, nil)
-		if err != ErrInvalidSeriesName {
-			t.Errorf("UpdateSeries(%q) = %v, want ErrInvalidSeriesName", name, err)
-		}
+		_, err = d.UpdateSeries(t.Context(), s.ID, name, nil, nil, nil)
+		require.ErrorIs(t, err, ErrInvalidSeriesName)
 	}
 }
 
@@ -111,230 +85,155 @@ func TestFindOrCreateSeries_BlankName(t *testing.T) {
 	d := newTestDB(t)
 
 	for _, name := range []string{"", " ", "  \t  "} {
-		_, err := d.FindOrCreateSeries(context.Background(), name)
-		if err != ErrInvalidSeriesName {
-			t.Errorf("FindOrCreateSeries(%q) = %v, want ErrInvalidSeriesName", name, err)
-		}
+		_, err := d.FindOrCreateSeries(t.Context(), name)
+		require.ErrorIs(t, err, ErrInvalidSeriesName)
 	}
 }
 
 func TestGetSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	created, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() error: %v", err)
-	}
+	created, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() error")
 
-	found, err := d.GetSeries(context.Background(), created.ID)
-	if err != nil {
-		t.Fatalf("GetSeries() error: %v", err)
-	}
-	if found.ID != created.ID {
-		t.Errorf("ID = %q, want %q", found.ID, created.ID)
-	}
-	if found.Name != "The Dark Tower" {
-		t.Errorf("Name = %q, want %q", found.Name, "The Dark Tower")
-	}
+	found, err := d.GetSeries(t.Context(), created.ID)
+	require.NoError(t, err, "GetSeries() error")
+	require.Equal(t, created.ID, found.ID)
+	require.Equal(t, "The Dark Tower", found.Name)
 }
 
 func TestGetSeries_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.GetSeries(context.Background(), "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	_, err := d.GetSeries(t.Context(), "nonexistent-id")
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestGetSeriesByName(t *testing.T) {
 	d := newTestDB(t)
 
-	created, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() error: %v", err)
-	}
+	created, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() error")
 
 	// All case variants should find the same series.
 	for _, name := range []string{"The Dark Tower", "the dark tower", "THE DARK TOWER", "the Dark Tower"} {
-		found, err := d.GetSeriesByName(context.Background(), name)
-		if err != nil {
-			t.Fatalf("GetSeriesByName(%q) error: %v", name, err)
-		}
-		if found.ID != created.ID {
-			t.Errorf("GetSeriesByName(%q) ID = %q, want %q", name, found.ID, created.ID)
-		}
-		if found.Name != "The Dark Tower" {
-			t.Errorf("GetSeriesByName(%q) Name = %q, want %q", name, found.Name, "The Dark Tower")
-		}
+		found, err := d.GetSeriesByName(t.Context(), name)
+		require.NoError(t, err, "GetSeriesByName(%q) error", name)
+		require.Equal(t, created.ID, found.ID)
+		require.Equal(t, "The Dark Tower", found.Name)
 	}
 }
 
 func TestGetSeriesByName_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	_, err := d.GetSeriesByName(context.Background(), "Nonexistent Series")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	_, err := d.GetSeriesByName(t.Context(), "Nonexistent Series")
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	if _, err := d.CreateSeries(context.Background(), "Discworld", nil, nil, nil); err != nil {
-		t.Fatalf("CreateSeries() for Discworld error: %v", err)
-	}
-	if _, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil); err != nil {
-		t.Fatalf("CreateSeries() for The Dark Tower error: %v", err)
-	}
+	_, err := d.CreateSeries(t.Context(), "Discworld", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() for Discworld error")
+	_, err = d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() for The Dark Tower error")
 
-	list, err := d.ListSeries(context.Background())
-	if err != nil {
-		t.Fatalf("ListSeries() error: %v", err)
-	}
-	if len(list) != 2 {
-		t.Fatalf("ListSeries() returned %d, want 2", len(list))
-	}
-	if list[0].Name != "Discworld" {
-		t.Errorf("first series Name = %q, want %q", list[0].Name, "Discworld")
-	}
+	list, err := d.ListSeries(t.Context())
+	require.NoError(t, err, "ListSeries() error")
+	require.Len(t, list, 2)
+	require.Equal(t, "Discworld", list[0].Name)
 }
 
 func TestUpdateSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	created, err := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() error: %v", err)
-	}
+	created, err := d.CreateSeries(t.Context(), "Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() error")
 
-	updated, err := d.UpdateSeries(context.Background(), created.ID, "The Dark Tower", new("dt-456"), nil, nil)
-	if err != nil {
-		t.Fatalf("UpdateSeries() error: %v", err)
-	}
-	if updated.Name != "The Dark Tower" {
-		t.Errorf("Name = %q, want %q", updated.Name, "The Dark Tower")
-	}
-	if updated.GoodreadsID == nil || *updated.GoodreadsID != "dt-456" {
-		t.Errorf("GoodreadsID = %v, want %q", updated.GoodreadsID, "dt-456")
-	}
+	updated, err := d.UpdateSeries(t.Context(), created.ID, "The Dark Tower", new("dt-456"), nil, nil)
+	require.NoError(t, err, "UpdateSeries() error")
+	require.Equal(t, "The Dark Tower", updated.Name)
+	require.NotNil(t, updated.GoodreadsID)
+	require.Equal(t, "dt-456", *updated.GoodreadsID)
 }
 
 func TestUpdateSeries_NormalizesWhitespace(t *testing.T) {
 	d := newTestDB(t)
 
-	created, err := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() error: %v", err)
-	}
+	created, err := d.CreateSeries(t.Context(), "Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() error")
 
-	updated, err := d.UpdateSeries(context.Background(), created.ID, "  The   Dark   Tower  ", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("UpdateSeries() error: %v", err)
-	}
-	if updated.Name != "The Dark Tower" {
-		t.Errorf("UpdateSeries().Name = %q, want %q", updated.Name, "The Dark Tower")
-	}
+	updated, err := d.UpdateSeries(t.Context(), created.ID, "  The   Dark   Tower  ", nil, nil, nil)
+	require.NoError(t, err, "UpdateSeries() error")
+	require.Equal(t, "The Dark Tower", updated.Name)
 }
 
 func TestUpdateSeries_DuplicateName(t *testing.T) {
 	d := newTestDB(t)
 
-	if _, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil); err != nil {
-		t.Fatalf("CreateSeries() for The Dark Tower error: %v", err)
-	}
-	s2, err := d.CreateSeries(context.Background(), "Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() for Dark Tower error: %v", err)
-	}
+	_, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() for The Dark Tower error")
+	s2, err := d.CreateSeries(t.Context(), "Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() for Dark Tower error")
 
-	_, err = d.UpdateSeries(context.Background(), s2.ID, "The Dark Tower", nil, nil, nil)
-	if err != ErrSeriesNameExists {
-		t.Errorf("expected ErrSeriesNameExists, got %v", err)
-	}
+	_, err = d.UpdateSeries(t.Context(), s2.ID, "The Dark Tower", nil, nil, nil)
+	require.ErrorIs(t, err, ErrSeriesNameExists)
 }
 
 func TestUpdateSeries_DuplicateNameCaseInsensitive(t *testing.T) {
 	d := newTestDB(t)
 
-	if _, err := d.CreateSeries(context.Background(), "Mistborn", nil, nil, nil); err != nil {
-		t.Fatalf("CreateSeries() for Mistborn error: %v", err)
-	}
-	s2, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() for The Dark Tower error: %v", err)
-	}
+	_, err := d.CreateSeries(t.Context(), "Mistborn", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() for Mistborn error")
+	s2, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() for The Dark Tower error")
 
-	_, err = d.UpdateSeries(context.Background(), s2.ID, "mistborn", nil, nil, nil)
-	if err != ErrSeriesNameExists {
-		t.Errorf("expected ErrSeriesNameExists, got %v", err)
-	}
+	_, err = d.UpdateSeries(t.Context(), s2.ID, "mistborn", nil, nil, nil)
+	require.ErrorIs(t, err, ErrSeriesNameExists)
 }
 
 func TestFindOrCreateSeries_CaseInsensitive(t *testing.T) {
 	d := newTestDB(t)
 
-	created, err := d.FindOrCreateSeries(context.Background(), "Mistborn")
-	if err != nil {
-		t.Fatalf("first FindOrCreateSeries() error: %v", err)
-	}
+	created, err := d.FindOrCreateSeries(t.Context(), "Mistborn")
+	require.NoError(t, err, "first FindOrCreateSeries() error")
 
-	found, err := d.FindOrCreateSeries(context.Background(), "mistborn")
-	if err != nil {
-		t.Fatalf("second FindOrCreateSeries() error: %v", err)
-	}
-	if found.ID != created.ID {
-		t.Errorf("expected same series ID, got %q and %q", found.ID, created.ID)
-	}
+	found, err := d.FindOrCreateSeries(t.Context(), "mistborn")
+	require.NoError(t, err, "second FindOrCreateSeries() error")
+	require.Equal(t, created.ID, found.ID)
 }
 
 func TestFindOrCreateSeries_NormalizesWhitespace(t *testing.T) {
 	d := newTestDB(t)
 
-	created, err := d.FindOrCreateSeries(context.Background(), "The Wheel of Time")
-	if err != nil {
-		t.Fatalf("first FindOrCreateSeries() error: %v", err)
-	}
+	created, err := d.FindOrCreateSeries(t.Context(), "The Wheel of Time")
+	require.NoError(t, err, "first FindOrCreateSeries() error")
 
-	found, err := d.FindOrCreateSeries(context.Background(), "  The   Wheel   of Time  ")
-	if err != nil {
-		t.Fatalf("second FindOrCreateSeries() error: %v", err)
-	}
-	if found.ID != created.ID {
-		t.Errorf("expected same series ID, got %q and %q", found.ID, created.ID)
-	}
-	if found.Name != "The Wheel of Time" {
-		t.Errorf("FindOrCreateSeries().Name = %q, want %q", found.Name, "The Wheel of Time")
-	}
+	found, err := d.FindOrCreateSeries(t.Context(), "  The   Wheel   of Time  ")
+	require.NoError(t, err, "second FindOrCreateSeries() error")
+	require.Equal(t, created.ID, found.ID)
+	require.Equal(t, "The Wheel of Time", found.Name)
 }
 
 func TestDeleteSeries(t *testing.T) {
 	d := newTestDB(t)
 
-	s, err := d.CreateSeries(context.Background(), "The Dark Tower", nil, nil, nil)
-	if err != nil {
-		t.Fatalf("CreateSeries() error: %v", err)
-	}
+	s, err := d.CreateSeries(t.Context(), "The Dark Tower", nil, nil, nil)
+	require.NoError(t, err, "CreateSeries() error")
 
-	err = d.DeleteSeries(context.Background(), s.ID)
-	if err != nil {
-		t.Fatalf("DeleteSeries() error: %v", err)
-	}
+	err = d.DeleteSeries(t.Context(), s.ID)
+	require.NoError(t, err, "DeleteSeries() error")
 
-	_, err = d.GetSeries(context.Background(), s.ID)
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
-	}
+	_, err = d.GetSeries(t.Context(), s.ID)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestDeleteSeries_NotFound(t *testing.T) {
 	d := newTestDB(t)
 
-	err := d.DeleteSeries(context.Background(), "nonexistent-id")
-	if err != sql.ErrNoRows {
-		t.Errorf("expected sql.ErrNoRows, got %v", err)
-	}
+	err := d.DeleteSeries(t.Context(), "nonexistent-id")
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 func TestListSeriesPaginated(t *testing.T) {
@@ -342,61 +241,31 @@ func TestListSeriesPaginated(t *testing.T) {
 
 	names := []string{"Discworld", "Dune", "Foundation", "The Dark Tower"}
 	for _, name := range names {
-		_, err := d.CreateSeries(context.Background(), name, nil, nil, nil)
-		if err != nil {
-			t.Fatalf("CreateSeries(%q) error: %v", name, err)
-		}
+		_, err := d.CreateSeries(t.Context(), name, nil, nil, nil)
+		require.NoError(t, err, "CreateSeries(%q) error", name)
 	}
 
 	// First page: 2 of 4 series.
-	page1, total, err := d.ListSeriesPaginated(context.Background(), 2, 0)
-	if err != nil {
-		t.Fatalf("ListSeriesPaginated() error: %v", err)
-	}
-	if total != 4 {
-		t.Errorf("total = %d, want 4", total)
-	}
-	if len(page1) != 2 {
-		t.Fatalf("len(page1) = %d, want 2", len(page1))
-	}
-	if page1[0].Name != "Discworld" {
-		t.Errorf("page1[0].Name = %q, want %q", page1[0].Name, "Discworld")
-	}
-	if page1[1].Name != "Dune" {
-		t.Errorf("page1[1].Name = %q, want %q", page1[1].Name, "Dune")
-	}
+	page1, total, err := d.ListSeriesPaginated(t.Context(), 2, 0)
+	require.NoError(t, err, "ListSeriesPaginated() error")
+	require.Equal(t, 4, total)
+	require.Len(t, page1, 2)
+	require.Equal(t, "Discworld", page1[0].Name)
+	require.Equal(t, "Dune", page1[1].Name)
 
 	// Second page: remaining 2 series.
-	page2, total2, err := d.ListSeriesPaginated(context.Background(), 2, 2)
-	if err != nil {
-		t.Fatalf("ListSeriesPaginated() page 2 error: %v", err)
-	}
-	if total2 != 4 {
-		t.Errorf("page 2 total = %d, want 4", total2)
-	}
-	if len(page2) != 2 {
-		t.Fatalf("len(page2) = %d, want 2", len(page2))
-	}
-	if page2[0].Name != "Foundation" {
-		t.Errorf("page2[0].Name = %q, want %q", page2[0].Name, "Foundation")
-	}
-	if page2[1].Name != "The Dark Tower" {
-		t.Errorf("page2[1].Name = %q, want %q", page2[1].Name, "The Dark Tower")
-	}
+	page2, total2, err := d.ListSeriesPaginated(t.Context(), 2, 2)
+	require.NoError(t, err, "ListSeriesPaginated() page 2 error")
+	require.Equal(t, 4, total2)
+	require.Len(t, page2, 2)
+	require.Equal(t, "Foundation", page2[0].Name)
+	require.Equal(t, "The Dark Tower", page2[1].Name)
 
 	// Empty table: total should be 0.
 	d2 := newTestDB(t)
-	empty, total3, err := d2.ListSeriesPaginated(context.Background(), 10, 0)
-	if err != nil {
-		t.Fatalf("ListSeriesPaginated() empty error: %v", err)
-	}
-	if total3 != 0 {
-		t.Errorf("empty total = %d, want 0", total3)
-	}
-	if len(empty) != 0 {
-		t.Errorf("empty result len = %d, want 0", len(empty))
-	}
-	if empty == nil {
-		t.Error("empty result = nil, want empty slice")
-	}
+	empty, total3, err := d2.ListSeriesPaginated(t.Context(), 10, 0)
+	require.NoError(t, err, "ListSeriesPaginated() empty error")
+	require.Equal(t, 0, total3)
+	require.Len(t, empty, 0)
+	require.NotNil(t, empty)
 }

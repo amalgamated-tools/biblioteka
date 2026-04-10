@@ -15,6 +15,8 @@ permissions:
   issues: read
   pull-requests: read
 
+tracker-id: q-workflow
+
 network: defaults
 
 safe-outputs:
@@ -25,6 +27,11 @@ safe-outputs:
     labels: [automation, workflow-optimization]
     draft: false
     if-no-changes: "ignore"
+    protected-files: allowed
+    allowed-files:
+      - .github/workflows/*.md
+      - .github/workflows/*.lock.yml
+      - .github/workflows/shared/*.md
 
 tools:
   agentic-workflows:
@@ -255,7 +262,7 @@ Create a pull request with your improvements:
      - Changes made and why
      - Expected improvements
      - Links to relevant log files or audit reports
-   - **Modified Files**: Only .md workflow files
+   - **Modified Files**: .md workflow source files and their compiled .lock.yml counterparts
 
 ## Important Guidelines
 
@@ -375,7 +382,7 @@ A successful Q operation:
 - ✅ Identifies specific issues with evidence from logs
 - ✅ Makes minimal, targeted improvements to workflows
 - ✅ Validates all changes using the `compile` tool from agentic-workflows
-- ✅ Creates PR with only .md workflow files
+- ✅ Creates PR with .md workflow source files and their compiled .lock.yml counterparts
 - ✅ Provides clear documentation of changes and rationale
 - ✅ Follows security best practices
 

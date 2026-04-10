@@ -8,6 +8,7 @@ permissions:
   discussions: read
   issues: read
   pull-requests: read
+tracker-id: weekly-repo-map
 engine: copilot
 tools:
   edit:
@@ -16,7 +17,7 @@ tools:
 safe-outputs:
   create-discussion:
     expires: 7d
-    category: "announcements"
+    category: "audits"
     title-prefix: "📰 "
     close-older-discussions: true
   noop:

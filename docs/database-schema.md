@@ -305,7 +305,7 @@ Long-lived credentials for programmatic API access. Each key belongs to one user
 - `idx_api_keys_user_id` — list all keys for a user
 
 **Notes:**
-- The full API key (`bib_` + 32 hex chars) is shown **once** at creation. Only the `key_hash` persists.
+- The full API key (`bib_` + 40 hex chars) is shown **once** at creation and is not recoverable afterward. The `key_hash` persists for lookup, and the non-secret `key_prefix` persists for UI identification.
 - When a user is deleted, all their API keys are deleted via CASCADE.
 - See the [Authentication guide — API Keys](authentication.md#api-keys) for usage details.
 
@@ -372,7 +372,7 @@ Named sync tokens that authenticate a Kobo e-reader device. Each token grants ac
 | `id`         | TEXT    | NOT NULL | auto-gen | Primary key                                              |
 | `user_id`    | TEXT    | NOT NULL | —        | FK → `users.id` ON DELETE CASCADE                        |
 | `name`       | TEXT    | NOT NULL | —        | Human-readable label (max 100 chars)                    |
-| `token_hash` | TEXT    | NULL     | NULL     | SHA-256 hex digest of the raw token; `NULL` only on pre-migration rows (always set for new tokens) |
+| `token_hash` | TEXT    | NOT NULL | —        | SHA-256 hex digest of the raw token                                                                |
 | `created_at` | DATETIME| NOT NULL | `now()`  | When the token was created                               |
 
 **Indexes:**
@@ -498,8 +498,8 @@ Stores Goodreads (and compatible catalog) metadata candidates fetched on behalf 
 
 **Indexes:**
 - `idx_goodreads_metadata_user_id` — fast user-scoped lookups
-- `idx_goodreads_metadata_user_status_created_at_id` (SQLite) / `idx_goodreads_metadata_user_status_created_at_id_desc` (PostgreSQL) — composite index on `(user_id, status, created_at DESC, id DESC)` for efficient paginated listing filtered by status
-- `idx_goodreads_metadata_user_created_at_id` (SQLite) / `idx_goodreads_metadata_user_created_at_id_desc` (PostgreSQL) — composite index on `(user_id, created_at DESC, id DESC)` for efficient paginated listing of all records for a user
+- `idx_goodreads_metadata_user_status_created_at_id_desc` — composite index on `(user_id, status, created_at DESC, id DESC)` for efficient paginated listing filtered by status
+- `idx_goodreads_metadata_user_created_at_id_desc` — composite index on `(user_id, created_at DESC, id DESC)` for efficient paginated listing of all records for a user
 
 **Notes:**
 - **This table is internal-only and is not exposed through the REST API.** It is used exclusively by internal server-side logic and background jobs.
@@ -546,9 +546,12 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `kobo_reading_states.go` | `KoboReadingState` struct; `GetKoboReadingState`, `UpsertKoboReadingState`, `ListKoboReadingStatesSince`, `GetReadingStatesForBooks` |
 | `kosync.go` | `KOSyncCredential` (type alias for `ProtocolCredential`); `GetKOSyncCredentialByUserID`, `GetKOSyncCredentialByUsername`, `UpsertKOSyncCredential`, `DeleteKOSyncCredential` — thin wrappers around the shared helpers in `protocol_credentials.go`; `ReadingProgress` struct; `GetReadingProgress`, `UpsertReadingProgress` |
 | `audit_logs.go` | `AuditLog` struct; `CreateAuditLog`, `ListAuditLogs` |
-| `goodreads_metadata.go` | `GoodreadsMetadata` struct; `CreateGoodreadsMetadata`, `GetGoodreadsMetadata`, `ListGoodreadsMetadataByUser`, `ListGoodreadsMetadataByStatus`, `UpdateGoodreadsMetadataStatus`, `DeleteGoodreadsMetadata` |
+| `goodreads_metadata.go` | `GoodreadsMetadata` struct; `GoodreadsMetadataInput` struct (holds the 20 optional fields passed to `CreateGoodreadsMetadata` in place of positional arguments); `CreateGoodreadsMetadata`, `GetGoodreadsMetadata`, `ListGoodreadsMetadataByUser`, `ListGoodreadsMetadataByStatus`, `UpdateGoodreadsMetadataStatus`, `DeleteGoodreadsMetadata` |
+| `find_or_create.go` | Unexported generic helper `findOrCreate[T]` — implements the lookup → insert → race-fetch pattern shared by `FindOrCreateAuthor` and `FindOrCreateSeries`. Normalizes the name, validates it, attempts the insert, and falls back to a second lookup when a concurrent insert wins the unique-constraint race. |
+| `named_entity_write.go` | Unexported generic helpers `namedEntityCreate[T]` and `namedEntityUpdate[T]` — normalize the name, validate it, execute the provided insert/update function, and translate unique-constraint violations into the entity-specific sentinel errors (`ErrXxxNameExists`). Currently used by `CreateAuthor`/`UpdateAuthor` and `CreateSeries`/`UpdateSeries`; also serves as a reusable helper for future named-entity CRUD. |
+| `scan_helpers.go` | Unexported generic scan utilities: `scanRow[T]` (wraps single-row scan to eliminate per-entity boilerplate), `collectRows[T]` (iterates `*sql.Rows` and collects results into a slice), and `collectRowsAndTotal[T]` (same as `collectRows` but also captures a `COUNT(*) OVER()` window-function total for paginated queries). |
+| `tx.go` | Unexported transaction helper `deferRollback` — intended for use with `defer`; calls `tx.Rollback()`, silently ignores `sql.ErrTxDone`, and logs a warning for any other rollback error. |
 | `paginate.go` | Two internal generic helpers sharing the `listQuery` interface and `allowedListTables` allowlist: `listAll[T]` — full-table SELECT with no limit; used by `ListAuthors`, `ListSeries`, `ListLibraries`; `listPaginated[T]` — issues a `COUNT(*)` then a paginated SELECT; used by `ListAuthorsPaginated` and `ListSeriesPaginated`. Both validate table names against the allowlist to prevent SQL injection |
-| `kobo_tokens_migration.go` | `backfillKoboTokenHashes`: one-time data migration that populates the `token_hash` column from existing plain `token` values; called during startup when the column is present but hashes are absent |
 | `sql_parser.go` | Internal helpers for parsing embedded SQL migration files |
 
 > The `books.go` split (PR [#318](https://github.com/amalgamated-tools/biblioteka/pull/318)) separated a previously oversized `books.go` file into the four focused files above (`books.go`, `book_queries.go`, `book_relations.go`, `book_files.go`). The public API surface of the `*DB` receiver is unchanged.

@@ -1,4 +1,4 @@
-.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt docs-serve
+.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt docs-serve lint-errorf
 
 # Tooling commands
 SWAG_CMD = go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5
@@ -116,7 +116,7 @@ clean:
 
 # Generate Swagger/OpenAPI documentation
 swagger:
-	$(SWAG_CMD) init -g cmd/server/main.go -o docs --parseDependency --parseInternal
+	$(SWAG_CMD) init -g cmd/server/main.go -o docs/swagger --parseDependency --parseInternal
 
 # Format swagger annotations
 swagger-fmt:
@@ -124,6 +124,11 @@ swagger-fmt:
 
 lint:
 	$(GOLANGCI_LINT_CMD) run ./... --max-issues-per-linter 0 --max-same-issues 0
+	go run ./cmd/slogcheck ./...
+	go run ./cmd/errorfcheck ./...
+
+lint-errorf:
+	go run ./cmd/errorfcheck ./...
 
 fmt:
 	go fmt ./...

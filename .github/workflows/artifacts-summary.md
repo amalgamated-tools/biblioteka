@@ -7,6 +7,7 @@ permissions:
   contents: read
   actions: read
   discussions: read
+tracker-id: artifacts-summary
 engine: copilot
 network:
   allowed:
@@ -21,7 +22,7 @@ tools:
     toolsets: [actions, repos]
 safe-outputs:
   create-discussion:
-    category: "announcements"
+    category: "audits"
     max: 1
     close-older-discussions: true
 timeout-minutes: 15

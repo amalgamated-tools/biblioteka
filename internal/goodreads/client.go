@@ -1,3 +1,6 @@
+// Package goodreads provides a client for the Goodreads unpublished GraphQL
+// API, supporting book searches by title/query, ISBN lookups, and direct book
+// lookups by Goodreads ID, legacy ID, or ASIN.
 package goodreads
 
 import (
@@ -28,10 +31,13 @@ var (
 	}
 )
 
+// HttpClient is the interface used by Client to make HTTP requests, allowing
+// the real *http.Client to be replaced by a test double.
 type HttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+// Client is a Goodreads API client. Create one with NewClient.
 type Client struct {
 	token      string
 	host       string
@@ -39,6 +45,9 @@ type Client struct {
 	httpClient HttpClient
 }
 
+// NewClient creates a Goodreads API client using the default public credentials
+// and a 3-second HTTP timeout. The auth transport restricts the API key header
+// to the Goodreads GraphQL endpoint to avoid leaking it to third-party domains.
 func NewClient() *Client {
 	host := string(defaultHost)
 

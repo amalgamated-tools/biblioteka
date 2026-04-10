@@ -17,6 +17,7 @@ Your signature is recorded once and applies to all future contributions.
 - Go 1.26+
 - Node.js 22+ with [pnpm](https://pnpm.io/)
 - Redis (for background jobs)
+- [goreman](https://github.com/mattn/goreman) — required to run `make dev` (starts the backend and frontend together); install with `go install github.com/mattn/goreman@latest`
 - [ExifTool](https://exiftool.org/) (optional; used for metadata extraction across all supported formats — EPUB, MOBI, AZW3, PDF; imports succeed without it but metadata is derived from filename/path-derived metadata only)
 - Docker (optional, for running the full stack locally)
 
@@ -27,6 +28,8 @@ If you use [mise](https://mise.jdx.dev/), you can install Go, Node.js, pnpm, and
 ```bash
 mise install
 ```
+
+> **goreman is not managed by mise.** Install it separately with `go install github.com/mattn/goreman@latest` (requires your Go install bin directory — `$GOBIN` if set, otherwise `$(go env GOPATH)/bin` — to be on your `$PATH`).
 
 ## Getting Started
 
@@ -69,7 +72,7 @@ internal/
   otel/              # Logging and tracing setup
   otelkeys/          # Shared log/telemetry field-name constants
   telemetry/         # Anonymous usage telemetry (opt-in)
-  testutils/         # Test helpers: MakeTestEPUB, MakeTestPDF (used in _test.go files only)
+  testutils/         # Test helpers: MakeTestEPUB, MakeTestEPUBWithOptions, MakeTestMOBI, MakeTestAZW3, MakeTestPDF (used in _test.go files only)
 frontend/            # Svelte 5 SPA (TypeScript + Tailwind CSS)
 e2e/                 # Playwright end-to-end tests
 db/
@@ -212,23 +215,39 @@ test.beforeEach(async ({ page }) => {
 
 #### Test helpers (`internal/testutils`)
 
-The `internal/testutils` package provides helpers for generating fixture book files in tests:
+The `internal/testutils` package provides helpers for generating fixture book files in tests. Never commit binary book files to the repository — use these helpers to generate them at test time instead.
 
 | Helper | Description |
 |--------|-------------|
-| `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB at the given path |
-| `testutils.MakeTestEPUBWithOptions(t, path, title, creator, identifier, opts)` | Creates a minimal valid EPUB with additional OPF fields (description, publisher, publication date, language) |
+| `testutils.MakeTestEPUB(t, path, title, creator, identifier)` | Creates a minimal valid EPUB 3 fixture at the given path. For an EPUB 2 fixture, use `testutils.MakeTestEPUBWithOptions(...)` with `EPUBOptions{Version:"2.0"}` |
+| `testutils.MakeTestEPUBWithOptions(t, path, title, creator, identifier, opts)` | Creates a minimal valid EPUB with full metadata control via `EPUBOptions` (description, publisher, publication date, language, cover image data, cover image href, cover media type, EPUB3 cover flag, EPUB version, subjects) |
+| `testutils.MakeTestMOBI(t, path, title, author, opts)` | Creates a minimal valid MOBI file with optional metadata via `MOBIOptions` (ISBN, ASIN, publisher, language, cover image) |
+| `testutils.MakeTestAZW3(t, path, title, author, opts)` | Creates a minimal valid AZW3 file (same PalmDB/MOBI binary format as MOBI; only the extension differs) |
 | `testutils.MakeTestPDF(t, path, title, author, et)` | Creates a minimal valid PDF and writes metadata via ExifTool (skips the test if ExifTool is unavailable) |
+| `testutils.TinyPNG()` | Returns the bytes of a minimal 1×1 pixel PNG image — useful as `CoverImageData` in `EPUBOptions` |
+| `testutils.TinyJPEG()` | Returns the bytes of a minimal 1×1 pixel JPEG image — useful as `CoverImageData` in `MOBIOptions` |
 
 Import path: `github.com/amalgamated-tools/biblioteka/internal/testutils`
 
 ```go
 func TestMyExtractor(t *testing.T) {
-    path := filepath.Join(t.TempDir(), "test.epub")
-    testutils.MakeTestEPUB(t, path, "Hamlet", "William Shakespeare", "urn:isbn:9780141396507")
+    dir := t.TempDir()
+
+    // EPUB
+    epubPath := filepath.Join(dir, "hamlet.epub")
+    testutils.MakeTestEPUB(t, epubPath, "Hamlet", "William Shakespeare", "urn:isbn:9780141396507")
+
+    // MOBI with optional metadata
+    mobiPath := filepath.Join(dir, "The Prince.mobi")
+    testutils.MakeTestMOBI(t, mobiPath, "The Prince", "Niccolò Machiavelli", testutils.MOBIOptions{
+        Publisher: "Public Domain",
+        Language:  "en",
+    })
     // ...
 }
 ```
+
+> **Sample books for CLI launch configs**: The "Run CLI" launch configs for individual file formats expect book files in a local `books/` directory (e.g. `books/theprince.azw3`). These files are **not** committed to the repository. Create the `books/` directory and add your own copies of the relevant files before using those launch configs. The Goodreads and **Run Server** launch configs require no local book files.
 
 ### Building
 
@@ -284,7 +303,7 @@ web: PORT=8080 go run cmd/server/main.go -mode=server
 frontend: cd frontend && pnpm run dev --host
 ```
 
-This is distinct from `Procfile.dev`, which uses [air](https://github.com/cosmtrek/air) for hot-reload during normal development.
+This is distinct from `Procfile.dev`, which uses [air](https://github.com/air-verse/air) for hot-reload during normal development (`go tool air -c .air.toml`). The `.air.toml` file in the repository root configures which directories and file extensions air watches, where to write the compiled binary, and build delay settings.
 
 ### IDE and Editor Support
 
@@ -294,11 +313,11 @@ The repository includes a `.vscode/launch.json` with ready-to-use **Run and Debu
 
 | Configuration | Binary | What it does |
 |---|---|---|
-| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans the sample `books/` directory and imports all supported files |
-| **Run CLI (AZW3)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.azw3` |
-| **Run CLI (MOBI)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.mobi` |
-| **Run CLI (EPUB)** | `cmd/cli/main.go` | Runs `process-file` against `books/alice.epub` (EPUB 2) |
-| **Run CLI (EPUB3)** | `cmd/cli/main.go` | Runs `process-file` against `books/epub30-spec.epub` (EPUB 3) |
+| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans your local `books/` directory and imports all supported files |
+| **Run CLI (AZW3)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.azw3` (place your own AZW3 file there) |
+| **Run CLI (MOBI)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.mobi` (place your own MOBI file there) |
+| **Run CLI (EPUB)** | `cmd/cli/main.go` | Runs `process-file` against `books/alice.epub` (place your own EPUB 2 file there) |
+| **Run CLI (EPUB3)** | `cmd/cli/main.go` | Runs `process-file` against `books/epub30-spec.epub` (place your own EPUB 3 file there) |
 | **Run CLI (Goodreads Search)** | `cmd/cli/main.go` | Runs `goodreads-search "Project Hail Mary"` |
 | **Run CLI (Goodreads Search by ISBN)** | `cmd/cli/main.go` | Runs `goodreads-search-isbn 9780593135204` |
 | **Run CLI (Goodreads Fetch by ASIN)** | `cmd/cli/main.go` | Runs `goodreads-get-by-asin 0593135202` |
@@ -313,7 +332,15 @@ cp .env.sample .env
 # Edit .env with your local values (DATABASE_URL, REDIS_URL, JWT_SECRET, …)
 ```
 
-> **Sample books**: Four sample book files in `books/` serve as realistic test data for the CLI configurations. They are version-controlled so the "Run CLI" launch configs work out of the box without any setup.
+> **Sample books**: The `books/` directory is not version-controlled. To use the file-specific "Run CLI" launch configs (AZW3, MOBI, EPUB, EPUB3), create the directory and add your own book files with the expected names:
+>
+> ```bash
+> mkdir -p books
+> # Add your own books/theprince.azw3, books/theprince.mobi,
+> # books/alice.epub, and books/epub30-spec.epub
+> ```
+>
+> The **Run CLI (Folder)** config works with any EPUB, MOBI, or AZW3 files you place in `books/`.
 
 The repository also includes a `.vscode/settings.json` with workspace-wide editor settings for the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.Go):
 
@@ -340,17 +367,17 @@ See [docs/frontend.md](docs/frontend.md) for the frontend architecture overview,
 
 ### Updating the OpenAPI Specification
 
-The OpenAPI spec (`docs/swagger.json`, `docs/swagger.yaml`, `docs/docs.go`) is generated from [swag](https://github.com/swaggo/swag) annotations on the handler functions. Regenerate it whenever you add, remove, or change an API endpoint:
+The OpenAPI spec (`docs/swagger/swagger.json`, `docs/swagger/swagger.yaml`, `docs/swagger/docs.go`) is generated from [swag](https://github.com/swaggo/swag) annotations on the handler functions. Regenerate it whenever you add, remove, or change an API endpoint:
 
 ```bash
-# Regenerate docs/swagger.json, docs/swagger.yaml, and docs/docs.go
+# Regenerate docs/swagger/swagger.json, docs/swagger/swagger.yaml, and docs/swagger/docs.go
 make swagger
 
 # Reformat swag annotations in handler files (run after editing annotations and before committing)
 make swagger-fmt
 ```
 
-Always commit the updated spec files alongside the handler changes that prompted them. At runtime, the interactive Swagger UI at `/swagger/` is served via the `http-swagger` UI assets, while the raw spec at `/swagger/doc.json` is generated from `docs/docs.go`; the `docs/swagger.json` and `docs/swagger.yaml` files are primarily for committing to the repository and for client/tooling consumption, and are not served directly by the backend.
+Always commit the updated spec files alongside the handler changes that prompted them. At runtime, the interactive Swagger UI at `/swagger/` is served via the `http-swagger` UI assets, while the raw spec at `/swagger/doc.json` is generated from `docs/swagger/docs.go`; the `docs/swagger/swagger.json` and `docs/swagger/swagger.yaml` files are primarily for committing to the repository and for client/tooling consumption, and are not served directly by the backend.
 
 ## Code Conventions
 
@@ -434,6 +461,33 @@ Always commit the updated spec files alongside the handler changes that prompted
 - **Logging**: Use `log/slog` for structured logging. Always call the **context-aware variants** — `slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`, `slog.WarnContext(ctx, ...)`, `slog.DebugContext(ctx, ...)` — passing `r.Context()` in HTTP handlers or a propagated `context.Context` elsewhere. The non-context versions (`slog.Info`, `slog.Error`, etc.) are **forbidden** by the `sloglint` linter. `log.Print*`, `log.Fatal*`, and `log.Panic*` are also forbidden. For log field keys, use the predefined constants from `internal/otelkeys/logger_keys.go` (e.g. `otelkeys.UserID`, `otelkeys.BookID`) — never raw string literals. If you need a new field key, add a constant there first.
 - **User scoping**: All data queries must include `user_id` to enforce per-user data isolation.
 - **Formatting**: Run `go fmt ./...` before committing Go code.
+
+## Testing Conventions
+
+### Go tests
+
+- **Use `testify/require`** for assertions — `require.NoError(t, err)`, `require.Equal(t, expected, actual)`, `require.True(t, cond)`, etc. Do **not** use `t.Fatal`, `t.Fatalf`, or `t.FailNow` directly. Using `testify/require` keeps assertion style consistent and produces better failure messages:
+  ```go
+  import "github.com/stretchr/testify/require"
+
+  // ✅ correct
+  require.NoError(t, err)
+  require.Equal(t, "expected", result)
+
+  // ❌ incorrect — use require instead
+  if err != nil {
+      t.Fatal(err)
+  }
+  ```
+- **Real database**: Go tests should run against a real SQLite database. When creating SQLite databases in tests, configure them with WAL mode, `synchronous=NORMAL`, and `foreign_keys=ON`. See `internal/db/testhelper_test.go` for a canonical example/reference helper pattern.
+- **Every new feature needs tests**: Any new handler, function, or component must include tests. Treat missing tests as a failing CI check — do not consider a task done until tests are written and passing.
+- **Test file organization**: Large handler test files are split by sub-concern. For example, `books_authors_test.go` covers only the books↔authors relationship handlers, while `books_test.go` covers book CRUD. Follow this pattern when adding tests for new endpoints or sub-resources.
+
+### Frontend tests
+
+- Frontend unit tests use [Vitest](https://vitest.dev/) and live alongside their source file (e.g. `copyTimeout.test.ts` next to `copyTimeout.svelte.ts`).
+- Use `vi.useFakeTimers()` for tests involving `setTimeout`/`setInterval` so tests run synchronously without real delays.
+- End-to-end tests live in `e2e/` and use Playwright (see [End-to-end tests](#end-to-end-tests-e2e) above).
 
 ## AI Coding Assistant Instructions
 
@@ -579,6 +633,10 @@ Major version bumps are opened as individual PRs and require manual review befor
 
 Dependabot pull requests for **patch and minor** version updates are automatically approved and enabled for auto-merge. Major version updates require a manual review before merging. The auto-merge workflow runs only when the pull request author is `dependabot[bot]`.
 
+#### Doc Updater Auto-Merge (`.github/workflows/doc-updater-auto-merge.yml`)
+
+Documentation pull requests created by the `daily-doc-updater` agentic workflow are automatically approved and enabled for auto-merge once all required CI checks pass. The workflow targets PRs whose title starts with `docs(daily):` and that carry both the `documentation` and `automation` labels. It runs only when the pull request author is `github-actions[bot]`.
+
 ### Automated agentic workflows
 
 Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that run on a schedule or in response to events. They analyze the codebase, find issues, and open pull requests or GitHub issues automatically. You do not need to trigger them manually.
@@ -606,7 +664,7 @@ Biblioteka uses a set of AI-powered workflows (GitHub Agentic Workflows) that ru
 | **Daily Assign Issue to User** | Daily | Assigns one unassigned open issue to an active contributor |
 | **Daily Code Metrics** | Daily | GitHub Discussion in "audits" category with code health metrics and 30-day trend charts |
 | **Daily Copilot Token Report** | Weekdays at 11:00 UTC | GitHub Discussion in "audits" category with Copilot token consumption and cost trends |
-| **Daily Doc Updater** | Daily at 06:00 UTC | Draft pull requests correcting and expanding documentation |
+| **Daily Doc Updater** | Daily at 06:00 UTC | Pull requests (auto-merged) correcting and expanding documentation |
 | **Daily Issues Report** | Daily | GitHub Discussion in "audits" category with issue clustering, metrics, and trend charts |
 | **Daily Multi-Device Docs Tester** | Daily | GitHub issues for responsive-design failures; asset uploads with test results |
 | **Daily Observability Report** | Daily | GitHub Discussion in "audits" category with logging and telemetry coverage analysis |
@@ -744,7 +802,7 @@ Review these reports to monitor AI spending across workflows and identify expens
 
 #### Daily Doc Updater
 
-The `daily-doc-updater` workflow runs every day at 06:00 UTC. It reviews recent code changes and the existing documentation for gaps, inaccuracies, and outdated content. When it identifies documentation that needs updating, it opens a draft pull request with the title prefix `[docs]`. Draft PRs expire after one day if not merged. Review and merge these pull requests to keep documentation in sync with the codebase.
+The `daily-doc-updater` workflow runs every day at 06:00 UTC. It reviews recent code changes and the existing documentation for gaps, inaccuracies, and outdated content. When it identifies documentation that needs updating, it opens a pull request with the title prefix `docs(daily):` and the labels `documentation` and `automation`. These PRs are automatically approved and auto-merged once CI passes (via the `doc-updater-auto-merge` workflow). PRs expire after one day if not merged.
 
 This is a complement to the event-driven `update-docs` workflow (which fires on every push to `main`): `update-docs` documents specific code changes immediately, while `daily-doc-updater` sweeps for broader documentation drift on a schedule.
 
@@ -788,7 +846,17 @@ These workflows are triggered manually by posting a slash command in a PR or iss
 | Slash command | Where | What it does |
 |---|---|---|
 | `/grumpy` | PR comment or review comment | Performs a critical code review focused on edge cases, potential bugs, and code quality. Posts up to 5 inline review comments. |
+| `/nit` | PR comment or review comment | Performs a detailed nitpick review focused on style, naming, and best practices that linters miss. Posts up to 10 inline review comments and publishes a summary report as a GitHub Discussion. |
 | `/q` | Issue or PR comment | Answers questions about the codebase, analyzes agentic workflow performance, and can open pull requests with workflow optimizations. Also triggered by a 🚀 reaction on a comment. |
+
+#### Using the on-demand code reviewers
+
+Two workflows are available for requesting AI-assisted code review at any point during a pull request:
+
+- **`grumpy-reviewer`** (`/grumpy`) — takes a harsh, critical stance to surface edge cases and subtle bugs that are easy to overlook. Use it when you want a second opinion on correctness and robustness.
+- **`pr-nitpick-reviewer`** (`/nit`) — focuses on style, readability, and minor best-practice improvements. Use it when you want feedback on code polish after the logic is solid.
+
+Both are compiled and ready to use. To invoke either, post a comment on the PR containing only the slash command (e.g. `/grumpy` or `/nit`). The workflow will respond in-thread and post inline review comments on the changed files.
 
 ### On-demand workflows
 

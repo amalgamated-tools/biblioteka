@@ -5,10 +5,11 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mockOPDSChecker implements OPDSCredentialChecker for testing.
@@ -31,9 +32,7 @@ func (m *mockOPDSChecker) GetOPDSCredential(_ context.Context, username string) 
 func newOPDSCheckerWithUser(t *testing.T, username, password, userID string) *mockOPDSChecker {
 	t.Helper()
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
-	if err != nil {
-		t.Fatalf("bcrypt hash: %v", err)
-	}
+	require.NoError(t, err, "bcrypt hash")
 	return &mockOPDSChecker{
 		creds: map[string]*ProtocolCredentialResult{
 			username: {UserID: userID, PasswordHash: string(hash)},
@@ -54,18 +53,11 @@ func TestOPDSBasicAuth_MissingCredentials(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
-	if got := w.Header().Get("WWW-Authenticate"); got != `Basic realm="Biblioteka OPDS"` {
-		t.Errorf("WWW-Authenticate = %q, want %q", got, `Basic realm="Biblioteka OPDS"`)
-	}
-	if !strings.Contains(w.Body.String(), "authentication required") {
-		t.Errorf("body should contain 'authentication required', got %q", w.Body.String())
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+	got := w.Header().Get("WWW-Authenticate")
+	require.Equal(t, `Basic realm="Biblioteka OPDS"`, got)
+	require.Contains(t, w.Body.String(), "authentication required")
 }
 
 func TestOPDSBasicAuth_UnknownUsername(t *testing.T) {
@@ -82,15 +74,9 @@ func TestOPDSBasicAuth_UnknownUsername(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
-	if !strings.Contains(w.Body.String(), "invalid credentials") {
-		t.Errorf("body should contain 'invalid credentials', got %q", w.Body.String())
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+	require.Contains(t, w.Body.String(), "invalid credentials")
 }
 
 func TestOPDSBasicAuth_WrongPassword(t *testing.T) {
@@ -107,15 +93,9 @@ func TestOPDSBasicAuth_WrongPassword(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
-	if !strings.Contains(w.Body.String(), "invalid credentials") {
-		t.Errorf("body should contain 'invalid credentials', got %q", w.Body.String())
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+	require.Contains(t, w.Body.String(), "invalid credentials")
 }
 
 func TestOPDSBasicAuth_Success(t *testing.T) {
@@ -132,12 +112,8 @@ func TestOPDSBasicAuth_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if gotUserID != "user-1" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "user-1")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "user-1", gotUserID)
 }
 
 func TestOPDSBasicAuth_UsernameLowercased(t *testing.T) {
@@ -154,12 +130,8 @@ func TestOPDSBasicAuth_UsernameLowercased(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if gotUserID != "user-1" {
-		t.Errorf("UserIDFromContext = %q, want %q", gotUserID, "user-1")
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "user-1", gotUserID)
 }
 
 func TestOPDSBasicAuth_EmptyUsername(t *testing.T) {
@@ -176,12 +148,8 @@ func TestOPDSBasicAuth_EmptyUsername(t *testing.T) {
 	w := httptest.NewRecorder()
 	mw(next).ServeHTTP(w, r)
 
-	if called {
-		t.Error("next handler should not have been called")
-	}
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
-	}
+	require.False(t, called)
+	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
 func TestOPDSBasicAuth_XMLErrorResponse(t *testing.T) {
@@ -195,11 +163,7 @@ func TestOPDSBasicAuth_XMLErrorResponse(t *testing.T) {
 	mw(next).ServeHTTP(w, r)
 
 	ct := w.Header().Get("Content-Type")
-	if !strings.Contains(ct, "application/atom+xml") {
-		t.Errorf("Content-Type = %q, want atom+xml", ct)
-	}
+	require.Contains(t, ct, "application/atom+xml")
 	body := w.Body.String()
-	if !strings.Contains(body, "<feed") {
-		t.Errorf("body should contain XML feed element, got %q", body)
-	}
+	require.Contains(t, body, "<feed")
 }
