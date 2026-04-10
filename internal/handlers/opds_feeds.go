@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -168,70 +170,71 @@ func (h *OPDSHandler) writeNamedEntityNavFeed(
 
 func (h *OPDSHandler) authorsFeed(w http.ResponseWriter, r *http.Request) {
 	h.writeNamedEntityNavFeed(w, r, "authors", "Authors",
-		func(ctx context.Context, limit, offset int) ([]opdspkg.NavEntity, int, error) {
-			authors, total, err := h.DB.ListAuthorsPaginated(ctx, limit, offset)
-			if err != nil {
-				return nil, 0, err
-			}
-			entities := make([]opdspkg.NavEntity, len(authors))
-			for i, a := range authors {
-				entities[i] = opdspkg.NavEntity{ID: a.ID, Name: a.Name, Updated: a.UpdatedAt.Format(time.RFC3339)}
-			}
-			return entities, total, nil
-		},
+		adaptNavEntities(h.DB.ListAuthorsPaginated, func(a db.Author) opdspkg.NavEntity {
+			return opdspkg.NavEntity{ID: a.ID, Name: a.Name, Updated: a.UpdatedAt.Format(time.RFC3339)}
+		}),
 	)
 }
 
 func (h *OPDSHandler) authorBooks(w http.ResponseWriter, r *http.Request, authorID string) {
-	ctx := r.Context()
-	author, err := h.DB.GetAuthor(ctx, authorID)
-	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: author not found",
-			slog.String(otelkeys.AuthorID, authorID),
-			slog.Any(otelkeys.Error, err),
-		)
-		http.NotFound(w, r)
-		return
-	}
-
-	h.writeBooksForEntity(w, r, "/authors/"+authorID, "Books by "+author.Name,
-		func(c context.Context, limit, offset int) ([]db.Book, int, error) {
-			return h.DB.ListBooksByAuthorPaginated(c, authorID, limit, offset)
-		},
+	writeEntityBooksFeed(h, w, r, authorID,
+		h.DB.GetAuthor, slog.String(otelkeys.AuthorID, authorID), "author",
+		"/authors/", func(a *db.Author) string { return "Books by " + a.Name },
+		h.DB.ListBooksByAuthorPaginated,
 	)
 }
 
 func (h *OPDSHandler) seriesFeed(w http.ResponseWriter, r *http.Request) {
 	h.writeNamedEntityNavFeed(w, r, "series", "Series",
-		func(ctx context.Context, limit, offset int) ([]opdspkg.NavEntity, int, error) {
-			seriesList, total, err := h.DB.ListSeriesPaginated(ctx, limit, offset)
-			if err != nil {
-				return nil, 0, err
-			}
-			entities := make([]opdspkg.NavEntity, len(seriesList))
-			for i, s := range seriesList {
-				entities[i] = opdspkg.NavEntity{ID: s.ID, Name: s.Name, Updated: s.UpdatedAt.Format(time.RFC3339)}
-			}
-			return entities, total, nil
-		},
+		adaptNavEntities(h.DB.ListSeriesPaginated, func(s db.Series) opdspkg.NavEntity {
+			return opdspkg.NavEntity{ID: s.ID, Name: s.Name, Updated: s.UpdatedAt.Format(time.RFC3339)}
+		}),
 	)
 }
 
 func (h *OPDSHandler) seriesBooks(w http.ResponseWriter, r *http.Request, seriesID string) {
+	writeEntityBooksFeed(h, w, r, seriesID,
+		h.DB.GetSeries, slog.String(otelkeys.SeriesID, seriesID), "series",
+		"/series/", func(s *db.Series) string { return s.Name },
+		h.DB.ListBooksBySeriesPaginated,
+	)
+}
+
+// writeEntityBooksFeed fetches an entity by ID and renders an OPDS acquisition feed
+// of its books. Returns 404 if the entity is not found.
+func writeEntityBooksFeed[T any](
+	h *OPDSHandler,
+	w http.ResponseWriter, r *http.Request,
+	entityID string,
+	getFn func(ctx context.Context, id string) (*T, error),
+	logAttr slog.Attr,
+	entityType string,
+	pathPrefix string,
+	titleFn func(*T) string,
+	listFn func(ctx context.Context, id string, limit, offset int) ([]db.Book, int, error),
+) {
 	ctx := r.Context()
-	series, err := h.DB.GetSeries(ctx, seriesID)
+	entity, err := getFn(ctx, entityID)
 	if err != nil {
-		slog.ErrorContext(ctx, "OPDS: series not found",
-			slog.String(otelkeys.SeriesID, seriesID),
-			slog.Any(otelkeys.Error, err),
-		)
-		http.NotFound(w, r)
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.WarnContext(ctx, "OPDS: entity not found",
+				slog.String(otelkeys.EntityType, entityType),
+				logAttr,
+			)
+			http.NotFound(w, r)
+		} else {
+			slog.ErrorContext(ctx, "OPDS: failed to fetch entity",
+				slog.String(otelkeys.EntityType, entityType),
+				logAttr,
+				slog.Any(otelkeys.Error, err),
+			)
+			writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "", "Failed to fetch entity")
+		}
 		return
 	}
-
-	h.writeBooksForEntity(w, r, "/series/"+seriesID, series.Name,
+	h.writeBooksForEntity(w, r, pathPrefix+entityID, titleFn(entity),
 		func(c context.Context, limit, offset int) ([]db.Book, int, error) {
-			return h.DB.ListBooksBySeriesPaginated(c, seriesID, limit, offset)
+			return listFn(c, entityID, limit, offset)
 		},
 	)
 }
