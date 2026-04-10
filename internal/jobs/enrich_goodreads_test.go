@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -266,7 +267,7 @@ func TestEnrichGoodreads_ISBNFailsFallsToTitle(t *testing.T) {
 	book := createTestBookWithFields(t, database, "Project Hail Mary", &isbn13, nil, nil, nil)
 
 	mock := &mockGoodreadsClient{
-		searchByISBNErr: fmt.Errorf("network error"),
+		searchByISBNErr: errors.New("network error"),
 		searchResult:    []goodreads.BookResult{sampleBookResult},
 	}
 

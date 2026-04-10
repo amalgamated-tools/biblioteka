@@ -32,7 +32,7 @@ func generateRandomHex(n int) (string, error) {
 // and returns it as a Base64-encoded string.
 func generateBase64Token(n int) (string, error) {
 	if n <= 0 {
-		return "", fmt.Errorf("generate token: n must be positive")
+		return "", errors.New("generate token: n must be positive")
 	}
 	if n > maxTokenSizeBytes {
 		return "", fmt.Errorf("generate token: n too large (max %d bytes)", maxTokenSizeBytes)
