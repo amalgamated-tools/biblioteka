@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/mail"
+	"os"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -127,7 +128,11 @@ func (h *BookFileHandler) handleEmailBookFile(w http.ResponseWriter, r *http.Req
 			slog.String(otelkeys.FilePath, bf.FilePath),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeError(r.Context(), w, http.StatusInternalServerError, "failed to read book file")
+		if errors.Is(err, os.ErrNotExist) {
+			writeError(r.Context(), w, http.StatusNotFound, "book file not found on disk")
+		} else {
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to read book file")
+		}
 		return
 	}
 

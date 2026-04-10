@@ -11,27 +11,15 @@ import (
 	"net/textproto"
 	"strings"
 	"time"
-)
 
-// fileTypeMIME maps Biblioteka file_type values to MIME content types.
-var fileTypeMIME = map[string]string{
-	"epub":  "application/epub+zip",
-	"pdf":   "application/pdf",
-	"mobi":  "application/x-mobipocket-ebook",
-	"azw3":  "application/vnd.amazon.ebook",
-	"cbz":   "application/vnd.comicbook+zip",
-	"cbr":   "application/vnd.comicbook-rar",
-	"fb2":   "application/x-fictionbook+xml",
-	"kepub": "application/epub+zip",
-	"txt":   "text/plain",
-	"djvu":  "image/vnd.djvu",
-}
+	"github.com/amalgamated-tools/biblioteka/internal/filetype"
+)
 
 // MIMETypeForFileType returns the MIME content type for a given book file
 // type string. If the type is not recognised, "application/octet-stream" is
 // returned so the file is always treated as a generic download.
 func MIMETypeForFileType(fileType string) string {
-	if mt := fileTypeMIME[strings.ToLower(fileType)]; mt != "" {
+	if mt := filetype.MIMEType(fileType); mt != "" {
 		return mt
 	}
 	return "application/octet-stream"
