@@ -24,6 +24,16 @@ type ProcessFilePayload struct {
 	LibraryID   string `json:"library_id,omitempty"`
 	LibraryRoot string `json:"library_root,omitempty"`
 	UserID      string `json:"user_id,omitempty"`
+
+	// Optional metadata overrides supplied by the caller (e.g. from the upload
+	// endpoint). Non-empty values take precedence over anything extracted from
+	// the file or derived from the file path.
+	OverrideTitle       string `json:"override_title,omitempty"`
+	OverrideAuthor      string `json:"override_author,omitempty"`
+	OverrideDescription string `json:"override_description,omitempty"`
+	OverrideISBN        string `json:"override_isbn,omitempty"`
+	OverrideLanguage    string `json:"override_language,omitempty"`
+	OverridePublisher   string `json:"override_publisher,omitempty"`
 }
 
 // NewProcessFileHandler returns a worker.Func that extracts metadata for a file

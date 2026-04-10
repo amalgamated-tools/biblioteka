@@ -60,6 +60,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/series/", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeries)))
 
 	// Protected book routes
+	s.mux.Handle("/api/books/upload", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleUpload)))
 	s.mux.Handle("/api/books", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBooks)))
 	s.mux.Handle("/api/books/", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBookRoutes)))
 
