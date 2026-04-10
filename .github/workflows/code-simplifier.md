@@ -84,11 +84,10 @@ For each merged PR or recent commit:
 
 ### 1.3 Determine Scope
 
-If **no files were changed in the last 24 hours**, exit gracefully without creating a PR:
+If **no files were changed in the last 24 hours**, call the `noop` safe-output tool and stop:
 
-```
-✅ No code changes detected in the last 24 hours.
-Code simplifier has nothing to process today.
+```json
+{"noop": {"message": "No action needed: No code changes detected in the last 24 hours. Code simplifier has nothing to process today."}}
 ```
 
 If **files were changed**, group them by **module/package** (two-level directory path). This grouping drives the focused analysis in Phase 2 and avoids loading unnecessary context.
@@ -234,11 +233,10 @@ Only create a PR if:
 - ✅ Build succeeds (or no build step exists)
 - ✅ Changes improve code quality without breaking functionality
 
-If no improvements were made or changes broke tests, exit gracefully:
+If no improvements were made or changes broke tests, call the `noop` safe-output tool and stop:
 
-```
-✅ Code analyzed from last 24 hours.
-No simplifications needed - code already meets quality standards.
+```json
+{"noop": {"message": "No action needed: Code analyzed from last 24 hours. No simplifications needed - code already meets quality standards."}}
 ```
 
 ### 4.2 Generate PR Description
@@ -311,7 +309,7 @@ Create the pull request using the safe-outputs tool with the generated descripti
 - **Clear over clever**: Prioritize readability and maintainability
 
 ### Exit Conditions
-Exit gracefully without creating a PR if:
+Call the `noop` safe-output tool (do NOT create a PR) if:
 - No code was changed in the last 24 hours
 - No simplifications are beneficial
 - Tests fail after changes
@@ -320,10 +318,16 @@ Exit gracefully without creating a PR if:
 
 ## Output Requirements
 
-Your output MUST either:
+Your output MUST call at least one safe-output tool. Failing to call any safe-output tool is treated as a workflow failure.
 
-1. **If no changes in last 24 hours**: Output a brief status message
-2. **If no simplifications beneficial**: Output a brief status message
-3. **If simplifications made**: Create a PR with the changes
+1. **If no changes in last 24 hours**: Call the `noop` tool with a status message
+2. **If no simplifications beneficial**: Call the `noop` tool with a status message
+3. **If simplifications made**: Create a PR with the changes using `create-pull-request`
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why no PR was created]"}}
+```
 
 Begin your code simplification analysis now.
