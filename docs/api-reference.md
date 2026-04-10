@@ -724,7 +724,7 @@ Return a paginated list of all audit log entries. Each entry records an action p
 |---------------|---------|-------------|
 | `id`          | string  | ID of this audit log entry |
 | `user_id`     | string? | ID of the user who performed the action; `null` for system actions |
-| `action`      | string  | Dot-separated `<entity_type>.<verb>` string (see table below) |
+| `action`      | string  | Typically a dot-separated `<entity_type>.<verb>` string, but the prefix is not guaranteed to match `entity_type` (see table below for all known values) |
 | `entity_type` | string  | Type of the entity affected (e.g. `book`, `library`) |
 | `entity_id`   | string  | ID of the entity affected (e.g. book ID) |
 | `metadata`    | object? | Optional extra context (e.g. entity name at time of action); omitted when empty |
@@ -1368,7 +1368,7 @@ Upload a book file to a library. The file is staged on disk and processed **asyn
 |--------------|--------|-------------|
 | `message`    | string | Human-readable status message |
 | `file_name`  | string | Basename of the uploaded file name, with any path components removed |
-| `file_type`  | string | Detected format: `epub`, `mobi`, `azw3`, or `pdf` |
+| `file_type`  | string | Lowercased file extension from the uploaded filename: `epub`, `mobi`, `azw3`, or `pdf` |
 | `library_id` | string | ID of the target library |
 
 **Errors:**
