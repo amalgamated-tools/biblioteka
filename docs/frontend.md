@@ -1425,7 +1425,7 @@ Key details:
 
 Setting durations to `0.01ms` (instead of `0`) avoids edge cases in some browsers where zero-duration animations never fire `animationend` events, which can leave UI state stuck. The `!important` declarations ensure no component-level Tailwind or inline style can accidentally override the user's preference.
 
-**Rule:** Do not add CSS animations that cannot be suppressed by `prefers-reduced-motion`. Every animation class (e.g. `animate-fade-in`, `animate-spin`) is automatically suppressed by this global rule. Never use `@keyframes` blocks inside a specific component's style unless the component also wraps them in its own `@media (prefers-reduced-motion: reduce)` guard — the global rule covers only styles declared in `index.css` and Tailwind utilities.
+**Rule:** Do not add CSS animations that cannot be suppressed by `prefers-reduced-motion`. Every animation class (e.g. `animate-fade-in`, `animate-spin`) is automatically suppressed by this global rule, as is any animation applied by a Svelte component `<style>` block, because the `!important` declarations override all non-`!important` `animation-*` and `transition-*` properties site-wide. The main exceptions are motion driven outside normal CSS rules — for example JavaScript/Web Animations API animations — or unusual inline `!important` overrides. Adding a component-level `@media (prefers-reduced-motion: reduce)` guard is optional belt-and-suspenders practice, not a requirement.
 
 ### Live regions in `BookList.svelte`
 
@@ -1814,7 +1814,7 @@ When editing the app shell or adding new persistent navigation elements:
 16. Run `pnpm run check` — `svelte-check` will surface missing `alt` attributes and other common issues.
 17. Every icon that appears alongside visible text must carry `aria-hidden="true"` to suppress redundant screen-reader announcements. See [Decorative icons alongside visible text](#decorative-icons-alongside-visible-text) above.
 18. Whenever a user action produces a transient status change without a focus move (e.g. selecting a theme, saving settings), add a `role="status"` `class="sr-only"` `<span>` live region to announce the outcome to screen readers (WCAG 4.1.3). Reset the text to `""` before setting the new message so repeated identical actions still trigger an announcement. See [Live region for theme change announcements](#live-region-for-theme-change-announcements-preferencestabsvelte) above.
-19. Do not add CSS animations that cannot be suppressed by the global `prefers-reduced-motion` rule in `index.css`. All Tailwind animation utilities (e.g. `animate-fade-in`, `animate-spin`) are automatically suppressed. Custom `@keyframes` in component `<style>` blocks must be wrapped in their own `@media (prefers-reduced-motion: reduce)` guard. See [Reduced-motion support](#reduced-motion-support-indexcss) above.
+19. Do not add animations or transitions that cannot be suppressed by the global `prefers-reduced-motion` rule in `index.css`. Tailwind animation utilities (e.g. `animate-fade-in`, `animate-spin`) and ordinary CSS animations, including custom `@keyframes` used from component `<style>` blocks, are suppressible via that global override. Add a component-level `@media (prefers-reduced-motion: reduce)` guard only when motion is driven outside normal CSS animation/transition rules (for example, via JavaScript) or when local `!important` styles would otherwise bypass the global override. See [Reduced-motion support](#reduced-motion-support-indexcss) above.
 
 ### Form accessibility
 
