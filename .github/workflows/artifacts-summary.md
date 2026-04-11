@@ -6,6 +6,7 @@ on:
 permissions:
   contents: read
   actions: read
+tracker-id: artifacts-summary
 engine: copilot
 network:
   allowed:
@@ -21,7 +22,7 @@ tools:
 safe-outputs:
   create-discussion:
     expires: 1d
-    category: "artifacts"
+    category: "audits"
     max: 1
     close-older-discussions: true
 timeout-minutes: 15

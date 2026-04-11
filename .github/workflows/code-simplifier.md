@@ -24,10 +24,9 @@ imports:
 
 safe-outputs:
   create-pull-request:
-    title-prefix: "[code-simplifier] "
+    title-prefix: "fix(code-simplifier): "
     labels: [refactoring, code-quality, automation]
     expires: 1d
-    protected-files: fallback-to-issue
 
 tools:
   github:
@@ -35,6 +34,7 @@ tools:
 
 timeout-minutes: 30
 source: githubnext/agentics/workflows/code-simplifier.md@97143ac59cb3a13ef2a77581f929f06719c7402a
+engine: copilot
 ---
 
 <!-- This prompt will be imported in the agentic workflow .github/workflows/code-simplifier.md at runtime. -->
@@ -83,12 +83,23 @@ For each merged PR or recent commit:
 
 ### 1.3 Determine Scope
 
-If **no files were changed in the last 24 hours**, exit gracefully without creating a PR:
+If **no files were changed in the last 24 hours**, call the `noop` safe-output tool and stop:
 
+```json
+{"noop": {"message": "No action needed: No code changes detected in the last 24 hours. Code simplifier has nothing to process today."}}
 ```
-✅ No code changes detected in the last 24 hours.
-Code simplifier has nothing to process today.
+
+If **files were changed**, group them by **module/package** (two-level directory path). This grouping drives the focused analysis in Phase 2 and avoids loading unnecessary context.
+
+```bash
+# Summarize changed files by two-level module path
+git log --since="24 hours ago" --pretty=format:"%H" --no-merges \
+  | xargs -r git diff-tree --no-commit-id -r --name-only \
+  | grep -v -E '(\.lock(\.ya?ml)?$|_test\.|\.gen\.go|vendor/)' \
+  | awk -F/ 'NF>=2{print $1"/"$2} NF==1{print $1}' | sort | uniq -c | sort -rn
 ```
+
+Record the affected modules list (e.g., `internal/handlers`, `frontend/src`). Also note which **file types** (languages) are present by inspecting the file extensions (e.g., `.go` → Go, `.ts`/`.tsx` → TypeScript). Both the module list and language set are used in Phase 2 to limit context loading.
 
 If **files were changed**, proceed to Phase 2.
 
@@ -96,10 +107,13 @@ If **files were changed**, proceed to Phase 2.
 
 ### 2.1 Review Project Standards
 
-Before simplifying, review the project's coding standards from relevant documentation:
-- Check for style guides, coding conventions, or contribution guidelines in the repository
-- Look for language-specific conventions (e.g., `STYLE.md`, `CONTRIBUTING.md`, `README.md`)
-- Identify established patterns in the codebase
+Before simplifying, review **only the documentation relevant to the file types that changed** (identified in Phase 1.3). Do not read docs for languages or tools that are not present in the changed file set:
+
+- If changed files include **Go** (`.go`): check `CONTRIBUTING.md`, `CLAUDE.md`, or any Go-specific style notes
+- If changed files include **TypeScript/JavaScript** (`.ts`, `.tsx`, `.js`, `.jsx`): check frontend conventions in `CONTRIBUTING.md` or `README.md`
+- If changed files include **Python**, **Rust**, or another language: check only the relevant section of the contribution guide for that language
+- **Skip** reading docs for languages not represented in the changed file set
+- Look for established patterns **only within the affected modules** identified in Phase 1.3 — do not load the entire codebase for context
 
 ### 2.2 Simplification Principles
 
@@ -151,6 +165,8 @@ For each changed file:
    - How can complexity be reduced?
    - What patterns should be applied?
    - Will this maintain all functionality?
+
+**Module-scoped analysis**: When reading supporting context (e.g., sibling files, shared helpers), limit reads to files **within the same module/package** as the changed file. Do not traverse the full codebase to gather context — use only what is directly needed to understand and improve the changed file.
 
 ### 2.4 Apply Simplifications
 
@@ -216,16 +232,15 @@ Only create a PR if:
 - ✅ Build succeeds (or no build step exists)
 - ✅ Changes improve code quality without breaking functionality
 
-If no improvements were made or changes broke tests, exit gracefully:
+If no improvements were made or changes broke tests, call the `noop` safe-output tool and stop:
 
-```
-✅ Code analyzed from last 24 hours.
-No simplifications needed - code already meets quality standards.
+```json
+{"noop": {"message": "No action needed: Code analyzed from last 24 hours. No simplifications needed - code already meets quality standards."}}
 ```
 
 ### 4.2 Generate PR Description
 
-If creating a PR, use this structure:
+If creating a PR, the title must follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `refactor: <short description>` (e.g., `refactor(handlers): simplify error handling logic`). Use this structure for the body:
 
 ```markdown
 ## Code Simplification - [Date]
@@ -293,7 +308,7 @@ Create the pull request using the safe-outputs tool with the generated descripti
 - **Clear over clever**: Prioritize readability and maintainability
 
 ### Exit Conditions
-Exit gracefully without creating a PR if:
+Call the `noop` safe-output tool (do NOT create a PR) if:
 - No code was changed in the last 24 hours
 - No simplifications are beneficial
 - Tests fail after changes
@@ -302,10 +317,16 @@ Exit gracefully without creating a PR if:
 
 ## Output Requirements
 
-Your output MUST either:
+Your output MUST call at least one safe-output tool. Failing to call any safe-output tool is treated as a workflow failure.
 
-1. **If no changes in last 24 hours**: Output a brief status message
-2. **If no simplifications beneficial**: Output a brief status message
-3. **If simplifications made**: Create a PR with the changes
+1. **If no changes in last 24 hours**: Call the `noop` tool with a status message
+2. **If no simplifications beneficial**: Call the `noop` tool with a status message
+3. **If simplifications made**: Create a PR with the changes using `create_pull_request`
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why no PR was created]"}}
+```
 
 Begin your code simplification analysis now.
