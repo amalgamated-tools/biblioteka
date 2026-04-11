@@ -94,9 +94,7 @@
     </div>
   {:else}
     {#if countError}
-      <AlertBanner variant="error" class="mb-5"
-        >{countError}</AlertBanner
-      >
+      <AlertBanner variant="error" class="mb-5">{countError}</AlertBanner>
     {/if}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 stagger">
       {#each stats as { label, value } (label)}
