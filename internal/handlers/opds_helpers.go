@@ -13,6 +13,11 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// nowRFC3339 returns the current UTC time formatted as RFC 3339.
+func nowRFC3339() string {
+	return time.Now().UTC().Format(time.RFC3339)
+}
+
 // adaptNavEntities wraps a paginated list function so its results are converted
 // to []opds.NavEntity for use with writeNamedEntityNavFeed. The toEntity
 // callback maps each element of the source slice to an opds.NavEntity.
@@ -41,7 +46,7 @@ func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentT
 		XMLNSOPDS: opds.XMLNSOPDS,
 		ID:        id,
 		Title:     title,
-		Updated:   time.Now().UTC().Format(time.RFC3339),
+		Updated:   nowRFC3339(),
 	}
 
 	var buf bytes.Buffer
@@ -84,7 +89,12 @@ func parsePage(r *http.Request) int {
 
 func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, feed *opds.Feed) {
 	var buf bytes.Buffer
-	buf.WriteString(xml.Header)
+	if _, err := buf.WriteString(xml.Header); err != nil {
+		slog.ErrorContext(r.Context(), "OPDS: failed to write XML header",
+			slog.Any(otelkeys.Error, err))
+		writeOPDSError(r, w, http.StatusInternalServerError, contentType, "urn:biblioteka:opds:error", "failed to write XML header")
+		return
+	}
 	enc := xml.NewEncoder(&buf)
 	enc.Indent("", "  ")
 	if err := enc.Encode(feed); err != nil {

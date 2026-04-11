@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { LayoutDashboard, Library, Plus, ArrowRight } from "lucide-svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { routerStore } from "../stores/router.svelte";
   import { getTotalBooksCount } from "../lib/api";
+  import AlertBanner from "./ui/AlertBanner.svelte";
 
   let totalBooks = $state<number | null>(null);
+  let countError: string | null = $state(null);
 
   $effect(() => {
     if (!libraryStore.loaded) {
@@ -13,15 +14,21 @@
     }
   });
 
-  onMount(() => {
-    getTotalBooksCount()
-      .then((count) => {
-        totalBooks = count;
-      })
-      .catch((err) => {
-        console.error("Failed to fetch total books count:", err);
-        totalBooks = 0;
-      });
+  let countFetched = false;
+  $effect(() => {
+    if (!countFetched) {
+      countFetched = true;
+      getTotalBooksCount()
+        .then((count) => {
+          totalBooks = count;
+        })
+        .catch((err) => {
+          console.error("Failed to fetch total books count:", err);
+          countError =
+            err instanceof Error ? err.message : "Failed to load book count";
+          totalBooks = 0;
+        });
+    }
   });
 
   const stats = $derived([
@@ -86,6 +93,11 @@
       </div>
     </div>
   {:else}
+    {#if countError}
+      <AlertBanner variant="error" class="mb-5"
+        >{countError}</AlertBanner
+      >
+    {/if}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 stagger">
       {#each stats as { label, value } (label)}
         <div
