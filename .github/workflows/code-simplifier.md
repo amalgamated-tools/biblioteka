@@ -322,7 +322,7 @@ Your output MUST call at least one safe-output tool. Failing to call any safe-ou
 
 1. **If no changes in last 24 hours**: Call the `noop` tool with a status message
 2. **If no simplifications beneficial**: Call the `noop` tool with a status message
-3. **If simplifications made**: Create a PR with the changes using `create-pull-request`
+3. **If simplifications made**: Create a PR with the changes using `create_pull_request`
 
 **Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
 
