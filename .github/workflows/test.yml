@@ -107,6 +107,8 @@ jobs:
           echo "Frontend coverage: ${PCT}"
 
       - name: Upload frontend coverage report
+        # Only upload on main-branch pushes to keep artifact storage in check.
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: frontend-coverage
@@ -324,7 +326,7 @@ jobs:
               '|-----------|----------|',
               ...rows,
               '',
-              '_Coverage is measured for all packages under `./...`. Frontend coverage details are available in the `frontend-coverage` artifact._',
+              '_Coverage is measured for all packages under `./...`. The full frontend coverage report is uploaded as an artifact on main-branch pushes only._',
             ].join('\n');
 
             try {
