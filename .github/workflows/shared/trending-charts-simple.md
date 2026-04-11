@@ -8,24 +8,34 @@ tools:
   bash:
     - "*"
 
+network:
+  allowed:
+    - defaults
+    - python
+
 steps:
   - name: Setup Python environment
     run: |
       mkdir -p /tmp/gh-aw/python/{data,charts,artifacts}
-      pip install --user --quiet numpy pandas matplotlib seaborn scipy
+      # Create a virtual environment for proper package isolation (avoids --break-system-packages)
+      if [ ! -d /tmp/gh-aw/venv ]; then
+        python3 -m venv /tmp/gh-aw/venv
+      fi
+      echo "/tmp/gh-aw/venv/bin" >> "$GITHUB_PATH"
+      /tmp/gh-aw/venv/bin/pip install --quiet numpy pandas matplotlib seaborn scipy
 
   - name: Upload charts
     if: always()
-    uses: actions/upload-artifact@v6
+    uses: actions/upload-artifact@v7
     with:
       name: trending-charts
       path: /tmp/gh-aw/python/charts/*.png
       if-no-files-found: warn
       retention-days: 30
 
-  - name: Upload source and data
+  - name: Upload source files and data
     if: always()
-    uses: actions/upload-artifact@v6
+    uses: actions/upload-artifact@v7
     with:
       name: trending-source-and-data
       path: |

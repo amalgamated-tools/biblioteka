@@ -33,8 +33,7 @@ tools:
     toolsets: [default]
 
 timeout-minutes: 30
-strict: true
-source: githubnext/agentics/workflows/code-simplifier.md@0718141d65ec967e48141f6f1850ad7b1f682bb0
+source: githubnext/agentics/workflows/code-simplifier.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 engine: copilot
 ---
 

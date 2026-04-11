@@ -1,5 +1,5 @@
 ---
-description: Detects inconsistencies between database migrations, Go types, handler DTOs, and TypeScript frontend types
+description: Detects inconsistencies between JSON schema, implementation code, and documentation
 on:
   schedule: daily
   workflow_dispatch:
@@ -13,30 +13,18 @@ tools:
   edit:
   bash: ["*"]
   github:
-    lockdown: false
+    mode: remote
     toolsets: [default, discussions]
   cache-memory:
     key: schema-consistency-cache-${{ github.workflow }}
-safe-outputs:
-  upload-asset:
-    max: 10
-    allowed-exts: [".png", ".jpg", ".jpeg"]
-    max-size: 10240
-    branch: "assets/${{ github.workflow }}"
-  create-discussion:
-    expires: 3d
-    category: "audits"
-    title-prefix: "[Schema Consistency] "
-    max: 1
-    close-older-discussions: true
-  close-discussion:
-    max: 10
-  noop:
 timeout-minutes: 30
 imports:
-  - shared/mood.md
+  - uses: shared/daily-audit-discussion.md
+    with:
+      title-prefix: "[Schema Consistency] "
+      expires: 1d
   - shared/reporting.md
-source: github/gh-aw/.github/workflows/schema-consistency-checker.md@852cb06ad52958b402ed982b69957ffc57ca0619
+source: github/gh-aw/.github/workflows/schema-consistency-checker.md@525b5b77a444146979ba1759b2a23d72934bc6fc
 ---
 
 # Schema Consistency Checker
@@ -45,11 +33,12 @@ You are an expert system that detects inconsistencies between:
 - Database migrations (`db/migrations/sqlite/*.sql` and `db/migrations/postgres/*.sql`)
 - The Go database layer (`internal/db/*.go`) and handler DTOs (`internal/handlers/*.go`)
 - The TypeScript frontend types (`frontend/src/types.ts`) and API client (`frontend/src/lib/api.ts`)
+- The workflows in the project (`.github/workflows/*.md`)
 - The API routes (`internal/server/routes.go`)
 
 ## Mission
 
-Analyze the Biblioteka repository to find inconsistencies across these four key areas and create a discussion report with actionable findings.
+Analyze the Biblioteka repository to find inconsistencies across these key areas and create a discussion report with actionable findings.
 
 ## Cache Memory Strategy Storage
 
@@ -466,7 +455,7 @@ Create a well-structured discussion report:
 ## Tools Available
 
 You have access to:
-- **bash**: Any command (use grep, find, cat, etc.)
+- **bash**: Any command (use grep, jq, find, cat, etc.)
 - **edit**: Create/modify files in cache memory
 - **github**: Read repository data, discussions
 

@@ -1,5 +1,5 @@
 ---
-description: Daily project performance summary (90-day window) with trend charts using safe-inputs
+description: Daily project performance summary (90-day window) with trend charts using mcp-scripts
 on:
   schedule: daily
   workflow_dispatch:
@@ -19,36 +19,33 @@ tools:
     lockdown: false
     toolsets: [default, discussions]
 safe-outputs:
-  upload-asset:
-  create-discussion:
-    expires: 3d
-    category: "audits"
-    title-prefix: "[daily performance] "
-    max: 1
-    close-older-discussions: true
-  close-discussion:
-    max: 10
+  upload-artifact:
+    retention-days: 30
+    skip-archive: true
 timeout-minutes: 30
 imports:
-  - shared/mood.md
-  - shared/github-queries-safe-input.md
+  - uses: shared/daily-audit-discussion.md
+    with:
+      title-prefix: "[daily performance] "
+  - shared/github-queries-mcp-script.md
   - shared/trending-charts-simple.md
   - shared/reporting.md
-source: github/gh-aw/.github/workflows/daily-performance-summary.md@852cb06ad52958b402ed982b69957ffc57ca0619
+  - shared/observability-otlp.md
+source: github/gh-aw/.github/workflows/daily-performance-summary.md@525b5b77a444146979ba1759b2a23d72934bc6fc
 ---
 
 {{#runtime-import? .github/shared-instructions.md}}
 
-# Daily Project Performance Summary Generator (Using Safe Inputs)
+# Daily Project Performance Summary Generator (Using MCP Scripts)
 
-You are an expert analyst that generates comprehensive daily performance summaries using **safe-input tools** to query GitHub data (PRs, issues, discussions) and creates trend visualizations.
+You are an expert analyst that generates comprehensive daily performance summaries using **mcp-script tools** to query GitHub data (PRs, issues, discussions) and creates trend visualizations.
 
-**IMPORTANT**: This workflow uses safe-input tools imported from `shared/github-queries-safe-input.md`. All data gathering MUST be done through these tools.
+**IMPORTANT**: This workflow uses mcp-script tools imported from `shared/github-queries-mcp-script.md`. All data gathering MUST be done through these tools.
 
 ## Mission
 
 Generate a daily performance summary analyzing the last 90 days of project activity:
-1. **Use safe-input tools** to query PRs, issues, and discussions
+1. **Use mcp-script tools** to query PRs, issues, and discussions
 2. Calculate key performance metrics (velocity, resolution times, activity levels)
 3. Generate trend charts showing project activity and performance
 4. Create a discussion with the comprehensive performance report
@@ -60,9 +57,9 @@ Generate a daily performance summary analyzing the last 90 days of project activ
 - **Run ID**: ${{ github.run_id }}
 - **Report Period**: Last 90 days (updated daily)
 
-## Phase 1: Gather Data Using Safe-Input Tools
+## Phase 1: Gather Data Using MCP-Script Tools
 
-**CRITICAL**: Use the safe-input tools to query GitHub data. These tools are imported from `shared/github-queries-safe-input.md` and provide the same functionality as the previous Skillz-based approach.
+**CRITICAL**: Use the mcp-script tools to query GitHub data. These tools are imported from `shared/github-queries-mcp-script.md` and provide the same functionality as the previous Skillz-based approach.
 
 ### Available Safe-Input Tools
 
@@ -73,7 +70,7 @@ The following tools are available for querying GitHub data:
 
 ### 1.1 Query Pull Requests
 
-**Use the `github-pr-query` safe-input tool** to get PR data:
+**Use the `github-pr-query` mcp-script tool** to get PR data:
 
 ```
 github-pr-query with state: "all", limit: 1000, jq: "."
@@ -87,7 +84,7 @@ The tool provides:
 
 ### 1.2 Query Issues
 
-**Use the `github-issue-query` safe-input tool** to get issue data:
+**Use the `github-issue-query` mcp-script tool** to get issue data:
 
 ```
 github-issue-query with state: "all", limit: 1000, jq: "."
@@ -101,7 +98,7 @@ The tool provides:
 
 ### 1.3 Query Discussions
 
-**Use the `github-discussion-query` safe-input tool** to get discussion data:
+**Use the `github-discussion-query` mcp-script tool** to get discussion data:
 
 ```
 github-discussion-query with limit: 1000, jq: "."
@@ -372,12 +369,15 @@ print("Velocity metrics chart saved!")
 
 ## Phase 4: Upload Charts
 
-Use the `upload asset` tool to upload all three charts:
-1. Upload `/tmp/gh-aw/python/charts/activity_overview.png`
-2. Upload `/tmp/gh-aw/python/charts/resolution_metrics.png`
-3. Upload `/tmp/gh-aw/python/charts/velocity_metrics.png`
-
-Collect the returned URLs for embedding in the discussion.
+Stage and upload all three charts as artifacts with 30-day retention:
+1. Copy charts to the upload staging directory:
+   ```bash
+   cp /tmp/gh-aw/python/charts/activity_overview.png /tmp/gh-aw/safeoutputs/upload-artifacts/
+   cp /tmp/gh-aw/python/charts/resolution_metrics.png /tmp/gh-aw/safeoutputs/upload-artifacts/
+   cp /tmp/gh-aw/python/charts/velocity_metrics.png /tmp/gh-aw/safeoutputs/upload-artifacts/
+   ```
+2. Call the `upload_artifact` safe-output tool for each chart
+3. Record the returned `aw_*` IDs for each chart
 
 ## Phase 5: Close Previous Discussions
 
@@ -387,60 +387,13 @@ Before creating the new discussion, find and close previous daily performance di
 2. Close each found discussion with reason "OUTDATED"
 3. Add a closing comment: "This discussion has been superseded by a newer daily performance report."
 
-## Phase 5.5: Report Formatting Guidelines
-
-**CRITICAL**: Follow these formatting guidelines to create well-structured, readable reports:
-
-### 1. Header Levels
-**Use h3 (###) or lower for all headers in your report to maintain proper document hierarchy.**
-
-The discussion title serves as h1, so all content headers should start at h3:
-- Use `###` for main sections (e.g., "### Performance Overview", "### Key Metrics")
-- Use `####` for subsections (e.g., "#### Pull Requests", "#### Issues")
-- Never use `##` (h2) or `#` (h1) in the report body
-
-### 2. Progressive Disclosure
-**Wrap long sections in `<details><summary><b>Section Name</b></summary>` tags to improve readability and reduce scrolling.**
-
-Use collapsible sections for:
-- Detailed benchmark results and performance data
-- Full performance metrics tables
-- Verbose statistics and historical comparisons
-- Technical implementation details
-
-Example:
-```markdown
-<details>
-<summary><b>Detailed Benchmark Results</b></summary>
-
-[Long performance data...]
-
-</details>
-```
-
-### 3. Report Structure Pattern
-
-Your report should follow this structure for optimal readability:
-
-1. **Performance Overview** (always visible): Brief executive summary highlighting overall project health, key achievements, and critical issues
-2. **Key Highlights** (always visible): Most important metrics and trends that stakeholders need to see immediately
-3. **Critical Performance Issues** (always visible): Any problems that require immediate attention with severity indicators
-4. **Detailed Benchmark Results** (in `<details>` tags): Comprehensive performance data, metrics tables, and historical comparisons
-5. **Optimization Recommendations** (always visible): Actionable insights and suggested improvements
-
-### Design Principles
-
-Create reports that:
-- **Build trust through clarity**: Most important info (overview, critical issues, recommendations) immediately visible
-- **Exceed expectations**: Add helpful context, trends, comparisons to give stakeholders the full picture
-- **Create delight**: Use progressive disclosure to reduce overwhelm while keeping details accessible
-- **Maintain consistency**: Follow the same patterns as other reporting workflows in this repository
-
 ## Phase 6: Create Discussion Report
 
 Create a new discussion with the comprehensive performance report.
 
 ### Discussion Format
+
+- **Report Formatting**: Use h3 (###) or lower for all headers in your report to maintain proper document hierarchy. Wrap long sections in `<details><summary>Section Name</summary>` tags to improve readability and reduce scrolling.
 
 **Title**: `[daily performance] Daily Performance Summary - YYYY-MM-DD`
 
@@ -465,22 +418,22 @@ Create a new discussion with the comprehensive performance report.
 
 ### 📈 Activity Overview
 
-![Activity Overview](URL_FROM_UPLOAD_ASSET_CHART_1)
+📎 **Chart: Activity Overview** — artifact `<aw_ID_1>` available in the [workflow run artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
 [Brief 2-3 sentence analysis of activity distribution across PRs, issues, and discussions]
 
 <details>
-<summary><b>📊 Detailed Benchmark Results</b></summary>
+<summary>📊 Detailed Benchmark Results</summary>
 
 #### 🎯 Resolution Metrics
 
-![Resolution Metrics](URL_FROM_UPLOAD_ASSET_CHART_2)
+📎 **Chart: Resolution Metrics** — artifact `<aw_ID_2>` available in the [workflow run artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
 [Analysis of PR merge rates and issue resolution rates]
 
 #### ⚡ Velocity Metrics
 
-![Velocity Metrics](URL_FROM_UPLOAD_ASSET_CHART_3)
+📎 **Chart: Velocity Metrics** — artifact `<aw_ID_3>` available in the [workflow run artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
 [Analysis of response times, contributor activity, and discussion engagement]
 
@@ -531,7 +484,7 @@ Create a new discussion with the comprehensive performance report.
 ## Success Criteria
 
 A successful run will:
-- ✅ **Query data using safe-input tools** (github-pr-query, github-issue-query, github-discussion-query)
+- ✅ **Query data using mcp-script tools** (github-pr-query, github-issue-query, github-discussion-query)
 - ✅ Calculate comprehensive performance metrics from tool output
 - ✅ Generate 3 high-quality trend charts
 - ✅ Upload charts as assets
@@ -540,10 +493,16 @@ A successful run will:
 
 ## Safe-Input Tools Usage Reminder
 
-This workflow uses safe-input tools imported from `shared/github-queries-safe-input.md`:
+This workflow uses mcp-script tools imported from `shared/github-queries-mcp-script.md`:
 1. Tools are defined in the shared workflow with shell script implementations
 2. Each tool supports jq-based filtering for efficient data querying
 3. Tools are authenticated with `GITHUB_TOKEN` for GitHub API access
 4. Call tools with parameters like: `github-pr-query with state: "all", limit: 1000, jq: "."`
 
-Begin your analysis now. **Use the safe-input tools** to gather data, run Python analysis, generate charts, and create the discussion report.
+Begin your analysis now. **Use the mcp-script tools** to gather data, run Python analysis, generate charts, and create the discussion report.
+
+**Important**: After completing your analysis, you **MUST** call the `create-discussion` safe-output tool (via the imported `daily-audit-discussion` shared workflow) to publish your report. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"create-discussion": {"title": "Daily Performance Summary", "body": "[Your analysis, charts, and findings here]"}}
+```
