@@ -50,12 +50,7 @@ func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentT
 	}
 
 	var buf bytes.Buffer
-	if _, err := buf.WriteString(xml.Header); err != nil {
-		slog.ErrorContext(r.Context(), "failed to write OPDS XML header",
-			slog.Any(otelkeys.Error, err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
+	buf.WriteString(xml.Header)
 
 	enc := xml.NewEncoder(&buf)
 	enc.Indent("", "  ")
@@ -89,12 +84,7 @@ func parsePage(r *http.Request) int {
 
 func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, feed *opds.Feed) {
 	var buf bytes.Buffer
-	if _, err := buf.WriteString(xml.Header); err != nil {
-		slog.ErrorContext(r.Context(), "OPDS: failed to write XML header",
-			slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, contentType, "urn:biblioteka:opds:error", "failed to write XML header")
-		return
-	}
+	buf.WriteString(xml.Header)
 	enc := xml.NewEncoder(&buf)
 	enc.Indent("", "  ")
 	if err := enc.Encode(feed); err != nil {
