@@ -1,5 +1,63 @@
 # Changelog
 
+## [0.9.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.8.0...v0.9.0) (2026-04-11)
+
+
+### Features
+
+* add download file button and count downloads across web UI, OPDS, and Kobo ([#1577](https://github.com/amalgamated-tools/biblioteka/issues/1577)) ([6cb6e58](https://github.com/amalgamated-tools/biblioteka/commit/6cb6e582eb86dc905ee834d14231cec2e86e6510))
+* add errorfcheck analyzer to catch fmt.Errorf with no format verbs ([#1592](https://github.com/amalgamated-tools/biblioteka/issues/1592)) ([f671f68](https://github.com/amalgamated-tools/biblioteka/commit/f671f68898ad5a14d9accca89566383d8e8b94f4))
+* add graph data ([#1588](https://github.com/amalgamated-tools/biblioteka/issues/1588)) ([c6c012d](https://github.com/amalgamated-tools/biblioteka/commit/c6c012def1ce3765d546c7abd1a8800cbc570f31))
+* add watch folder setting for automatic book import ([#1578](https://github.com/amalgamated-tools/biblioteka/issues/1578)) ([c30c9f2](https://github.com/amalgamated-tools/biblioteka/commit/c30c9f2a1be9b70d52fd665d531e7e5b680e35f6))
+* add weekly test coverage tracking agent ([#1519](https://github.com/amalgamated-tools/biblioteka/issues/1519)) ([5628e72](https://github.com/amalgamated-tools/biblioteka/commit/5628e72a2ce40995c27e703b13e572825b4d7aa6))
+* **api:** add getTotalBooksCount helper ([#1596](https://github.com/amalgamated-tools/biblioteka/issues/1596)) ([4df0e4c](https://github.com/amalgamated-tools/biblioteka/commit/4df0e4c3fd61e9dd06d387d07e93ee75ebfd07dc))
+* **auth:** add DISABLE_SIGNUP env var to gate public signup ([#1434](https://github.com/amalgamated-tools/biblioteka/issues/1434)) ([581bde5](https://github.com/amalgamated-tools/biblioteka/commit/581bde52f886554cff4b245e0079f6f0eab553ec))
+* **auth:** warn when JWT_SECRET is shorter than 32 characters ([#1517](https://github.com/amalgamated-tools/biblioteka/issues/1517)) ([f431e29](https://github.com/amalgamated-tools/biblioteka/commit/f431e290d41f67a4894472c45cba1936cd4b7312))
+* **books:** add POST /api/books/upload endpoint ([#1584](https://github.com/amalgamated-tools/biblioteka/issues/1584)) ([afd3082](https://github.com/amalgamated-tools/biblioteka/commit/afd30824ab7864f16e9949cfbe0406702b0465c7))
+* **books:** email a book file as an attachment ([#1602](https://github.com/amalgamated-tools/biblioteka/issues/1602)) ([25bf393](https://github.com/amalgamated-tools/biblioteka/commit/25bf3931c6ee8ff58e0fda9e4bf91eabff03212e))
+* **lint:** add slogcheck analyzer to ban slog.Any for typed values ([#1439](https://github.com/amalgamated-tools/biblioteka/issues/1439)) ([cdce158](https://github.com/amalgamated-tools/biblioteka/commit/cdce1588e780d053466093ea42b67a7c22e049ff))
+* **metadata:** add remote metadata fetch, review, and apply workflow ([#1532](https://github.com/amalgamated-tools/biblioteka/issues/1532)) ([58931c9](https://github.com/amalgamated-tools/biblioteka/commit/58931c97fc2e734c6c02ec8e24fa0455e5a669bf))
+* **server:** apply security headers globally via middleware ([#1432](https://github.com/amalgamated-tools/biblioteka/issues/1432)) ([596d34c](https://github.com/amalgamated-tools/biblioteka/commit/596d34c133e5fb2011202d36d64e5973cdcabfb8))
+
+
+### Bug Fixes
+
+* **accessibility:** address WCAG issues from Daily Accessibility Review ([#1568](https://github.com/amalgamated-tools/biblioteka/issues/1568)) ([19470fc](https://github.com/amalgamated-tools/biblioteka/commit/19470fc6ac667157d9c0435c90bb183e0b6324fa))
+* **accessibility:** announce theme changes to screen readers via live region ([#1513](https://github.com/amalgamated-tools/biblioteka/issues/1513)) ([ebfed6b](https://github.com/amalgamated-tools/biblioteka/commit/ebfed6b7994301a2ccc98ec54290bf5df2842894))
+* **accessibility:** fix 5 WCAG AA violations from daily accessibility review ([#1479](https://github.com/amalgamated-tools/biblioteka/issues/1479)) ([3dd274b](https://github.com/amalgamated-tools/biblioteka/commit/3dd274bc0bd37d8226beff4320af41a02aeb87d8))
+* **accessibility:** fix broken heading hierarchy on Libraries page ([#1478](https://github.com/amalgamated-tools/biblioteka/issues/1478)) ([2432c99](https://github.com/amalgamated-tools/biblioteka/commit/2432c99a3b0995c312788cded1b46aa29b023274))
+* **accessibility:** improve dark mode placeholder contrast in TextInput ([#1512](https://github.com/amalgamated-tools/biblioteka/issues/1512)) ([d42fd74](https://github.com/amalgamated-tools/biblioteka/commit/d42fd74a8b8b6504d46c118793c52935355b2067))
+* **accessibility:** improve form border contrast and add theme change announcements ([#1520](https://github.com/amalgamated-tools/biblioteka/issues/1520)) ([50fe2b2](https://github.com/amalgamated-tools/biblioteka/commit/50fe2b20e530d96e836538ebedb610557d428c9b))
+* **accessibility:** improve form control contrast and add theme change announcements ([#1511](https://github.com/amalgamated-tools/biblioteka/issues/1511)) ([25f5015](https://github.com/amalgamated-tools/biblioteka/commit/25f50156659ae9c1aaff80fdebb3775b0ac2facd))
+* **accessibility:** include library name in page title (WCAG 2.4.2) ([#1571](https://github.com/amalgamated-tools/biblioteka/issues/1571)) ([b6988e8](https://github.com/amalgamated-tools/biblioteka/commit/b6988e8faaaddd8416d3e3283e5e183a380c1807))
+* address four recurring code quality issues across handlers, jobs, and db ([#1444](https://github.com/amalgamated-tools/biblioteka/issues/1444)) ([5d4089f](https://github.com/amalgamated-tools/biblioteka/commit/5d4089f566a9fc7a1dc1add8aa575ba1593bf5f2))
+* **auth:** max password length + API key entropy hardening ([#1494](https://github.com/amalgamated-tools/biblioteka/issues/1494)) ([bdd49cd](https://github.com/amalgamated-tools/biblioteka/commit/bdd49cdf22a2c10e9da327802e9f4f4cb499704c))
+* **auth:** prevent rate limiter X-Forwarded-For spoofing ([#1518](https://github.com/amalgamated-tools/biblioteka/issues/1518)) ([8c6bc41](https://github.com/amalgamated-tools/biblioteka/commit/8c6bc41fcd0d98a14360e863b644926f3319723b))
+* **auth:** raise bcrypt work factor from 10 to 12 ([#1433](https://github.com/amalgamated-tools/biblioteka/issues/1433)) ([f3681f2](https://github.com/amalgamated-tools/biblioteka/commit/f3681f26a39dd72b743ed999d76b6a2adc863f72))
+* **auth:** raise minPasswordLength from 6 to 8 per NIST SP 800-63B ([#1435](https://github.com/amalgamated-tools/biblioteka/issues/1435)) ([3e5d0fb](https://github.com/amalgamated-tools/biblioteka/commit/3e5d0fb840b482ce6291e4fb6f8af545e6fa87e5))
+* **auth:** redact email in login and OIDC callback logs ([#1488](https://github.com/amalgamated-tools/biblioteka/issues/1488)) ([2aa3356](https://github.com/amalgamated-tools/biblioteka/commit/2aa3356bd5d58a0ca5665699e099cc5caed73203))
+* **ci:** add shared-instructions.md with noop fallback guidance for agentic workflows ([#1626](https://github.com/amalgamated-tools/biblioteka/issues/1626)) ([2bbafbf](https://github.com/amalgamated-tools/biblioteka/commit/2bbafbf6595da3193ed549331b4b75e708dda2b5))
+* **ci:** ensure Daily Workflow Updater calls noop safe-output when no updates found ([#1627](https://github.com/amalgamated-tools/biblioteka/issues/1627)) ([65e6cf5](https://github.com/amalgamated-tools/biblioteka/commit/65e6cf5b5d598a04535e8ed60070548043fe3e79))
+* **ci:** remove invalid `--squash` flag from dependabot auto-merge workflow ([#1457](https://github.com/amalgamated-tools/biblioteka/issues/1457)) ([772b43d](https://github.com/amalgamated-tools/biblioteka/commit/772b43dfffa5355148f7daff76c43788820a1125))
+* **code-simplifier:** instruct agent to call noop when no action is needed ([#1636](https://github.com/amalgamated-tools/biblioteka/issues/1636)) ([35f4172](https://github.com/amalgamated-tools/biblioteka/commit/35f41729bd8e1b3fda25f33408c8b7ef634b6603))
+* **code-simplifier:** refactor(db): add collectRowsAndTotal helper and apply to paginated book queries ([#1467](https://github.com/amalgamated-tools/biblioteka/issues/1467)) ([f7fb055](https://github.com/amalgamated-tools/biblioteka/commit/f7fb055fe1f968c306a9af574ed2dfe7497236c8))
+* **code-simplifier:** refactor(preferences): remove redundant aria-live on role=status span ([#1560](https://github.com/amalgamated-tools/biblioteka/issues/1560)) ([29302de](https://github.com/amalgamated-tools/biblioteka/commit/29302defc846bbaf8afbcb4535cf82b97c6429a8))
+* **code-simplifier:** refactor(preferences): use ThemePreference type and consolidate timer cleanup in tests ([#1524](https://github.com/amalgamated-tools/biblioteka/issues/1524)) ([4820c78](https://github.com/amalgamated-tools/biblioteka/commit/4820c785468dcdd102c3b9b362b1d4a34dc8aff6))
+* **db:** use bookColumnsWithPrefix in ListBooksByLibrary ([#1438](https://github.com/amalgamated-tools/biblioteka/issues/1438)) ([3002656](https://github.com/amalgamated-tools/biblioteka/commit/30026566ad7d7fb95b5eb18b1a69f4a89611938c))
+* enforce static slog messages (sloglint static-msg) ([#1440](https://github.com/amalgamated-tools/biblioteka/issues/1440)) ([f106484](https://github.com/amalgamated-tools/biblioteka/commit/f106484c92fdd2e6c23d4379da59eb264816edbd))
+* **frontend:** migrate JWT from localStorage to in-memory storage ([#1430](https://github.com/amalgamated-tools/biblioteka/issues/1430)) ([d1306e5](https://github.com/amalgamated-tools/biblioteka/commit/d1306e5e3461d28dc95dc2f0a335847cb00b8dbd))
+* **handlers:** add context timeout to library path validation to prevent handler goroutine blocking ([#1486](https://github.com/amalgamated-tools/biblioteka/issues/1486)) ([828c6ac](https://github.com/amalgamated-tools/biblioteka/commit/828c6ac46f0b0e86c65f7c67458b285a788c973e))
+* **handlers:** prevent open redirect via unvalidated cover_image_url scheme ([#1431](https://github.com/amalgamated-tools/biblioteka/issues/1431)) ([0eedebc](https://github.com/amalgamated-tools/biblioteka/commit/0eedebcb30371a2af2516f29a4b5e588316dd11b))
+* **handlers:** remove premature log and unify admin auth check ([#1441](https://github.com/amalgamated-tools/biblioteka/issues/1441)) ([7bf4e82](https://github.com/amalgamated-tools/biblioteka/commit/7bf4e8294fc15002f98effc7c782a7181a2eda28))
+* **handlers:** use write-specific error handling in updateProfile and HandleSetAdmin ([#1591](https://github.com/amalgamated-tools/biblioteka/issues/1591)) ([d1a4575](https://github.com/amalgamated-tools/biblioteka/commit/d1a4575c377454c2501b61475f874dd0eb752418))
+* **kobo:** replace aria-disabled workaround with real disabled attribute ([#1484](https://github.com/amalgamated-tools/biblioteka/issues/1484)) ([0ea3bbc](https://github.com/amalgamated-tools/biblioteka/commit/0ea3bbcb5e1eccc8ba5908ed3c0cef81702fd6ee))
+* replace err.Error() leakage with typed sentinel errors ([#1445](https://github.com/amalgamated-tools/biblioteka/issues/1445)) ([99faac2](https://github.com/amalgamated-tools/biblioteka/commit/99faac25fd4ea8c9b2d8e45c26e176c14a1b9674))
+* **security:** block SSRF via admin-supplied OIDC issuer URL ([#1422](https://github.com/amalgamated-tools/biblioteka/issues/1422)) ([cd53b42](https://github.com/amalgamated-tools/biblioteka/commit/cd53b429e77fabae7ee4858d3eff6bb9f60dda69))
+* **security:** validate book file path against library roots to prevent path traversal ([#1421](https://github.com/amalgamated-tools/biblioteka/issues/1421)) ([4698a39](https://github.com/amalgamated-tools/biblioteka/commit/4698a39383094045147802586de28b0394622e8d))
+* **workflow:** add noop safe-output instructions to update-docs workflow ([#1580](https://github.com/amalgamated-tools/biblioteka/issues/1580)) ([7ea4de1](https://github.com/amalgamated-tools/biblioteka/commit/7ea4de10c2d22fbf24fc9aea6991ee5a3f9c867e))
+* **workflow:** add noop safe-output to schema consistency checker ([#1570](https://github.com/amalgamated-tools/biblioteka/issues/1570)) ([a0f2161](https://github.com/amalgamated-tools/biblioteka/commit/a0f2161d574ff08ce523039ceb60bb509be6fa92))
+* **workflows:** add noop safe-output fallback to daily-team-evolution-insights ([#1635](https://github.com/amalgamated-tools/biblioteka/issues/1635)) ([08bdc96](https://github.com/amalgamated-tools/biblioteka/commit/08bdc96d7e33c5fa337eddd8dc303dc27c72482e))
+
 ## [0.8.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.7.0...v0.8.0) (2026-04-06)
 
 
