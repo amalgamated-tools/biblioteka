@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { tick } from "svelte";
   import { authStore } from "./stores/auth.svelte";
   import { routerStore, APP_TITLE_SUFFIX } from "./stores/router.svelte";
   import { libraryStore } from "./stores/libraries.svelte";
@@ -15,8 +15,12 @@
 
   let sidebarOpen = $state(false);
 
-  onMount(async () => {
-    await authStore.init();
+  let authInitialized = false;
+  $effect(() => {
+    if (!authInitialized) {
+      authInitialized = true;
+      void authStore.init();
+    }
   });
 
   // Redirect away from books view when no libraries exist
