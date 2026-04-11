@@ -19,10 +19,7 @@ import (
 // type string. If the type is not recognised, "application/octet-stream" is
 // returned so the file is always treated as a generic download.
 func MIMETypeForFileType(fileType string) string {
-	if mt := filetype.MIMEType(fileType); mt != "" {
-		return mt
-	}
-	return "application/octet-stream"
+	return filetype.MIMETypeOrOctetStream(fileType)
 }
 
 // sanitizeFilename strips control characters (including CR/LF) from a
