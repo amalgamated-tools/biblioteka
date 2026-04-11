@@ -183,7 +183,7 @@ func WriteOPF(ctx context.Context, dir string, data OPFData, baseName string) er
 		data.Language = "und"
 	}
 	if (data.CoverFilename == "") != (data.CoverMediaType == "") {
-		return errors.New("CoverFilename and CoverMediaType must both be set or both be empty")
+		return errors.New("cover filename and cover media type must both be set or both be empty")
 	}
 
 	xmlBytes, err := marshalOPF(dir, data)
