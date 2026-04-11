@@ -398,3 +398,10 @@ A successful quality improvement run:
 - **Be Specific**: Provide exact file paths, line numbers, and code examples where relevant
 - **Be Actionable**: Every finding should lead to a concrete task
 - **Respect Timeout**: Complete within 20 minutes
+
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

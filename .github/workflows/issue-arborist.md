@@ -154,4 +154,9 @@ If you did take action, you do not need to call noop. Simply finish after execut
 - **Create parent issues only for clusters of 5+ related issues** that clearly share a common theme
 - When creating parent issues, include references to all related sub-issues in the body
 
-**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation.
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```
+

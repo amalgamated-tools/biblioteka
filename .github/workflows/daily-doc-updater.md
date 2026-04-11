@@ -13,6 +13,7 @@ network:
   - python
   - rust
   - java
+  - github
 
 permissions:
   contents: read
@@ -20,6 +21,7 @@ permissions:
   pull-requests: read
 
 tracker-id: daily-doc-updater
+engine: copilot
 tools:
   github:
     toolsets: [default]

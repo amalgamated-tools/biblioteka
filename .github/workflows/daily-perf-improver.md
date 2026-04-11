@@ -326,3 +326,12 @@ Maintain a single open issue titled `[Perf Improver] Monthly Activity {YYYY}-{MM
 - **AI transparency**: every comment, PR, and issue must include a Perf Improver disclosure with 🤖.
 - **Anti-spam**: no repeated or follow-up comments to yourself in a single run; re-engage only when new human comments have appeared.
 - **Quality over quantity**: one well-measured improvement is worth more than many unmeasured changes.
+
+**Reminder**: You MUST call exactly one safe-output tool before finishing. If no file exceeds 500 lines, call `noop` with a status message. If a file exceeds 500 lines, call `create_issue`. Do NOT end without calling a safe-output tool.
+
+Example noop output:
+
+```json
+{"noop": {"message": "No action needed: all non-test source files are below the 500-line threshold after checking the largest files."}}
+```
+

@@ -248,3 +248,10 @@ If you made any changes to the glossary:
 - Review recent changes to understand what's actively being developed
 
 Your work helps users understand project-specific terminology and concepts, making documentation more accessible and consistent.
+
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

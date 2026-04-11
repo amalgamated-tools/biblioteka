@@ -390,3 +390,10 @@ Maintain a single open issue titled `[Repo Assist] Monthly Activity {YYYY}-{MM}`
 - **Release preparation**: use your judgement on each run to assess whether a release is warranted (significant unreleased changes, changelog out of date). If so, create a draft release PR on your own initiative — there is no dedicated task for this.
 - **Quality over quantity**: noise erodes trust. Do nothing rather than add low-value output.
 - **Bias toward action**: While avoiding spam, actively seek ways to contribute value within the two selected tasks. A "no action" run should be genuinely exceptional.
+
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

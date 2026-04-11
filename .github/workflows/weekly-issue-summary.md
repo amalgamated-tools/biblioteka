@@ -157,3 +157,10 @@ Create a discussion with the title format: `Weekly Summary - [YYYY-MM-DD]`
 - If fewer than 7 days of data are available, generate charts with available data and note the limited range
 - If no issues exist this week, still create a discussion noting the quiet week
 - Always create the discussion even if charts fail to generate (omit chart sections and explain)
+
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

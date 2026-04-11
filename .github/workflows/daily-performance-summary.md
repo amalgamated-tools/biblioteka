@@ -12,8 +12,11 @@ permissions:
 engine: copilot
 strict: true
 tracker-id: daily-performance-summary
+features:
+  dangerous-permissions-write: true
 tools:
   github:
+    lockdown: false
     toolsets: [default, discussions]
 safe-outputs:
   upload-artifact:

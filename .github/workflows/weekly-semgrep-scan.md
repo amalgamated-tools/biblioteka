@@ -1,12 +1,12 @@
 ---
-description: Daily Semgrep security scan for SQL injection and other vulnerabilities
-name: Daily Semgrep Scan
+description: Weekly Semgrep security scan for SQL injection and other vulnerabilities
+name: Weekly Semgrep Scan
 imports:
   - shared/security-analysis-base.md
   - shared/mcp/semgrep.md
   - shared/observability-otlp.md
 on:
-  schedule: daily
+  schedule: weekly on monday around 21:00
   workflow_dispatch:
 permissions:
   contents: read

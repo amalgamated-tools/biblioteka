@@ -347,3 +347,12 @@ Maintain a single open issue titled `[Test Improver] Monthly Activity {YYYY}-{MM
 - If the test expectations are correct and the code fails them: **file an issue** describing the potential bug. Do not silently "fix" the test.
 - Only adjust test expectations when you have verified the original expectation was incorrect.
 - Document your reasoning in the PR or issue.
+
+**Reminder**: You MUST call exactly one safe-output tool before finishing. If no file exceeds 500 lines, call `noop` with a status message. If a file exceeds 500 lines, call `create_issue`. Do NOT end without calling a safe-output tool.
+
+Example noop output:
+
+```json
+{"noop": {"message": "No action needed: all non-test source files are below the 500-line threshold after checking the largest files."}}
+```
+
