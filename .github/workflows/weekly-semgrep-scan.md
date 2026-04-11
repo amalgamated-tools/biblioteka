@@ -12,7 +12,7 @@ permissions:
   contents: read
   issues: read
   pull-requests: read
-  security-events: write
+  security-events: read
 safe-outputs:
   create-code-scanning-alert:
     driver: "Semgrep Security Scanner"

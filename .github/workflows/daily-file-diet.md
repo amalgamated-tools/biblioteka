@@ -89,7 +89,7 @@ head -n 100 <LARGE_FILE>
 grep -n "^func\|^class\|^def\|^module\|^impl\|^struct\|^type\|^interface\|^export " <LARGE_FILE> | head -50
 ```
 
-**Important**: Do NOT pipe commands together (e.g., do not use `|`). Run each command separately and review the output yourself.
+**Important**: Piping is allowed only for limiting output length (e.g., `| head -50`). Do NOT use pipes for other purposes. Run each command separately and review the output yourself.
 
 Identify:
 - What logical concerns or responsibilities the file contains

@@ -57,7 +57,7 @@ Generate a daily performance summary analyzing the last 90 days of project activ
 - **Run ID**: ${{ github.run_id }}
 - **Report Period**: Last 90 days (updated daily)
 
-## Phase 1: Gather Data Using Safe-Input Tools
+## Phase 1: Gather Data Using MCP-Script Tools
 
 **CRITICAL**: Use the mcp-script tools to query GitHub data. These tools are imported from `shared/github-queries-mcp-script.md` and provide the same functionality as the previous Skillz-based approach.
 
