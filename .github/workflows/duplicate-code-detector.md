@@ -21,7 +21,7 @@ safe-outputs:
     max: 3
 timeout-minutes: 15
 strict: true
-source: github/gh-aw/.github/workflows/duplicate-code-detector.md@e61c83d853eb02c9bc88b90efd1f913a3334db60
+source: github/gh-aw/.github/workflows/duplicate-code-detector.md@525b5b77a444146979ba1759b2a23d72934bc6fc
 ---
 
 # Duplicate Code Detection
@@ -259,3 +259,13 @@ For each distinct duplication pattern found, create a separate issue using this 
 7. **Reference Analysis**: `find_referencing_symbols` for usage patterns
 
 **Objective**: Improve code quality by identifying and reporting meaningful code duplication that impacts maintainability. Focus on actionable findings that enable automated or manual refactoring.
+
+
+**Reminder**: You MUST call exactly one safe-output tool before finishing. If no file exceeds 500 lines, call `noop` with a status message. If a file exceeds 500 lines, call `create_issue`. Do NOT end without calling a safe-output tool.
+
+Example noop output:
+
+```json
+{"noop": {"message": "No action needed: all non-test source files are below the 500-line threshold after checking the largest files."}}
+```
+

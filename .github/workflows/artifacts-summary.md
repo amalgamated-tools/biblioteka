@@ -6,7 +6,6 @@ on:
 permissions:
   contents: read
   actions: read
-  discussions: read
 tracker-id: artifacts-summary
 engine: copilot
 network:
@@ -22,16 +21,18 @@ tools:
     toolsets: [actions, repos]
 safe-outputs:
   create-discussion:
+    expires: 1d
     category: "audits"
     max: 1
     close-older-discussions: true
 timeout-minutes: 15
 strict: true
 imports:
-  - shared/mood.md
   - shared/reporting.md
   - shared/safe-output-app.md
-source: github/gh-aw/.github/workflows/artifacts-summary.md@852cb06ad52958b402ed982b69957ffc57ca0619
+features:
+  copilot-requests: true
+source: github/gh-aw/.github/workflows/artifacts-summary.md@936d8cefa32536db14d3a74d7ae2af4af1840fde
 ---
 
 # Artifacts Summary
@@ -90,3 +91,9 @@ Create an issue with a markdown table like this:
 - Convert sizes to human-readable formats (MB, GB)
 - Consider artifact retention policies in your analysis
 - Include both successful and failed runs in the analysis, ignore cancelled runs
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

@@ -1,35 +1,37 @@
 ---
-description: >
-  Triages newly opened issues by labeling them with conventional-commit type
-  and priority labels, detecting duplicates, and asking clarifying questions
-  when the description is unclear.
+description: |
+  Intelligent issue triage assistant that processes new and reopened issues.
+  Analyzes issue content, selects appropriate labels, detects spam, gathers context
+  from similar issues, and provides analysis notes including debugging strategies,
+  reproduction steps, and resource links. Helps maintainers quickly understand and
+  prioritize incoming issues.
 
 on:
   issues:
-    types: [opened, edited]
-  workflow_dispatch:
-  roles: all
+    types: [opened, edited, reopened]
+  reaction: eyes
 
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read
+permissions: read-all
 
-tools:
-  github:
-    lockdown: false
-    toolsets: [default]
+network: defaults
 
 safe-outputs:
+  add-labels:
+    max: 5
   add-comment:
-    max: 2
-    discussions: false
-  update-issue:
-    max: 1
-  noop:
+
+tools:
+  web-fetch:
+  github:
+    lockdown: false
+    toolsets: [issues]
+    min-integrity: none # This workflow is allowed to examine and comment on any issues
+
+timeout-minutes: 10
+source: githubnext/agentics/workflows/issue-triage.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---
 
-# Issue Triage Agent
+# Agentic Triage
 
 You are an issue triage agent for the **${{ github.repository }}** repository.
 Your job is to examine every newly opened (or edited) issue and perform four tasks:
@@ -111,8 +113,6 @@ too vague to meaningfully triage), **post a comment** asking for specifics —
 exists on the issue**. Search the issue's existing comments for a prior
 clarification comment from `github-actions[bot]` before posting a new one.
 
-Example:
-
 ---
 
 ## Step 6 — Apply Labels
@@ -132,12 +132,28 @@ an edited closed issue could be reopened unintentionally.
 
 If the issue already carries a type label and a priority label that match your
 classification, skip this step entirely and proceed to Step 7.
----
 
-## Step 7 — Nothing to Do
+---
+## Step 7 — Analyze and Add Comment
+
+Add an issue comment to the issue with your analysis:
+   - Check for an existing comment starting with "🎯 Agentic Issue Triage"
+   - Start with "🎯 Agentic Issue Triage"
+   - Provide a brief summary of the issue
+   - Mention any relevant details that might help the team understand the issue better
+   - Include any debugging strategies or reproduction steps if applicable
+   - Suggest resources or links that might be helpful for resolving the issue or learning skills related to the issue or the particular area of the codebase affected by it
+   - Mention any nudges or ideas that could help the team in addressing the issue
+   - If you have possible reproduction steps, include them in the comment
+   - If you have any debugging strategies, include them in the comment
+   - If appropriate break the issue down to sub-tasks and write a checklist of things to do.
+   - Use collapsed-by-default sections in the GitHub markdown to keep the comment tidy. Collapse all sections except the short main summary at the top.
+
+
+## Step 8 — Nothing to Do
 
 If the issue already has correct type and priority labels, no duplicates are
-found, and the description is clear, call the `noop` safe output with a message
+found, the description is clear, and you've already added an analysis, call the `noop` safe output with a message
 such as:
 
 > Issue #<number> is already triaged — no changes needed.

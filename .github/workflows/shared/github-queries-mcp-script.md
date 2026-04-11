@@ -1,5 +1,5 @@
 ---
-safe-inputs:
+mcp-scripts:
   github-issue-query:
     description: "Query GitHub issues with jq filtering support. Without --jq, returns schema and data size info. Use --jq '.' to get all data, or specific jq expressions to filter."
     inputs:
@@ -341,7 +341,7 @@ safe-inputs:
 <!--
 ## GitHub Queries Safe Input Tools
 
-This shared workflow provides safe-input tools for querying GitHub issues, pull requests, and discussions with built-in jq filtering support.
+This shared workflow provides mcp-script tools for querying GitHub issues, pull requests, and discussions with built-in jq filtering support.
 
 ### Available Tools
 
@@ -355,7 +355,7 @@ Import this shared workflow to get access to all query tools:
 
 ```yaml
 imports:
-  - shared/github-queries-safe-input.md
+  - shared/github-queries-mcp-script.md
 ```
 
 ### Tool Parameters

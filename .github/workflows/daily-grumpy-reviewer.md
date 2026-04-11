@@ -39,7 +39,6 @@ tools:
     toolsets: [repos]
 timeout-minutes: 30
 imports:
-  - shared/mood.md
   - shared/reporting.md
   - uses: shared/daily-audit-discussion.md
     with:

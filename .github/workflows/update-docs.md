@@ -40,6 +40,7 @@ tools:
   bash: true
 
 timeout-minutes: 15
+source: githubnext/agentics/workflows/update-docs.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---
 
 # Update Docs
@@ -168,5 +169,3 @@ Example noop output:
 > NOTE: Never make direct pushes to main. Always create a pull request for documentation changes.
 
 > NOTE: Treat documentation gaps like failing tests.
-
-> **Important**: You MUST call exactly one safe-output tool before finishing. If documentation updates are needed, create a pull request. If no updates are needed, call `noop` with a status message. Do NOT end without calling a safe-output tool.

@@ -18,6 +18,7 @@ safe-outputs:
     expires: 2d
     title-prefix: "chore(file-diet): "
     labels: [refactoring, code-health, automated-analysis]
+    assignees: copilot
     max: 1
 
 tools:
@@ -26,8 +27,8 @@ tools:
   bash: true
 
 timeout-minutes: 20
-strict: true
-source: githubnext/agentics/workflows/daily-file-diet.md@b897c2f3e43bde9ff7923c8fa9211055b26e27cc
+
+source: githubnext/agentics/workflows/daily-file-diet.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---
 
 # Daily File Diet Agent 🏋️
@@ -85,7 +86,7 @@ head -n 100 <LARGE_FILE>
 ```
 
 ```bash
-grep -n "^func\|^class\|^def\|^module\|^impl\|^struct\|^type\|^interface\|^export " <LARGE_FILE>
+grep -n "^func\|^class\|^def\|^module\|^impl\|^struct\|^type\|^interface\|^export " <LARGE_FILE> | head -50
 ```
 
 **Important**: Do NOT pipe commands together (e.g., do not use `|`). Run each command separately and review the output yourself.

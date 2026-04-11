@@ -1,9 +1,19 @@
 ---
 name: Daily Documentation Updater
-description: Automatically reviews and updates documentation to ensure accuracy and completeness
+description: Automatically reviews and updates documentation based on recent code changes
 on:
   schedule: daily
   workflow_dispatch:
+
+network:
+  allowed:
+  - defaults
+  - dotnet
+  - node
+  - python
+  - rust
+  - java
+  - github
 
 permissions:
   contents: read
@@ -12,50 +22,30 @@ permissions:
 
 tracker-id: daily-doc-updater
 engine: copilot
+tools:
+  github:
+    toolsets: [default]
+  edit:
+  bash: true
 
-network:
-  allowed:
-    - defaults
-    - github
+timeout-minutes: 30
 
 safe-outputs:
   create-pull-request:
-    expires: 1d
+    expires: 2d
     title-prefix: "docs(daily):"
     labels: [documentation, automation]
     reviewers: [copilot]
     draft: false
     auto-merge: true
-  create-issue:
-    labels: [documentation, automation]
-    max: 2
-  add-comment:
-    max: 2
+    protected-files: fallback-to-issue
 
-tools:
-  cache-memory: true
-  github:
-    toolsets: [default]
-  edit:
-  bash:
-    - "find docs -name '*.md'"
-    - "find docs -maxdepth 1 -ls"
-    - "find docs -name '*.md' -exec cat {} +"
-    - "grep -r '*' docs"
-    - "git"
-
-timeout-minutes: 45
-
-imports:
-  - shared/mood.md
-source: github/gh-aw/.github/workflows/daily-doc-updater.md@852cb06ad52958b402ed982b69957ffc57ca0619
+source: githubnext/agentics/workflows/daily-doc-updater.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---
-
-{{#runtime-import? .github/shared-instructions.md}}
 
 # Daily Documentation Updater
 
-You are an AI documentation agent that automatically updates the project documentation based on recent code changes and merged pull requests.
+You are an AI documentation agent that automatically updates project documentation based on recent code changes and merged pull requests.
 
 ## Your Mission
 
@@ -68,6 +58,7 @@ Scan the repository for merged pull requests and code changes from the last 24 h
 First, search for merged pull requests from the last 24 hours.
 
 Use the GitHub tools to:
+- Calculate yesterday's date: `date -u -d "1 day ago" +%Y-%m-%d`
 - Search for pull requests merged in the last 24 hours using `search_pull_requests` with a query like: `repo:${{ github.repository }} is:pr is:merged merged:>=YYYY-MM-DD` (replace YYYY-MM-DD with yesterday's date)
 - Get details of each merged PR using `pull_request_read`
 - Review commits from the last 24 hours using `list_commits`
@@ -84,7 +75,7 @@ For each merged PR and commit, analyze:
 
 Create a summary of changes that should be documented.
 
-### 3. Review Documentation Instructions
+### 3. Identify Documentation Location
 
 **IMPORTANT**: Before making any documentation changes, review the existing documentation structure:
 
@@ -104,7 +95,6 @@ Pay special attention to:
 - Proper use of headings (markdown syntax, not bold text)
 - Code samples with appropriate language tags
 - Plain Markdown formatting (no MDX or component syntax)
-
 ### 4. Identify Documentation Gaps
 
 Review the documentation in the `docs/` directory:
@@ -144,7 +134,6 @@ Exclude PRs whose title starts with `docs(daily):` (those belong to this workflo
 - **Skip** that file and log: `SIBLING SKIP [file]: open sibling PR #N from update-docs already covers this file`
 
 Only proceed with files that do **not** have a recently merged doc PR (4a) **and** do **not** have an open sibling PR (4b).
-
 ### 5. Update Documentation
 
 For each missing or incomplete feature documentation:
@@ -246,19 +235,14 @@ After deduplication and capping, count how many `docs(daily):` PRs this workflow
 If you made any documentation changes:
 
 1. **Summarize your changes** in a clear commit message
-2. **Call the `create_pull_request` MCP tool** to create a PR
-   - **IMPORTANT**: Call the `create_pull_request` MCP tool from the safe-outputs MCP server
-   - Do NOT use GitHub API tools directly or write JSON to files
-   - Do NOT use `create_pull_request` from the GitHub MCP server
-   - The safe-outputs MCP tool is automatically available because `safe-outputs.create-pull-request` is configured in the frontmatter
-   - Call the tool with the PR title and description, and it will handle creating the branch and PR
+2. **Call the safe-outputs create-pull-request tool** to create a PR
 3. **Include in the PR description**:
    - List of features documented
    - Summary of changes made
    - Links to relevant merged PRs that triggered the updates
    - Any notes about features that need further review
 
-**PR Title Format**: `docs(daily): <brief scope-specific description>`
+**PR Title Format**: `docs(daily): Update documentation for features from [date]`
 
 **PR Description Template**:
 ```markdown
@@ -290,7 +274,8 @@ This PR updates the documentation based on features merged in the last 24 hours.
 
 - **No recent changes**: If there are no merged PRs in the last 24 hours, exit gracefully without creating a PR
 - **Already documented**: If all features are already documented, exit gracefully
-- **Unclear features**: If a feature is complex and needs human review, note it in the PR description but don't skip documentation entirely
+- **Unclear features**: If a feature is complex and needs human review, note it in the PR description but include basic documentation
+- **No documentation directory**: If there's no obvious documentation location, document in README.md
 
 ## Guidelines
 
