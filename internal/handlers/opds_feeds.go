@@ -17,7 +17,7 @@ import (
 
 func (h *OPDSHandler) rootFeed(w http.ResponseWriter, r *http.Request) {
 	baseURL := opdsBaseURL(r)
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := nowRFC3339()
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
@@ -95,7 +95,7 @@ func (h *OPDSHandler) writeBooksFeed(
 	entries := h.bookEntries(ctx, books, baseURL)
 	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.AcqContentType)
 	links = append(links, extraLinks...)
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := nowRFC3339()
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
@@ -156,7 +156,7 @@ func (h *OPDSHandler) writeNamedEntityNavFeed(
 	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.NavContentType)
 	links = append(links, opdspkg.Link{Rel: opdspkg.RelStart, Href: baseURL, Type: opdspkg.NavContentType})
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := nowRFC3339()
 	feed := &opdspkg.Feed{
 		XMLNS:   opdspkg.XMLNSAtom,
 		ID:      selfURL,
@@ -273,7 +273,7 @@ func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
 	entries := h.bookEntries(ctx, books, baseURL)
 	escapedQuery := url.QueryEscape(query)
 	selfURL := baseURL + "/search?q=" + escapedQuery
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := nowRFC3339()
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
