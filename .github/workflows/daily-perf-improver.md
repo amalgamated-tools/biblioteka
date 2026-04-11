@@ -54,6 +54,10 @@ safe-outputs:
     title-prefix: "[Perf Improver] "
     max: 1
 
+checkout:
+  fetch: ["*"]
+  fetch-depth: 0
+
 tools:
   web-fetch:
   github:

@@ -54,6 +54,10 @@ safe-outputs:
     title-prefix: "[Test Improver] "
     max: 1
 
+checkout:
+  fetch: ["*"]
+  fetch-depth: 0
+
 tools:
   web-fetch:
   bash: true
