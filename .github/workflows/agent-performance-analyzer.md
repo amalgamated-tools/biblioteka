@@ -25,6 +25,7 @@ safe-outputs:
     group: true
     labels: [cookie]
   create-discussion:
+    category: "audits"
     expires: 1d
     max: 2
   add-comment:

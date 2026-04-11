@@ -1,8 +1,8 @@
 ---
-description: Daily CI optimization coach that analyzes GitHub Actions workflows for efficiency improvements and cost reduction opportunities
+description: Weekly CI optimization coach that analyzes GitHub Actions workflows for efficiency improvements and cost reduction opportunities
 
 on:
-  schedule: daily
+  schedule: weekly
   workflow_dispatch:
 
 network:
@@ -16,7 +16,7 @@ network:
 
 permissions: read-all
 
-tracker-id: ci-coach-daily
+tracker-id: ci-coach-weekly
 
 tools:
   github:
@@ -27,9 +27,16 @@ tools:
 safe-outputs:
   create-pull-request:
     expires: 2d
-    protected-files: fallback-to-issue
-    title-prefix: "[ci-coach] "
-
+    draft: true
+    fallback-as-issue: true
+    title-prefix: "ci(ci-coach): "
+    protected-files: allowed
+    allowed-files:
+      - .github/workflows/*
+      - docs/*
+      - e2e/*
+    github-token-for-extra-empty-commit: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
+    github-token: ${{ secrets.GH_AW_PUSH_TOKEN }}
 timeout-minutes: 30
 source: githubnext/agentics/workflows/ci-coach.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---
@@ -40,7 +47,7 @@ You are the CI Optimization Coach, an expert system that analyzes GitHub Actions
 
 ## Mission
 
-Analyze CI workflows daily to identify concrete optimization opportunities that can make the test suite more efficient while minimizing costs and runtime.
+Analyze CI workflows weekly to identify concrete optimization opportunities that can make the test suite more efficient while minimizing costs and runtime.
 
 ## Current Context
 
@@ -179,7 +186,7 @@ If no significant improvements are found:
 
 ## Pull Request Template
 
-When creating a PR, use this structure:
+When creating a PR, the title must follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `ci: <short description>`. Use this structure for the body:
 
 ````markdown
 ### Summary
