@@ -18,9 +18,8 @@ vi.mock("../lib/api", () => ({
 }));
 
 vi.mock("lucide-svelte", () => ({ BookCheck: () => {} }));
-vi.mock("./ui/AlertBanner.svelte", () => ({ default: () => {} }));
 
-import { getSignupEnabled } from "../lib/api";
+import { getOidcEnabled, getSignupEnabled } from "../lib/api";
 
 import Auth from "./Auth.svelte";
 
@@ -127,5 +126,27 @@ describe("Auth", () => {
     const loginPanel = screen.getByRole("tabpanel", { hidden: true });
     expect(loginPanel.id).toBe("login-panel");
     expect(loginPanel).not.toHaveAttribute("hidden");
+  });
+
+  it("shows an error banner when OIDC check fails", async () => {
+    vi.mocked(getOidcEnabled).mockRejectedValueOnce(new Error("network"));
+
+    render(Auth);
+    await vi.waitFor(() => {
+      expect(
+        screen.getByText("Unable to reach the server to load auth settings"),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("shows an error banner when signup check fails", async () => {
+    vi.mocked(getSignupEnabled).mockRejectedValueOnce(new Error("network"));
+
+    render(Auth);
+    await vi.waitFor(() => {
+      expect(
+        screen.getByText("Unable to reach the server to load auth settings"),
+      ).toBeInTheDocument();
+    });
   });
 });
