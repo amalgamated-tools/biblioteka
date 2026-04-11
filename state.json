@@ -1,0 +1,42 @@
+{
+  "last_run": "2026-04-11T22:21:40Z",
+  "tasks_run": ["task1", "task2", "task3", "task7"],
+  "commands": {
+    "build": "make build (requires frontend first)",
+    "test": "GOTOOLCHAIN=local go test ./... (note: go.mod requires 1.26.1 but only 1.24.13 available)",
+    "lint": "make lint",
+    "fmt": "make fmt && make hardfmt",
+    "bench": "GOTOOLCHAIN=local go test -bench=BenchmarkParseBookPath -benchmem ./internal/pathparser/",
+    "note": "Go 1.26.1 download is blocked by firewall - use GOTOOLCHAIN=local to use installed 1.24.13"
+  },
+  "backlog": [
+    {
+      "id": "books-title-index",
+      "status": "pr_created",
+      "description": "Add indexes on books.title and books.created_at for ORDER BY performance",
+      "impact": "high",
+      "pr_branch": "perf-assist/books-title-created-at-indexes"
+    },
+    {
+      "id": "search-replacer-cache",
+      "status": "identified",
+      "description": "Cache strings.NewReplacer in SearchBooks as package-level var (minor)",
+      "impact": "low"
+    },
+    {
+      "id": "fts-search",
+      "status": "identified",
+      "description": "SQLite FTS5 for full-text book search instead of LIKE pattern",
+      "impact": "high",
+      "note": "Major change, needs maintainer discussion first"
+    },
+    {
+      "id": "benchmark-db-queries",
+      "status": "identified",
+      "description": "Add Go benchmarks for DB query functions (ListBooksPaginated, SearchBooks)",
+      "impact": "medium"
+    }
+  ],
+  "monthly_activity_issue_number": null,
+  "checked_off_items": []
+}
