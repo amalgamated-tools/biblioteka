@@ -15,13 +15,6 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/filetype"
 )
 
-// MIMETypeForFileType returns the MIME content type for a given book file
-// type string. If the type is not recognised, "application/octet-stream" is
-// returned so the file is always treated as a generic download.
-func MIMETypeForFileType(fileType string) string {
-	return filetype.MIMETypeOrOctetStream(fileType)
-}
-
 // sanitizeFilename strips control characters (including CR/LF) from a
 // filename so it is safe to embed in email headers.
 func sanitizeFilename(name string) string {
@@ -71,7 +64,7 @@ func (lw *lineWrapWriter) Write(p []byte) (int, error) {
 // that carries filename as a base64-encoded attachment. The plain-text body is
 // a short human-readable note. params supplies the envelope From header.
 func BuildAttachmentMessage(params SendParams, to, filename, fileType string, data []byte) ([]byte, error) {
-	mimeType := MIMETypeForFileType(fileType)
+	mimeType := filetype.MIMETypeOrOctetStream(fileType)
 	safeName := sanitizeFilename(filename)
 	subject := mime.QEncoding.Encode("UTF-8", "Book: "+safeName)
 
