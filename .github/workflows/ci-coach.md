@@ -240,7 +240,7 @@ When creating a PR, the title must follow [Conventional Commits v1.0.0](https://
 ✅ Analyzed all GitHub Actions workflows
 ✅ Collected metrics from recent runs
 ✅ Identified optimization opportunities OR confirmed workflows are well-optimized
-✅ If changes proposed: Checked for existing open `[ci-coach]` PRs before creating a new one
+✅ If changes proposed: Checked for existing open `ci(ci-coach): ` PRs before creating a new one
 ✅ If changes proposed: Created or updated PR with clear rationale and expected impact
 ✅ If no changes: Used noop tool to report analysis complete
 ✅ Completed analysis in under 30 minutes
