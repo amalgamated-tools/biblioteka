@@ -368,7 +368,7 @@ See [API reference — SMTP config endpoints](api-reference.md#get-apiconfigsmtp
 When SMTP is configured, any authenticated user can send a book file as an email attachment to any valid address directly from the library UI. This is useful for sending books to e-readers — for example, a Kindle personal document address.
 
 - The mail icon on each book card opens the send dialog. When a book has multiple files, a file selector is shown first.
-- Files larger than 25 MiB are rejected with `413 Request Entity Too Large`.
+- Files larger than 25 MB are rejected with `413 Request Entity Too Large`.
 - Each successful send is recorded in the audit log as `book_file.emailed`.
 
 If SMTP is not configured, the request is rejected with `400 Bad Request` and the UI disables the send button accordingly.
