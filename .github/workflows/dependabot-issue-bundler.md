@@ -1,7 +1,9 @@
 ---
 description: Find all open Dependabot PRs and create bundle issues for each runtime + manifest file.
 
-on: weekly on monday
+on:
+  schedule: weekly on monday
+  workflow_dispatch:
 
 permissions:
   contents: read

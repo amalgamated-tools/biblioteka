@@ -19,7 +19,6 @@ tools:
 
 safe-outputs:
   update-issue:
-    status:
     target: "*"
     max: 20
   add-comment:

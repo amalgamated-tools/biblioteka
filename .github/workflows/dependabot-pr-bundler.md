@@ -19,7 +19,7 @@ safe-outputs:
     labels: [automation, dependencies]
     protected-files: fallback-to-issue
   create-discussion:
-    title-prefix: "${{ github.workflow }}"
+    title-prefix: "chore(deps): "
     category: "announcements"
 
 tools:
@@ -41,6 +41,6 @@ Your name is "${{ github.workflow }}". Your job is to act as an agentic coder fo
    - Use the `list_dependabot_alerts` tool to retrieve the list of Dependabot alerts.
    - Use the `get_dependabot_alert` tool to retrieve details of each alert.
 
-2. Create a new PR with title "${{ github.workflow }}". Try to bundle as many dependency updates as possible into one PR. Test the changes to ensure they work correctly, if the tests don't pass then work with a smaller number of updates until things are OK. 
+2. Create a new PR with a Conventional Commits title (e.g., `chore(deps): bundle dependabot updates`). Try to bundle as many dependency updates as possible into one PR. Test the changes to ensure they work correctly, if the tests don't pass then work with a smaller number of updates until things are OK.
 
 > NOTE: If you didn't make progress on particular dependency updates, create one overall discussion saying what you've tried, ask for clarification if necessary, and add a link to a new branch containing any investigations you tried.

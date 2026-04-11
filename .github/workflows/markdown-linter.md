@@ -14,7 +14,7 @@ permissions:
 safe-outputs:
   create-issue:
     expires: 2d
-    title-prefix: "[linter] "
+    title-prefix: "docs(linter): "
     labels: [automation, code-quality]
   noop:
 
@@ -24,53 +24,46 @@ timeout-minutes: 15
 imports:
   - shared/reporting.md
 
-jobs:
-  super_linter:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
-      statuses: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Super-linter
-        uses: super-linter/super-linter@v8.5.0
-        id: super-linter
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CREATE_LOG_FILE: "true"
-          LOG_FILE: super-linter.log
-          DEFAULT_BRANCH: main
-          ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: "true"
-          VALIDATE_MARKDOWN: "true"
-          VALIDATE_ALL_CODEBASE: "false"
-
-      - name: Check for linting issues
-        id: check-results
-        run: |
-          if [ -f "super-linter.log" ] && [ -s "super-linter.log" ]; then
-            if grep -qE "ERROR|WARN|FAIL" super-linter.log; then
-              echo "needs-linting=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "needs-linting=false" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "needs-linting=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Upload super-linter log
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: super-linter-log
-          path: super-linter.log
-          retention-days: 7
 steps:
+  - name: Checkout repository
+    uses: actions/checkout@v6.0.2
+    with:
+      fetch-depth: 0
+      persist-credentials: false
+
+  - name: Super-linter
+    uses: super-linter/super-linter@v8.5.0
+    id: super-linter
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CREATE_LOG_FILE: "true"
+      LOG_FILE: super-linter.log
+      DEFAULT_BRANCH: main
+      ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: "true"
+      VALIDATE_MARKDOWN: "true"
+      VALIDATE_ALL_CODEBASE: "false"
+
+  - name: Check for linting issues
+    id: check-results
+    run: |
+      if [ -f "super-linter.log" ] && [ -s "super-linter.log" ]; then
+        if grep -qE "ERROR|WARN|FAIL" super-linter.log; then
+          echo "needs-linting=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "needs-linting=false" >> "$GITHUB_OUTPUT"
+        fi
+      else
+        echo "needs-linting=false" >> "$GITHUB_OUTPUT"
+      fi
+
+  - name: Upload super-linter log
+    if: always()
+    uses: actions/upload-artifact@v7
+    with:
+      name: super-linter-log
+      path: super-linter.log
+      retention-days: 7
+
   - name: Download super-linter log
     uses: actions/download-artifact@v8
     with:

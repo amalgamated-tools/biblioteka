@@ -53,11 +53,5 @@ Create an upbeat daily status report for the team as a GitHub issue.
 1. Gather recent activity from the repository
 2. Create a new GitHub issue with your findings and insights
 
-**Reminder**: You MUST call exactly one safe-output tool before finishing. If no file exceeds 500 lines, call `noop` with a status message. If a file exceeds 500 lines, call `create_issue`. Do NOT end without calling a safe-output tool.
-
-Example noop output:
-
-```json
-{"noop": {"message": "No action needed: all non-test source files are below the 500-line threshold after checking the largest files."}}
-```
+**Reminder**: You MUST call the `create-issue` safe-output tool before finishing to publish the status report. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
 
