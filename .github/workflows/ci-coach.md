@@ -125,9 +125,9 @@ If you identify valuable improvements:
 
 2. **Document the changes** thoroughly in the PR description
 
-3. **Deduplication check**: Before creating a new PR, search for existing open PRs with the `[ci-coach]` title prefix. If one already exists, update that PR with your new findings rather than creating a new one. This prevents duplicate PR spam when multiple workflow runs overlap or trigger in quick succession.
+3. **Deduplication check**: Before creating a new PR, search for existing open PRs with the `ci(ci-coach): ` title prefix. If one already exists, update that PR with your new findings rather than creating a new one. This prevents duplicate PR spam when multiple workflow runs overlap or trigger in quick succession.
 
-4. **Create a pull request** with clear rationale (only if no existing open `[ci-coach]` PR was found)
+4. **Create a pull request** with clear rationale (only if no existing open `ci(ci-coach): ` PR was found)
 
 ### Phase 5: No Changes Path (2 minutes)
 
@@ -246,3 +246,10 @@ When creating a PR, the title must follow [Conventional Commits v1.0.0](https://
 ✅ Completed analysis in under 30 minutes
 
 Begin your analysis now. Identify CI workflows, analyze their performance, and either propose optimizations through a pull request or report that no improvements are needed.
+
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

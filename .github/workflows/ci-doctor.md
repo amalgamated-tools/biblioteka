@@ -7,7 +7,7 @@ description: |
 
 on:
   workflow_run:
-    workflows: ["Daily Perf Improver", "Daily Test Coverage Improver"]  # Monitor the CI workflow specifically
+    workflows: ["Test", "Daily Perf Improver"]  # Monitor the CI workflow specifically
     types:
       - completed
     branches:
@@ -22,8 +22,9 @@ network: defaults
 
 safe-outputs:
   create-issue:
-    title-prefix: "${{ github.workflow }}"
+    title-prefix: "fix(ci): ${{ github.workflow }}"
     labels: [automation, ci]
+    close-older-issues: true
   add-comment:
 
 tools:
