@@ -106,6 +106,21 @@ describe("LibraryForm accessibility", () => {
     ).toHaveTextContent("*");
   });
 
+  it("shows required-fields legend with sr-only asterisk description", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const legend = container.querySelector("form p");
+    expect(legend).toBeInTheDocument();
+    expect(legend?.textContent).toMatch(/are required/i);
+    const visual = legend?.querySelector('span[aria-hidden="true"]');
+    expect(visual).toHaveTextContent("*");
+    const srOnly = legend?.querySelector(".sr-only");
+    expect(srOnly).toHaveTextContent("an asterisk");
+  });
+
   it("shows inline name error with aria-invalid when submitting empty name", async () => {
     const { container } = render(LibraryForm, {
       props: { mode: "create", editId: "" },
