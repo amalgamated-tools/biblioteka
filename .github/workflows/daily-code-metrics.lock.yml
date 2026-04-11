@@ -457,9 +457,6 @@ jobs:
       - name: Determine automatic lockdown mode for GitHub MCP Server
         id: determine-automatic-lockdown
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
-        env:
-          GH_AW_GITHUB_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN }}
-          GH_AW_GITHUB_MCP_SERVER_TOKEN: ${{ secrets.GH_AW_GITHUB_MCP_SERVER_TOKEN }}
         with:
           script: |
             const determineAutomaticLockdown = require('${{ runner.temp }}/gh-aw/actions/determine_automatic_lockdown.cjs');
@@ -688,8 +685,8 @@ jobs:
                 },
                 "guard-policies": {
                   "allow-only": {
-                    "min-integrity": "$GITHUB_MCP_GUARD_MIN_INTEGRITY",
-                    "repos": "$GITHUB_MCP_GUARD_REPOS"
+                    "min-integrity": "none",
+                    "repos": "all"
                   }
                 }
               },

@@ -17,6 +17,8 @@ tools:
     max-file-size: 102400  # 100KB
     max-patch-size: 51200  # 50KB - increased from default 10KB to handle history.jsonl growth
   bash: true
+  github:
+    lockdown: false
 timeout-minutes: 30
 strict: true
 imports:
