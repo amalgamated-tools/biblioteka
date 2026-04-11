@@ -309,4 +309,52 @@ describe("MetadataFetchPanel", () => {
       ).toBeInTheDocument();
     });
   });
+
+  it("closes the previous SSE stream when bookId changes and ignores stale events", async () => {
+    const previousES = createMockEventSource();
+    mockSubscribeToMetadataEvents.mockReturnValue(previousES);
+    mockFetchMetadata.mockResolvedValue({ status: "enqueued" });
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const view = renderPanel();
+
+    await user.click(screen.getByText("Fetch Metadata"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockSubscribeToMetadataEvents).toHaveBeenCalledTimes(1);
+    expect(mockFetchMetadata).toHaveBeenCalledTimes(1);
+
+    // Simulate bookId prop change (navigating to a different book edit page)
+    await view.rerender({
+      bookId: "book-2",
+      saving: false,
+      metadata: null,
+      currentValues: baseCurrentValues,
+      onApplyField: vi.fn(),
+      onApplyAll: vi.fn(),
+      onDismiss: vi.fn(),
+    });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(previousES.close).toHaveBeenCalled();
+
+    // Stale events from the old stream should not update the UI
+    previousES.onmessage?.({
+      data: JSON.stringify({
+        event: "progress",
+        message: "Old stream should be ignored",
+      }),
+    });
+    previousES.onmessage?.({
+      data: JSON.stringify({ event: "complete" }),
+    });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(
+      screen.queryByText("Old stream should be ignored"),
+    ).not.toBeInTheDocument();
+    // No new SSE subscription or fetch was triggered by the bookId change
+    expect(mockSubscribeToMetadataEvents).toHaveBeenCalledTimes(1);
+    expect(mockFetchMetadata).toHaveBeenCalledTimes(1);
+  });
 });

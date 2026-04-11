@@ -60,8 +60,12 @@
     }
   }
 
-  // Close any open SSE connection and timeout when the component unmounts.
+  // Close any open SSE connection and timeout when the component unmounts
+  // or when bookId changes (e.g. navigating between edit pages without
+  // remounting the component).
   $effect(() => {
+    // Read bookId so Svelte tracks it as a dependency.
+    void bookId;
     return () => {
       closeSSE();
       fetchingMetadata = false;
