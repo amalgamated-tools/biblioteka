@@ -15,7 +15,7 @@ type contextKey string
 // UUID generation fails, the ID falls back to the literal string "none".
 const RequestID = "X-Request-ID"
 
-// RequestIDKey is the context key for the X-Request-ID value
+// ctxRequestIDKey is the unexported context key for the X-Request-ID value.
 const ctxRequestIDKey contextKey = "go-http-RequestId"
 
 // RequestIDHandler is a middleware that generates or extracts request IDs and adds them to the request context.
