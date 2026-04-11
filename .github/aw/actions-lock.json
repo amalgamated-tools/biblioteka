@@ -10,6 +10,11 @@
       "version": "v5.0.4",
       "sha": "668228422ae6a00e4ad889ee87cd7109ec5666a7"
     },
+    "actions/checkout@v4": {
+      "repo": "actions/checkout",
+      "version": "v4",
+      "sha": "34e114876b0b11c390a56381ad16ebd13914f8d5"
+    },
     "actions/checkout@v6.0.2": {
       "repo": "actions/checkout",
       "version": "v6.0.2",
@@ -50,6 +55,11 @@
       "version": "v6",
       "sha": "b7c566a772e6b6bfb58ed0dc250532a479d7789f"
     },
+    "actions/upload-artifact@v7": {
+      "repo": "actions/upload-artifact",
+      "version": "v7",
+      "sha": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+    },
     "actions/upload-artifact@v7.0.0": {
       "repo": "actions/upload-artifact",
       "version": "v7.0.0",
@@ -74,6 +84,11 @@
       "repo": "github/gh-aw/actions/setup",
       "version": "v0.68.0",
       "sha": "f3d301231ec6de850c2b3320f3ba896ab1e8a8ff"
+    },
+    "super-linter/super-linter@v8.5.0": {
+      "repo": "super-linter/super-linter",
+      "version": "v8.5.0",
+      "sha": "61abc07d755095a68f4987d1c2c3d1d64408f1f9"
     }
   }
 }
