@@ -1,73 +1,45 @@
+## Report Formatting
+
+Follow the content structure and formatting guidelines from the imported formatting fragment above.
+
+## Reporting Workflow Run Information
+
+When analyzing workflow run logs or reporting information from GitHub Actions runs:
+
+### 1. Workflow Run ID Formatting
+
+**Always render workflow run IDs as clickable URLs** when mentioning them in your report. The workflow run data includes a `url` field that provides the full GitHub Actions run page URL.
+
+**Format:**
+
+`````markdown
+[§12345](https://github.com/owner/repo/actions/runs/12345)
+`````
+
+**Example:**
+
+`````markdown
+Analysis based on [§456789](https://github.com/github/gh-aw/actions/runs/456789)
+`````
+
+### 2. Document References for Workflow Runs
+
+When your analysis is based on information mined from one or more workflow runs, **include up to 3 workflow run URLs as document references** at the end of your report.
+
+**Format:**
+
+`````markdown
 ---
-# Report formatting guidelines
----
 
-## Report Structure Guidelines
+**References:**
+- [§12345](https://github.com/owner/repo/actions/runs/12345)
+- [§12346](https://github.com/owner/repo/actions/runs/12346)
+- [§12347](https://github.com/owner/repo/actions/runs/12347)
+`````
 
-### 1. Header Levels
-**Use h3 (###) or lower for all headers in your issue report to maintain proper document hierarchy.**
+**Guidelines:**
 
-When creating GitHub issues or discussions:
-- Use `###` (h3) for main sections (e.g., "### Test Summary")
-- Use `####` (h4) for subsections (e.g., "#### Device-Specific Results")
-- Never use `##` (h2) or `#` (h1) in reports - these are reserved for titles
-
-### 2. Progressive Disclosure
-**Wrap detailed test results in `<details><summary>Section Name</summary>` tags to improve readability and reduce scrolling.**
-
-Use collapsible sections for:
-- Verbose details (full test logs, raw data)
-- Secondary information (minor warnings, extra context)
-- Per-item breakdowns when there are many items
-
-Always keep critical information visible (summary, critical issues, key metrics).
-
-### 3. Report Structure Pattern
-
-1. **Overview**: 1-2 paragraphs summarizing key findings
-2. **Critical Information**: Show immediately (summary stats, critical issues)
-3. **Details**: Use `<details><summary>Section Name</summary>` for expanded content
-4. **Context**: Add helpful metadata (workflow run, date, trigger)
-
-### Design Principles (Airbnb-Inspired)
-
-Reports should:
-- **Build trust through clarity**: Most important info immediately visible
-- **Exceed expectations**: Add helpful context like trends, comparisons
-- **Create delight**: Use progressive disclosure to reduce overwhelm
-- **Maintain consistency**: Follow patterns across all reports
-
-### Example Report Structure
-
-```markdown
-### Summary
-- Key metric 1: value
-- Key metric 2: value
-- Status: ✅/⚠️/❌
-
-### Critical Issues
-[Always visible - these are important]
-
-<details>
-<summary>View Detailed Results</summary>
-
-[Comprehensive details, logs, traces]
-
-</details>
-
-<details>
-<summary>View All Warnings</summary>
-
-[Minor issues and potential problems]
-
-</details>
-
-### Recommendations
-[Actionable next steps - keep visible]
-```
-
-## Workflow Run References
-
-- Format run IDs as links: `[§12345](https://github.com/owner/repo/actions/runs/12345)`
-- Include up to 3 most relevant run URLs at end under `**References:**`
-- Do NOT add footer attribution (system adds automatically)
+- Include **maximum 3 references** to keep reports concise
+- Choose the most relevant or representative runs (e.g., failed runs, high-cost runs, or runs with significant findings)
+- Always use the actual URL from the workflow run data (specifically, use the `url` field from `RunData` or the `RunURL` field from `ErrorSummary`)
+- If analyzing more than 3 runs, select the most important ones for references
