@@ -177,9 +177,7 @@
   class="bg-white dark:bg-ink-900 rounded-2xl shadow-sm border border-ink-100 dark:border-ink-800 p-6 mb-6"
 >
   <div class="flex items-center justify-between mb-3">
-    <h2
-      class="text-lg font-display font-bold text-ink-900 dark:text-cream-100"
-    >
+    <h2 class="text-lg font-display font-bold text-ink-900 dark:text-cream-100">
       Remote Metadata
     </h2>
     <Button
