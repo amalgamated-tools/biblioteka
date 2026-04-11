@@ -20,7 +20,7 @@ network:
 safe-outputs:
   create-pull-request:
     expires: 2d
-    title-prefix: "[docs] "
+    title-prefix: "docs(glossary): "
     labels: [documentation, glossary]
     draft: false
     protected-files: fallback-to-issue

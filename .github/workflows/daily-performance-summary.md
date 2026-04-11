@@ -501,8 +501,8 @@ This workflow uses mcp-script tools imported from `shared/github-queries-mcp-scr
 
 Begin your analysis now. **Use the mcp-script tools** to gather data, run Python analysis, generate charts, and create the discussion report.
 
-**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+**Important**: After completing your analysis, you **MUST** call the `create-discussion` safe-output tool (via the imported `daily-audit-discussion` shared workflow) to publish your report. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
 
 ```json
-{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+{"create-discussion": {"title": "Daily Performance Summary", "body": "[Your analysis, charts, and findings here]"}}
 ```

@@ -92,8 +92,8 @@ Create an issue with a markdown table like this:
 - Consider artifact retention policies in your analysis
 - Include both successful and failed runs in the analysis, ignore cancelled runs
 
-**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+**Important**: After completing your analysis, you **MUST** call the `create-discussion` safe-output tool to publish your report. If there are no notable findings, include a brief explanation in the discussion body. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
 
 ```json
-{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+{"create-discussion": {"title": "Artifacts Summary", "body": "[Your analysis and findings here]"}}
 ```

@@ -53,7 +53,7 @@ tools:
 safe-outputs:
   create-pull-request:
     expires: 2d
-    title-prefix: "[docs] "
+    title-prefix: "docs(unbloat): "
     labels: [documentation, automation]
     draft: true
     protected-files: fallback-to-issue

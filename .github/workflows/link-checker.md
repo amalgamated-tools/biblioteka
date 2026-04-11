@@ -101,7 +101,7 @@ tools:
 
 safe-outputs:
   create-pull-request:
-    title-prefix: "[link-checker] "
+    title-prefix: "docs(link-checker): "
     labels: [documentation, automated]
     draft: false
     protected-files: fallback-to-issue

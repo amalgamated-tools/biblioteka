@@ -69,7 +69,7 @@ Documentation‑as‑Code, transparency, single source of truth, continuous impr
 
 1. **Analyze Repository Changes**
 
-   - On every push to main, examine the diff to identify changed/added/removed entities
+   - On every push to the `main` branch, examine the diff to identify changed/added/removed entities
    - Look for new APIs, functions, classes, configuration files, or significant code changes
    - Check existing documentation for accuracy and completeness
    - Identify documentation gaps like failing tests: a "red build" until fixed

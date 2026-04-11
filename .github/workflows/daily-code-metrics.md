@@ -446,8 +446,8 @@ This ensures the quality score reflects actionable source code volatility, not n
 - Embed charts in discussion report with analysis
 - Store metrics to repo memory, create discussion report with visualizations
 
-**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+**Important**: After completing your analysis, you **MUST** call the `create-discussion` safe-output tool to publish the report, including a brief explanation if there are no notable changes or actions needed. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
 
 ```json
-{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+{"create-discussion": {"title": "Daily Code Metrics Report", "body": "[summary of metrics, charts, analysis, and note if no action is needed]"}}
 ```
