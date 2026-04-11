@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
-	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
+	"github.com/amalgamated-tools/biblioteka/internal/filetype"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"github.com/amalgamated-tools/biblioteka/internal/smtp"
 )
@@ -192,10 +192,7 @@ func (h *BookFileHandler) downloadBookFile(w http.ResponseWriter, r *http.Reques
 		)
 	}
 
-	mimeType := opdspkg.MIMETypeForFileType(bf.FileType)
-	if mimeType == "" {
-		mimeType = "application/octet-stream"
-	}
+	mimeType := filetype.MIMETypeOrOctetStream(bf.FileType)
 
 	w.Header().Set("Content-Type", mimeType)
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": bf.FileName}))
