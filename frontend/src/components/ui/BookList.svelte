@@ -289,7 +289,7 @@
           {#each books as book (book.id)}
             <tr
               onclick={() => routerStore.navigate(`books/${book.id}`)}
-              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer focus-within:ring-2 focus-within:ring-accent-500"
+              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer focus-within:ring-2 focus-within:ring-inset focus-within:ring-accent-500"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
