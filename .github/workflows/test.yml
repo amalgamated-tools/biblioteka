@@ -108,7 +108,7 @@ jobs:
 
       - name: Upload frontend coverage report
         # Only upload on main-branch pushes to avoid accumulating ~342 KB artifacts
-        # on every PR run (2 000+ runs × 342 KB ≈ 667 MB of artifact storage).
+        # on every PR run (2,000+ runs × 342 KB ≈ 667 MB of artifact storage).
         # The coverage percentage is exported as a job output and is available on all runs.
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
