@@ -2,6 +2,7 @@ import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import { userEvent } from "@testing-library/user-event";
 import type { RemoteMetadata } from "../../types";
+import type { FormFields } from "./BookEditForm.svelte";
 
 vi.mock("lucide-svelte", () => ({
   Search: () => {},
@@ -23,22 +24,35 @@ vi.mock("../../lib/api", () => ({
     mockSubscribeToMetadataEvents(...args),
 }));
 
+vi.mock("../../lib/api/core", () => ({
+  ApiError: class ApiError extends Error {
+    status: number;
+    constructor(message: string, status: number) {
+      super(message);
+      this.status = status;
+    }
+  },
+}));
+
 import MetadataFetchPanel from "./MetadataFetchPanel.svelte";
 
-const baseCurrentValues = {
-  title: "Old Title",
-  description: null,
-  publisher: null,
-  language: null,
-  publication_date: null,
-  isbn13: null,
-  isbn10: null,
-  asin: null,
-  goodreads_id: null,
-  hardcover_id: null,
-  google_books_id: null,
-  cover_image_url: null,
-};
+function makeFields(overrides: Partial<FormFields> = {}): FormFields {
+  return {
+    title: "Old Title",
+    description: "",
+    publisher: "",
+    language: "",
+    publicationDate: "",
+    isbn13: "",
+    isbn10: "",
+    asin: "",
+    goodreadsId: "",
+    hardcoverId: "",
+    googleBooksId: "",
+    coverImageUrl: "",
+    ...overrides,
+  };
+}
 
 const fakeMetadata: RemoteMetadata = {
   id: "m1",
@@ -70,15 +84,19 @@ function createMockEventSource() {
   };
 }
 
-function renderPanel(metadata: RemoteMetadata | null = null) {
+function renderPanel(overrides: Record<string, unknown> = {}) {
+  // Default: getMetadata returns 404 (no pending metadata)
+  if (!mockGetMetadata.getMockImplementation()) {
+    mockGetMetadata.mockRejectedValue(
+      Object.assign(new Error("Not Found"), { status: 404 }),
+    );
+  }
   return render(MetadataFetchPanel, {
     bookId: "b1",
     saving: false,
-    metadata,
-    currentValues: baseCurrentValues,
-    onApplyField: vi.fn(),
-    onApplyAll: vi.fn(),
-    onDismiss: vi.fn(),
+    fields: makeFields(),
+    pendingMetadata: null,
+    ...overrides,
   });
 }
 
@@ -328,11 +346,8 @@ describe("MetadataFetchPanel", () => {
     await view.rerender({
       bookId: "book-2",
       saving: false,
-      metadata: null,
-      currentValues: baseCurrentValues,
-      onApplyField: vi.fn(),
-      onApplyAll: vi.fn(),
-      onDismiss: vi.fn(),
+      fields: makeFields(),
+      pendingMetadata: null,
     });
     await vi.advanceTimersByTimeAsync(0);
 
@@ -367,12 +382,12 @@ describe("MetadataFetchPanel", () => {
     mockFetchMetadata.mockResolvedValue({ status: "enqueued" });
 
     let resolveMetadata!: (value: RemoteMetadata) => void;
-    const pendingMetadata = new Promise<RemoteMetadata>((resolve) => {
+    const pendingMetadataPromise = new Promise<RemoteMetadata>((resolve) => {
       resolveMetadata = resolve;
     });
     mockGetMetadata.mockImplementation((id: string) => {
       if (id === "b1") {
-        return pendingMetadata;
+        return pendingMetadataPromise;
       }
       return Promise.reject(new Error("not found"));
     });
@@ -393,11 +408,8 @@ describe("MetadataFetchPanel", () => {
     await rerender({
       bookId: "b2",
       saving: false,
-      metadata: null,
-      currentValues: baseCurrentValues,
-      onApplyField: vi.fn(),
-      onApplyAll: vi.fn(),
-      onDismiss: vi.fn(),
+      fields: makeFields(),
+      pendingMetadata: null,
     });
 
     // Resolve the old book's metadata request after the component has rerendered.
