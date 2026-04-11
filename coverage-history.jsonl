@@ -1,0 +1,1 @@
+{"date":"2026-04-11","timestamp":1744415204,"total_coverage":0,"packages_tested":0,"packages_zero":0,"total_statements":0,"covered_statements":0,"test_pass_count":0,"test_fail_count":-1,"run_error":"Infrastructure failure: Go 1.26.1 required but Go 1.24.13 available; network blocked for dependency downloads; exiftool not installed","packages":{}}
