@@ -38,7 +38,7 @@ safe-outputs:
     github-token-for-extra-empty-commit: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
     github-token: ${{ secrets.GH_AW_PUSH_TOKEN }}
 timeout-minutes: 30
-source: githubnext/agentics/workflows/ci-coach.md@b897c2f3e43bde9ff7923c8fa9211055b26e27cc
+source: githubnext/agentics/workflows/ci-coach.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---
 
 # CI Optimization Coach
@@ -125,7 +125,9 @@ If you identify valuable improvements:
 
 2. **Document the changes** thoroughly in the PR description
 
-3. **Create a pull request** with clear rationale
+3. **Deduplication check**: Before creating a new PR, search for existing open PRs with the `ci(ci-coach): ` title prefix. If one already exists, update that PR with your new findings rather than creating a new one. This prevents duplicate PR spam when multiple workflow runs overlap or trigger in quick succession.
+
+4. **Create a pull request** with clear rationale (only if no existing open `ci(ci-coach): ` PR was found)
 
 ### Phase 5: No Changes Path (2 minutes)
 
@@ -238,8 +240,16 @@ When creating a PR, the title must follow [Conventional Commits v1.0.0](https://
 ✅ Analyzed all GitHub Actions workflows
 ✅ Collected metrics from recent runs
 ✅ Identified optimization opportunities OR confirmed workflows are well-optimized
-✅ If changes proposed: Created PR with clear rationale and expected impact
+✅ If changes proposed: Checked for existing open `ci(ci-coach): ` PRs before creating a new one
+✅ If changes proposed: Created or updated PR with clear rationale and expected impact
 ✅ If no changes: Used noop tool to report analysis complete
 ✅ Completed analysis in under 30 minutes
 
 Begin your analysis now. Identify CI workflows, analyze their performance, and either propose optimizations through a pull request or report that no improvements are needed.
+
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

@@ -29,7 +29,6 @@ safe-outputs:
     labels: [dependencies, automation]
     draft: false
     protected-files: allowed
-  noop:
 
 tools:
   github:
@@ -38,9 +37,11 @@ tools:
 
 timeout-minutes: 15
 
-# features:
-#   copilot-requests: true
-source: github/gh-aw/.github/workflows/daily-workflow-updater.md@e2db3a4a4d844e8337b59db4bf5c1d8f9458778d
+features:
+  copilot-requests: true
+imports:
+  - shared/observability-otlp.md
+source: github/gh-aw/.github/workflows/daily-workflow-updater.md@525b5b77a444146979ba1759b2a23d72934bc6fc
 ---
 
 {{#runtime-import? .github/shared-instructions.md}}
@@ -127,7 +128,7 @@ If `.github/aw/actions-lock.json` has changes:
 This PR updates GitHub Actions versions in `.github/aw/actions-lock.json` to their latest compatible releases.
 
 <details>
-<summary><b>📦 Actions Updated (full list)</b></summary>
+<summary>📦 Actions Updated (full list)</summary>
 
 ### Actions Updated
 
@@ -160,11 +161,11 @@ The updated actions will be automatically used in workflow compilations. No manu
 
 ### 6. Handle Edge Cases
 
-- **No updates available**: If `actions-lock.json` was not modified, do NOT create a PR. Call `noop` with a message explaining that all actions are already up to date.
+- **No updates available**: If `actions-lock.json` was not modified, do NOT create a PR. Exit gracefully with a message like "All actions are already up to date."
 
-- **Only .lock.yml files changed**: If only `.lock.yml` files changed but `actions-lock.json` was not modified, reset the lock files and call `noop` with a message explaining no action version updates were found.
+- **Only .lock.yml files changed**: If only `.lock.yml` files changed but `actions-lock.json` was not modified, reset the lock files and exit without creating a PR.
 
-- **Update command fails**: If the `gh aw update` command fails, do not create a PR. Call `noop` with a message describing the error encountered.
+- **Update command fails**: If the `gh aw update` command fails, report the error but do not create a PR. The error might be temporary (network issues, API rate limits).
 
 ## Important Guidelines
 
@@ -203,6 +204,7 @@ git status
 - PR is created only when `actions-lock.json` changes
 - `.lock.yml` files are never included in the PR
 - PR description clearly shows what was updated
+- Process handles edge cases gracefully
 - **Every run calls exactly one safe-output tool**: either `create-pull-request` (when updates are found) or `noop` (when no updates are needed or an error occurs)
 
 Good luck keeping our GitHub Actions up to date!
