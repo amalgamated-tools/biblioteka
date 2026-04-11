@@ -10,7 +10,7 @@ import (
 
 // Search performs a search query against the Goodreads unpublished GraphQL API and returns a list of search results.
 // The query parameter is a string that can contain the book title, author name, or other relevant information to find matching books on Goodreads.
-// It should not be a search for ISBN - we have other functions for that
+// Do not use this for ISBN searches; use SearchByISBN instead.
 func (c *Client) Search(ctx context.Context, query string) ([]BookResult, error) {
 	results := make([]BookResult, 0)
 	seen := make(map[string]struct{})
