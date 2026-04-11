@@ -170,6 +170,63 @@ describe("LibraryForm accessibility", () => {
   });
 });
 
+describe("LibraryForm remove folder button aria-labels", () => {
+  afterEach(() => cleanup());
+
+  it("uses a generic ordinal label when the path is empty", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    // Add a second (empty) folder so the remove buttons appear
+    const addBtn = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button[type=button]"),
+    ).find((b) => b.textContent?.includes("Add another folder"))!;
+    await fireEvent.click(addBtn);
+    await tick();
+
+    const removeBtns = container.querySelectorAll<HTMLButtonElement>(
+      'button[aria-label^="Remove folder"]',
+    );
+    expect(removeBtns).toHaveLength(2);
+    expect(removeBtns[0]).toHaveAttribute("aria-label", "Remove folder 1");
+    expect(removeBtns[1]).toHaveAttribute("aria-label", "Remove folder 2");
+  });
+
+  it("uses the path value in the label when the path is filled", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    // Fill in the first path
+    const firstInput = container.querySelector(
+      "input[aria-label]",
+    ) as HTMLInputElement;
+    await fireEvent.input(firstInput, {
+      target: { value: "/home/user/books" },
+    });
+
+    // Add a second folder
+    const addBtn = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button[type=button]"),
+    ).find((b) => b.textContent?.includes("Add another folder"))!;
+    await fireEvent.click(addBtn);
+    await tick();
+
+    const removeBtns = container.querySelectorAll<HTMLButtonElement>(
+      'button[aria-label^="Remove folder"]',
+    );
+    expect(removeBtns).toHaveLength(2);
+    expect(removeBtns[0]).toHaveAttribute(
+      "aria-label",
+      `Remove folder "/home/user/books"`,
+    );
+    expect(removeBtns[1]).toHaveAttribute("aria-label", "Remove folder 2");
+  });
+});
+
 describe("LibraryForm monitor toggle switch", () => {
   afterEach(() => cleanup());
 
