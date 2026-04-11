@@ -6,9 +6,11 @@ import type { BookSummary } from "../../types";
 vi.mock("lucide-svelte", () => ({ BookOpen: () => {}, Mail: () => {} }));
 
 let emailModalRendered = false;
+let emailModalOnClose: (() => void) | null = null;
 vi.mock("./EmailBookModal.svelte", () => ({
-  default: () => {
+  default: (_anchor: unknown, props: { onClose?: () => void }) => {
     emailModalRendered = true;
+    emailModalOnClose = props?.onClose ?? null;
     return {};
   },
 }));
@@ -37,6 +39,7 @@ describe("BookCard", () => {
   afterEach(() => {
     cleanup();
     emailModalRendered = false;
+    emailModalOnClose = null;
   });
 
   it("renders the book title in a heading", () => {
@@ -117,5 +120,20 @@ describe("BookCard", () => {
     const btn = screen.getByRole("button", { name: /email the hobbit/i });
     await user.click(btn);
     expect(emailModalRendered).toBe(true);
+  });
+
+  it("returns focus to the email button when the modal closes", async () => {
+    const user = userEvent.setup();
+    render(BookCard, { book: baseBook });
+    const btn = screen.getByRole("button", { name: /email the hobbit/i });
+    await user.click(btn);
+    expect(emailModalOnClose).toBeTypeOf("function");
+
+    // Simulate the modal calling onClose
+    emailModalOnClose!();
+    // Wait for tick() + re-render
+    await vi.waitFor(() => {
+      expect(btn).toHaveFocus();
+    });
   });
 });
