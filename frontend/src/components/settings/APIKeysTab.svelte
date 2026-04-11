@@ -3,7 +3,6 @@
   import type { APIKey } from "../../types";
   import { copyToClipboard } from "../../lib/clipboard";
   import { KeyRound, Copy, Trash2 } from "lucide-svelte";
-  import { onDestroy, onMount } from "svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
@@ -23,13 +22,12 @@
   let createKeyLoading = $state(false);
   const newKeyCopyState = new CopyTimeoutState();
 
-  onDestroy(() => {
-    newKeyCopyState.clear();
-    tokenList.copy.clear();
-  });
-
-  onMount(() => {
+  $effect(() => {
     void tokenList.load();
+    return () => {
+      newKeyCopyState.clear();
+      tokenList.copy.clear();
+    };
   });
 
   async function handleCreateAPIKey(e: SubmitEvent) {
@@ -46,16 +44,8 @@
       const result = await createAPIKey(newKeyName.trim());
       newlyCreatedKey = result.key;
       newKeyName = "";
-      tokenList.items = [
-        {
-          id: result.id,
-          name: result.name,
-          key_prefix: result.key_prefix,
-          last_used_at: result.last_used_at,
-          created_at: result.created_at,
-        },
-        ...tokenList.items,
-      ];
+      const { key: _secret, ...apiKey } = result; // eslint-disable-line @typescript-eslint/no-unused-vars
+      tokenList.items = [apiKey, ...tokenList.items];
     } catch (err) {
       tokenList.error =
         err instanceof Error ? err.message : "Failed to create API key";
