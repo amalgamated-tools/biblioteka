@@ -24,7 +24,7 @@ frontend/
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
       Books.svelte        Book listing and detail view; reads `initialOffset` from the URL hash query string (`#books?offset=48`) and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
-      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries) plus a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); Total Books is fetched from the API via `getTotalBooksCount()` on mount and shows "…" while the request is in flight (falls back to `0` on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
+      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries) plus a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); in the stats-grid branch, Total Books is fetched from the API via `getTotalBooksCount()` on first render and shows "…" while the request is in flight (falls back to `0` on error, surfacing an `AlertBanner` with the error message); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
@@ -118,10 +118,9 @@ The `error` field is set when `load()` fails and cleared before each operation. 
 
 ```svelte
 <script lang="ts">
-  import { onMount } from "svelte";
   import { authorStore } from "../stores/authors.svelte";
 
-  onMount(() => { authorStore.load(); });
+  $effect(() => { authorStore.load(); });
 </script>
 
 {#if authorStore.error}
@@ -216,10 +215,9 @@ Stores are plain class instances — no special `$` prefix import is needed for 
 
 ```svelte
 <script lang="ts">
-  import { onMount } from "svelte";
   import { libraryStore } from "../stores/libraries.svelte";
 
-  onMount(() => {
+  $effect(() => {
     libraryStore.load();
   });
 </script>
@@ -229,7 +227,19 @@ Stores are plain class instances — no special `$` prefix import is needed for 
 {/each}
 ```
 
-> **Prefer `onMount` for one-time initial data fetching.** `onMount` runs exactly once after the component mounts and is the right place for an unconditional side-effect such as seeding a store. `$effect` re-runs whenever its reactive dependencies change, so using it to trigger `store.load()` can cause repeated fetches or subtle ordering bugs. Only use `$effect` for loading when it is tied to specific reactive preconditions (not just "run on first render") and the `load()` method is idempotent so that repeated calls are safe.
+> **Prefer `$effect` for one-time initial data fetching in Svelte 5 runes-mode components.** Store `load()` methods on `CrudStore`-based stores include an idempotency guard (`if (this.loading || this.loaded) return;`), so calling `load()` from a bare `$effect` is safe — the guard prevents duplicate requests even if the effect re-runs. `TokenListState.load()` has no such guard, but is equally safe because it performs no synchronous `$state` reads, so Svelte never registers a reactive dependency and the effect runs only once. For non-idempotent initialization that must run exactly once regardless of reactive dependencies, use a non-reactive boolean guard variable:
+>
+> ```svelte
+> let initialized = false;
+> $effect(() => {
+>   if (!initialized) {
+>     initialized = true;
+>     void doOneTimeSetup();
+>   }
+> });
+> ```
+>
+> `onMount` remains valid for components that already use it, but new components should use `$effect` consistently with the rest of the runes-mode codebase.
 
 ## Routing
 
@@ -510,7 +520,7 @@ Use `AutoDismissTimer` whenever a component shows a transient success or informa
 | `loading` | `boolean` | `true` while `load()` is in progress |
 | `error` | `string \| null` | Load or delete error message; `null` when no error is present |
 | `pendingDelete` | `{ id: string; name: string } \| null` | The item currently awaiting confirmation; `null` when no delete is in progress |
-| `copy` | `CopyTimeoutState` | Integrated copy-to-clipboard feedback state; use `tokenList.copy.set(id)` after a clipboard write, check `tokenList.copy.copiedId` to drive per-row "Copied!" feedback, and call `tokenList.copy.clear()` from `onDestroy` |
+| `copy` | `CopyTimeoutState` | Integrated copy-to-clipboard feedback state; use `tokenList.copy.set(id)` after a clipboard write, check `tokenList.copy.copiedId` to drive per-row "Copied!" feedback, and call `tokenList.copy.clear()` from the `$effect` cleanup function |
 
 **Methods:**
 
@@ -528,7 +538,6 @@ Components that render a delete confirmation dialog should add `data-delete-trig
 
 ```svelte
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import { TokenListState } from "../lib/tokenList.svelte";
   import { listAPIKeys, deleteAPIKey } from "../lib/api";
   import { copyToClipboard } from "../lib/clipboard";
@@ -541,9 +550,13 @@ Components that render a delete confirmation dialog should add `data-delete-trig
     deleteError: "Failed to delete API key",
   });
 
-  onMount(() => void tokenList.load());
-  // Clear the copy timer when the component unmounts to prevent leaks
-  onDestroy(() => tokenList.copy.clear());
+  $effect(() => {
+    void tokenList.load();
+    // Clear copy timers when the component unmounts to prevent leaks
+    return () => {
+      tokenList.copy.clear();
+    };
+  });
 
   async function handleCopy(id: string, value: string) {
     try {
@@ -725,7 +738,7 @@ When adding a new input interface, always match the nullability of the correspon
 
 1. Create `frontend/src/stores/<name>.svelte.ts`.
 2. Define a class with `$state` / `$state.raw` properties. Use `$state.raw` for array properties and `$state` for scalars and nullable objects (see the [`$state` vs `$state.raw`](#reactive-stores) note above).
-3. If the store fetches data from the API, implement `load()` with the idempotency guard: `if (this.loading || this.loaded) return;`. This ensures that calling `load()` from multiple `onMount` handlers never issues a duplicate request.
+3. If the store fetches data from the API, implement `load()` with the idempotency guard: `if (this.loading || this.loaded) return;`. This ensures that calling `load()` from multiple `$effect` blocks never issues a duplicate request.
 4. Export a singleton: `export const myStore = new MyStore();`.
 5. Add an entry for the new store in the table above.
 
