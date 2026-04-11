@@ -8,7 +8,7 @@ permissions:
   contents: read
   pull-requests: read
   actions: read
-
+tracker-id: pr-nitpick-reviewer
 tools:
   cache-memory: true
   github:
@@ -63,6 +63,31 @@ Use the cache memory at `/tmp/gh-aw/cache-memory/` to:
 - Review user instructions from `/tmp/gh-aw/cache-memory/user-preferences.json`
 - Note team coding conventions from `/tmp/gh-aw/cache-memory/conventions.json`
 
+**Memory Files Structure:**
+
+`/tmp/gh-aw/cache-memory/nitpick-patterns.json`:
+```json
+{
+  "common_patterns": [
+    {
+      "pattern": "inconsistent naming conventions",
+      "count": 5,
+      "last_seen": "2024-11-01"
+    }
+  ],
+  "repo_specific": {
+    "preferred_style": "notes about repo preferences"
+  }
+}
+```
+
+`/tmp/gh-aw/cache-memory/user-preferences.json`:
+```json
+{
+  "ignore_patterns": ["pattern to ignore"],
+  "focus_areas": ["naming", "comments", "structure"]
+}
+```
 ### Step 2: Deduplication Check
 
 Before fetching PR details, guard against duplicate runs:
@@ -125,6 +150,11 @@ Look for **non-linter** issues such as:
 
 For each nitpick found, post inline review comments using `create-pull-request-review-comment`:
 
+- **Line-specific feedback** - Issues on specific code lines
+- **Code snippets** - Suggestions with example code
+- **Technical details** - Detailed explanations of issues
+
+**Format:**
 ```json
 {
   "path": "path/to/file.js",
@@ -158,6 +188,23 @@ After completing the review, update cache memory files:
 - Note any team-specific conventions observed
 - Track preferences inferred from PR feedback
 
+**Create `/tmp/gh-aw/cache-memory/pr-${{ github.event.pull_request.number }}.json`:**
+```json
+{
+  "pr_number": ${{ github.event.pull_request.number }},
+  "reviewed_date": "[timestamp]",
+  "files_reviewed": ["list of files"],
+  "nitpick_count": 0,
+  "categories": {
+    "naming": 0,
+    "structure": 0,
+    "comments": 0,
+    "best_practices": 0
+  },
+  "key_issues": ["brief descriptions"]
+}
+```
+
 ## Review Scope and Prioritization
 
 ### Focus On
@@ -187,6 +234,10 @@ After completing the review, update cache memory files:
 - ✅ "Line 42: This function has 3 levels of nesting. Consider extracting the inner logic"
 - ❌ "This code is too complex"
 
+### Be Educational
+- ✅ "Using early returns here would reduce nesting and improve readability. See [link to style guide]"
+- ❌ "Use early returns"
+
 ### Acknowledge Good Work
 - ✅ "Excellent error handling pattern in this function!"
 - ❌ [Only criticism without positive feedback]
@@ -200,10 +251,42 @@ After completing the review, update cache memory files:
 ### Large PRs (> 20 files changed)
 - Focus on patterns rather than every instance
 - Suggest refactoring in summary rather than inline
+- Prioritize architectural concerns
 
+### Auto-generated Code
+- Skip review of obviously generated files
+- Note in summary: "Skipped [count] auto-generated files"
 ### No Nitpicks Found
 - Still submit a positive review acknowledging good code quality
 - Update memory cache with "clean review" note
+
+### First-time Author
+- Be extra welcoming and educational
+- Provide more context for suggestions
+- Link to style guides and resources
+
+## Success Criteria
+
+A successful review:
+- ✅ Identifies 0-10 meaningful nitpicks (not everything is a nitpick!)
+- ✅ Provides specific, actionable feedback
+- ✅ Uses appropriate output types (review comments, PR comments, discussion)
+- ✅ Maintains constructive, helpful tone
+- ✅ Updates memory cache for consistency
+- ✅ Completes within 15-minute timeout
+- ✅ Adds value beyond automated linters
+- ✅ Helps improve code quality and team practices
+
+## Important Notes
+
+- **Quality over quantity** - Don't flag everything; focus on what matters
+- **Context matters** - Consider the PR's purpose and urgency
+- **Be consistent** - Use memory cache to maintain standards
+- **Be helpful** - The goal is to improve code, not criticize
+- **Stay focused** - Only flag non-linter issues per the mission
+- **Respect time** - Author's time is valuable; make feedback count
+
+Now begin your review! 🔍
 
 **Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
 

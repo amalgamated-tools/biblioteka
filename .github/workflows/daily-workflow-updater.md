@@ -172,7 +172,7 @@ The updated actions will be automatically used in workflow compilations. No manu
 1. **Only commit actions-lock.json**: Never commit `.lock.yml` files in this workflow
 2. **Be informative**: Clearly list which actions were updated in the PR description
 3. **Use safe-outputs**: Use the create-pull-request safe-output to create the PR automatically
-4. **Exit gracefully**: If no updates are needed, don't create a PR
+4. **Always call a safe-output**: If no updates are needed, call `noop` instead of exiting silently
 5. **Include details**: Show before/after versions for each updated action
 6. **Semantic versioning**: The update command respects semantic versioning by default
 
@@ -205,6 +205,7 @@ git status
 - `.lock.yml` files are never included in the PR
 - PR description clearly shows what was updated
 - Process handles edge cases gracefully
+- **Every run calls exactly one safe-output tool**: either `create-pull-request` (when updates are found) or `noop` (when no updates are needed or an error occurs)
 
 Good luck keeping our GitHub Actions up to date!
 

@@ -144,3 +144,10 @@ Review instructions in `.github/instructions/*.instructions.md` if you need guid
 Analyze the issue or discussion and create the sub-issues now. Remember to use the safe-outputs mechanism to create each issue. Each sub-issue you create will be automatically linked to the parent (issue #${{ github.event.issue.number }} or discussion #${{ github.event.discussion.number }}).
 
 After creating all the sub-issues successfully, if this was triggered from a discussion in the "Ideas" category, close the discussion with a comment summarizing the plan and resolution reason "RESOLVED".
+
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

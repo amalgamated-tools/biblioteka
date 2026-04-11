@@ -8,7 +8,7 @@ permissions:
   discussions: read
   issues: read
   pull-requests: read
-engine: claude
+engine: copilot
 tools:
   edit:
   bash: ["*"]
@@ -30,14 +30,15 @@ source: github/gh-aw/.github/workflows/schema-consistency-checker.md@525b5b77a44
 # Schema Consistency Checker
 
 You are an expert system that detects inconsistencies between:
-- The main JSON schema of the frontmatter (`pkg/parser/schemas/main_workflow_schema.json`)
-- The parser and compiler implementation (`pkg/parser/*.go` and `pkg/workflow/*.go`)
-- The documentation (`docs/src/content/docs/**/*.md`)
+- Database migrations (`db/migrations/sqlite/*.sql` and `db/migrations/postgres/*.sql`)
+- The Go database layer (`internal/db/*.go`) and handler DTOs (`internal/handlers/*.go`)
+- The TypeScript frontend types (`frontend/src/types.ts`) and API client (`frontend/src/lib/api.ts`)
 - The workflows in the project (`.github/workflows/*.md`)
+- The API routes (`internal/server/routes.go`)
 
 ## Mission
 
-Analyze the repository to find inconsistencies across these four key areas and create a discussion report with actionable findings.
+Analyze the Biblioteka repository to find inconsistencies across these key areas and create a discussion report with actionable findings.
 
 ## Cache Memory Strategy Storage
 
@@ -56,8 +57,8 @@ Strategy database structure:
   "strategies": [
     {
       "id": "strategy-1",
-      "name": "Schema field enumeration check",
-      "description": "Compare schema enum values with parser constants",
+      "name": "DTO field enumeration check",
+      "description": "Compare Go handler DTO json tags with TypeScript interface fields",
       "success_count": 5,
       "last_used": "2024-01-15",
       "findings": 3
@@ -67,119 +68,205 @@ Strategy database structure:
 }
 ```
 
+## Scope Detection
+
+Before running any analysis, determine which schema layers were touched in the last 24 hours. This prevents unnecessary full-codebase scans when only a subset of layers changed.
+
+### Step 0: Identify Changed Schema Files
+
+```bash
+# Get files changed in the last 24 hours (non-merge commits)
+git log --since="24 hours ago" --pretty=format:"%H" --no-merges \
+  | xargs -r git diff-tree --no-commit-id -r --name-only \
+  | sort -u
+```
+
+Map changed files to schema layers using these rules:
+
+| Changed file pattern | Affected layer |
+|---|---|
+| `db/migrations/sqlite/*.sql` or `db/migrations/postgres/*.sql` | **LAYER_MIGRATIONS** |
+| `internal/db/*.go` (not `*_test.go`) | **LAYER_DB** |
+| `internal/handlers/*.go` (not `*_test.go`) | **LAYER_HANDLERS** |
+| `frontend/src/types.ts` or `frontend/src/lib/api.ts` | **LAYER_FRONTEND** |
+| `internal/server/routes.go` | **LAYER_ROUTES** |
+
+Set a boolean flag for each layer (`true` = changed, `false` = unchanged).
+
+**Early exit**: If **none** of the five layers have any changed files, call the `noop` safe-output tool and stop immediately. Do not proceed to analysis.
+
+```json
+{"noop": {"message": "✅ No schema-related files changed in the last 24 hours. Schema Consistency Checker has nothing to analyze today."}}
+```
+
+**Partial run**: If only some layers changed, skip the analysis sections for unchanged layers and note which layers were skipped in the report. For example, if only `LAYER_HANDLERS` and `LAYER_FRONTEND` changed, skip Analysis Area 1 (DB Migrations vs Go DB Layer) and focus only on Area 2 (Go Handler DTOs vs TypeScript) and Area 4 (Go DB Types vs Handler DTO Mappings).
+
+Layer dependency rules — if a layer is marked changed, also enable its dependent checks:
+- `LAYER_MIGRATIONS` changed → enable Area 1 (migrations vs DB layer)
+- `LAYER_DB` changed → enable Area 1 and Area 4
+- `LAYER_HANDLERS` changed → enable Area 2 and Area 4
+- `LAYER_FRONTEND` changed → enable Area 2
+- `LAYER_ROUTES` changed → enable Area 3
+
 ## Analysis Areas
 
-### 1. Schema vs Parser Implementation
+### 1. DB Migrations vs Go DB Layer
 
 **Check for:**
-- Fields defined in schema but not handled in parser/compiler
-- Fields handled in parser/compiler but missing from schema
-- Type mismatches (schema says `string`, parser expects `object`)
-- Enum values in schema not validated in parser/compiler
-- Required fields not enforced
-- Default values inconsistent between schema and parser/compiler
+- Columns defined in migrations but not scanned in Go structs
+- Go struct fields with no corresponding migration column
+- Type mismatches (e.g., `TEXT` vs `int`, `INTEGER` vs `string`)
+- Tables in migrations with no corresponding Go type
+- Columns added to later migrations not reflected in existing `Scan` calls
+- Differences between SQLite and PostgreSQL migrations for the same table
 
 **Key files to analyze:**
-- `pkg/parser/schemas/main_workflow_schema.json`
-- `pkg/parser/schemas/mcp_config_schema.json`
-- `pkg/parser/frontmatter.go` and `pkg/parser/*.go`
-- `pkg/workflow/compiler.go` - main workflow compiler
-- `pkg/workflow/tools.go` - tools configuration processing
-- `pkg/workflow/safe_outputs.go` - safe-outputs configuration
-- `pkg/workflow/cache.go` - cache and cache-memory configuration
-- `pkg/workflow/permissions.go` - permissions processing
-- `pkg/workflow/engine.go` - engine config and network permissions types
-- `pkg/workflow/domains.go` - network domain allowlist functions
-- `pkg/workflow/engine_network_hooks.go` - network hook generation
-- `pkg/workflow/engine_firewall_support.go` - firewall support checking
-- `pkg/workflow/strict_mode.go` - strict mode validation
-- `pkg/workflow/stop_after.go` - stop-after processing
-- `pkg/workflow/safe_jobs.go` - safe-jobs configuration (internal - accessed via safe-outputs.jobs)
-- `pkg/workflow/runtime_setup.go` - runtime overrides
-- `pkg/workflow/github_token.go` - github-token configuration
-- `pkg/workflow/*.go` (all workflow processing files that use frontmatter)
+- `db/migrations/sqlite/*.sql` — SQLite table definitions
+- `db/migrations/postgres/*.sql` — PostgreSQL table definitions
+- `internal/db/*.go` — Go entity structs and SQL scanning code (look for `rows.Scan`, `row.Scan`)
 
-### 2. Schema vs Documentation
+**Example bash analysis:**
+```bash
+# List all migration files sorted by timestamp
+ls -1 db/migrations/sqlite/*.sql | sort
+
+# Extract table column names from a migration
+grep -A 50 "CREATE TABLE books" db/migrations/sqlite/*.sql | grep -E "^[[:space:]]+[[:alnum:]_]+"
+
+# Find all Scan calls in db layer
+grep -n "\.Scan(" internal/db/*.go | head -40
+
+# Extract struct fields with json tags from db layer
+grep -n 'json:"' internal/db/*.go | head -40
+```
+
+### 2. Go Handler DTOs vs TypeScript Frontend Types
 
 **Check for:**
-- Schema fields not documented
-- Documented fields not in schema
-- Type descriptions mismatch
-- Example values that violate schema
-- Missing or outdated examples
-- Enum values documented but not in schema
+- JSON fields in Go handler DTOs not present in TypeScript interfaces
+- TypeScript interface fields not present in Go handler DTOs
+- Optional/nullable mismatches (`*string` in Go vs non-optional TypeScript field)
+- Type mismatches (Go `int64` mapped to TypeScript `number`, `db.Timestamp` to `string`)
+- DTOs returned by handlers but not defined in TypeScript
+- TypeScript types used in API calls but not returned by any handler
 
 **Key files to analyze:**
-- `docs/src/content/docs/reference/frontmatter.md`
-- `docs/src/content/docs/reference/frontmatter-full.md`
-- `docs/src/content/docs/reference/*.md` (all reference docs)
+- `internal/handlers/*.go` — Go DTO structs (look for `json:"..."` struct tags)
+- `frontend/src/types.ts` — TypeScript interface and type definitions
 
-### 3. Schema vs Actual Workflows
+**Example bash analysis:**
+```bash
+# Extract all Go DTO struct field json tags from handlers
+grep -rn 'json:"' internal/handlers/*.go | grep -v '_test.go' | sort
+
+# Extract all TypeScript interface field names from types.ts
+grep -n '^[[:space:]]\+[[:alnum:]_]\+[?]\?:' frontend/src/types.ts | head -60
+
+# Find all DTO struct definitions in handlers
+grep -n 'type.*DTO struct' internal/handlers/*.go
+
+# Find TypeScript export interfaces/types
+grep -n '^export \(interface\|type\)' frontend/src/types.ts
+```
+
+### 3. API Routes vs Frontend API Client
 
 **Check for:**
-- Workflows using fields not in schema
-- Workflows using deprecated fields
-- Invalid field values according to schema
-- Missing required fields
-- Type violations in actual usage
-- Undocumented field combinations
+- Routes registered in `routes.go` with no corresponding call in `api.ts`
+- Frontend API calls in `api.ts` targeting URLs not registered in `routes.go`
+- HTTP method mismatches (handler registers GET, frontend sends POST)
+- Path parameter inconsistencies
 
 **Key files to analyze:**
-- `.github/workflows/*.md` (all workflow files)
-- `.github/workflows/shared/**/*.md` (shared components)
+- `internal/server/routes.go` — HTTP route registrations (`HandleFunc`, `Handle`)
+- `frontend/src/lib/api.ts` — Frontend API calls (fetch/request calls with URL strings)
 
-### 4. Parser vs Documentation
+**Example bash analysis:**
+```bash
+# Extract all registered route paths from routes.go
+grep -n 'HandleFunc\|\.Handle(' internal/server/routes.go | grep -o '"/api/[^"]*"' | sort -u
+
+# Extract all API URL paths from frontend api.ts
+grep -n '"\/api\/' frontend/src/lib/api.ts | grep -o '`/api/[^`]*`\|"/api/[^"]*"' | sort -u
+
+# Compare method + path combinations
+grep -n 'method:' frontend/src/lib/api.ts | head -20
+```
+
+### 4. Go DB Types vs Handler DTO Mappings
 
 **Check for:**
-- Parser/compiler features not documented
-- Documented features not implemented in parser/compiler
-- Error messages that don't match docs
-- Validation rules not documented
+- Fields in `internal/db/*.go` entity structs not mapped in `toXxxDTO` functions
+- `toXxxDTO` functions referencing non-existent entity fields
+- New entity fields added to the DB layer not yet exposed in DTOs
+- Inconsistent null handling (`*string` vs `sql.NullString`)
 
-**Focus on:**
-- `pkg/parser/*.go` - frontmatter parsing
-- `pkg/workflow/*.go` - workflow compilation and feature processing
+**Key files to analyze:**
+- `internal/db/*.go` — entity struct definitions (Author, Book, Series, Tag, etc.)
+- `internal/handlers/*.go` — `toXxxDTO` mapping functions
+
+**Example bash analysis:**
+```bash
+# Find all toXxxDTO functions in handlers
+grep -n '^func to.*DTO(' internal/handlers/*.go
+
+# Extract entity struct fields from db layer
+grep -n 'type \w\+ struct' internal/db/*.go | grep -v 'test'
+
+# Find all entity field names in db structs
+grep -A 30 'type Author struct' internal/db/authors.go
+
+# Find all fields mapped in toAuthorDTO
+grep -A 20 'func toAuthorDTO' internal/handlers/authors.go
+```
 
 ## Detection Strategies
 
 Here are proven strategies you can use or build upon:
 
-### Strategy 1: Field Enumeration Diff
-1. Extract all field names from schema
-2. Extract all field names from parser code (look for YAML tags, map keys)
-3. Extract all field names from documentation
-4. Compare and find missing/extra fields
+### Strategy 1: DTO Field Enumeration Diff
+1. Extract all JSON tag field names from Go handler DTOs
+2. Extract all field names from TypeScript interfaces
+3. For each entity (Book, Author, Series, Tag, etc.) find the matching TS interface
+4. Compare and find missing/extra fields in each direction
 
-### Strategy 2: Type Analysis
-1. For each field in schema, note its type
-2. Search parser for how that field is processed
-3. Check if types match
-4. Report type mismatches
+### Strategy 2: Migration Column vs Struct Field Check
+1. Extract all column names from the latest migration for each table
+2. Find the corresponding Go struct and its `Scan` call
+3. Compare column count vs scan arguments
+4. Report mismatches
 
-### Strategy 3: Enum Validation
-1. Extract enum values from schema
-2. Search for those enums in parser validation
-3. Check if all enum values are handled
-4. Find undocumented enum values
+### Strategy 3: Route Coverage Analysis
+1. Extract all `/api/*` paths from `routes.go`
+2. Extract all URL strings from `api.ts`
+3. Normalize paths (strip trailing slashes, normalize path params)
+4. Find routes with no frontend client, or frontend calls with no route
 
-### Strategy 4: Example Validation
-1. Extract code examples from documentation
-2. Validate each example against the schema
-3. Report examples that don't validate
-4. Suggest corrections
+### Strategy 4: Nullable Field Consistency
+1. Find all pointer fields (`*string`, `*int64`, etc.) in Go DTOs
+2. Find corresponding TypeScript fields
+3. Check whether TypeScript marks them as optional (`field?: type`) or uses `| null`
+4. Report inconsistencies in null handling
 
-### Strategy 5: Real-World Usage Analysis
-1. Parse all workflow files in the repo
-2. Extract frontmatter configurations
-3. Check each against schema
-4. Find patterns that work but aren't in schema (potential missing features)
+### Strategy 5: New Migration Drift Check
+1. Find migrations created in the last 30 days (`git log --since`)
+2. For each new or modified table, re-check the Go struct and DTO mappings
+3. Focus on recently changed files where drift is most likely
 
 ### Strategy 6: Grep-Based Pattern Detection
 1. Use bash/grep to find specific patterns
-2. Example: `grep -r "type.*string" pkg/parser/schemas/ | grep engine`
-3. Cross-reference with parser implementation
+2. Example: `grep -rn 'json:"' internal/handlers/books.go` vs TypeScript Book interface
+3. Cross-reference with TypeScript types
 
 ## Implementation Steps
+
+### Step 0: Detect Changed Schema Files (Scope Detection)
+
+Run the scope detection from the [Scope Detection](#scope-detection) section above:
+1. Get the list of files changed in the last 24 hours
+2. Map them to the five schema layer flags
+3. Exit gracefully if no schema layers changed
+4. Record which layers are active for this run — only active layers are analyzed in Steps 3–4
 
 ### Step 1: Load Previous Strategies
 ```bash
@@ -194,32 +281,30 @@ fi
 - Otherwise or 30% of time, try new/different approach
 
 ### Step 3: Execute Analysis
-Use chosen strategy to find inconsistencies. Examples:
 
-**Example: Field enumeration**
+**Only analyze the layers flagged as active in Step 0.** Skip any analysis area whose layer flag is `false`.
+
+Use the chosen strategy to find inconsistencies within the active layers. Example for DTO field enumeration (run only when `LAYER_HANDLERS` or `LAYER_FRONTEND` is active):
+
 ```bash
-# Extract schema fields using jq for robust JSON parsing
-jq -r '.properties | keys[]' pkg/parser/schemas/main_workflow_schema.json 2>/dev/null | sort -u
+# Step 1: List all Go DTO types and their json fields in handlers
+echo "=== Go Handler DTOs ==="
+grep -rn 'json:"' internal/handlers/*.go | grep -v '_test.go' | grep 'type\|json:' | head -60
 
-# Extract parser fields from pkg/parser (look for yaml tags)
-grep -r "yaml:\"" pkg/parser/*.go | grep -o 'yaml:"[^"]*"' | sort -u
+# Step 2: List TypeScript types
+echo "=== TypeScript Types ==="
+cat frontend/src/types.ts
 
-# Extract workflow compiler fields from pkg/workflow (look for yaml tags and frontmatter access)
-grep -r "yaml:\"" pkg/workflow/*.go | grep -o 'yaml:"[^"]*"' | sort -u
-grep -r 'frontmatter\["[^"]*"\]' pkg/workflow/*.go | grep -o '\["[^"]*"\]' | sort -u
+# Step 3: Find DB entity structs
+echo "=== DB Entity Structs ==="
+grep -A 30 'type Book struct' internal/db/books.go
 
-# Extract documented fields
-grep -r "^###\? " docs/src/content/docs/reference/frontmatter.md
+# Step 4: Find toBookDTO mapping
+echo "=== toBookDTO mapping ==="
+grep -A 30 'func toBookDTO' internal/handlers/books.go
 ```
 
-**Example: Type checking**
-```bash
-# Find schema field types (handles different JSON Schema patterns)
-jq -r '
-  (.properties // {}) | to_entries[] | 
-  "\(.key): \(.value.type // .value.oneOf // .value.anyOf // .value.allOf // "complex")"
-' pkg/parser/schemas/main_workflow_schema.json 2>/dev/null || echo "Failed to parse schema"
-```
+When `LAYER_MIGRATIONS` or `LAYER_DB` is active, also run migration drift checks. When `LAYER_ROUTES` is active, also run route coverage analysis. Skip commands for inactive layers to keep the run fast.
 
 ### Step 4: Record Findings
 Create a structured list of inconsistencies found:
@@ -227,29 +312,29 @@ Create a structured list of inconsistencies found:
 ```markdown
 ## Inconsistencies Found
 
-### Schema ↔ Parser Mismatches
-1. **Field `engine.version`**: 
-   - Schema: defines as string
-   - Parser: not validated in frontmatter.go
-   - Impact: Invalid values could pass through
+### DB Migration ↔ Go Struct Mismatches
+1. **Table `books`, column `publication_date`**: 
+   - Migration: `TEXT`
+   - Go struct: field present as `*string`
+   - Scan: verified present in row.Scan call
 
-### Schema ↔ Documentation Mismatches  
-1. **Field `cache-memory`**:
-   - Schema: defines array of objects with `id` and `key`
-   - Docs: only shows simple boolean example
-   - Impact: Advanced usage not documented
+### Go DTO ↔ TypeScript Mismatches  
+1. **`bookDTO.google_books_id`**:
+   - Go: `GoogleBooksID *string \`json:"google_books_id"\``
+   - TypeScript: field missing from `Book` interface
+   - Impact: Frontend cannot display Google Books ID
 
-### Parser ↔ Documentation Mismatches
-1. **Error message for invalid `on` field**:
-   - Parser: "trigger configuration is required"
-   - Docs: doesn't mention this error
-   - Impact: Users may not understand error
+### Route ↔ Frontend API Mismatches
+1. **`/api/books/{id}/cover`**:
+   - routes.go: GET handler registered
+   - api.ts: no corresponding fetch call found
+   - Impact: Frontend never fetches book covers via this route
 ```
 
 ### Step 5: Update Cache
 Save successful strategy and findings to cache:
 ```bash
-# Update strategies.json with results
+mkdir -p /tmp/gh-aw/cache-memory
 cat > /tmp/gh-aw/cache-memory/strategies.json << 'EOF'
 {
   "strategies": [...],
@@ -257,6 +342,22 @@ cat > /tmp/gh-aw/cache-memory/strategies.json << 'EOF'
 }
 EOF
 ```
+
+### Step 5b: Cross-Agent Awareness Check
+
+Before creating the discussion report, query for any **open** pull requests from sibling documentation automation agents. This provides maintainers with full context: inconsistencies reported here may already be addressed (or in progress) via a concurrent documentation PR.
+
+Search for open sibling agent PRs:
+```
+repo:${{ github.repository }} is:pr is:open label:documentation label:automation
+```
+
+For each open PR found, note:
+- The PR number and title
+- Which documentation files it modifies (check the PR body for filenames like `docs/api-reference.md`)
+- Whether any of this checker's findings are likely covered by that PR
+
+Include the results as a dedicated **"Open Sibling Agent PRs"** section in the discussion report (see report format below). If no open sibling PRs exist, record `None`.
 
 ### Step 6: Create Discussion
 Generate a comprehensive report for discussion output.
@@ -271,29 +372,34 @@ Create a well-structured discussion report:
 ## Summary
 
 - **Inconsistencies Found**: [NUMBER]
-- **Categories Analyzed**: Schema, Parser, Documentation, Workflows
+- **Layers Analyzed**: [List only the layers that were active, e.g., "Handler DTOs, TypeScript Types"]
+- **Layers Skipped**: [List layers with no recent changes, e.g., "DB Migrations (no changes in 24h)"]
 - **Strategy Used**: [STRATEGY NAME]
 - **New Strategy**: [YES/NO]
 
 ## Critical Issues
 
-[List high-priority inconsistencies that could cause bugs]
+[List high-priority inconsistencies that could cause bugs or data loss]
 
-## Documentation Gaps
+## DB Migration Drift
 
-[List areas where docs don't match reality]
+[List tables or columns where migrations and Go structs are out of sync]
 
-## Schema Improvements Needed
+## DTO / Type Mismatches
 
-[List schema enhancements needed]
+[List fields where Go DTOs and TypeScript interfaces disagree]
 
-## Parser Updates Required
+## API Route Coverage Gaps
 
-[List parser code that needs updates]
+[List routes or frontend calls that have no matching counterpart]
 
-## Workflow Violations
+## Nullable Handling Issues
 
-[List workflows using invalid/undocumented features]
+[List fields where null/optional semantics differ between Go and TypeScript]
+
+## Open Sibling Agent PRs
+
+[List any open PRs from sibling automation agents (update-docs, daily-doc-updater) with label:documentation label:automation. For each PR, note the PR number, title, and which docs files it touches. Mention if any of this report's findings appear to be already addressed by a sibling PR. If none: "None."]
 
 ## Recommendations
 
@@ -310,10 +416,10 @@ Create a well-structured discussion report:
 
 ## Next Steps
 
-- [ ] Fix schema definitions
-- [ ] Update parser validation
-- [ ] Update documentation
-- [ ] Fix workflow files
+- [ ] Fix missing TypeScript fields
+- [ ] Update Go DTOs for new migration columns
+- [ ] Add frontend API calls for uncovered routes
+- [ ] Fix nullable/optional mismatches
 ```
 
 ## Important Guidelines
@@ -322,21 +428,23 @@ Create a well-structured discussion report:
 - Never execute untrusted code from workflows
 - Validate all file paths before reading
 - Sanitize all grep/bash commands
-- Read-only access to schema, parser, and documentation files for analysis
+- Read-only access to source files for analysis
 - Only modify files in `/tmp/gh-aw/cache-memory/` (never modify source files)
 
 ### Quality
 - Be thorough but focused on actionable findings
-- Prioritize issues by severity (critical bugs vs documentation gaps)
+- Prioritize issues by severity (data bugs vs minor gaps)
 - Provide specific file:line references when possible
 - Include code snippets to illustrate issues
-- Suggest concrete fixes
+- Suggest concrete fixes referencing actual field names
 
 ### Efficiency  
-- Use bash tools efficiently (grep, jq, etc.)
+- **Run scope detection first** (Step 0) — exit early when no schema files changed
+- Analyze only active layers; skip inactive layers entirely
+- Use bash tools efficiently (grep, find, etc.)
 - Cache results when re-analyzing same data
 - Don't re-check things found in previous runs (check cache first)
-- Focus on high-impact areas
+- Focus on high-impact areas (books, authors, series are core entities)
 
 ### Strategy Evolution
 - Try genuinely different approaches when not using cached strategies
@@ -354,17 +462,20 @@ You have access to:
 ## Success Criteria
 
 A successful run:
-- ✅ Analyzes all 4 areas (schema, parser, docs, workflows)
+- ✅ Runs scope detection (Step 0) before any analysis
+- ✅ Calls `noop` and exits gracefully when no schema-related files changed in the last 24 hours
+- ✅ Analyzes only the layers affected by recent changes (skips unchanged layers)
 - ✅ Uses or creates an effective detection strategy
 - ✅ Updates cache with strategy results
 - ✅ Finds at least one category of inconsistencies OR confirms consistency
-- ✅ Creates a detailed discussion report
-- ✅ Provides actionable recommendations
+- ✅ Creates a detailed discussion report with actionable recommendations, OR calls `noop` if no inconsistencies are found
 
-Begin your analysis now. Check the cache, choose a strategy, execute it, and report your findings in a discussion.
+**Important**: You **MUST** call exactly one terminal safe-output (`noop` or `create-discussion`) before finishing. Ancillary calls like `upload-asset` or `close-discussion` are allowed alongside the terminal output. If no schema-related files changed in the last 24 hours, or if analysis finds zero inconsistencies, call `noop` with a descriptive status message. Otherwise, create a discussion report.
 
-**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+Example noop output:
 
 ```json
-{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+{"noop": {"message": "✅ Schema consistency check complete: no inconsistencies found across analyzed layers."}}
 ```
+
+Begin your analysis now. Check the cache, choose a strategy, execute it, and either create a discussion report with your findings or call `noop` with a descriptive status message when there are no relevant changes or no inconsistencies.

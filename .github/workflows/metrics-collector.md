@@ -1,6 +1,8 @@
 ---
 description: Collects daily performance metrics for the agent ecosystem and stores them in repo-memory
-on: daily
+on:
+  schedule: daily
+  workflow_dispatch:
 permissions:
   contents: read
   issues: read
@@ -203,6 +205,22 @@ find /tmp/gh-aw/repo-memory/default/metrics/daily/ -name "*.json" -mtime +30 -de
 - If token/cost data is unavailable, omit or set to null
 - Always include workflows in the metrics even if they have no activity (helps detect stalled workflows)
 
+### Always-Track Workflows
+
+These workflows must always appear in the metrics output, even with zero runs or outputs. Several are slash-command- or manually-triggered and will frequently have no daily activity, but must still be represented in the ecosystem view for accurate counts and trend analysis:
+
+| Workflow | Tracker ID | Trigger type |
+|---|---|---|
+| artifacts-summary | artifacts-summary | weekly schedule |
+| grumpy-reviewer | grumpy-reviewer | slash command (`/grumpy`) |
+| pr-nitpick-reviewer | pr-nitpick-reviewer | slash command (`/nit`) |
+| q | q | slash command (`/q`) / reaction |
+| weekly-repo-map | weekly-repo-map | weekly schedule |
+| portfolio-analyst | portfolio-analyst-weekly | weekly schedule |
+| commit-changes-analyzer | commit-changes-analyzer | manual dispatch |
+
+When building the `workflows` object in the output JSON, ensure each of these tracker IDs has an entry. If a workflow has no runs or activity in the collection window, set count- and duration-style numeric fields to `0`, and set rate fields to `null`. If token usage or cost data is not present in the logs, leave those fields as `null` or omit them rather than forcing them to `0`, even when the workflow had runs.
+
 ### Workflow Name Extraction
 
 The agentic-workflows logs tool provides structured data with workflow names already extracted. Use this instead of parsing footers manually.
@@ -273,3 +291,11 @@ At the end of collection:
 ✅ Ecosystem aggregates calculated correctly
 ✅ Collection completed within timeout
 ✅ No errors or warnings in execution log
+
+
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```

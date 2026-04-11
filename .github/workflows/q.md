@@ -15,16 +15,22 @@ permissions:
   issues: read
   pull-requests: read
 
+tracker-id: q-workflow
 network: defaults
 
 safe-outputs:
   add-comment:
     max: 1
   create-pull-request:
-    title-prefix: "[q] "
+    title-prefix: "chore(q): "
     labels: [automation, workflow-optimization]
     draft: false
     if-no-changes: "ignore"
+    protected-files: allowed
+    allowed-files:
+      - .github/workflows/*.md
+      - .github/workflows/*.lock.yml
+      - .github/workflows/shared/*.md
 
 tools:
   agentic-workflows:
@@ -239,6 +245,7 @@ Create a pull request with your improvements:
 2. **Create Pull Request**:
    - Use the `create-pull-request` tool which is configured in the workflow frontmatter
    - The PR will be created with the prefix "[q]" and labeled with "automation, workflow-optimization"
+   - The PR title must follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) format: `ci: <short description>` (e.g., `ci: optimize workflow caching and parallelization`)
    - The system will automatically skip PR creation if there are no file changes
 
 3. **Create Focused Changes**: Make minimal, surgical modifications
@@ -254,7 +261,7 @@ Create a pull request with your improvements:
      - Changes made and why
      - Expected improvements
      - Links to relevant log files or audit reports
-   - **Modified Files**: Only .md workflow files
+   - **Modified Files**: .md workflow source files and their compiled .lock.yml counterparts
 
 ## Important Guidelines
 
@@ -374,7 +381,7 @@ A successful Q operation:
 - ✅ Identifies specific issues with evidence from logs
 - ✅ Makes minimal, targeted improvements to workflows
 - ✅ Validates all changes using the `compile` tool from agentic-workflows
-- ✅ Creates PR with only .md workflow files
+- ✅ Creates PR with .md workflow source files and their compiled .lock.yml counterparts
 - ✅ Provides clear documentation of changes and rationale
 - ✅ Follows security best practices
 
