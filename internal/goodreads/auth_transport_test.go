@@ -18,7 +18,7 @@ func (t *recordingTransport) RoundTrip(req *http.Request) (*http.Response, error
 
 func TestAuthTransport_AddsKeyForAllowedHost(t *testing.T) {
 	inner := &recordingTransport{}
-	transport := &GoodReadsAuthTransport{
+	transport := &GoodreadsAuthTransport{
 		Token:            []byte("secret-key"),
 		AllowedHost:      "api.example.com",
 		WrappedTransport: inner,
@@ -34,7 +34,7 @@ func TestAuthTransport_AddsKeyForAllowedHost(t *testing.T) {
 
 func TestAuthTransport_OmitsKeyForDifferentHost(t *testing.T) {
 	inner := &recordingTransport{}
-	transport := &GoodReadsAuthTransport{
+	transport := &GoodreadsAuthTransport{
 		Token:            []byte("secret-key"),
 		AllowedHost:      "api.example.com",
 		WrappedTransport: inner,
@@ -50,7 +50,7 @@ func TestAuthTransport_OmitsKeyForDifferentHost(t *testing.T) {
 
 func TestAuthTransport_EmptyAllowedHostSendsKeyEverywhere(t *testing.T) {
 	inner := &recordingTransport{}
-	transport := &GoodReadsAuthTransport{
+	transport := &GoodreadsAuthTransport{
 		Token:            []byte("secret-key"),
 		AllowedHost:      "",
 		WrappedTransport: inner,
@@ -66,7 +66,7 @@ func TestAuthTransport_EmptyAllowedHostSendsKeyEverywhere(t *testing.T) {
 
 func TestAuthTransport_DoesNotMutateOriginalRequest(t *testing.T) {
 	inner := &recordingTransport{}
-	transport := &GoodReadsAuthTransport{
+	transport := &GoodreadsAuthTransport{
 		Token:            []byte("secret-key"),
 		AllowedHost:      "api.example.com",
 		WrappedTransport: inner,
