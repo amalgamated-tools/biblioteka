@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
-	"github.com/amalgamated-tools/biblioteka/internal/ptrutil"
 
 	"github.com/stretchr/testify/require"
 )
@@ -99,7 +98,8 @@ func TestBookMetadata_Language_Default(t *testing.T) {
 }
 
 func TestBookMetadata_Language_Set(t *testing.T) {
-	book := &db.Book{ID: "bk1", Title: "French", Language: ptrutil.Ptr("fr")}
+	lang := "fr"
+	book := &db.Book{ID: "bk1", Title: "French", Language: &lang}
 	meta := BookMetadata(book, nil, nil, nil)
 	require.Equal(t, "fr", meta.Language)
 }
