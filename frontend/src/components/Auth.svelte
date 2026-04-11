@@ -46,7 +46,7 @@
         })
         .catch((e) => {
           console.error("Failed to check OIDC status", e);
-          initError = "Unable to check single sign-on availability";
+          initError ??= "Unable to reach the server to load auth settings";
         });
       getSignupEnabled()
         .then((enabled) => {
@@ -57,7 +57,7 @@
         })
         .catch((e) => {
           console.error("Failed to check signup status", e);
-          initError = "Unable to check signup availability";
+          initError ??= "Unable to reach the server to load auth settings";
         });
     }
   });
