@@ -56,6 +56,10 @@ steps:
         echo "needs-linting=false" >> "$GITHUB_OUTPUT"
       fi
 
+  - name: Fix super-linter log permissions
+    if: always()
+    run: sudo chmod 644 super-linter.log || true
+
   - name: Upload super-linter log
     if: always()
     uses: actions/upload-artifact@v7
