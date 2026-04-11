@@ -24,7 +24,7 @@ frontend/
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
       Books.svelte        Book listing and detail view; reads `initialOffset` from the URL hash query string (`#books?offset=48`) and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
-      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries) plus a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); Total Books is fetched from the API via `getTotalBooksCount()` on first render and shows "…" while the request is in flight (falls back to `0` on error, surfacing an `AlertBanner` with the error message); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
+      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries) plus a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); in the stats-grid branch, Total Books is fetched from the API via `getTotalBooksCount()` on first render and shows "…" while the request is in flight (falls back to `0` on error, surfacing an `AlertBanner` with the error message); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
@@ -227,7 +227,7 @@ Stores are plain class instances — no special `$` prefix import is needed for 
 {/each}
 ```
 
-> **Prefer `$effect` for one-time initial data fetching in Svelte 5 runes-mode components.** Because all store `load()` methods include an idempotency guard (`if (this.loading || this.loaded) return;`), calling `load()` from a bare `$effect` is safe — the guard prevents duplicate requests even if the effect re-runs. For non-idempotent initialization that must run exactly once regardless of reactive dependencies, use a non-reactive boolean guard variable:
+> **Prefer `$effect` for one-time initial data fetching in Svelte 5 runes-mode components.** Store `load()` methods on `CrudStore`-based stores include an idempotency guard (`if (this.loading || this.loaded) return;`), so calling `load()` from a bare `$effect` is safe — the guard prevents duplicate requests even if the effect re-runs. `TokenListState.load()` has no such guard, but is equally safe because it performs no synchronous `$state` reads, so Svelte never registers a reactive dependency and the effect runs only once. For non-idempotent initialization that must run exactly once regardless of reactive dependencies, use a non-reactive boolean guard variable:
 >
 > ```svelte
 > let initialized = false;
