@@ -46,13 +46,24 @@
   let fetchingMetadata = $state(false);
   let metadataError: string | null = $state(null);
   let progressMessage: string | null = $state(null);
-  let eventSource: EventSource | null = $state(null);
+  let eventSource: EventSource | null = null;
+  let sseTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Close any open SSE connection when the component unmounts.
+  function closeSSE() {
+    if (sseTimeout != null) {
+      clearTimeout(sseTimeout);
+      sseTimeout = null;
+    }
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
+  }
+
+  // Close any open SSE connection and timeout when the component unmounts.
   $effect(() => {
     return () => {
-      eventSource?.close();
-      eventSource = null;
+      closeSSE();
       fetchingMetadata = false;
       metadataError = null;
       progressMessage = null;
@@ -63,19 +74,6 @@
     fetchingMetadata = true;
     metadataError = null;
     progressMessage = "Starting metadata fetch...";
-
-    let sseTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    function closeSSE() {
-      if (sseTimeout != null) {
-        clearTimeout(sseTimeout);
-        sseTimeout = null;
-      }
-      if (eventSource) {
-        eventSource.close();
-        eventSource = null;
-      }
-    }
 
     try {
       // Open SSE connection first so no progress events are missed if the

@@ -206,7 +206,7 @@
       await api.rejectMetadata(bookId);
       metadata = null;
     } catch {
-      // Best effort — failure is surfaced by MetadataFetchPanel if it retries.
+      // Best effort — if rejection fails, metadata stays visible and the user can retry.
     }
   }
 </script>
