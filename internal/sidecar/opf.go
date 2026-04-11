@@ -171,7 +171,7 @@ func WriteOPF(ctx context.Context, dir string, data OPFData, baseName string) er
 		return fmt.Errorf("invalid OPF base name %q: %w", baseName, err)
 	}
 	if data.Title == "" {
-		return errors.New("WriteOPF: Title is required by OPF 2.0")
+		return errors.New("title is required by OPF 2.0")
 	}
 	if data.Language == "" {
 		slog.DebugContext(
@@ -183,7 +183,7 @@ func WriteOPF(ctx context.Context, dir string, data OPFData, baseName string) er
 		data.Language = "und"
 	}
 	if (data.CoverFilename == "") != (data.CoverMediaType == "") {
-		return errors.New("WriteOPF: CoverFilename and CoverMediaType must both be set or both be empty")
+		return errors.New("cover filename and cover media type must both be set or both be empty")
 	}
 
 	xmlBytes, err := marshalOPF(dir, data)
