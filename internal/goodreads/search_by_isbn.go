@@ -17,16 +17,11 @@ import (
 )
 
 // SearchByISBN searches Goodreads for books matching the given ISBN and returns a list of search results.
-// It uses the Goodreads auto_complete endpoint, which returns a list of books matching the query.
-// Since we are searching by ISBN, we expect to get either 0 or 1 results back, but we return a list to be consistent with the other search methods.
+// Returns a list for consistency with Search, but typically yields 0 or 1 results.
 func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, error) {
 	// make sure that the ISBN is valid before making the HTTP request, to avoid unnecessary requests and to provide better error messages
 	if len(isbn) == 0 {
-		slog.ErrorContext(
-			ctx,
-			"ISBN cannot be empty",
-		)
-		return nil, errors.New("ISBN cannot be empty")
+		return nil, errors.New("isbn cannot be empty")
 	}
 	// Strip common ISBN formatting before validating and querying Goodreads.
 	var normalizedISBN strings.Builder
