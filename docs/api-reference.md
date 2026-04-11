@@ -641,7 +641,7 @@ Return the current watch folder configuration.
 | `200 OK` | Current watch folder configuration (may have empty `path` and `library_id` if not set) |
 | `401 Unauthorized` | Missing or invalid JWT |
 | `403 Forbidden` | Caller is not an admin |
-| `500 Internal Server Error` | Failed to verify admin permissions due to an unexpected server/database error |
+| `500 Internal Server Error` | Failed to verify admin permissions |
 
 ---
 
@@ -1598,9 +1598,10 @@ data: {"event":"complete","source":"goodreads","metadata_id":"d1e2f3..."}
 | `event` | string | `"progress"` — intermediate update; `"complete"` — job succeeded; `"error"` — job failed; `"not_found"` — no Goodreads match found |
 | `source` | string | Always `"goodreads"` |
 | `message` | string | Human-readable status message (present on `progress`, `error`, and `not_found`) |
+| `step` | string | Optional machine-readable progress step (typically present on `progress` events), for example `searching_isbn13` or `searching_title` |
 | `metadata_id` | string | ID of the newly created metadata candidate (present on `complete` only) |
 
-The stream also sends `: heartbeat` comment lines every 15 seconds to keep the connection alive through proxies. The connection remains open until a terminal event (`complete`, `error`, `not_found`) is sent or the client disconnects, although proxies or other infrastructure may still impose their own timeouts.
+The stream also sends `: heartbeat` comment lines every 15 seconds to keep the connection alive through proxies. The write deadline is reset on every heartbeat, so the connection remains open until a terminal event (`complete`, `error`, `not_found`) is sent or the client disconnects; proxies or other infrastructure may impose additional timeouts.
 
 | Status | Description |
 |--------|-------------|
@@ -1630,7 +1631,7 @@ After a successful apply, the candidate's `status` changes to `"applied"` and th
 
 | Status | Description |
 |--------|-------------|
-| `200 OK` | Metadata applied; updated book summary returned |
+| `200 OK` | Metadata applied; updated book returned |
 | `401 Unauthorized` | Missing or invalid token |
 | `404 Not Found` | Book not found, or no pending metadata candidate for this user |
 | `500 Internal Server Error` | Failed to update the book or mark the candidate as applied |
