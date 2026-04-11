@@ -1,9 +1,5 @@
-<script lang="ts">
-  import type { RemoteMetadata } from "../../types";
-  import { ArrowLeft, Check, X } from "lucide-svelte";
-  import Button from "../ui/Button.svelte";
-
-  interface CurrentValues {
+<script module lang="ts">
+  export interface CurrentValues {
     title: string;
     description: string | null;
     publisher: string | null;
@@ -17,6 +13,12 @@
     google_books_id: string | null;
     cover_image_url: string | null;
   }
+</script>
+
+<script lang="ts">
+  import type { RemoteMetadata } from "../../types";
+  import { ArrowLeft, Check, X } from "lucide-svelte";
+  import Button from "../ui/Button.svelte";
 
   interface Props {
     metadata: RemoteMetadata;
