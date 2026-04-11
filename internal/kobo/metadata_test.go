@@ -96,8 +96,7 @@ func TestBookMetadata_Language_Default(t *testing.T) {
 	meta := BookMetadata(book, nil, nil, nil)
 	require.Equal(t, "en", meta.Language)
 }
-
-func TestBookMetadata_Language_Set(t *testing.T) {
+	book := &db.Book{ID: "bk1", Title: "French", Language: new("fr")}
 	lang := "fr"
 	book := &db.Book{ID: "bk1", Title: "French", Language: &lang}
 	meta := BookMetadata(book, nil, nil, nil)
