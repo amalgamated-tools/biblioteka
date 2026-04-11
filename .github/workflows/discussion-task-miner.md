@@ -34,7 +34,7 @@ safe-outputs:
 tools:
   cache-memory: true
   github:
-    lockdown: true
+    lockdown: false
     toolsets: [default, discussions]
   bash:
     - "jq *"
