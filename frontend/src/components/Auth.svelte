@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { BookCheck } from "lucide-svelte";
   import { authStore } from "../stores/auth.svelte";
   import { getOidcEnabled, getSignupEnabled } from "../lib/api";
@@ -16,6 +15,7 @@
   let loading = $state(false);
   let oidcEnabled = $state(false);
   let signupEnabled = $state(true);
+  let initError: string | null = $state(null);
 
   function handleTabKeydown(event: KeyboardEvent) {
     if (loading) return;
@@ -36,19 +36,29 @@
     }
   }
 
-  onMount(async () => {
-    try {
-      oidcEnabled = await getOidcEnabled();
-    } catch (e) {
-      console.error("Failed to check OIDC status", e);
-    }
-    try {
-      signupEnabled = await getSignupEnabled();
-      if (!signupEnabled) {
-        isLogin = true;
-      }
-    } catch (e) {
-      console.error("Failed to check signup status", e);
+  let authInitialized = false;
+  $effect(() => {
+    if (!authInitialized) {
+      authInitialized = true;
+      getOidcEnabled()
+        .then((enabled) => {
+          oidcEnabled = enabled;
+        })
+        .catch((e) => {
+          console.error("Failed to check OIDC status", e);
+          initError ??= "Unable to reach the server to load auth settings";
+        });
+      getSignupEnabled()
+        .then((enabled) => {
+          signupEnabled = enabled;
+          if (!enabled) {
+            isLogin = true;
+          }
+        })
+        .catch((e) => {
+          console.error("Failed to check signup status", e);
+          initError ??= "Unable to reach the server to load auth settings";
+        });
     }
   });
 
@@ -120,6 +130,10 @@
     <div
       class="bg-white dark:bg-ink-900 rounded-2xl shadow-xl shadow-ink-900/5 dark:shadow-ink-950/50 border border-ink-100 dark:border-ink-800 p-8"
     >
+      {#if initError}
+        <AlertBanner variant="error" class="mb-6">{initError}</AlertBanner>
+      {/if}
+
       {#if oidcEnabled}
         <a
           href="/api/auth/oidc/login"
