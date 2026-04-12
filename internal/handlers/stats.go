@@ -25,6 +25,10 @@ type monthlyDownloadsDTO struct {
 	Count int    `json:"count"`
 }
 
+func toMonthlyDownloadsDTO(c *db.MonthlyDownloadCount) monthlyDownloadsDTO {
+	return monthlyDownloadsDTO{Month: c.Month, Count: c.Count}
+}
+
 // HandleDownloadsPerMonth handles GET /api/stats/downloads-per-month.
 // It returns monthly download counts for the authenticated user.
 // Optional query parameter: months (default 12, max 24).
@@ -62,10 +66,5 @@ func (h *StatsHandler) HandleDownloadsPerMonth(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	dtos := make([]monthlyDownloadsDTO, len(counts))
-	for i, c := range counts {
-		dtos[i] = monthlyDownloadsDTO{Month: c.Month, Count: c.Count}
-	}
-
-	writeJSON(r.Context(), w, http.StatusOK, dtos)
+	writeJSON(r.Context(), w, http.StatusOK, mapSlice(counts, toMonthlyDownloadsDTO))
 }
