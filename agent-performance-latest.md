@@ -1,26 +1,24 @@
-# Agent Performance — 2026-04-10
-**Run:** 2026-04-10T23:44Z
+# Agent Performance — 2026-04-12
+**Run:** 2026-04-12T15:35Z
 
 ## Snapshot
-- 19 scheduled workflows; 68% success rate today (2 hard fails + 4 noop-omission fails)
-- PR merge rate: 84% — healthy
-- Top performers: agentic-maintenance (A+), daily-doc-updater (A), daily-grumpy-reviewer (A)
+- 54 workflows; 53 Copilot / 1 Codex; 53/54 compiled; PR merge rate 84%
+- 5 open [aw] failures: arborist #1753, triage #1737, this analyzer #1735, code-metrics #1730, markdown-linter #1702
+- Noop fix PRs #1635/#1636 still awaiting merge
 
-## CRITICAL: Noop Omission Epidemic (Apr 10, Day 1)
-- 4 agents completed but forgot to call noop: daily-nitpick-reviewer (24 turns, 2.45M tokens!), dead-code-remover (17t, 734k), daily-file-diet (10t, 431k), code-simplifier
-- Copilot fix PRs: #1635, #1636 (partial) — need merge + extend to remaining 2 agents
-- Fix: Add mandatory noop instruction to ALL reviewer/analyzer prompts
+## Top Performers
+- **daily-doc-updater**: 16 PRs/day, high merge rate
+- **repo-assist**: Batched 4 a11y fixes in #1700; priority-high CI/bug issues
+- **discussion-task-miner**: Issues drive real implementations (OIDC #1713, kobo #1711, telemetry #1712 all merged in v0.10.0)
+- **daily-accessibility-review**: Issues → accessibility fixes merged
 
-## CRITICAL: Duplicate Code Detector Hard Fail
-- Error: CODEX_API_KEY / OPENAI_API_KEY not configured — fails daily
-- Fix: Configure secret in repo/org settings (5 min operational fix)
+## Underperformers
+- **duplicate-code-detector**: Hard fail daily (missing CODEX_API_KEY)
+- **issue-arborist, agentic-triage**: Hard failing
+- **weekly-issue-summary**: Not compiled
 
-## MEDIUM: Daily Accessibility Review Crash (Run 51, Apr 10)
-- Orphan process termination; was succeeding runs 47-50 (Apr 6-9)
-- Investigate crash/OOM cause
+## Behavioral Issues
+- **contribution-check**: 4 issues on Apr 12 (no skip guard for 0-result runs)
+- **discussion-task-miner**: Issue #1751 duplicated 3 days running — no dedup
 
-## Pending Merges: #1635, #1636 (Copilot noop fixes)
-
-## Resolved This Period
-- update-docs duplicate PRs: RESOLVED (1 targeted PR today)
-- Copilot PR backlog: RESOLVED (~5 open, down from 14)
+## Discussion Created: Agent Performance Report — Week of 2026-04-12

@@ -1,26 +1,26 @@
 # Shared Alerts
-**Updated:** 2026-04-10T23:44Z by agent-performance-analyzer
+**Updated:** 2026-04-12T15:35Z by agent-performance-analyzer
 
 ## Active Alerts
 
-### CRITICAL: Noop Omission Epidemic (Apr 10)
-- 4 agents: daily-nitpick-reviewer, dead-code-remover, daily-file-diet, code-simplifier
-- All ran successfully but omitted noop call; generated failure issues #1629 #1615 #1614 #1613
-- Fix PRs #1635 #1636 awaiting merge; need to extend fix to all 4 agents
+### CRITICAL: Duplicate Code Detector Missing API Key
+- CODEX_API_KEY/OPENAI_API_KEY not configured — hard fail every run
 
-### CRITICAL: Duplicate Code Detector Missing API Key (Apr 10)
-- CODEX_API_KEY / OPENAI_API_KEY secret not configured
-- Run 24267037507 — hard fail every day until secret added
+### CRITICAL: Noop Fix PRs Stalled
+- PRs #1635 #1636 awaiting merge; 4 agents still at risk of silent noop failures
 
-### MEDIUM: Daily Accessibility Review Crash (Apr 10)
-- Run 51 failed; orphan process termination; was OK Apr 6-9 (runs 47-50)
-- Investigate crash/OOM
+### MEDIUM: 5 Open [aw] Failure Issues
+- issue-arborist #1753, agentic-triage #1737, agent-perf-analyzer #1735, code-metrics #1730, markdown-linter #1702
 
-### PENDING MERGE: daily-team-evolution-insights Fix PR #1635 (Apr 9)
-### PENDING MERGE: code-simplifier Noop Fix PR #1636 (Apr 10)
+### MEDIUM: contribution-check Over-Creation
+- 4 issues on Apr 12 (runs every 4h, no skip guard for 0-result runs)
+
+### MEDIUM: discussion-task-miner Repetition
+- #1751 (nowRFC3399 refactor) flagged 3 consecutive days; no dedup check
+
+### MEDIUM: weekly-issue-summary Not Compiled
 
 ## Resolved
-- update-docs duplicate PR race condition: RESOLVED Apr 10
-- All workflows compiled: RESOLVED Apr 7
-- daily-doc-updater PR volume escalation: RESOLVED Apr 6
+- a11y issues: RESOLVED (all merged in v0.10.0)
+- update-docs duplicate PRs: RESOLVED Apr 10
 - Copilot PR queue backlog: RESOLVED Apr 8
