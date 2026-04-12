@@ -50,7 +50,7 @@ A library organization layout where imported book files are moved into `<Author>
 
 ## CrudStore
 
-The base class in `frontend/src/stores/` from which entity-list stores inherit. Provides `$state` fields for `items`, `loading`, `loaded`, and `error`, plus a `load()` method with an idempotency guard (`if (this.loading || this.loaded) return`) that prevents duplicate API requests even when called from multiple `$effect` blocks. Stores that require additional state beyond basic CRUD (e.g. `libraryStore` with scan-tracking) implement the full class directly instead of extending `CrudStore`. See also [`$effect`](#effect), [runes](#runes).
+The base class in `frontend/src/stores/` from which entity-list stores inherit. Provides a `$state.raw` field for `items` (replacing the whole array on each fetch) and `$state` fields for `loading`, `loaded`, and `error`, plus a `load()` method with an idempotency guard (`if (this.loading || this.loaded) return`) that prevents duplicate API requests even when called from multiple `$effect` blocks. Stores that require additional state beyond basic CRUD (e.g. `libraryStore` with scan-tracking) implement the full class directly instead of extending `CrudStore`. See also [`$effect`](#effect), [runes](#runes).
 
 ## dbmate
 
