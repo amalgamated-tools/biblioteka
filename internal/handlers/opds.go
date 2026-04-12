@@ -27,7 +27,7 @@ type OPDSHandler struct {
 func (h *OPDSHandler) HandleOPDS(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
-		writeOPDSError(r, w, http.StatusMethodNotAllowed, opdspkg.NavContentType, "urn:biblioteka:opds:error", "Method not allowed")
+		writeOPDSError(r, w, http.StatusMethodNotAllowed, opdspkg.NavContentType, opdspkg.ErrorID, "Method not allowed")
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 	allowed, pathErr := isBookFilePathAllowed(ctx, h.DB, bf.FilePath)
 	if pathErr != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to validate book file path", slog.Any(otelkeys.Error, pathErr))
-		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "urn:biblioteka:opds:error", "Failed to validate file path")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, opdspkg.ErrorID, "Failed to validate file path")
 		return
 	}
 	if !allowed {
@@ -157,7 +157,7 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 			slog.String(otelkeys.BookFileID, fileID),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "urn:biblioteka:opds:error", "Failed to read file")
+		writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, opdspkg.ErrorID, "Failed to read file")
 		return
 	}
 
