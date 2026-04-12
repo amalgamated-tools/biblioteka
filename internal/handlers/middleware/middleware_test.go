@@ -1,8 +1,12 @@
 package middleware
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -246,4 +250,19 @@ func TestSecurityHeadersMiddleware_HSTS_SecureCookiesFalse(t *testing.T) {
 	NewSecurityHeadersMiddleware(SecurityHeadersConfig{SecureCookies: false})(next).ServeHTTP(w, r)
 
 	require.Empty(t, w.Header().Get("Strict-Transport-Security"))
+}
+
+func TestThemeBootstrapScriptCSPHash_MatchesIndexHTML(t *testing.T) {
+	html, err := os.ReadFile("../../../frontend/index.html")
+	require.NoError(t, err, "failed to read frontend/index.html")
+
+	re := regexp.MustCompile(`<script>([\s\S]*?)</script>`)
+	match := re.FindSubmatch(html)
+	require.NotNil(t, match, "no bare <script> tag found in frontend/index.html")
+
+	digest := sha256.Sum256(match[1])
+	want := "sha256-" + base64.StdEncoding.EncodeToString(digest[:])
+
+	require.Equal(t, want, themeBootstrapScriptCSPHash,
+		"themeBootstrapScriptCSPHash is stale — regenerate with the command in security_headers.go")
 }
