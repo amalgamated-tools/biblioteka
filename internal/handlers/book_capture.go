@@ -127,10 +127,8 @@ func (h *BookHandler) HandleCapture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logAudit(r.Context(), h.DB, userID, db.AuditActionBookCaptured, "book_capture", rawURL, map[string]any{
-		"url":        rawURL,
-		"library_id": libraryID,
-	})
+	// Note: audit logging is handled by the background job (capture:url) after successful EPUB creation.
+	// Logging here would produce duplicate audit entries.
 
 	slog.InfoContext(r.Context(), "URL capture request accepted",
 		slog.String(otelkeys.URL, rawURL),

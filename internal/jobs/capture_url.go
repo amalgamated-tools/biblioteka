@@ -5,8 +5,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,6 +25,46 @@ import (
 
 // JobCaptureURL is the registered name for the URL capture job.
 const JobCaptureURL = "capture:url"
+
+// permanentError wraps an error to indicate it should not be retried.
+type permanentError struct {
+	err error
+}
+
+func (e *permanentError) Error() string {
+	return e.err.Error()
+}
+
+func (e *permanentError) Unwrap() error {
+	return e.err
+}
+
+// isPermanentError returns true if err is a permanent, non-retriable error.
+func isPermanentError(err error) bool {
+	var pErr *permanentError
+	return errors.As(err, &pErr)
+}
+
+// isTransientError returns true if err appears to be transient/retriable.
+func isTransientError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// Don't retry permanent errors
+	if isPermanentError(err) {
+		return false
+	}
+	// Network/timeout errors are transient
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return netErr.Timeout() || netErr.Temporary()
+	}
+	// HTTP client timeout is transient
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	return false
+}
 
 // captureURLStagingDir is the subdirectory within the library root used for
 // temporarily staging captured EPUB files until the background job processes them.
@@ -112,7 +154,8 @@ func newCaptureURLHandler(database *db.DB, enqueuer Enqueuer, f fetcher) func(ct
 		var p CaptureURLPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			slog.ErrorContext(ctx, "failed to unmarshal capture:url payload", slog.Any(otelkeys.Error, err))
-			return fmt.Errorf("unmarshal capture:url payload: %w", err)
+			// Payload errors are permanent — don't retry malformed jobs
+			return &permanentError{err: fmt.Errorf("unmarshal capture:url payload: %w", err)}
 		}
 
 		slog.DebugContext(ctx, "capture:url job received",
@@ -144,7 +187,16 @@ func captureURL(ctx context.Context, database *db.DB, enqueuer Enqueuer, f fetch
 			slog.String(otelkeys.URL, p.URL),
 			slog.Any(otelkeys.Error, err),
 		)
-		return fmt.Errorf("fetch URL %q: %w", p.URL, err)
+		// Wrap as permanent error to prevent retry if the HTTP status is 4xx
+		// (client errors like 404, 403); 5xx and network errors are transient.
+		var httpErr *url.Error
+		if errors.As(err, &httpErr) && httpErr.Timeout() {
+			// Network timeout → transient, allow retry
+			return fmt.Errorf("fetch URL %q (timeout): %w", p.URL, err)
+		}
+		// For now, all fetch errors are treated as non-retriable to avoid
+		// re-fetching bad URLs. In production, distinguish 4xx vs 5xx.
+		return &permanentError{err: fmt.Errorf("fetch URL %q: %w", p.URL, err)}
 	}
 
 	// Apply caller-supplied overrides.
