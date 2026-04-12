@@ -75,7 +75,7 @@
     </h2>
 
     {#if usersLoading}
-      <p class="text-ink-500 dark:text-ink-300">Loading users...</p>
+      <p role="status" class="text-ink-500 dark:text-ink-300">Loading users...</p>
     {:else if usersError}
       <AlertBanner variant="error">{usersError}</AlertBanner>
     {:else}
