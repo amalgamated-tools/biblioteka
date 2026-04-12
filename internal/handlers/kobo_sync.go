@@ -25,7 +25,7 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 	books, err := h.DB.ListBooksModifiedSince(ctx, syncToken.BooksLastModified, syncToken.BooksLastID, kobo.SyncPageSize+1)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to list books for kobo sync", slog.Any(otelkeys.Error, err))
-		writeKoboJSON(w, http.StatusInternalServerError, []any{})
+		writeKoboJSON(ctx, w, http.StatusInternalServerError, []any{})
 		return
 	}
 
@@ -47,7 +47,7 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 	filesByBook, err := h.DB.GetFilesForBooks(ctx, bookIDs)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to batch-load files for kobo sync", slog.Any(otelkeys.Error, err))
-		writeKoboJSON(w, http.StatusInternalServerError, []any{})
+		writeKoboJSON(ctx, w, http.StatusInternalServerError, []any{})
 		return
 	}
 	seriesByBook, err := h.DB.GetSeriesForBooks(ctx, bookIDs)
