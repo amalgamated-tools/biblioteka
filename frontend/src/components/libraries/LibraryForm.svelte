@@ -180,6 +180,11 @@
   {/if}
 
   <form onsubmit={handleSubmit} class="space-y-5">
+    <p class="text-xs text-ink-500 dark:text-ink-300">
+      Fields marked with <span aria-hidden="true">*</span><span class="sr-only"
+        >an asterisk</span
+      > are required.
+    </p>
     <div>
       <label
         for="lib-name"
