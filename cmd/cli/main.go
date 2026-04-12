@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/amalgamated-tools/biblioteka/internal/calibre"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/goodreads"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
@@ -87,6 +88,16 @@ func main() {
 				libraryID = os.Args[3]
 			}
 			err = runScanDirectory(ctx, os.Args[2], libraryID)
+		case "calibre-import":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: %s calibre-import <calibre-library-path> [library-id]\n", os.Args[0])
+				os.Exit(1)
+			}
+			libraryID := ""
+			if len(os.Args) >= 4 {
+				libraryID = os.Args[3]
+			}
+			err = runCalibreImport(ctx, os.Args[2], libraryID)
 		default:
 			if len(os.Args) >= 3 {
 				fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", cmd)
@@ -121,6 +132,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "Commands:\n")
 	fmt.Fprintf(os.Stderr, "  process-file <file>                    Process a single book file\n")
 	fmt.Fprintf(os.Stderr, "  scan-directory <directory> [library-id] Scan a directory and enqueue files for processing\n")
+	fmt.Fprintf(os.Stderr, "  calibre-import <calibre-library-path> [library-id] Import a Calibre library into Biblioteka\n")
 	fmt.Fprintf(os.Stderr, "  goodreads-search <query>              Search Goodreads for a book by query\n")
 	fmt.Fprintf(os.Stderr, "  goodreads-search-isbn <isbn>          Search Goodreads for a book by ISBN\n")
 	fmt.Fprintf(os.Stderr, "  goodreads-get-by-asin <asin>          Get a book from Goodreads by ASIN\n")
@@ -330,5 +342,42 @@ func runGoodreadsGetByLegacyID(ctx context.Context, legacyID int64) error {
 	fmt.Printf("Author: %s\n", result.AuthorName)
 	fmt.Printf("ASIN: %s\n", result.BookASIN)
 	fmt.Printf("Goodreads ID: %s\n", result.BookID)
+	return nil
+}
+
+func runCalibreImport(ctx context.Context, libraryPath, libraryID string) error {
+	absPath, err := filepath.Abs(libraryPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve library path %q: %w", libraryPath, err)
+	}
+
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat library path %q: %w", absPath, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("library path %q is not a directory", absPath)
+	}
+
+	database, err := db.SetupDatabase(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to setup database", slog.Any(otelkeys.Error, err))
+		return fmt.Errorf("failed to setup database: %w", err)
+	}
+	defer func() { _ = database.Close() }()
+
+	result, err := calibre.Import(ctx, database, calibre.ImportOptions{
+		LibraryPath: absPath,
+		LibraryID:   libraryID,
+	})
+	if err != nil {
+		return fmt.Errorf("calibre import failed: %w", err)
+	}
+
+	fmt.Printf("Calibre import complete:\n")
+	fmt.Printf("  Total books:    %d\n", result.Total)
+	fmt.Printf("  Imported:       %d\n", result.Imported)
+	fmt.Printf("  Skipped:        %d\n", result.Skipped)
+	fmt.Printf("  Errors:         %d\n", result.Errors)
 	return nil
 }
