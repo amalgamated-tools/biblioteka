@@ -359,6 +359,18 @@ func runCalibreImport(ctx context.Context, libraryPath, libraryID string) error 
 		return fmt.Errorf("library path %q is not a directory", absPath)
 	}
 
+	metadataPath := filepath.Join(absPath, "metadata.db")
+	metadataInfo, err := os.Stat(metadataPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("library path %q does not contain metadata.db; expected a Calibre library", absPath)
+		}
+		return fmt.Errorf("failed to stat Calibre metadata database %q: %w", metadataPath, err)
+	}
+	if metadataInfo.IsDir() {
+		return fmt.Errorf("calibre metadata database path %q is a directory", metadataPath)
+	}
+
 	database, err := db.SetupDatabase(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to setup database: %w", err)
