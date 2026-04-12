@@ -49,20 +49,17 @@ type GoodreadsMetadata struct {
 const goodreadsMetadataColumns = `id, user_id, book_id, status, title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url, author_name, author_goodreads_id, author_image_url, goodreads_work_id, goodreads_book_legacy_id, goodreads_work_legacy_id, goodreads_author_legacy_id, created_at, updated_at`
 
 func scanGoodreadsMetadata(row interface{ Scan(...any) error }) (*GoodreadsMetadata, error) {
-	var gm GoodreadsMetadata
-	err := row.Scan(
-		&gm.ID, &gm.UserID, &gm.BookID, &gm.Status,
-		&gm.Title, &gm.Description, &gm.ASIN, &gm.ISBN10, &gm.ISBN13,
-		&gm.GoodreadsID, &gm.HardcoverID, &gm.GoogleBooksID,
-		&gm.PublicationDate, &gm.Publisher, &gm.Language,
-		&gm.CoverImageURL, &gm.AuthorName, &gm.AuthorGoodreadsID, &gm.AuthorImageURL,
-		&gm.GoodreadsWorkID, &gm.GoodreadsBookLegacyID, &gm.GoodreadsWorkLegacyID,
-		&gm.GoodreadsAuthorLegacyID, &gm.CreatedAt, &gm.UpdatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &gm, nil
+	return scanRow(row, func(gm *GoodreadsMetadata) []any {
+		return []any{
+			&gm.ID, &gm.UserID, &gm.BookID, &gm.Status,
+			&gm.Title, &gm.Description, &gm.ASIN, &gm.ISBN10, &gm.ISBN13,
+			&gm.GoodreadsID, &gm.HardcoverID, &gm.GoogleBooksID,
+			&gm.PublicationDate, &gm.Publisher, &gm.Language,
+			&gm.CoverImageURL, &gm.AuthorName, &gm.AuthorGoodreadsID, &gm.AuthorImageURL,
+			&gm.GoodreadsWorkID, &gm.GoodreadsBookLegacyID, &gm.GoodreadsWorkLegacyID,
+			&gm.GoodreadsAuthorLegacyID, &gm.CreatedAt, &gm.UpdatedAt,
+		}
+	})
 }
 
 // GoodreadsMetadataInput holds the optional fields for creating a goodreads_metadata row.

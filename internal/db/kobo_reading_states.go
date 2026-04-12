@@ -31,13 +31,12 @@ type KoboReadingState struct {
 const koboReadingStateColumns = `id, user_id, book_id, status, percent_read, location_value, location_type, location_source, created_at, updated_at`
 
 func scanKoboReadingState(row interface{ Scan(...any) error }) (*KoboReadingState, error) {
-	var s KoboReadingState
-	err := row.Scan(&s.ID, &s.UserID, &s.BookID, &s.Status, &s.PercentRead,
-		&s.LocationValue, &s.LocationType, &s.LocationSource, &s.CreatedAt, &s.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("scan kobo reading state: %w", err)
-	}
-	return &s, nil
+	return scanRow(row, func(s *KoboReadingState) []any {
+		return []any{
+			&s.ID, &s.UserID, &s.BookID, &s.Status, &s.PercentRead,
+			&s.LocationValue, &s.LocationType, &s.LocationSource, &s.CreatedAt, &s.UpdatedAt,
+		}
+	})
 }
 
 // GetKoboReadingState returns the reading state for a specific user+book pair,
