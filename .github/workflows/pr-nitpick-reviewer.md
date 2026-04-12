@@ -3,6 +3,11 @@ description: Provides detailed nitpicky code review focusing on style, best prac
 
 on:
   slash_command: "nit"
+  reaction: "eyes"
+
+concurrency:
+  group: "gh-aw-np-${{ github.workflow }}-pr-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
+  cancel-in-progress: true  
 
 permissions:
   contents: read
