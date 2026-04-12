@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import {
     getWatchFolderConfig,
     setWatchFolderConfig,
@@ -26,18 +25,20 @@
     return configured ? "Update Configuration" : "Save Configuration";
   });
 
-  onMount(async () => {
-    try {
-      const [config, libs] = await Promise.all([
-        getWatchFolderConfig(),
-        listLibraries(),
-      ]);
-      watchFolderPath = config.path;
-      watchFolderLibraryId = config.library_id;
-      libraries = libs;
-    } catch {
-      // ignore - user can re-enter
-    }
+  $effect(() => {
+    void (async () => {
+      try {
+        const [config, libs] = await Promise.all([
+          getWatchFolderConfig(),
+          listLibraries(),
+        ]);
+        watchFolderPath = config.path;
+        watchFolderLibraryId = config.library_id;
+        libraries = libs;
+      } catch {
+        // ignore - user can re-enter
+      }
+    })();
   });
 
   async function handleSave(e: SubmitEvent) {

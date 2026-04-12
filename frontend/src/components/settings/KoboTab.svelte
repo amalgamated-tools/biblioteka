@@ -7,7 +7,6 @@
   import type { KoboToken } from "../../types";
   import { copyToClipboard } from "../../lib/clipboard";
   import { BookOpen, Copy, Trash2 } from "lucide-svelte";
-  import { onDestroy, onMount } from "svelte";
   import Button from "../ui/Button.svelte";
   import TextInput from "../ui/TextInput.svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
@@ -27,10 +26,9 @@
   let createTokenLoading = $state(false);
   let liveMessage = $state("");
 
-  onDestroy(() => tokenList.copy.clear());
-
-  onMount(() => {
+  $effect(() => {
     void tokenList.load();
+    return () => tokenList.copy.clear();
   });
 
   async function handleCreateToken(e: SubmitEvent) {
