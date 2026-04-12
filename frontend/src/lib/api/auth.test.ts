@@ -101,6 +101,28 @@ describe("Auth API", () => {
       expect(options.method).toBe("POST");
     });
 
+    it("clears the in-memory token after a successful logout", async () => {
+      mockFetchResponse(fakeAuthResponse);
+      await login("test@example.com", "secret");
+      expect(getToken()).toBe("test-token-abc");
+
+      mockFetchResponse({ message: "logged out" });
+      await logout();
+
+      expect(getToken()).toBeNull();
+    });
+
+    it("clears the in-memory token even when the request fails", async () => {
+      mockFetchResponse(fakeAuthResponse);
+      await login("test@example.com", "secret");
+      expect(getToken()).toBe("test-token-abc");
+
+      mockFetchResponse({ error: "server error" }, 500);
+      await logout();
+
+      expect(getToken()).toBeNull();
+    });
+
     it("does not throw when the request fails", async () => {
       mockFetchResponse({ error: "server error" }, 500);
 
