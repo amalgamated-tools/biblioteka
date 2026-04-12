@@ -214,3 +214,64 @@ func TestTargetPath_SanitizedEmpty(t *testing.T) {
 	require.Equal(t, "", TargetPath(t.Context(), "/lib/book.epub", "/lib", "...", "Title"))
 	require.Equal(t, "", TargetPath(t.Context(), "/lib/book.epub", "/lib", "Author", "..."))
 }
+
+// TestSanitizeDirName documents the exact character-filtering behaviour of
+// sanitizeDirName, which is applied to untrusted epub author/title metadata
+// before constructing filesystem paths. Explicit unit tests here make future
+// changes to the sanitizer easy to reason about and safe to verify.
+func TestSanitizeDirName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		// Ordinary text is left untouched.
+		{"plain text", "Jane Austen", "Jane Austen"},
+		{"unicode preserved", "Ångström", "Ångström"},
+		{"internal dot preserved", "J.R.R. Tolkien", "J.R.R. Tolkien"},
+
+		// Whitespace handling.
+		{"leading and trailing spaces trimmed", "  Author Name  ", "Author Name"},
+		{"only spaces", "   ", ""},
+
+		// Path separators — both Unix and Windows variants must be removed so
+		// that metadata cannot inject additional directory levels.
+		{"forward slash removed", "path/name", "pathname"},
+		{"backslash removed", `back\slash`, "backslash"},
+
+		// Null byte removal prevents filesystem confusion on some platforms.
+		{"null byte removed", "a\x00b", "ab"},
+
+		// Windows-problematic characters. Even though Biblioteka targets Linux,
+		// removing them keeps directory names portable and avoids surprises when
+		// syncing libraries to Windows hosts.
+		{"colon removed", "author:name", "authorname"},
+		{"asterisk removed", "author*name", "authorname"},
+		{"question mark removed", "author?name", "authorname"},
+		{"double quote removed", `author"name`, "authorname"},
+		{"less than removed", "author<name", "authorname"},
+		{"greater than removed", "author>name", "authorname"},
+		{"pipe removed", "author|name", "authorname"},
+
+		// Leading dots are stripped so the resulting directory is not hidden on
+		// Unix filesystems (where names starting with '.' are hidden by default).
+		{"single leading dot stripped", ".hidden", "hidden"},
+		{"multiple leading dots stripped", "...name", "name"},
+		{"only leading dots become empty", "...", ""},
+
+		// Internal and trailing dots are left intact — they are valid and common
+		// (e.g. "J.R.R." or "Vol. 1").
+		{"trailing dots preserved", "Vol. 1.", "Vol. 1."},
+
+		// Combined / edge cases.
+		{"all special chars become empty", "/\\:\x00*?\"<>|", ""},
+		{"empty string", "", ""},
+		{"special chars with surrounding text", "auth/or:name", "authorname"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, sanitizeDirName(tt.input))
+		})
+	}
+}
