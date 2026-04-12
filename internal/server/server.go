@@ -86,6 +86,7 @@ type Server struct {
 	requireKoboAuth       func(http.Handler) http.Handler
 	requireKOSyncAuth     func(http.Handler) http.Handler
 	authLimiter           *auth.RateLimiter
+	secureCookies         bool
 	mux                   *http.ServeMux
 	httpServer            *http.Server
 	shutdownFuncs         []ShutdownFunc
@@ -167,6 +168,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 
 	// Determine cookie security mode: secure by default, can be disabled for local dev
 	secureCookies := os.Getenv("SECURE_COOKIES") != "false"
+	s.secureCookies = secureCookies
 
 	// Disable signup if DISABLE_SIGNUP=true; signup is enabled by default.
 	disableSignup := os.Getenv("DISABLE_SIGNUP") == "true"
@@ -279,7 +281,7 @@ func (s *Server) Run(ctx context.Context) error {
 		middleware.RequestIDHandler,
 		otel.TraceMiddleware,
 		middleware.LoggingMiddleware,
-		middleware.SecurityHeadersMiddleware,
+		middleware.NewSecurityHeadersMiddleware(middleware.SecurityHeadersConfig{SecureCookies: s.secureCookies}),
 	).Then(s.mux)
 
 	s.httpServer = &http.Server{
