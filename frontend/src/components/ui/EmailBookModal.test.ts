@@ -196,4 +196,44 @@ describe("EmailBookModal", () => {
       ),
     );
   });
+
+  it("traps Tab focus within the dialog: Tab from last element wraps to first", async () => {
+    mockFetch(fakeBook);
+    const user = userEvent.setup();
+    render(EmailBookModal, { bookId: "b1", onClose: vi.fn() });
+
+    await waitFor(() => screen.getByLabelText("To"));
+
+    // Focus the Cancel button (last enabled focusable element; Send is disabled when input is empty)
+    const cancelButton = screen.getByRole("button", { name: /cancel/i });
+    cancelButton.focus();
+    expect(cancelButton).toHaveFocus();
+
+    // Tab from the last element should wrap back to the first focusable element
+    await user.keyboard("{Tab}");
+
+    // First focusable element is the Close button
+    const closeButton = screen.getByRole("button", { name: /close/i });
+    expect(closeButton).toHaveFocus();
+  });
+
+  it("traps Shift+Tab focus within the dialog: Shift+Tab from first element wraps to last", async () => {
+    mockFetch(fakeBook);
+    const user = userEvent.setup();
+    render(EmailBookModal, { bookId: "b1", onClose: vi.fn() });
+
+    await waitFor(() => screen.getByLabelText("To"));
+
+    // Focus the Close button (first focusable element)
+    const closeButton = screen.getByRole("button", { name: /close/i });
+    closeButton.focus();
+    expect(closeButton).toHaveFocus();
+
+    // Shift+Tab from the first element should wrap to the last focusable element
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+
+    // Last enabled focusable element is the Cancel button (Send is disabled when input is empty)
+    const cancelButton = screen.getByRole("button", { name: /cancel/i });
+    expect(cancelButton).toHaveFocus();
+  });
 });
