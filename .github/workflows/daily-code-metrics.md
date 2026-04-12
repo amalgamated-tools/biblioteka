@@ -19,6 +19,7 @@ tools:
   bash: true
   github:
     lockdown: false
+    min-integrity: none
 timeout-minutes: 30
 strict: true
 imports:
