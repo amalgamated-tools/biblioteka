@@ -18,15 +18,17 @@ const hsts = "max-age=63072000; includeSubDomains"
 // SecurityHeadersConfig holds configuration for the security headers middleware.
 type SecurityHeadersConfig struct {
 	// SecureCookies controls whether HTTPS-only headers such as
-	// Strict-Transport-Security are emitted. Set to true for any
-	// deployment that terminates TLS (i.e. SECURE_COOKIES=true).
+	// Strict-Transport-Security are emitted. Set to true when the
+	// application is served over HTTPS externally, including when TLS
+	// is terminated by an upstream reverse proxy or load balancer
+	// (i.e. SECURE_COOKIES=true).
 	SecureCookies bool
 }
 
 // NewSecurityHeadersMiddleware returns a middleware that adds baseline HTTP
 // security headers to every response. When cfg.SecureCookies is true,
 // a Strict-Transport-Security (HSTS) header is also set to protect against
-// protocol-downgrade attacks on HTTPS deployments.
+// protocol-downgrade attacks for responses served over HTTPS externally.
 // Individual route handlers (such as the Swagger UI) may override specific
 // headers with more permissive or restrictive values for their use case.
 func NewSecurityHeadersMiddleware(cfg SecurityHeadersConfig) func(http.Handler) http.Handler {
