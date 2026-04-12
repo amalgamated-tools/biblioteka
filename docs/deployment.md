@@ -289,6 +289,24 @@ No additional reverse proxy configuration is required to enable these headers �
 
 ---
 
+## Static Asset Caching
+
+Biblioteka uses Vite's content-hashing for frontend assets (JavaScript, CSS, fonts). Every compiled asset under `/assets/` has a content-derived hash in its filename (e.g., `index-DfzxFbzN.js`), meaning a changed file always gets a new URL.
+
+The embedded file server sets `Cache-Control` headers automatically based on path:
+
+| Path pattern | `Cache-Control` value | Effect |
+|---|---|---|
+| `/assets/*` (content-hashed) | `public, max-age=31536000, immutable` | Cached by browser and CDN for one year; never revalidated |
+| `/` and `/index.html` | `no-cache` | Always revalidated; ensures the browser fetches new asset hashes after a deploy |
+| Other static files | *(ETag / Last-Modified only)* | Standard conditional-request revalidation |
+
+The `immutable` directive tells browsers not to issue conditional requests for `/assets/` files even within the `max-age` window. Because the filename changes on every build, stale assets are never served — the browser will request the new filename as soon as it reloads the revalidated `index.html`.
+
+> **Reverse proxy note:** If your reverse proxy also caches responses (e.g., Nginx proxy_cache, Varnish, a CDN), the `Cache-Control: public, max-age=31536000, immutable` header on `/assets/*` responses is safe to honour — those filenames are permanent. For `index.html` (`no-cache`), ensure the proxy forwards the header to clients unchanged and does not apply its own long-lived cache to it.
+
+---
+
 ## Health Check
 
 The `GET /api/health` endpoint returns `200 OK` with `{"status":"ok"}` and requires no authentication. Use it for liveness/readiness probes:

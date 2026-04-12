@@ -80,7 +80,8 @@ curl -X PUT http://localhost:8080/api/auth/password \
 | Maximum length | 72 bytes (bcrypt silently truncates inputs longer than 72 bytes; any two passwords sharing the same first 72 bytes would be treated as identical — this cap prevents that collision) |
 | Storage | bcrypt hash with work factor 12; plaintext is never persisted |
 | Work factor rationale | Cost 12 is used instead of bcrypt's default (cost 10) because modern hardware can brute-force cost-10 hashes significantly faster than when the default was standardized |
-| Timing safety | Protocol-layer credential endpoints (OPDS, KOSync) perform a constant-time dummy bcrypt comparison when a username is not found to mitigate timing-based enumeration; the main login endpoint (`POST /api/auth/login`) does not currently apply this protection |
+| Account enumeration | The main login endpoint (`POST /api/auth/login`) returns the same generic `"invalid email or password"` error for both non-existent accounts and OIDC-only accounts (accounts with no password set). This prevents an attacker from using the login endpoint to discover which email addresses are registered as OIDC-only versus not registered at all. |
+| Timing safety | Protocol-layer credential endpoints (OPDS, KOSync) perform a constant-time dummy bcrypt comparison when a username is not found to mitigate timing-based enumeration. The main login endpoint (`POST /api/auth/login`) applies the same protection: a dummy bcrypt comparison is performed when the account does not exist or is OIDC-only, so response times are indistinguishable across all three cases. |
 
 ---
 
