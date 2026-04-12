@@ -155,7 +155,7 @@ docker compose logs biblioteka \
 
 Biblioteka includes OpenTelemetry trace context propagation (`TraceMiddleware`) that wraps every incoming HTTP request in an OTel span. The global tracer provider is used, which defaults to a **no-op provider** — no spans are exported and there is no overhead beyond the middleware call.
 
-The standard binary does not include a built-in OTLP exporter or read `OTEL_EXPORTER_OTLP_ENDPOINT` at runtime. Span export requires building from source and registering a `TracerProvider` that includes an exporter (e.g. `go.opentelemetry.io/otel/exporters/otlp/otlptrace`) before calling `server.NewServer`. The span names follow the pattern `METHOD /path` (e.g. `GET /api/books`).
+The standard binary does not include a built-in OTLP exporter or read `OTEL_EXPORTER_OTLP_ENDPOINT` at runtime. Span export requires building from source and registering a `TracerProvider` that includes an exporter (e.g. `go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc` or `otlptracehttp`) before calling `server.NewServer`. The span names follow the pattern `METHOD /path` (e.g. `GET /api/books`).
 
 > Most deployments are well-served by structured log correlation via `request_id` alone. Distributed tracing is an advanced integration point that requires custom builds.
 
