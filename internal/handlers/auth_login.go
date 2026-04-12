@@ -60,7 +60,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if user.PasswordHash == "" {
 		slog.DebugContext(r.Context(), "login failed: OIDC-only account", slog.String(otelkeys.Email, redactEmail(req.Email)))
-		writeError(r.Context(), w, http.StatusUnauthorized, "this account uses OIDC login")
+		writeError(r.Context(), w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
 
