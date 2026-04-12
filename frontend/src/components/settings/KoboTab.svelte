@@ -122,7 +122,9 @@
     {/if}
 
     {#if tokenList.loading}
-      <p class="text-ink-500 dark:text-ink-300">Loading Kobo tokens...</p>
+      <p role="status" class="text-ink-500 dark:text-ink-300">
+        Loading Kobo tokens...
+      </p>
     {:else if tokenList.items.length === 0}
       <p class="text-sm text-ink-500 dark:text-ink-300">
         No Kobo tokens yet. Create one above to get started.
