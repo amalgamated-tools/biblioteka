@@ -24,6 +24,7 @@ vi.mock("../stores/router.svelte", () => ({
 
 vi.mock("../lib/api", () => ({
   getTotalBooksCount: vi.fn().mockResolvedValue(0),
+  getDownloadsPerMonth: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("lucide-svelte", () => ({
@@ -36,13 +37,14 @@ vi.mock("lucide-svelte", () => ({
 import Dashboard from "./Dashboard.svelte";
 import { libraryStore } from "../stores/libraries.svelte";
 import { routerStore } from "../stores/router.svelte";
-import { getTotalBooksCount } from "../lib/api";
+import { getTotalBooksCount, getDownloadsPerMonth } from "../lib/api";
 
 describe("Dashboard", () => {
   beforeEach(() => {
     vi.mocked(libraryStore).loaded = false;
     vi.mocked(libraryStore).libraries = [];
     vi.mocked(getTotalBooksCount).mockResolvedValue(0);
+    vi.mocked(getDownloadsPerMonth).mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -241,5 +243,54 @@ describe("Dashboard", () => {
     });
 
     expect(getTotalBooksCount).toHaveBeenCalled();
+  });
+
+  it("shows the downloads histogram when data is available", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [
+      {
+        id: "lib-1",
+        name: "Fiction",
+        paths: [],
+        organization_type: "book_per_folder",
+        monitored: false,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    vi.mocked(getDownloadsPerMonth).mockResolvedValue([
+      { month: "2026-02", count: 3 },
+      { month: "2026-03", count: 5 },
+    ]);
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("downloads-histogram-card"),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("shows a downloads error banner when the stats fetch fails", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = [
+      {
+        id: "lib-1",
+        name: "Fiction",
+        paths: [],
+        organization_type: "book_per_folder",
+        monitored: false,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    vi.mocked(getDownloadsPerMonth).mockRejectedValue(
+      new Error("network error"),
+    );
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(screen.getByText("network error")).toBeInTheDocument();
+    });
   });
 });

@@ -10,3 +10,4 @@ export * from "./api/books";
 export * from "./api/tokens";
 export * from "./api/pagination";
 export * from "./api/metadata";
+export * from "./api/stats";
