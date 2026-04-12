@@ -51,14 +51,13 @@ func TestStaticCacheMiddleware_AssetsImmutable(t *testing.T) {
 	paths := []string{
 		"/assets/index-Bm2A5K9v.js",
 		"/assets/style-abc123.css",
-		"/assets/",
 	}
 	for _, path := range paths {
 		t.Run(path, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, path, nil)
 			rec := httptest.NewRecorder()
 			handler.ServeHTTP(rec, req)
-			require.Equal(t, "public, max-age=31536000, immutable", rec.Header().Get("Cache-Control"),
+			require.Equalf(t, "public, max-age=31536000, immutable", rec.Header().Get("Cache-Control"),
 				"expected immutable cache for hashed asset %s", path)
 		})
 	}
@@ -75,7 +74,7 @@ func TestStaticCacheMiddleware_IndexNoCache(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, path, nil)
 			rec := httptest.NewRecorder()
 			handler.ServeHTTP(rec, req)
-			require.Equal(t, "no-cache", rec.Header().Get("Cache-Control"),
+			require.Equalf(t, "no-cache", rec.Header().Get("Cache-Control"),
 				"expected no-cache for entry point %s", path)
 		})
 	}
@@ -87,11 +86,16 @@ func TestStaticCacheMiddleware_OtherFiles_NoOverride(t *testing.T) {
 	})
 	handler := staticCacheMiddleware(inner)
 
-	req := httptest.NewRequest(http.MethodGet, "/favicon.ico", nil)
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-	require.Equal(t, "", rec.Header().Get("Cache-Control"),
-		"expected no Cache-Control override for non-asset files")
+	paths := []string{"/favicon.ico", "/assets/"}
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+			require.Equalf(t, "", rec.Header().Get("Cache-Control"),
+				"expected no Cache-Control override for %s", path)
+		})
+	}
 }
 
 // ---------------------------------------------------------------------------
