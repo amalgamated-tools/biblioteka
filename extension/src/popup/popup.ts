@@ -114,6 +114,7 @@ async function renderCapture(settings: Settings): Promise<void> {
       showStatus(statusEl, "success", "Saved! Processing in background…");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error("[Save to Biblioteka] capture failed:", err);
       showStatus(statusEl, "error", `Failed: ${msg}`);
       saveBtn.disabled = false;
     }

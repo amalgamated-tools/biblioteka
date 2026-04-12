@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"unicode/utf8"
 
 	epub "github.com/bmaupin/go-epub"
 	readability "github.com/go-shiori/go-readability"
@@ -294,7 +295,7 @@ func generatePrefix() (string, error) {
 }
 
 // sanitizeFilename removes characters that are invalid in file names from s
-// and truncates the result to 100 characters.
+// and truncates the result to 100 bytes.
 func sanitizeFilename(s string) string {
 	var b []byte
 	for _, r := range s {
@@ -305,7 +306,7 @@ func sanitizeFilename(s string) string {
 		case r < 0x20:
 			// skip control characters
 		default:
-			b = append(b, []byte(string(r))...)
+			b = utf8.AppendRune(b, r)
 		}
 	}
 	if len(b) > 100 {

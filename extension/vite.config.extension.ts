@@ -13,7 +13,9 @@ function copyManifestPlugin() {
       copyFileSync("manifest.json", "dist/manifest.json");
       copyFileSync("src/popup/popup.html", "dist/popup/popup.html");
       copyFileSync("src/popup/popup.css", "dist/popup/popup.css");
-      // Icons: copy the SVG for now; replace with PNGs in a real deployment.
+      // Copy the source SVG icon. For store submissions, generate PNG icons
+      // from this SVG at 16×16, 32×32, 48×48, and 128×128 and place them in
+      // extension/src/icons/ before running `make build-extension`.
       copyFileSync("src/icons/icon.svg", "dist/icons/icon.svg");
     },
   };

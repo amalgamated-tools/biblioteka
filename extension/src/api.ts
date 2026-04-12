@@ -6,7 +6,7 @@
  * errors or non-2xx responses.
  */
 
-import type { Settings, CaptureRequest, CaptureResponse, Library } from "../types.js";
+import type { Settings, CaptureRequest, CaptureResponse, Library } from "./types.js";
 
 const STORAGE_KEY = "biblioteka_settings";
 
