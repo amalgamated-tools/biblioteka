@@ -109,7 +109,10 @@
       const last = focusable[focusable.length - 1];
 
       if (e.shiftKey) {
-        if (document.activeElement === first || document.activeElement === dialogEl) {
+        if (
+          document.activeElement === first ||
+          document.activeElement === dialogEl
+        ) {
           e.preventDefault();
           last.focus();
         }
