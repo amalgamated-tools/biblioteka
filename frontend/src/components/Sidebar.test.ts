@@ -31,6 +31,7 @@ vi.mock("lucide-svelte", () => ({
   Settings: () => {},
   LogOut: () => {},
   BookCheck: () => {},
+  BookMarked: () => {},
   Settings2: () => {},
 }));
 

@@ -99,6 +99,8 @@ const (
 	Protocol             string = "protocol"
 	PubSubChannel        string = "pubsub_channel"
 	Query                string = "query"
+	ReadingListID        string = "reading_list_id"
+	ReadingListName      string = "reading_list_name"
 	Reason               string = "reason"
 	RedirectURI          string = "redirect_uri"
 	RelPath              string = "rel_path"
