@@ -26,7 +26,7 @@ func (h *KoboHandler) HandleBookState(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPut:
 		h.updateBookState(w, r, userID, bookID)
 	default:
-		writeKoboJSON(w, http.StatusOK, []any{})
+		writeKoboJSON(r.Context(), w, http.StatusOK, []any{})
 	}
 }
 
@@ -34,16 +34,16 @@ func (h *KoboHandler) getBookState(w http.ResponseWriter, r *http.Request, userI
 	book, err := h.DB.GetBook(r.Context(), bookID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeKoboJSON(w, http.StatusNotFound, map[string]any{})
+			writeKoboJSON(r.Context(), w, http.StatusNotFound, map[string]any{})
 			return
 		}
-		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
+		writeKoboJSON(r.Context(), w, http.StatusInternalServerError, map[string]any{})
 		return
 	}
 
 	state, err := h.DB.GetKoboReadingState(r.Context(), userID, bookID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{})
+		writeKoboJSON(r.Context(), w, http.StatusInternalServerError, map[string]any{})
 		return
 	}
 	if state == nil {
@@ -56,7 +56,7 @@ func (h *KoboHandler) getBookState(w http.ResponseWriter, r *http.Request, userI
 		}
 	}
 
-	writeKoboJSON(w, http.StatusOK, []any{kobo.ReadingStateResponse(state)})
+	writeKoboJSON(r.Context(), w, http.StatusOK, []any{kobo.ReadingStateResponse(state)})
 }
 
 type koboStateUpdateRequest struct {
@@ -84,20 +84,20 @@ func (h *KoboHandler) updateBookState(w http.ResponseWriter, r *http.Request, us
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var req koboStateUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.ReadingStates) == 0 {
-		writeKoboJSON(w, http.StatusBadRequest, map[string]any{"RequestResult": "BadRequest"})
+		writeKoboJSON(r.Context(), w, http.StatusBadRequest, map[string]any{"RequestResult": "BadRequest"})
 		return
 	}
 
 	if _, err := h.DB.GetBook(r.Context(), bookID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			writeKoboJSON(w, http.StatusNotFound, map[string]any{"RequestResult": "NotFound"})
+			writeKoboJSON(r.Context(), w, http.StatusNotFound, map[string]any{"RequestResult": "NotFound"})
 			return
 		}
 		slog.ErrorContext(r.Context(), "failed to fetch book for kobo state update",
 			slog.String(otelkeys.BookID, bookID),
 			slog.Any(otelkeys.Error, err),
 		)
-		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{"RequestResult": "ServerError"})
+		writeKoboJSON(r.Context(), w, http.StatusInternalServerError, map[string]any{"RequestResult": "ServerError"})
 		return
 	}
 
@@ -126,17 +126,17 @@ func (h *KoboHandler) updateBookState(w http.ResponseWriter, r *http.Request, us
 	if err != nil {
 		// Treat missing books (FK violation race) as a 404-style response.
 		if errors.Is(err, db.ErrBookNotFound) {
-			writeKoboJSON(w, http.StatusNotFound, map[string]any{"RequestResult": "NotFound"})
+			writeKoboJSON(r.Context(), w, http.StatusNotFound, map[string]any{"RequestResult": "NotFound"})
 			return
 		}
 
 		slog.ErrorContext(r.Context(), "failed to upsert kobo reading state", slog.Any(otelkeys.Error, err))
-		writeKoboJSON(w, http.StatusInternalServerError, map[string]any{"RequestResult": "ServerError"})
+		writeKoboJSON(r.Context(), w, http.StatusInternalServerError, map[string]any{"RequestResult": "ServerError"})
 		return
 	}
 
 	updated := state.UpdatedAt.UTC().Format(time.RFC3339)
-	writeKoboJSON(w, http.StatusOK, map[string]any{
+	writeKoboJSON(r.Context(), w, http.StatusOK, map[string]any{
 		"RequestResult": "Success",
 		"UpdateResults": []any{
 			map[string]any{

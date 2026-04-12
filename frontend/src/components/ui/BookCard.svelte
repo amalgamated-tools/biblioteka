@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import type { BookSummary } from "../../types";
   import { BookOpen, Mail } from "lucide-svelte";
   import EmailBookModal from "./EmailBookModal.svelte";
@@ -10,6 +11,13 @@
   let { book }: Props = $props();
 
   let showEmailModal = $state(false);
+  let emailButtonEl: HTMLButtonElement | null = $state(null);
+
+  async function closeModal() {
+    showEmailModal = false;
+    await tick();
+    emailButtonEl?.focus();
+  }
 </script>
 
 <div class="relative">
@@ -54,6 +62,7 @@
 
   <!-- Email button: always visible, accent on hover/focus -->
   <button
+    bind:this={emailButtonEl}
     onclick={() => (showEmailModal = true)}
     aria-label="Email {book.title}"
     title="Email this book"
@@ -64,5 +73,5 @@
 </div>
 
 {#if showEmailModal}
-  <EmailBookModal bookId={book.id} onClose={() => (showEmailModal = false)} />
+  <EmailBookModal bookId={book.id} onClose={closeModal} />
 {/if}

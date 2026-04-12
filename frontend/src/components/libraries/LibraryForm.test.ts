@@ -106,6 +106,21 @@ describe("LibraryForm accessibility", () => {
     ).toHaveTextContent("*");
   });
 
+  it("shows required-fields legend with sr-only asterisk description", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    const legend = container.querySelector("form > p");
+    expect(legend).toBeInTheDocument();
+    expect(legend?.textContent).toMatch(/are required/i);
+    const visual = legend?.querySelector('span[aria-hidden="true"]');
+    expect(visual).toHaveTextContent("*");
+    const srOnly = legend?.querySelector(".sr-only");
+    expect(srOnly).toHaveTextContent("an asterisk");
+  });
+
   it("shows inline name error with aria-invalid when submitting empty name", async () => {
     const { container } = render(LibraryForm, {
       props: { mode: "create", editId: "" },
@@ -167,6 +182,63 @@ describe("LibraryForm accessibility", () => {
 
     expect(container.querySelector("#lib-name-error")).toBeNull();
     expect(container.querySelector("#lib-folders-error")).toBeNull();
+  });
+});
+
+describe("LibraryForm remove folder button aria-labels", () => {
+  afterEach(() => cleanup());
+
+  it("uses a generic ordinal label when the path is empty", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    // Add a second (empty) folder so the remove buttons appear
+    const addBtn = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button[type=button]"),
+    ).find((b) => b.textContent?.includes("Add another folder"))!;
+    await fireEvent.click(addBtn);
+    await tick();
+
+    const removeBtns = container.querySelectorAll<HTMLButtonElement>(
+      'button[aria-label^="Remove folder"]',
+    );
+    expect(removeBtns).toHaveLength(2);
+    expect(removeBtns[0]).toHaveAttribute("aria-label", "Remove folder 1");
+    expect(removeBtns[1]).toHaveAttribute("aria-label", "Remove folder 2");
+  });
+
+  it("uses the path value in the label when the path is filled", async () => {
+    const { container } = render(LibraryForm, {
+      props: { mode: "create", editId: "" },
+    });
+    await tick();
+
+    // Fill in the first path
+    const firstInput = container.querySelector(
+      'input[aria-label="Folder path"]',
+    ) as HTMLInputElement;
+    await fireEvent.input(firstInput, {
+      target: { value: "/home/user/books" },
+    });
+
+    // Add a second folder
+    const addBtn = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button[type=button]"),
+    ).find((b) => b.textContent?.includes("Add another folder"))!;
+    await fireEvent.click(addBtn);
+    await tick();
+
+    const removeBtns = container.querySelectorAll<HTMLButtonElement>(
+      'button[aria-label^="Remove folder"]',
+    );
+    expect(removeBtns).toHaveLength(2);
+    expect(removeBtns[0]).toHaveAttribute(
+      "aria-label",
+      `Remove folder "/home/user/books"`,
+    );
+    expect(removeBtns[1]).toHaveAttribute("aria-label", "Remove folder 2");
   });
 });
 
