@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import { authStore } from "../../stores/auth.svelte";
   import {
     changePassword,
@@ -39,9 +38,11 @@
     }
   });
 
-  onDestroy(() => {
-    successTimer.clear();
-    nameSuccessTimer.clear();
+  $effect(() => {
+    return () => {
+      successTimer.clear();
+      nameSuccessTimer.clear();
+    };
   });
 
   async function handleLinkSso() {

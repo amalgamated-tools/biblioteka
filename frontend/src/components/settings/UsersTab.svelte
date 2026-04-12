@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { authStore } from "../../stores/auth.svelte";
   import { listUsers, setUserAdmin } from "../../lib/api";
   import type { AdminUser } from "../../types";
@@ -27,9 +26,9 @@
     }
   });
 
-  onMount(() => {
+  $effect(() => {
     if (userList.length === 0) {
-      loadUsers();
+      void loadUsers();
     }
   });
 

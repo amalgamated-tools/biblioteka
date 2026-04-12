@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { authStore } from "../stores/auth.svelte";
   import type { AppView } from "../stores/router.svelte";
   import { libraryStore } from "../stores/libraries.svelte";
@@ -31,8 +30,8 @@
     }
   });
 
-  onMount(() => {
-    getVersion()
+  $effect(() => {
+    void getVersion()
       .then((v) => {
         version = v;
       })
