@@ -64,6 +64,11 @@ func NewJWTManager(secret string, ttl time.Duration) (*JWTManager, error) {
 	return &JWTManager{secret: key, oidcKey: oidcKey, ttl: ttl}, nil
 }
 
+// jwtIssuer is the value used for the JWT "iss" and "aud" claims.
+// All tokens issued by this service carry both claims so that tokens
+// cannot be reused against a different service.
+const jwtIssuer = "biblioteka"
+
 // CreateToken generates a signed JWT for the given user ID.
 func (j *JWTManager) CreateToken(ctx context.Context, userID string) (string, error) {
 	slog.DebugContext(ctx, "creating JWT token", slog.String(otelkeys.UserID, userID))
@@ -71,6 +76,8 @@ func (j *JWTManager) CreateToken(ctx context.Context, userID string) (string, er
 	claims := Claims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    jwtIssuer,
+			Audience:  jwt.ClaimStrings{jwtIssuer},
 			Subject:   userID,
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(j.ttl)),
@@ -97,7 +104,10 @@ func (j *JWTManager) ValidateToken(ctx context.Context, tokenString string) (*Cl
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 		return j.secret, nil
-	})
+	},
+		jwt.WithIssuer(jwtIssuer),
+		jwt.WithAudience(jwtIssuer),
+	)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			slog.DebugContext(ctx, "JWT token expired")
