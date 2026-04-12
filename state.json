@@ -1,40 +1,55 @@
 {
-  "last_run": "2026-04-11T22:21:40Z",
-  "tasks_run": ["task1", "task2", "task3", "task7"],
+  "last_run": "2026-04-12T18:02:12Z",
+  "tasks_run": ["task3", "task4", "task5", "task6", "task7"],
   "commands": {
     "build": "make build (requires frontend first)",
     "test": "GOTOOLCHAIN=local go test ./... (note: go.mod requires 1.26.1 but only 1.24.13 available)",
     "lint": "make lint",
     "fmt": "make fmt && make hardfmt",
     "bench": "GOTOOLCHAIN=local go test -bench=BenchmarkParseBookPath -benchmem ./internal/pathparser/",
-    "note": "Go 1.26.1 download is blocked by firewall - use GOTOOLCHAIN=local to use installed 1.24.13"
+    "note": "Go 1.26.1 download is blocked by firewall - use GOTOOLCHAIN=local to use installed 1.24.13. Module cache is partially populated so some packages work but not all."
   },
   "backlog": [
     {
-      "id": "books-title-index",
+      "id": "static-asset-caching",
       "status": "pr_created",
-      "description": "Add indexes on books.title and books.created_at for ORDER BY performance",
-      "impact": "high",
-      "pr_branch": "perf-assist/books-title-created-at-indexes"
+      "description": "Add Cache-Control: immutable for Vite content-hashed assets in /assets/; no-cache for index.html",
+      "impact": "medium",
+      "pr_branch": "perf-assist/static-asset-cache-headers",
+      "note": "Eliminates per-asset HTTP round-trips on repeat page loads"
     },
     {
-      "id": "search-replacer-cache",
-      "status": "identified",
-      "description": "Cache strings.NewReplacer in SearchBooks as package-level var (minor)",
-      "impact": "low"
+      "id": "books-title-index",
+      "status": "merged",
+      "description": "Add indexes on books.title and books.created_at for ORDER BY performance",
+      "impact": "high",
+      "pr_number": 1677,
+      "merged_by": "veverkap"
     },
     {
       "id": "fts-search",
-      "status": "identified",
-      "description": "SQLite FTS5 for full-text book search instead of LIKE pattern",
-      "impact": "high",
-      "note": "Major change, needs maintainer discussion first"
+      "status": "implemented_by_maintainers",
+      "description": "SQLite FTS5 for full-text book search - already implemented (migration 20260412000000_add_books_fts.sql)",
+      "impact": "high"
     },
     {
       "id": "benchmark-db-queries",
-      "status": "identified",
-      "description": "Add Go benchmarks for DB query functions (ListBooksPaginated, SearchBooks)",
+      "status": "implemented",
+      "description": "Go benchmarks for DB query functions - already exists in internal/db/bench_test.go",
       "impact": "medium"
+    },
+    {
+      "id": "search-replacer-cache",
+      "status": "implemented",
+      "description": "strings.NewReplacer already cached as package-level var searchLikeReplacer",
+      "impact": "low"
+    },
+    {
+      "id": "load-book-relations-parallel",
+      "status": "identified",
+      "description": "LoadBookRelations makes 3 sequential DB queries (GetAuthorsForBooks, GetFilesForBooks, GetSeriesForBooks) - could run concurrently with errgroup",
+      "impact": "low",
+      "note": "Single-book detail endpoint only; parallelism benefit modest due to SQLite write lock semantics"
     }
   ],
   "monthly_activity_issue_number": null,
