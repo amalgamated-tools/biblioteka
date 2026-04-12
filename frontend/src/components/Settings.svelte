@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { routerStore } from "../stores/router.svelte";
   import { getConfigStatus, getOidcConfig } from "../lib/api";
   import type { AdminUser } from "../types";
@@ -68,26 +67,28 @@
   let cachedUsers: AdminUser[] = $state.raw([]);
   let smtpConfigured = $state(false);
 
-  onMount(async () => {
-    try {
-      const status = await getConfigStatus();
-      oidcConfigured = status.oidc_configured;
-      smtpConfigured = status.smtp_configured;
-      isAdmin = status.is_admin;
+  $effect(() => {
+    void (async () => {
+      try {
+        const status = await getConfigStatus();
+        oidcConfigured = status.oidc_configured;
+        smtpConfigured = status.smtp_configured;
+        isAdmin = status.is_admin;
 
-      if (isAdmin) {
-        const oidcConfig = status.oidc_configured
-          ? await getOidcConfig()
-          : null;
-        if (oidcConfig) {
-          oidcIssuerUrl = oidcConfig.issuer_url;
-          oidcClientId = oidcConfig.client_id;
-          oidcRedirectUri = oidcConfig.redirect_uri;
+        if (isAdmin) {
+          const oidcConfig = status.oidc_configured
+            ? await getOidcConfig()
+            : null;
+          if (oidcConfig) {
+            oidcIssuerUrl = oidcConfig.issuer_url;
+            oidcClientId = oidcConfig.client_id;
+            oidcRedirectUri = oidcConfig.redirect_uri;
+          }
         }
+      } catch {
+        // ignore - will show as not configured
       }
-    } catch {
-      // ignore - will show as not configured
-    }
+    })();
   });
 </script>
 
