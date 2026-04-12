@@ -339,6 +339,7 @@ describe("MetadataFetchPanel", () => {
     expect(previousES.close).toHaveBeenCalled();
 
     // Stale events from the old stream should not update the UI
+    mockGetMetadata.mockClear();
     previousES.onmessage?.({
       data: JSON.stringify({
         event: "progress",
@@ -353,6 +354,8 @@ describe("MetadataFetchPanel", () => {
     expect(
       screen.queryByText("Old stream should be ignored"),
     ).not.toBeInTheDocument();
+    // Stale complete event must not trigger a metadata fetch for the new bookId
+    expect(mockGetMetadata).not.toHaveBeenCalled();
     // No new SSE subscription or fetch was triggered by the bookId change
     expect(mockSubscribeToMetadataEvents).toHaveBeenCalledTimes(1);
     expect(mockFetchMetadata).toHaveBeenCalledTimes(1);
