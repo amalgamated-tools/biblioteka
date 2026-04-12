@@ -3,6 +3,15 @@
 -- Content table: FTS5 reads indexed content from the books table via rowid.
 -- Using content= avoids duplicating text; using content_rowid=rowid ties FTS
 -- entries to the corresponding books row.
+--
+-- NOTE: This index is tied to SQLite's implicit rowid, not the books.id TEXT
+-- primary key. SQLite can reassign rowids during VACUUM on tables that lack an
+-- INTEGER PRIMARY KEY alias. The books table uses a TEXT id so its rowid is
+-- implicit. Running VACUUM (manually or via a maintenance routine) could
+-- silently corrupt the FTS index by remapping rowids to wrong rows.
+-- auto_vacuum is not enabled for this database, so this is safe in practice,
+-- but any future maintenance that calls VACUUM should rebuild books_fts
+-- afterwards (INSERT INTO books_fts(books_fts) VALUES ('rebuild')).
 CREATE VIRTUAL TABLE books_fts USING fts5(
     title,
     description,
@@ -24,7 +33,10 @@ CREATE TRIGGER books_fts_ad AFTER DELETE ON books BEGIN
         VALUES ('delete', old.rowid, old.title, COALESCE(old.description, ''));
 END;
 
-CREATE TRIGGER books_fts_au AFTER UPDATE ON books BEGIN
+-- Only re-index when title or description actually changes; other column
+-- updates (cover, ISBN, page count, etc.) do not affect the FTS index.
+CREATE TRIGGER books_fts_au AFTER UPDATE ON books
+WHEN old.title != new.title OR old.description IS NOT new.description BEGIN
     INSERT INTO books_fts(books_fts, rowid, title, description)
         VALUES ('delete', old.rowid, old.title, COALESCE(old.description, ''));
     INSERT INTO books_fts(rowid, title, description) VALUES (new.rowid, new.title, COALESCE(new.description, ''));

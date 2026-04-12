@@ -159,12 +159,19 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 // index-accelerated full-text matching. On PostgreSQL the existing ILIKE query
 // is used, which is accelerated by the pg_trgm GIN indexes added in migration
 // 20260412000000_add_books_trgm.
+//
+// An empty or whitespace-only query returns zero results on all dialects.
 func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) ([]Book, int, error) {
 	slog.DebugContext(ctx, "db: searching books",
 		slog.String(otelkeys.Query, query),
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
+
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []Book{}, 0, nil
+	}
 
 	var (
 		whereClause string
