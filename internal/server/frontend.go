@@ -11,6 +11,28 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// staticCacheMiddleware wraps a file server and sets Cache-Control headers
+// appropriate for the asset type:
+//   - Vite content-hashed assets under /assets/ get a 1-year immutable cache,
+//     eliminating network round-trips for repeat visitors.
+//   - index.html gets no-cache so the browser always revalidates the entry
+//     point and picks up new asset hashes when the app is updated.
+//   - All other static files are served without a Cache-Control override and
+//     rely on http.FileServer's default ETag/Last-Modified behaviour.
+func staticCacheMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/assets/"):
+			// Content-hashed filenames never change; cache indefinitely.
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		case r.URL.Path == "/" || r.URL.Path == "/index.html":
+			// Entry point must be revalidated so browsers pick up new hashes.
+			w.Header().Set("Cache-Control", "no-cache")
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (s *Server) setupFrontend(ctx context.Context) {
 	// Serve the embedded frontend SPA
 	frontendFS, err := fs.Sub(embeddedFiles, "dist")
@@ -19,7 +41,7 @@ func (s *Server) setupFrontend(ctx context.Context) {
 		panic(fmt.Sprintf("failed to setup frontend filesystem: %v", err))
 	}
 
-	fileServer := http.FileServer(http.FS(frontendFS))
+	fileServer := staticCacheMiddleware(http.FileServer(http.FS(frontendFS)))
 
 	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// If the request is for an API route that wasn't matched, return 404
