@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,6 +51,8 @@ func TestCreateAndValidateToken(t *testing.T) {
 	claims, err := jm.ValidateToken(t.Context(), token)
 	require.NoError(t, err, "ValidateToken() error")
 	require.Equal(t, userID, claims.UserID)
+	require.Equal(t, jwtIssuer, claims.Issuer)
+	require.Equal(t, jwt.ClaimStrings{jwtIssuer}, claims.Audience)
 }
 
 func TestValidateToken_InvalidToken(t *testing.T) {
@@ -89,5 +92,53 @@ func TestValidateToken_Empty(t *testing.T) {
 	jm, err := NewJWTManager("testsecret", time.Hour)
 	require.NoError(t, err, "NewJWTManager() error")
 	_, err = jm.ValidateToken(t.Context(), "")
+	require.ErrorIs(t, err, ErrInvalidToken)
+}
+
+func TestValidateToken_WrongIssuer(t *testing.T) {
+	jm, err := NewJWTManager("testsecret", time.Hour)
+	require.NoError(t, err, "NewJWTManager() error")
+
+	// Craft a token with a different issuer using the same secret.
+	now := time.Now()
+	claims := Claims{
+		UserID: "user-123",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "other-service",
+			Audience:  jwt.ClaimStrings{jwtIssuer},
+			Subject:   "user-123",
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString(jm.secret)
+	require.NoError(t, err, "sign token with wrong issuer")
+
+	_, err = jm.ValidateToken(t.Context(), signed)
+	require.ErrorIs(t, err, ErrInvalidToken)
+}
+
+func TestValidateToken_WrongAudience(t *testing.T) {
+	jm, err := NewJWTManager("testsecret", time.Hour)
+	require.NoError(t, err, "NewJWTManager() error")
+
+	// Craft a token with a different audience using the same secret.
+	now := time.Now()
+	claims := Claims{
+		UserID: "user-123",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    jwtIssuer,
+			Audience:  jwt.ClaimStrings{"other-service"},
+			Subject:   "user-123",
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString(jm.secret)
+	require.NoError(t, err, "sign token with wrong audience")
+
+	_, err = jm.ValidateToken(t.Context(), signed)
 	require.ErrorIs(t, err, ErrInvalidToken)
 }

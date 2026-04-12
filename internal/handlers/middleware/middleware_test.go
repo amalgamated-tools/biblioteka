@@ -182,7 +182,7 @@ func TestSecurityHeadersMiddleware_SetsHeaders(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 	w := httptest.NewRecorder()
-	SecurityHeadersMiddleware(next).ServeHTTP(w, r)
+	NewSecurityHeadersMiddleware(SecurityHeadersConfig{})(next).ServeHTTP(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, globalCSP, w.Header().Get("Content-Security-Policy"))
@@ -200,7 +200,7 @@ func TestSecurityHeadersMiddleware_HeadersCanBeOverridden(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/swagger/", nil)
 	w := httptest.NewRecorder()
-	SecurityHeadersMiddleware(next).ServeHTTP(w, r)
+	NewSecurityHeadersMiddleware(SecurityHeadersConfig{})(next).ServeHTTP(w, r)
 
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, overrideCSP, w.Header().Get("Content-Security-Policy"))
@@ -218,8 +218,32 @@ func TestSecurityHeadersMiddleware_CallsNext(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
-	SecurityHeadersMiddleware(next).ServeHTTP(w, r)
+	NewSecurityHeadersMiddleware(SecurityHeadersConfig{})(next).ServeHTTP(w, r)
 
 	require.True(t, called)
 	require.Equal(t, http.StatusNoContent, w.Code)
+}
+
+func TestSecurityHeadersMiddleware_HSTS_SecureCookiesTrue(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	w := httptest.NewRecorder()
+	NewSecurityHeadersMiddleware(SecurityHeadersConfig{SecureCookies: true})(next).ServeHTTP(w, r)
+
+	require.Equal(t, hsts, w.Header().Get("Strict-Transport-Security"))
+}
+
+func TestSecurityHeadersMiddleware_HSTS_SecureCookiesFalse(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	r := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	w := httptest.NewRecorder()
+	NewSecurityHeadersMiddleware(SecurityHeadersConfig{SecureCookies: false})(next).ServeHTTP(w, r)
+
+	require.Empty(t, w.Header().Get("Strict-Transport-Security"))
 }
