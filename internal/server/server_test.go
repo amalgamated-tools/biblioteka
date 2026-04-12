@@ -405,7 +405,6 @@ func TestRoutes_PublicEndpoints(t *testing.T) {
 	}
 
 	for _, path := range routes {
-		path := path
 		t.Run(path, func(t *testing.T) {
 			resp, err := ts.Client().Get(ts.URL + path)
 			require.NoError(t, err)
@@ -434,7 +433,6 @@ func TestRoutes_ProtectedEndpoints(t *testing.T) {
 	}
 
 	for _, path := range routes {
-		path := path
 		t.Run(path, func(t *testing.T) {
 			resp, err := ts.Client().Get(ts.URL + path)
 			require.NoError(t, err)
