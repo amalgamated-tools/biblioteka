@@ -134,7 +134,8 @@
             {:else}
               <span
                 class="p-1 text-success-500 dark:text-success-400"
-                title="Values match"
+                aria-label="Values match"
+                role="img"
               >
                 <Check class="w-3.5 h-3.5" aria-hidden="true" />
               </span>
