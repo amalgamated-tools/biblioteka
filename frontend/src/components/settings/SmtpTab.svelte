@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import {
     getConfigStatus,
     getSmtpConfig,
@@ -64,24 +63,25 @@
       : "Save Configuration";
   });
 
-  onMount(async () => {
-    try {
-      const smtp = await getSmtpConfig();
-      smtpForm.host = smtp.host;
-      smtpForm.port = smtp.port || "587";
-      smtpForm.username = smtp.username;
-      smtpForm.from = smtp.from;
-      smtpForm.tls = smtp.tls || "starttls";
-      smtpStatus.envOverride = smtp.env_override;
-      smtpStatus.passwordSet = smtp.password_set;
-    } catch {
-      // ignore - user can re-enter
-    }
-  });
-
-  onDestroy(() => {
-    testMessageTimer.clear();
-    testErrorTimer.clear();
+  $effect(() => {
+    void (async () => {
+      try {
+        const smtp = await getSmtpConfig();
+        smtpForm.host = smtp.host;
+        smtpForm.port = smtp.port || "587";
+        smtpForm.username = smtp.username;
+        smtpForm.from = smtp.from;
+        smtpForm.tls = smtp.tls || "starttls";
+        smtpStatus.envOverride = smtp.env_override;
+        smtpStatus.passwordSet = smtp.password_set;
+      } catch {
+        // ignore - user can re-enter
+      }
+    })();
+    return () => {
+      testMessageTimer.clear();
+      testErrorTimer.clear();
+    };
   });
 
   async function handleSmtpSave(e: SubmitEvent) {
