@@ -26,8 +26,11 @@
     }
   });
 
+  let didInit = false;
+
   $effect(() => {
-    if (userList.length === 0 && !usersLoading && !usersError) {
+    if (!didInit && userList.length === 0 && !usersLoading) {
+      didInit = true;
       void loadUsers();
     }
   });
