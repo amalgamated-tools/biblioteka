@@ -22,8 +22,9 @@ import (
 func staticCacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case strings.HasPrefix(r.URL.Path, "/assets/"):
+		case strings.HasPrefix(r.URL.Path, "/assets/") && !strings.HasSuffix(r.URL.Path, "/"):
 			// Content-hashed filenames never change; cache indefinitely.
+			// Exclude directory paths (trailing slash) which are not content-hashed.
 			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		case r.URL.Path == "/" || r.URL.Path == "/index.html":
 			// Entry point must be revalidated so browsers pick up new hashes.
