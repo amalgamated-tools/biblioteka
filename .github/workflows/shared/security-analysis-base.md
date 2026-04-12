@@ -10,8 +10,6 @@ tools:
     toolsets: [repos, code_security]
   bash: true
 
-features:
-  copilot-requests: true
 ---
 
 ## Security Analysis Configuration

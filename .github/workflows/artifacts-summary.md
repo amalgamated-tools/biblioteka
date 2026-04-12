@@ -30,8 +30,6 @@ strict: true
 imports:
   - shared/reporting.md
   - shared/safe-output-app.md
-features:
-  copilot-requests: true
 source: github/gh-aw/.github/workflows/artifacts-summary.md@936d8cefa32536db14d3a74d7ae2af4af1840fde
 ---
 

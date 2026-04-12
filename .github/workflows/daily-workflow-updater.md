@@ -37,8 +37,6 @@ tools:
 
 timeout-minutes: 15
 
-features:
-  copilot-requests: true
 imports:
   - shared/observability-otlp.md
 source: github/gh-aw/.github/workflows/daily-workflow-updater.md@525b5b77a444146979ba1759b2a23d72934bc6fc
