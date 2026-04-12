@@ -290,13 +290,12 @@
             <tr
               onclick={() => routerStore.navigate(`books/${book.id}`)}
               onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
+                if (e.key === "Enter" && e.target === e.currentTarget && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
                   e.preventDefault();
                   routerStore.navigate(`books/${book.id}`);
                 }
               }}
               tabindex="0"
-              role="link"
               aria-label={`View ${book.title}`}
               class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer focus:ring-2 focus:ring-inset focus:ring-accent-500 focus:outline-none"
             >
