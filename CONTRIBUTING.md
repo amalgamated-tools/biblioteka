@@ -138,19 +138,7 @@ pnpm exec playwright test --headed
 
 #### E2E test helpers (`e2e/tests/helpers/auth.ts`)
 
-Shared auth utilities live in `e2e/tests/helpers/auth.ts`. Import them in any spec that needs authentication instead of duplicating login/signup logic.
-
-| Export | Description |
-|--------|-------------|
-| `createTestUser(overrides?)` | Returns a `TestUser` with a unique email, default display name, and password. Pass `overrides` to customise individual fields. |
-| `configureTimeouts(page)` | Sets `page.setDefaultTimeout` and `page.setDefaultNavigationTimeout` from `E2E_TIMEOUT_MS` / `E2E_NAVIGATION_TIMEOUT_MS` env vars (defaults: 5 000 ms each). Call this at the top of every test or `test.beforeEach`. |
-| `openAuthPage(page)` | Navigates to `/` and waits for the login button to appear. |
-| `openSignupForm(page)` | Calls `openAuthPage`, then clicks "Sign Up" and waits for the registration form. |
-| `openLoginForm(page)` | Calls `openAuthPage`, then clicks the login button and waits for email/password inputs. |
-| `signUp(page, user)` | Completes the sign-up flow for a `TestUser` and waits for the authenticated home screen. |
-| `signIn(page, email, password)` | Fills and submits the login form. **Does not assert success** — callers must check the expected outcome (some tests deliberately sign in with bad credentials). |
-| `signOut(page)` | Clicks the logout button and waits for the login screen and `localStorage` token removal. |
-| `getAuthErrorBanner(page)` | Returns the Playwright locator for the auth error banner (`data-testid="auth-error"`). |
+Shared auth utilities live in `e2e/tests/helpers/auth.ts`. Import them in any spec that needs authentication instead of duplicating login/signup logic. Key exports: `createTestUser(overrides?)`, `configureTimeouts(page)` (call in every test), `openAuthPage`, `openSignupForm`, `openLoginForm`, `signUp`, `signOut`, `getAuthErrorBanner`. Note: `signIn(page, email, password)` fills and submits the login form but **does not assert success** — callers must check the expected outcome.
 
 **Usage example:**
 
@@ -170,13 +158,7 @@ test("login with wrong password shows error", async ({ page }) => {
 
 #### E2E test helpers (`e2e/tests/helpers/admin.ts`)
 
-Admin auth utilities live in `e2e/tests/helpers/admin.ts`. Use these in specs that need to act as the pre-seeded admin user instead of creating a fresh user each time.
-
-| Export | Description |
-|--------|-------------|
-| `signInAsAdmin(page)` | Opens the login form, signs in as the global admin (seeded by `global-setup.ts`), and waits for the authenticated dashboard. |
-| `ADMIN_EMAIL` | The email address of the seeded admin user (re-exported from `e2e/constants.ts`). |
-| `ADMIN_PASSWORD` | The password of the seeded admin user (re-exported from `e2e/constants.ts`). |
+Admin auth utilities live in `e2e/tests/helpers/admin.ts`. Provides `signInAsAdmin(page)` to log in as the pre-seeded admin, plus `ADMIN_EMAIL` and `ADMIN_PASSWORD` re-exported from `e2e/constants.ts`.
 
 **Usage example:**
 
@@ -280,52 +262,13 @@ This command:
 
 > **Note:** `make screenshots` requires a running Redis instance on `localhost:6379`. Run `make redis-check` first or start Redis with `docker compose up -d redis`.
 
-The screenshot script accepts several environment variables for pointing at a non-default server or using different credentials:
-
-| Variable | Default | Description |
-|---|---|---|
-| `BASE_URL` | `http://localhost:5173` | URL of the running Vite dev/serve frontend |
-| `DEMO_NAME` | `Demo` | Display name for the admin account the script signs up |
-| `DEMO_EMAIL` | `demo@veverka.net` | Email for the admin account |
-| `DEMO_PASSWORD` | `password123` | Password for the admin account |
-| `NONADMIN_NAME` | `Regular User` | Display name for the secondary non-admin account |
-| `NONADMIN_EMAIL` | `nonadmin@veverka.net` | Email for the non-admin account |
-| `NONADMIN_PASSWORD` | `password123` | Password for the non-admin account |
-| `SCREENSHOT_TIMEOUT_MS` | `5000` | Default Playwright action timeout (ms) |
-| `SCREENSHOT_NAVIGATION_TIMEOUT_MS` | `8000` | Playwright navigation timeout (ms) |
-
-#### `Procfile.screen`
-
-`Procfile.screen` defines the server pair used **only** during screenshot capture. It starts a production-mode server (the compiled Go binary is not required — it uses `go run`) alongside `pnpm run dev --host`:
-
-```
-web: PORT=8080 go run cmd/server/main.go -mode=server
-frontend: cd frontend && pnpm run dev --host
-```
-
-This is distinct from `Procfile.dev`, which uses [air](https://github.com/air-verse/air) for hot-reload during normal development (`go tool air -c .air.toml`). The `.air.toml` file in the repository root configures which directories and file extensions air watches, where to write the compiled binary, and build delay settings.
+The screenshot script accepts the environment variables `BASE_URL`, `DEMO_NAME`, `DEMO_EMAIL`, `DEMO_PASSWORD`, `NONADMIN_NAME`, `NONADMIN_EMAIL`, `NONADMIN_PASSWORD`, `SCREENSHOT_TIMEOUT_MS`, and `SCREENSHOT_NAVIGATION_TIMEOUT_MS`. See `script/screenshots/shared.mjs` for defaults.
 
 ### IDE and Editor Support
 
 #### VS Code
 
-The repository includes a `.vscode/launch.json` with ready-to-use **Run and Debug** configurations (`Ctrl+Shift+D` / `⇧⌘D`):
-
-| Configuration | Binary | What it does |
-|---|---|---|
-| **Run CLI (Folder)** | `cmd/cli/main.go` | Runs `scan-directory books/` — scans your local `books/` directory and imports all supported files |
-| **Run CLI (AZW3)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.azw3` (place your own AZW3 file there) |
-| **Run CLI (MOBI)** | `cmd/cli/main.go` | Runs `process-file` against `books/theprince.mobi` (place your own MOBI file there) |
-| **Run CLI (EPUB)** | `cmd/cli/main.go` | Runs `process-file` against `books/alice.epub` (place your own EPUB 2 file there) |
-| **Run CLI (EPUB3)** | `cmd/cli/main.go` | Runs `process-file` against `books/epub30-spec.epub` (place your own EPUB 3 file there) |
-| **Run CLI (Goodreads Search)** | `cmd/cli/main.go` | Runs `goodreads-search "Project Hail Mary"` |
-| **Run CLI (Goodreads Search by ISBN)** | `cmd/cli/main.go` | Runs `goodreads-search-isbn 9780593135204` |
-| **Run CLI (Goodreads Fetch by ASIN)** | `cmd/cli/main.go` | Runs `goodreads-get-by-asin 0593135202` |
-| **Run CLI (Goodreads Fetch by ID)** | `cmd/cli/main.go` | Runs `goodreads-get-by-id` with a Goodreads KCA ID |
-| **Run CLI (Goodreads Fetch by Legacy ID)** | `cmd/cli/main.go` | Runs `goodreads-get-by-legacy-id 54493401` |
-| **Run Server** | `cmd/server/main.go` | Starts the Biblioteka HTTP server |
-
-All CLI configurations load environment variables from `.env` in the workspace root. Copy `.env.sample` to `.env` and fill in the required values before launching:
+The repository includes a `.vscode/launch.json` with **Run and Debug** configurations (`Ctrl+Shift+D` / `⇧⌘D`) for the server (`cmd/server/main.go`) and CLI tool (`cmd/cli/main.go`). The CLI configurations cover scanning a directory, processing individual files by format (AZW3, MOBI, EPUB, EPUB3), and Goodreads search/fetch commands. All CLI configurations load environment variables from `.env`; copy `.env.sample` first:
 
 ```bash
 cp .env.sample .env
@@ -342,16 +285,7 @@ cp .env.sample .env
 >
 > The **Run CLI (Folder)** config works with any EPUB, MOBI, or AZW3 files you place in `books/`.
 
-The repository also includes a `.vscode/settings.json` with workspace-wide editor settings for the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.Go):
-
-| Setting | Value | Effect |
-|---------|-------|--------|
-| `go.lintTool` | `golangci-lint` | Uses golangci-lint instead of the default `staticcheck` |
-| `go.lintFlags` | `["--fast"]` | Runs a faster subset of linters on save; the full suite (`make lint`) runs in CI |
-| `go.lintOnSave` | `workspace` | Lints all packages in the workspace on every save |
-| `editor.formatOnSave` | `true` | Auto-formats Go files on save (equivalent to `go fmt`) |
-
-This means that when you save a `.go` file, VS Code will automatically format it and run a fast lint pass. Run `make lint` (or `golangci-lint run ./...`) for the complete linter output before opening a pull request.
+The repository also includes a `.vscode/settings.json` that configures golangci-lint (with `--fast` on save), lints on workspace save, and auto-formats Go files on save. Run `make lint` for the complete linter output before opening a pull request.
 
 ### Frontend (from `frontend/`)
 
@@ -707,37 +641,9 @@ Review these issues the same way you would a human-authored refactoring suggesti
 
 The `ci-coach` workflow runs daily and can also be triggered on demand. It analyses GitHub Actions workflow performance across the repository to find efficiency improvements and cost reduction opportunities. When it identifies actionable optimizations, it opens a pull request with the title prefix `ci(ci-coach):`. If a pull request cannot be created (e.g. due to branch protection), it falls back to opening a GitHub issue instead.
 
-#### Daily Repo Chronicle
-
-The `daily-repo-chronicle` workflow runs on weekdays at 16:00 UTC and can also be triggered on demand. It collects the day's repository activity — commits, pull requests, issues, and discussions — and writes a newspaper-style narrative summary with exactly two trend charts. The report is published as a GitHub Discussion in the **announcements** category with a `📰` title prefix. The previous day's discussion from this workflow is closed automatically when a new one is created.
-
-These discussions give contributors a quick narrative view of what changed each day without reading the raw commit log.
-
-#### Weekly Repo Map
-
-The `weekly-repo-map` workflow runs every Monday at approximately 15:00 UTC and can also be triggered on demand. It generates an ASCII file-tree visualization of the repository's structure with size distribution, then creates a GitHub issue labeled `documentation` with the title prefix `[repo-map]`. The previous repo-map issue is closed automatically when a new one is created.
-
-Use these issues to quickly understand which directories have grown and whether the project layout remains navigable.
-
-#### Greptile Labeler
-
-The `greptile-labeler` workflow fires whenever a pull request is opened, updated (new commit pushed), or receives a new comment. It scans PR review threads and comments for activity from the **Greptile** bot. If Greptile has commented, the workflow adds the `greptile-changes` label to the PR. If Greptile has not commented (or its comments were removed), the label is removed. You may see this label appear or disappear automatically as you push commits or as Greptile completes its review.
-
 #### Update Docs
 
 The `update-docs` workflow runs on every push to `main`. It examines the diff, identifies new or changed APIs, functions, configuration, and other user-visible behaviour, and opens a draft pull request with the corresponding documentation updates. If documentation is already up to date, it does nothing. Merge or close these PRs as you would any human-authored documentation PR.
-
-#### Portfolio Analyst
-
-The `portfolio-analyst` workflow runs every Monday at approximately 09:00 UTC. It downloads up to 30 days of agentic workflow logs and analyzes them for cost reduction opportunities (targeting 20%+ savings) and reliability improvements. Results are published as a GitHub Discussion in the **audits** category. Previous discussions from this workflow are closed automatically when a new one is created. You do not need to act on these discussions unless you want to adjust a workflow configuration.
-
-#### Static Analysis Report
-
-The `static-analysis-report` workflow runs daily. It scans agentic workflow files for security vulnerabilities using [zizmor](https://github.com/woodruffw/zizmor), [poutine](https://github.com/boostsecurityio/poutine), and [actionlint](https://github.com/rhysd/actionlint). Findings are posted as a GitHub Discussion in the **security** category. The workflow closes its previous discussion when it opens a new one to keep the list tidy.
-
-#### Artifacts Summary
-
-The `artifacts-summary` workflow runs every Sunday at approximately 06:00 UTC. It generates a report of GitHub Actions artifact usage (names, sizes, retention policies) across all workflows in the repository. The report is published as a GitHub Discussion in the **artifacts** category. Use it to identify large or stale artifacts that could be cleaned up to reduce storage costs.
 
 #### Daily Malicious Code Scan
 
@@ -766,65 +672,17 @@ The `duplicate-code-detector` workflow runs daily and scans the codebase for dup
 
 Review these issues the same way you would a human-authored refactoring suggestion. Close an issue once you have refactored the duplicate or determined it is intentional. Keep in mind that the detector may find more duplicates than it files issues for in a single run due to this per-run cap and internal thresholding.
 
-#### Metrics Collector
-
-The `metrics-collector` workflow runs daily and gathers performance metrics for the entire agentic workflow ecosystem. It reads workflow run history, job durations, success/failure rates, and token usage, then writes structured JSON data to a dedicated `memory/meta-orchestrators` branch under `metrics/`. This data is intended for meta-orchestrator workflows for trend analysis, cost tracking, and health monitoring. You do not need to interact with these files directly.
-
-#### Schema Consistency Checker
-
-The `schema-consistency-checker` workflow runs daily and detects inconsistencies across three sources of truth:
-
-- The agentic workflow JSON schema (as defined in this repository's schema definitions)
-- The parser and compiler implementation (the Go packages that load, validate, and execute workflow definitions)
-- The documentation (Markdown docs) and workflow definition files (for example, `.github/workflows/*.yml`)
-
-Findings are published as a GitHub Discussion in the **audits** category with a `[Schema Consistency]` title prefix. Previous discussions are closed automatically when a new one is created. If a finding affects Biblioteka's workflow definitions or documentation, address it as you would any other documentation inconsistency.
-
-#### Claude Code User Docs Review
-
-The `claude-code-user-docs-review` workflow runs every day at 08:00 UTC. It adopts the perspective of a developer who uses Claude Code but does not have a GitHub Copilot subscription. It reads `README.md` and the `docs/` directory, then evaluates the documentation for clarity, completeness, and accessibility to non-Copilot users. Findings are published as a GitHub Discussion in the **audits** category. The previous discussion from this workflow is closed automatically when a new one is created.
-
-Review these discussions to identify documentation gaps that may block contributors who don't use Copilot.
-
-#### Daily Assign Issue to User
-
-The `daily-assign-issue-to-user` workflow runs every day on a schedule. It finds one open, unassigned issue and assigns it to an active contributor. After assigning, it adds a comment to the issue notifying the contributor. This ensures issues don't remain unassigned indefinitely without requiring manual triage.
-
-#### Daily Code Metrics
-
-The `daily-code-metrics` workflow runs every day. It measures code-health indicators (lines of code, test coverage, complexity, churn, and similar metrics), generates trend charts over a 30-day window, and publishes the results as a GitHub Discussion in the **audits** category. Historical data is stored in the `memory/` branch so that trend comparisons remain accurate between runs. The previous discussion from this workflow is closed automatically.
-
-#### Daily Copilot Token Report
-
-The `daily-copilot-token-report` workflow runs on weekdays at 11:00 UTC. It downloads logs from all agentic workflows over the previous 30 days, aggregates token consumption by workflow and engine, calculates approximate costs, and identifies usage trends. Results are published as a GitHub Discussion in the **audits** category. The previous discussion from this workflow is closed automatically.
-
-Review these reports to monitor AI spending across workflows and identify expensive or runaway workflows before costs accumulate.
-
 #### Daily Doc Updater
 
 The `daily-doc-updater` workflow runs every day at 06:00 UTC. It reviews recent code changes and the existing documentation for gaps, inaccuracies, and outdated content. When it identifies documentation that needs updating, it opens a pull request with the title prefix `docs(daily):` and the labels `documentation` and `automation`. These PRs are automatically approved and auto-merged once CI passes (via the `doc-updater-auto-merge` workflow). PRs expire after one day if not merged.
 
 This is a complement to the event-driven `update-docs` workflow (which fires on every push to `main`): `update-docs` documents specific code changes immediately, while `daily-doc-updater` sweeps for broader documentation drift on a schedule.
 
-#### Daily Issues Report
-
-The `daily-issues-report` workflow runs every day. It retrieves the most recent 1,000 issues, clusters them by theme, computes key metrics (open rate, resolution time, label distribution), and generates trend charts. The report is published as a GitHub Discussion in the **audits** category. The previous discussion from this workflow is closed automatically.
-
-Use these reports to spot patterns in user-reported bugs or feature requests, or to identify recurring problems that may warrant broader fixes.
-
 #### Daily Multi-Device Docs Tester
 
 The `daily-multi-device-docs-tester` workflow runs every day. It opens the documentation site using Playwright at three device widths — mobile (375 px), tablet (768 px), and desktop (1280 px) — and checks for layout breakage, unreadable text, inaccessible interactive elements, and missing responsive behaviour. Any failures are reported as GitHub issues. Full test results are uploaded as Actions artifacts and retained for 2 days.
 
 When assigned a docs-tester issue, inspect the attached artifact for screenshots and check the affected page at the reported viewport width.
-
-#### Daily Observability Report
-
-The `daily-observability-report` workflow runs every day. It analyzes the last 7 days of workflow run logs to assess logging and telemetry coverage across all agentic workflows. It specifically looks at the AWF firewall and MCP Gateway layers, checks structured-logging completeness, and flags workflows with poor observability. Findings are published as a GitHub Discussion in the **audits** category. The previous discussion from this workflow is closed automatically.
-
-#### Daily Performance Summary
-
-The `daily-performance-summary` workflow runs every day. It queries GitHub for repository activity over a 90-day window — pull request cycle time, issue resolution time, workflow success rates, and contributor velocity — then generates trend charts. The report is published as a GitHub Discussion in the **audits** category. The previous discussion from this workflow is closed automatically.
 
 #### Daily Safe Output Optimizer
 
