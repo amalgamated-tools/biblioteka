@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/timeutil"
 	"github.com/google/uuid"
 )
 
@@ -42,11 +43,6 @@ const (
 	// set. It points to the Biblioteka telemetry ingestion endpoint.
 	DefaultTelemetryEndpoint = "https://telemetry-worker.amalgamated-tools.workers.dev"
 )
-
-// nowRFC3339 returns the current UTC time formatted as RFC 3339.
-func nowRFC3339() string {
-	return time.Now().UTC().Format(time.RFC3339)
-}
 
 // SendBoot fires a single telemetry ping if TELEMETRY_ENABLED=true. It is
 // called once during server startup and may block the application boot path
@@ -104,7 +100,7 @@ func SendBoot(ctx context.Context, version string) {
 		Version:     version,
 		OS:          runtime.GOOS,
 		Arch:        runtime.GOARCH,
-		Timestamp:   nowRFC3339(),
+		Timestamp:   timeutil.NowRFC3339(),
 	}
 
 	body, err := json.Marshal(payload)
