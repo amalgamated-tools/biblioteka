@@ -82,11 +82,11 @@ describe("EmailBookModal", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/loading/i);
   });
 
-  it("moves focus to the dialog element on mount", () => {
+  it("moves focus to the dialog element on mount", async () => {
     fetchMock.mockReturnValue(new Promise(() => {}));
     render(EmailBookModal, { bookId: "b1", onClose: vi.fn() });
     const dialog = screen.getByRole("dialog");
-    expect(dialog).toHaveFocus();
+    await waitFor(() => expect(dialog).toHaveFocus());
   });
 
   it("renders the dialog title", async () => {

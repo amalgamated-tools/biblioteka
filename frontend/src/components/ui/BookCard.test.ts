@@ -129,11 +129,17 @@ describe("BookCard", () => {
     await user.click(btn);
     expect(emailModalOnClose).toBeTypeOf("function");
 
+    // Move focus away so we can verify it returns to the button
+    const outsideFocusTarget = document.createElement("button");
+    outsideFocusTarget.type = "button";
+    document.body.appendChild(outsideFocusTarget);
+    outsideFocusTarget.focus();
+    expect(outsideFocusTarget).toHaveFocus();
+
     // Simulate the modal calling onClose
-    emailModalOnClose!();
-    // Wait for tick() + re-render
-    await vi.waitFor(() => {
-      expect(btn).toHaveFocus();
-    });
+    await emailModalOnClose!();
+    expect(btn).toHaveFocus();
+
+    outsideFocusTarget.remove();
   });
 });

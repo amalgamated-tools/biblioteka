@@ -11,7 +11,7 @@
   let { book }: Props = $props();
 
   let showEmailModal = $state(false);
-  let emailButtonEl: HTMLButtonElement;
+  let emailButtonEl: HTMLButtonElement | null = $state(null);
 
   async function closeModal() {
     showEmailModal = false;

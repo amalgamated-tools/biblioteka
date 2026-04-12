@@ -13,7 +13,7 @@
 
   let { bookId, onClose }: Props = $props();
 
-  let dialogEl: HTMLDivElement;
+  let dialogEl: HTMLDivElement | null = $state(null);
 
   onMount(() => {
     dialogEl?.focus();
