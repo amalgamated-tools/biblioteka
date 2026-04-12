@@ -72,6 +72,7 @@ type Server struct {
 	authorHandler          *handlers.AuthorHandler
 	seriesHandler          *handlers.SeriesHandler
 	bookHandler            *handlers.BookHandler
+	readingListHandler     *handlers.ReadingListHandler
 	bookFileHandler        *handlers.BookFileHandler
 	auditLogHandler        *handlers.AuditLogHandler
 	apiKeyHandler          *handlers.APIKeyHandler
@@ -183,6 +184,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	}
 	s.authorHandler = &handlers.AuthorHandler{DB: s.DB}
 	s.seriesHandler = &handlers.SeriesHandler{DB: s.DB}
+	s.readingListHandler = &handlers.ReadingListHandler{DB: s.DB}
 	s.bookHandler = &handlers.BookHandler{DB: s.DB}
 
 	// Always wire MetadataHandler so GET/apply/reject endpoints work without
