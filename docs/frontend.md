@@ -49,7 +49,7 @@ frontend/
       ui/                 Generic reusable UI components
         AlertBanner.svelte   Dismissible alert / error banner
         BookCard.svelte      Card widget displaying a single book summary
-        BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states
+        BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states; table-view rows are keyboard-accessible via `tabindex="0"` and Enter-key navigation (WCAG 2.1.1)
         Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
         DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
         TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3); border uses `border-ink-400 dark:border-ink-400` to meet the Non-text Contrast minimum (WCAG 1.4.11)
@@ -967,6 +967,52 @@ When `pollingInterval` is set and `total === 0`, `BookList` enters a polling mod
 
 > **Note:** `BookList` cannot identify *which* library finished scanning, so when embedding the all-books view (`Books.svelte`) alongside a scan in progress, pass `pollingInterval` derived from `libraryStore.isScanning` but **omit** `onBooksFound` — the aggregate view cannot safely call `clearScanning` without knowing the specific library ID. Polling stops naturally once `total > 0`.
 
+#### Table view keyboard navigation
+
+**WCAG criterion:** [2.1.1 Keyboard](https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html) (Level A)
+
+In table view, each book row (`<tr>`) is interactive — clicking it navigates to the book detail page. Without explicit focus management, non-title cells are unreachable by keyboard.
+
+`BookList.svelte` implements the following pattern to make every table row fully keyboard-accessible:
+
+- **`tabindex="0"`** — places the `<tr>` in the natural tab order so keyboard users can tab to it.
+- **`aria-label="View {title}"`** — gives the row an accessible name that screen readers announce when the row receives focus.
+- **`onkeydown` with Enter** — pressing Enter (without any modifier key) triggers the same navigation as a mouse click. Space intentionally does **not** activate navigation, preserving the browser's default scroll-by-space behavior.
+- **Modifier-key guard** — `Ctrl`, `Cmd`, `Shift`, and `Alt` held during Enter are ignored, so browser-native shortcuts (e.g., open in new tab) are not blocked.
+- **`e.target === e.currentTarget` guard** — prevents double-handling bubbled keyboard events from child elements (e.g., if a child cell receives focus and propagates keydown up to the row).
+- **`tabindex="-1"` on the title anchor** — removes the `<a>` link inside the title cell from the tab order to prevent keyboard users from reaching the same destination twice on a single pass. Mouse navigation and screen-reader `<a>` traversal are unaffected.
+- **`focus-visible:ring-*` instead of `focus-within:ring-*`** — the focus ring appears only during keyboard navigation, not after a mouse click, matching platform conventions.
+
+The implicit `role="row"` is preserved — no `role="link"` override is applied — so the table's structural semantics remain intact for assistive technologies.
+
+```svelte
+<tr
+  onclick={() => routerStore.navigate(`books/${book.id}`)}
+  onkeydown={(e) => {
+    if (
+      e.key === "Enter" &&
+      e.target === e.currentTarget &&
+      !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
+    ) {
+      e.preventDefault();
+      routerStore.navigate(`books/${book.id}`);
+    }
+  }}
+  tabindex="0"
+  aria-label={`View ${book.title}`}
+  class="... focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500 focus-visible:outline-none"
+>
+  <td>
+    <a href={`#books/${book.id}`} tabindex="-1">
+      {book.title}
+    </a>
+  </td>
+  <!-- other cells -->
+</tr>
+```
+
+> **Rule:** When a table row acts as a navigation target, add `tabindex="0"`, `aria-label`, and an Enter-key `onkeydown` handler. Set `tabindex="-1"` on any link inside the row that points to the same destination. Do **not** add `role="link"` — it breaks table structure semantics for screen readers.
+
 ---
 
 ### `Button.svelte`
@@ -1459,6 +1505,27 @@ Setting durations to `0.01ms` (instead of `0`) avoids edge cases in some browser
 
 **Rule:** Use `role="status"` for state messages that appear on initial render and that you own via markup (`role` implies the live region). Use explicit `aria-live="polite"` with `aria-atomic="true"` for messages whose text content changes dynamically in-place (e.g. a count or progress string that updates repeatedly).
 
+### Keyboard navigation for interactive table rows (`BookList.svelte`)
+
+**WCAG criterion:** [2.1.1 Keyboard](https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html) (Level A)
+
+When a data table's rows are clickable (each row navigates to a detail page), the row must also be operable by keyboard. A `<tr>` with only `onclick` is invisible to keyboard-only users — the cells cannot receive focus and the action cannot be triggered without a mouse.
+
+The book list table in `BookList.svelte` uses the following pattern:
+
+| Attribute / handler | Value | Purpose |
+|---|---|---|
+| `tabindex="0"` | on `<tr>` | Enters the natural tab order |
+| `aria-label` | `"View {title}"` | Gives the row an accessible name |
+| `onkeydown` | Enter → `routerStore.navigate(…)` | Activates navigation via keyboard |
+| Modifier-key guard | `!metaKey && !ctrlKey && !shiftKey && !altKey` | Preserves browser-native shortcuts |
+| `e.target === e.currentTarget` | guard on `onkeydown` | Prevents double-firing from bubbled child events |
+| `tabindex="-1"` | on title `<a>` | Removes the duplicate destination from the tab order |
+| `focus-visible:ring-*` | on `<tr>` | Shows focus ring on keyboard navigation only, not on mouse click |
+
+Space does **not** activate navigation — it retains the default browser scroll behavior.
+The implicit `role="row"` is preserved so table semantics remain correct for assistive technologies.
+
 ### ARIA landmarks
 
 The app uses semantic HTML5 landmark elements so screen readers can navigate by region.
@@ -1827,7 +1894,7 @@ When editing the app shell or adding new persistent navigation elements:
 7. Navigation links that represent the active view must carry `aria-current={isActive ? "page" : undefined}`. Tab-style buttons should use `aria-selected` instead (see item 9). See [`aria-current` on active navigation links](#aria-current-on-active-navigation-links) above.
 8. Toggle switches (`<input type="checkbox">` styled as a switch) must carry `role="switch"` **and** an explicit `aria-checked` attribute, with an explicit `for`/`id` label association. See [`role="switch"` on toggle inputs](#roleswitch-on-toggle-inputs) below.
 9. Tab-style navigation widgets (a set of buttons that show/hide panels) must use the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (Arrow keys, Home, End). See [ARIA tab widget — Login/Sign Up toggle](#aria-tab-widget--loginsign-up-toggle-authsvelte) for the reference implementation.
-10. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. State-toggle buttons in table rows must use action-oriented `aria-label` values. See [Table accessibility](#table-accessibility) below.
+10. Data tables must have `scope="col"` (or `scope="row"`) on every `<th>`. Visual-only columns (e.g., "Actions") must have an `sr-only` text label inside their `<th>`. State-toggle buttons in table rows must use action-oriented `aria-label` values. When a table row is itself a navigation target, add `tabindex="0"`, `aria-label`, and an Enter-key `onkeydown` handler; set `tabindex="-1"` on any link inside the row that points to the same destination; use `focus-visible:ring-*` (not `focus-within:ring-*`) for the focus ring (WCAG 2.1.1). See [Table accessibility](#table-accessibility) below.
 11. Sidebar navigation groups must use `role="group"` with `aria-labelledby` pointing to a native `<h2>` heading so screen readers announce the section name. See [Labelled navigation groups](#labelled-navigation-groups-sidebarsvelte) above.
 12. Page view components should include a native `<h1>` for their primary content state. Composite views that delegate to sub-components (e.g., `Libraries.svelte` → `LibraryView.svelte`) may have the `<h1>` in the sub-component; empty or transitional states may omit it. Persistent shell elements (sidebar, header, footer) must never contain an `<h1>`. See [Page heading hierarchy](#page-heading-hierarchy) above.
 13. Never apply `opacity-0` to an element that can receive keyboard focus. Use `opacity-30` (or higher) as the minimum resting opacity so the element is visible when focused. When the action is context-sensitive (e.g. per-library settings links), include the context in the `aria-label` so each link has a unique, descriptive name. See [Focus visible — Library settings link](#focus-visible--library-settings-link-sidebarsvelte) above.
@@ -2164,6 +2231,7 @@ When adding a data table component:
 3. If a `<th>` spans rows, it has `scope="row"`.
 4. Do not use `<td>` for header cells — use `<th scope="…">` so the relationship is semantically clear.
 5. Inline state-toggle buttons (whose visible text reflects the current state) must carry an action-oriented `aria-label` so screen-reader users hear what the button will *do*, not just what the current state *is*. See [Action-oriented labels for state-toggle buttons](#action-oriented-labels-for-state-toggle-buttons) below.
+6. If a row is a navigation target (clicking it navigates elsewhere), add `tabindex="0"`, `aria-label="View {name}"`, and an Enter-key `onkeydown` handler. Set `tabindex="-1"` on any link inside the row that points to the same destination. Do **not** add `role="link"`. Use `focus-visible:ring-*` for the focus indicator (WCAG 2.1.1). See [Keyboard navigation for interactive table rows](#keyboard-navigation-for-interactive-table-rows-booklistsvelte) above.
 
 #### Action-oriented labels for state-toggle buttons
 
@@ -2565,7 +2633,24 @@ The following test suites cover reactive stores and the API client. Unlike the a
 
 ### `BookList.test.ts`
 
-`frontend/src/components/ui/BookList.test.ts` exercises `BookList.svelte`'s polling and empty-state behaviour. All `lucide-svelte` icons are mocked as no-ops (required for JSDOM). Six tests across two `describe` blocks:
+`frontend/src/components/ui/BookList.test.ts` exercises `BookList.svelte`'s loading state, keyboard accessibility, ARIA structure, pagination, polling, and empty-state behaviour. All `lucide-svelte` icons are mocked as no-ops (required for JSDOM). Eighteen tests across six `describe` blocks:
+
+**`BookList loading state` (one test):**
+1. **`exposes 'Loading books...' via role='status' while loading`** — asserts that a `role="status"` element with the text "Loading books..." is present while a fetch is in flight.
+
+**`BookList table view keyboard accessibility (WCAG 2.1.1)` (eight tests):**
+1. **`table rows have tabindex=0 and aria-label`** — switches to table view and asserts each `<tr>` carries both `tabindex="0"` and `aria-label="View {title}"`.
+2. **`table rows navigate on Enter key`** — fires `keydown { key: "Enter" }` on a row; asserts `window.location.hash` is set to the correct book path.
+3. **`does not navigate on Space key`** — fires `keydown { key: " " }`; asserts the hash remains unchanged.
+4–7. **`does not navigate when {modifier} is pressed`** (parameterized × 4) — fires Enter with each of `ctrlKey`, `metaKey`, `shiftKey`, `altKey`; asserts navigation is not triggered in any case.
+8. **`title anchor has tabindex=-1 to avoid double-tabbing`** — asserts the `<a>` inside the title cell carries `tabindex="-1"`.
+
+**`BookList table view accessibility` (one test):**
+1. **`labels the book table with aria-label (WCAG 1.3.1)`** — switches to table view and asserts a `<table>` element with `aria-label="Books"` is present.
+
+**`BookList pagination accessibility` (two tests):**
+1. **`pagination counter has aria-atomic but no duplicate aria-live (WCAG 4.1.3)`** — asserts the "Page X of Y" counter carries `aria-atomic="true"` and does **not** carry `aria-live` (which would cause double-announcement alongside an ancestor live region).
+2. **`pagination buttons have descriptive aria-label (WCAG 2.4.6)`** — asserts the Previous and Next buttons carry full-context labels including the target page number (e.g., `"Next page, page 2 of 25"`).
 
 **`BookList empty state` (two tests):**
 1. **`shows 'No books yet.' when no pollingInterval is set`** — renders with an empty `fetchBooks`; asserts the standard empty-state text appears.
