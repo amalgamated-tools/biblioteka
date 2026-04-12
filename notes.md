@@ -40,6 +40,7 @@ Use `GOTOOLCHAIN=local go version` to confirm. CI has the correct Go version.
 - handlers package has `testsetup_test.go` with `newTestDB`, `newTestJWT`, `withUserID`
 - errorResponse struct is `{Error string "json:\"error\""}` in handlers/response.go
 - CreateOIDCUser(ctx, name, email, oidcSubject) creates user with empty PasswordHash
+- httptest.NewRequest sets r.Host = "example.com" by default when no Host header present
 
 ## Testing Landscape
 Codebase is very well tested overall. Most packages have 1:1 test file ratio.
@@ -56,25 +57,32 @@ Key untested internal helpers (tested only via high-level integration):
 
 ## Task Round-Robin Status
 - 2026-04-11: Tasks 1, 2, 3, 7 (discovery + sanitizeDirName PR + monthly issue)
-- 2026-04-12: Tasks 4, 3, 7 (no open PRs to maintain; OIDC login regression PR; monthly issue update)
-- Next run: Task 2 (identify opportunities), Task 5 (comment on testing issues), Task 7
+- 2026-04-12 run 2: Tasks 4, 3, 7 (no open PRs to maintain; OIDC login regression PR; monthly issue update)
+- 2026-04-12 run 3: Tasks 2, 3, 7 (auth_origin CSRF helpers PR; new monthly issue)
+- Next run: Task 4 (maintain PRs), Task 5 (comment on testing issues), Task 7
 
 ## Testing Backlog (prioritized)
 
-1. **[DONE in PR] sanitizeDirName unit tests** — merged as PR #1689
-2. **[IN PROGRESS] OIDC login enumeration regression** — PR on branch test-assist/oidc-login-enumeration-regression; regression test for security fix in #1713
-3. **organize path-escape defense-in-depth test** — the `filepath.Rel` escape guard in organize.go has no test. Likely unreachable in practice (sanitizer removes / and \, TrimLeft removes leading dots). Low value.
-4. **smtp/send.go** — no tests for newClientWithContext or Send. These require real TCP connections, making unit tests difficult. Could use a test server.
-5. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Medium value if direct tests would catch regressions in heuristics.
+1. **[IN PROGRESS] auth_origin CSRF helpers** — PR on branch test-assist/auth-origin-csrf-tests
+   - Tests sameOrigin, matchRequestOrigin, parseHostPort, normalizeHost, defaultPort
+   - 263 lines: 14 table-driven sameOrigin cases + 3 logout integration tests
+2. **organize path-escape defense-in-depth test** — the `filepath.Rel` escape guard in organize.go has no test. Likely unreachable in practice. Low value.
+3. **smtp/send.go** — no tests for newClientWithContext or Send. These require real TCP connections, making unit tests difficult. Could use a test server.
+4. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Medium value if direct tests would catch regressions in heuristics.
 
 ## Maintainer Priorities
-Not yet observed. Will monitor PR feedback.
+- Previous monthly issue #1690 was closed by veverkap on 2026-04-12 as "completed"
+- This signals positive reception; maintainer is actively merging Test Improver PRs
 
 ## Completed Work
 
+### 2026-04-12 Run 3
+- Created new monthly activity issue for April 2026
+- Created PR on branch `test-assist/auth-origin-csrf-tests`: unit tests for CSRF origin-checking helpers (sameOrigin, matchRequestOrigin, parseHostPort, normalizeHost, defaultPort)
+
 ### 2026-04-12 Run 2
 - Confirmed PR #1689 (sanitizeDirName tests) was merged
-- Created PR on branch `test-assist/oidc-login-enumeration-regression`: regression test for OIDC account enumeration fix (#1713)
+- Created PR on branch `test-assist/oidc-login-enumeration-regression`: regression test for OIDC account enumeration fix (#1713) — merged as #1771 ✅
 - Updated monthly activity issue #1690
 
 ### 2026-04-11 Run 1
