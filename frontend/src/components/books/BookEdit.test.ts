@@ -103,6 +103,21 @@ describe("BookEdit", () => {
     });
   });
 
+  it("shows required-fields legend with sr-only asterisk description", async () => {
+    mockGetBook.mockResolvedValue(fakeBook);
+    const { container } = render(BookEdit, { bookId: "b1" });
+
+    await waitFor(() => {
+      const legend = container.querySelector("form > p");
+      expect(legend).toBeInTheDocument();
+      expect(legend?.textContent).toMatch(/are required/i);
+      const visual = legend?.querySelector('span[aria-hidden="true"]');
+      expect(visual).toHaveTextContent("*");
+      const srOnly = legend?.querySelector(".sr-only");
+      expect(srOnly).toHaveTextContent("an asterisk");
+    });
+  });
+
   it("populates form fields from the book", async () => {
     mockGetBook.mockResolvedValue(fakeBook);
     render(BookEdit, { bookId: "b1" });
