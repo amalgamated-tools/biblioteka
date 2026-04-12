@@ -2,14 +2,18 @@ package middleware
 
 import "net/http"
 
-// themeBootstrapScriptHash is the SHA-256 hash of the inline theme-bootstrap
-// script in frontend/index.html (the <script> block that reads biblioteka_theme
-// from localStorage and toggles the "dark" class before the bundle loads).
+// themeBootstrapScriptCSPHash is the CSP hash-source token (including the
+// "sha256-" algorithm prefix) for the inline theme-bootstrap script in
+// frontend/index.html — the bare <script> block that reads biblioteka_theme
+// from localStorage and toggles the "dark" class before the bundle loads.
 //
-// To regenerate after editing the script:
+// NOTE: The regex below matches a bare <script> tag (no attributes). If the
+// bootstrap tag gains attributes, update the pattern accordingly.
+//
+// To regenerate after editing the script (run from the repository root):
 //
 //	python3 -c "import hashlib,base64,re; c=open('frontend/index.html').read(); s=re.search(r'<script>(.*?)</script>',c,re.DOTALL).group(1); print('sha256-'+base64.b64encode(hashlib.sha256(s.encode()).digest()).decode())"
-const themeBootstrapScriptHash = "sha256-fH8pmaGT8bEGA0OitMqoXdy+W8xbN89w8ghrDCdlrwA="
+const themeBootstrapScriptCSPHash = "sha256-fH8pmaGT8bEGA0OitMqoXdy+W8xbN89w8ghrDCdlrwA="
 
 // globalCSP is the Content-Security-Policy header value applied to all responses.
 // Individual route handlers (such as the Swagger UI) may override this with
@@ -17,7 +21,7 @@ const themeBootstrapScriptHash = "sha256-fH8pmaGT8bEGA0OitMqoXdy+W8xbN89w8ghrDCd
 // It permits the embedded frontend's inline theme bootstrap script (via its
 // SHA-256 hash) and Google Fonts stylesheet/font resources so the SPA continues
 // to render as intended when this middleware is applied globally.
-const globalCSP = "default-src 'self'; script-src 'self' '" + themeBootstrapScriptHash + "'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data: https://fonts.gstatic.com;"
+const globalCSP = "default-src 'self'; script-src 'self' '" + themeBootstrapScriptCSPHash + "'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data: https://fonts.gstatic.com;"
 
 // hsts is the Strict-Transport-Security header value used when secure cookies
 // are enabled. Two years max-age with includeSubDomains protects all
