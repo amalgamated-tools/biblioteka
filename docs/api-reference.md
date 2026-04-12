@@ -1209,7 +1209,7 @@ List books (summary objects — no nested authors, series, or files), with pagin
 When the `query` parameter is provided, its value is trimmed first. If the trimmed value is non-empty, the endpoint searches `title` and `description` and returns only matching books, still paginated. The search implementation depends on the configured database backend:
 
 - **SQLite:** Uses an FTS5 virtual table (`books_fts`). Each whitespace-separated token is matched as a prefix — for example, `"found"` also matches `"Foundation"`. Multi-token queries require all tokens to match somewhere in the combined title+description document (implicit AND), so `"frank dune"` returns books where `title` contains "Frank" and `description` contains "Dune" (or any other cross-field token split). Tokens made entirely of punctuation or special characters are silently dropped; if no valid tokens remain, zero results are returned.
-- **PostgreSQL:** Uses `ILIKE` with GIN trigram indexes (`pg_trgm`). This is a substring match — `%query%` — which is case-insensitive but does not support prefix expansion across the combined document.
+- **PostgreSQL:** Uses `ILIKE` with GIN trigram indexes (`pg_trgm`). This is a case-insensitive literal substring match — `%query%`. LIKE special characters (`%`, `_`, `\`) in the query are escaped and treated as literals — they do not act as wildcards. Does not support prefix expansion across the combined document.
 
 If `query` is omitted or trims to an empty string (for example, `query=%20%20`), all books are returned.
 
@@ -1217,7 +1217,7 @@ If `query` is omitted or trims to an empty string (for example, `query=%20%20`),
 
 | Parameter | Type    | Default | Description |
 |-----------|---------|---------|-------------|
-| `query`   | string  | _(none)_ | Search term(s) across `title` and `description`. SQLite uses FTS5 (prefix-matching, cross-field AND); PostgreSQL uses `ILIKE` (substring). The value is trimmed; only non-empty trimmed values trigger search. If omitted or blank after trimming, all books are returned. |
+| `query`   | string  | _(none)_ | Search term(s) across `title` and `description`. SQLite uses FTS5 (prefix-matching, cross-field AND); PostgreSQL uses `ILIKE` (literal-substring; LIKE special characters are escaped). The value is trimmed; only non-empty trimmed values trigger search. If omitted or blank after trimming, all books are returned. |
 | `limit`   | integer | `50`    | Maximum books to return (capped at `200`) |
 | `offset`  | integer | `0`     | Number of books to skip |
 
