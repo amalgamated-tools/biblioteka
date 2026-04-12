@@ -113,6 +113,17 @@ func runImport(ctx context.Context, biblDB *db.DB, calibreDB *DB, opts ImportOpt
 // book is successfully written, (false, nil) when it is skipped as a
 // duplicate, and (false, err) on a hard error.
 func importBook(ctx context.Context, biblDB *db.DB, book *Book, opts ImportOptions) (bool, error) {
+	// Books with no file formats cannot be deduplicated by file path, so they
+	// would be re-imported on every run. Skip them to keep the import
+	// idempotent; users can add metadata-only books manually if needed.
+	if len(book.Formats) == 0 {
+		slog.DebugContext(ctx, "calibre: skipping format-less book",
+			slog.Int64(otelkeys.CalibreID, book.CalibreID),
+			slog.String(otelkeys.Title, book.Title),
+		)
+		return false, nil
+	}
+
 	// Deduplicate by file path: skip the entire book if any format is already indexed.
 	for _, f := range book.Formats {
 		path := f.FilePath(opts.LibraryPath, book.Path)
@@ -244,19 +255,27 @@ func buildBookInput(book *Book) db.BookInput {
 	}
 
 	// Map Calibre identifier types to Biblioteka BookInput fields.
+	// ISBN types are applied in priority order (isbn13 > isbn10 > isbn)
+	// rather than map iteration order to ensure deterministic results when
+	// multiple ISBN identifiers are present.
+	for _, typ := range []string{"isbn13", "isbn10", "isbn"} {
+		val, ok := book.Identifiers[typ]
+		if !ok || val == "" {
+			continue
+		}
+		normalized := exif.NormalizeISBN(val)
+		switch len(normalized) {
+		case 10:
+			input.ISBN10 = ptrutil.NilIfZero(normalized)
+		case 13:
+			input.ISBN13 = ptrutil.NilIfZero(normalized)
+		}
+	}
 	for typ, val := range book.Identifiers {
 		if val == "" {
 			continue
 		}
 		switch strings.ToLower(typ) {
-		case "isbn", "isbn10", "isbn13":
-			normalized := exif.NormalizeISBN(val)
-			switch len(normalized) {
-			case 10:
-				input.ISBN10 = ptrutil.NilIfZero(normalized)
-			case 13:
-				input.ISBN13 = ptrutil.NilIfZero(normalized)
-			}
 		case "asin", "mobi-asin":
 			input.ASIN = ptrutil.NilIfZero(strings.TrimSpace(val))
 		case "goodreads", "goodreads-id":
