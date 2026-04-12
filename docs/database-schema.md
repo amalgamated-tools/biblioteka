@@ -210,6 +210,11 @@ Core book metadata. All fields except `title` are optional.
 - `idx_books_created_at` — index on `(created_at DESC)` (SQLite) / composite index on `(created_at DESC, id DESC)` (PostgreSQL) for efficient `ORDER BY created_at DESC` queries; used by `ListRecentBooks`.
 - `idx_books_updated_at_id` — composite index on `(updated_at, id)` for efficient cursor-based pagination; used by the Kobo library sync endpoint to order and page through books by modification time.
 
+**Full-text / trigram search indexes (added in migration `20260412000000`):**
+
+- **SQLite:** `books_fts` — FTS5 content virtual table backed by the `books` table (columns: `title`, `description`). Three `AFTER INSERT/DELETE/UPDATE` triggers keep the index in sync automatically. `SearchBooks` queries this index using prefix-matching phrases (e.g. `"found"*`); the `sanitizeFTS5Query` function in `fts_sanitize.go` converts the user's query into a safe FTS5 `MATCH` expression. Running `VACUUM` on the database while FTS5 is enabled can corrupt the implicit `rowid` mapping; rebuild the index afterward with `INSERT INTO books_fts(books_fts) VALUES ('rebuild')` if needed.
+- **PostgreSQL:** `idx_books_title_trgm` and `idx_books_description_trgm` — GIN trigram indexes using the `pg_trgm` extension (enabled automatically by the migration). These accelerate the `ILIKE '%query%'` clause used by `SearchBooks` on PostgreSQL, converting what would otherwise be a full sequential scan into an index lookup.
+
 **Notes:**
 - Books are global (not scoped per user).
 - When a book file is first discovered by the background scanner, a book record is created automatically with the filename (minus extension) as the `title`. Other fields can be filled in via the API.
@@ -535,6 +540,7 @@ All database access lives in the `internal/db/` package. The books domain is spl
 | `migrations.go` | Embedded migration runner used by `SetupDatabase` |
 | `books.go` | `Book` struct; core CRUD: `CreateBook`, `CreateBookWithFile`, `GetBook`, `ListBooks`, `ListBooksByLibrary[Paginated]`, `UpdateBook`, `DeleteBook`, `AddBookToLibrary`, `RemoveBookFromLibrary` |
 | `book_queries.go` | Additional book list/search queries: `ListBooksPaginated`, `ListRecentBooks`, `ListBooksByAuthor[Paginated]`, `ListBooksBySeries[Paginated]`, `SearchBooks` |
+| `fts_sanitize.go` | `sanitizeFTS5Query` — converts a raw user search string into a safe SQLite FTS5 `MATCH` expression (prefix phrases, double-quote escaping, pure-punctuation token filtering); used exclusively by `SearchBooks` on the SQLite dialect |
 | `book_relations.go` | Book–author and book–series associations: `GetBookAuthors`, `SetBookAuthors`, `GetBookSeries`, `SetBookSeries`, `GetAuthorsForBooks` |
 | `book_files.go` | `BookFile` struct; file lifecycle: `CreateBookFile`, `GetBookFile`, `ListBookFiles`, `GetBookFileByPath`, `DeleteBookFile`, `GetFilesForBooks`, `IncrementBookFileDownloadCount` |
 | `authors.go` | `Author` struct; `CreateAuthor`, `GetAuthor[ByName]`, `ListAuthors[Paginated]`, `UpdateAuthor`, `FindOrCreateAuthor`, `DeleteAuthor` |
