@@ -281,6 +281,8 @@ If a user signs in via OIDC and no existing account has that `sub` claim, the se
 |----------|-------|
 | Algorithm | HS256 |
 | Expiry | 24 hours |
+| `iss` claim | `"biblioteka"` — issuer; validated on every request |
+| `aud` claim | `"biblioteka"` — audience; validated on every request; tokens missing this claim are rejected |
 | Secret | Configured via `JWT_SECRET` environment variable; minimum recommended length is **32 characters** |
 | Cookie name | `biblioteka_token` |
 | Cookie flags | `HttpOnly`, `SameSite=Strict`, `Secure` (when `SECURE_COOKIES=true`) |
