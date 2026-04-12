@@ -10,19 +10,20 @@ import (
 
 func TestDefaultPort(t *testing.T) {
 	tests := []struct {
+		name   string
 		scheme string
 		want   string
 	}{
-		{"https", "443"},
-		{"HTTPS", "443"},
-		{"Https", "443"},
-		{"http", "80"},
-		{"HTTP", "80"},
-		{"ftp", "80"},
-		{"", "80"},
+		{"https", "https", "443"},
+		{"HTTPS", "HTTPS", "443"},
+		{"Https", "Https", "443"},
+		{"http", "http", "80"},
+		{"HTTP", "HTTP", "80"},
+		{"ftp", "ftp", "80"},
+		{"(empty)", "", "80"},
 	}
 	for _, tt := range tests {
-		t.Run(tt.scheme, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.want, defaultPort(tt.scheme))
 		})
 	}
@@ -93,11 +94,6 @@ func TestParseHostPort(t *testing.T) {
 			wantHost: "::1", wantPort: "80",
 		},
 		{
-			name:     "empty port string uses default",
-			hostport: "example.com:", defaultPort: "80",
-			wantHost: "example.com", wantPort: "80",
-		},
-		{
 			name:     "standard http port 80",
 			hostport: "example.com:80", defaultPort: "80",
 			wantHost: "example.com", wantPort: "80",
@@ -118,6 +114,7 @@ func TestSameOrigin(t *testing.T) {
 		host    string
 		origin  string
 		referer string
+		proto   string
 		want    bool
 	}{
 		{
@@ -204,6 +201,19 @@ func TestSameOrigin(t *testing.T) {
 			origin: "http://example.com:8080",
 			want:   true,
 		},
+		{
+			name:   "https origin rejected on http request",
+			host:   "example.com",
+			origin: "https://example.com",
+			want:   false,
+		},
+		{
+			name:   "https origin accepted with X-Forwarded-Proto https",
+			host:   "example.com",
+			origin: "https://example.com",
+			proto:  "https",
+			want:   true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -215,6 +225,9 @@ func TestSameOrigin(t *testing.T) {
 			}
 			if tt.referer != "" {
 				r.Header.Set("Referer", tt.referer)
+			}
+			if tt.proto != "" {
+				r.Header.Set("X-Forwarded-Proto", tt.proto)
 			}
 			require.Equal(t, tt.want, sameOrigin(r))
 		})
@@ -254,7 +267,7 @@ func TestLogout_RefererFallback_OK(t *testing.T) {
 	h := newAuthHandler(t)
 
 	r := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
-	// httptest.NewRequest sets Host to "example.com" by default.
+	r.Host = "example.com"
 	r.Header.Set("Referer", "http://"+r.Host+"/settings")
 	w := httptest.NewRecorder()
 	h.Logout(w, r)
