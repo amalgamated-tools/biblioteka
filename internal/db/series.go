@@ -40,12 +40,9 @@ func (seriesListQuery) orderBy(d *DB) string {
 }
 
 func scanSeries(row interface{ Scan(...any) error }) (*Series, error) {
-	var s Series
-	err := row.Scan(&s.ID, &s.Name, &s.GoodreadsID, &s.HardcoverID, &s.GoogleBooksID, &s.CreatedAt, &s.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
+	return scanRow(row, func(s *Series) []any {
+		return []any{&s.ID, &s.Name, &s.GoodreadsID, &s.HardcoverID, &s.GoogleBooksID, &s.CreatedAt, &s.UpdatedAt}
+	})
 }
 
 // CreateSeries inserts a new series with the given name and optional external

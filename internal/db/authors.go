@@ -55,12 +55,9 @@ func (authorListQuery) orderBy(d *DB) string {
 }
 
 func scanAuthor(row interface{ Scan(...any) error }) (*Author, error) {
-	var a Author
-	err := row.Scan(&a.ID, &a.Name, &a.GoodreadsID, &a.HardcoverID, &a.GoogleBooksID, &a.ImageURL, &a.CreatedAt, &a.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &a, nil
+	return scanRow(row, func(a *Author) []any {
+		return []any{&a.ID, &a.Name, &a.GoodreadsID, &a.HardcoverID, &a.GoogleBooksID, &a.ImageURL, &a.CreatedAt, &a.UpdatedAt}
+	})
 }
 
 // CreateAuthor inserts a new author with the given name and optional external
