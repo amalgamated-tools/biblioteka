@@ -112,7 +112,7 @@ describe("LibraryForm accessibility", () => {
     });
     await tick();
 
-    const legend = container.querySelector("form p");
+    const legend = container.querySelector("form > p");
     expect(legend).toBeInTheDocument();
     expect(legend?.textContent).toMatch(/are required/i);
     const visual = legend?.querySelector('span[aria-hidden="true"]');
