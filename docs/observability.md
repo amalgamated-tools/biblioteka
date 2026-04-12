@@ -123,6 +123,7 @@ docker compose logs -f --no-log-prefix biblioteka | jq 'select(.level == "ERROR"
 docker compose logs -f --no-log-prefix biblioteka | jq 'select(.request_id == "550e8400-e29b-41d4-a716-446655440000")'
 
 # Show slow requests (> 500 ms)
+# duration is in nanoseconds: 500000000 ns = 500 ms; 1000000000 ns = 1 s
 docker compose logs -f --no-log-prefix biblioteka | jq 'select(.duration != null and .duration > 500000000)'
 ```
 
@@ -152,11 +153,11 @@ docker compose logs biblioteka \
 
 ## Distributed Tracing
 
-Biblioteka includes OpenTelemetry trace context propagation (`TraceMiddleware`) that wraps every incoming HTTP request in an OTel span. The global tracer provider is used, which defaults to a **no-op provider** (no spans are exported) unless you configure an OTLP exporter before the server starts.
+Biblioteka includes OpenTelemetry trace context propagation (`TraceMiddleware`) that wraps every incoming HTTP request in an OTel span. The global tracer provider is used, which defaults to a **no-op provider** — no spans are exported and there is no overhead beyond the middleware call.
 
-To emit traces, mount a custom `TracerProvider` before `server.NewServer` is called (see `internal/otel/tracing.go`). The span names follow the pattern `METHOD /path` (e.g. `GET /api/books`).
+The standard binary does not include a built-in OTLP exporter or read `OTEL_EXPORTER_OTLP_ENDPOINT` at runtime. Span export requires building from source and registering a `TracerProvider` that includes an exporter (e.g. `go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc` or `otlptracehttp`) before calling `server.NewServer`. The span names follow the pattern `METHOD /path` (e.g. `GET /api/books`).
 
-> Most deployments are well-served by structured log correlation via `request_id` alone. Distributed tracing is an advanced integration point for larger environments.
+> Most deployments are well-served by structured log correlation via `request_id` alone. Distributed tracing is an advanced integration point that requires custom builds.
 
 ---
 

@@ -289,15 +289,7 @@
           {#each books as book (book.id)}
             <tr
               onclick={() => routerStore.navigate(`books/${book.id}`)}
-              role="link"
-              tabindex="0"
-              onkeydown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  routerStore.navigate(`books/${book.id}`);
-                }
-              }}
-              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer"
+              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer focus-within:ring-2 focus-within:ring-accent-500"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
@@ -318,12 +310,14 @@
                       />
                     </div>
                   {/if}
-                  <span
-                    class="font-medium text-ink-900 dark:text-cream-100 truncate max-w-xs"
+                  <a
+                    href={`#books/${book.id}`}
+                    onclick={(e) => e.stopPropagation()}
+                    class="font-medium text-ink-900 dark:text-cream-100 truncate max-w-xs hover:underline focus:outline-none focus:ring-2 focus:ring-accent-500 rounded"
                     title={book.title}
                   >
                     {book.title}
-                  </span>
+                  </a>
                 </div>
               </td>
               <td
