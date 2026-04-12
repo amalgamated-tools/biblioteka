@@ -3,7 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -292,7 +292,7 @@ func TestHandleUpload_NoEnqueuer(t *testing.T) {
 
 func TestHandleUpload_EnqueueFailureCleansStagedFile(t *testing.T) {
 	h, userID, libraryID := setupUploadHandler(t)
-	enq := &mockEnqueuer{err: fmt.Errorf("redis unavailable")}
+	enq := &mockEnqueuer{err: errors.New("redis unavailable")}
 	h.Enqueuer = enq
 
 	// Track staged files by intercepting the enqueue — since enqueueing fails
@@ -503,7 +503,7 @@ type errAfterNReader struct {
 
 func (r *errAfterNReader) Read(p []byte) (int, error) {
 	if r.pos >= r.errAfter {
-		return 0, fmt.Errorf("simulated read error")
+		return 0, errors.New("simulated read error")
 	}
 	remaining := r.errAfter - r.pos
 	src := r.data[r.pos:]
@@ -513,7 +513,7 @@ func (r *errAfterNReader) Read(p []byte) (int, error) {
 	n := copy(p, src)
 	r.pos += n
 	if r.pos >= r.errAfter {
-		return n, fmt.Errorf("simulated read error")
+		return n, errors.New("simulated read error")
 	}
 	return n, nil
 }

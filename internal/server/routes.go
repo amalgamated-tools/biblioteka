@@ -34,7 +34,7 @@ func (s *Server) setupRoutes(ctx context.Context) {
 
 	// Protected auth routes
 	s.mux.Handle("/api/auth/me", s.requireAuth(http.HandlerFunc(s.authHandler.Me)))
-	s.mux.Handle("/api/auth/password", s.requireJWTAuth(http.HandlerFunc(s.authHandler.ChangePassword)))
+	s.mux.Handle("/api/auth/password", s.requireJWTAuth(s.authLimiter.Limit(s.authHandler.ChangePassword)))
 
 	// Protected config routes (JWT-only: sensitive server configuration)
 	s.mux.Handle("/api/config/status", s.requireJWTAuth(http.HandlerFunc(s.configHandler.HandleConfigStatus)))
