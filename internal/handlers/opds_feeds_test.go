@@ -369,12 +369,13 @@ func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := h.DB.CreateBook(ctx, db.BookInput{Title: "100% Pure"})
-
 	require.NoError(t, err, "create book")
 	_, err = h.DB.CreateBook(ctx, db.BookInput{Title: "Other Book"})
 	require.NoError(t, err, "create book")
 
-	// Search for "%" should not match everything due to LIKE wildcard escaping.
+	// Search for "%" alone contains no letters or digits, so the FTS5
+	// sanitizer produces an empty query and returns zero results. This also
+	// verifies that a bare "%" never acts as a LIKE wildcard matching all rows.
 	r := httptest.NewRequest(http.MethodGet, "/opds/search?q=%25", nil) // %25 = URL-encoded "%"
 	w := httptest.NewRecorder()
 	h.HandleOPDS(w, r)
@@ -382,6 +383,16 @@ func TestSearch_SpecialCharsInQuery(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 
 	feed := parseOPDSFeed(t, w.Body.Bytes())
+	require.Len(t, feed.Entries, 0)
+
+	// Searching for a term that appears in the title should still find it.
+	r = httptest.NewRequest(http.MethodGet, "/opds/search?q=Pure", nil)
+	w = httptest.NewRecorder()
+	h.HandleOPDS(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	feed = parseOPDSFeed(t, w.Body.Bytes())
 	require.Len(t, feed.Entries, 1)
 }
 
