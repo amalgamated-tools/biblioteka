@@ -244,6 +244,7 @@ Change the authenticated user's password. Not supported for OIDC-only accounts.
 | `200 OK` | Password updated |
 | `400 Bad Request` | Missing fields, invalid password, or OIDC-only account |
 | `401 Unauthorized` | Missing or invalid JWT, current password is incorrect, or user no longer exists |
+| `429 Too Many Requests` | Rate limit exceeded |
 | `500 Internal Server Error` | Database or password hashing error |
 
 ---
