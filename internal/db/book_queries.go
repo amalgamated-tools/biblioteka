@@ -154,6 +154,11 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 }
 
 // SearchBooks searches books by title or description with pagination and total count.
+//
+// On SQLite the search is backed by a FTS5 virtual table (books_fts) for
+// index-accelerated full-text matching. On PostgreSQL the existing ILIKE query
+// is used, which is accelerated by the pg_trgm GIN indexes added in migration
+// 20260412000000_add_books_trgm.
 func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) ([]Book, int, error) {
 	slog.DebugContext(ctx, "db: searching books",
 		slog.String(otelkeys.Query, query),
@@ -161,20 +166,28 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	escaped := searchLikeReplacer.Replace(query)
-	likePattern := "%" + escaped + "%"
+	var (
+		whereClause string
+		matchArg    any
+	)
 
-	var whereClause string
-	if d.Dialect == DialectPostgres {
-		whereClause = `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`
+	if d.Dialect == DialectSQLite {
+		ftsQuery := sanitizeFTS5Query(query)
+		if ftsQuery == "" {
+			return []Book{}, 0, nil
+		}
+		whereClause = `WHERE rowid IN (SELECT rowid FROM books_fts WHERE books_fts MATCH $1)`
+		matchArg = ftsQuery
 	} else {
-		whereClause = `WHERE (title LIKE $1 ESCAPE '\' OR description LIKE $1 ESCAPE '\')`
+		escaped := searchLikeReplacer.Replace(query)
+		whereClause = `WHERE (title ILIKE $1 ESCAPE '\' OR description ILIKE $1 ESCAPE '\')`
+		matchArg = "%" + escaped + "%"
 	}
 
 	orderBy := d.dialectOrderBy("title", "ASC")
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+bookColumns+`, COUNT(*) OVER() FROM books `+whereClause+` `+orderBy+` LIMIT $2 OFFSET $3`,
-		likePattern, limit, offset,
+		matchArg, limit, offset,
 	)
 	if err != nil {
 		return nil, 0, err
@@ -184,7 +197,7 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 		return nil, 0, err
 	}
 	if err := countFallback(ctx, d, &total, len(books), offset,
-		`SELECT COUNT(*) FROM books `+whereClause, likePattern,
+		`SELECT COUNT(*) FROM books `+whereClause, matchArg,
 	); err != nil {
 		return nil, 0, err
 	}
