@@ -106,9 +106,9 @@ func newTestCalibreDB(t *testing.T) *DB {
 	return newDBFromSQL(sqlDB)
 }
 
-// newTestBibliothekaDB creates an in-memory Biblioteka database with all
+// newTestBibliotekaDB creates an in-memory Biblioteka database with all
 // migrations applied.
-func newTestBibliothekaDB(t *testing.T) *db.DB {
+func newTestBibliotekaDB(t *testing.T) *db.DB {
 	t.Helper()
 	sqlDB, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err, "open biblioteka test db")
@@ -232,7 +232,7 @@ func insertCalibreLanguage(t *testing.T, cdb *DB, bookID int64, langCode string)
 // metadata fields is imported into Biblioteka correctly.
 func TestImport_BasicBook(t *testing.T) {
 	cdb := newTestCalibreDB(t)
-	biblDB := newTestBibliothekaDB(t)
+	biblDB := newTestBibliotekaDB(t)
 
 	bookID := insertCalibreBook(t, cdb, "Dune", "Frank Herbert/Dune (1)", "1965-08-01 00:00:00+00:00", 1.0)
 	authorID := insertCalibreAuthor(t, cdb, "Frank Herbert")
@@ -293,7 +293,7 @@ func TestImport_BasicBook(t *testing.T) {
 // position are imported correctly.
 func TestImport_SeriesPosition(t *testing.T) {
 	cdb := newTestCalibreDB(t)
-	biblDB := newTestBibliothekaDB(t)
+	biblDB := newTestBibliotekaDB(t)
 
 	bookID := insertCalibreBook(t, cdb, "The Fellowship of the Ring", "J.R.R. Tolkien/The Lord of the Rings (1)", "1954-07-29 00:00:00+00:00", 1.0)
 	authorID := insertCalibreAuthor(t, cdb, "J.R.R. Tolkien")
@@ -323,7 +323,7 @@ func TestImport_SeriesPosition(t *testing.T) {
 // registered as separate book_file records.
 func TestImport_MultipleFormats(t *testing.T) {
 	cdb := newTestCalibreDB(t)
-	biblDB := newTestBibliothekaDB(t)
+	biblDB := newTestBibliotekaDB(t)
 
 	bookID := insertCalibreBook(t, cdb, "Foundation", "Isaac Asimov/Foundation (2)", "", 1.0)
 	insertCalibreFormat(t, cdb, bookID, "EPUB", "Foundation", 400000)
@@ -356,7 +356,7 @@ func TestImport_MultipleFormats(t *testing.T) {
 // skips books whose file paths are already in book_files.
 func TestImport_Deduplication(t *testing.T) {
 	cdb := newTestCalibreDB(t)
-	biblDB := newTestBibliothekaDB(t)
+	biblDB := newTestBibliotekaDB(t)
 
 	bookID := insertCalibreBook(t, cdb, "1984", "George Orwell/1984 (1)", "", 1.0)
 	insertCalibreFormat(t, cdb, bookID, "EPUB", "1984", 300000)
@@ -385,7 +385,7 @@ func TestImport_Deduplication(t *testing.T) {
 // Biblioteka library when LibraryID is provided.
 func TestImport_LibraryAssociation(t *testing.T) {
 	cdb := newTestCalibreDB(t)
-	biblDB := newTestBibliothekaDB(t)
+	biblDB := newTestBibliotekaDB(t)
 
 	lib, err := biblDB.CreateLibrary(t.Context(), "My Library", "/calibre/library", db.LibraryOrganizationNone, false)
 	require.NoError(t, err)
@@ -443,7 +443,7 @@ func TestImport_ISBNClassification(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cdb := newTestCalibreDB(t)
-			biblDB := newTestBibliothekaDB(t)
+			biblDB := newTestBibliotekaDB(t)
 
 			bookID := insertCalibreBook(t, cdb, "To Kill a Mockingbird", "Harper Lee/To Kill a Mockingbird (1)", "", 1.0)
 			insertCalibreFormat(t, cdb, bookID, "EPUB", "To Kill a Mockingbird", 100000)
@@ -473,7 +473,7 @@ func TestImport_ISBNClassification(t *testing.T) {
 // (0101-01-01) is not written as the publication date.
 func TestImport_EmptyPublicationDate(t *testing.T) {
 	cdb := newTestCalibreDB(t)
-	biblDB := newTestBibliothekaDB(t)
+	biblDB := newTestBibliotekaDB(t)
 
 	// Calibre sentinel date for "no date set".
 	bookID := insertCalibreBook(t, cdb, "Unknown Date Book", "Author/Unknown Date Book (1)", "0101-01-01 00:00:00+00:00", 1.0)
@@ -493,7 +493,7 @@ func TestImport_EmptyPublicationDate(t *testing.T) {
 // all of them linked correctly.
 func TestImport_MultipleAuthors(t *testing.T) {
 	cdb := newTestCalibreDB(t)
-	biblDB := newTestBibliothekaDB(t)
+	biblDB := newTestBibliotekaDB(t)
 
 	bookID := insertCalibreBook(t, cdb, "Good Omens", "Terry Pratchett & Neil Gaiman/Good Omens (1)", "", 1.0)
 	insertCalibreFormat(t, cdb, bookID, "EPUB", "Good Omens", 300000)
@@ -524,7 +524,7 @@ func TestImport_MultipleAuthors(t *testing.T) {
 // returns a zero-result without errors.
 func TestImport_EmptyLibrary(t *testing.T) {
 	cdb := newTestCalibreDB(t)
-	biblDB := newTestBibliothekaDB(t)
+	biblDB := newTestBibliotekaDB(t)
 
 	opts := ImportOptions{LibraryPath: "/calibre/library"}
 	result, err := runImport(t.Context(), biblDB, cdb, opts)
@@ -575,7 +575,7 @@ func TestFormat_FilePath(t *testing.T) {
 // to deduplicate on).
 func TestImport_NoFormats(t *testing.T) {
 	cdb := newTestCalibreDB(t)
-	biblDB := newTestBibliothekaDB(t)
+	biblDB := newTestBibliotekaDB(t)
 
 	insertCalibreBook(t, cdb, "Format-less Book", "Some Author/Format-less Book (1)", "", 1.0)
 
@@ -595,7 +595,7 @@ func TestImport_NoFormats(t *testing.T) {
 // is mapped to the ASIN field.
 func TestImport_AsinIdentifier(t *testing.T) {
 	cdb := newTestCalibreDB(t)
-	biblDB := newTestBibliothekaDB(t)
+	biblDB := newTestBibliotekaDB(t)
 
 	bookID := insertCalibreBook(t, cdb, "Some Kindle Book", "Author/Some Kindle Book (1)", "", 1.0)
 	insertCalibreFormat(t, cdb, bookID, "MOBI", "Some Kindle Book", 200000)
@@ -610,4 +610,42 @@ func TestImport_AsinIdentifier(t *testing.T) {
 	require.Len(t, books, 1)
 	require.NotNil(t, books[0].ASIN)
 	require.Equal(t, "B001234567", *books[0].ASIN)
+}
+
+// TestImport_ISBNPriority verifies that when both isbn13 and a generic isbn
+// identifier are present and both normalize to 13 digits, the isbn13 value
+// wins (higher priority).
+func TestImport_ISBNPriority(t *testing.T) {
+	cdb := newTestCalibreDB(t)
+	biblDB := newTestBibliotekaDB(t)
+
+	bookID := insertCalibreBook(t, cdb, "ISBN Priority", "Author/ISBN Priority (1)", "", 1.0)
+	insertCalibreFormat(t, cdb, bookID, "EPUB", "ISBN Priority", 100000)
+	insertCalibreIdentifier(t, cdb, bookID, "isbn13", "9781234567890")
+	insertCalibreIdentifier(t, cdb, bookID, "isbn", "9780987654321")
+
+	opts := ImportOptions{LibraryPath: "/calibre/library"}
+	_, err := runImport(t.Context(), biblDB, cdb, opts)
+	require.NoError(t, err)
+
+	books, err := biblDB.ListBooks(t.Context())
+	require.NoError(t, err)
+	require.Len(t, books, 1)
+	require.NotNil(t, books[0].ISBN13)
+	require.Equal(t, "9781234567890", *books[0].ISBN13, "isbn13 should take priority over generic isbn")
+}
+
+// TestImport_InvalidLibraryID verifies that an invalid library ID causes
+// the import to fail before processing any books.
+func TestImport_InvalidLibraryID(t *testing.T) {
+	cdb := newTestCalibreDB(t)
+	biblDB := newTestBibliotekaDB(t)
+
+	bookID := insertCalibreBook(t, cdb, "Some Book", "Author/Some Book (1)", "", 1.0)
+	insertCalibreFormat(t, cdb, bookID, "EPUB", "Some Book", 100000)
+
+	opts := ImportOptions{LibraryPath: "/calibre/library", LibraryID: "nonexistent-library-id"}
+	_, err := runImport(t.Context(), biblDB, cdb, opts)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not found")
 }

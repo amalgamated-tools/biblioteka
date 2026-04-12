@@ -71,6 +71,16 @@ func Import(ctx context.Context, biblDB *db.DB, opts ImportOptions) (*ImportResu
 // runImport is the internal implementation of Import, split out so tests can
 // inject a pre-populated calibre.DB directly.
 func runImport(ctx context.Context, biblDB *db.DB, calibreDB *DB, opts ImportOptions) (*ImportResult, error) {
+	// Validate the library ID once before processing any books.
+	if opts.LibraryID != "" {
+		if _, err := biblDB.GetLibrary(ctx, opts.LibraryID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, fmt.Errorf("library %q not found", opts.LibraryID)
+			}
+			return nil, fmt.Errorf("validate library %q: %w", opts.LibraryID, err)
+		}
+	}
+
 	books, err := calibreDB.LoadBooks(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load calibre books: %w", err)
@@ -80,6 +90,7 @@ func runImport(ctx context.Context, biblDB *db.DB, calibreDB *DB, opts ImportOpt
 	slog.InfoContext(ctx, "calibre: loaded books",
 		slog.Int(otelkeys.BookCount, len(books)),
 	)
+	slog.InfoContext(ctx, "calibre: note: Calibre tags are not imported; re-tag books manually in Biblioteka if needed")
 
 	for i := range books {
 		book := &books[i]
@@ -153,7 +164,9 @@ func importBook(ctx context.Context, biblDB *db.DB, book *Book, opts ImportOptio
 		slog.String(otelkeys.Title, biblBook.Title),
 	)
 
-	// Register each file format.
+	// Register each file format. If no files can be created the book import
+	// is treated as an error so the caller can retry cleanly.
+	filesCreated := 0
 	for _, f := range book.Formats {
 		path := f.FilePath(opts.LibraryPath, book.Path)
 		fileType := strings.ToLower(f.FormatCode)
@@ -165,7 +178,12 @@ func importBook(ctx context.Context, biblDB *db.DB, book *Book, opts ImportOptio
 				slog.String(otelkeys.FileName, f.FileName()),
 				slog.Any(otelkeys.Error, fileErr),
 			)
+		} else {
+			filesCreated++
 		}
+	}
+	if filesCreated == 0 {
+		return false, fmt.Errorf("all %d file record(s) failed to create for book %q", len(book.Formats), book.Title)
 	}
 
 	// Link authors — best-effort.
@@ -255,9 +273,8 @@ func buildBookInput(book *Book) db.BookInput {
 	}
 
 	// Map Calibre identifier types to Biblioteka BookInput fields.
-	// ISBN types are applied in priority order (isbn13 > isbn10 > isbn)
-	// rather than map iteration order to ensure deterministic results when
-	// multiple ISBN identifiers are present.
+	// ISBN types are applied in priority order (isbn13 > isbn10 > isbn);
+	// once a field is set by a higher-priority source it is not overwritten.
 	for _, typ := range []string{"isbn13", "isbn10", "isbn"} {
 		val, ok := book.Identifiers[typ]
 		if !ok || val == "" {
@@ -266,9 +283,13 @@ func buildBookInput(book *Book) db.BookInput {
 		normalized := exif.NormalizeISBN(val)
 		switch len(normalized) {
 		case 10:
-			input.ISBN10 = ptrutil.NilIfZero(normalized)
+			if input.ISBN10 == nil {
+				input.ISBN10 = ptrutil.NilIfZero(normalized)
+			}
 		case 13:
-			input.ISBN13 = ptrutil.NilIfZero(normalized)
+			if input.ISBN13 == nil {
+				input.ISBN13 = ptrutil.NilIfZero(normalized)
+			}
 		}
 	}
 	for typ, val := range book.Identifiers {

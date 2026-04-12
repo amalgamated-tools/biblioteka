@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -22,9 +23,14 @@ type DB struct {
 	db *sql.DB
 }
 
-// Open opens the Calibre metadata.db at path. The caller must call Close when done.
+// Open opens the Calibre metadata.db at path in read-only mode. The caller
+// must call Close when done.
 func Open(path string) (*DB, error) {
-	sqlDB, err := sql.Open("sqlite", path)
+	if _, err := os.Stat(path); err != nil {
+		return nil, fmt.Errorf("stat calibre db %q: %w", path, err)
+	}
+	dsn := fmt.Sprintf("file:%s?mode=ro", path)
+	sqlDB, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open calibre db: %w", err)
 	}
@@ -62,7 +68,8 @@ var calibreDateLayouts = []string{
 
 // parseCalibreDate parses a Calibre datetime string. Returns a zero Time on
 // failure. Calibre uses the sentinel date "0101-01-01" for books with no
-// publication date; callers should check year > 100 before using the result.
+// publication date; callers should only use results whose year is greater
+// than calibreSentinelYear.
 func parseCalibreDate(s string) time.Time {
 	s = strings.TrimSpace(s)
 	if s == "" {
@@ -226,7 +233,7 @@ func (c *DB) loadBookAuthors(ctx context.Context) (map[int64][]string, error) {
 		`SELECT bal.book, a.name
 		 FROM authors a
 		 INNER JOIN books_authors_link bal ON bal.author = a.id
-		 ORDER BY bal.book, a.name`,
+		 ORDER BY bal.book, bal.id`,
 	)
 	if err != nil {
 		return nil, err
