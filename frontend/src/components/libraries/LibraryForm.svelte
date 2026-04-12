@@ -246,8 +246,9 @@
                   formPaths = formPaths.filter((_, idx) => idx !== i);
                 }}
                 class="p-2 text-ink-400 hover:text-danger-600 transition-colors"
-                title="Remove folder"
-                aria-label="Remove folder"
+                aria-label={entry.value
+                  ? `Remove folder "${entry.value}"`
+                  : `Remove folder ${i + 1}`}
                 disabled={saving}
               >
                 <X class="w-4 h-4" aria-hidden="true" />
