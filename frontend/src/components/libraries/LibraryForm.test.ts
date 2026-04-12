@@ -202,7 +202,7 @@ describe("LibraryForm remove folder button aria-labels", () => {
 
     // Fill in the first path
     const firstInput = container.querySelector(
-      "input[aria-label]",
+      'input[aria-label="Folder path"]',
     ) as HTMLInputElement;
     await fireEvent.input(firstInput, {
       target: { value: "/home/user/books" },
