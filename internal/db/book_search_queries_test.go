@@ -188,11 +188,21 @@ func TestSearchBooks_FTS5OperatorCharsDoNotError(t *testing.T) {
 	require.NoError(t, err, "CreateBook(Foundation)")
 
 	// FTS5 operator characters passed raw by the user must not cause errors.
-	for _, q := range []string{`"Foundation"`, "Foundation*", "Foundation-", "-Foundation", "Foundation AND Dune"} {
-		books, _, err := d.SearchBooks(t.Context(), q, 10, 0)
+	// Each of these sanitizes to a phrase-quoted form containing "Foundation",
+	// so they should find the book.
+	for _, q := range []string{`"Foundation"`, "Foundation*", "Foundation-", "-Foundation"} {
+		books, total, err := d.SearchBooks(t.Context(), q, 10, 0)
 		require.NoError(t, err, "SearchBooks(%q) must not error", q)
-		_ = books
+		require.Equal(t, 1, total, "SearchBooks(%q) should find 1 book", q)
+		require.Len(t, books, 1, "SearchBooks(%q) should return 1 book", q)
+		require.Equal(t, "Foundation", books[0].Title, "SearchBooks(%q) book title", q)
 	}
+
+	// Multi-word query: "Foundation AND Dune" sanitizes to three required tokens
+	// ("Foundation"*, "AND"*, "Dune"*). A book with only "Foundation" in the
+	// title won't match all three, but the query must still not error.
+	_, _, err = d.SearchBooks(t.Context(), "Foundation AND Dune", 10, 0)
+	require.NoError(t, err, `SearchBooks("Foundation AND Dune") must not error`)
 }
 
 func TestSearchBooks_EmptyAfterSanitize(t *testing.T) {
