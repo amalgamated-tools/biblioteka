@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/filetype"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -190,6 +191,17 @@ func (h *BookFileHandler) downloadBookFile(w http.ResponseWriter, r *http.Reques
 			slog.String(otelkeys.BookFileID, id),
 			slog.Any(otelkeys.Error, incErr),
 		)
+	}
+
+	// Record a timestamped download event for the histogram (best-effort).
+	if userID := auth.UserIDFromContext(ctx); userID != "" {
+		if recErr := h.DB.RecordBookDownload(ctx, id, userID); recErr != nil {
+			slog.WarnContext(ctx, "failed to record book download event",
+				slog.String(otelkeys.BookFileID, id),
+				slog.String(otelkeys.UserID, userID),
+				slog.Any(otelkeys.Error, recErr),
+			)
+		}
 	}
 
 	mimeType := filetype.MIMETypeOrOctetStream(bf.FileType)
