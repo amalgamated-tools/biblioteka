@@ -1,25 +1,43 @@
 {
-  "last_run": "2026-04-12T01:06:21Z",
+  "last_run": "2026-04-12T12:43:18Z",
   "comments_made": {
     "1668": "2026-04-11T22:26:12Z",
-    "1531": "2026-04-12T01:06:21Z"
+    "1531": "2026-04-12T01:06:21Z",
+    "1750": "2026-04-12T12:43:18Z"
   },
   "prs_created": [
     {
       "branch": "repo-assist/fix-a11y-issues-1641-1642-1643-1644-1b30f25405368471",
       "title": "fix(a11y): address four keyboard/screen-reader accessibility issues (#1641-#1644)",
       "closes": [1641, 1642, 1643, 1644],
-      "created_at": "2026-04-11T22:26:12Z"
+      "created_at": "2026-04-11T22:26:12Z",
+      "status": "merged"
     },
     {
       "branch": "repo-assist/improve-api-core-auth-tests-20260412",
       "title": "test(frontend): add unit tests for api/core.ts and api/auth.ts",
       "closes": [],
-      "created_at": "2026-04-12T01:06:21Z"
+      "created_at": "2026-04-12T01:06:21Z",
+      "status": "push_failed_issue_1719"
+    },
+    {
+      "branch": "repo-assist/fix-issue-1741-focus-trap-offsetparent",
+      "title": "fix(frontend): remove offsetParent check from focus trap in EmailBookModal",
+      "closes": [1741],
+      "created_at": "2026-04-12T12:43:18Z",
+      "status": "open"
+    },
+    {
+      "branch": "repo-assist/eng-node22-upgrade-20260412",
+      "title": "ci: upgrade CI Node.js from 20 to 22 LTS (EOL April 30)",
+      "closes": [],
+      "created_at": "2026-04-12T12:43:18Z",
+      "status": "open"
     }
   ],
-  "issues_commented": [1668, 1531],
+  "issues_commented": [1668, 1531, 1750],
   "monthly_activity_issue": "2026-04",
-  "backlog_cursor": 1702,
-  "notes": "A11y PR #1700 open (fixes #1641-1644). Frontend API test PR open (api/core.ts + api/auth.ts, 32 tests). Commented on #1531 (S3 backend). Monthly Activity issue recreated (previous #1701 was closed). Next run: continue from issue #1702."
+  "monthly_activity_issue_number": 1720,
+  "backlog_cursor": 1750,
+  "notes": "PR #1700 (a11y) merged by veverkap 2026-04-12. Issue #1719 has patch for API tests (push failed). New PRs: focus-trap fix (#1741), Node 22 CI upgrade. Commented on #1750 (CSP hardening SHA-256 hash). Good candidates for next run: implement #1749 (HSTS+JWT), #1750 (CSP sha256), #1748 (server tests)."
 }
