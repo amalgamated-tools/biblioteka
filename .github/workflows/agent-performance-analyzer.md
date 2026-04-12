@@ -31,8 +31,8 @@ safe-outputs:
   add-comment:
     max: 10
 timeout-minutes: 30
-features:
-  copilot-requests: true
+# features:
+#   copilot-requests: true
 source: github/gh-aw/.github/workflows/agent-performance-analyzer.md@66fb0c5877c118a3b1ee7e120edac1161b1df4ee
 ---
 
