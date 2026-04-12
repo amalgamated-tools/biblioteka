@@ -6,12 +6,8 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/timeutil"
 )
-
-// nowRFC3339 returns the current UTC time formatted as RFC 3339.
-func nowRFC3339() string {
-	return time.Now().UTC().Format(time.RFC3339)
-}
 
 // DownloadURL represents a Kobo download URL entry.
 type DownloadURL struct {
@@ -177,7 +173,7 @@ func FormatForFileType(fileType string) (string, bool) {
 
 // BookEntitlement builds the BookEntitlement object expected by Kobo devices.
 func BookEntitlement(book *db.Book) *Entitlement {
-	now := nowRFC3339()
+	now := timeutil.NowRFC3339()
 	return &Entitlement{
 		Accessibility:       "Full",
 		ActivePeriod:        ActivePeriod{From: now},
@@ -244,7 +240,7 @@ func BookMetadata(book *db.Book, authors []db.Author, series []db.BookSeriesEntr
 
 // ReadingStateResponse builds the reading-state object expected by Kobo devices.
 func ReadingStateResponse(state *db.KoboReadingState) *ReadingState {
-	now := nowRFC3339()
+	now := timeutil.NowRFC3339()
 
 	updatedAt := now
 	if !state.UpdatedAt.IsZero() {
