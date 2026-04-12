@@ -311,6 +311,13 @@ export interface MetadataProgressEvent {
   metadata_id?: string;
 }
 
+// Statistics
+
+export interface MonthlyDownloads {
+  month: string; // "YYYY-MM"
+  count: number;
+}
+
 // Audit Logs
 
 export interface AuditLog {
