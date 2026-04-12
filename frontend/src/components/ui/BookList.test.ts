@@ -77,6 +77,7 @@ describe("BookList table view keyboard accessibility (WCAG 2.1.1)", () => {
     const row = screen.getByRole("row", { name: "View Test Book" });
     expect(row.tagName).toBe("TR");
     expect(row).toHaveAttribute("tabindex", "0");
+    expect(row).toHaveAttribute("aria-label", "View Test Book");
   });
 
   it("table rows navigate on Enter key", async () => {
@@ -111,18 +112,25 @@ describe("BookList table view keyboard accessibility (WCAG 2.1.1)", () => {
     expect(window.location.hash).toBe("");
   });
 
-  it("does not navigate when modifier keys are pressed", async () => {
+  it.each([
+    { modifier: "ctrlKey" },
+    { modifier: "metaKey" },
+    { modifier: "shiftKey" },
+    { modifier: "altKey" },
+  ])("does not navigate when $modifier is pressed", async ({ modifier }) => {
     const fetchBooks = vi.fn().mockResolvedValue(fakeBooks);
     render(BookList, { props: { fetchBooks } });
     await tick();
     await tick();
 
-    const tableViewButton = screen.getByRole("button", { name: "Table view" });
+    const tableViewButton = screen.getByRole("button", {
+      name: "Table view",
+    });
     await fireEvent.click(tableViewButton);
     await tick();
 
     const row = screen.getByRole("row", { name: "View Test Book" });
-    await fireEvent.keyDown(row, { key: "Enter", ctrlKey: true });
+    await fireEvent.keyDown(row, { key: "Enter", [modifier]: true });
 
     expect(window.location.hash).toBe("");
   });
