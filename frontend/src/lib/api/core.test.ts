@@ -16,6 +16,7 @@ import {
   request,
   getVersion,
 } from "./core";
+import { mockFetchResponse, mockNoContentResponse } from "./testUtils";
 
 let fetchMock: Mock;
 
@@ -69,28 +70,14 @@ describe("Token management", () => {
 describe("request()", () => {
   it("returns parsed body on 200 application/json response", async () => {
     const body = { id: "1", name: "test" };
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      headers: new Headers({ "content-type": "application/json" }),
-      json: vi.fn().mockResolvedValue(body),
-      text: vi.fn(),
-    });
+    mockFetchResponse(fetchMock, body);
 
     const result = await request<typeof body>("GET", "/api/test");
     expect(result).toEqual(body);
   });
 
   it("returns undefined on 204 No Content response", async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 204,
-      statusText: "No Content",
-      headers: new Headers(),
-      json: vi.fn(),
-      text: vi.fn(),
-    });
+    mockNoContentResponse(fetchMock);
 
     const result = await request("DELETE", "/api/test");
     expect(result).toBeUndefined();
@@ -148,8 +135,9 @@ describe("request()", () => {
       text: vi.fn(),
     });
 
-    await expect(request("POST", "/api/test", {})).rejects.toThrow(ApiError);
-    await expect(request("POST", "/api/test", {})).rejects.toMatchObject({
+    const err = await request("POST", "/api/test", {}).catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err).toMatchObject({
       message: "name is required",
       status: 400,
     });
@@ -173,14 +161,7 @@ describe("request()", () => {
 
   it("sends Authorization header when token is set", async () => {
     setToken("bearer-token");
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      headers: new Headers({ "content-type": "application/json" }),
-      json: vi.fn().mockResolvedValue({}),
-      text: vi.fn(),
-    });
+    mockFetchResponse(fetchMock, {});
 
     await request("GET", "/api/test");
 
@@ -189,14 +170,7 @@ describe("request()", () => {
   });
 
   it("does not send Authorization header when no token is set", async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      headers: new Headers({ "content-type": "application/json" }),
-      json: vi.fn().mockResolvedValue({}),
-      text: vi.fn(),
-    });
+    mockFetchResponse(fetchMock, {});
 
     await request("GET", "/api/test");
 
@@ -207,14 +181,7 @@ describe("request()", () => {
 
 describe("getVersion()", () => {
   it("returns the version string from the response", async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      headers: new Headers({ "content-type": "application/json" }),
-      json: vi.fn().mockResolvedValue({ version: "1.2.3" }),
-      text: vi.fn(),
-    });
+    mockFetchResponse(fetchMock, { version: "1.2.3" });
 
     const version = await getVersion();
     expect(version).toBe("1.2.3");
