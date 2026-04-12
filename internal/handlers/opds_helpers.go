@@ -7,16 +7,11 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/timeutil"
 )
-
-// nowRFC3339 returns the current UTC time formatted as RFC 3339.
-func nowRFC3339() string {
-	return time.Now().UTC().Format(time.RFC3339)
-}
 
 // adaptNavEntities wraps a paginated list function so its results are converted
 // to []opds.NavEntity for use with writeNamedEntityNavFeed. The toEntity
@@ -46,7 +41,7 @@ func writeOPDSError(r *http.Request, w http.ResponseWriter, status int, contentT
 		XMLNSOPDS: opds.XMLNSOPDS,
 		ID:        id,
 		Title:     title,
-		Updated:   nowRFC3339(),
+		Updated:   timeutil.NowRFC3339(),
 	}
 
 	var buf bytes.Buffer
@@ -83,12 +78,17 @@ func parsePage(r *http.Request) int {
 }
 
 func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, feed *opds.Feed) {
+	ctx := r.Context()
 	var buf bytes.Buffer
-	buf.WriteString(xml.Header)
+	if _, err := buf.WriteString(xml.Header); err != nil {
+		slog.ErrorContext(ctx, "failed to write OPDS XML header", slog.Any(otelkeys.Error, err))
+		writeOPDSError(r, w, http.StatusInternalServerError, contentType, "urn:biblioteka:opds:error", "failed to generate feed")
+		return
+	}
 	enc := xml.NewEncoder(&buf)
 	enc.Indent("", "  ")
 	if err := enc.Encode(feed); err != nil {
-		slog.ErrorContext(r.Context(), "OPDS: failed to encode feed", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "OPDS: failed to encode feed", slog.Any(otelkeys.Error, err))
 		writeOPDSError(r, w, http.StatusInternalServerError, contentType, "urn:biblioteka:opds:error", "failed to encode feed")
 		return
 	}

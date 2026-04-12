@@ -13,11 +13,12 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/timeutil"
 )
 
 func (h *OPDSHandler) rootFeed(w http.ResponseWriter, r *http.Request) {
 	baseURL := opdsBaseURL(r)
-	now := nowRFC3339()
+	now := timeutil.NowRFC3339()
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
@@ -95,7 +96,7 @@ func (h *OPDSHandler) writeBooksFeed(
 	entries := h.bookEntries(ctx, books, baseURL)
 	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.AcqContentType)
 	links = append(links, extraLinks...)
-	now := nowRFC3339()
+	now := timeutil.NowRFC3339()
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
@@ -156,7 +157,7 @@ func (h *OPDSHandler) writeNamedEntityNavFeed(
 	links := opdspkg.PaginationLinks(selfURL, page, total, opdspkg.PageSize, opdspkg.NavContentType)
 	links = append(links, opdspkg.Link{Rel: opdspkg.RelStart, Href: baseURL, Type: opdspkg.NavContentType})
 
-	now := nowRFC3339()
+	now := timeutil.NowRFC3339()
 	feed := &opdspkg.Feed{
 		XMLNS:   opdspkg.XMLNSAtom,
 		ID:      selfURL,
@@ -273,7 +274,7 @@ func (h *OPDSHandler) searchResults(w http.ResponseWriter, r *http.Request) {
 	entries := h.bookEntries(ctx, books, baseURL)
 	escapedQuery := url.QueryEscape(query)
 	selfURL := baseURL + "/search?q=" + escapedQuery
-	now := nowRFC3339()
+	now := timeutil.NowRFC3339()
 	feed := &opdspkg.Feed{
 		XMLNS:     opdspkg.XMLNSAtom,
 		XMLNSOPDS: opdspkg.XMLNSOPDS,
