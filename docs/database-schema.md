@@ -206,7 +206,7 @@ Core book metadata. All fields except `title` are optional.
 | `updated_at`      | DATETIME| NOT NULL | `now()`  | Last update time                       |
 
 **Indexes:**
-- `idx_books_title` — index on `title` (SQLite) / composite index on `(title, id)` (PostgreSQL) for efficient `ORDER BY title ASC` queries; used by `ListBooksPaginated`, `ListBooksByAuthorPaginated`, and `SearchBooks`.
+- `idx_books_title` — index on `title` (SQLite) / composite index on `(title, id)` (PostgreSQL) for efficient `ORDER BY title ASC` queries; used by `ListBooksPaginated`, `ListBooksByAuthorPaginated`, `ListBooksBySeriesPaginated`, and `SearchBooks`.
 - `idx_books_created_at` — index on `(created_at DESC)` (SQLite) / composite index on `(created_at DESC, id DESC)` (PostgreSQL) for efficient `ORDER BY created_at DESC` queries; used by `ListRecentBooks`.
 - `idx_books_updated_at_id` — composite index on `(updated_at, id)` for efficient cursor-based pagination; used by the Kobo library sync endpoint to order and page through books by modification time.
 
