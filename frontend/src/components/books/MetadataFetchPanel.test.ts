@@ -360,4 +360,55 @@ describe("MetadataFetchPanel", () => {
     expect(mockSubscribeToMetadataEvents).toHaveBeenCalledTimes(1);
     expect(mockFetchMetadata).toHaveBeenCalledTimes(1);
   });
+
+  it("ignores stale metadata fallback results after bookId rerender", async () => {
+    const mockES = createMockEventSource();
+    mockSubscribeToMetadataEvents.mockReturnValue(mockES);
+    mockFetchMetadata.mockResolvedValue({ status: "enqueued" });
+
+    let resolveMetadata!: (value: RemoteMetadata) => void;
+    const pendingMetadata = new Promise<RemoteMetadata>((resolve) => {
+      resolveMetadata = resolve;
+    });
+    mockGetMetadata.mockImplementation((id: string) => {
+      if (id === "b1") {
+        return pendingMetadata;
+      }
+      return Promise.reject(new Error("not found"));
+    });
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { rerender } = renderPanel();
+
+    await user.click(screen.getByText("Fetch Metadata"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Trigger the async fallback load for the original book.
+    mockES.onerror!();
+
+    await waitFor(() => {
+      expect(mockGetMetadata).toHaveBeenCalledWith("b1");
+    });
+
+    await rerender({
+      bookId: "b2",
+      saving: false,
+      metadata: null,
+      currentValues: baseCurrentValues,
+      onApplyField: vi.fn(),
+      onApplyAll: vi.fn(),
+      onDismiss: vi.fn(),
+    });
+
+    // Resolve the old book's metadata request after the component has rerendered.
+    resolveMetadata(fakeMetadata);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(
+      screen.queryByText(
+        "Metadata stream closed unexpectedly. Please try again.",
+      ),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(fakeMetadata.title!)).not.toBeInTheDocument();
+  });
 });
