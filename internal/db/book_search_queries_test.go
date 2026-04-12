@@ -78,9 +78,16 @@ func TestSearchBooks_SpecialCharacterEscaping(t *testing.T) {
 	_, err = d.CreateBook(t.Context(), BookInput{Title: "Something Else"})
 	require.NoError(t, err, "CreateBook(Something Else)")
 
-	// Searching for "%" as a literal character should find exactly one book.
+	// "%" contains no letter or digit so it produces an empty FTS5 query;
+	// the search returns no results rather than matching everything.
 	books, total, err := d.SearchBooks(t.Context(), "%", 10, 0)
 	require.NoError(t, err, "SearchBooks(%%) error")
+	require.Equal(t, 0, total)
+	require.Len(t, books, 0)
+
+	// Searching for the word that appears in the title still works.
+	books, total, err = d.SearchBooks(t.Context(), "Pure", 10, 0)
+	require.NoError(t, err, "SearchBooks(Pure) error")
 	require.Equal(t, 1, total)
 	require.Len(t, books, 1)
 	require.Equal(t, "100% Pure Fiction", books[0].Title)
@@ -110,9 +117,16 @@ func TestSearchBooks_BackslashEscaping(t *testing.T) {
 	_, err = d.CreateBook(t.Context(), BookInput{Title: "BackXslash"})
 	require.NoError(t, err, "CreateBook(BackXslash)")
 
+	// "\" contains no letter or digit so it produces an empty FTS5 query;
+	// the search returns no results.
 	books, _, err := d.SearchBooks(t.Context(), `\`, 10, 0)
 	require.NoError(t, err, "SearchBooks(backslash) error")
-	require.Len(t, books, 1)
+	require.Len(t, books, 0)
+
+	// Searching for a real word token from the title still works.
+	books, _, err = d.SearchBooks(t.Context(), "Back", 10, 0)
+	require.NoError(t, err, "SearchBooks(Back) error")
+	require.Len(t, books, 2)
 }
 
 func TestSearchBooks_Paginated(t *testing.T) {
@@ -145,5 +159,149 @@ func TestSearchBooks_OffsetBeyondTotal(t *testing.T) {
 	books, total, err := d.SearchBooks(t.Context(), "Searchable", 10, 50)
 	require.NoError(t, err, "SearchBooks(offset=50) error")
 	require.Equal(t, 1, total)
+	require.Len(t, books, 0)
+}
+
+func TestSearchBooks_PrefixMatch(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Foundation"})
+	require.NoError(t, err, "CreateBook(Foundation)")
+
+	_, err = d.CreateBook(t.Context(), BookInput{Title: "Foundation and Empire"})
+	require.NoError(t, err, "CreateBook(Foundation and Empire)")
+
+	_, err = d.CreateBook(t.Context(), BookInput{Title: "Dune"})
+	require.NoError(t, err, "CreateBook(Dune)")
+
+	// Partial-word prefix query should match both Foundation books.
+	books, total, err := d.SearchBooks(t.Context(), "Founda", 10, 0)
+	require.NoError(t, err, "SearchBooks(Founda) error")
+	require.Equal(t, 2, total)
+	require.Len(t, books, 2)
+}
+
+func TestSearchBooks_FTS5OperatorCharsDoNotError(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Foundation"})
+	require.NoError(t, err, "CreateBook(Foundation)")
+
+	// FTS5 operator characters passed raw by the user must not cause errors.
+	// Each of these sanitizes to a phrase-quoted form containing "Foundation",
+	// so they should find the book.
+	for _, q := range []string{`"Foundation"`, "Foundation*", "Foundation-", "-Foundation"} {
+		books, total, err := d.SearchBooks(t.Context(), q, 10, 0)
+		require.NoError(t, err, "SearchBooks(%q) must not error", q)
+		require.Equal(t, 1, total, "SearchBooks(%q) should find 1 book", q)
+		require.Len(t, books, 1, "SearchBooks(%q) should return 1 book", q)
+		require.Equal(t, "Foundation", books[0].Title, "SearchBooks(%q) book title", q)
+	}
+
+	// Multi-word query: "Foundation AND Dune" sanitizes to three required tokens
+	// ("Foundation"*, "AND"*, "Dune"*). A book with only "Foundation" in the
+	// title won't match all three, but the query must still not error.
+	_, _, err = d.SearchBooks(t.Context(), "Foundation AND Dune", 10, 0)
+	require.NoError(t, err, `SearchBooks("Foundation AND Dune") must not error`)
+}
+
+func TestSearchBooks_EmptyAfterSanitize(t *testing.T) {
+	d := newTestDB(t)
+
+	_, err := d.CreateBook(t.Context(), BookInput{Title: "Foundation"})
+	require.NoError(t, err, "CreateBook(Foundation)")
+
+	// Queries composed entirely of non-word characters produce an empty FTS5
+	// expression; SearchBooks must return zero results without erroring.
+	for _, q := range []string{"%", `\`, "*", "-", "---", "% * -"} {
+		books, total, err := d.SearchBooks(t.Context(), q, 10, 0)
+		require.NoError(t, err, "SearchBooks(%q) must not error", q)
+		require.Equal(t, 0, total, "SearchBooks(%q) total", q)
+		require.Len(t, books, 0, "SearchBooks(%q) books", q)
+	}
+}
+
+// ---- FTS trigger sync tests ----
+
+func TestSearchBooks_UpdateTitleSyncsIndex(t *testing.T) {
+	d := newTestDB(t)
+
+	b, err := d.CreateBook(t.Context(), BookInput{Title: "Original Title"})
+	require.NoError(t, err, "CreateBook()")
+
+	// Verify the original title is searchable.
+	books, total, err := d.SearchBooks(t.Context(), "Original", 10, 0)
+	require.NoError(t, err, "SearchBooks(Original) error")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+
+	// Update the title.
+	_, err = d.UpdateBook(t.Context(), b.ID, BookInput{Title: "Updated Title"})
+	require.NoError(t, err, "UpdateBook()")
+
+	// Old title should no longer match.
+	books, total, err = d.SearchBooks(t.Context(), "Original", 10, 0)
+	require.NoError(t, err, "SearchBooks(Original) after update error")
+	require.Equal(t, 0, total)
+	require.Len(t, books, 0)
+
+	// New title should match.
+	books, total, err = d.SearchBooks(t.Context(), "Updated", 10, 0)
+	require.NoError(t, err, "SearchBooks(Updated) error")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+}
+
+func TestSearchBooks_UpdateDescriptionSyncsIndex(t *testing.T) {
+	d := newTestDB(t)
+
+	oldDesc := "desert planet adventure"
+	b, err := d.CreateBook(t.Context(), BookInput{Title: "Dune", Description: &oldDesc})
+	require.NoError(t, err, "CreateBook()")
+
+	// Verify the original description is searchable.
+	books, total, err := d.SearchBooks(t.Context(), "desert", 10, 0)
+	require.NoError(t, err, "SearchBooks(desert) error")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+
+	// Update the description.
+	newDesc := "galactic empire saga"
+	_, err = d.UpdateBook(t.Context(), b.ID, BookInput{Title: "Dune", Description: &newDesc})
+	require.NoError(t, err, "UpdateBook()")
+
+	// Old description terms should no longer match.
+	books, total, err = d.SearchBooks(t.Context(), "desert", 10, 0)
+	require.NoError(t, err, "SearchBooks(desert) after update error")
+	require.Equal(t, 0, total)
+	require.Len(t, books, 0)
+
+	// New description terms should match.
+	books, total, err = d.SearchBooks(t.Context(), "galactic", 10, 0)
+	require.NoError(t, err, "SearchBooks(galactic) error")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+}
+
+func TestSearchBooks_DeleteRemovesFromIndex(t *testing.T) {
+	d := newTestDB(t)
+
+	b, err := d.CreateBook(t.Context(), BookInput{Title: "Ephemeral Book"})
+	require.NoError(t, err, "CreateBook()")
+
+	// Verify the book is searchable.
+	books, total, err := d.SearchBooks(t.Context(), "Ephemeral", 10, 0)
+	require.NoError(t, err, "SearchBooks(Ephemeral) error")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+
+	// Delete the book.
+	err = d.DeleteBook(t.Context(), b.ID)
+	require.NoError(t, err, "DeleteBook()")
+
+	// Deleted book should no longer appear in search results.
+	books, total, err = d.SearchBooks(t.Context(), "Ephemeral", 10, 0)
+	require.NoError(t, err, "SearchBooks(Ephemeral) after delete error")
+	require.Equal(t, 0, total)
 	require.Len(t, books, 0)
 }
