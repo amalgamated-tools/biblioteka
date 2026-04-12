@@ -44,7 +44,7 @@ steps:
   - name: Set up Node.js
     uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
     with:
-      node-version: "20"
+      node-version: "22"
 
   - name: Install pnpm
     uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
