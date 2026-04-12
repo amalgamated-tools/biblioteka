@@ -88,10 +88,7 @@
     return Array.from(
       dialogEl.querySelectorAll<HTMLElement>(focusableSelector),
     ).filter(
-      (el) =>
-        !el.closest('[aria-hidden="true"]') &&
-        !el.closest("[hidden]") &&
-        el.offsetParent !== null,
+      (el) => !el.closest('[aria-hidden="true"]') && !el.closest("[hidden]"),
     );
   }
 
@@ -109,7 +106,10 @@
       const last = focusable[focusable.length - 1];
 
       if (e.shiftKey) {
-        if (document.activeElement === first || document.activeElement === dialogEl) {
+        if (
+          document.activeElement === first ||
+          document.activeElement === dialogEl
+        ) {
           e.preventDefault();
           last.focus();
         }
