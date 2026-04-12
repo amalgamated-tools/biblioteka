@@ -106,15 +106,21 @@ The code of the application has been checked out to the current working director
 
 Steps:
 
+0. Read the markdown corresponding to the workflow file under `.github/workflows/daily-accessibility-review.md`. 
+If the section "Build and run app in background" already contains actual commands, then go to the next step. If it 
+still contains a placeholder, then:  
+   a. Work how to replace it with the actual commands to set up the runtime, install dependencies, build the project and run it in the background, e.g., using `&` at the end of the command.
+   b. Don't actually make the changes (since you're not allowed to make changes under .github/workflows), but rather create a discussion showing the exact changes that are needed to the workflow file. Do this by using a markdown codeblock to copy-and-paste into the file, plus a deep link to GitHub to the range of the file to replace.
+   c. In the discussion body mention that the user must (1) make these changes manually and (2) then run "gh aw compile" to compile the workflow file using GitHub Agentic Workflows (https://github.com/github/gh-aw).
+   d. Also instruct them to remove this section from the markdown. 
+   e. Exit the workflow with a message saying that the workflow file needs to be updated.
+
 1. Use the Playwright MCP tool to browse to `localhost:3000`. Review the website for accessibility problems by navigating around, clicking
   links, pressing keys, taking snapshots and/or screenshots to review, etc. using the appropriate Playwright MCP commands.
 
 2. Review the source code of the application to look for accessibility issues in the code.  Use the Grep, LS, Read, etc. tools.
 
-3. Use the GitHub MCP tool to create issues for any accessibility problems you find.  Each issue should include:
+3. Use the GitHub MCP tool to create discussions for any accessibility problems you find.  Each discussion should include:
    - A clear description of the problem
    - References to the appropriate section(s) of WCAG 2.2 that are violated
    - Any relevant code snippets that illustrate the issue
-   - Recommendations for how to fix the issue, if possible
-   - Screenshots or snapshots that illustrate the issue, if possible
-   - A notice that the PR should include a reference to the issue number, e.g., "Fixes #123"
