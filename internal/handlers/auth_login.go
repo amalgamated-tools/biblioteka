@@ -3,13 +3,26 @@ package handlers
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// dummyLoginBcryptHash is a pre-computed bcrypt hash used for timing-safe
+// comparisons when a user is not found or has no password hash (OIDC-only).
+// This prevents attackers from distinguishing these cases via response time.
+var dummyLoginBcryptHash = func() []byte {
+	hash, err := bcrypt.GenerateFromPassword([]byte("dummy-login-password"), auth.BcryptCost)
+	if err != nil {
+		panic(fmt.Errorf("generate dummy login bcrypt hash: %w", err))
+	}
+	return hash
+}()
 
 // Login authenticates a user with email and password, returning a signed JWT and setting an auth cookie on success.
 //
@@ -47,6 +60,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			slog.DebugContext(r.Context(), "login failed: user not found", slog.String(otelkeys.Email, redactEmail(req.Email)))
+			_ = bcrypt.CompareHashAndPassword(dummyLoginBcryptHash, []byte(req.Password))
 			writeError(r.Context(), w, http.StatusUnauthorized, "invalid email or password")
 			return
 		}
@@ -60,7 +74,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if user.PasswordHash == "" {
 		slog.DebugContext(r.Context(), "login failed: OIDC-only account", slog.String(otelkeys.Email, redactEmail(req.Email)))
-		writeError(r.Context(), w, http.StatusUnauthorized, "this account uses OIDC login")
+		_ = bcrypt.CompareHashAndPassword(dummyLoginBcryptHash, []byte(req.Password))
+		writeError(r.Context(), w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
 
