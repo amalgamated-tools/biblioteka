@@ -265,4 +265,14 @@ func TestThemeBootstrapScriptCSPHash_MatchesIndexHTML(t *testing.T) {
 
 	require.Equal(t, want, themeBootstrapScriptCSPHash,
 		"themeBootstrapScriptCSPHash is stale — regenerate with the command in security_headers.go")
+	require.Contains(t, globalCSP, themeBootstrapScriptCSPHash,
+		"globalCSP must include themeBootstrapScriptCSPHash in script-src")
+
+	scriptSrcRe := regexp.MustCompile(`(?:^|;\s*)script-src\s+([^;]+)`)
+	scriptSrcMatch := scriptSrcRe.FindStringSubmatch(globalCSP)
+	require.Len(t, scriptSrcMatch, 2, "globalCSP must define a script-src directive")
+	require.Contains(t, scriptSrcMatch[1], themeBootstrapScriptCSPHash,
+		"script-src must include themeBootstrapScriptCSPHash")
+	require.NotContains(t, scriptSrcMatch[1], "'unsafe-inline'",
+		"script-src must not allow 'unsafe-inline'")
 }
