@@ -37,7 +37,7 @@ func (h *KoboHandler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeKoboJSON(w, http.StatusOK, map[string]any{
+	writeKoboJSON(r.Context(), w, http.StatusOK, map[string]any{
 		"AccessToken":  accessToken,
 		"RefreshToken": refreshToken,
 		"TokenType":    "Bearer",
