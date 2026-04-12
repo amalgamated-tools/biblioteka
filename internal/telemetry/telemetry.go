@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
+	"github.com/amalgamated-tools/biblioteka/internal/timeutil"
 	"github.com/google/uuid"
 )
 
@@ -99,7 +100,7 @@ func SendBoot(ctx context.Context, version string) {
 		Version:     version,
 		OS:          runtime.GOOS,
 		Arch:        runtime.GOARCH,
-		Timestamp:   time.Now().UTC().Format(time.RFC3339),
+		Timestamp:   timeutil.NowRFC3339(),
 	}
 
 	body, err := json.Marshal(payload)
