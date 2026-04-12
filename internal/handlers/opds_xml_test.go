@@ -154,7 +154,7 @@ func TestWriteOPDSError(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/opds/all", nil)
 	w := httptest.NewRecorder()
 
-	writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, "urn:biblioteka:opds:error", "Something went wrong")
+	writeOPDSError(r, w, http.StatusInternalServerError, opdspkg.AcqContentType, opdspkg.ErrorID, "Something went wrong")
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 	ct := w.Header().Get("Content-Type")
@@ -166,7 +166,7 @@ func TestWriteOPDSError(t *testing.T) {
 	// Must be a valid feed with the provided title
 	feed := parseOPDSFeed(t, w.Body.Bytes())
 	require.Equal(t, "Something went wrong", feed.Title)
-	require.Equal(t, "urn:biblioteka:opds:error", feed.ID)
+	require.Equal(t, opdspkg.ErrorID, feed.ID)
 }
 
 func TestWriteOPDSError_NavContentType(t *testing.T) {
