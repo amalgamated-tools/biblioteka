@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
+	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
 // KoboHandler handles Kobo sync device API endpoints and Kobo token management.
@@ -44,32 +47,34 @@ func (h *KoboHandler) handleLibraryRoute(w http.ResponseWriter, r *http.Request)
 	case strings.HasSuffix(r.URL.Path, "/state"):
 		h.HandleBookState(w, r)
 	default:
-		writeKoboJSON(w, http.StatusOK, map[string]any{})
+		writeKoboJSON(r.Context(), w, http.StatusOK, map[string]any{})
 	}
 }
 
-func (h *KoboHandler) handleLoyaltyBenefits(w http.ResponseWriter, _ *http.Request) {
-	writeKoboJSON(w, http.StatusOK, map[string]any{"Benefits": map[string]any{}})
+func (h *KoboHandler) handleLoyaltyBenefits(w http.ResponseWriter, r *http.Request) {
+	writeKoboJSON(r.Context(), w, http.StatusOK, map[string]any{"Benefits": map[string]any{}})
 }
 
 func (h *KoboHandler) handleAnalyticsGetTests(w http.ResponseWriter, r *http.Request) {
 	userKey := r.Header.Get("X-Kobo-userkey")
-	writeKoboJSON(w, http.StatusOK, map[string]any{
+	writeKoboJSON(r.Context(), w, http.StatusOK, map[string]any{
 		"Result":  "Success",
 		"TestKey": userKey,
 		"Tests":   map[string]any{},
 	})
 }
 
-func (h *KoboHandler) handleDefault(w http.ResponseWriter, _ *http.Request) {
-	writeKoboJSON(w, http.StatusOK, map[string]any{})
+func (h *KoboHandler) handleDefault(w http.ResponseWriter, r *http.Request) {
+	writeKoboJSON(r.Context(), w, http.StatusOK, map[string]any{})
 }
 
 // writeKoboJSON writes a JSON response with the content type expected by Kobo devices.
-func writeKoboJSON(w http.ResponseWriter, status int, data any) {
+func writeKoboJSON(ctx context.Context, w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		slog.ErrorContext(ctx, "failed to encode Kobo JSON response", slog.Any(otelkeys.Error, err))
+	}
 }
 
 // schemeAndHost returns the scheme and host for building absolute URLs.

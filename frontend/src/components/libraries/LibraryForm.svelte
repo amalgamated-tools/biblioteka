@@ -180,6 +180,11 @@
   {/if}
 
   <form onsubmit={handleSubmit} class="space-y-5">
+    <p class="text-xs text-ink-500 dark:text-ink-300">
+      Fields marked with <span aria-hidden="true">*</span><span class="sr-only"
+        >an asterisk</span
+      > are required.
+    </p>
     <div>
       <label
         for="lib-name"
@@ -246,8 +251,9 @@
                   formPaths = formPaths.filter((_, idx) => idx !== i);
                 }}
                 class="p-2 text-ink-400 hover:text-danger-600 transition-colors"
-                title="Remove folder"
-                aria-label="Remove folder"
+                aria-label={entry.value
+                  ? `Remove folder "${entry.value}"`
+                  : `Remove folder ${i + 1}`}
                 disabled={saving}
               >
                 <X class="w-4 h-4" aria-hidden="true" />
