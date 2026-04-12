@@ -220,3 +220,88 @@ func TestSearchBooks_EmptyAfterSanitize(t *testing.T) {
 		require.Len(t, books, 0, "SearchBooks(%q) books", q)
 	}
 }
+
+// ---- FTS trigger sync tests ----
+
+func TestSearchBooks_UpdateTitleSyncsIndex(t *testing.T) {
+	d := newTestDB(t)
+
+	b, err := d.CreateBook(t.Context(), BookInput{Title: "Original Title"})
+	require.NoError(t, err, "CreateBook()")
+
+	// Verify the original title is searchable.
+	books, total, err := d.SearchBooks(t.Context(), "Original", 10, 0)
+	require.NoError(t, err, "SearchBooks(Original) error")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+
+	// Update the title.
+	_, err = d.UpdateBook(t.Context(), b.ID, BookInput{Title: "Updated Title"})
+	require.NoError(t, err, "UpdateBook()")
+
+	// Old title should no longer match.
+	books, total, err = d.SearchBooks(t.Context(), "Original", 10, 0)
+	require.NoError(t, err, "SearchBooks(Original) after update error")
+	require.Equal(t, 0, total)
+	require.Len(t, books, 0)
+
+	// New title should match.
+	books, total, err = d.SearchBooks(t.Context(), "Updated", 10, 0)
+	require.NoError(t, err, "SearchBooks(Updated) error")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+}
+
+func TestSearchBooks_UpdateDescriptionSyncsIndex(t *testing.T) {
+	d := newTestDB(t)
+
+	oldDesc := "desert planet adventure"
+	b, err := d.CreateBook(t.Context(), BookInput{Title: "Dune", Description: &oldDesc})
+	require.NoError(t, err, "CreateBook()")
+
+	// Verify the original description is searchable.
+	books, total, err := d.SearchBooks(t.Context(), "desert", 10, 0)
+	require.NoError(t, err, "SearchBooks(desert) error")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+
+	// Update the description.
+	newDesc := "galactic empire saga"
+	_, err = d.UpdateBook(t.Context(), b.ID, BookInput{Title: "Dune", Description: &newDesc})
+	require.NoError(t, err, "UpdateBook()")
+
+	// Old description terms should no longer match.
+	books, total, err = d.SearchBooks(t.Context(), "desert", 10, 0)
+	require.NoError(t, err, "SearchBooks(desert) after update error")
+	require.Equal(t, 0, total)
+	require.Len(t, books, 0)
+
+	// New description terms should match.
+	books, total, err = d.SearchBooks(t.Context(), "galactic", 10, 0)
+	require.NoError(t, err, "SearchBooks(galactic) error")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+}
+
+func TestSearchBooks_DeleteRemovesFromIndex(t *testing.T) {
+	d := newTestDB(t)
+
+	b, err := d.CreateBook(t.Context(), BookInput{Title: "Ephemeral Book"})
+	require.NoError(t, err, "CreateBook()")
+
+	// Verify the book is searchable.
+	books, total, err := d.SearchBooks(t.Context(), "Ephemeral", 10, 0)
+	require.NoError(t, err, "SearchBooks(Ephemeral) error")
+	require.Equal(t, 1, total)
+	require.Len(t, books, 1)
+
+	// Delete the book.
+	err = d.DeleteBook(t.Context(), b.ID)
+	require.NoError(t, err, "DeleteBook()")
+
+	// Deleted book should no longer appear in search results.
+	books, total, err = d.SearchBooks(t.Context(), "Ephemeral", 10, 0)
+	require.NoError(t, err, "SearchBooks(Ephemeral) after delete error")
+	require.Equal(t, 0, total)
+	require.Len(t, books, 0)
+}
