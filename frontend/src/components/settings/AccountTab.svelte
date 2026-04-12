@@ -7,6 +7,7 @@
   } from "../../lib/api";
   import { required, minLength, matches, validate } from "../../lib/validation";
   import { AutoDismissTimer } from "../../lib/autoDismissTimer.svelte";
+  import { onDestroy } from "svelte";
   import { Lock, Mail, Link, User } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -38,11 +39,9 @@
     }
   });
 
-  $effect(() => {
-    return () => {
-      successTimer.clear();
-      nameSuccessTimer.clear();
-    };
+  onDestroy(() => {
+    successTimer.clear();
+    nameSuccessTimer.clear();
   });
 
   async function handleLinkSso() {
