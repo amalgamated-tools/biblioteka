@@ -333,7 +333,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         name: Fetch issues data
-        run: "# Create output directory\nmkdir -p /tmp/gh-aw/issues-data\n\necho \"⬇ Downloading the last 100 open issues (excluding sub-issues)...\"\n\n# Fetch the last 100 open issues that don't have a parent issue\ngh issue list --repo ${{ github.repository }} \\\n  --search \"-parent-issue:*\" \\\n  --state open \\\n  --json number,title,author,createdAt,state,url,body,labels,updatedAt,closedAt,milestone,assignees \\\n  --limit 100 \\\n  > /tmp/gh-aw/issues-data/issues.json\n\necho \"✓ Issues data saved to /tmp/gh-aw/issues-data/issues.json\"\necho \"Total issues fetched: $(jq 'length' /tmp/gh-aw/issues-data/issues.json)\"\n"
+        run: "# Create output directory\nmkdir -p /tmp/gh-aw/issues-data\n\necho \"⬇ Downloading the last 100 open issues...\"\n\n# Fetch the last 100 open issues\ngh issue list --repo ${{ github.repository }} \\\n  --state open \\\n  --json number,title,author,createdAt,state,url,body,labels,updatedAt,closedAt,milestone,assignees \\\n  --limit 100 \\\n  > /tmp/gh-aw/issues-data/issues.json\n\necho \"✓ Issues data saved to /tmp/gh-aw/issues-data/issues.json\"\necho \"Total issues fetched: $(jq 'length' /tmp/gh-aw/issues-data/issues.json)\"\n"
 
       - name: Configure Git credentials
         env:
