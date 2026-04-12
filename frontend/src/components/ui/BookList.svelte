@@ -304,7 +304,7 @@
               }}
               tabindex="0"
               aria-label={`View ${book.title}`}
-              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer focus:ring-2 focus:ring-inset focus:ring-accent-500 focus:outline-none"
+              class="border-b border-ink-50 dark:border-ink-800/50 hover:bg-ink-50 dark:hover:bg-ink-800/30 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500 focus-visible:outline-none"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
