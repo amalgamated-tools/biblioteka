@@ -375,3 +375,69 @@ func TestNewServer_WithDB(t *testing.T) {
 
 	require.Equal(t, d, s.DB)
 }
+
+// ---------------------------------------------------------------------------
+// Route registration smoke tests
+// ---------------------------------------------------------------------------
+
+// newTestServer creates a full Server via NewServer with a test DB and returns
+// an httptest.Server backed by the server's mux.
+func newTestServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	d := newTestDB(t)
+	s, err := NewServer(t.Context(), WithDB(d))
+	require.NoError(t, err, "NewServer")
+	ts := httptest.NewServer(s.mux)
+	t.Cleanup(ts.Close)
+	return ts
+}
+
+// TestRoutes_PublicEndpoints verifies that public (unauthenticated) system
+// endpoints are reachable and return 200 OK.
+func TestRoutes_PublicEndpoints(t *testing.T) {
+	ts := newTestServer(t)
+
+	routes := []string{
+		"/api/health",
+		"/api/version",
+		"/api/auth/signup/enabled",
+		"/api/auth/oidc/enabled",
+	}
+
+	for _, path := range routes {
+		t.Run(path, func(t *testing.T) {
+			resp, err := ts.Client().Get(ts.URL + path)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			require.Equal(t, http.StatusOK, resp.StatusCode, "expected 200 for %s", path)
+		})
+	}
+}
+
+// TestRoutes_ProtectedEndpoints verifies that auth-protected API routes
+// return 401 Unauthorized when no credentials are supplied.
+func TestRoutes_ProtectedEndpoints(t *testing.T) {
+	ts := newTestServer(t)
+
+	routes := []string{
+		"/api/books",
+		"/api/authors",
+		"/api/series",
+		"/api/libraries",
+		"/api/book-files/someID",
+		"/api/audit-logs",
+		"/api/api-keys",
+		"/api/admin/users",
+		"/api/config/status",
+		"/api/auth/me",
+	}
+
+	for _, path := range routes {
+		t.Run(path, func(t *testing.T) {
+			resp, err := ts.Client().Get(ts.URL + path)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			require.Equal(t, http.StatusUnauthorized, resp.StatusCode, "expected 401 for %s", path)
+		})
+	}
+}
