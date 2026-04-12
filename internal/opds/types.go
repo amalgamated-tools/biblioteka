@@ -23,6 +23,10 @@ const (
 // PageSize is the default number of entries per OPDS page.
 const PageSize = 50
 
+// ErrorID is the OPDS feed ID used for error responses. It is a stable URN
+// that OPDS clients can use to identify error feeds from this server.
+const ErrorID = "urn:biblioteka:opds:error"
+
 // Link relation constants used in OPDS feeds.
 const (
 	RelSelf        = "self"
