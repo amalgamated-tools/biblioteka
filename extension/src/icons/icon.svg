@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Book spine -->
+  <rect x="20" y="16" width="88" height="96" rx="6" fill="#6366f1"/>
+  <!-- Pages -->
+  <rect x="30" y="24" width="72" height="80" rx="4" fill="#ffffff" fill-opacity="0.95"/>
+  <!-- Lines representing text -->
+  <rect x="40" y="38" width="48" height="5" rx="2.5" fill="#6366f1" fill-opacity="0.4"/>
+  <rect x="40" y="51" width="48" height="5" rx="2.5" fill="#6366f1" fill-opacity="0.4"/>
+  <rect x="40" y="64" width="36" height="5" rx="2.5" fill="#6366f1" fill-opacity="0.4"/>
+  <!-- Down arrow indicating "save" -->
+  <path d="M64 74 L54 86 L74 86 Z" fill="#6366f1"/>
+  <rect x="61" y="64" width="6" height="14" rx="3" fill="#6366f1"/>
+</svg>

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
@@ -86,6 +87,7 @@ type Server struct {
 	requireOPDSAuth       func(http.Handler) http.Handler
 	requireKoboAuth       func(http.Handler) http.Handler
 	requireKOSyncAuth     func(http.Handler) http.Handler
+	corsAllowedOrigins    []string
 	authLimiter           *auth.RateLimiter
 	secureCookies         bool
 	mux                   *http.ServeMux
@@ -173,6 +175,17 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 
 	// Disable signup if DISABLE_SIGNUP=true; signup is enabled by default.
 	disableSignup := os.Getenv("DISABLE_SIGNUP") == "true"
+
+	// Read CORS_ALLOWED_ORIGINS if not already set via WithCORSAllowedOrigins.
+	if len(s.corsAllowedOrigins) == 0 {
+		if raw := os.Getenv("CORS_ALLOWED_ORIGINS"); raw != "" {
+			for _, o := range strings.Split(raw, ",") {
+				if o = strings.TrimSpace(o); o != "" {
+					s.corsAllowedOrigins = append(s.corsAllowedOrigins, o)
+				}
+			}
+		}
+	}
 
 	s.authHandler = &handlers.AuthHandler{DB: s.DB, JWT: s.JWT, SecureCookies: secureCookies, DisableSignup: disableSignup}
 	s.adminHandler = &handlers.AdminHandler{DB: s.DB}

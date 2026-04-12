@@ -1,4 +1,4 @@
-.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt docs-serve lint-errorf
+.PHONY: all build frontend backend clean dev redis-check screenshots kill-dev swagger swagger-fmt docs-serve lint-errorf build-extension
 
 # Tooling commands
 SWAG_CMD = go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5
@@ -155,3 +155,7 @@ docs-serve:
 db-dump: clean
 	go run cmd/cli/main.go db-migrate
 	dbmate -u "sqlite:db/biblioteka.db" -d "db/migrations/sqlite" dump
+
+# Build the browser extension into extension/dist/
+build-extension:
+	cd extension && pnpm install && pnpm run build
