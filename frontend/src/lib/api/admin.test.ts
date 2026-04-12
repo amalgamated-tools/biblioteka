@@ -9,9 +9,7 @@ import {
 } from "vitest";
 import { listUsers, setUserAdmin, getAuditLogs, clearToken } from "../api";
 import type { AdminUser, PaginatedAuditLogs } from "../../types";
-import {
-  mockFetchResponse as _mockFetchResponse,
-} from "./testUtils";
+import { mockFetchResponse as _mockFetchResponse } from "./testUtils";
 
 let fetchMock: Mock;
 
