@@ -1,5 +1,5 @@
 import type { User } from "../../types";
-import { request, setToken } from "./core";
+import { clearToken, request, setToken } from "./core";
 
 interface AuthResponse {
   token: string;
@@ -41,6 +41,8 @@ export async function logout(): Promise<void> {
     await request<{ message: string }>("POST", "/api/auth/logout");
   } catch {
     // Best-effort; cookie may already be cleared or expired.
+  } finally {
+    clearToken();
   }
 }
 
