@@ -1,0 +1,179 @@
+/* popup.css — Minimal styling for the browser extension popup */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  width: 340px;
+  min-height: 120px;
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.logo {
+  width: 28px;
+  height: 28px;
+}
+
+h1 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+main {
+  padding: 14px;
+}
+
+/* ---- Capture view ---- */
+.capture-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.current-url {
+  font-size: 12px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  display: block;
+  margin-bottom: 3px;
+}
+
+select,
+input[type="text"] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  font-size: 13px;
+  color: #111827;
+  background: #fff;
+  outline: none;
+}
+
+select:focus,
+input[type="text"]:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 8px 12px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover {
+  background: #4f46e5;
+}
+
+.btn-primary:disabled {
+  background: #a5b4fc;
+  cursor: not-allowed;
+}
+
+/* ---- Settings view ---- */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.btn-secondary {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #374151;
+  margin-top: 4px;
+}
+
+.btn-secondary:hover {
+  background: #f3f4f6;
+}
+
+/* ---- Status messages ---- */
+.status {
+  padding: 8px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.status.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status.loading {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.settings-link {
+  margin-top: 8px;
+  text-align: right;
+}
+
+.settings-link button {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #6b7280;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.settings-link button:hover {
+  color: #374151;
+}

@@ -29,6 +29,17 @@ func WithWorker(w *worker.Worker) ServerOption {
 	}
 }
 
+// WithCORSAllowedOrigins configures the list of origins that are permitted to
+// make cross-origin requests to the book upload and capture endpoints (e.g.
+// browser extension origins such as "moz-extension://abc123"). When the slice
+// is empty (the default) no CORS headers are emitted and all cross-origin
+// browser requests remain blocked.
+func WithCORSAllowedOrigins(origins []string) ServerOption {
+	return func(s *Server) {
+		s.corsAllowedOrigins = origins
+	}
+}
+
 // WithVersion sets the application version string returned by the /api/version
 // endpoint.
 func WithVersion(version string) ServerOption {

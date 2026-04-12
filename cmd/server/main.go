@@ -104,6 +104,7 @@ func realMain(cancelCtx context.Context) error { //nolint:contextcheck // The ne
 		w.Register(cancelCtx, jobs.JobProcessFile, jobs.NewProcessFileHandler(database, extractor, w))
 		w.Register(cancelCtx, jobs.JobScanLibrary, jobs.NewScanLibraryHandler(w))
 		w.Register(cancelCtx, jobs.JobScanLibraries, jobs.NewScanLibrariesHandler(database, w))
+		w.Register(cancelCtx, jobs.JobCaptureURL, jobs.NewCaptureURLHandler(database, w))
 
 		w.Register(cancelCtx, jobs.JobScanWatchFolder, jobs.NewScanWatchFolderHandler(database, w))
 

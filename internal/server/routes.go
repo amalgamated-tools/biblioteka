@@ -17,6 +17,10 @@ import (
 )
 
 func (s *Server) setupRoutes(ctx context.Context) {
+	// CORS middleware applied to browser-accessible endpoints (upload and capture).
+	// When CORS_ALLOWED_ORIGINS is empty this is a no-op.
+	corsMW := corsMiddleware(s.corsAllowedOrigins)
+
 	// Public auth routes (rate-limited)
 	s.mux.HandleFunc("/api/auth/signup", s.authLimiter.Limit(s.authHandler.Signup))
 	s.mux.HandleFunc("/api/auth/login", s.authLimiter.Limit(s.authHandler.Login))
@@ -60,7 +64,8 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/series/", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeries)))
 
 	// Protected book routes
-	s.mux.Handle("/api/books/upload", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleUpload)))
+	s.mux.Handle("/api/books/upload", s.requireAuth(corsMW(http.HandlerFunc(s.bookHandler.HandleUpload))))
+	s.mux.Handle("/api/books/capture", s.requireAuth(corsMW(http.HandlerFunc(s.bookHandler.HandleCapture))))
 	s.mux.Handle("/api/books", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBooks)))
 	s.mux.Handle("/api/books/", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBookRoutes)))
 

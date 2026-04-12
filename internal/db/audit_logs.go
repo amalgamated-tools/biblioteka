@@ -16,6 +16,7 @@ const (
 	AuditActionAuthorCreated           = "author.created"
 	AuditActionAuthorDeleted           = "author.deleted"
 	AuditActionAuthorUpdated           = "author.updated"
+	AuditActionBookCaptured            = "book.captured"
 	AuditActionBookCreated             = "book.created"
 	AuditActionBookDeleted             = "book.deleted"
 	AuditActionBookFileCreated         = "book_file.created"
