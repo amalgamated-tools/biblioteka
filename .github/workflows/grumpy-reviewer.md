@@ -5,8 +5,9 @@ on:
   slash_command:
     name: grumpy
     events: [pull_request_comment, pull_request_review_comment]
+  reaction: "eyes"
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-pr-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
+  group: "gh-aw-gr-${{ github.workflow }}-pr-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
   cancel-in-progress: true
 permissions:
   contents: read
