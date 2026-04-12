@@ -134,11 +134,14 @@
       es.onerror = () => {
         // Guard against stale errors from a replaced EventSource.
         if (eventSource !== es) return;
+        const capturedBookId = bookId;
         closeSSE();
         fetchingMetadata = false;
         // If we got an error before any complete event, try loading metadata
         // in case the job finished before SSE connected.
-        loadPendingMetadata().then(() => {
+        loadPendingMetadata(capturedBookId).then(() => {
+          // Bail if bookId changed while the request was in-flight.
+          if (bookId !== capturedBookId) return;
           if (!metadata) {
             metadataError =
               "Metadata stream closed unexpectedly. Please try again.";
@@ -173,11 +176,18 @@
     }
   }
 
-  async function loadPendingMetadata() {
+  async function loadPendingMetadata(forBookId?: string) {
+    const targetBookId = forBookId ?? bookId;
     try {
-      metadata = await api.getMetadata(bookId);
+      const result = await api.getMetadata(targetBookId);
+      // Only update state if bookId hasn't changed while the request was in-flight.
+      if (bookId === targetBookId) {
+        metadata = result;
+      }
     } catch {
-      metadata = null;
+      if (bookId === targetBookId) {
+        metadata = null;
+      }
     }
   }
 </script>
