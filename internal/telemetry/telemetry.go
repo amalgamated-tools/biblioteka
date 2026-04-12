@@ -43,6 +43,11 @@ const (
 	DefaultTelemetryEndpoint = "https://telemetry-worker.amalgamated-tools.workers.dev"
 )
 
+// nowRFC3339 returns the current UTC time formatted as RFC 3339.
+func nowRFC3339() string {
+	return time.Now().UTC().Format(time.RFC3339)
+}
+
 // SendBoot fires a single telemetry ping if TELEMETRY_ENABLED=true. It is
 // called once during server startup and may block the application boot path
 // while the request is performed. The request times out after 3 seconds.
@@ -99,7 +104,7 @@ func SendBoot(ctx context.Context, version string) {
 		Version:     version,
 		OS:          runtime.GOOS,
 		Arch:        runtime.GOARCH,
-		Timestamp:   time.Now().UTC().Format(time.RFC3339),
+		Timestamp:   nowRFC3339(),
 	}
 
 	body, err := json.Marshal(payload)
