@@ -13,15 +13,14 @@
 
   let { bookId, onClose }: Props = $props();
 
+  let book: Book | null = $state(null);
+  let loadError: string | null = $state(null);
+  let loading = $state(true);
   let dialogEl: HTMLDivElement | null = $state(null);
 
   onMount(() => {
     dialogEl?.focus();
   });
-
-  let book: Book | null = $state(null);
-  let loadError: string | null = $state(null);
-  let loading = $state(true);
 
   let selectedFileId: string = $state("");
   let toAddress: string = $state("");
