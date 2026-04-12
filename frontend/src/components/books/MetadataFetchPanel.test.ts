@@ -35,6 +35,7 @@ vi.mock("../../lib/api/core", () => ({
 }));
 
 import MetadataFetchPanel from "./MetadataFetchPanel.svelte";
+import { ApiError } from "../../lib/api/core";
 
 function makeFields(overrides: Partial<FormFields> = {}): FormFields {
   return {
@@ -85,12 +86,6 @@ function createMockEventSource() {
 }
 
 function renderPanel(overrides: Record<string, unknown> = {}) {
-  // Default: getMetadata returns 404 (no pending metadata)
-  if (!mockGetMetadata.getMockImplementation()) {
-    mockGetMetadata.mockRejectedValue(
-      Object.assign(new Error("Not Found"), { status: 404 }),
-    );
-  }
   return render(MetadataFetchPanel, {
     bookId: "b1",
     saving: false,
@@ -104,6 +99,8 @@ describe("MetadataFetchPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    // Default: getMetadata returns 404 (no pending metadata)
+    mockGetMetadata.mockRejectedValue(new ApiError("Not Found", 404));
   });
 
   afterEach(() => {

@@ -91,6 +91,8 @@
 
   async function loadPendingMetadata(forBookId?: string) {
     const targetBookId = forBookId ?? bookId;
+    pendingMetadata = null;
+    metadataError = null;
     try {
       const result = await api.getMetadata(targetBookId);
       // Only update state if bookId hasn't changed while the request was in-flight.

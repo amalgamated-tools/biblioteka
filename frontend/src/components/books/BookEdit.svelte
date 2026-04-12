@@ -36,21 +36,26 @@
   });
 
   let hasPendingMetadata = $derived(pendingMetadata !== null);
+  let fetchSeq = 0;
 
   $effect(() => {
     loadBook(bookId);
   });
 
   async function loadBook(id: string) {
+    const seq = ++fetchSeq;
     loading = true;
     error = null;
+    pendingMetadata = null;
     try {
       book = await api.getBook(id);
+      if (seq !== fetchSeq) return;
       populateForm(book);
     } catch (e) {
+      if (seq !== fetchSeq) return;
       error = e instanceof Error ? e.message : "Failed to load book";
     } finally {
-      loading = false;
+      if (seq === fetchSeq) loading = false;
     }
   }
 
