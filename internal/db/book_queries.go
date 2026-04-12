@@ -8,6 +8,9 @@ import (
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
 
+// searchLikeReplacer escapes special LIKE pattern characters for use in SQL LIKE/ILIKE queries.
+var searchLikeReplacer = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
 // ListBooksPaginated returns books ordered by title with pagination and total count.
 func (d *DB) ListBooksPaginated(ctx context.Context, limit, offset int) ([]Book, int, error) {
 	slog.DebugContext(ctx, "db: listing books paginated",
@@ -158,7 +161,7 @@ func (d *DB) SearchBooks(ctx context.Context, query string, limit, offset int) (
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(query)
+	escaped := searchLikeReplacer.Replace(query)
 	likePattern := "%" + escaped + "%"
 
 	var whereClause string
