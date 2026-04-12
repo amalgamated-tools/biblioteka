@@ -88,10 +88,7 @@
     return Array.from(
       dialogEl.querySelectorAll<HTMLElement>(focusableSelector),
     ).filter(
-      (el) =>
-        !el.closest('[aria-hidden="true"]') &&
-        !el.closest("[hidden]") &&
-        el.offsetParent !== null,
+      (el) => !el.closest('[aria-hidden="true"]') && !el.closest("[hidden]"),
     );
   }
 
