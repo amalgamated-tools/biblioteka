@@ -145,6 +145,7 @@ Before going live, verify each item:
 - [ ] **`SECURE_COOKIES=true`** — ensures session cookies are only sent over HTTPS. Only set this to `false` for local HTTP development.
 - [ ] **TLS** — terminate TLS at a reverse proxy (nginx, Caddy, Traefik). Do not expose port 8080 directly to the internet.
 - [ ] **Redis persistence** — configure Redis with at least `appendonly yes` if background job durability matters to you.
+- [ ] **Redis eviction policy** — set `maxmemory-policy noeviction` in your Redis configuration. asynq stores queued and scheduled job records directly in Redis; any eviction policy that silently removes keys under memory pressure (e.g. `allkeys-lru`, `volatile-lru`, `allkeys-random`) will cause background jobs to be dropped without error. `noeviction` makes Redis return an error when it is full instead of silently discarding data, so the problem surfaces immediately rather than silently losing work.
 - [ ] **PostgreSQL backups** — if using PostgreSQL, schedule regular `pg_dump` backups of the `biblioteka` database.
 - [ ] **SQLite backups** — if using SQLite, back up the Docker volume (`biblioteka-data`) or the `*.db` file.
 - [ ] **`TELEMETRY_ENABLED`** — leave unset (or set to `false`) to keep anonymous telemetry disabled (default). Set to `true` to enable it.

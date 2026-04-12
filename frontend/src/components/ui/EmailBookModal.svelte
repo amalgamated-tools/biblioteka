@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { Mail, X } from "lucide-svelte";
   import * as api from "../../lib/api";
   import type { Book, BookFile } from "../../types";
@@ -11,6 +12,12 @@
   }
 
   let { bookId, onClose }: Props = $props();
+
+  let dialogEl: HTMLDivElement | null = $state(null);
+
+  onMount(() => {
+    dialogEl?.focus();
+  });
 
   let book: Book | null = $state(null);
   let loadError: string | null = $state(null);
@@ -84,6 +91,7 @@
 <!-- Modal wrapper -->
 <svelte:window onkeydown={handleKeydown} />
 <div
+  bind:this={dialogEl}
   role="dialog"
   aria-modal="true"
   aria-labelledby="email-modal-title"
