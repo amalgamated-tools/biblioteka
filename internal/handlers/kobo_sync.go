@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"time"
@@ -25,7 +24,7 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 	books, err := h.DB.ListBooksModifiedSince(ctx, syncToken.BooksLastModified, syncToken.BooksLastID, kobo.SyncPageSize+1)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to list books for kobo sync", slog.Any(otelkeys.Error, err))
-		writeKoboJSON(w, http.StatusInternalServerError, []any{})
+		writeKoboJSON(ctx, w, http.StatusInternalServerError, []any{})
 		return
 	}
 
@@ -47,7 +46,7 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 	filesByBook, err := h.DB.GetFilesForBooks(ctx, bookIDs)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to batch-load files for kobo sync", slog.Any(otelkeys.Error, err))
-		writeKoboJSON(w, http.StatusInternalServerError, []any{})
+		writeKoboJSON(ctx, w, http.StatusInternalServerError, []any{})
 		return
 	}
 	seriesByBook, err := h.DB.GetSeriesForBooks(ctx, bookIDs)
@@ -122,11 +121,9 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 		newSyncToken.BooksLastID = newBooksLastID
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("x-kobo-synctoken", kobo.EncodeSyncToken(newSyncToken))
 	if hasMore {
 		w.Header().Set("x-kobo-sync", "continue")
 	}
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(syncResults)
+	writeKoboJSON(ctx, w, http.StatusOK, syncResults)
 }
