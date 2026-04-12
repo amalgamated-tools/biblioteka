@@ -82,7 +82,9 @@
     try {
       // Open SSE connection first so no progress events are missed if the
       // worker processes the job before the subscription is established.
-      eventSource?.close();
+      // Fully reset any previous SSE connection and timeout from an earlier
+      // fetch attempt before creating a new subscription.
+      closeSSE();
       const es = api.subscribeToMetadataEvents(bookId);
       eventSource = es;
 
