@@ -2,10 +2,20 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import { userEvent } from "@testing-library/user-event";
 
-import BookEditForm from "./BookEditForm.svelte";
+vi.mock("../../stores/router.svelte", () => ({
+  routerStore: { navigate: vi.fn() },
+}));
 
-function renderForm(overrides: Record<string, unknown> = {}) {
-  return render(BookEditForm, {
+vi.mock("../../lib/api", () => ({
+  updateBook: vi.fn().mockResolvedValue({}),
+  rejectMetadata: vi.fn().mockResolvedValue(undefined),
+}));
+
+import BookEditForm from "./BookEditForm.svelte";
+import type { FormFields } from "./BookEditForm.svelte";
+
+function makeFields(overrides: Partial<FormFields> = {}): FormFields {
+  return {
     title: "The Hobbit",
     description: "A fantasy novel",
     publisher: "Allen & Unwin",
@@ -18,10 +28,17 @@ function renderForm(overrides: Record<string, unknown> = {}) {
     hardcoverId: "hc-123",
     googleBooksId: "gb-456",
     coverImageUrl: "https://example.com/cover.jpg",
+    ...overrides,
+  };
+}
+
+function renderForm(overrides: Record<string, unknown> = {}) {
+  return render(BookEditForm, {
+    bookId: "b1",
+    fields: makeFields(),
     saving: false,
-    formError: null,
-    onsubmit: vi.fn(),
-    oncancel: vi.fn(),
+    hasPendingMetadata: false,
+    onSaved: vi.fn(),
     ...overrides,
   });
 }
@@ -55,34 +72,18 @@ describe("BookEditForm", () => {
     }
   });
 
-  it("displays the formError AlertBanner when formError is set", () => {
-    renderForm({ formError: "Title is required" });
+  it("displays the formError AlertBanner when title is blank and form is submitted", async () => {
+    const user = userEvent.setup();
+    renderForm({ fields: makeFields({ title: "" }) });
+
+    await user.click(screen.getByText("Save Changes"));
+
     expect(screen.getByText("Title is required")).toBeInTheDocument();
   });
 
-  it("does not display an error banner when formError is null", () => {
-    renderForm({ formError: null });
+  it("does not display an error banner initially", () => {
+    renderForm();
     expect(screen.queryByText("Title is required")).not.toBeInTheDocument();
-  });
-
-  it("calls onsubmit when the form is submitted", async () => {
-    const onsubmit = vi.fn((e: SubmitEvent) => e.preventDefault());
-    renderForm({ onsubmit });
-
-    const user = userEvent.setup();
-    await user.click(screen.getByText("Save Changes"));
-
-    expect(onsubmit).toHaveBeenCalledOnce();
-  });
-
-  it("calls oncancel when the cancel button is clicked", async () => {
-    const oncancel = vi.fn();
-    renderForm({ oncancel });
-
-    const user = userEvent.setup();
-    await user.click(screen.getByText("Cancel"));
-
-    expect(oncancel).toHaveBeenCalledOnce();
   });
 
   it("disables all inputs and buttons when saving is true", () => {

@@ -1,46 +1,47 @@
 <script lang="ts">
   import type { RemoteMetadata, MetadataProgressEvent } from "../../types";
+  import { ApiError } from "../../lib/api/core";
   import * as api from "../../lib/api";
   import { Search } from "lucide-svelte";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
   import MetadataComparison from "./MetadataComparison.svelte";
+  import type { CurrentValues } from "./MetadataComparison.svelte";
+  import type { FormFields } from "./BookEditForm.svelte";
 
-  interface CurrentValues {
-    title: string;
-    description: string | null;
-    publisher: string | null;
-    language: string | null;
-    publication_date: string | null;
-    isbn13: string | null;
-    isbn10: string | null;
-    asin: string | null;
-    goodreads_id: string | null;
-    hardcover_id: string | null;
-    google_books_id: string | null;
-    cover_image_url: string | null;
-  }
+  // Maps each editable RemoteMetadata key to the corresponding FormFields key.
+  // The `satisfies` constraint ensures this stays in sync with both interfaces at
+  // compile time: adding or renaming a field in either interface will cause a
+  // type error here.
+  const FIELD_MAP = {
+    title: "title",
+    description: "description",
+    publisher: "publisher",
+    language: "language",
+    publication_date: "publicationDate",
+    isbn13: "isbn13",
+    isbn10: "isbn10",
+    asin: "asin",
+    goodreads_id: "goodreadsId",
+    hardcover_id: "hardcoverId",
+    google_books_id: "googleBooksId",
+    cover_image_url: "coverImageUrl",
+  } as const satisfies Partial<Record<keyof RemoteMetadata, keyof FormFields>>;
 
-  type EditableMetadataField = keyof RemoteMetadata & keyof CurrentValues;
+  type EditableMetadataKey = keyof typeof FIELD_MAP;
 
   interface Props {
     bookId: string;
     saving: boolean;
-    metadata: RemoteMetadata | null;
-    currentValues: CurrentValues;
-    onApplyField: (field: EditableMetadataField) => void;
-    onApplyAll: () => void;
-    onDismiss: () => void;
+    fields: FormFields;
+    pendingMetadata?: RemoteMetadata | null;
   }
 
   let {
     bookId,
     saving,
-    metadata = $bindable(null),
-    currentValues,
-    onApplyField,
-    onApplyAll,
-    onDismiss,
+    fields = $bindable() as FormFields,
+    pendingMetadata = $bindable<RemoteMetadata | null>(null),
   }: Props = $props();
 
   let fetchingMetadata = $state(false);
@@ -48,6 +49,21 @@
   let progressMessage: string | null = $state(null);
   let eventSource: EventSource | null = null;
   let sseTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  let currentFormValues: CurrentValues = $derived({
+    title: fields.title,
+    description: fields.description || null,
+    publisher: fields.publisher || null,
+    language: fields.language || null,
+    publication_date: fields.publicationDate || null,
+    isbn13: fields.isbn13 || null,
+    isbn10: fields.isbn10 || null,
+    asin: fields.asin || null,
+    goodreads_id: fields.goodreadsId || null,
+    hardcover_id: fields.hardcoverId || null,
+    google_books_id: fields.googleBooksId || null,
+    cover_image_url: fields.coverImageUrl || null,
+  });
 
   function closeSSE() {
     if (sseTimeout != null) {
@@ -64,8 +80,7 @@
   // or when bookId changes (e.g. navigating between edit pages without
   // remounting the component).
   $effect(() => {
-    // Read bookId so Svelte tracks it as a dependency.
-    void bookId;
+    loadPendingMetadata(bookId);
     return () => {
       closeSSE();
       fetchingMetadata = false;
@@ -73,6 +88,30 @@
       progressMessage = null;
     };
   });
+
+  async function loadPendingMetadata(forBookId?: string) {
+    const targetBookId = forBookId ?? bookId;
+    pendingMetadata = null;
+    metadataError = null;
+    try {
+      const result = await api.getMetadata(targetBookId);
+      // Only update state if bookId hasn't changed while the request was in-flight.
+      if (bookId === targetBookId) {
+        pendingMetadata = result;
+      }
+    } catch (e) {
+      if (bookId !== targetBookId) return;
+      pendingMetadata = null;
+      // A 404 is expected when no pending metadata exists. Surface other
+      // errors so the user knows something went wrong.
+      if (!(e instanceof ApiError && e.status === 404)) {
+        metadataError =
+          e instanceof Error
+            ? e.message
+            : "Failed to check for pending metadata";
+      }
+    }
+  }
 
   async function handleFetchMetadata() {
     fetchingMetadata = true;
@@ -142,7 +181,7 @@
         loadPendingMetadata(capturedBookId).then(() => {
           // Bail if bookId changed while the request was in-flight.
           if (bookId !== capturedBookId) return;
-          if (!metadata) {
+          if (!pendingMetadata) {
             metadataError =
               "Metadata stream closed unexpectedly. Please try again.";
           }
@@ -176,19 +215,32 @@
     }
   }
 
-  async function loadPendingMetadata(forBookId?: string) {
-    const targetBookId = forBookId ?? bookId;
+  async function dismissMetadata() {
+    if (!pendingMetadata) return;
     try {
-      const result = await api.getMetadata(targetBookId);
-      // Only update state if bookId hasn't changed while the request was in-flight.
-      if (bookId === targetBookId) {
-        metadata = result;
-      }
-    } catch {
-      if (bookId === targetBookId) {
-        metadata = null;
-      }
+      await api.rejectMetadata(bookId);
+      pendingMetadata = null;
+    } catch (e) {
+      metadataError =
+        e instanceof Error ? e.message : "Failed to dismiss metadata";
     }
+  }
+
+  function applyField(field: EditableMetadataKey) {
+    const meta = pendingMetadata;
+    if (!meta) return;
+    const value = meta[field];
+    if (value == null) return;
+    fields[FIELD_MAP[field]] = value;
+  }
+
+  function applyAll() {
+    const meta = pendingMetadata;
+    if (!meta) return;
+    (Object.keys(FIELD_MAP) as EditableMetadataKey[]).forEach((metaKey) => {
+      const value = meta[metaKey];
+      if (value != null) fields[FIELD_MAP[metaKey]] = value;
+    });
   }
 </script>
 
@@ -225,13 +277,13 @@
     <AlertBanner variant="error" class="mt-3">{metadataError}</AlertBanner>
   {/if}
 
-  {#if metadata && !fetchingMetadata}
+  {#if pendingMetadata && !fetchingMetadata}
     <MetadataComparison
-      {metadata}
-      {currentValues}
-      {onApplyField}
-      {onApplyAll}
-      {onDismiss}
+      metadata={pendingMetadata}
+      currentValues={currentFormValues}
+      onApplyField={applyField}
+      onApplyAll={applyAll}
+      onDismiss={dismissMetadata}
     />
   {/if}
 </div>
