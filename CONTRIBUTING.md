@@ -262,7 +262,7 @@ This command:
 
 > **Note:** `make screenshots` requires a running Redis instance on `localhost:6379`. Run `make redis-check` first or start Redis with `docker compose up -d redis`.
 
-The screenshot script accepts the environment variables `BASE_URL`, `DEMO_EMAIL`, `DEMO_PASSWORD`, `NONADMIN_EMAIL`, `NONADMIN_PASSWORD`, and timeout variables. See `script/take-screenshots.mjs` for defaults.
+The screenshot script accepts the environment variables `BASE_URL`, `DEMO_NAME`, `DEMO_EMAIL`, `DEMO_PASSWORD`, `NONADMIN_NAME`, `NONADMIN_EMAIL`, `NONADMIN_PASSWORD`, `SCREENSHOT_TIMEOUT_MS`, and `SCREENSHOT_NAVIGATION_TIMEOUT_MS`. See `script/screenshots/shared.mjs` for defaults.
 
 ### IDE and Editor Support
 
