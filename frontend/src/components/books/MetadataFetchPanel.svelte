@@ -100,6 +100,9 @@
       // Register handlers immediately so no events are missed during the
       // fetch request that follows.
       es.onmessage = (event) => {
+        // Guard against stale events from an EventSource that was replaced
+        // (e.g. when bookId changed and $effect cleanup called closeSSE()).
+        if (eventSource !== es) return;
         try {
           const data: MetadataProgressEvent = JSON.parse(event.data);
           if (data.message) {
@@ -127,6 +130,8 @@
       };
 
       es.onerror = () => {
+        // Guard against stale errors from a replaced EventSource.
+        if (eventSource !== es) return;
         closeSSE();
         fetchingMetadata = false;
         // If we got an error before any complete event, try loading metadata
