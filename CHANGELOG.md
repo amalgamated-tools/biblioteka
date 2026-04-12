@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.10.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.9.0...v0.10.0) (2026-04-12)
+
+
+### Features
+
+* **db:** add benchmark suite for DB query functions ([#1705](https://github.com/amalgamated-tools/biblioteka/issues/1705)) ([c0e0b41](https://github.com/amalgamated-tools/biblioteka/commit/c0e0b41eb804016481f23ee8b67e8ca035760e59))
+* **db:** SQLite FTS5 for book search + PostgreSQL pg_trgm indexes ([#1716](https://github.com/amalgamated-tools/biblioteka/issues/1716)) ([b435e40](https://github.com/amalgamated-tools/biblioteka/commit/b435e40c31d041d4f079aaa24b0f69a40cc244ab))
+
+
+### Bug Fixes
+
+* **a11y:** address four keyboard/screen-reader accessibility issues ([#1641](https://github.com/amalgamated-tools/biblioteka/issues/1641)–[#1644](https://github.com/amalgamated-tools/biblioteka/issues/1644)) ([#1700](https://github.com/amalgamated-tools/biblioteka/issues/1700)) ([7323215](https://github.com/amalgamated-tools/biblioteka/commit/7323215aac4fb16799795bab2733e0709c411598))
+* **accessibility:** add accessible label to MetadataComparison "values match" checkmark ([#1728](https://github.com/amalgamated-tools/biblioteka/issues/1728)) ([9ba1c81](https://github.com/amalgamated-tools/biblioteka/commit/9ba1c815abaffeb79e28bdf2c86626a501cb4f2e))
+* **accessibility:** add required-fields legend to BookEdit and LibraryForm ([#1662](https://github.com/amalgamated-tools/biblioteka/issues/1662)) ([038a012](https://github.com/amalgamated-tools/biblioteka/commit/038a0120ce2a0a158da324f561eb51d43ab5b6a0))
+* **accessibility:** add role="status" to Settings tab loading paragraphs ([#1726](https://github.com/amalgamated-tools/biblioteka/issues/1726)) ([b7311d0](https://github.com/amalgamated-tools/biblioteka/commit/b7311d01a957575965ec6fa44558d25798faa5b2))
+* **accessibility:** manage keyboard focus on Email Book modal open/close ([#1659](https://github.com/amalgamated-tools/biblioteka/issues/1659)) ([4f6dcdb](https://github.com/amalgamated-tools/biblioteka/commit/4f6dcdbdbc48c9933ea94373a83aff399a57d6cf))
+* **accessibility:** replace role="link" on `<tr>` with native anchor in BookList table view ([#1660](https://github.com/amalgamated-tools/biblioteka/issues/1660)) ([c1e360c](https://github.com/amalgamated-tools/biblioteka/commit/c1e360c69c9bc480ae69ecafa4dd7911f32904bd))
+* **accessibility:** trap focus within EmailBookModal dialog ([#1723](https://github.com/amalgamated-tools/biblioteka/issues/1723)) ([c914486](https://github.com/amalgamated-tools/biblioteka/commit/c914486d882e948f3edb39cc4f62d77c1cd8a0ad))
+* **accessibility:** unique aria-label on "Remove folder" buttons in LibraryForm ([#1661](https://github.com/amalgamated-tools/biblioteka/issues/1661)) ([0e77a72](https://github.com/amalgamated-tools/biblioteka/commit/0e77a720f4f7a4ae40a6ec39220612a0522e2144))
+* **auth:** add rate limiting to PUT /api/auth/password ([#1715](https://github.com/amalgamated-tools/biblioteka/issues/1715)) ([706a0e3](https://github.com/amalgamated-tools/biblioteka/commit/706a0e37d74f20a8ff9aebfd690246e9e5aba61c))
+* **auth:** normalize OIDC login error to prevent account enumeration ([#1713](https://github.com/amalgamated-tools/biblioteka/issues/1713)) ([0d64e5c](https://github.com/amalgamated-tools/biblioteka/commit/0d64e5cb8be4c75a868549150fb32d64d6a83111))
+* **ci:** fix permission denied error when uploading super-linter log artifact ([#1674](https://github.com/amalgamated-tools/biblioteka/issues/1674)) ([5c2cbc6](https://github.com/amalgamated-tools/biblioteka/commit/5c2cbc64a01d81626dfac25895f924683110cd05))
+* **code-simplifier:** consolidate MIME type fallback in filetype package ([#1648](https://github.com/amalgamated-tools/biblioteka/issues/1648)) ([273bfff](https://github.com/amalgamated-tools/biblioteka/commit/273bfff842187f048679df73aa797f0b975ad282))
+* **kobo:** replace inline json.NewEncoder with writeKoboJSON in kobo_sync.go ([#1711](https://github.com/amalgamated-tools/biblioteka/issues/1711)) ([6864dfe](https://github.com/amalgamated-tools/biblioteka/commit/6864dfe26b9cb90c60f6d1f4766b2fd1bdaa2844))
+* **telemetry:** fix Go convention violations in telemetry.go ([#1712](https://github.com/amalgamated-tools/biblioteka/issues/1712)) ([0c5a736](https://github.com/amalgamated-tools/biblioteka/commit/0c5a736465393101f50e0cd30519e32c0f1c607a))
+* **workflows:** add contents: read permission to weekly-issue-summary ([#1710](https://github.com/amalgamated-tools/biblioteka/issues/1710)) ([1622a74](https://github.com/amalgamated-tools/biblioteka/commit/1622a748b1659b38cdf3660bd44b6b8c1a3cf3fa))
+* **workflows:** disable lockdown mode for issue arborist and weekly summary tools ([c4b70b7](https://github.com/amalgamated-tools/biblioteka/commit/c4b70b777094861b9552b029343d25d16ca59eed))
+* **workflows:** disable lockdown mode in discussion task miner ([c700fcc](https://github.com/amalgamated-tools/biblioteka/commit/c700fcc0726bb1755a2da4f356dd919ceed08513))
+* **workflows:** update gh-aw metadata and prompt identifiers in markdown linter workflow ([f8d6d70](https://github.com/amalgamated-tools/biblioteka/commit/f8d6d7069a60d8603ab77d22207d1e873c93c27c))
+
+
+### Performance Improvements
+
+* **db:** add indexes on books.title and books.created_at ([#1677](https://github.com/amalgamated-tools/biblioteka/issues/1677)) ([780a5a3](https://github.com/amalgamated-tools/biblioteka/commit/780a5a31266c37d2ef65ecabff3d10c0b4dc6e1c))
+* **db:** cache strings.NewReplacer at package level in SearchBooks ([#1706](https://github.com/amalgamated-tools/biblioteka/issues/1706)) ([fbdaa63](https://github.com/amalgamated-tools/biblioteka/commit/fbdaa63f935a039766e73824a8f1a97c3bdf231a))
+
 ## [0.9.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.8.0...v0.9.0) (2026-04-11)
 
 
