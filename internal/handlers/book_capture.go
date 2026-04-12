@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -143,11 +144,64 @@ func (h *BookHandler) HandleCapture(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// isValidCaptureURL reports whether rawURL is a valid http or https URL.
+// isValidCaptureURL reports whether rawURL is a valid http or https URL and does
+// not target private, reserved, or link-local IP addresses (SSRF protection).
 func isValidCaptureURL(rawURL string) bool {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return false
 	}
-	return u.Scheme == "http" || u.Scheme == "https"
+
+	// Only allow http and https schemes
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+
+	// Extract hostname; reject if empty or is a known private service name
+	hostname := u.Hostname()
+	if hostname == "" {
+		return false
+	}
+
+	// Reject localhost-like hostnames
+	if hostname == "localhost" || hostname == "localhost.localdomain" {
+		return false
+	}
+
+	// Try to parse as IP address; if successful, validate it's not in a private range
+	if ip := net.ParseIP(hostname); ip != nil {
+		// Reject private IPv4 ranges
+		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return false
+		}
+		// Reject multicast
+		if ip.IsMulticast() {
+			return false
+		}
+		// Reject unspecified (0.0.0.0 or ::)
+		if ip.IsUnspecified() {
+			return false
+		}
+		// If we get here, the IP is public and safe
+		return true
+	}
+
+	// For hostnames (not IPs), resolve them and check the resolved IPs
+	ips, err := net.LookupIP(hostname)
+	if err != nil {
+		// If resolution fails, reject the URL (can't verify it's safe)
+		return false
+	}
+
+	// Check that at least one resolved IP is public
+	for _, ip := range ips {
+		if !ip.IsPrivate() && !ip.IsLoopback() && !ip.IsLinkLocalUnicast() &&
+			!ip.IsLinkLocalMulticast() && !ip.IsMulticast() && !ip.IsUnspecified() {
+			// Found a public IP, allow it
+			return true
+		}
+	}
+
+	// All IPs are private/reserved/link-local, reject
+	return false
 }
