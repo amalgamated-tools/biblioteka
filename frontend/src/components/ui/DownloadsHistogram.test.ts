@@ -20,9 +20,9 @@ describe("DownloadsHistogram", () => {
 
   it("renders the default title", () => {
     render(DownloadsHistogram, { data: dataWithDownloads });
-    expect(
-      screen.getByRole("heading", { level: 3 }),
-    ).toHaveTextContent("Downloads per month");
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(
+      "Downloads per month",
+    );
   });
 
   it("renders a custom title", () => {
@@ -30,24 +30,22 @@ describe("DownloadsHistogram", () => {
       data: dataWithDownloads,
       title: "My custom title",
     });
-    expect(
-      screen.getByRole("heading", { level: 3 }),
-    ).toHaveTextContent("My custom title");
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(
+      "My custom title",
+    );
   });
 
   it("shows the empty state message when all counts are zero", () => {
     render(DownloadsHistogram, { data: emptyData });
-    expect(
-      screen.getByText(/no downloads recorded yet/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByTestId("histogram-bars"),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText(/no downloads recorded yet/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("histogram-bars")).not.toBeInTheDocument();
   });
 
   it("renders bars when data has downloads", () => {
     render(DownloadsHistogram, { data: dataWithDownloads });
-    expect(screen.queryByText(/no downloads recorded yet/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/no downloads recorded yet/i),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("histogram-bars")).toBeInTheDocument();
   });
 

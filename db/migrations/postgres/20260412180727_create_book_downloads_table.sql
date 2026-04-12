@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS book_downloads (
 	downloaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_book_downloads_user_id        ON book_downloads(user_id);
-CREATE INDEX idx_book_downloads_downloaded_at  ON book_downloads(downloaded_at);
+CREATE INDEX idx_book_downloads_user_downloaded ON book_downloads(user_id, downloaded_at);
 
 -- migrate:down
 DROP TABLE IF EXISTS book_downloads;

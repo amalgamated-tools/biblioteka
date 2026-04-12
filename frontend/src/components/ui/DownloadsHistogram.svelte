@@ -54,25 +54,31 @@
     </p>
   {:else}
     <div
-      role="img"
+      role="list"
       aria-label={title}
       class="flex items-end gap-1 h-32 w-full"
       data-testid="histogram-bars"
     >
       {#each data as item (item.month)}
         {@const h = barHeight(item.count)}
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
-          class="flex-1 flex flex-col items-center gap-1 group"
+          class="flex-1 flex flex-col items-center gap-1 group focus-within:outline-none"
+          role="listitem"
+          tabindex="0"
+          aria-label="{monthFull(item.month)}: {item.count} {item.count === 1
+            ? 'download'
+            : 'downloads'}"
           title="{monthFull(item.month)}: {item.count}"
         >
           <span
-            class="text-[10px] text-ink-400 dark:text-ink-400 opacity-0 group-hover:opacity-100 transition-opacity leading-none"
+            class="text-[10px] text-ink-400 dark:text-ink-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity leading-none"
             aria-hidden="true"
           >
             {item.count}
           </span>
           <div
-            class="w-full rounded-t-sm bg-accent-400 dark:bg-accent-500 hover:bg-accent-500 dark:hover:bg-accent-400 transition-colors"
+            class="w-full rounded-t-sm bg-accent-400 dark:bg-accent-500 hover:bg-accent-500 dark:hover:bg-accent-400 group-focus-within:bg-accent-500 dark:group-focus-within:bg-accent-400 transition-colors"
             style="height: {h}%"
             role="presentation"
           ></div>

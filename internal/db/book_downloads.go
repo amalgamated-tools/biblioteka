@@ -51,7 +51,9 @@ FROM generate_series(
     '1 month'::interval
 ) AS gs(month)
 LEFT JOIN book_downloads bd
-    ON  DATE_TRUNC('month', bd.downloaded_at) = gs.month
+    ON  bd.downloaded_at >= DATE_TRUNC('month', NOW() - (($2 - 1) || ' months')::interval)
+    AND bd.downloaded_at < DATE_TRUNC('month', NOW()) + '1 month'::interval
+    AND DATE_TRUNC('month', bd.downloaded_at) = gs.month
     AND bd.user_id = $1
 GROUP BY gs.month
 ORDER BY gs.month ASC`
@@ -71,13 +73,20 @@ month_series AS (
         )
     ) AS month
     FROM months
+),
+bounds AS (
+    SELECT
+        date(date('now', 'start of month'), '-' || ($2 - 1) || ' months') AS start_date,
+        date(date('now', 'start of month'), '+1 month')                   AS end_date
 )
 SELECT
     ms.month,
     COUNT(bd.id) AS count
-FROM month_series ms
+FROM month_series ms, bounds b
 LEFT JOIN book_downloads bd
-    ON  strftime('%Y-%m', bd.downloaded_at) = ms.month
+    ON  bd.downloaded_at >= b.start_date
+    AND bd.downloaded_at < b.end_date
+    AND strftime('%Y-%m', bd.downloaded_at) = ms.month
     AND bd.user_id = $1
 GROUP BY ms.month
 ORDER BY ms.month ASC`

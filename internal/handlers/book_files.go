@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"mime"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -194,14 +196,18 @@ func (h *BookFileHandler) downloadBookFile(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Record a timestamped download event for the histogram (best-effort).
+	// Uses context.WithoutCancel so a client disconnect doesn't prevent
+	// recording the event, with a short timeout to bound latency.
 	if userID := auth.UserIDFromContext(ctx); userID != "" {
-		if recErr := h.DB.RecordBookDownload(ctx, id, userID); recErr != nil {
-			slog.WarnContext(ctx, "failed to record book download event",
+		recCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		if recErr := h.DB.RecordBookDownload(recCtx, id, userID); recErr != nil {
+			slog.WarnContext(recCtx, "failed to record book download event",
 				slog.String(otelkeys.BookFileID, id),
 				slog.String(otelkeys.UserID, userID),
 				slog.Any(otelkeys.Error, recErr),
 			)
 		}
+		cancel()
 	}
 
 	mimeType := filetype.MIMETypeOrOctetStream(bf.FileType)
