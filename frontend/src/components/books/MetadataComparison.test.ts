@@ -176,7 +176,9 @@ describe("MetadataComparison", () => {
       onApplyAll: vi.fn(),
       onDismiss: vi.fn(),
     });
-    const matchIndicators = screen.getAllByRole("img", { name: "Values match" });
+    const matchIndicators = screen.getAllByRole("img", {
+      name: "Values match",
+    });
     expect(matchIndicators.length).toBeGreaterThan(0);
   });
 });
