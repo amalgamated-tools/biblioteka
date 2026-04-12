@@ -9,9 +9,10 @@
 -- INTEGER PRIMARY KEY alias. The books table uses a TEXT id so its rowid is
 -- implicit. Running VACUUM (manually or via a maintenance routine) could
 -- silently corrupt the FTS index by remapping rowids to wrong rows.
--- auto_vacuum is not enabled for this database, so this is safe in practice,
--- but any future maintenance that calls VACUUM should rebuild books_fts
--- afterwards (INSERT INTO books_fts(books_fts) VALUES ('rebuild')).
+-- By default SQLite does not enable auto_vacuum, but this is a per-database
+-- setting that depends on the PRAGMA value at creation time. If VACUUM or
+-- auto_vacuum is ever used, rebuild books_fts afterwards:
+--   INSERT INTO books_fts(books_fts) VALUES ('rebuild');
 CREATE VIRTUAL TABLE books_fts USING fts5(
     title,
     description,

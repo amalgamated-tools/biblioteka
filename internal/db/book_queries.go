@@ -156,8 +156,11 @@ func (d *DB) ListBooksBySeriesPaginated(ctx context.Context, seriesID string, li
 // SearchBooks searches books by title or description with pagination and total count.
 //
 // On SQLite the search is backed by a FTS5 virtual table (books_fts) for
-// index-accelerated full-text matching. On PostgreSQL the existing ILIKE query
-// is used, which is accelerated by the pg_trgm GIN indexes added in migration
+// index-accelerated full-text matching. Multi-token queries are evaluated as an
+// implicit AND across the combined FTS document (title + description), so
+// different tokens may match in different columns (e.g., one in title and one
+// in description). On PostgreSQL the existing ILIKE query is used, which is
+// accelerated by the pg_trgm GIN indexes added in migration
 // 20260412000000_add_books_trgm.
 //
 // An empty or whitespace-only query returns zero results on all dialects.
