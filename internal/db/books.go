@@ -32,12 +32,9 @@ type Book struct {
 const bookColumns = `id, title, description, asin, isbn10, isbn13, goodreads_id, hardcover_id, google_books_id, publication_date, publisher, language, cover_image_url, created_at, updated_at`
 
 func scanBook(row interface{ Scan(...any) error }) (*Book, error) {
-	var b Book
-	err := row.Scan(&b.ID, &b.Title, &b.Description, &b.ASIN, &b.ISBN10, &b.ISBN13, &b.GoodreadsID, &b.HardcoverID, &b.GoogleBooksID, &b.PublicationDate, &b.Publisher, &b.Language, &b.CoverImageURL, &b.CreatedAt, &b.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &b, nil
+	return scanRow(row, func(b *Book) []any {
+		return []any{&b.ID, &b.Title, &b.Description, &b.ASIN, &b.ISBN10, &b.ISBN13, &b.GoodreadsID, &b.HardcoverID, &b.GoogleBooksID, &b.PublicationDate, &b.Publisher, &b.Language, &b.CoverImageURL, &b.CreatedAt, &b.UpdatedAt}
+	})
 }
 
 // scanBookAndTotal scans book columns plus a trailing COUNT(*) OVER() total.

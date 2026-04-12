@@ -59,12 +59,9 @@ type AuditLog struct {
 const auditLogColumns = `id, user_id, action, entity_type, entity_id, metadata, created_at`
 
 func scanAuditLog(row interface{ Scan(...any) error }) (*AuditLog, error) {
-	var entry AuditLog
-	err := row.Scan(&entry.ID, &entry.UserID, &entry.Action, &entry.EntityType, &entry.EntityID, &entry.Metadata, &entry.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &entry, nil
+	return scanRow(row, func(entry *AuditLog) []any {
+		return []any{&entry.ID, &entry.UserID, &entry.Action, &entry.EntityType, &entry.EntityID, &entry.Metadata, &entry.CreatedAt}
+	})
 }
 
 // CreateAuditLog inserts a new audit log entry. The metadata map is serialised

@@ -98,11 +98,9 @@ func (d *DB) GetBookSeries(ctx context.Context, bookID string) ([]BookSeriesEntr
 }
 
 func scanBookSeriesEntry(row interface{ Scan(...any) error }) (*BookSeriesEntry, error) {
-	var entry BookSeriesEntry
-	if err := row.Scan(&entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position); err != nil {
-		return nil, err
-	}
-	return &entry, nil
+	return scanRow(row, func(entry *BookSeriesEntry) []any {
+		return []any{&entry.Series.ID, &entry.Series.Name, &entry.Series.GoodreadsID, &entry.Series.HardcoverID, &entry.Series.GoogleBooksID, &entry.Series.CreatedAt, &entry.Series.UpdatedAt, &entry.Position}
+	})
 }
 
 // SetBookSeries replaces all series associations for a book.
