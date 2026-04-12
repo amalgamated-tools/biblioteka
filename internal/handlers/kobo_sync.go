@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"time"
@@ -122,11 +121,9 @@ func (h *KoboHandler) HandleSync(w http.ResponseWriter, r *http.Request) {
 		newSyncToken.BooksLastID = newBooksLastID
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("x-kobo-synctoken", kobo.EncodeSyncToken(newSyncToken))
 	if hasMore {
 		w.Header().Set("x-kobo-sync", "continue")
 	}
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(syncResults)
+	writeKoboJSON(w, http.StatusOK, syncResults)
 }
