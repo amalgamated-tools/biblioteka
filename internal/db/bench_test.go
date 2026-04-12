@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"testing"
@@ -30,16 +29,16 @@ func newBenchDB(b *testing.B) *DB {
 
 	d := &DB{DB: sqlDB, Dialect: DialectSQLite}
 
-	require.NoError(b, runMigrations(context.Background(), d), "newBenchDB: migrations")
+	require.NoError(b, runMigrations(b.Context(), d), "newBenchDB: migrations")
 
 	return d
 }
 
-// seedBooks inserts n books and returns the DB. Book titles are of the form
+// seedBooks inserts n books into the DB. Book titles are of the form
 // "Book 00001", …, "Book 0NNNN" so that lexicographic and numeric order agree.
 func seedBooks(b *testing.B, d *DB, n int) {
 	b.Helper()
-	ctx := context.Background()
+	ctx := b.Context()
 	for i := range n {
 		_, err := d.CreateBook(ctx, BookInput{Title: fmt.Sprintf("Book %05d", i+1)})
 		require.NoError(b, err, "seedBooks: CreateBook")
@@ -51,24 +50,28 @@ func seedBooks(b *testing.B, d *DB, n int) {
 func BenchmarkListBooksPaginated_100(b *testing.B) {
 	d := newBenchDB(b)
 	seedBooks(b, d, 100)
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ResetTimer()
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.ListBooksPaginated(ctx, 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkListBooksPaginated_1000(b *testing.B) {
 	d := newBenchDB(b)
 	seedBooks(b, d, 1000)
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ResetTimer()
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.ListBooksPaginated(ctx, 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -77,24 +80,28 @@ func BenchmarkListBooksPaginated_1000(b *testing.B) {
 func BenchmarkListRecentBooks_100(b *testing.B) {
 	d := newBenchDB(b)
 	seedBooks(b, d, 100)
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ResetTimer()
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.ListRecentBooks(ctx, 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkListRecentBooks_1000(b *testing.B) {
 	d := newBenchDB(b)
 	seedBooks(b, d, 1000)
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ResetTimer()
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.ListRecentBooks(ctx, 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -103,37 +110,43 @@ func BenchmarkListRecentBooks_1000(b *testing.B) {
 func BenchmarkSearchBooks_Hit_100(b *testing.B) {
 	d := newBenchDB(b)
 	seedBooks(b, d, 100)
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ResetTimer()
 	b.ReportAllocs()
 	for range b.N {
-		// "Book" matches all 100 titles; benchmarks the mid-page path.
+		// "Book" matches all 100 titles; benchmarks the first-page path.
 		_, _, err := d.SearchBooks(ctx, "Book", 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkSearchBooks_Hit_1000(b *testing.B) {
 	d := newBenchDB(b)
 	seedBooks(b, d, 1000)
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ResetTimer()
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.SearchBooks(ctx, "Book", 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkSearchBooks_NoMatch_1000(b *testing.B) {
 	d := newBenchDB(b)
 	seedBooks(b, d, 1000)
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ResetTimer()
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.SearchBooks(ctx, "zzz-no-match", 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -141,7 +154,7 @@ func BenchmarkSearchBooks_NoMatch_1000(b *testing.B) {
 
 func BenchmarkListBooksByAuthorPaginated_100(b *testing.B) {
 	d := newBenchDB(b)
-	ctx := context.Background()
+	ctx := b.Context()
 
 	author, err := d.CreateAuthor(ctx, "Prolific Author", nil, nil, nil, nil)
 	require.NoError(b, err, "CreateAuthor")
@@ -156,7 +169,9 @@ func BenchmarkListBooksByAuthorPaginated_100(b *testing.B) {
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.ListBooksByAuthorPaginated(ctx, author.ID, 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -164,7 +179,7 @@ func BenchmarkListBooksByAuthorPaginated_100(b *testing.B) {
 
 func BenchmarkListBooksBySeriesPaginated_100(b *testing.B) {
 	d := newBenchDB(b)
-	ctx := context.Background()
+	ctx := b.Context()
 
 	s, err := d.CreateSeries(ctx, "Long Series", nil, nil, nil)
 	require.NoError(b, err, "CreateSeries")
@@ -180,7 +195,9 @@ func BenchmarkListBooksBySeriesPaginated_100(b *testing.B) {
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.ListBooksBySeriesPaginated(ctx, s.ID, 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -188,7 +205,7 @@ func BenchmarkListBooksBySeriesPaginated_100(b *testing.B) {
 
 func BenchmarkListBooksByLibraryPaginated_100(b *testing.B) {
 	d := newBenchDB(b)
-	ctx := context.Background()
+	ctx := b.Context()
 
 	lib, err := d.CreateLibrary(ctx, "Benchmark Library", "/books", LibraryOrganizationNone, false)
 	require.NoError(b, err, "CreateLibrary")
@@ -203,7 +220,9 @@ func BenchmarkListBooksByLibraryPaginated_100(b *testing.B) {
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.ListBooksByLibraryPaginated(ctx, lib.ID, 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -211,7 +230,7 @@ func BenchmarkListBooksByLibraryPaginated_100(b *testing.B) {
 
 func BenchmarkListAuthorsPaginated_100(b *testing.B) {
 	d := newBenchDB(b)
-	ctx := context.Background()
+	ctx := b.Context()
 
 	for i := range 100 {
 		_, err := d.CreateAuthor(ctx, fmt.Sprintf("Author %05d", i+1), nil, nil, nil, nil)
@@ -222,7 +241,9 @@ func BenchmarkListAuthorsPaginated_100(b *testing.B) {
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.ListAuthorsPaginated(ctx, 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -230,7 +251,7 @@ func BenchmarkListAuthorsPaginated_100(b *testing.B) {
 
 func BenchmarkListSeriesPaginated_100(b *testing.B) {
 	d := newBenchDB(b)
-	ctx := context.Background()
+	ctx := b.Context()
 
 	for i := range 100 {
 		_, err := d.CreateSeries(ctx, fmt.Sprintf("Series %05d", i+1), nil, nil, nil)
@@ -241,6 +262,8 @@ func BenchmarkListSeriesPaginated_100(b *testing.B) {
 	b.ReportAllocs()
 	for range b.N {
 		_, _, err := d.ListSeriesPaginated(ctx, 50, 0)
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
