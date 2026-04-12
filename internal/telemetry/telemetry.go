@@ -50,10 +50,10 @@ func SendBoot(ctx context.Context, version string) {
 	// Telemetry is opt-in meaning it is disabled by default unless explicitly enabled
 	envTelemetryEnabled, ok := os.LookupEnv(EnvTelemetryEnabled)
 	if ok {
-		slog.DebugContext(ctx, "Telemetry environment variable found", slog.String(otelkeys.TelemetryEnabled, envTelemetryEnabled))
+		slog.DebugContext(ctx, "telemetry environment variable found", slog.String(otelkeys.TelemetryEnabled, envTelemetryEnabled))
 
 		if !strings.EqualFold(envTelemetryEnabled, "true") {
-			slog.InfoContext(ctx, "Telemetry is disabled via TELEMETRY_ENABLED environment variable")
+			slog.InfoContext(ctx, "telemetry is disabled via TELEMETRY_ENABLED environment variable")
 			return
 		}
 	} else {
@@ -63,29 +63,29 @@ func SendBoot(ctx context.Context, version string) {
 
 	endpoint := os.Getenv(EnvTelemetryEndpoint)
 	if endpoint == "" {
-		slog.DebugContext(ctx, "Telemetry endpoint not set, using default")
+		slog.DebugContext(ctx, "telemetry endpoint not set, using default")
 		endpoint = DefaultTelemetryEndpoint
 	}
 
-	slog.WarnContext(ctx, "NOTICE: This application collects anonymous telemetry data to help improve the product. To disable telemetry, set the environment variable TELEMETRY_ENABLED=false")
+	slog.WarnContext(ctx, "anonymous telemetry is enabled; this application collects non-identifying system information to help improve the product; set TELEMETRY_ENABLED=false to disable")
 
 	var installIDPath string
 	// Determine install ID path: prefer mounted /data folder, fall back to ./data
 	if _, err := os.Stat("/data"); err == nil {
 		installIDPath = "/data/install_id"
-		slog.DebugContext(ctx, "Using mounted /data folder for install ID", slog.String(otelkeys.Path, installIDPath))
+		slog.DebugContext(ctx, "using mounted /data folder for install ID", slog.String(otelkeys.Path, installIDPath))
 	} else {
 		installIDPath = "./data/install_id"
-		slog.DebugContext(ctx, "Using local data folder for install ID", slog.String(otelkeys.Path, installIDPath))
+		slog.DebugContext(ctx, "using local data folder for install ID", slog.String(otelkeys.Path, installIDPath))
 	}
 
 	// Only send once per install
 	if _, err := os.Stat(installIDPath); err == nil {
-		slog.DebugContext(ctx, "Telemetry already sent for this install, skipping")
+		slog.DebugContext(ctx, "telemetry already sent for this install, skipping")
 		return
 	}
 
-	slog.DebugContext(ctx, "Install ID not found, sending telemetry data")
+	slog.DebugContext(ctx, "install ID not found, sending telemetry data")
 	// Create install ID
 	id := uuid.New().String()
 
@@ -100,13 +100,13 @@ func SendBoot(ctx context.Context, version string) {
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to marshal telemetry payload", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to marshal telemetry payload", slog.Any(otelkeys.Error, err))
 		return
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewBuffer(body))
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to create telemetry request", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to create telemetry request", slog.Any(otelkeys.Error, err))
 		return
 	}
 
@@ -117,32 +117,32 @@ func SendBoot(ctx context.Context, version string) {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to send telemetry request", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to send telemetry request", slog.Any(otelkeys.Error, err))
 		return
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			slog.ErrorContext(ctx, "Failed to close telemetry response body", slog.Any(otelkeys.Error, err))
+			slog.ErrorContext(ctx, "failed to close telemetry response body", slog.Any(otelkeys.Error, err))
 		}
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		slog.ErrorContext(ctx, "Telemetry request failed", slog.Int(otelkeys.Status, resp.StatusCode))
+		slog.ErrorContext(ctx, "telemetry request failed", slog.Int(otelkeys.StatusCode, resp.StatusCode))
 		return
 	}
 
 	// write out response to log
-	slog.DebugContext(ctx, "Telemetry sent successfully")
+	slog.DebugContext(ctx, "telemetry sent successfully")
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to read telemetry response", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to read telemetry response", slog.Any(otelkeys.Error, err))
 		return
 	}
-	slog.DebugContext(ctx, "Telemetry response", slog.String(otelkeys.Body, string(body)))
+	slog.DebugContext(ctx, "telemetry response", slog.String(otelkeys.Body, string(body)))
 
 	err = os.WriteFile(installIDPath, []byte(id), 0o644)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to write install ID", slog.Any(otelkeys.Error, err))
+		slog.ErrorContext(ctx, "failed to write install ID", slog.Any(otelkeys.Error, err))
 		return
 	}
 }
