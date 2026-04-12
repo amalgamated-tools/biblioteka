@@ -175,6 +175,8 @@ definitions:
         type: string
       created_at:
         $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
+      download_count:
+        type: integer
       file_hash:
         type: string
       file_name:
@@ -272,6 +274,32 @@ definitions:
       updated_at:
         $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
     type: object
+  internal_handlers.captureAcceptedResponse:
+    properties:
+      library_id:
+        type: string
+      message:
+        type: string
+      url:
+        type: string
+    type: object
+  internal_handlers.captureRequest:
+    properties:
+      author:
+        type: string
+      description:
+        type: string
+      language:
+        type: string
+      library_id:
+        type: string
+      publisher:
+        type: string
+      title:
+        type: string
+      url:
+        type: string
+    type: object
   internal_handlers.changePasswordRequest:
     properties:
       currentPassword:
@@ -301,13 +329,6 @@ definitions:
       file_type:
         type: string
     type: object
-  internal_handlers.credentialRequest:
-    properties:
-      password:
-        type: string
-      username:
-        type: string
-    type: object
   internal_handlers.credentialResponse:
     properties:
       created_at:
@@ -315,6 +336,11 @@ definitions:
       updated_at:
         $ref: '#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp'
       username:
+        type: string
+    type: object
+  internal_handlers.emailBookFileRequest:
+    properties:
+      to:
         type: string
     type: object
   internal_handlers.errorResponse:
@@ -332,8 +358,6 @@ definitions:
         type: string
       token:
         type: string
-      token_hash:
-        type: string
       user_id:
         type: string
     type: object
@@ -344,8 +368,6 @@ definitions:
       id:
         type: string
       name:
-        type: string
-      token_hash:
         type: string
       user_id:
         type: string
@@ -484,6 +506,22 @@ definitions:
       username:
         type: string
     type: object
+  internal_handlers.updateProfileRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  internal_handlers.uploadAcceptedResponse:
+    properties:
+      file_name:
+        type: string
+      file_type:
+        type: string
+      library_id:
+        type: string
+      message:
+        type: string
+    type: object
   internal_handlers.userDTO:
     properties:
       email:
@@ -492,18 +530,27 @@ definitions:
         type: string
       is_admin:
         type: boolean
+      name:
+        type: string
       oidc_linked:
+        type: boolean
+    type: object
+  internal_handlers.watchFolderConfigResponse:
+    properties:
+      library_id:
+        type: string
+      path:
+        type: string
+    type: object
+  internal_server.enabledResponse:
+    properties:
+      enabled:
         type: boolean
     type: object
   internal_server.healthResponse:
     properties:
       status:
         type: string
-    type: object
-  internal_server.oidcEnabledResponse:
-    properties:
-      enabled:
-        type: boolean
     type: object
   internal_server.versionResponse:
     properties:
@@ -719,11 +766,13 @@ paths:
     get:
       description: Returns a paginated list of all audit log entries (admin only)
       parameters:
-      - description: Max entries to return (default 50)
+      - description: Max entries to return (default 50, max 200; invalid or out-of-range
+          values are silently clamped)
         in: query
         name: limit
         type: integer
-      - description: Entries to skip (default 0)
+      - description: Entries to skip (default 0; invalid or negative values are silently
+          ignored)
         in: query
         name: offset
         type: integer
@@ -734,10 +783,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/internal_handlers.auditLogListDTO'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
         "401":
           description: Unauthorized
           schema:
@@ -811,7 +856,8 @@ paths:
       - Auth
   /auth/me:
     get:
-      description: Returns the authenticated user's profile
+      description: GET returns the authenticated user's profile; PUT updates the display
+        name
       produces:
       - application/json
       responses:
@@ -833,7 +879,46 @@ paths:
             $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: Get current user
+      summary: Get or update current user
+      tags:
+      - Auth
+    put:
+      consumes:
+      - application/json
+      description: Updates the authenticated user's display name
+      parameters:
+      - description: Update profile request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.updateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.userDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update current user's profile
       tags:
       - Auth
   /auth/oidc/callback:
@@ -877,7 +962,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_server.oidcEnabledResponse'
+            $ref: '#/definitions/internal_server.enabledResponse'
       summary: Check if OIDC is enabled
       tags:
       - System
@@ -1017,6 +1102,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
         "409":
           description: Conflict
           schema:
@@ -1028,6 +1117,19 @@ paths:
       summary: Sign up a new user
       tags:
       - Auth
+  /auth/signup/enabled:
+    get:
+      description: Returns whether new user signup is permitted on this server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.enabledResponse'
+      summary: Check if signup is enabled
+      tags:
+      - System
   /authors:
     get:
       description: Returns all authors
@@ -1209,6 +1311,51 @@ paths:
       summary: Update an author
       tags:
       - Authors
+  /authors/{id}/books:
+    get:
+      description: Returns paginated books for a specific author
+      parameters:
+      - description: Author ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Max items per page (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.bookListDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List books by author
+      tags:
+      - Authors
   /book-files/{id}:
     delete:
       description: Delete a book file by ID
@@ -1278,10 +1425,107 @@ paths:
       summary: Get a book file
       tags:
       - BookFiles
+  /book-files/{id}/download:
+    get:
+      description: Serves the book file content for download and increments the download
+        count
+      parameters:
+      - description: Book File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: File content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Download a book file
+      tags:
+      - BookFiles
+  /book-files/{id}/email:
+    post:
+      consumes:
+      - application/json
+      description: Sends a book file as an email attachment to the specified address
+      parameters:
+      - description: Book File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Recipient email address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.emailBookFileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Email a book file
+      tags:
+      - BookFiles
   /books:
     get:
-      description: Returns paginated books (summary without relations)
+      description: Returns paginated books (summary without relations). When query
+        is provided, performs a title/description search.
       parameters:
+      - description: Search query (title/description substring match)
+        in: query
+        name: query
+        type: string
       - description: Max items per page (default 50, max 200)
         in: query
         name: limit
@@ -1687,6 +1931,120 @@ paths:
       summary: Set book series
       tags:
       - Books
+  /books/capture:
+    post:
+      consumes:
+      - application/json
+      description: Fetch a web page, extract its article content, convert it to EPUB,
+        and add it to a library. Processing happens asynchronously.
+      parameters:
+      - description: URL capture request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.captureRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/internal_handlers.captureAcceptedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Capture a web URL as an EPUB book
+      tags:
+      - Books
+  /books/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a book file (.epub, .mobi, .azw3, .pdf) to a library. The
+        file is staged and processed asynchronously.
+      parameters:
+      - description: Book file (.epub, .mobi, .azw3, .pdf)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Target library ID
+        in: formData
+        name: library_id
+        required: true
+        type: string
+      - description: Title override (takes precedence over extracted metadata)
+        in: formData
+        name: title
+        type: string
+      - description: Author override (takes precedence over extracted metadata)
+        in: formData
+        name: author
+        type: string
+      - description: Description override
+        in: formData
+        name: description
+        type: string
+      - description: ISBN override (ISBN-10 or ISBN-13)
+        in: formData
+        name: isbn
+        type: string
+      - description: Language override
+        in: formData
+        name: language
+        type: string
+      - description: Publisher override
+        in: formData
+        name: publisher
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/internal_handlers.uploadAcceptedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload a book file
+      tags:
+      - Books
   /config/oidc:
     get:
       description: Returns current OIDC configuration (admin only)
@@ -1877,6 +2235,73 @@ paths:
       summary: Get configuration status
       tags:
       - Config
+  /config/watch-folder:
+    get:
+      consumes:
+      - application/json
+      description: GET returns current watch folder config (admin only). PUT updates
+        watch folder config (admin only).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.watchFolderConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get or update watch folder configuration
+      tags:
+      - Config
+    put:
+      consumes:
+      - application/json
+      description: GET returns current watch folder config (admin only). PUT updates
+        watch folder config (admin only).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.watchFolderConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get or update watch folder configuration
+      tags:
+      - Config
   /health:
     get:
       description: Returns server health status
@@ -2015,89 +2440,21 @@ paths:
       - kobo-tokens
   /kosync/credentials:
     delete:
-      description: DELETE removes the current user's KOSync credential.
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Credential deleted
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
-          description: No KOSync credentials configured
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "405":
-          description: Method not allowed
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete KOSync credentials
-      tags:
-      - kosync-credentials
-    get:
-      description: GET returns the current user's KOSync credential (username and
-        timestamps; the hashed password is never returned).
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Credential returned
-          schema:
-            $ref: '#/definitions/internal_handlers.credentialResponse'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
-          description: No KOSync credentials configured
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "405":
-          description: Method not allowed
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get KOSync credentials
-      tags:
-      - kosync-credentials
-    put:
       consumes:
       - application/json
-      description: PUT creates or updates the current user's KOSync credential.
-      parameters:
-      - description: Credential data (required for PUT)
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/internal_handlers.credentialRequest'
+      description: |-
+        GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).
+        PUT creates or updates the current user's KOSync credential using a JSON body matching credentialRequest.
+        DELETE removes the current user's KOSync credential.
       produces:
       - application/json
       responses:
         "200":
-          description: Credential created or updated
+          description: Credential returned or updated
           schema:
             $ref: '#/definitions/internal_handlers.credentialResponse'
+        "204":
+          description: Credential deleted
         "400":
           description: Bad request
           schema:
@@ -2124,7 +2481,97 @@ paths:
             $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: Create or update KOSync credentials
+      summary: Manage KOSync credentials
+      tags:
+      - kosync-credentials
+    get:
+      consumes:
+      - application/json
+      description: |-
+        GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).
+        PUT creates or updates the current user's KOSync credential using a JSON body matching credentialRequest.
+        DELETE removes the current user's KOSync credential.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Credential returned or updated
+          schema:
+            $ref: '#/definitions/internal_handlers.credentialResponse'
+        "204":
+          description: Credential deleted
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: No KOSync credentials configured
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Username already taken
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Manage KOSync credentials
+      tags:
+      - kosync-credentials
+    put:
+      consumes:
+      - application/json
+      description: |-
+        GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).
+        PUT creates or updates the current user's KOSync credential using a JSON body matching credentialRequest.
+        DELETE removes the current user's KOSync credential.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Credential returned or updated
+          schema:
+            $ref: '#/definitions/internal_handlers.credentialResponse'
+        "204":
+          description: Credential deleted
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: No KOSync credentials configured
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Username already taken
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Manage KOSync credentials
       tags:
       - kosync-credentials
   /libraries:
@@ -2363,89 +2810,21 @@ paths:
       - Libraries
   /opds/credentials:
     delete:
-      description: DELETE removes the current user's OPDS credential.
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Credential deleted
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
-          description: No OPDS credentials configured
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "405":
-          description: Method not allowed
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete OPDS credentials
-      tags:
-      - opds-credentials
-    get:
-      description: GET returns the current user's OPDS credential.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Credential returned
-          schema:
-            $ref: '#/definitions/internal_handlers.credentialResponse'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "404":
-          description: No OPDS credentials configured
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "405":
-          description: Method not allowed
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/internal_handlers.errorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get OPDS credentials
-      tags:
-      - opds-credentials
-    put:
       consumes:
       - application/json
-      description: PUT creates or replaces the current user's OPDS credential (username
-        and password, with the password hashed server-side).
-      parameters:
-      - description: Credential data (required for PUT)
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/internal_handlers.credentialRequest'
+      description: |-
+        GET returns the current user's OPDS credential.
+        PUT creates or replaces the current user's OPDS credential using a JSON body of type credentialRequest (username and password, with the password hashed server-side).
+        DELETE removes the current user's OPDS credential.
       produces:
       - application/json
       responses:
         "200":
-          description: Credential created or updated
+          description: Credential returned or updated
           schema:
             $ref: '#/definitions/internal_handlers.credentialResponse'
+        "204":
+          description: Credential deleted
         "400":
           description: Bad request
           schema:
@@ -2472,7 +2851,97 @@ paths:
             $ref: '#/definitions/internal_handlers.errorResponse'
       security:
       - BearerAuth: []
-      summary: Create or update OPDS credentials
+      summary: Manage OPDS credentials
+      tags:
+      - opds-credentials
+    get:
+      consumes:
+      - application/json
+      description: |-
+        GET returns the current user's OPDS credential.
+        PUT creates or replaces the current user's OPDS credential using a JSON body of type credentialRequest (username and password, with the password hashed server-side).
+        DELETE removes the current user's OPDS credential.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Credential returned or updated
+          schema:
+            $ref: '#/definitions/internal_handlers.credentialResponse'
+        "204":
+          description: Credential deleted
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: No OPDS credentials configured
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Username already taken
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Manage OPDS credentials
+      tags:
+      - opds-credentials
+    put:
+      consumes:
+      - application/json
+      description: |-
+        GET returns the current user's OPDS credential.
+        PUT creates or replaces the current user's OPDS credential using a JSON body of type credentialRequest (username and password, with the password hashed server-side).
+        DELETE removes the current user's OPDS credential.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Credential returned or updated
+          schema:
+            $ref: '#/definitions/internal_handlers.credentialResponse'
+        "204":
+          description: Credential deleted
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: No OPDS credentials configured
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "405":
+          description: Method not allowed
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "409":
+          description: Username already taken
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Manage OPDS credentials
       tags:
       - opds-credentials
   /series:
@@ -2654,6 +3123,52 @@ paths:
       security:
       - BearerAuth: []
       summary: Update a series
+      tags:
+      - Series
+  /series/{id}/books:
+    get:
+      description: Returns paginated books for a specific series, ordered by position
+        then title
+      parameters:
+      - description: Series ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Max items per page (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.bookListDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: List books in a series
       tags:
       - Series
   /version:
