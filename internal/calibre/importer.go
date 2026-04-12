@@ -104,7 +104,7 @@ func runImport(ctx context.Context, biblDB *db.DB, calibreDB *DB, opts ImportOpt
 		slog.Int(otelkeys.BookCount, result.Total),
 		slog.Int(otelkeys.Imported, result.Imported),
 		slog.Int(otelkeys.Skipped, result.Skipped),
-		slog.Int(otelkeys.ErrorCode, result.Errors),
+		slog.Int(otelkeys.ErrorCount, result.Errors),
 	)
 	return result, nil
 }

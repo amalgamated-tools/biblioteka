@@ -40,6 +40,7 @@ const (
 	EntityType           string = "entity_type"
 	Error                string = "error"
 	ErrorCode            string = "error_code"
+	ErrorCount           string = "error_count"
 	Existing             string = "existing"
 	ExpiresAt            string = "expires_at"
 	Ext                  string = "ext"

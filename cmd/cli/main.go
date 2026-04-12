@@ -361,7 +361,6 @@ func runCalibreImport(ctx context.Context, libraryPath, libraryID string) error 
 
 	database, err := db.SetupDatabase(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to setup database", slog.Any(otelkeys.Error, err))
 		return fmt.Errorf("failed to setup database: %w", err)
 	}
 	defer func() { _ = database.Close() }()
