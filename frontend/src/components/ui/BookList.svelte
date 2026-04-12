@@ -290,7 +290,14 @@
             <tr
               onclick={() => routerStore.navigate(`books/${book.id}`)}
               onkeydown={(e) => {
-                if (e.key === "Enter" && e.target === e.currentTarget && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                if (
+                  e.key === "Enter" &&
+                  e.target === e.currentTarget &&
+                  !e.metaKey &&
+                  !e.ctrlKey &&
+                  !e.shiftKey &&
+                  !e.altKey
+                ) {
                   e.preventDefault();
                   routerStore.navigate(`books/${book.id}`);
                 }
