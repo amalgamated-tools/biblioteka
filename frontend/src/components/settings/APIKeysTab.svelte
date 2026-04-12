@@ -145,7 +145,7 @@
     {/if}
 
     {#if tokenList.loading}
-      <p class="text-ink-500 dark:text-ink-300">Loading API keys...</p>
+      <p role="status" class="text-ink-500 dark:text-ink-300">Loading API keys...</p>
     {:else if tokenList.items.length === 0}
       <p class="text-sm text-ink-500 dark:text-ink-300">
         No API keys yet. Create one above to get started.
