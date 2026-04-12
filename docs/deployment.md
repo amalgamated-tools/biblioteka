@@ -262,7 +262,7 @@ Database migrations run automatically on startup — no separate migration step 
 
 ## HTTP Security Headers
 
-Biblioteka sets the following HTTP security headers on every response via the `SecurityHeadersMiddleware`:
+Biblioteka sets the following HTTP security headers on every response via the `NewSecurityHeadersMiddleware` middleware:
 
 | Header | Value | Purpose |
 |--------|-------|---------|
@@ -276,6 +276,12 @@ Biblioteka sets the following HTTP security headers on every response via the `S
 The CSP permits the embedded frontend's inline theme bootstrap script and Google Fonts resources required by the SPA. Individual route handlers (such as the Swagger UI) may override the CSP with a more permissive or restrictive value for their specific use case; all other security headers remain in effect.
 
 The `Strict-Transport-Security` header is only emitted when `SECURE_COOKIES=true` (the default). It is suppressed for local development (`SECURE_COOKIES=false`) where TLS is not in use.
+
+> **Upgrade note (JWT `iss`/`aud` claims):** Starting with this release, all JWT
+> tokens include `iss` and `aud` claims set to `"biblioteka"`, and validation
+> requires them. Tokens issued by earlier versions (which lack these claims) will
+> be rejected, effectively logging out existing sessions on deploy. No data is
+> lost — users simply need to log in again.
 
 No additional reverse proxy configuration is required to enable these headers — the application server sets them directly.
 

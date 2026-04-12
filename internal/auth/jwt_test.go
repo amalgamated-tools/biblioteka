@@ -142,3 +142,26 @@ func TestValidateToken_WrongAudience(t *testing.T) {
 	_, err = jm.ValidateToken(t.Context(), signed)
 	require.ErrorIs(t, err, ErrInvalidToken)
 }
+
+func TestValidateToken_MissingIssuerAndAudience(t *testing.T) {
+	jm, err := NewJWTManager("testsecret", time.Hour)
+	require.NoError(t, err)
+
+	// Simulate a token created before iss/aud were introduced.
+	now := time.Now()
+	claims := Claims{
+		UserID: "user-123",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   "user-123",
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
+			// Issuer and Audience intentionally absent
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString(jm.secret)
+	require.NoError(t, err)
+
+	_, err = jm.ValidateToken(t.Context(), signed)
+	require.ErrorIs(t, err, ErrInvalidToken, "legacy token without iss/aud must be rejected")
+}
