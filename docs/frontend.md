@@ -245,7 +245,7 @@ Stores are plain class instances — no special `$` prefix import is needed for 
 > });
 > ```
 >
-> `onMount` remains valid for components that already use it, but new components should use `$effect` consistently with the rest of the runes-mode codebase.
+> `onMount` and `onDestroy` are not used in new components. Use `$effect` for all initialization and side effects. For cleanup (such as canceling timers or subscriptions), return a cleanup function from `$effect` instead of calling `onDestroy`.
 
 ## Routing
 
@@ -477,18 +477,19 @@ Use `copyToClipboard` whenever a component needs to copy text (tokens, sync URLs
 | `show()` | Sets `visible` to `true`, cancels any running timer, and starts a new auto-reset timer |
 | `clear()` | Cancels the pending timer and sets `visible` to `false` immediately |
 
-Always call `clear()` from `onDestroy` to prevent timer leaks when the component is unmounted before the timeout fires.
+Call `clear()` from the `$effect` cleanup return function to prevent timer leaks when the component unmounts before the timeout fires.
 
 **Usage:**
 
 ```svelte
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import { AutoDismissTimer } from "../lib/autoDismissTimer.svelte";
 
   const successTimer = new AutoDismissTimer(); // auto-hides after 3 s
 
-  onDestroy(() => successTimer.clear());
+  $effect(() => {
+    return () => successTimer.clear();
+  });
 
   async function handleSave() {
     await saveSettings();
@@ -634,20 +635,21 @@ Use `TokenListState` whenever a settings tab manages a list of user-owned tokens
 | `set(id)` | Marks `id` as copied, cancels any running timer, and starts a new auto-reset timer |
 | `clear()` | Cancels the pending timer and resets `copiedId` to `null` immediately |
 
-Always call `clear()` from `onDestroy` to prevent timer leaks when the component is unmounted before the timeout fires.
+Call `clear()` from the `$effect` cleanup return function to prevent timer leaks when the component unmounts before the timeout fires.
 
 **Usage:**
 
 ```svelte
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import { CopyTimeoutState } from "../lib/copyTimeout.svelte";
   import { copyToClipboard } from "../lib/clipboard";
 
   const copyState = new CopyTimeoutState(); // auto-resets after 2 s
-  let copyError: string | null = null;
+  let copyError: string | null = $state(null);
 
-  onDestroy(() => copyState.clear());
+  $effect(() => {
+    return () => copyState.clear();
+  });
 
   async function handleCopy(id: string, value: string) {
     try {
@@ -697,7 +699,7 @@ Use `CopyTimeoutState` whenever a component shows per-item "Copied!" feedback af
 |--------|-------------|
 | `clear()` | Cancels any pending timeout and resets `value` to `idleValue` immediately |
 
-Always call `clear()` from `onDestroy` to prevent timer leaks. Both `AutoDismissTimer` and `CopyTimeoutState` inherit this method — components using either class call the same `clear()` API.
+Call `clear()` from the `$effect` cleanup return function to prevent timer leaks. Both `AutoDismissTimer` and `CopyTimeoutState` inherit this method — components using either class call the same `clear()` API.
 
 Do **not** use `TimeoutState` directly in components. Extend it in a new subclass when you need auto-resetting reactive state with a different `T`. For boolean visibility (`true`/`false`) use `AutoDismissTimer`; for string-or-null item tracking use `CopyTimeoutState`.
 
