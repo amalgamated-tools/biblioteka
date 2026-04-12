@@ -89,7 +89,7 @@ ORDER BY ms.month ASC`
 	}
 	defer rows.Close()
 
-	result := make([]MonthlyDownloadCount, 0, months)
+	result := make([]MonthlyDownloadCount, 0)
 	for rows.Next() {
 		var m MonthlyDownloadCount
 		if err := rows.Scan(&m.Month, &m.Count); err != nil {
