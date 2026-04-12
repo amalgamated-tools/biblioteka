@@ -172,6 +172,32 @@ func TestLogin_UserNotFound(t *testing.T) {
 	h.Login(w, r)
 
 	require.Equal(t, http.StatusUnauthorized, w.Code)
+	var resp errorResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Equal(t, "invalid email or password", resp.Error)
+}
+
+// Regression test for account enumeration via OIDC login error (PR #1713).
+// An OIDC-only account (empty password_hash) must return the same generic
+// "invalid email or password" error as a non-existent account so that
+// attackers cannot use the login endpoint to discover which emails are
+// registered as OIDC-only vs. not registered at all.
+func TestLogin_OIDCOnlyAccountReturnsGenericError(t *testing.T) {
+	h := newAuthHandler(t)
+
+	_, err := h.DB.CreateOIDCUser(t.Context(), "Alice", "alice@example.com", "oidc-subject-123")
+	require.NoError(t, err)
+
+	body := `{"email":"alice@example.com","password":"somepassword"}`
+	r := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString(body))
+	w := httptest.NewRecorder()
+	h.Login(w, r)
+
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+	var resp errorResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	// Must match the user-not-found error exactly — no "OIDC" or account-type hint.
+	require.Equal(t, "invalid email or password", resp.Error)
 }
 
 func TestLogin_MissingFields(t *testing.T) {
