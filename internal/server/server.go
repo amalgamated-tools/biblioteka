@@ -79,6 +79,7 @@ type Server struct {
 	opdsCredentialHandler *handlers.OPDSCredentialHandler
 	koboHandler           *handlers.KoboHandler
 	kosyncHandler         *handlers.KOSyncHandler
+	statsHandler          *handlers.StatsHandler
 	requireAuth           func(http.Handler) http.Handler
 	requireJWTAuth        func(http.Handler) http.Handler
 	requireAdmin          func(http.Handler) http.Handler
@@ -216,6 +217,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.apiKeyHandler = &handlers.APIKeyHandler{DB: s.DB}
 	s.koboHandler = &handlers.KoboHandler{DB: s.DB}
 	s.koboHandler.RegisterRoutes()
+	s.statsHandler = &handlers.StatsHandler{DB: s.DB}
 	s.requireKoboAuth = auth.KoboTokenAuthMiddleware(&koboDBAdapter{db: s.DB})
 	protocolCredAdapter := &protocolCredDBAdapter{db: s.DB}
 	s.requireOPDSAuth = auth.OPDSBasicAuthMiddleware(protocolCredAdapter)
