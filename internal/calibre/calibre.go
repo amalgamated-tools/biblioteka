@@ -45,7 +45,10 @@ func (c *DB) Close() error {
 	return c.db.Close()
 }
 
-// calibreDateLayouts are the datetime formats Calibre uses in SQLite storage.
+// calibreSentinelYear is Calibre's magic year for "no publication date set"
+// (the sentinel date is 0101-01-01, i.e. 1 January of year 101 AD).
+const calibreSentinelYear = 101
+
 var calibreDateLayouts = []string{
 	"2006-01-02T15:04:05-07:00",
 	"2006-01-02 15:04:05-07:00",
@@ -185,8 +188,8 @@ func (c *DB) LoadBooks(ctx context.Context) ([]Book, error) {
 			Identifiers: identifiers[rb.id],
 			Language:    languages[rb.id],
 		}
-		// Year ≤ 101 is Calibre's sentinel for "no date set" (0101-01-01).
-		if !rb.pubdate.IsZero() && rb.pubdate.Year() > 101 {
+		// Year ≤ calibreSentinelYear is Calibre's sentinel for "no date set" (0101-01-01).
+		if !rb.pubdate.IsZero() && rb.pubdate.Year() > calibreSentinelYear {
 			book.Pubdate = rb.pubdate
 		}
 		books = append(books, book)
@@ -366,7 +369,9 @@ func (c *DB) loadBookLanguages(ctx context.Context) (map[int64]string, error) {
 		 ORDER BY bll.book, bll.item_order`,
 	)
 	if err != nil {
-		// Older Calibre databases may not have the languages tables.
+		// Older Calibre databases may not have the languages tables. The SQLite
+		// driver does not expose a typed error for "no such table", so we fall
+		// back to string matching as a last resort.
 		if strings.Contains(err.Error(), "no such table") {
 			return make(map[int64]string), nil
 		}

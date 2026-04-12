@@ -426,6 +426,18 @@ func TestImport_ISBNClassification(t *testing.T) {
 			calibreVal:  "9780061120084",
 			wantISBN13:  "9780061120084",
 		},
+		{
+			name:        "isbn10 via explicit type",
+			calibreType: "isbn10",
+			calibreVal:  "0-06-112008-1",
+			wantISBN10:  "0061120081",
+		},
+		{
+			name:        "isbn10 via generic isbn type",
+			calibreType: "isbn",
+			calibreVal:  "0-06-112008-1",
+			wantISBN10:  "0061120081",
+		},
 	}
 
 	for _, tt := range tests {
@@ -559,7 +571,8 @@ func TestFormat_FilePath(t *testing.T) {
 }
 
 // TestImport_NoFormats verifies that a Calibre book with no file formats is
-// still imported as a book record (without any file records).
+// skipped to keep the import idempotent (without formats there is no file path
+// to deduplicate on).
 func TestImport_NoFormats(t *testing.T) {
 	cdb := newTestCalibreDB(t)
 	biblDB := newTestBibliothekaDB(t)
@@ -569,17 +582,13 @@ func TestImport_NoFormats(t *testing.T) {
 	opts := ImportOptions{LibraryPath: "/calibre/library"}
 	result, err := runImport(t.Context(), biblDB, cdb, opts)
 	require.NoError(t, err)
-	// Book has no formats so the dedup check finds no files and a book record
-	// is created but with no associated files.
-	require.Equal(t, 1, result.Imported)
+	require.Equal(t, 1, result.Total)
+	require.Equal(t, 0, result.Imported, "format-less book should be skipped")
+	require.Equal(t, 1, result.Skipped)
 
 	books, err := biblDB.ListBooks(t.Context())
 	require.NoError(t, err)
-	require.Len(t, books, 1)
-
-	files, err := biblDB.ListBookFiles(t.Context(), books[0].ID)
-	require.NoError(t, err)
-	require.Empty(t, files, "expected no book files for a format-less book")
+	require.Empty(t, books, "format-less book should not be written to Biblioteka")
 }
 
 // TestImport_AsinIdentifier verifies that the Calibre "asin" identifier type
