@@ -206,14 +206,14 @@ Core book metadata. All fields except `title` are optional.
 | `updated_at`      | DATETIME| NOT NULL | `now()`  | Last update time                       |
 
 **Indexes:**
-- `idx_books_title` — index on `title` (SQLite) / composite index on `(title, id)` (PostgreSQL) for efficient `ORDER BY title ASC` queries; used by `ListBooksPaginated`, `ListBooksByAuthorPaginated`, `ListBooksBySeriesPaginated`, and `SearchBooks`.
-- `idx_books_created_at` — index on `(created_at DESC)` (SQLite) / composite index on `(created_at DESC, id DESC)` (PostgreSQL) for efficient `ORDER BY created_at DESC` queries; used by `ListRecentBooks`.
+- `idx_books_title` — index on `(title)` (SQLite) / composite index on `(title, id)` (PostgreSQL), covering `ORDER BY title ASC, rowid ASC` on SQLite and `ORDER BY title ASC, id ASC` on PostgreSQL in paginated list and search queries; used by `ListBooksPaginated`, `ListBooksByAuthorPaginated`, `ListBooksBySeriesPaginated`, and `SearchBooks`.
+- `idx_books_created_at` — index on `(created_at DESC)` (SQLite) / composite index on `(created_at DESC, id DESC)` (PostgreSQL), covering `ORDER BY created_at DESC, rowid DESC` on SQLite and `ORDER BY created_at DESC, id DESC` on PostgreSQL; used by `ListRecentBooks`.
 - `idx_books_updated_at_id` — composite index on `(updated_at, id)` for efficient cursor-based pagination; used by the Kobo library sync endpoint to order and page through books by modification time.
 
 **Full-text / trigram search indexes (added in migration `20260412000000`):**
 
 - **SQLite:** `books_fts` — FTS5 content virtual table backed by the `books` table (columns: `title`, `description`). Three `AFTER INSERT/DELETE/UPDATE` triggers keep the index in sync automatically. `SearchBooks` queries this index using prefix-matching phrases (e.g. `"found"*`); the `sanitizeFTS5Query` function in `fts_sanitize.go` converts the user's query into a safe FTS5 `MATCH` expression. Running `VACUUM` on the database while FTS5 is enabled can corrupt the implicit `rowid` mapping; rebuild the index afterward with `INSERT INTO books_fts(books_fts) VALUES ('rebuild')` if needed.
-- **PostgreSQL:** `idx_books_title_trgm` and `idx_books_description_trgm` — GIN trigram indexes using the `pg_trgm` extension (enabled automatically by the migration). These accelerate the `ILIKE '%query%'` clause used by `SearchBooks` on PostgreSQL, converting what would otherwise be a full sequential scan into an index lookup.
+- **PostgreSQL:** `idx_books_title_trgm` and `idx_books_description_trgm` — GIN trigram indexes using the `pg_trgm` extension (enabled automatically by the migration). These accelerate the `ILIKE '%query%'` clause used by `SearchBooks` on PostgreSQL, converting what would otherwise be a full sequential scan into an index lookup. LIKE special characters in the query are escaped before matching.
 
 **Notes:**
 - Books are global (not scoped per user).
@@ -291,6 +291,51 @@ Individual physical files (EPUB, MOBI, PDF, AZW3) linked to a book record.
 
 **Indexes:**
 - `UNIQUE(file_path)` (`idx_book_files_file_path`) — each physical file path is indexed at most once. The `process:file` handler relies on this constraint to prevent duplicate `book_file` rows when a file is encountered again after Redis state is lost or when the same path is scanned from multiple library configurations.
+
+---
+
+### `books_fts` (SQLite virtual table)
+
+> **SQLite only.** This virtual table does not exist in the PostgreSQL schema; full-text search on PostgreSQL is handled by the `pg_trgm` GIN indexes described above.
+
+An FTS5 content table that provides full-text search over `books.title` and `books.description`. It is created by migration `20260412000000_add_books_fts.sql`.
+
+```sql
+CREATE VIRTUAL TABLE books_fts USING fts5(
+    title,
+    description,
+    content=books,
+    content_rowid=rowid
+);
+```
+
+`content=books` means FTS5 reads the indexed text from the `books` table rather than storing a copy, avoiding data duplication. `content_rowid=rowid` ties each FTS entry to the corresponding `books` row via SQLite's implicit `rowid`.
+
+**Sync triggers:**
+
+Three triggers keep `books_fts` in sync with the `books` table automatically:
+
+| Trigger | Event | Behavior |
+|---------|-------|----------|
+| `books_fts_ai` | `AFTER INSERT ON books` | Inserts a new FTS entry for the added row |
+| `books_fts_ad` | `AFTER DELETE ON books` | Marks the deleted row's FTS entry as deleted |
+| `books_fts_au` | `AFTER UPDATE ON books WHEN title or description changed` | Deletes the old FTS entry and inserts a new one; skips updates that do not touch `title` or `description` |
+
+**Query behavior:**
+
+`SearchBooks` passes the user query through `sanitizeFTS5Query` before issuing the FTS `MATCH` expression. Each whitespace-separated token is wrapped in FTS5 phrase syntax with a trailing `*` wildcard for prefix matching (e.g. `"found"*` matches any word that starts with `found`, such as `foundation` — the match is case-insensitive because FTS5's `unicode61` tokenizer folds to lowercase). Multiple tokens are evaluated as an implicit AND — all tokens must match somewhere in the combined document (different tokens may match in different columns). Tokens that contain no letter or digit are skipped entirely; if no valid tokens remain, `SearchBooks` returns zero results without executing the FTS query.
+
+**VACUUM warning:**
+
+`books_fts` is tied to SQLite's implicit `rowid`, not the `books.id` TEXT primary key. Running `VACUUM` (or enabling `auto_vacuum`) can silently reassign rowids, corrupting the FTS index by mapping entries to wrong rows. By default SQLite does not enable `auto_vacuum`. If `VACUUM` is ever run manually or via a maintenance routine, rebuild the index afterwards:
+
+```sql
+INSERT INTO books_fts(books_fts) VALUES ('rebuild');
+```
+
+**Code:**
+- `internal/db/fts_sanitize.go` — `sanitizeFTS5Query` and `containsWordChar` helpers
+- `internal/db/book_queries.go` — `SearchBooks` (constructs the `MATCH` expression and queries `books_fts`)
 
 ---
 
