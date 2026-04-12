@@ -9,9 +9,7 @@ import {
 } from "vitest";
 import { listEntityBooks, clearToken } from "../api";
 import type { PaginatedBooks } from "../../types";
-import {
-  mockFetchResponse as _mockFetchResponse,
-} from "./testUtils";
+import { mockFetchResponse as _mockFetchResponse } from "./testUtils";
 
 let fetchMock: Mock;
 
