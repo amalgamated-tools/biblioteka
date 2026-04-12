@@ -67,7 +67,11 @@ func SendBoot(ctx context.Context, version string) {
 		endpoint = DefaultTelemetryEndpoint
 	}
 
-	slog.WarnContext(ctx, "anonymous telemetry is enabled; this application collects non-identifying system information to help improve the product; set TELEMETRY_ENABLED=false to disable")
+	slog.WarnContext(ctx, "anonymous telemetry is enabled",
+		slog.Bool(otelkeys.TelemetryEnabled, true),
+		slog.String(otelkeys.TelemetryEndpoint, endpoint),
+		slog.String(otelkeys.TelemetryDisableHint, "set TELEMETRY_ENABLED=false to disable"),
+	)
 
 	var installIDPath string
 	// Determine install ID path: prefer mounted /data folder, fall back to ./data
