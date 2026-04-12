@@ -5,36 +5,29 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  actions: read
-  discussions: read
   issues: read
   pull-requests: read
 tracker-id: daily-code-metrics
 engine: copilot
-checkout:
-  fetch-depth: 0  # Full history is available; do not assume a shallow clone or run `git fetch --unshallow` unless `git rev-parse --is-shallow-repository` returns `true`
 tools:
   repo-memory:
     branch-prefix: daily
     description: "Historical code quality and health metrics"
     file-glob: ["*.json", "*.jsonl", "*.csv", "*.md"]
     max-file-size: 102400  # 100KB
+    max-patch-size: 51200  # 50KB - increased from default 10KB to handle history.jsonl growth
   bash: true
-safe-outputs:
-  upload-asset:
-  create-discussion:
-    expires: 3d
-    category: "audits"
-    max: 1
-    close-older-discussions: true
 timeout-minutes: 30
 strict: true
 imports:
-  - shared/mood.md
+  - uses: shared/daily-audit-discussion.md
+    with:
+      title-prefix: "[daily-code-metrics] "
   - shared/reporting.md
   - shared/python-dataviz.md
   - shared/trends.md
-source: github/gh-aw/.github/workflows/daily-code-metrics.md@852cb06ad52958b402ed982b69957ffc57ca0619
+  - shared/observability-otlp.md
+source: github/gh-aw/.github/workflows/daily-code-metrics.md@525b5b77a444146979ba1759b2a23d72934bc6fc
 ---
 
 {{#runtime-import? .github/shared-instructions.md}}
@@ -47,7 +40,7 @@ You are the Daily Code Metrics Agent - an expert system that tracks comprehensiv
 
 Analyze codebase daily: compute size, quality, health metrics. Track 7/30-day trends. Store in cache, generate reports with visualizations.
 
-**Context**: Full git history is available (`fetch-depth: 0`). No need to run `git fetch --unshallow`. Memory: `/tmp/gh-aw/repo-memory/default/`
+**Context**: Fresh clone (no git history). Fetch with `git fetch --unshallow` for churn metrics. Memory: `/tmp/gh-aw/repo-memory/default/`
 
 ## Metrics to Collect
 
@@ -59,7 +52,7 @@ All metrics use standardized names from scratchpad/metrics-glossary.md:
 
 **Tests**: Test files/LOC (`test_lines_of_code`), test-to-source ratio (`test_to_source_ratio`)
 
-**Churn (7d)**: Files modified, commits, lines added/deleted, most active files (full history available via `fetch-depth: 0`)
+**Churn (7d)**: Files modified, commits, lines added/deleted, most active files (requires `git fetch --unshallow`)
   - **IMPORTANT**: Exclude generated `*.lock.yml` files from churn calculations to avoid noise
   - Calculate separate churn metrics: source code churn vs workflow lock file churn
   - Use source code churn (excluding `*.lock.yml`) for quality score calculation
@@ -271,17 +264,6 @@ After generating charts:
 
 For each metric: current value, 7-day % change, 30-day % change, trend indicator (⬆️/➡️/⬇️)
 
-## Report Formatting Guidelines
-
-**IMPORTANT**: Use h3 (###) or lower for all headers in the discussion report to maintain proper document hierarchy. The discussion title serves as h1.
-
-**Structure**:
-- Main sections: h3 (###) - e.g., "### 📊 Visualizations"
-- Subsections: h4 (####) - e.g., "#### LOC Distribution by Language"
-- Detail sections inside `<details>`: h3/h4 as appropriate
-
-**Progressive Disclosure**: Keep executive summary and key visualizations visible. Use `<details>` tags for detailed metrics tables (as already shown in template).
-
 ## Report Format
 
 Use detailed template with embedded visualization charts:
@@ -328,7 +310,7 @@ Brief 2-3 paragraph executive summary highlighting key findings, quality score, 
 [Trend analysis and significant changes]
 
 <details>
-<summary><b>📈 Detailed Metrics</b></summary>
+<summary>📈 Detailed Metrics</summary>
 
 ### Size Metrics
 
@@ -426,6 +408,7 @@ Brief 2-3 paragraph executive summary highlighting key findings, quality score, 
 
 ### Report Guidelines
 
+- **Report Formatting**: Use h3 (###) or lower for all headers in your report to maintain proper document hierarchy. Wrap long sections in `<details><summary>Section Name</summary>` tags to improve readability and reduce scrolling.
 - Include all 6 visualization charts as embedded images
 - Upload charts using `upload asset` tool for permanent URLs
 - Provide brief analysis for each chart
@@ -462,3 +445,9 @@ This ensures the quality score reflects actionable source code volatility, not n
 - Upload charts as assets for permanent URLs
 - Embed charts in discussion report with analysis
 - Store metrics to repo memory, create discussion report with visualizations
+
+**Important**: After completing your analysis, you **MUST** call the `create-discussion` safe-output tool to publish the report, including a brief explanation if there are no notable changes or actions needed. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"create-discussion": {"title": "Daily Code Metrics Report", "body": "[summary of metrics, charts, analysis, and note if no action is needed]"}}
+```

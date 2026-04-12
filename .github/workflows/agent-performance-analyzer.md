@@ -17,7 +17,6 @@ tools:
     file-glob: "**"
     max-file-size: 102400  # 100KB
 imports:
-  - shared/mood.md
   - shared/reporting.md
 safe-outputs:
   create-issue:
@@ -27,11 +26,14 @@ safe-outputs:
     labels: [cookie]
   create-discussion:
     category: "audits"
+    expires: 1d
     max: 2
   add-comment:
     max: 10
 timeout-minutes: 30
-source: github/gh-aw/.github/workflows/agent-performance-analyzer.md@852cb06ad52958b402ed982b69957ffc57ca0619
+features:
+  copilot-requests: true
+source: github/gh-aw/.github/workflows/agent-performance-analyzer.md@66fb0c5877c118a3b1ee7e120edac1161b1df4ee
 ---
 
 {{#runtime-import? .github/shared-instructions.md}}
@@ -636,3 +638,9 @@ Your effectiveness is measured by:
 - Agent ecosystem health and sustainability
 
 Execute all phases systematically and maintain an objective, data-driven approach to agent performance analysis.
+
+**Important**: After completing your analysis, you **MUST** call one of the configured safe-output tools (`create-issue`, `create-discussion`, or `add-comment`) to publish your findings. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"create-discussion": {"title": "Agent Performance Analysis", "body": "[Your analysis and findings here]"}}
+```

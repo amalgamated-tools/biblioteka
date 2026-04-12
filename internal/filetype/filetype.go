@@ -25,3 +25,14 @@ var mimeTypes = map[string]string{
 func MIMEType(fileType string) string {
 	return mimeTypes[strings.ToLower(fileType)]
 }
+
+// MIMETypeOrOctetStream returns the MIME content type for a Biblioteka file
+// type string, falling back to "application/octet-stream" when the type is not
+// recognized. Use this for HTTP downloads and email attachments where the
+// browser or mail client must always receive a valid content type.
+func MIMETypeOrOctetStream(fileType string) string {
+	if mt := MIMEType(fileType); mt != "" {
+		return mt
+	}
+	return "application/octet-stream"
+}

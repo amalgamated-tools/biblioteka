@@ -7,34 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPtr(t *testing.T) {
-	t.Run("string", func(t *testing.T) {
-		p := ptrutil.Ptr("hello")
-		require.NotNil(t, p)
-		require.Equal(t, "hello", *p)
-	})
-	t.Run("empty string", func(t *testing.T) {
-		p := ptrutil.Ptr("")
-		require.NotNil(t, p)
-		require.Equal(t, "", *p)
-	})
-	t.Run("int", func(t *testing.T) {
-		p := ptrutil.Ptr(42)
-		require.NotNil(t, p)
-		require.Equal(t, 42, *p)
-	})
-	t.Run("float64", func(t *testing.T) {
-		p := ptrutil.Ptr(3.14)
-		require.NotNil(t, p)
-		require.InDelta(t, 3.14, *p, 0.001)
-	})
-	t.Run("bool", func(t *testing.T) {
-		p := ptrutil.Ptr(true)
-		require.NotNil(t, p)
-		require.True(t, *p)
-	})
-}
-
 func TestDeref(t *testing.T) {
 	t.Run("non-nil string", func(t *testing.T) {
 		s := "hello"

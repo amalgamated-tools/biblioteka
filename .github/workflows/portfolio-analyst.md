@@ -6,7 +6,6 @@ on:
 permissions:
   contents: read
   actions: read
-  discussions: read
   issues: read
   pull-requests: read
 tracker-id: portfolio-analyst-weekly
@@ -19,29 +18,34 @@ tools:
     toolsets: [default]
   bash: ["*"]
 steps:
+  - name: Install gh-aw CLI
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    run: |
+      if gh extension list | grep -q "github/gh-aw"; then
+        gh extension upgrade gh-aw || true
+      else
+        gh extension install github/gh-aw
+      fi
+      gh aw --version
   - name: Download logs from last 30 days
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     run: |
       mkdir -p /tmp/portfolio-logs
-      # Install gh-aw extension if not already available
-      if ! gh extension list 2>/dev/null | grep -q "github/gh-aw"; then
-        gh extension install github/gh-aw
-      fi
       gh aw logs --start-date -30d -c 5000 -o /tmp/portfolio-logs --json > /tmp/portfolio-logs/summary.json
 safe-outputs:
-  create-discussion:
-    title-prefix: "[portfolio] "
-    category: "audits"
-    close-older-discussions: true
   upload-asset:
 timeout-minutes: 20
 imports:
-  - shared/mood.md
+  - uses: shared/daily-audit-discussion.md
+    with:
+      title-prefix: "[portfolio] "
+      expires: 1d
   - shared/reporting.md
   - shared/jqschema.md
   - shared/trending-charts-simple.md
-source: github/gh-aw/.github/workflows/portfolio-analyst.md@852cb06ad52958b402ed982b69957ffc57ca0619
+source: github/gh-aw/.github/workflows/portfolio-analyst.md@525b5b77a444146979ba1759b2a23d72934bc6fc
 ---
 
 # Automated Portfolio Analyst
@@ -364,7 +368,7 @@ Top 3 workflows account for [X]% of total cost:
 **Total Potential Savings: $[X]/month ([Y]% reduction)**
 
 <details>
-<summary><b>Strategy 1: Fix High-Failure Workflows - $[X]/month</b></summary>
+<summary>Strategy 1: Fix High-Failure Workflows - $[X]/month</summary>
 
 List workflows with >30% failure rate, showing:
 - Workflow name and file
@@ -375,7 +379,7 @@ List workflows with >30% failure rate, showing:
 </details>
 
 <details>
-<summary><b>Strategy 2: Reduce Over-Scheduling - $[Y]/month</b></summary>
+<summary>Strategy 2: Reduce Over-Scheduling - $[Y]/month</summary>
 
 List over-scheduled workflows with:
 - Current frequency (runs/month)
@@ -385,14 +389,14 @@ List over-scheduled workflows with:
 </details>
 
 <details>
-<summary><b>Strategy 3: Disable Failed Workflows - $[Z]/month</b></summary>
+<summary>Strategy 3: Disable Failed Workflows - $[Z]/month</summary>
 
 List workflows with 100% failure rate or no successful runs.
 
 </details>
 
 <details>
-<summary><b>Strategy 4: Remove Unused Workflows - $[W]/month</b></summary>
+<summary>Strategy 4: Remove Unused Workflows - $[W]/month</summary>
 
 List workflows with no runs in 60+ days.
 
@@ -581,3 +585,9 @@ print("✅ All charts generated")
 ✅ All dollar amounts are from actual workflow execution data
 
 Begin your analysis now. **FIRST**: Generate all 4 required charts from `/tmp/portfolio-logs/summary.json` and upload them as assets. **THEN**: Create the dashboard-style discussion with embedded chart URLs. Read from the pre-downloaded JSON file at `/tmp/portfolio-logs/summary.json` to get real execution data for all workflows. This file contains everything you need: summary metrics and individual run data. DO NOT attempt to call `gh aw logs` or any `gh` commands - they will not work. Move fast, focus on high-impact issues, deliver actionable recommendations based on actual costs, and make the report visual and scannable.
+
+**Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.
+
+```json
+{"noop": {"message": "No action needed: [brief explanation of what was analyzed and why]"}}
+```
