@@ -133,13 +133,16 @@ describe("BookCard", () => {
     const outsideFocusTarget = document.createElement("button");
     outsideFocusTarget.type = "button";
     document.body.appendChild(outsideFocusTarget);
-    outsideFocusTarget.focus();
-    expect(outsideFocusTarget).toHaveFocus();
 
-    // Simulate the modal calling onClose
-    await emailModalOnClose!();
-    expect(btn).toHaveFocus();
+    try {
+      outsideFocusTarget.focus();
+      expect(outsideFocusTarget).toHaveFocus();
 
-    outsideFocusTarget.remove();
+      // Simulate the modal calling onClose
+      await emailModalOnClose!();
+      expect(btn).toHaveFocus();
+    } finally {
+      outsideFocusTarget.remove();
+    }
   });
 });
