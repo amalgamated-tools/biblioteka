@@ -163,4 +163,23 @@ describe("MetadataComparison", () => {
     });
     expect(screen.queryByTitle("Use fetched value")).not.toBeInTheDocument();
   });
+
+  it("shows accessible 'Values match' label when a field value matches", () => {
+    const matchingValues = {
+      ...baseCurrentValues,
+      title: "New Title",
+    };
+    render(MetadataComparison, {
+      metadata: baseMetadata,
+      currentValues: matchingValues,
+      onApplyField: vi.fn(),
+      onApplyAll: vi.fn(),
+      onDismiss: vi.fn(),
+    });
+    const matchIndicators = screen.getAllByRole("img", {
+      name: /^Values match for /,
+    });
+    expect(matchIndicators).toHaveLength(1);
+    expect(matchIndicators[0]).toHaveAccessibleName("Values match for Title");
+  });
 });
