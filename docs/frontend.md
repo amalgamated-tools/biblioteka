@@ -1003,7 +1003,7 @@ The implicit `role="row"` is preserved — no `role="link"` override is applied 
   class="... focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500 focus-visible:outline-none"
 >
   <td>
-    <a href={`#books/${book.id}`} tabindex="-1">
+    <a href={`#books/${book.id}`} onclick={(e) => e.stopPropagation()} tabindex="-1">
       {book.title}
     </a>
   </td>
@@ -1011,7 +1011,7 @@ The implicit `role="row"` is preserved — no `role="link"` override is applied 
 </tr>
 ```
 
-> **Rule:** When a table row acts as a navigation target, add `tabindex="0"`, `aria-label`, and an Enter-key `onkeydown` handler. Set `tabindex="-1"` on any link inside the row that points to the same destination. Do **not** add `role="link"` — it breaks table structure semantics for screen readers.
+> **Rule:** When a table row acts as a navigation target, add `tabindex="0"`, `aria-label`, and an Enter-key `onkeydown` handler. Set `tabindex="-1"` and `onclick={(e) => e.stopPropagation()}` on any link inside the row that points to the same destination, so clicks on the link do not bubble up to the row's `onclick` handler. Do **not** add `role="link"` — it breaks table structure semantics for screen readers.
 
 ---
 
@@ -2231,7 +2231,7 @@ When adding a data table component:
 3. If a `<th>` spans rows, it has `scope="row"`.
 4. Do not use `<td>` for header cells — use `<th scope="…">` so the relationship is semantically clear.
 5. Inline state-toggle buttons (whose visible text reflects the current state) must carry an action-oriented `aria-label` so screen-reader users hear what the button will *do*, not just what the current state *is*. See [Action-oriented labels for state-toggle buttons](#action-oriented-labels-for-state-toggle-buttons) below.
-6. If a row is a navigation target (clicking it navigates elsewhere), add `tabindex="0"`, `aria-label="View {name}"`, and an Enter-key `onkeydown` handler. Set `tabindex="-1"` on any link inside the row that points to the same destination. Do **not** add `role="link"`. Use `focus-visible:ring-*` for the focus indicator (WCAG 2.1.1). See [Keyboard navigation for interactive table rows](#keyboard-navigation-for-interactive-table-rows-booklistsvelte) above.
+6. If a row is a navigation target (clicking it navigates elsewhere), add `tabindex="0"`, `aria-label="View {name}"`, and an Enter-key `onkeydown` handler. Set `tabindex="-1"` and `onclick={(e) => e.stopPropagation()}` on any link inside the row that points to the same destination to prevent double navigation. Do **not** add `role="link"`. Use `focus-visible:ring-*` for the focus indicator (WCAG 2.1.1). See [Keyboard navigation for interactive table rows](#keyboard-navigation-for-interactive-table-rows-booklistsvelte) above.
 
 #### Action-oriented labels for state-toggle buttons
 
