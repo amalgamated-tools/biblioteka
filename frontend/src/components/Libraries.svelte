@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { routerStore } from "../stores/router.svelte";
   import { Plus, Library as LibraryIcon } from "lucide-svelte";
@@ -35,13 +34,15 @@
     return libraryStore.libraries.find((l) => l.id === viewId) ?? null;
   });
 
-  onMount(async () => {
+  $effect(() => {
     if (!libraryStore.loaded) {
-      try {
-        await libraryStore.load();
-      } catch (e) {
-        error = e instanceof Error ? e.message : "Failed to load libraries";
-      }
+      void (async () => {
+        try {
+          await libraryStore.load();
+        } catch (e) {
+          error = e instanceof Error ? e.message : "Failed to load libraries";
+        }
+      })();
     }
   });
 </script>

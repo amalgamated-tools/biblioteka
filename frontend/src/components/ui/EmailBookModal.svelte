@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { Mail, X } from "lucide-svelte";
   import * as api from "../../lib/api";
   import type { Book, BookFile } from "../../types";
@@ -18,7 +17,7 @@
   let loading = $state(true);
   let dialogEl: HTMLDivElement | null = $state(null);
 
-  onMount(() => {
+  $effect(() => {
     dialogEl?.focus();
   });
 
