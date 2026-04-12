@@ -27,7 +27,7 @@
   });
 
   $effect(() => {
-    if (userList.length === 0) {
+    if (userList.length === 0 && !usersLoading && !usersError) {
       void loadUsers();
     }
   });
