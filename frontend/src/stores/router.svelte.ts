@@ -22,6 +22,7 @@ export type AppView =
   | "books"
   | "my-library"
   | "libraries"
+  | "reading-lists"
   | "settings";
 
 export type SettingsSubPath =
@@ -40,6 +41,7 @@ const viewTitles: Record<AppView, string> = {
   books: `All Books${APP_TITLE_SUFFIX}`,
   "my-library": `My Library${APP_TITLE_SUFFIX}`,
   libraries: `Libraries${APP_TITLE_SUFFIX}`,
+  "reading-lists": `Reading Lists${APP_TITLE_SUFFIX}`,
   settings: `Settings${APP_TITLE_SUFFIX}`,
 };
 

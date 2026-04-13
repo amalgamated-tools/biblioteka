@@ -8,26 +8,6 @@ Biblioteka extracts metadata — title, author, ISBN, ASIN, description, publish
 
 The extractor is implemented in [`internal/metadata/extractor.go`](../internal/metadata/extractor.go) and exposed to end users via the standalone [`cmd/cli`](../cmd/cli/main.go) utility.
 
-> **Import pipeline status:** Automatic metadata extraction is **now active** in the `process:file` background job (since v0.0.5). When a file is imported during a library scan, the extractor runs and populates the book record with `Title`, `ISBN` (stored as ISBN-10 or ISBN-13), `Description`, `Publisher`, `Language`, `PublicationDate`, and `cover_image_url` when extracted values are non-empty. If extraction fails (for example, because ExifTool is not installed), the job falls back to deriving the book title from the filename. Author records are also created automatically from extracted author metadata and linked to the imported book.
-
----
-
-## Extracted fields
-
-| Field | Notes |
-|-------|-------|
-| `Title` | Falls back to filename (without extension) when ExifTool cannot find a `Title` tag |
-| `Author` | Tries `Author` tag first, then `Creator` (used by EPUBs). Returns `""` when not found; no author record is created for an empty author |
-| `ISBN` | Tries `ISBN` tag first, then `Identifier` tag. Normalized via `NormalizeISBN` (strips `urn:isbn:`/`isbn:` prefixes, validates as 10 or 13 digits). Returns `""` when no valid identifier is present |
-| `Format` | Uppercase file extension (e.g. `"EPUB"`, `"PDF"`) |
-| `Description` | From ExifTool `Description` tag; availability depends on the file format and its embedded metadata |
-| `Publisher` | From ExifTool `Publisher` tag |
-| `Language` | From ExifTool `Language` tag |
-| `PublicationDate` | From ExifTool `PublicationDate` tag; normalized from ExifTool's `YYYY:MM:DD` format to `YYYY-MM-DD` |
-| `CoverImageURL` | Extracted cover art stored as a `data:` URL. For EPUB files, resolved from ExifTool's cover manifest tags and extracted directly from the ZIP archive. For MOBI and AZW3 files, extracted from the embedded binary cover record via the `sblinch/mobi` library. Cover images larger than 20 MB are skipped; a warning is logged and the field is left empty. PDF files do not produce a `CoverImageURL`. |
-| `ASIN` | Amazon ASIN extracted from the ExifTool `ASIN` tag (present in MOBI and AZW3 files) or from a `dc:identifier` element with scheme `AMAZON` or `MOBI-ASIN`, or whose value begins with the `urn:amazon` prefix (present in Kindle-converted EPUB files). Extracted into `ExifToolOutput.ASIN` but **not automatically written to the database** during import — set the `asin` field via the [API](api-reference.md) after import if needed. |
-| `Subjects` | EPUB subject tags (`dc:subject`) extracted from the ExifTool `Subject` field. Values are split on `", "` (comma + space), trimmed, and deduplicated into `ExifToolOutput.Subjects []string`. **Not persisted** — there is no corresponding database column. Use the Goodreads CLI to enrich book records instead. |
-
 ---
 
 ## ExifTool tag mapping
@@ -38,11 +18,12 @@ All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-o
 |--------------|---------------------|----------|
 | `Title` | `Title` | Filename stem |
 | `Author`, `Creator` | `Author` | `""` (empty; no author record created) |
-| `ISBN`, `Identifier` | `ISBN` | `""` (empty; normalized and validated) |
+| `ISBN`, `Identifier` | `ISBN` | `""` (empty; `NormalizeISBN` strips `urn:isbn:`/`isbn:` prefixes and normalizes values to 10- or 13-character ISBN-like strings; it does not verify ISBN-10/13 check digits) |
+| _(file extension)_ | `Format` | Lowercased extension (e.g. `"epub"`, `"pdf"`); persisted as `book_files.file_type`, not on `books` |
 | `Description` | `Description` | `""` |
 | `Publisher` | `Publisher` | `""` |
 | `Language` | `Language` | `""` |
-| `PublicationDate` | `PublicationDate` | `""` |
+| `PublicationDate` | `PublicationDate` | `""` (ExifTool's `YYYY:MM:DD` format normalized to `YYYY-MM-DD`) |
 | `MetaName`, `MetaContent`, `ManifestItemId`, `ManifestItemHref`, `ManifestItemMedia-type` | `CoverImageURL` (EPUB) | `""` when no embedded cover is found |
 | _(binary record in MOBI/AZW3 file)_ | `CoverImageURL` (MOBI, AZW3) | `""` when no embedded cover is found |
 | `ASIN` | `ASIN` (MOBI, AZW3, EPUB `dc:identifier` with scheme `AMAZON` or `MOBI-ASIN`, or value prefixed `urn:amazon`) | `""` — extracted but not persisted during import |
@@ -80,19 +61,11 @@ go build -o biblioteka-cli ./cmd/cli
 
 ### `db-migrate` — run database migrations
 
-Applies any pending database migrations and exits. Useful for running migrations without starting the full HTTP server — for example, in a one-off init container or a CI schema-dump step.
+Applies pending migrations and exits (useful in init containers or CI schema-dump steps without binding to a port). Prints `Database migrations completed successfully` on success. The server runs the same migrations automatically on startup.
 
 ```bash
 ./biblioteka-cli db-migrate
 ```
-
-**Output on success:**
-
-```
-Database migrations completed successfully
-```
-
-The server runs the same migrations automatically on startup via `db.SetupDatabase`, so this command is only needed when you want to migrate without binding to a port (e.g. in an init container, a `make db-dump` step, or to verify the schema before running tests).
 
 ---
 
@@ -102,22 +75,13 @@ Extracts metadata from one file, stores a book and book_file record in the datab
 
 ```bash
 ./biblioteka-cli process-file /path/to/book.epub
-./biblioteka-cli process-file /path/to/book.pdf
-```
-
-**Legacy shorthand** (backwards-compatible): passing a file path directly without a subcommand invokes `process-file`:
-
-```bash
+# Legacy shorthand (backwards-compatible):
 ./biblioteka-cli /path/to/book.epub
 ```
 
-**Example output:**
+Prints `Successfully processed file: /path/to/book.epub` on success.
 
-```
-Successfully processed file: /path/to/book.epub
-```
-
-> **Note:** When ExifTool is not installed, imports still succeed but metadata is derived from the filename only. Install ExifTool to enable full metadata extraction (title, author, ISBN, etc.).
+> **Note:** When ExifTool is not installed, imports still succeed but metadata is derived from the filename only.
 
 ### `scan-directory` — enqueue a directory for processing
 
@@ -136,6 +100,38 @@ Recursively walks a directory and enqueues a `process:file` background job for e
 When `<library-id>` is supplied the directory is also used as the `library_root`, enabling [path-based metadata](background-jobs.md#path-based-metadata) and [file reorganization](background-jobs.md#file-reorganization) in the worker.
 
 **Requirements:** a Redis instance reachable at `REDIS_URL` (default `redis://localhost:6379`) and at least one worker process running to consume the enqueued jobs.
+
+---
+
+### `calibre-import` — import a Calibre library
+
+Reads a Calibre library's `metadata.db` and imports books, authors, series, and file records directly into the Biblioteka database. No Redis or worker is required — all writes happen inline.
+
+```bash
+./biblioteka-cli calibre-import /path/to/calibre/library
+./biblioteka-cli calibre-import /path/to/calibre/library <library-id>
+```
+
+| Argument | Required | Description |
+|---|---|---|
+| `<calibre-library-path>` | Yes | Root directory of the Calibre library (must contain `metadata.db`) |
+| `<library-id>` | No | UUID of an existing Biblioteka library to associate every imported book with |
+
+The import is **idempotent**: books already indexed by file path are skipped, not duplicated. Per-book errors are counted without aborting the rest of the import.
+
+**Example output:**
+
+```
+Calibre import complete:
+  Total books:    312
+  Imported:       308
+  Skipped:        3
+  Errors:         1
+```
+
+> **Note:** Calibre tags are not imported. Re-tag books manually in Biblioteka after import.
+
+See the full [Migrate from Calibre](calibre.md) guide for identifier mapping, deduplication behavior, and a step-by-step workflow.
 
 ---
 
@@ -253,14 +249,6 @@ Goodreads ID: kca://book/amzn1.gr.book.v1.xyz
 
 ---
 
-## What's next
-
-The `process:file` background job ([`internal/jobs/process_file.go`](../internal/jobs/process_file.go)) extracts and stores `Title`, `ISBN`, `Description`, `Publisher`, `Language`, `PublicationDate`, embedded cover art (EPUB, MOBI, and AZW3), and links extracted `Author` names to book records.
-
-Use `cmd/cli` to import a single file and verify what Biblioteka extracts before a full library scan.
-
----
-
 ## Contributing
 
 To add support for a new extracted field:
@@ -268,7 +256,7 @@ To add support for a new extracted field:
 1. Add the field to `ExifToolOutput` in [`internal/exif/types.go`](../internal/exif/types.go).
 2. Add the corresponding tag-name mapping as a `case` in the `parseScalar` function in [`internal/exif/tsv.go`](../internal/exif/tsv.go).
 3. Add or extend tests in [`internal/exif/tsv_test.go`](../internal/exif/tsv_test.go) and [`internal/metadata/extractor_test.go`](../internal/metadata/extractor_test.go).
-4. Update the [Extracted fields](#extracted-fields) table in this document.
+4. Update the [ExifTool tag mapping](#exiftool-tag-mapping) table in this document.
 
 To add support for a new file format:
 

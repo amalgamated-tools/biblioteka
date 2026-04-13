@@ -465,43 +465,49 @@ When implementing the database layer for a new sync protocol, use the shared hel
 
 ## Continuous Integration
 
-The test workflow (`.github/workflows/test.yml`) runs on pushes and pull requests targeting `main`, but only when the following paths are modified:
+The test workflow (`.github/workflows/test.yml`) behaves differently for pushes and pull requests:
 
-| Path pattern | What it covers |
-|---|---|
-| `cmd/**` | Server and CLI entry points |
-| `internal/**` | All backend packages |
-| `frontend/**` | Svelte SPA and its tests |
-| `db/**` | Migrations and schema |
-| `go.mod`, `go.sum` | Go module changes |
-| `.golangci.yml` | Linter configuration |
-| `.github/workflows/test.yml` | Workflow file itself |
+- **Pushes to `main`**: only runs when the following paths are modified:
+
+  | Path pattern | What it covers |
+  |---|---|
+  | `cmd/**` | Server and CLI entry points |
+  | `internal/**` | All backend packages |
+  | `frontend/**` | Svelte SPA and its tests |
+  | `db/**` | Migrations and schema |
+  | `go.mod`, `go.sum` | Go module changes |
+  | `.golangci.yml` | Linter configuration |
+  | `.github/workflows/test.yml` | Workflow file itself |
+
+- **Pull requests targeting `main`**: always triggers (no path filter), but a `check-docs-only` gate job evaluates the changed files. If every changed file is a documentation file (`docs/**` excluding code files, or `*.md`), all test and lint jobs are skipped automatically and the workflow reports success. No manual trigger is needed for docs-only PRs.
 
 ### Job structure
 
-The workflow runs five jobs. All three leaf jobs start in parallel at the beginning of every run:
+The workflow runs seven jobs. The `check-docs-only` job runs first and gates all downstream jobs:
 
 ```
-frontend-checks ──► frontend-all (gate)
-
-go-lint ──┐
-          └──► go-all (gate)
-go-test ──┘
+check-docs-only ──► frontend-checks ──► frontend-all (gate)
+             │ └──► go-lint ──┐
+             │                └──► go-all (gate)
+             └──► go-test ──┘
+                             └──► coverage-comment (PRs only, when tests ran)
 ```
 
 | Job | Depends on | What it does |
 |---|---|---|
-| `frontend-checks` | — | Installs pnpm deps (cached), builds frontend (`pnpm run build`), runs TypeScript check (`pnpm run check`), Prettier format check, ESLint (`pnpm run lint`), and frontend unit tests |
-| `frontend-all` | `frontend-checks` | Gate job — fails the run if the frontend job failed |
-| `go-lint` | — | Runs golangci-lint and Go format check (`gofmt`) |
-| `go-test` | — | Installs `exiftool` (apt package cached), runs `go test -v ./...` |
-| `go-all` | `go-lint` + `go-test` | Gate job — fails the run if either Go job failed |
+| `check-docs-only` | — | Detects docs-only PRs by evaluating changed file paths; sets `skip-tests=true` output to short-circuit all downstream jobs on docs-only PRs |
+| `frontend-checks` | `check-docs-only` | Installs pnpm deps (cached), builds frontend (`pnpm run build`), runs TypeScript check (`pnpm run check`), Prettier format check, ESLint (`pnpm run lint`), and frontend unit tests; skipped on docs-only PRs |
+| `frontend-all` | `frontend-checks` | Gate job — fails the run if the frontend job failed; passes immediately for docs-only PRs |
+| `go-lint` | `check-docs-only` | Runs golangci-lint and Go format check (`gofmt`); skipped on docs-only PRs |
+| `go-test` | `check-docs-only` | Installs `exiftool` (apt package cached), runs `go test ./...` with coverage; skipped on docs-only PRs |
+| `go-all` | `go-lint` + `go-test` | Gate job — fails the run if either Go job failed; passes immediately for docs-only PRs |
+| `coverage-comment` | `go-test` + `frontend-checks` | Posts or updates a coverage summary comment on the PR; only runs on pull requests after a successful non-skipped test run |
 
-All five jobs run fully in parallel (the two gate jobs wait for their dependencies). Total CI time is roughly `max(frontend-checks, go-lint, go-test)`.
+All test and lint jobs run fully in parallel (the gate jobs wait for their dependencies). Total CI time is roughly `max(frontend-checks, go-lint, go-test)`.
 
 The frontend job uses pnpm's built-in cache via `actions/setup-node` (`cache: 'pnpm'`, keyed on `frontend/pnpm-lock.yaml`) to avoid re-downloading the dependency tree on every run. Both Go jobs use the Go module cache via `actions/setup-go` (`cache: true`, keyed on `go.sum`). The `go-test` job additionally caches the `libimage-exiftool-perl` apt package via `actions/cache` (keyed on the test workflow file hash). On a cache hit the job skips `apt-get update` entirely and uses `--no-download` to install directly from the cache, cutting CI overhead. On a cache miss the full `apt-get update` + install runs and the downloaded package is saved for subsequent runs.
 
-> **Note:** Pull requests that only touch documentation files (e.g. `README.md`, `CONTRIBUTING.md`, `docs/`) will not trigger the test workflow. If you need CI to run on a docs-only PR, trigger it manually via **Actions → Test → Run workflow**.
+> **Note:** Documentation-only pull requests (files in `docs/**` and `*.md`) always trigger the test workflow but skip all test and lint jobs automatically. The workflow reports success immediately without running any tests.
 
 > **Concurrency:** The workflow uses a concurrency group keyed on the workflow + ref (`github.ref`: branch ref for pushes, PR merge ref for pull requests). A new push to a PR branch automatically cancels any in-progress run for that branch. Runs on `main` are never cancelled.
 

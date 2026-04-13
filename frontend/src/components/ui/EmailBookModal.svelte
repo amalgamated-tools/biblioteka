@@ -16,9 +16,10 @@
   let loadError: string | null = $state(null);
   let loading = $state(true);
   let dialogEl: HTMLDivElement | null = $state(null);
+  let closeButtonEl: HTMLButtonElement | null = $state(null);
 
   $effect(() => {
-    dialogEl?.focus();
+    closeButtonEl?.focus();
   });
 
   let selectedFileId: string = $state("");
@@ -123,13 +124,13 @@
 </script>
 
 <!-- Modal wrapper -->
-<svelte:window onkeydown={handleKeydown} />
 <div
   bind:this={dialogEl}
   role="dialog"
   aria-modal="true"
   aria-labelledby="email-modal-title"
   tabindex="-1"
+  onkeydown={handleKeydown}
   class="fixed inset-0 z-50 flex items-center justify-center p-4"
 >
   <!-- Backdrop -->
@@ -160,6 +161,7 @@
         </h2>
       </div>
       <button
+        bind:this={closeButtonEl}
         onclick={onClose}
         aria-label="Close"
         class="p-1 rounded-lg text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
