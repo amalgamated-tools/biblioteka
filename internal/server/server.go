@@ -64,33 +64,34 @@ type Server struct {
 
 	Worker *worker.Worker
 
-	oidcHandler           *handlers.OIDCHandler
-	authHandler           *handlers.AuthHandler
-	configHandler         *handlers.ConfigHandler
-	adminHandler          *handlers.AdminHandler
-	libraryHandler        *handlers.LibraryHandler
-	authorHandler         *handlers.AuthorHandler
-	seriesHandler         *handlers.SeriesHandler
-	bookHandler           *handlers.BookHandler
-	bookFileHandler       *handlers.BookFileHandler
-	auditLogHandler       *handlers.AuditLogHandler
-	apiKeyHandler         *handlers.APIKeyHandler
-	opdsHandler           *handlers.OPDSHandler
-	opdsCredentialHandler *handlers.OPDSCredentialHandler
-	koboHandler           *handlers.KoboHandler
-	kosyncHandler         *handlers.KOSyncHandler
-	statsHandler          *handlers.StatsHandler
-	requireAuth           func(http.Handler) http.Handler
-	requireJWTAuth        func(http.Handler) http.Handler
-	requireAdmin          func(http.Handler) http.Handler
-	requireOPDSAuth       func(http.Handler) http.Handler
-	requireKoboAuth       func(http.Handler) http.Handler
-	requireKOSyncAuth     func(http.Handler) http.Handler
-	authLimiter           *auth.RateLimiter
-	secureCookies         bool
-	mux                   *http.ServeMux
-	httpServer            *http.Server
-	shutdownFuncs         []ShutdownFunc
+	oidcHandler            *handlers.OIDCHandler
+	authHandler            *handlers.AuthHandler
+	configHandler          *handlers.ConfigHandler
+	adminHandler           *handlers.AdminHandler
+	libraryHandler         *handlers.LibraryHandler
+	authorHandler          *handlers.AuthorHandler
+	seriesHandler          *handlers.SeriesHandler
+	bookHandler            *handlers.BookHandler
+	bookFileHandler        *handlers.BookFileHandler
+	auditLogHandler        *handlers.AuditLogHandler
+	apiKeyHandler          *handlers.APIKeyHandler
+	opdsHandler            *handlers.OPDSHandler
+	opdsCredentialHandler  *handlers.OPDSCredentialHandler
+	koboHandler            *handlers.KoboHandler
+	kosyncHandler          *handlers.KOSyncHandler
+	statsHandler           *handlers.StatsHandler
+	readingProgressHandler *handlers.ReadingProgressHandler
+	requireAuth            func(http.Handler) http.Handler
+	requireJWTAuth         func(http.Handler) http.Handler
+	requireAdmin           func(http.Handler) http.Handler
+	requireOPDSAuth        func(http.Handler) http.Handler
+	requireKoboAuth        func(http.Handler) http.Handler
+	requireKOSyncAuth      func(http.Handler) http.Handler
+	authLimiter            *auth.RateLimiter
+	secureCookies          bool
+	mux                    *http.ServeMux
+	httpServer             *http.Server
+	shutdownFuncs          []ShutdownFunc
 }
 
 // NewServer creates a new server instance
@@ -214,6 +215,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
 	s.opdsCredentialHandler = &handlers.OPDSCredentialHandler{DB: s.DB}
 	s.kosyncHandler = &handlers.KOSyncHandler{DB: s.DB}
+	s.readingProgressHandler = &handlers.ReadingProgressHandler{DB: s.DB}
 	s.apiKeyHandler = &handlers.APIKeyHandler{DB: s.DB}
 	s.koboHandler = &handlers.KoboHandler{DB: s.DB}
 	s.koboHandler.RegisterRoutes()

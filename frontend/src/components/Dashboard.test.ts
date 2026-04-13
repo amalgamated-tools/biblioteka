@@ -25,6 +25,12 @@ vi.mock("../stores/router.svelte", () => ({
 vi.mock("../lib/api", () => ({
   getTotalBooksCount: vi.fn().mockResolvedValue(0),
   getDownloadsPerMonth: vi.fn().mockResolvedValue([]),
+  getReadingProgressStats: vi.fn().mockResolvedValue({
+    current_streak: 0,
+    total_tracked: 0,
+    total_finished: 0,
+    in_progress: [],
+  }),
 }));
 
 vi.mock("lucide-svelte", () => ({
@@ -32,12 +38,19 @@ vi.mock("lucide-svelte", () => ({
   Library: () => {},
   Plus: () => {},
   ArrowRight: () => {},
+  Flame: () => {},
+  BookOpen: () => {},
+  CheckCheck: () => {},
 }));
 
 import Dashboard from "./Dashboard.svelte";
 import { libraryStore } from "../stores/libraries.svelte";
 import { routerStore } from "../stores/router.svelte";
-import { getTotalBooksCount, getDownloadsPerMonth } from "../lib/api";
+import {
+  getTotalBooksCount,
+  getDownloadsPerMonth,
+  getReadingProgressStats,
+} from "../lib/api";
 
 describe("Dashboard", () => {
   beforeEach(() => {
@@ -45,6 +58,12 @@ describe("Dashboard", () => {
     vi.mocked(libraryStore).libraries = [];
     vi.mocked(getTotalBooksCount).mockResolvedValue(0);
     vi.mocked(getDownloadsPerMonth).mockResolvedValue([]);
+    vi.mocked(getReadingProgressStats).mockResolvedValue({
+      current_streak: 0,
+      total_tracked: 0,
+      total_finished: 0,
+      in_progress: [],
+    });
   });
 
   afterEach(() => {
@@ -292,5 +311,154 @@ describe("Dashboard", () => {
     await waitFor(() => {
       expect(screen.getByText("network error")).toBeInTheDocument();
     });
+  });
+
+  // ---- Reading Activity section ----
+
+  const libWithOne = [
+    {
+      id: "lib-1",
+      name: "Fiction",
+      paths: [],
+      organization_type: "book_per_folder" as const,
+      monitored: false,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+  ];
+
+  it("shows Reading Activity heading when stats load", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = libWithOne;
+    vi.mocked(getReadingProgressStats).mockResolvedValue({
+      current_streak: 0,
+      total_tracked: 0,
+      total_finished: 0,
+      in_progress: [],
+    });
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: /Reading Activity/i }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("shows KOSync nudge when total_tracked is 0", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = libWithOne;
+    vi.mocked(getReadingProgressStats).mockResolvedValue({
+      current_streak: 0,
+      total_tracked: 0,
+      total_finished: 0,
+      in_progress: [],
+    });
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/No reading activity recorded yet/i),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("shows streak badge when current_streak > 0", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = libWithOne;
+    vi.mocked(getReadingProgressStats).mockResolvedValue({
+      current_streak: 5,
+      total_tracked: 3,
+      total_finished: 0,
+      in_progress: [],
+    });
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(screen.getByText(/5-day streak/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows finished books badge when total_finished > 0", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = libWithOne;
+    vi.mocked(getReadingProgressStats).mockResolvedValue({
+      current_streak: 0,
+      total_tracked: 2,
+      total_finished: 2,
+      in_progress: [],
+    });
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(screen.getByText(/2 books finished/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows Currently Reading list with document names", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = libWithOne;
+    vi.mocked(getReadingProgressStats).mockResolvedValue({
+      current_streak: 1,
+      total_tracked: 1,
+      total_finished: 0,
+      in_progress: [
+        {
+          document: "my-great-book",
+          percentage: 0.42,
+          device: "KOReader",
+          last_synced: "2026-04-12T10:00:00Z",
+          estimated_minutes_remaining: null,
+        },
+      ],
+    });
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(screen.getByText("my-great-book")).toBeInTheDocument();
+    });
+    expect(screen.getByText("42%")).toBeInTheDocument();
+    expect(screen.getByText("KOReader")).toBeInTheDocument();
+  });
+
+  it("shows estimated time remaining when provided", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = libWithOne;
+    vi.mocked(getReadingProgressStats).mockResolvedValue({
+      current_streak: 1,
+      total_tracked: 1,
+      total_finished: 0,
+      in_progress: [
+        {
+          document: "timed-book",
+          percentage: 0.5,
+          device: null,
+          last_synced: "2026-04-12T10:00:00Z",
+          estimated_minutes_remaining: 45,
+        },
+      ],
+    });
+    render(Dashboard);
+
+    await waitFor(() => {
+      expect(screen.getByText("~45m left")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show reading activity section while stats are still loading", async () => {
+    vi.mocked(libraryStore).loaded = true;
+    vi.mocked(libraryStore).libraries = libWithOne;
+    // Never resolves — simulates loading state.
+    vi.mocked(getReadingProgressStats).mockReturnValue(new Promise(() => {}));
+    render(Dashboard);
+    await tick();
+
+    expect(
+      screen.queryByRole("heading", { name: /Reading Activity/i }),
+    ).toBeNull();
+    // Welcome fallback should be shown instead.
+    expect(
+      screen.getByRole("heading", { name: /Welcome to Biblioteka/i }),
+    ).toBeInTheDocument();
   });
 });
