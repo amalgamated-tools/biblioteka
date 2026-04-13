@@ -15,11 +15,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Evaluate if PR is docs-only
-        id: evaluate
-        run: |
-          # Get list of changed files in this PR
-          git diff --name-only ${{ github.event.pull_request.base.sha }}..HEAD > /tmp/changed_files.txt
+       - name: Evaluate if PR is docs-only
+         id: evaluate
+         run: |
+           # Get list of changed files in this PR
+           # Use 'origin/main' as base to avoid issues with merge_base on first push
+           BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
+           git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+           git diff --name-only "$BASE_REF"...HEAD > /tmp/changed_files.txt
           
           # Check if all changed files are documentation-related
           # Exclude: cmd/, internal/, frontend/, db/, e2e/, go.mod, go.sum, .golangci.yml, lock files
