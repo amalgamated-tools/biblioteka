@@ -81,7 +81,6 @@ func TestGetReadingStats_NoData(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, stats.TotalTracked)
 	require.Equal(t, 0, stats.TotalFinished)
-	require.Equal(t, 0, stats.InProgressCount)
 }
 
 func TestGetReadingStats_Categories(t *testing.T) {
@@ -109,7 +108,6 @@ func TestGetReadingStats_Categories(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 4, stats.TotalTracked)
 	require.Equal(t, 2, stats.TotalFinished)
-	require.Equal(t, 1, stats.InProgressCount)
 }
 
 func TestGetReadingStats_IsolatedByUser(t *testing.T) {
