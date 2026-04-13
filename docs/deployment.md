@@ -305,7 +305,7 @@ The embedded file server sets `Cache-Control` headers automatically based on pat
 
 | Path pattern | `Cache-Control` value | Effect |
 |---|---|---|
-| `/assets/*` (content-hashed) | `public, max-age=31536000, immutable` | Cached by browser and CDN for one year; never revalidated |
+| `/assets/*` (content-hashed files) | `public, max-age=31536000, immutable` | Cached by browser and CDN for one year; not revalidated during `max-age` |
 | `/` and `/index.html` | `no-cache` | Always revalidated; ensures the browser fetches new asset hashes after a deploy |
 | Other static files | *(ETag / Last-Modified only)* | Standard conditional-request revalidation |
 
