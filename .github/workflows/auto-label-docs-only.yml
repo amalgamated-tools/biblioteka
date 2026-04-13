@@ -63,7 +63,7 @@ jobs:
         with:
           script: |
             try {
-              github.rest.issues.addLabels({
+              await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
@@ -72,9 +72,9 @@ jobs:
               console.log('✅ Applied docs-only label');
             } catch (error) {
               if (error.status === 403) {
-                console.log('⚠️  Insufficient permissions to add label (expected for fork PRs)');
+                console.log('⚠️  Insufficient permissions to add label');
               } else {
-                throw error;
+                console.log(`⚠️  Error adding label: ${error.message}`);
               }
             }
 
@@ -84,7 +84,7 @@ jobs:
         with:
           script: |
             try {
-              github.rest.issues.removeLabel({
+              await github.rest.issues.removeLabel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
@@ -95,8 +95,8 @@ jobs:
               if (error.status === 404) {
                 console.log('ℹ️  Label not present, nothing to remove');
               } else if (error.status === 403) {
-                console.log('⚠️  Insufficient permissions to remove label (expected for fork PRs)');
+                console.log('⚠️  Insufficient permissions to remove label');
               } else {
-                throw error;
+                console.log(`⚠️  Error removing label: ${error.message}`);
               }
             }
