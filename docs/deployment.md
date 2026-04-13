@@ -177,7 +177,7 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `JWT_SECRET` | **Yes** | Random secret for signing JWTs (minimum 32 characters recommended; a shorter value logs a startup warning); tokens are valid for **24 hours** after issue — leaked tokens remain valid until expiry. To immediately invalidate all active sessions (e.g. after a suspected credential leak), rotate the secret and redeploy; see [JWT Secret Rotation](#jwt-secret-rotation) |
+| `JWT_SECRET` | **Yes** | Random secret for signing JWTs (minimum 32 characters recommended; a shorter value logs a startup warning); tokens are valid for **24 hours** after issuance — leaked tokens remain valid until expiry. To immediately invalidate all active sessions (e.g. after a suspected credential leak), rotate the secret and redeploy; see [JWT Secret Rotation](#jwt-secret-rotation) |
 | `SECURE_COOKIES` | **Yes** (set to `true`) | Prevents cookies being sent over HTTP |
 | `DATABASE_URL` | No | Omit for SQLite; set to a PostgreSQL DSN for Postgres |
 | `REDIS_URL` | No | Defaults to `redis://localhost:6379` |
@@ -185,7 +185,7 @@ See the [Configuration](../README.md#configuration) table in the README for the 
 
 ### JWT Secret Rotation
 
-JWT tokens are **stateless** — the server does not maintain a token revocation list. The only way to immediately invalidate all active sessions is to rotate the `JWT_SECRET` and redeploy.
+JWT tokens are **stateless** — the server does not maintain a token revocation list. Rotating `JWT_SECRET` and redeploying is the only way to invalidate all active sessions. In deployments with multiple replicas or rolling updates, sessions are not fully invalidated until all running instances have been restarted with the new secret.
 
 **When to rotate:**
 - A `JWT_SECRET` value is accidentally exposed (committed to version control, leaked in logs, etc.).
@@ -203,15 +203,18 @@ NEW_SECRET=$(openssl rand -hex 32)
 
 # 3. Redeploy
 docker compose up -d --force-recreate biblioteka
+
+# In split-process deployments, also recreate the worker to keep the environment consistent:
+docker compose up -d --force-recreate biblioteka-worker
 ```
 
 **Consequences of rotation:**
-- All active browser sessions are immediately invalidated — every logged-in user will be redirected to the login page on their next request.
+- All active browser sessions are immediately invalidated — every logged-in user will appear logged out and be shown the login screen on their next request.
 - All API clients using JWT Bearer tokens must re-authenticate to obtain a new token.
 - [API keys](../README.md#api-keys) (`bib_…`) are **not** affected — they authenticate via a separate mechanism and remain valid after a JWT secret rotation.
 - Kobo sync tokens are **not** affected — they authenticate via a separate mechanism.
 
-> **OIDC sessions:** If OIDC is enabled, rotating `JWT_SECRET` invalidates the Biblioteka-issued JWT but does **not** invalidate the user's session with their identity provider. Users will be asked to log in again; for most OIDC providers this means being redirected to the SSO login page and authenticating again.
+> **OIDC sessions:** If OIDC is enabled, rotating `JWT_SECRET` invalidates the Biblioteka-issued JWT but does **not** invalidate the user's session with their identity provider. Users will be sent back through the OIDC login flow, but many providers will silently reuse an existing IdP session and may not prompt for credentials again. If rotation happens while an OIDC login or account-link flow is already in progress, that flow may fail and need to be restarted because OIDC `state` validation is derived from `JWT_SECRET`.
 
 ## Reverse Proxy Setup
 
