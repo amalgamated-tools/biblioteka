@@ -63,20 +63,20 @@ type uploadAcceptedResponse struct {
 //	@Accept			multipart/form-data
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			file          formData  file    true   "Book file (.epub, .mobi, .azw3, .pdf)"
-//	@Param			library_id    formData  string  true   "Target library ID"
-//	@Param			title         formData  string  false  "Title override (takes precedence over extracted metadata)"
-//	@Param			author        formData  string  false  "Author override (takes precedence over extracted metadata)"
-//	@Param			description   formData  string  false  "Description override"
-//	@Param			isbn          formData  string  false  "ISBN override (ISBN-10 or ISBN-13)"
-//	@Param			language      formData  string  false  "Language override"
-//	@Param			publisher     formData  string  false  "Publisher override"
-//	@Success		202		{object}	uploadAcceptedResponse
-//	@Failure		400		{object}	errorResponse
-//	@Failure		401		{object}	errorResponse
-//	@Failure		404		{object}	errorResponse
-//	@Failure		413		{object}	errorResponse
-//	@Failure		503		{object}	errorResponse
+//	@Param			file		formData	file	true	"Book file (.epub, .mobi, .azw3, .pdf)"
+//	@Param			library_id	formData	string	true	"Target library ID"
+//	@Param			title		formData	string	false	"Title override (takes precedence over extracted metadata)"
+//	@Param			author		formData	string	false	"Author override (takes precedence over extracted metadata)"
+//	@Param			description	formData	string	false	"Description override"
+//	@Param			isbn		formData	string	false	"ISBN override (ISBN-10 or ISBN-13)"
+//	@Param			language	formData	string	false	"Language override"
+//	@Param			publisher	formData	string	false	"Publisher override"
+//	@Success		202			{object}	uploadAcceptedResponse
+//	@Failure		400			{object}	errorResponse
+//	@Failure		401			{object}	errorResponse
+//	@Failure		404			{object}	errorResponse
+//	@Failure		413			{object}	errorResponse
+//	@Failure		503			{object}	errorResponse
 //	@Router			/books/upload [post]
 func (h *BookHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

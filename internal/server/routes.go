@@ -83,6 +83,9 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// KOSync credential management (JWT-only: credential management)
 	s.mux.Handle("/api/kosync/credentials", s.requireJWTAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncCredentials)))
 
+	// Reading progress stats (authenticated)
+	s.mux.Handle("/api/reading-progress/stats", s.requireAuth(http.HandlerFunc(s.readingProgressHandler.HandleReadingProgressStats)))
+
 	// KOReader kosync-compatible progress sync endpoints.
 	// POST /api/user/create — KOReader always tries to register; we return 409 so
 	// it falls through to /api/user/auth.  Users set up credentials via the web UI.
