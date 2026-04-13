@@ -611,4 +611,3 @@ func TestHandleSetSMTPConfig_PreservesExistingEncryptedPassword(t *testing.T) {
 	cfg := h.resolveSMTPConfig(t.Context())
 	require.Equal(t, "original-pw", cfg.Password)
 }
-

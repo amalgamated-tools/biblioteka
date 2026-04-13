@@ -527,4 +527,3 @@ func TestHandleSetOIDCConfig_PreservesExistingEncryptedSecret(t *testing.T) {
 	// The callback must receive the plaintext secret (not the encrypted form).
 	require.Equal(t, "original-secret", callbackSecret)
 }
-
