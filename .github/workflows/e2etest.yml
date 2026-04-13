@@ -17,18 +17,14 @@ on:
       - '.github/workflows/e2etest.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'cmd/**'
-      - 'internal/**'
-      - 'frontend/**'
-      - 'db/**'
-      - 'e2e/**'
-      - 'go.mod'
-      - 'go.sum'
-      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
-      # a bad regeneration would break the Go binary build
-      - 'docs/swagger/docs.go'
-      - '.github/workflows/e2etest.yml'
+    # Paths filter is omitted so the workflow always runs on PR events —
+    # check-docs-only evaluates the changed files and skips tests when the
+    # PR only touches documentation (docs/** non-code files and *.md).
+    # labeled/unlabeled are intentionally excluded: label-triggered runs
+    # share the same concurrency group and would cancel in-progress test
+    # runs, and their aggregator "success" result could override a prior
+    # failure in branch protection.
+    types: [synchronize, opened, reopened]
 
 permissions:
   contents: read
@@ -40,7 +36,53 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  check-docs-only:
+    runs-on: ubuntu-latest
+    outputs:
+      skip-tests: ${{ steps.check.outputs.skip-tests }}
+    steps:
+      - name: Checkout code
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+
+      - name: Check if docs-only PR
+        id: check
+        run: |
+          # Always run this step to ensure skip-tests output is always set.
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Evaluate the actual changed files instead of relying on labels,
+          # which avoids a race condition with auto-label-docs-only.yml.
+          BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+          CHANGED=$(git diff --name-only "$BASE_REF"...HEAD)
+
+          DOCS_ONLY=true
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            if ([[ "$file" =~ ^docs/ ]] && [[ ! "$file" =~ \.(go|ts|js|py|sh)$ ]]) || \
+               [[ "$file" =~ (^|/)[^/]+\.md$ ]]; then
+              continue
+            fi
+            DOCS_ONLY=false
+            echo "Found non-docs file: $file"
+            break
+          done <<< "$CHANGED"
+
+          if [[ "$DOCS_ONLY" == "true" ]]; then
+            echo "skip-tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+          fi
+
   e2e:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     name: E2E Tests
     # The full job (build frontend + Go binary + Playwright install + tests)
@@ -123,3 +165,23 @@ jobs:
           name: playwright-test-results-${{ github.run_id }}
           path: e2e/test-results/
           retention-days: 7
+
+  e2e-all:
+    needs: [check-docs-only, e2e]
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Check E2E tests (passed or skipped for docs-only)
+        run: |
+          # For docs-only PRs, tests are skipped and that's expected
+          if [[ "${{ needs.check-docs-only.outputs.skip-tests }}" == "true" ]]; then
+            echo "✅ E2E tests skipped (docs-only PR)"
+            exit 0
+          fi
+          # For other PRs, ensure the e2e job succeeded
+          if [[ "${{ needs.e2e.result }}" != "success" ]]; then
+            echo "❌ E2E job failed"
+            exit 1
+          fi
+          echo "✅ E2E tests passed"
