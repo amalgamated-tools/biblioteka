@@ -1,33 +1,33 @@
-# Agent Performance — 2026-04-12
-**Run:** 2026-04-12T23:44Z
+# Agent Performance — 2026-04-13 (Evening)
+**Run:** 2026-04-13T23:45Z
 
 ## Snapshot
 - 54 workflows registered; 53 Copilot / 1 Codex; all compiled
-- PR merge rate (30-PR sample): 60% overall (Copilot 65%, amalgamated-bot 36% in-flight)
-- Ecosystem: 8 open issues, healthy
-- No-op tracker #1733: 58 comments, working correctly
+- Agent PR merge rate (28 closed agent PRs): 82%
+- Overall PR merge rate (50 sample): 90%
+- Open issues: 17 (12 agent-created, 3 human, 2 other)
+- Open PRs: 11 (9 from amalgamated-bot, 1 human release PR)
+- Ecosystem growth: 24 → 54 workflows since Apr 4 metrics snapshot
 
 ## Top Performers
-- **daily-doc-updater**: 16+ PRs/day, 65% merge rate, highly productive
-- **code-simplifier**: 100% merge rate (1 PR today, merged immediately)
-- **daily-accessibility-review**: Issues consistently drive merged fixes
-- **discussion-task-miner**: Upstream issues (OIDC #1713, kobo #1711) integrated in v0.10.0
-- **daily-plan / daily-repo-status / daily-team-status**: Clean, relevant daily reporting
+- **code-simplifier**: 100% merge rate; refactoring changes accepted immediately
+- **discussion-task-miner**: 3 relevant issues created today (#1842, #1839, #1840) — high quality task extraction
+- **repository-quality-improver**: New issue #1884 with thorough cross-dialect analysis
+- **tech-content-editorial-board**: Issue #1872 well-structured high-priority analysis
+- **daily-doc-updater**: Highly active; ~82% agent PR merge rate; volume leader
 
 ## Underperformers
-- **duplicate-code-detector** (CODEX): Hard fail every run — CODEX_API_KEY missing; 36 failed runs
-- **unbloat-docs**: 0% merge rate in last batch (PR #1808 open, unmerged)
-- **contribution-check**: Still creating report issues even with 'lgtm' results (low signal-to-noise)
+- **duplicate-code-detector** (CODEX): HARD FAIL — CODEX_API_KEY missing; 36+ failures (CRITICAL, ongoing)
+- **contribution-check**: Issue #1875 created today for "lgtm" scenario — still low signal-to-noise (MEDIUM, persists since Apr 12)
+- **unbloat-docs**: PR #1878 open, previous batch had 0% merge rate (MEDIUM, ongoing)
+- **daily-doc-updater** (duplicate PRs): PRs #1865 and #1870 are near-duplicate docs PRs — over-creation signal
 
-## Improvements Since Last Report (Apr 12 morning)
-- No new [aw] failure issues created today (5 previous still open)
-- contribution-check: still running 4x/day, creating report issues each time
-- discussion-task-miner: no new dedup violations observed today
-
-## Behavioral Notes
-- 54 workflows, many reactive ones running correctly as skip when no trigger
-- Noop issue #1733 receiving regular comments — infrastructure working
-- v0.10.0 shipped today with features from agentic discussions
+## New Observations Since Apr 12
+- daily-doc-updater created duplicate docs PRs (#1865 and #1870 both "fix clamping description")
+- PR backlog at 10 agent PRs (up from ~5 on Apr 12) — review bandwidth may be limited
+- Overall merge rate improved from 84% → 90%
+- repo-assist active with CI improvement suggestion (#1827) — positive signal
+- 5 open [aw] failure issues remain from Apr 12 (#1753, #1737, #1735, #1730, #1702) — no resolution yet
 
 ## Discussion Created
-Agent Performance Report — Week of 2026-04-12 (second run)
+Agent Performance Report — Week of 2026-04-13
