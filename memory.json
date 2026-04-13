@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-04-13T01:20:00Z",
+  "last_run": "2026-04-13T09:30:00Z",
   "comments_made": {
     "1531": "2026-04-12T01:06:21Z"
   },
@@ -13,22 +13,30 @@
     },
     {
       "branch": "repo-assist/fix-download-recording-kobo-opds-20260413",
+      "pr_number": 1826,
       "title": "fix(handlers): record download events for Kobo and OPDS downloads",
       "closes": [],
       "created_at": "2026-04-13T01:20:00Z",
       "status": "open"
     },
     {
-      "branch": "repo-assist/eng-go-mod-tidy-check-20260413",
-      "title": "ci(test): add go mod tidy check to Go lint CI job",
+      "branch": "repo-assist/fix-claude-md-listall-1841-1843",
+      "title": "docs(claude): fix stale helpers.go refs; refactor listAll to use collectRows",
+      "closes": [1841, 1843],
+      "created_at": "2026-04-13T09:30:00Z",
+      "status": "open"
+    },
+    {
+      "branch": "repo-assist/perf-audit-log-single-query-20260413",
+      "title": "perf(db): optimize ListAuditLogs to single COUNT(*) OVER() query",
       "closes": [],
-      "created_at": "2026-04-13T01:20:00Z",
+      "created_at": "2026-04-13T09:30:00Z",
       "status": "open"
     }
   ],
   "issues_commented": [1531],
   "monthly_activity_issue": "2026-04",
-  "monthly_activity_issue_number": "aw_monthly04",
-  "backlog_cursor": 1531,
-  "notes": "Issues #1749, #1750, #1748 all closed by veverkap. Previous monthly activity issue #1720 closed by veverkap as completed. New PRs this run: (1) fix Kobo+OPDS missing RecordBookDownload call - tests included; (2) ci go mod tidy check. Open: PR #1806 (Perf Improver - book_downloads index). Issue #1531 (S3 feature) still open, previously commented. Monthly activity summary issue re-created this run."
+  "monthly_activity_issue_number": 1828,
+  "backlog_cursor": 1843,
+  "notes": "PR #1806 (book_downloads index, Perf Improver) was merged by veverkap on 2026-04-13. go-mod-tidy CI PR push failed last run (not created). PR #1826 (Kobo/OPDS downloads) still open; Greptile left inline comment about missing tab indentation in opds_feeds_test.go. Issues #1841 and #1843 (task-miner) fixed by this run's PRs. Issue #1531 (S3 feature) still open."
 }
