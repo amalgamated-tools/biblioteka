@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { ArrowLeft, Pencil, Trash2, BookMarked, X, Check } from "lucide-svelte";
+  import {
+    ArrowLeft,
+    Pencil,
+    Trash2,
+    BookMarked,
+    X,
+    Check,
+  } from "lucide-svelte";
   import { routerStore } from "../../stores/router.svelte";
   import { readingListStore } from "../../stores/reading-lists.svelte";
   import { listReadingListBooks } from "../../lib/api";
@@ -27,8 +34,7 @@
 
   // Load list from store or server.
   $effect(() => {
-    list =
-      readingListStore.lists.find((l) => l.id === listId) ?? null;
+    list = readingListStore.lists.find((l) => l.id === listId) ?? null;
     if (!list && readingListStore.loaded) {
       error = "Reading list not found.";
     }
@@ -150,10 +156,7 @@
               />
             </div>
             <div class="flex gap-2 pt-1">
-              <Button
-                onclick={saveEdit}
-                disabled={saving || !editName.trim()}
-              >
+              <Button onclick={saveEdit} disabled={saving || !editName.trim()}>
                 <Check class="w-4 h-4 mr-1" aria-hidden="true" />
                 {saving ? "Saving…" : "Save"}
               </Button>
@@ -197,10 +200,7 @@
               Edit
             </Button>
             {#if !confirmDelete}
-              <Button
-                variant="danger"
-                onclick={() => (confirmDelete = true)}
-              >
+              <Button variant="danger" onclick={() => (confirmDelete = true)}>
                 <Trash2 class="w-4 h-4 mr-1" aria-hidden="true" />
                 Delete
               </Button>
@@ -208,7 +208,11 @@
               <span class="text-sm text-ink-600 dark:text-ink-300 mr-1"
                 >Delete this list?</span
               >
-              <Button variant="danger" onclick={handleDelete} disabled={deleting}>
+              <Button
+                variant="danger"
+                onclick={handleDelete}
+                disabled={deleting}
+              >
                 {deleting ? "Deleting…" : "Yes, delete"}
               </Button>
               <Button

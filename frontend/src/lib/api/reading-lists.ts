@@ -1,4 +1,8 @@
-import type { PaginatedBooks, ReadingList, ReadingListInput } from "../../types";
+import type {
+  PaginatedBooks,
+  ReadingList,
+  ReadingListInput,
+} from "../../types";
 import { request } from "./core";
 import { listEntityBooks } from "./pagination";
 
@@ -48,10 +52,7 @@ export async function removeBookFromReadingList(
   listId: string,
   bookId: string,
 ): Promise<void> {
-  await request<void>(
-    "DELETE",
-    `/api/reading-lists/${listId}/books/${bookId}`,
-  );
+  await request<void>("DELETE", `/api/reading-lists/${listId}/books/${bookId}`);
 }
 
 export async function getReadingListsForBook(
