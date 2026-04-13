@@ -18,7 +18,8 @@ on:
   pull_request:
     branches: [main]
     # Paths filter is omitted so the workflow always runs on PR events —
-    # check-docs-only will skip tests when the docs-only label is present.
+    # check-docs-only evaluates the changed files and skips tests when the
+    # PR only touches documentation (docs/** non-code files and *.md).
     # labeled/unlabeled are intentionally excluded: label-triggered runs
     # share the same concurrency group and would cancel in-progress test
     # runs, and their aggregator "success" result could override a prior
@@ -64,7 +65,7 @@ jobs:
           DOCS_ONLY=true
           while IFS= read -r file; do
             [[ -z "$file" ]] && continue
-            if [[ "$file" =~ ^docs/ ]] || \
+            if ([[ "$file" =~ ^docs/ ]] && [[ ! "$file" =~ \.(go|ts|js|py|sh)$ ]]) || \
                [[ "$file" =~ (^|/)[^/]+\.md$ ]]; then
               continue
             fi
