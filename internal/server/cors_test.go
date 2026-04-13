@@ -95,6 +95,33 @@ func TestCORSMiddleware_EmptyAllowedOrigins(t *testing.T) {
 	require.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"), "empty allowed list means no CORS headers")
 }
 
+func TestCORSMiddleware_PreflightDisallowedOrigin(t *testing.T) {
+	next := &nextHandlerSentinel{}
+	mw := corsMiddleware([]string{"moz-extension://abc123"})(next)
+
+	req := httptest.NewRequest(http.MethodOptions, "/api/books/capture", nil)
+	req.Header.Set("Origin", "https://evil.example.com")
+	rec := httptest.NewRecorder()
+
+	mw.ServeHTTP(rec, req)
+
+	require.True(t, next.called, "OPTIONS from disallowed origin should pass through to next handler")
+	require.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
+}
+
+func TestCORSMiddleware_PreflightNoOrigin(t *testing.T) {
+	next := &nextHandlerSentinel{}
+	mw := corsMiddleware([]string{"moz-extension://abc123"})(next)
+
+	req := httptest.NewRequest(http.MethodOptions, "/api/books/capture", nil)
+	rec := httptest.NewRecorder()
+
+	mw.ServeHTTP(rec, req)
+
+	require.True(t, next.called, "OPTIONS with no origin should pass through to next handler")
+	require.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
+}
+
 func TestCORSMiddleware_MultipleAllowedOrigins(t *testing.T) {
 	origins := []string{
 		"moz-extension://abc123",

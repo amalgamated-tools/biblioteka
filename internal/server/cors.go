@@ -11,7 +11,7 @@ const corsAllowedHeaders = "Authorization, Content-Type, X-Request-ID"
 
 // corsAllowedMethods is the fixed list of HTTP methods permitted by the CORS
 // preflight check.
-const corsAllowedMethods = "POST, OPTIONS"
+const corsAllowedMethods = "GET, POST, OPTIONS"
 
 // corsMaxAge is the preflight cache duration in seconds (24 hours).
 const corsMaxAge = "86400"
@@ -24,7 +24,9 @@ const corsMaxAge = "86400"
 // Only requests with an Origin header that appears verbatim in allowedOrigins
 // receive permissive headers — this prevents a misconfigured wildcard from
 // opening every endpoint to cross-origin access. Preflight OPTIONS requests
-// receive a 204 No Content response; all other methods are forwarded to next.
+// from allowed origins receive a 204 No Content response; OPTIONS from
+// disallowed or absent origins are passed through to the next handler so the
+// underlying route can return its normal response (e.g. 405 Method Not Allowed).
 func corsMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
 	allowed := make(map[string]struct{}, len(allowedOrigins))
 	for _, o := range allowedOrigins {
@@ -45,13 +47,13 @@ func corsMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
 					w.Header().Set("Access-Control-Allow-Headers", corsAllowedHeaders)
 					w.Header().Set("Access-Control-Max-Age", corsMaxAge)
 					w.Header().Add("Vary", "Origin")
-				}
-			}
 
-			// Short-circuit OPTIONS preflight requests.
-			if r.Method == http.MethodOptions {
-				w.WriteHeader(http.StatusNoContent)
-				return
+					// Short-circuit OPTIONS preflight for allowed origins only.
+					if r.Method == http.MethodOptions {
+						w.WriteHeader(http.StatusNoContent)
+						return
+					}
+				}
 			}
 
 			next.ServeHTTP(w, r)

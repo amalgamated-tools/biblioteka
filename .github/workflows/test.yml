@@ -84,6 +84,7 @@ jobs:
           fi
 
   frontend-checks:
+    runs-on: ubuntu-latest
     needs: [check-docs-only]
     if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
     timeout-minutes: 20
@@ -184,6 +185,7 @@ jobs:
   # (.gitkeep) in internal/server/dist satisfies //go:embed all:dist for compilation.
   go-lint:
     needs: [check-docs-only]
+    runs-on: ubuntu-latest
     if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
     timeout-minutes: 15
     steps:
@@ -211,6 +213,7 @@ jobs:
 
   go-test:
     needs: [check-docs-only]
+    runs-on: ubuntu-latest
     if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
     timeout-minutes: 15
     outputs:

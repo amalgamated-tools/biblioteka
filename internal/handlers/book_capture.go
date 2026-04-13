@@ -141,8 +141,14 @@ func (h *BookHandler) HandleCapture(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// dnsLookupTimeout is the maximum time allowed for a DNS lookup during URL
+// validation.
+const dnsLookupTimeout = 2 * time.Second
+
 // isValidCaptureURL reports whether rawURL is a valid http or https URL and does
 // not target private, reserved, or link-local IP addresses (SSRF protection).
+// All resolved IPs must be public — if any resolved address is private, the URL
+// is rejected to prevent DNS rebinding and mixed-record attacks.
 func isValidCaptureURL(rawURL string) bool {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -167,38 +173,35 @@ func isValidCaptureURL(rawURL string) bool {
 
 	// Try to parse as IP address; if successful, validate it's not in a private range
 	if ip := net.ParseIP(hostname); ip != nil {
-		// Reject private IPv4 ranges
-		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
-			return false
-		}
-		// Reject multicast
-		if ip.IsMulticast() {
-			return false
-		}
-		// Reject unspecified (0.0.0.0 or ::)
-		if ip.IsUnspecified() {
-			return false
-		}
-		// If we get here, the IP is public and safe
-		return true
+		return isPublicIP(ip)
 	}
 
-	// For hostnames (not IPs), resolve them and check the resolved IPs
-	ips, err := net.LookupIP(hostname)
+	// For hostnames (not IPs), resolve them and check all resolved IPs are public
+	lookupCtx, cancel := context.WithTimeout(context.Background(), dnsLookupTimeout)
+	defer cancel()
+
+	ipAddrs, err := net.DefaultResolver.LookupIPAddr(lookupCtx, hostname)
 	if err != nil {
 		// If resolution fails, reject the URL (can't verify it's safe)
 		return false
 	}
 
-	// Check that at least one resolved IP is public
-	for _, ip := range ips {
-		if !ip.IsPrivate() && !ip.IsLoopback() && !ip.IsLinkLocalUnicast() &&
-			!ip.IsLinkLocalMulticast() && !ip.IsMulticast() && !ip.IsUnspecified() {
-			// Found a public IP, allow it
-			return true
+	if len(ipAddrs) == 0 {
+		return false
+	}
+
+	// Reject if ANY resolved IP is non-public (prevents DNS rebinding / mixed records)
+	for _, ipAddr := range ipAddrs {
+		if !isPublicIP(ipAddr.IP) {
+			return false
 		}
 	}
 
-	// All IPs are private/reserved/link-local, reject
-	return false
+	return true
+}
+
+// isPublicIP reports whether ip is a globally routable unicast address.
+func isPublicIP(ip net.IP) bool {
+	return !ip.IsPrivate() && !ip.IsLoopback() && !ip.IsLinkLocalUnicast() &&
+		!ip.IsLinkLocalMulticast() && !ip.IsMulticast() && !ip.IsUnspecified()
 }

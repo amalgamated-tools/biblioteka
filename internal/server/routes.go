@@ -51,8 +51,8 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/admin/users", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleListUsers)))
 	s.mux.Handle("/api/admin/users/", s.requireJWTAuth(http.HandlerFunc(s.adminHandler.HandleSetAdmin)))
 
-	// Protected library routes
-	s.mux.Handle("/api/libraries", s.requireAuth(http.HandlerFunc(s.libraryHandler.HandleLibraries)))
+	// Protected library routes (CORS enabled for browser extension)
+	s.mux.Handle("/api/libraries", corsMW(s.requireAuth(http.HandlerFunc(s.libraryHandler.HandleLibraries))))
 	s.mux.Handle("/api/libraries/", s.requireAuth(http.HandlerFunc(s.libraryHandler.HandleLibrary)))
 
 	// Protected author routes
@@ -64,8 +64,8 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/series/", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeries)))
 
 	// Protected book routes
-	s.mux.Handle("/api/books/upload", s.requireAuth(corsMW(http.HandlerFunc(s.bookHandler.HandleUpload))))
-	s.mux.Handle("/api/books/capture", s.requireAuth(corsMW(http.HandlerFunc(s.bookHandler.HandleCapture))))
+	s.mux.Handle("/api/books/upload", corsMW(s.requireAuth(http.HandlerFunc(s.bookHandler.HandleUpload))))
+	s.mux.Handle("/api/books/capture", corsMW(s.requireAuth(http.HandlerFunc(s.bookHandler.HandleCapture))))
 	s.mux.Handle("/api/books", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBooks)))
 	s.mux.Handle("/api/books/", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBookRoutes)))
 
