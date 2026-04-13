@@ -20,12 +20,8 @@ jobs:
       - name: Evaluate if PR is docs-only
         id: evaluate
         run: |
-          # Honor manually-applied docs-only label — if it's present, don't override it
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
-            echo "is-docs-only=true" >> $GITHUB_OUTPUT
-            echo "Label already applied; skipping file analysis"
-            exit 0
-          fi
+          # Always evaluate the current PR file set so synchronize events can
+          # remove stale docs-only state when code/config files are added later.
           
           # Get list of changed files in this PR
           BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
