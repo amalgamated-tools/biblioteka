@@ -4,6 +4,7 @@ db/biblioteka.db*
 # Binaries
 /bibloteka
 /biblioteka
+/cli
 *.exe
 
 # IDE
