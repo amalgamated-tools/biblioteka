@@ -20,6 +20,11 @@ func newTestDB(t *testing.T) *db.DB {
 	require.NoError(t, err, "newTestDB: open")
 	t.Cleanup(func() { _ = sqlDB.Close() })
 
+	// Restrict to one connection: in-memory SQLite databases are per-connection,
+	// so concurrent goroutines acquiring different connections would each see an
+	// empty database. A single connection serialises all access to the same DB.
+	sqlDB.SetMaxOpenConns(1)
+
 	_, err = sqlDB.Exec(`
 		PRAGMA journal_mode = WAL;
 		PRAGMA synchronous = NORMAL;

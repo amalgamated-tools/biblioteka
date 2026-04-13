@@ -282,7 +282,7 @@
                   >
                     <div
                       class="h-full bg-accent-500 rounded-full transition-all"
-                      style="width: {item.percentage * 100}%"
+                      style:width="{item.percentage * 100}%"
                     ></div>
                   </div>
 
