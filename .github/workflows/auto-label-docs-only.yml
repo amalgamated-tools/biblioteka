@@ -1,0 +1,88 @@
+name: Auto-label docs-only PRs
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-docs-only:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Evaluate if PR is docs-only
+        id: evaluate
+        run: |
+          # Get PR title and check if it starts with docs: or doc:
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          TITLE_IS_DOCS=false
+          if [[ "$PR_TITLE" =~ ^(docs|doc)\: ]]; then
+            TITLE_IS_DOCS=true
+          fi
+          
+          # Get list of changed files in this PR
+          git diff --name-only ${{ github.event.pull_request.base.sha }}..HEAD > /tmp/changed_files.txt
+          
+          # Check if all changed files are documentation-related
+          # Exclude: cmd/, internal/, frontend/, db/, e2e/, go.mod, go.sum, .golangci.yml, lock files
+          FILES_IS_DOCS=true
+          while IFS= read -r file; do
+            # Skip if file matches code paths or is a code file
+            if [[ "$file" =~ ^(cmd|internal|frontend|db|e2e)/ ]] || \
+               [[ "$file" =~ \.(go|ts|tsx|js|jsx|mod|sum|yml|yaml)$ ]] || \
+               [[ "$file" =~ ^\.github/workflows/ ]]; then
+              FILES_IS_DOCS=false
+              echo "Found code file: $file"
+              break
+            fi
+          done < /tmp/changed_files.txt
+          
+          # Print summary
+          echo "Title is docs: $TITLE_IS_DOCS"
+          echo "Files are docs: $FILES_IS_DOCS"
+          
+          # PR is docs-only if title says so OR all files are docs
+          if [[ "$TITLE_IS_DOCS" == "true" ]] || [[ "$FILES_IS_DOCS" == "true" ]]; then
+            echo "is-docs-only=true" >> $GITHUB_OUTPUT
+          else
+            echo "is-docs-only=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Apply docs-only label
+        if: steps.evaluate.outputs.is-docs-only == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['docs-only']
+            });
+            console.log('✅ Applied docs-only label');
+
+      - name: Remove docs-only label
+        if: steps.evaluate.outputs.is-docs-only == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name: 'docs-only'
+              });
+              console.log('✅ Removed docs-only label');
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('ℹ️  Label not present, nothing to remove');
+              } else {
+                throw error;
+              }
+            }
