@@ -18,8 +18,8 @@ All formats are handled by [ExifTool](https://exiftool.org/) running as a stay-o
 |--------------|---------------------|----------|
 | `Title` | `Title` | Filename stem |
 | `Author`, `Creator` | `Author` | `""` (empty; no author record created) |
-| `ISBN`, `Identifier` | `ISBN` | `""` (empty; `NormalizeISBN` strips `urn:isbn:`/`isbn:` prefixes and validates as 10 or 13 digits) |
-| _(file extension)_ | `Format` | Uppercase extension (e.g. `"EPUB"`, `"PDF"`); stored on `book_files`, not `books` |
+| `ISBN`, `Identifier` | `ISBN` | `""` (empty; `NormalizeISBN` strips `urn:isbn:`/`isbn:` prefixes and normalizes values to 10- or 13-character ISBN-like strings; it does not verify ISBN-10/13 check digits) |
+| _(file extension)_ | `Format` | Lowercased extension (e.g. `"epub"`, `"pdf"`); persisted as `book_files.file_type`, not on `books` |
 | `Description` | `Description` | `""` |
 | `Publisher` | `Publisher` | `""` |
 | `Language` | `Language` | `""` |
