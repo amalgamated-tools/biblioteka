@@ -66,4 +66,24 @@ describe("DownloadsHistogram", () => {
       expect(item.className).not.toContain("focus-within:outline-none");
     }
   });
+
+  it("links the list aria-labelledby to the heading id", () => {
+    render(DownloadsHistogram, { data: dataWithDownloads });
+    const heading = screen.getByRole("heading", { level: 3 });
+    const list = screen.getByRole("list");
+    const headingId = heading.getAttribute("id");
+    expect(headingId).toBeTruthy();
+    expect(list.getAttribute("aria-labelledby")).toBe(headingId);
+  });
+
+  it("generates unique ids for multiple instances", () => {
+    render(DownloadsHistogram, { data: dataWithDownloads, title: "First" });
+    render(DownloadsHistogram, { data: dataWithDownloads, title: "Second" });
+    const headings = screen.getAllByRole("heading", { level: 3 });
+    const id1 = headings[0].getAttribute("id");
+    const id2 = headings[1].getAttribute("id");
+    expect(id1).toBeTruthy();
+    expect(id2).toBeTruthy();
+    expect(id1).not.toBe(id2);
+  });
 });
