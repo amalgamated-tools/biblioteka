@@ -337,6 +337,28 @@ func TestChangePassword_MethodNotAllowed(t *testing.T) {
 	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
+// TestChangePassword_OIDCOnlyAccount verifies that an OIDC-only account
+// (empty PasswordHash) cannot change its password via the local credential flow.
+// This is a security boundary: OIDC users have no local password to verify
+// against, so the endpoint must reject the request regardless of the supplied
+// currentPassword value.
+func TestChangePassword_OIDCOnlyAccount(t *testing.T) {
+	h := newAuthHandler(t)
+	user, err := h.DB.CreateOIDCUser(t.Context(), "OIDCUser", "oidconly@example.com", "oidc-subject-abc")
+	require.NoError(t, err)
+
+	r := httptest.NewRequest(http.MethodPut, "/api/auth/password",
+		bytes.NewBufferString(`{"currentPassword":"anypassword","newPassword":"newpassword1"}`))
+	r = withUserID(r, user.ID)
+	w := httptest.NewRecorder()
+	h.ChangePassword(w, r)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	var resp errorResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Contains(t, resp.Error, "cannot change password")
+}
+
 // --- Set-Cookie header assertions ---
 
 // assertAuthCookie checks that the response contains a Set-Cookie header for
