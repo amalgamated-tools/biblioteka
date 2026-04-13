@@ -2317,6 +2317,56 @@ Delete a book file record (does not delete the file from disk). Returns `204 No 
 
 ---
 
+## Stats
+
+Statistical endpoints return per-user activity data. All stats endpoints require authentication.
+
+### `GET /api/stats/downloads-per-month` 🔒
+
+Returns monthly book-file download counts for the authenticated user over a rolling window.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Max | Description |
+|-----------|------|---------|-----|-------------|
+| `months` | integer | `12` | `24` | Number of calendar months to include, counting backwards from the current month (inclusive) |
+
+Out-of-range or non-integer values for `months` are silently clamped to `12`.
+
+**Response:** `200 OK`
+
+```json
+[
+  { "month": "2025-05", "count": 4 },
+  { "month": "2025-06", "count": 7 },
+  { "month": "2025-07", "count": 0 },
+  ...
+  { "month": "2026-04", "count": 12 }
+]
+```
+
+The array always contains exactly `months` entries ordered oldest-first. Months with no downloads have `count: 0` — the series is never sparse. This makes the response safe to render directly as a bar chart without client-side gap-filling.
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `month` | string | Calendar month in `YYYY-MM` format |
+| `count` | integer | Number of download events initiated by the authenticated user in that month |
+
+**Status codes:**
+
+| Status | Meaning |
+|--------|---------|
+| `200 OK` | Success |
+| `401 Unauthorized` | Missing or invalid authentication |
+| `405 Method Not Allowed` | Non-`GET` request |
+| `500 Internal Server Error` | Database error |
+
+> **User isolation:** Download counts are scoped to the authenticated user. Each user sees only their own download history.
+
+---
+
 ## Swagger UI
 
 ### `GET /swagger/`

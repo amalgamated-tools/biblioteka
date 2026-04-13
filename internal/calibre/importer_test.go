@@ -103,7 +103,7 @@ func newTestCalibreDB(t *testing.T) *DB {
 	t.Cleanup(func() { _ = sqlDB.Close() })
 	_, err = sqlDB.Exec(calibreSchema)
 	require.NoError(t, err, "create calibre schema")
-	return newDBFromSQL(sqlDB)
+	return &DB{db: sqlDB}
 }
 
 // newTestBibliotekaDB creates an in-memory Biblioteka database with all

@@ -155,6 +155,23 @@ export interface PaginatedBooks {
   offset: number;
 }
 
+// Reading progress
+
+export interface ReadingProgressItem {
+  document: string;
+  percentage: number;
+  device?: string | null;
+  last_synced: string;
+  estimated_minutes_remaining?: number | null;
+}
+
+export interface ReadingProgressStats {
+  current_streak: number;
+  total_tracked: number;
+  total_finished: number;
+  in_progress: ReadingProgressItem[];
+}
+
 // Config
 
 export interface ConfigStatus {
@@ -337,4 +354,20 @@ export interface PaginatedAuditLogs {
   total: number;
   limit: number;
   offset: number;
+}
+
+// Reading Lists
+
+export interface ReadingList {
+  id: string;
+  name: string;
+  description: string | null;
+  book_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReadingListInput {
+  name: string;
+  description?: string | null;
 }
