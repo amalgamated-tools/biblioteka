@@ -49,6 +49,10 @@ nav:
   - Home: index.md
   - Getting Started:
       - Deployment: deployment.md
+      - Cloud Platforms:
+          - Fly.io: deploy-flyio.md
+          - Render: deploy-render.md
+          - Railway: deploy-railway.md
       - Authentication: authentication.md
       - Administration: administration.md
   - User Guides:
