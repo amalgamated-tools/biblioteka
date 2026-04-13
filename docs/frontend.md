@@ -52,7 +52,8 @@ frontend/
         BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states; table-view rows are keyboard-accessible via `tabindex="0"` and Enter-key navigation (WCAG 2.1.1)
         Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
         DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
-        DownloadsHistogram.svelte  Bar-chart histogram that renders monthly download counts; each bar is a focusable `role="listitem"` with an `aria-label` of "Month YYYY: N download(s)" so the data is accessible to keyboard and screen-reader users; an empty-state message with `aria-live="polite"` is shown when all counts are zero
+        DownloadsHistogram.svelte  Bar chart showing monthly download counts; accessible via `role="list"` + per-bar `aria-label`; count tooltip uses `text-ink-600 dark:text-ink-200` and month labels use `text-ink-600 dark:text-ink-400` to meet the WCAG 1.4.3 Contrast Minimum (Level AA)
+        EmailBookModal.svelte      Modal dialog for emailing a book file to an address; implements full focus trapping (Tab / Shift+Tab wrap-around), Escape-to-dismiss, and autofocus on the Close button (WCAG 2.1.1, 2.1.2)
         TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3); border uses `border-ink-400 dark:border-ink-400` to meet the Non-text Contrast minimum (WCAG 1.4.11)
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
@@ -825,45 +826,6 @@ Padding is intentionally left to the caller via the `class` prop to avoid Tailwi
 
 ---
 
-### `DownloadsHistogram.svelte`
-
-A pure-CSS bar-chart component that renders monthly download counts fetched from `GET /api/stats/downloads-per-month`. Used by `Dashboard.svelte` to display the authenticated user's download history.
-
-**Props:**
-
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `data` | `MonthlyDownloads[]` | ✓ | — | Array of `{ month: "YYYY-MM", count: number }` objects ordered oldest-first |
-| `title` | `string` | | `"Downloads per month"` | Label rendered as an `<h3>` above the chart and used as the `aria-label` on the bar list |
-
-**Accessibility:**
-
-- The bar container uses `role="list"` with an `aria-label` matching the `title` prop.
-- Each bar column is a `role="listitem"` element with `tabindex="0"` and an `aria-label` of `"Month YYYY: N download(s)"`, so keyboard users can navigate each data point with Tab/arrow keys and screen readers announce the exact figure.
-- A count tooltip (`aria-hidden="true"`) appears above each bar on hover/focus — decorative only.
-- When all counts are zero, an empty-state `<p>` with `aria-live="polite"` is shown instead of the chart.
-
-**Usage:**
-
-```svelte
-<script lang="ts">
-  import DownloadsHistogram from "./ui/DownloadsHistogram.svelte";
-  import { getDownloadsPerMonth } from "../lib/api";
-  import type { MonthlyDownloads } from "../types";
-
-  let data = $state<MonthlyDownloads[]>([]);
-  $effect(() => {
-    getDownloadsPerMonth(12).then((d) => (data = d));
-  });
-</script>
-
-{#if data.length > 0}
-  <DownloadsHistogram {data} title="Downloads per month" />
-{/if}
-```
-
----
-
 ### `TextInput.svelte`
 
 A styled text input with focus ring, dark-mode support, disabled styling, and ARIA attribute forwarding. In dark mode, placeholder text uses `dark:placeholder:text-ink-300` to maintain sufficient contrast against the dark background (WCAG 1.4.3 Contrast Minimum, Level AA). Form control borders use `border-ink-400 dark:border-ink-400` to meet the WCAG 1.4.11 Non-text Contrast minimum of 3:1.
@@ -1166,6 +1128,81 @@ An accessible inline delete-confirmation dialog that replaces the current item's
 ```
 
 `LibraryForm.svelte`, `APIKeysTab.svelte`, and `KoboTab.svelte` are canonical reference implementations.
+
+---
+
+### `DownloadsHistogram.svelte`
+
+A bar chart that visualises monthly download counts for a book or the library. Each bar is sized proportionally to the highest count in the dataset. An empty-state message is shown when all counts are zero. All visual data is also exposed as accessible text through ARIA attributes so the chart is usable without a pointing device or visual display.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `data` | `MonthlyDownloads[]` | ✓ | — | Array of `{ month: string; count: number }` objects. `month` is in `"YYYY-MM"` format. |
+| `title` | `string` | | `"Downloads per month"` | Heading rendered above the chart and used as the `aria-label` for the bar list. |
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import DownloadsHistogram from "./ui/DownloadsHistogram.svelte";
+  import type { MonthlyDownloads } from "../types";
+
+  let monthlyDownloads: MonthlyDownloads[] = $state([]);
+</script>
+
+<DownloadsHistogram data={monthlyDownloads} />
+```
+
+**Accessibility:**
+
+- The bar container uses `role="list"` with an `aria-label` matching the `title` prop.
+- Each bar is a `role="listitem"` with a full `aria-label` in the form `"January 2026: 5 downloads"` so screen readers can announce every data point without relying on the visual bar heights.
+- The count tooltip (shown on hover/focus) and month axis labels use `text-ink-600` (light mode) to satisfy the WCAG 1.4.3 Contrast Minimum of 4.5:1. The count tooltip additionally uses `dark:text-ink-200` in dark mode to maintain contrast against the `accent-500` bar background. Month axis labels use `dark:text-ink-400` in dark mode.
+- Each bar is `tabindex="0"` so keyboard users can navigate the chart with Tab.
+- The month label row and the count tooltip are `aria-hidden="true"` because the equivalent information is already conveyed by the per-bar `aria-label`.
+- The empty-state message uses `aria-live="polite"`; note that the element is conditionally rendered inside `{#if isEmpty}`, so announcements may not fire reliably in all screen readers (NVDA and JAWS sometimes skip announcements when a live region is inserted with text already populated).
+
+---
+
+### `EmailBookModal.svelte`
+
+A modal dialog that lets users email a book file to an email address. It fetches the book's file list on mount, then presents a file picker (when the book has more than one file), an email address field, and a Send button. Focus is trapped within the dialog while it is open; the backdrop click and Escape key both dismiss it.
+
+**Props:**
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `bookId` | `string` | ✓ | ID of the book whose files should be offered for emailing. |
+| `onClose` | `() => void` | ✓ | Called when the dialog should be dismissed (backdrop click, close button, or Escape key). |
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import EmailBookModal from "./ui/EmailBookModal.svelte";
+
+  let showEmailModal = $state(false);
+  let selectedBookId = $state("");
+</script>
+
+{#if showEmailModal}
+  <EmailBookModal
+    bookId={selectedBookId}
+    onClose={() => (showEmailModal = false)}
+  />
+{/if}
+```
+
+**Accessibility:**
+
+- The dialog root uses `role="dialog"` with `aria-modal="true"` and `aria-labelledby` pointing to the modal's `<h2>` title element (WCAG 4.1.2).
+- On mount, focus moves to the **Close** button via `$effect` so keyboard users are immediately inside the dialog (WCAG 2.1.2).
+- Tab and Shift+Tab wrap around the set of focusable elements inside the dialog, preventing focus from escaping to the page behind the modal (WCAG 2.1.1).
+- Pressing Escape calls `onClose` to dismiss the dialog (WCAG 2.1.2).
+- The backdrop has `aria-hidden="true"` so screen readers are not aware of the decorative overlay.
+- Loading and success states use `role="status"` for polite announcements; error states use `role="alert"` for immediate announcements.
 
 ---
 
@@ -2415,18 +2452,6 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 > **Testing note:** Each test calls `await tick()` after `render()` to flush Svelte 5 reactive state before asserting. `afterEach(cleanup)` removes the rendered component from JSDOM between tests.
 
-#### `DownloadsHistogram.test.ts`
-
-`frontend/src/components/ui/DownloadsHistogram.test.ts` verifies the rendering, empty-state behavior, and data-driven bar generation of the histogram component. Five tests in one `DownloadsHistogram` describe block:
-
-1. **`renders the default title`** — renders with no `title` prop; asserts the `<h3>` heading reads `"Downloads per month"`.
-2. **`renders a custom title`** — passes `title="My custom title"`; asserts the `<h3>` reflects the override.
-3. **`shows the empty state message when all counts are zero`** — renders with all-zero data; asserts `"No downloads recorded yet."` is visible and `data-testid="histogram-bars"` is absent.
-4. **`renders bars when data has downloads`** — renders with non-zero data; asserts `"No downloads recorded yet."` is absent and `data-testid="histogram-bars"` is present.
-5. **`renders a bar element for each data point`** — renders three data points; asserts the `histogram-bars` container has exactly three child elements.
-
-> **Testing note:** `afterEach(cleanup)` removes rendered components between tests.
-
 #### `TextInput.test.ts`
 
 `frontend/src/components/ui/TextInput.test.ts` verifies ARIA forwarding and accessibility-critical styling on the reusable text input (WCAG 1.4.3, 4.1.2). The key accessibility test:
@@ -2684,6 +2709,36 @@ The following test suites cover reactive stores and the API client. Unlike the a
 1. **`removes the library from the store and clears its scanning state`** — adds and marks a library as scanning, then calls `remove(id)`; asserts the library is gone from `libraries` and `scanningIds`.
 
 > **Setup:** `beforeEach` resets the store by setting `libraries = []`, `loading = false`, `loaded = false`, and calling `clearAllScanning()`. Fake timers are used to control the 5-minute scanning timeout without real waits.
+
+---
+
+### `DownloadsHistogram.test.ts`
+
+`frontend/src/components/ui/DownloadsHistogram.test.ts` verifies the rendering and accessibility behavior of the `DownloadsHistogram` chart component. Five tests in one `describe` block:
+
+1. **`renders the default title`** — mounts with `data` containing downloads; asserts an `<h3>` heading with text `"Downloads per month"` is present.
+2. **`renders a custom title`** — mounts with a `title` override; asserts the `<h3>` heading reflects the custom string.
+3. **`shows the empty state message when all counts are zero`** — mounts with all-zero counts; asserts the "No downloads recorded yet." message is present and the `data-testid="histogram-bars"` container is absent.
+4. **`renders bars when data has downloads`** — mounts with non-zero counts; asserts the histogram-bars container is present and the empty-state message is absent.
+5. **`renders a bar element for each data point`** — mounts with three data points; asserts the histogram-bars container has exactly three child elements.
+
+---
+
+### `EmailBookModal.test.ts`
+
+`frontend/src/components/ui/EmailBookModal.test.ts` verifies the loading, success, error, and accessibility behaviors of the `EmailBookModal` component. `fetch` is stubbed globally; `lucide-svelte` icons are mocked as no-ops (required for JSDOM). Eleven tests in one `describe` block:
+
+1. **`shows loading state initially`** — `fetch` never resolves; asserts a `role="status"` element with text matching `/loading/i` is present.
+2. **`moves focus to the close button on mount`** — `fetch` never resolves; asserts the Close button receives focus via `$effect` autofocus on mount (WCAG 2.1.2).
+3. **`renders the dialog title`** — `fetch` resolves with a book; asserts an `<h2>` heading with text `"Email Book"` is present.
+4. **`shows file name and email input after loading`** — `fetch` resolves; asserts the file name and the To address input are visible.
+5. **`shows 'no files' message when book has no files`** — `fetch` resolves with a book that has an empty `files` array; asserts the "no files available" message appears.
+6. **`shows an error message when book load fails`** — `fetch` rejects; asserts a `role="alert"` element contains the error text.
+7. **`calls onClose when the close button is clicked`** — `fetch` resolves; simulates a click on the Close button; asserts the `onClose` prop was called once.
+8. **`shows success message after sending`** — two-call fetch sequence (book load then send); fills the To field and clicks Send; asserts a `role="status"` element contains `"Email sent successfully"`.
+9. **`shows error message when send fails`** — two-call fetch sequence (book load then 502 error); fills To and clicks Send; asserts a `role="alert"` element contains the API error text.
+10. **`traps Tab focus within the dialog: Tab from last element wraps to first`** — focuses the Cancel button (last focusable element when Send is disabled); presses Tab; asserts focus wraps to the Close button (WCAG 2.1.1).
+11. **`traps Shift+Tab focus within the dialog: Shift+Tab from first element wraps to last`** — focuses the Close button; presses Shift+Tab; asserts focus wraps to the Cancel button (WCAG 2.1.1).
 
 ---
 
