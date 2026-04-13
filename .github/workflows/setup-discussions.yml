@@ -2,6 +2,11 @@ name: "Setup Announcements Discussion Category"
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - copilot/update-agentic-planner-2026-04-12
+    paths:
+      - .github/workflows/setup-discussions.yml
 
 permissions: {}
 
