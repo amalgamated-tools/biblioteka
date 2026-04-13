@@ -39,11 +39,25 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       skip-tests: ${{ steps.check.outputs.skip-tests }}
+      skip-run: ${{ steps.check.outputs.skip-run }}
     steps:
       - name: Check if docs-only PR
         id: check
         run: |
-          # Always run this step to ensure skip-tests output is always set
+          # Always run this step to ensure skip-tests and skip-run outputs are always set.
+          # skip-run=true when a labeled/unlabeled event fires for a label that is NOT
+          # docs-only: no code changed, so there is no need to rerun CI.
+          EVENT="${{ github.event_name }}"
+          ACTION="${{ github.event.action }}"
+          LABEL="${{ github.event.label.name }}"
+          if [[ "$EVENT" == "pull_request" ]] && \
+             [[ "$ACTION" == "labeled" || "$ACTION" == "unlabeled" ]] && \
+             [[ "$LABEL" != "docs-only" ]]; then
+            echo "skip-run=true" >> $GITHUB_OUTPUT
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "skip-run=false" >> $GITHUB_OUTPUT
           # Use short-circuit expression so push events never access github.event.pull_request
           if [[ "${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
             echo "skip-tests=true" >> $GITHUB_OUTPUT
@@ -53,7 +67,7 @@ jobs:
 
   frontend-checks:
     needs: [check-docs-only]
-    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
+    if: needs.check-docs-only.outputs.skip-run != 'true' && (needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push')
     runs-on: ubuntu-latest
     name: Frontend Checks
     timeout-minutes: 20
@@ -141,6 +155,10 @@ jobs:
     steps:
       - name: Verify frontend checks job passed (or skipped for docs-only)
         run: |
+          if [[ "${{ needs.check-docs-only.outputs.skip-run }}" == "true" ]]; then
+            echo "Non-docs-only label event; no tests were triggered"
+            exit 0
+          fi
           if [[ "${{ needs.check-docs-only.outputs.skip-tests }}" == "true" ]]; then
             echo "Skipping frontend tests (docs-only PR)"
             exit 0
@@ -154,7 +172,7 @@ jobs:
   # (.gitkeep) in internal/server/dist satisfies //go:embed all:dist for compilation.
   go-lint:
     needs: [check-docs-only]
-    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
+    if: needs.check-docs-only.outputs.skip-run != 'true' && (needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push')
     runs-on: ubuntu-latest
     name: Go Lint
     timeout-minutes: 15
@@ -183,7 +201,7 @@ jobs:
 
   go-test:
     needs: [check-docs-only]
-    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
+    if: needs.check-docs-only.outputs.skip-run != 'true' && (needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push')
     runs-on: ubuntu-latest
     name: Go Tests
     timeout-minutes: 15
@@ -300,6 +318,10 @@ jobs:
     steps:
       - name: Check all Go jobs passed (or skipped for docs-only)
         run: |
+          if [[ "${{ needs.check-docs-only.outputs.skip-run }}" == "true" ]]; then
+            echo "Non-docs-only label event; no tests were triggered"
+            exit 0
+          fi
           if [[ "${{ needs.check-docs-only.outputs.skip-tests }}" == "true" ]]; then
             echo "Skipping Go tests (docs-only PR)"
             exit 0
@@ -317,6 +339,7 @@ jobs:
       && github.event.pull_request.head.repo.full_name == github.repository
       && needs.go-test.result == 'success'
       && needs.check-docs-only.outputs.skip-tests != 'true'
+      && needs.check-docs-only.outputs.skip-run != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

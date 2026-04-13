@@ -35,11 +35,25 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       skip-tests: ${{ steps.check.outputs.skip-tests }}
+      skip-run: ${{ steps.check.outputs.skip-run }}
     steps:
       - name: Check if docs-only PR
         id: check
         run: |
-          # Always run this step to ensure skip-tests output is always set
+          # Always run this step to ensure skip-tests and skip-run outputs are always set.
+          # skip-run=true when a labeled/unlabeled event fires for a label that is NOT
+          # docs-only: no code changed, so there is no need to rerun CI.
+          EVENT="${{ github.event_name }}"
+          ACTION="${{ github.event.action }}"
+          LABEL="${{ github.event.label.name }}"
+          if [[ "$EVENT" == "pull_request" ]] && \
+             [[ "$ACTION" == "labeled" || "$ACTION" == "unlabeled" ]] && \
+             [[ "$LABEL" != "docs-only" ]]; then
+            echo "skip-run=true" >> $GITHUB_OUTPUT
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "skip-run=false" >> $GITHUB_OUTPUT
           # Use short-circuit expression so push events never access github.event.pull_request
           if [[ "${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
             echo "skip-tests=true" >> $GITHUB_OUTPUT
@@ -49,7 +63,7 @@ jobs:
 
   e2e:
     needs: [check-docs-only]
-    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
+    if: needs.check-docs-only.outputs.skip-run != 'true' && (needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push')
     runs-on: ubuntu-latest
     name: E2E Tests
     # The full job (build frontend + Go binary + Playwright install + tests)
@@ -141,6 +155,11 @@ jobs:
     steps:
       - name: Check E2E tests (passed or skipped for docs-only)
         run: |
+          # For non-docs-only label events, no tests were triggered
+          if [[ "${{ needs.check-docs-only.outputs.skip-run }}" == "true" ]]; then
+            echo "✅ Non-docs-only label event; no tests were triggered"
+            exit 0
+          fi
           # For docs-only PRs, tests are skipped and that's expected
           if [[ "${{ needs.check-docs-only.outputs.skip-tests }}" == "true" ]]; then
             echo "✅ E2E tests skipped (docs-only PR)"
