@@ -204,7 +204,7 @@
           <p class="text-ink-500 dark:text-ink-300 leading-relaxed">
             No reading activity recorded yet. Connect KOReader via
             <a
-              href="#settings"
+              href="#settings/kobo"
               class="text-accent-600 dark:text-accent-400 underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-300 transition-colors"
             >
               Settings → KOSync
