@@ -45,12 +45,12 @@ func toKoboTokenDTO(token *db.KoboToken) koboTokenDTO {
 //	@Security		BearerAuth
 //	@Accept			json
 //	@Produce		json
-//	@Success		200		{array}		koboTokenDTO			"List of Kobo tokens"
-//	@Success		201		{object}	koboTokenCreateResponse	"Kobo token created"
-//	@Failure		400		{object}	errorResponse			"Bad request"
-//	@Failure		401		{object}	errorResponse			"Unauthorized"
-//	@Failure		405		{object}	errorResponse			"Method not allowed"
-//	@Failure		500		{object}	errorResponse			"Internal server error"
+//	@Success		200	{array}		koboTokenDTO			"List of Kobo tokens"
+//	@Success		201	{object}	koboTokenCreateResponse	"Kobo token created"
+//	@Failure		400	{object}	errorResponse			"Bad request"
+//	@Failure		401	{object}	errorResponse			"Unauthorized"
+//	@Failure		405	{object}	errorResponse			"Method not allowed"
+//	@Failure		500	{object}	errorResponse			"Internal server error"
 //	@Router			/kobo/tokens [get]
 //	@Router			/kobo/tokens [post]
 func (h *KoboHandler) HandleKoboTokens(w http.ResponseWriter, r *http.Request) {
