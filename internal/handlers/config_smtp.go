@@ -111,8 +111,19 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 				writeError(r.Context(), w, http.StatusInternalServerError, "failed to load SMTP configuration")
 				return
 			}
-		} else if existingUsername == username && existingPassword != "" {
-			password = existingPassword
+		} else {
+			// Decrypt the stored password before comparing and reusing.
+			if h.Secrets != nil {
+				existingPassword, err = h.Secrets.Decrypt(existingPassword)
+				if err != nil {
+					slog.ErrorContext(r.Context(), "failed to decrypt existing SMTP password", slog.Any(otelkeys.Error, err))
+					writeError(r.Context(), w, http.StatusInternalServerError, "failed to load SMTP configuration")
+					return
+				}
+			}
+			if existingUsername == username && existingPassword != "" {
+				password = existingPassword
+			}
 		}
 	}
 
@@ -140,12 +151,23 @@ func (h *ConfigHandler) handleSetSMTPConfig(w http.ResponseWriter, r *http.Reque
 		slog.String(otelkeys.Email, params.FromHeader),
 	)
 
+	// Encrypt the password before storing it in the database.
+	storedPassword := password
+	if h.Secrets != nil {
+		storedPassword, err = h.Secrets.Encrypt(password)
+		if err != nil {
+			slog.ErrorContext(r.Context(), "failed to encrypt SMTP password", slog.Any(otelkeys.Error, err))
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to save SMTP configuration")
+			return
+		}
+	}
+
 	_, port, _ := net.SplitHostPort(params.Addr)
 	if err := h.DB.SetSettings(r.Context(), []db.Setting{
 		{Key: smtp.SettingKeyHost, Value: host},
 		{Key: smtp.SettingKeyPort, Value: port},
 		{Key: smtp.SettingKeyUsername, Value: username},
-		{Key: smtp.SettingKeyPassword, Value: password},
+		{Key: smtp.SettingKeyPassword, Value: storedPassword},
 		{Key: smtp.SettingKeyFrom, Value: params.FromHeader},
 		{Key: smtp.SettingKeyTLS, Value: params.TLS},
 	}); err != nil {

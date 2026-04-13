@@ -17,6 +17,10 @@ const (
 	GoodreadsMetadataStatusRejected = "rejected"
 )
 
+// MetadataSourceGoodreads is the provenance identifier for metadata records
+// fetched from Goodreads.
+const MetadataSourceGoodreads = "goodreads"
+
 // GoodreadsMetadata represents a row in the goodreads_metadata table.
 type GoodreadsMetadata struct {
 	ID                      string    `json:"id"`
