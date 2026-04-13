@@ -161,19 +161,7 @@ func (h *ReadingListHandler) updateReadingList(w http.ResponseWriter, r *http.Re
 
 	userID := auth.UserIDFromContext(ctx)
 	rl, err := h.DB.UpdateReadingList(ctx, id, userID, req.Name, req.Description)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(ctx, w, http.StatusNotFound, "reading list not found")
-			return
-		}
-		if handleNameErr(ctx, w, err, db.ErrInvalidReadingListName, db.ErrReadingListNameExists, "a reading list") {
-			return
-		}
-		slog.ErrorContext(ctx, "failed to update reading list",
-			slog.String(otelkeys.ReadingListID, id),
-			slog.Any(otelkeys.Error, err),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to update reading list")
+	if handleUpdateErr(ctx, w, err, db.ErrInvalidReadingListName, db.ErrReadingListNameExists, "a reading list", "reading list", id) {
 		return
 	}
 
@@ -246,9 +234,14 @@ func (h *ReadingListHandler) addBookToReadingList(w http.ResponseWriter, r *http
 	}
 
 	userID := auth.UserIDFromContext(ctx)
-	if err := h.DB.AddBookToReadingList(ctx, listID, userID, req.BookID); err != nil {
+	added, err := h.DB.AddBookToReadingList(ctx, listID, userID, req.BookID)
+	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			writeError(ctx, w, http.StatusNotFound, "reading list not found")
+			return
+		}
+		if errors.Is(err, db.ErrBookNotFound) {
+			writeError(ctx, w, http.StatusNotFound, "book not found")
 			return
 		}
 		slog.ErrorContext(ctx, "failed to add book to reading list",
@@ -260,9 +253,11 @@ func (h *ReadingListHandler) addBookToReadingList(w http.ResponseWriter, r *http
 		return
 	}
 
-	logAudit(ctx, h.DB, userID, db.AuditActionReadingListBookAdded, "reading_list", listID,
-		map[string]any{"book_id": req.BookID},
-	)
+	if added {
+		logAudit(ctx, h.DB, userID, db.AuditActionReadingListBookAdded, "reading_list", listID,
+			map[string]any{"book_id": req.BookID},
+		)
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -282,7 +277,8 @@ func (h *ReadingListHandler) removeBookFromReadingList(w http.ResponseWriter, r 
 	ctx := r.Context()
 	userID := auth.UserIDFromContext(ctx)
 
-	if err := h.DB.RemoveBookFromReadingList(ctx, listID, userID, bookID); err != nil {
+	removed, err := h.DB.RemoveBookFromReadingList(ctx, listID, userID, bookID)
+	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			writeError(ctx, w, http.StatusNotFound, "reading list not found")
 			return
@@ -296,9 +292,11 @@ func (h *ReadingListHandler) removeBookFromReadingList(w http.ResponseWriter, r 
 		return
 	}
 
-	logAudit(ctx, h.DB, userID, db.AuditActionReadingListBookRemoved, "reading_list", listID,
-		map[string]any{"book_id": bookID},
-	)
+	if removed {
+		logAudit(ctx, h.DB, userID, db.AuditActionReadingListBookRemoved, "reading_list", listID,
+			map[string]any{"book_id": bookID},
+		)
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 }

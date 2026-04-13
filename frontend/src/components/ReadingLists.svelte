@@ -15,15 +15,14 @@
   let createError: string | null = $state(null);
 
   $effect(() => {
-    if (!readingListStore.loaded) {
-      void (async () => {
-        try {
-          await readingListStore.load();
-        } catch (e) {
-          error =
-            e instanceof Error ? e.message : "Failed to load reading lists";
-        }
-      })();
+    if (!readingListStore.loaded && !readingListStore.loading) {
+      void readingListStore.load();
+    }
+  });
+
+  $effect(() => {
+    if (readingListStore.loadError) {
+      error = readingListStore.loadError;
     }
   });
 

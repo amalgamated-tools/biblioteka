@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -45,29 +46,16 @@ func scanReadingList(row interface{ Scan(...any) error }) (*ReadingList, error) 
 // normalized before storage. Returns ErrReadingListNameExists if a list with
 // an equivalent normalized name already exists for this user.
 func (d *DB) CreateReadingList(ctx context.Context, userID, name string, description *string) (*ReadingList, error) {
-	name = NormalizeReadingListName(name)
-	if name == "" {
-		slog.WarnContext(ctx, "db: rejecting reading list with blank name after normalization",
-			slog.String(otelkeys.UserID, userID),
-		)
-		return nil, ErrInvalidReadingListName
-	}
-	slog.DebugContext(ctx, "db: creating reading list",
-		slog.String(otelkeys.UserID, userID),
-		slog.String(otelkeys.ReadingListName, name),
-	)
-	rl, err := scanReadingList(d.QueryRowContext(ctx,
-		`INSERT INTO reading_lists (user_id, name, description) VALUES ($1, $2, $3)
+	return namedEntityCreate(ctx, "reading list", name,
+		NormalizeReadingListName, ErrInvalidReadingListName, ErrReadingListNameExists,
+		func(ctx context.Context, n string) (*ReadingList, error) {
+			return scanReadingList(d.QueryRowContext(ctx,
+				`INSERT INTO reading_lists (user_id, name, description) VALUES ($1, $2, $3)
          RETURNING id, user_id, name, description, 0, created_at, updated_at`,
-		userID, name, description,
-	))
-	if err != nil {
-		if isColumnUniqueViolation(err, "reading_lists.name", "idx_reading_lists_user_name") {
-			return nil, ErrReadingListNameExists
-		}
-		return nil, err
-	}
-	return rl, nil
+				userID, n, description,
+			))
+		},
+	)
 }
 
 // GetReadingList retrieves a reading list by ID scoped to the given user.
@@ -108,33 +96,19 @@ func (d *DB) ListReadingLists(ctx context.Context, userID string) ([]ReadingList
 // Returns ErrReadingListNameExists if the new name conflicts with another list
 // owned by the same user.
 func (d *DB) UpdateReadingList(ctx context.Context, id, userID, name string, description *string) (*ReadingList, error) {
-	name = NormalizeReadingListName(name)
-	if name == "" {
-		slog.WarnContext(ctx, "db: rejecting reading list update with blank name after normalization",
-			slog.String(otelkeys.ReadingListID, id),
-		)
-		return nil, ErrInvalidReadingListName
-	}
-	slog.DebugContext(ctx, "db: updating reading list",
-		slog.String(otelkeys.ReadingListID, id),
-		slog.String(otelkeys.UserID, userID),
-		slog.String(otelkeys.ReadingListName, name),
-	)
-	result, err := scanReadingList(d.QueryRowContext(ctx,
-		`UPDATE reading_lists SET name = $1, description = $2, updated_at = `+d.now()+`
+	return namedEntityUpdate(ctx, "reading list", id, name,
+		NormalizeReadingListName, ErrInvalidReadingListName, ErrReadingListNameExists,
+		func(ctx context.Context, id, n string) (*ReadingList, error) {
+			return scanReadingList(d.QueryRowContext(ctx,
+				`UPDATE reading_lists SET name = $1, description = $2, updated_at = `+d.now()+`
          WHERE id = $3 AND user_id = $4
          RETURNING id, user_id, name, description,
            (SELECT COUNT(*) FROM reading_list_books WHERE reading_list_id = reading_lists.id),
            created_at, updated_at`,
-		name, description, id, userID,
-	))
-	if err != nil {
-		if isColumnUniqueViolation(err, "reading_lists.name", "idx_reading_lists_user_name") {
-			return nil, ErrReadingListNameExists
-		}
-		return nil, err
-	}
-	return result, nil
+				n, description, id, userID,
+			))
+		},
+	)
 }
 
 // DeleteReadingList removes the reading list with the given ID, scoped to
@@ -148,8 +122,10 @@ func (d *DB) DeleteReadingList(ctx context.Context, id, userID string) error {
 }
 
 // AddBookToReadingList adds a book to a reading list. The list must be owned
-// by userID. Idempotent: if the book is already in the list, returns nil.
-func (d *DB) AddBookToReadingList(ctx context.Context, listID, userID, bookID string) error {
+// by userID. Returns ErrBookNotFound if the book does not exist.
+// Returns (true, nil) if the book was newly added, (false, nil) if it was
+// already present (idempotent).
+func (d *DB) AddBookToReadingList(ctx context.Context, listID, userID, bookID string) (bool, error) {
 	slog.DebugContext(ctx, "db: adding book to reading list",
 		slog.String(otelkeys.ReadingListID, listID),
 		slog.String(otelkeys.UserID, userID),
@@ -162,23 +138,34 @@ func (d *DB) AddBookToReadingList(ctx context.Context, listID, userID, bookID st
 		listID,
 	).Scan(&ownerID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if ownerID != userID {
-		return sql.ErrNoRows
+		return false, sql.ErrNoRows
 	}
-	_, err = d.ExecContext(ctx,
+	result, err := d.ExecContext(ctx,
 		`INSERT INTO reading_list_books (reading_list_id, book_id) VALUES ($1, $2)
          ON CONFLICT (reading_list_id, book_id) DO NOTHING`,
 		listID, bookID,
 	)
-	return err
+	if err != nil {
+		if isForeignKeyViolation(err) {
+			return false, fmt.Errorf("add book to reading list: %w", ErrBookNotFound)
+		}
+		return false, err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
 }
 
 // RemoveBookFromReadingList removes a book from a reading list. The list must
 // be owned by userID. Returns sql.ErrNoRows if the list doesn't exist or is
-// not owned by the user.
-func (d *DB) RemoveBookFromReadingList(ctx context.Context, listID, userID, bookID string) error {
+// not owned by the user. Returns (true, nil) if the book was removed,
+// (false, nil) if it was not present.
+func (d *DB) RemoveBookFromReadingList(ctx context.Context, listID, userID, bookID string) (bool, error) {
 	slog.DebugContext(ctx, "db: removing book from reading list",
 		slog.String(otelkeys.ReadingListID, listID),
 		slog.String(otelkeys.UserID, userID),
@@ -191,16 +178,23 @@ func (d *DB) RemoveBookFromReadingList(ctx context.Context, listID, userID, book
 		listID,
 	).Scan(&ownerID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if ownerID != userID {
-		return sql.ErrNoRows
+		return false, sql.ErrNoRows
 	}
-	_, err = d.ExecContext(ctx,
+	result, err := d.ExecContext(ctx,
 		`DELETE FROM reading_list_books WHERE reading_list_id = $1 AND book_id = $2`,
 		listID, bookID,
 	)
-	return err
+	if err != nil {
+		return false, err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
 }
 
 // ListReadingListBooks returns a paginated list of books in a reading list,
