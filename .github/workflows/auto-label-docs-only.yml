@@ -29,6 +29,7 @@ jobs:
           
           # Check if all changed files are documentation-related
           # Exclude: cmd/, internal/, frontend/, db/, e2e/, go.mod, go.sum, .golangci.yml, lock files,
+          # extension-less build/config files (Makefile, Dockerfile, Procfile*),
           # and repo-root package/config/lock files that can affect builds
           FILES_IS_DOCS=true
           while IFS= read -r file; do
@@ -36,6 +37,8 @@ jobs:
             if [[ "$file" =~ ^(cmd|internal|frontend|db|e2e)/ ]] || \
                [[ "$file" =~ \.(go|ts|tsx|js|jsx|mod|sum|yml|yaml)$ ]] || \
                [[ "$file" =~ ^\.github/workflows/ ]] || \
+               [[ "$file" =~ ^(Makefile|Dockerfile)$ ]] || \
+               [[ "$file" =~ ^Procfile ]] || \
                [[ "$file" =~ ^(package\.json|package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml)$ ]]; then
               FILES_IS_DOCS=false
               echo "Found code file: $file"
