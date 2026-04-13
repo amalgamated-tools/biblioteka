@@ -100,6 +100,18 @@ async function openSettingsTab(page, tabHash, headingName) {
     await page.getByRole('heading', { name: headingName, exact: true }).waitFor({ state: 'visible' });
 }
 
+async function openReadingActivityPage(page) {
+    await page.goto(`${BASE_URL}/#reading-activity`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    // Wait for either the Reading Activity heading or fall back to dashboard if page doesn't exist yet
+    await Promise.any([
+        page.getByRole('heading', { name: 'Reading Activity', exact: true }).waitFor({ state: 'visible' }),
+        page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor({ state: 'visible' }),
+    ]);
+}
+
 async function openBooksPage(page) {
     await page.goto(`${BASE_URL}/#books`, {
         waitUntil: 'networkidle',
@@ -224,6 +236,11 @@ export async function runVariant({ theme, mobile }) {
         // wait for the logout-button to ensure the dashboard is fully loaded before taking a screenshot
         // await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('dashboard', variantName)) });
+
+        console.log(`Capturing reading-activity (${variantName})...`);
+        await openReadingActivityPage(page);
+        await setTheme(page, theme);
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('reading-activity', variantName)) });
 
         console.log(`Capturing books (${variantName})...`);
         await openBooksPage(page);
