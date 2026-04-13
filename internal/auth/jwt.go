@@ -127,6 +127,12 @@ func (j *JWTManager) ValidateToken(ctx context.Context, tokenString string) (*Cl
 	return claims, nil
 }
 
+// NewSecretEncrypter returns a SecretEncrypter whose key is derived from the
+// JWT signing secret. Use it to encrypt sensitive settings at rest.
+func (j *JWTManager) NewSecretEncrypter() (*SecretEncrypter, error) {
+	return newSecretEncrypter(j.secret)
+}
+
 // HMACSign produces an HMAC-SHA256 signature over data using a
 // purpose-specific key derived from the JWT secret via HKDF.
 func (j *JWTManager) HMACSign(data []byte) []byte {

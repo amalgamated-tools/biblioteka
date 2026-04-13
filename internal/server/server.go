@@ -130,12 +130,17 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		s.JWT = jwtManager
 
 		if jwtSecret == "" {
-			slog.InfoContext(ctx, "WARNING: JWT_SECRET not set, using random secret. Existing JWT tokens will become invalid after a server restart; all users will need to log in again.")
+			slog.WarnContext(ctx, "JWT_SECRET not set, using random secret; all existing JWT tokens and any at-rest encrypted settings (SMTP password, OIDC client secret) will become invalid after a server restart")
 		} else if len(jwtSecret) < auth.MinSecretLength {
 			slog.WarnContext(ctx, "JWT_SECRET is shorter than the recommended minimum of 32 characters; a short secret weakens HMAC-SHA256 signing",
 				slog.Int(otelkeys.JWTSecretLength, len(jwtSecret)),
 			)
 		}
+	}
+
+	secretEncrypter, err := s.JWT.NewSecretEncrypter()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize settings encrypter: %w", err)
 	}
 
 	if s.requireAuth == nil {
@@ -212,7 +217,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		}
 	}
 	s.bookHandler.MetadataHandler = metadataHandler
-	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
+	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB, Secrets: secretEncrypter}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
 	s.opdsCredentialHandler = &handlers.OPDSCredentialHandler{DB: s.DB}
@@ -228,6 +233,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.requireKOSyncAuth = auth.KOSyncHeaderAuthMiddleware(protocolCredAdapter)
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
+		Secrets:          secretEncrypter,
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
 		OnOIDCConfigSet: func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error {
 			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, issuerURL, clientID, clientSecret, redirectURI, secureCookies)
@@ -258,6 +264,13 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		dbClientID, _ := s.DB.GetSetting(ctx, "oidc_client_id")
 		dbClientSecret, _ := s.DB.GetSetting(ctx, "oidc_client_secret")
 		dbRedirectURI, _ := s.DB.GetSetting(ctx, "oidc_redirect_uri")
+		// Decrypt the client secret stored in the database.
+		if decrypted, decErr := secretEncrypter.Decrypt(dbClientSecret); decErr == nil {
+			dbClientSecret = decrypted
+		} else {
+			dbClientSecret = ""
+			slog.WarnContext(ctx, "failed to decrypt OIDC client secret from saved settings; skipping OIDC initialization from saved settings", slog.Any(otelkeys.Error, decErr))
+		}
 		if dbClientID != "" && dbClientSecret != "" && dbRedirectURI != "" {
 			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, dbIssuer, dbClientID, dbClientSecret, dbRedirectURI, secureCookies)
 			if err != nil {

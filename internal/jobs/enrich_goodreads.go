@@ -90,7 +90,7 @@ func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSea
 			slog.String(otelkeys.BookID, p.BookID),
 			slog.Any(otelkeys.Error, err),
 		)
-		publishEvent(ctx, publisher, channel, progressEvent{Event: EventError, Source: "goodreads", Message: "failed to fetch book"})
+		publishEvent(ctx, publisher, channel, progressEvent{Event: EventError, Source: db.MetadataSourceGoodreads, Message: "failed to fetch book"})
 		return fmt.Errorf("fetch book %s: %w", p.BookID, err)
 	}
 
@@ -100,7 +100,7 @@ func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSea
 			slog.String(otelkeys.BookID, p.BookID),
 			slog.String(otelkeys.Title, book.Title),
 		)
-		publishEvent(ctx, publisher, channel, progressEvent{Event: EventNotFound, Source: "goodreads", Message: "No Goodreads match found"})
+		publishEvent(ctx, publisher, channel, progressEvent{Event: EventNotFound, Source: db.MetadataSourceGoodreads, Message: "No Goodreads match found"})
 		return nil
 	}
 
@@ -119,11 +119,11 @@ func enrichGoodreads(ctx context.Context, database *db.DB, grClient GoodreadsSea
 			slog.String(otelkeys.BookID, p.BookID),
 			slog.Any(otelkeys.Error, err),
 		)
-		publishEvent(ctx, publisher, channel, progressEvent{Event: EventError, Source: "goodreads", Message: "failed to save metadata"})
+		publishEvent(ctx, publisher, channel, progressEvent{Event: EventError, Source: db.MetadataSourceGoodreads, Message: "failed to save metadata"})
 		return fmt.Errorf("create goodreads metadata for book %s: %w", p.BookID, err)
 	}
 
-	publishEvent(ctx, publisher, channel, progressEvent{Event: EventComplete, Source: "goodreads", MetadataID: gm.ID})
+	publishEvent(ctx, publisher, channel, progressEvent{Event: EventComplete, Source: db.MetadataSourceGoodreads, MetadataID: gm.ID})
 
 	return nil
 }
@@ -269,11 +269,11 @@ func titleSimilar(a, b string) bool {
 }
 
 // publishProgress is a convenience wrapper that publishes a progress event
-// with a source of "goodreads".
+// with a source of db.MetadataSourceGoodreads.
 func publishProgress(ctx context.Context, publisher pubsub.Publisher, channel, step, message string) {
 	publishEvent(ctx, publisher, channel, progressEvent{
 		Event:   EventProgress,
-		Source:  "goodreads",
+		Source:  db.MetadataSourceGoodreads,
 		Step:    step,
 		Message: message,
 	})
