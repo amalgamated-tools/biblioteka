@@ -8,6 +8,7 @@ jobs:
   check-docs-only:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
     steps:
       - name: Checkout code
@@ -18,36 +19,47 @@ jobs:
        - name: Evaluate if PR is docs-only
          id: evaluate
          run: |
-           # Get list of changed files in this PR
-           # Use 'origin/main' as base to avoid issues with merge_base on first push
-           BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
-           git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
-           git diff --name-only "$BASE_REF"...HEAD > /tmp/changed_files.txt
-          
-          # Check if all changed files are documentation-related
-          # Exclude: cmd/, internal/, frontend/, db/, e2e/, go.mod, go.sum, .golangci.yml, lock files
-          FILES_IS_DOCS=true
-          while IFS= read -r file; do
-            # Skip if file matches code paths or is a code file
-            if [[ "$file" =~ ^(cmd|internal|frontend|db|e2e)/ ]] || \
-               [[ "$file" =~ \.(go|ts|tsx|js|jsx|mod|sum|yml|yaml)$ ]] || \
-               [[ "$file" =~ ^\.github/workflows/ ]]; then
-              FILES_IS_DOCS=false
-              echo "Found code file: $file"
-              break
-            fi
-          done < /tmp/changed_files.txt
-          
-          # Print summary
-          echo "Files are docs-only: $FILES_IS_DOCS"
-          
-          # PR is docs-only ONLY if all changed files are documentation
-          # Title prefix (docs:) is NOT sufficient alone to skip CI
-          if [[ "$FILES_IS_DOCS" == "true" ]]; then
-            echo "is-docs-only=true" >> $GITHUB_OUTPUT
-          else
-            echo "is-docs-only=false" >> $GITHUB_OUTPUT
-          fi
+           # Short-circuit in GitHub expression so push events never access
+           # github.event.pull_request (which doesn't exist on push events)
+           if [[ "${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
+             echo "is-docs-only=true" >> $GITHUB_OUTPUT
+           else
+             echo "is-docs-only=false" >> $GITHUB_OUTPUT
+           fi
+           
+           # Get list of changed files in this PR (only on pull_request events)
+           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+             BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
+             git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+             git diff --name-only "$BASE_REF"...HEAD > /tmp/changed_files.txt
+             
+             # Check if all changed files are documentation-related
+             # Exclude: cmd/, internal/, frontend/, db/, e2e/, go.mod, go.sum, .golangci.yml, lock files,
+             # and repo-root package/config/lock files that can affect builds
+             FILES_IS_DOCS=true
+             while IFS= read -r file; do
+               # Skip if file matches code paths or is a code/config file
+               if [[ "$file" =~ ^(cmd|internal|frontend|db|e2e)/ ]] || \
+                  [[ "$file" =~ \.(go|ts|tsx|js|jsx|mod|sum|yml|yaml)$ ]] || \
+                  [[ "$file" =~ ^\.github/workflows/ ]] || \
+                  [[ "$file" =~ ^(package\.json|package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml)$ ]]; then
+                 FILES_IS_DOCS=false
+                 echo "Found code file: $file"
+                 break
+               fi
+             done < /tmp/changed_files.txt
+             
+             # Print summary
+             echo "Files are docs-only: $FILES_IS_DOCS"
+             
+             # PR is docs-only ONLY if all changed files are documentation AND
+             # if the label check passed (label takes precedence over file analysis)
+             if [[ "$FILES_IS_DOCS" == "true" ]]; then
+               echo "is-docs-only=true" >> $GITHUB_OUTPUT
+             else
+               echo "is-docs-only=false" >> $GITHUB_OUTPUT
+             fi
+           fi
 
       - name: Apply docs-only label
         if: steps.evaluate.outputs.is-docs-only == 'true'

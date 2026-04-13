@@ -40,8 +40,8 @@ jobs:
         id: check
         run: |
           # Always run this step to ensure skip-tests output is always set
-          # Short-circuit: only check PR labels if this is a PR event
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]] && [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          # Use short-circuit expression so push events never access github.event.pull_request
+          if [[ "${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
             echo "skip-tests=true" >> $GITHUB_OUTPUT
           else
             echo "skip-tests=false" >> $GITHUB_OUTPUT
