@@ -206,7 +206,7 @@ func TestHandleReadingListRoutes_Books_List(t *testing.T) {
 	require.NoError(t, err)
 	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Dune"})
 	require.NoError(t, err)
-	err = h.DB.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
+	_, err = h.DB.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
 	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/reading-lists/"+rl.ID+"/books", nil)
@@ -249,6 +249,21 @@ func TestHandleReadingListRoutes_Books_Add(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, w.Code)
 }
 
+func TestHandleReadingListRoutes_Books_Add_BookNotFound(t *testing.T) {
+	h, userID := setupReadingListHandler(t)
+
+	rl, err := h.DB.CreateReadingList(t.Context(), userID, "My List", nil)
+	require.NoError(t, err)
+
+	body := mustMarshal(t, addBookToReadingListRequest{BookID: "nonexistent-book"})
+	r := httptest.NewRequest(http.MethodPost, "/api/reading-lists/"+rl.ID+"/books", bytes.NewReader(body))
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+	h.HandleReadingListRoutes(w, r)
+
+	require.Equal(t, http.StatusNotFound, w.Code)
+}
+
 func TestHandleReadingListRoutes_Books_Add_MissingBookID(t *testing.T) {
 	h, userID := setupReadingListHandler(t)
 
@@ -271,7 +286,7 @@ func TestHandleReadingListRoutes_Books_Remove(t *testing.T) {
 	require.NoError(t, err)
 	book, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Dune"})
 	require.NoError(t, err)
-	err = h.DB.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
+	_, err = h.DB.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
 	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodDelete, "/api/reading-lists/"+rl.ID+"/books/"+book.ID, nil)

@@ -36,15 +36,13 @@
   $effect(() => {
     list = readingListStore.lists.find((l) => l.id === listId) ?? null;
     if (!list && readingListStore.loaded) {
-      error = "Reading list not found.";
+      error = readingListStore.loadError ?? "Reading list not found.";
     }
   });
 
   $effect(() => {
-    if (!readingListStore.loaded) {
-      void readingListStore.load().catch(() => {
-        error = "Failed to load reading lists.";
-      });
+    if (!readingListStore.loaded && !readingListStore.loading) {
+      void readingListStore.load();
     }
   });
 

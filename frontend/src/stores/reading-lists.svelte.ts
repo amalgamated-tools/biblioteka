@@ -54,18 +54,17 @@ class ReadingListStore {
 
   async addBook(listId: string, bookId: string): Promise<void> {
     await api.addBookToReadingList(listId, bookId);
-    // Increment book_count optimistically.
-    this.lists = this.lists.map((l) =>
-      l.id === listId ? { ...l, book_count: l.book_count + 1 } : l,
-    );
+    // The backend add is idempotent, so a successful response does not
+    // guarantee a new row was inserted. Re-sync from the server to keep
+    // book_count accurate.
+    await this.reload();
   }
 
   async removeBook(listId: string, bookId: string): Promise<void> {
     await api.removeBookFromReadingList(listId, bookId);
-    // Decrement book_count optimistically.
-    this.lists = this.lists.map((l) =>
-      l.id === listId ? { ...l, book_count: Math.max(0, l.book_count - 1) } : l,
-    );
+    // The backend remove is idempotent and may be a no-op. Re-sync from
+    // the server to keep book_count accurate.
+    await this.reload();
   }
 }
 

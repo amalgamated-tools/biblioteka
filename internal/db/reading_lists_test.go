@@ -7,15 +7,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// createTestUser is a helper that creates a test user and returns its ID.
+// createTestUserForRL is a helper that creates a test user and returns its ID.
 func createTestUserForRL(t *testing.T, d *DB, email string) string {
 	t.Helper()
 	u, err := d.CreateUser(t.Context(), "Test User", email, "password123")
-	require.NoError(t, err, "createTestUser")
+	require.NoError(t, err, "createTestUserForRL")
 	return u.ID
 }
 
-// ptr returns a pointer to a string literal (convenience helper for tests).
+// strPtr returns a pointer to a string literal (convenience helper for tests).
 func strPtr(s string) *string { return &s }
 
 func TestCreateReadingList(t *testing.T) {
@@ -249,8 +249,9 @@ func TestAddBookToReadingList(t *testing.T) {
 	book, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err)
 
-	err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
+	added, err := d.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
 	require.NoError(t, err)
+	require.True(t, added)
 
 	got, err := d.GetReadingList(t.Context(), rl.ID, userID)
 	require.NoError(t, err)
@@ -266,11 +267,13 @@ func TestAddBookToReadingList_Idempotent(t *testing.T) {
 	book, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err)
 
-	err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
+	added, err := d.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
 	require.NoError(t, err)
+	require.True(t, added)
 	// Adding the same book again is idempotent.
-	err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
+	added, err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
 	require.NoError(t, err)
+	require.False(t, added, "duplicate add should return false")
 
 	got, err := d.GetReadingList(t.Context(), rl.ID, userID)
 	require.NoError(t, err)
@@ -283,8 +286,19 @@ func TestAddBookToReadingList_ListNotFound(t *testing.T) {
 	book, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err)
 
-	err = d.AddBookToReadingList(t.Context(), "nonexistent", userID, book.ID)
+	_, err = d.AddBookToReadingList(t.Context(), "nonexistent", userID, book.ID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestAddBookToReadingList_BookNotFound(t *testing.T) {
+	d := newTestDB(t)
+	userID := createTestUserForRL(t, d, "user@example.com")
+
+	rl, err := d.CreateReadingList(t.Context(), userID, "My List", nil)
+	require.NoError(t, err)
+
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, userID, "nonexistent")
+	require.ErrorIs(t, err, ErrBookNotFound)
 }
 
 func TestAddBookToReadingList_OtherUserCannotAdd(t *testing.T) {
@@ -297,7 +311,7 @@ func TestAddBookToReadingList_OtherUserCannotAdd(t *testing.T) {
 	book, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err)
 
-	err = d.AddBookToReadingList(t.Context(), rl.ID, user2ID, book.ID)
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, user2ID, book.ID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
@@ -310,14 +324,29 @@ func TestRemoveBookFromReadingList(t *testing.T) {
 	book, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err)
 
-	err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book.ID)
 	require.NoError(t, err)
-	err = d.RemoveBookFromReadingList(t.Context(), rl.ID, userID, book.ID)
+	removed, err := d.RemoveBookFromReadingList(t.Context(), rl.ID, userID, book.ID)
 	require.NoError(t, err)
+	require.True(t, removed)
 
 	got, err := d.GetReadingList(t.Context(), rl.ID, userID)
 	require.NoError(t, err)
 	require.Equal(t, 0, got.BookCount)
+}
+
+func TestRemoveBookFromReadingList_NotPresent(t *testing.T) {
+	d := newTestDB(t)
+	userID := createTestUserForRL(t, d, "user@example.com")
+
+	rl, err := d.CreateReadingList(t.Context(), userID, "My List", nil)
+	require.NoError(t, err)
+	book, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
+	require.NoError(t, err)
+
+	removed, err := d.RemoveBookFromReadingList(t.Context(), rl.ID, userID, book.ID)
+	require.NoError(t, err)
+	require.False(t, removed, "removing a book not in the list should return false")
 }
 
 func TestRemoveBookFromReadingList_OtherUserCannotRemove(t *testing.T) {
@@ -329,10 +358,10 @@ func TestRemoveBookFromReadingList_OtherUserCannotRemove(t *testing.T) {
 	require.NoError(t, err)
 	book, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err)
-	err = d.AddBookToReadingList(t.Context(), rl.ID, user1ID, book.ID)
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, user1ID, book.ID)
 	require.NoError(t, err)
 
-	err = d.RemoveBookFromReadingList(t.Context(), rl.ID, user2ID, book.ID)
+	_, err = d.RemoveBookFromReadingList(t.Context(), rl.ID, user2ID, book.ID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
@@ -347,9 +376,9 @@ func TestListReadingListBooks(t *testing.T) {
 	book2, err := d.CreateBook(t.Context(), BookInput{Title: "Foundation"})
 	require.NoError(t, err)
 
-	err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book1.ID)
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book1.ID)
 	require.NoError(t, err)
-	err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book2.ID)
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book2.ID)
 	require.NoError(t, err)
 
 	books, total, err := d.ListReadingListBooks(t.Context(), rl.ID, userID, 50, 0)
@@ -389,9 +418,9 @@ func TestGetReadingListsForBook(t *testing.T) {
 	book, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err)
 
-	err = d.AddBookToReadingList(t.Context(), rl1.ID, userID, book.ID)
+	_, err = d.AddBookToReadingList(t.Context(), rl1.ID, userID, book.ID)
 	require.NoError(t, err)
-	err = d.AddBookToReadingList(t.Context(), rl2.ID, userID, book.ID)
+	_, err = d.AddBookToReadingList(t.Context(), rl2.ID, userID, book.ID)
 	require.NoError(t, err)
 
 	lists, err := d.GetReadingListsForBook(t.Context(), book.ID, userID)
@@ -410,7 +439,7 @@ func TestGetReadingListsForBook_IsolatesUsers(t *testing.T) {
 	require.NoError(t, err)
 	book, err := d.CreateBook(t.Context(), BookInput{Title: "Dune"})
 	require.NoError(t, err)
-	err = d.AddBookToReadingList(t.Context(), rl1.ID, user1ID, book.ID)
+	_, err = d.AddBookToReadingList(t.Context(), rl1.ID, user1ID, book.ID)
 	require.NoError(t, err)
 
 	lists, err := d.GetReadingListsForBook(t.Context(), book.ID, user2ID)
@@ -428,9 +457,9 @@ func TestListReadingLists_IncludesBookCount(t *testing.T) {
 	require.NoError(t, err)
 	book2, err := d.CreateBook(t.Context(), BookInput{Title: "Foundation"})
 	require.NoError(t, err)
-	err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book1.ID)
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book1.ID)
 	require.NoError(t, err)
-	err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book2.ID)
+	_, err = d.AddBookToReadingList(t.Context(), rl.ID, userID, book2.ID)
 	require.NoError(t, err)
 
 	lists, err := d.ListReadingLists(t.Context(), userID)
