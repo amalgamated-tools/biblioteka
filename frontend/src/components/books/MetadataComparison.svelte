@@ -109,7 +109,7 @@
         {@const different = isDifferent(field.key)}
         <div
           class="grid grid-cols-[120px_1fr_auto_1fr] gap-2 items-start text-sm rounded-lg p-2 {different
-            ? 'bg-warning-50 dark:bg-warning-900/10'
+            ? 'bg-accent-50 dark:bg-accent-800/20 border-l-2 border-accent-500'
             : 'bg-ink-50 dark:bg-ink-800/30'}"
         >
           <span
