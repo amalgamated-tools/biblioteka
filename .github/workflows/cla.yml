@@ -32,13 +32,13 @@ jobs:
           path-to-signatures: '.github/cla-signatures.json'
           path-to-document: 'https://github.com/amalgamated-tools/biblioteka/blob/main/CLA.md'
           branch: 'cla-signatures'
-           allowlist: >-
-             github-actions[bot],
-             dependabot-preview[bot],
-             dependabot[bot],
-             copilot,
-             github-copilot[bot],
-             copilot[bot],
-             Copilot,
-             copilot-swe-agent[bot],
-             veverkananobot
+          allowlist: >-
+            github-actions[bot],
+            dependabot-preview[bot],
+            dependabot[bot],
+            copilot,
+            github-copilot[bot],
+            copilot[bot],
+            Copilot,
+            copilot-swe-agent[bot],
+            veverkananobot
