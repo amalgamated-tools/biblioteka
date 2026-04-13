@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/kobo"
@@ -318,18 +319,18 @@ func TestHandleDownload_RecordsDownloadEvent(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(1), got.DownloadCount, "download_count should be incremented")
 
-	// Verify a timestamped download event was recorded.
-	counts, err := h.DB.GetMonthlyDownloads(t.Context(), userID, 1)
-	require.NoError(t, err)
-	require.Len(t, counts, 1)
-	require.Equal(t, 1, counts[0].Count, "one download event should be recorded for current month")
+	// Verify a timestamped download event was recorded (recording is async).
+	require.Eventually(t, func() bool {
+		counts, err := h.DB.GetMonthlyDownloads(t.Context(), userID, 1)
+		return err == nil && len(counts) == 1 && counts[0].Count == 1
+	}, 5*time.Second, 10*time.Millisecond, "one download event should be recorded for current month")
 }
 
 // TestHandleDownload_NoDownloadEventWithoutUser verifies that when there is no
 // user ID in context (unauthenticated path), the download still succeeds but no
 // download event is recorded.
 func TestHandleDownload_NoDownloadEventWithoutUser(t *testing.T) {
-	h, _ := setupKoboHandler(t)
+	h, userID := setupKoboHandler(t)
 
 	dir := t.TempDir()
 	registerTestLibrary(t, h.DB, dir)
@@ -356,4 +357,10 @@ func TestHandleDownload_NoDownloadEventWithoutUser(t *testing.T) {
 	got, err := h.DB.GetBookFile(t.Context(), bf.ID)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), got.DownloadCount)
+
+	// Verify no timestamped download event was recorded without an authenticated user.
+	counts, err := h.DB.GetMonthlyDownloads(t.Context(), userID, 1)
+	require.NoError(t, err)
+	require.Len(t, counts, 1)
+	require.Equal(t, 0, counts[0].Count, "no download event should be recorded without a user ID")
 }

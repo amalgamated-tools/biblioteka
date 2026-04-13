@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	opdspkg "github.com/amalgamated-tools/biblioteka/internal/opds"
@@ -541,9 +542,9 @@ func TestDownload_RecordsDownloadEvent(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 
-	// Verify a timestamped download event was recorded.
-	counts, err := h.DB.GetMonthlyDownloads(ctx, user.ID, 1)
-	require.NoError(t, err)
-	require.Len(t, counts, 1)
-	require.Equal(t, 1, counts[0].Count, "one download event should be recorded for current month")
+	// Verify a timestamped download event was recorded (recording is async).
+	require.Eventually(t, func() bool {
+		counts, err := h.DB.GetMonthlyDownloads(ctx, user.ID, 1)
+		return err == nil && len(counts) == 1 && counts[0].Count == 1
+	}, 5*time.Second, 10*time.Millisecond, "one download event should be recorded for current month")
 }

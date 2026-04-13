@@ -105,19 +105,21 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	// Record a timestamped download event for the histogram (best-effort).
-	// Uses context.WithoutCancel so a client disconnect doesn't prevent
-	// recording the event, with a short timeout to bound latency.
+	// Record a timestamped download event for the histogram (best-effort,
+	// async so download latency is not coupled to DB write latency).
 	if userID := auth.UserIDFromContext(r.Context()); userID != "" {
-		recCtx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
-		if recErr := h.DB.RecordBookDownload(recCtx, target.ID, userID); recErr != nil {
-			slog.WarnContext(recCtx, "kobo download: failed to record book download event",
-				slog.String(otelkeys.BookFileID, target.ID),
-				slog.String(otelkeys.UserID, userID),
-				slog.Any(otelkeys.Error, recErr),
-			)
-		}
-		cancel()
+		bookFileID := target.ID
+		go func(userID, bookFileID string) {
+			recCtx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
+			defer cancel()
+			if recErr := h.DB.RecordBookDownload(recCtx, bookFileID, userID); recErr != nil {
+				slog.WarnContext(recCtx, "kobo download: failed to record book download event",
+					slog.String(otelkeys.BookFileID, bookFileID),
+					slog.String(otelkeys.UserID, userID),
+					slog.Any(otelkeys.Error, recErr),
+				)
+			}
+		}(userID, bookFileID)
 	}
 
 	http.ServeContent(w, r, target.FileName, stat.ModTime(), f)

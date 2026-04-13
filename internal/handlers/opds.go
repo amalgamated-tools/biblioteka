@@ -174,19 +174,20 @@ func (h *OPDSHandler) downloadFile(w http.ResponseWriter, r *http.Request, fileI
 		)
 	}
 
-	// Record a timestamped download event for the histogram (best-effort).
-	// Uses context.WithoutCancel so a client disconnect doesn't prevent
-	// recording the event, with a short timeout to bound latency.
+	// Record a timestamped download event for the histogram (best-effort,
+	// async so download latency is not coupled to DB write latency).
 	if userID := auth.UserIDFromContext(ctx); userID != "" {
-		recCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-		if recErr := h.DB.RecordBookDownload(recCtx, fileID, userID); recErr != nil {
-			slog.WarnContext(recCtx, "OPDS: failed to record book download event",
-				slog.String(otelkeys.BookFileID, fileID),
-				slog.String(otelkeys.UserID, userID),
-				slog.Any(otelkeys.Error, recErr),
-			)
-		}
-		cancel()
+		go func(userID, fileID string) {
+			recCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+			defer cancel()
+			if recErr := h.DB.RecordBookDownload(recCtx, fileID, userID); recErr != nil {
+				slog.WarnContext(recCtx, "OPDS: failed to record book download event",
+					slog.String(otelkeys.BookFileID, fileID),
+					slog.String(otelkeys.UserID, userID),
+					slog.Any(otelkeys.Error, recErr),
+				)
+			}
+		}(userID, fileID)
 	}
 
 	http.ServeContent(w, r, bf.FileName, stat.ModTime(), f)
