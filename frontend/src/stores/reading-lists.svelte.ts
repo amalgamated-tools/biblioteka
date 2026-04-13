@@ -64,9 +64,7 @@ class ReadingListStore {
     await api.removeBookFromReadingList(listId, bookId);
     // Decrement book_count optimistically.
     this.lists = this.lists.map((l) =>
-      l.id === listId
-        ? { ...l, book_count: Math.max(0, l.book_count - 1) }
-        : l,
+      l.id === listId ? { ...l, book_count: Math.max(0, l.book_count - 1) } : l,
     );
   }
 }

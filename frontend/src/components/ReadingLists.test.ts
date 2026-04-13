@@ -93,9 +93,7 @@ describe("ReadingLists", () => {
     render(ReadingLists);
     await tick();
 
-    expect(
-      screen.queryByText(/No reading lists yet/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/No reading lists yet/i)).not.toBeInTheDocument();
   });
 
   it("shows list cards when lists exist", async () => {

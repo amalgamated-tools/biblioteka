@@ -20,7 +20,8 @@
         try {
           await readingListStore.load();
         } catch (e) {
-          error = e instanceof Error ? e.message : "Failed to load reading lists";
+          error =
+            e instanceof Error ? e.message : "Failed to load reading lists";
         }
       })();
     }
@@ -43,7 +44,8 @@
       showForm = false;
       routerStore.navigate(`reading-lists/${created.id}`);
     } catch (e) {
-      createError = e instanceof Error ? e.message : "Failed to create reading list";
+      createError =
+        e instanceof Error ? e.message : "Failed to create reading list";
     } finally {
       creating = false;
     }
@@ -129,11 +131,18 @@
             />
           </div>
           <div class="flex gap-2 pt-1">
-            <Button onclick={handleCreate} disabled={creating || !newName.trim()}>
+            <Button
+              onclick={handleCreate}
+              disabled={creating || !newName.trim()}
+            >
               <Check class="w-4 h-4 mr-1" aria-hidden="true" />
               {creating ? "Creating…" : "Create"}
             </Button>
-            <Button variant="secondary" onclick={cancelCreate} disabled={creating}>
+            <Button
+              variant="secondary"
+              onclick={cancelCreate}
+              disabled={creating}
+            >
               <X class="w-4 h-4 mr-1" aria-hidden="true" />
               Cancel
             </Button>
