@@ -109,11 +109,22 @@ func (d *DB) CreateAuditLog(ctx context.Context, userID, action, entityType, ent
 // ListAuditLogs returns audit log entries ordered by creation time (newest first),
 // with the total count of all entries. limit and offset control pagination.
 // A single query with COUNT(*) OVER() is used to avoid a separate COUNT round-trip.
+// When limit <= 0 the query would return zero rows and the window function would
+// produce no total; in that case a standalone COUNT(*) is issued instead and an
+// empty slice is returned with the correct total.
 func (d *DB) ListAuditLogs(ctx context.Context, limit, offset int) ([]AuditLog, int, error) {
 	slog.DebugContext(ctx, "db: listing audit logs",
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
+
+	if limit <= 0 {
+		var total int
+		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_logs`).Scan(&total); err != nil {
+			return nil, 0, err
+		}
+		return []AuditLog{}, total, nil
+	}
 
 	rows, err := d.QueryContext(ctx,
 		`SELECT `+auditLogColumns+`, COUNT(*) OVER() AS total FROM audit_logs ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2`,

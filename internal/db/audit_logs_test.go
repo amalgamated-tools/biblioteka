@@ -82,6 +82,27 @@ func TestListAuditLogs_Empty(t *testing.T) {
 	require.Len(t, entries, 0)
 }
 
+// TestListAuditLogs_ZeroLimit verifies that total is correct when limit <= 0
+// (the window function would return no rows and no total without the guard).
+func TestListAuditLogs_ZeroLimit(t *testing.T) {
+	d := newTestDB(t)
+	ctx := t.Context()
+
+	for range 3 {
+		require.NoError(t, d.CreateAuditLog(ctx, "user1", AuditActionBookCreated, "book", "book-x", nil))
+	}
+
+	entries, total, err := d.ListAuditLogs(ctx, 0, 0)
+	require.NoError(t, err, "ListAuditLogs(limit=0) error")
+	require.Equal(t, 3, total, "total should reflect real count with limit=0")
+	require.Empty(t, entries)
+
+	entries, total, err = d.ListAuditLogs(ctx, -1, 0)
+	require.NoError(t, err, "ListAuditLogs(limit=-1) error")
+	require.Equal(t, 3, total, "total should reflect real count with limit=-1")
+	require.Empty(t, entries)
+}
+
 // TestListAuditLogs_OffsetBeyondTotal verifies that total is correct even when
 // offset exceeds the number of rows (the window-function count fallback path).
 func TestListAuditLogs_OffsetBeyondTotal(t *testing.T) {
