@@ -27,23 +27,22 @@ jobs:
           git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
           git diff --name-only "$BASE_REF"...HEAD > /tmp/changed_files.txt
           
-          # Check if all changed files are documentation-related
-          # Exclude: cmd/, internal/, frontend/, db/, e2e/, go.mod, go.sum, .golangci.yml, lock files,
-          # extension-less build/config files (Makefile, Dockerfile, Procfile*),
-          # and repo-root package/config/lock files that can affect builds
+          # Check if all changed files are documentation-related.
+          # Allow only explicit docs paths and documentation asset types so
+          # repo-root build/config files (for example Makefile, Dockerfile,
+          # Procfile, or extensionless scripts) are not misclassified.
           FILES_IS_DOCS=true
           while IFS= read -r file; do
-            # Skip if file matches code paths or is a code/config file
-            if [[ "$file" =~ ^(cmd|internal|frontend|db|e2e)/ ]] || \
-               [[ "$file" =~ \.(go|ts|tsx|js|jsx|mod|sum|yml|yaml)$ ]] || \
-               [[ "$file" =~ ^\.github/workflows/ ]] || \
-               [[ "$file" =~ ^(Makefile|Dockerfile)$ ]] || \
-               [[ "$file" =~ ^Procfile ]] || \
-               [[ "$file" =~ ^(package\.json|package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml)$ ]]; then
-              FILES_IS_DOCS=false
-              echo "Found code file: $file"
-              break
+            # Treat a file as docs-only only if it is clearly documentation.
+            if [[ "$file" =~ ^docs/ ]] || \
+               [[ "$file" =~ (^|/)[^/]+\.md$ ]] || \
+               [[ "$file" =~ \.(png|jpg|jpeg|gif|svg|webp|pdf)$ ]]; then
+              continue
             fi
+
+            FILES_IS_DOCS=false
+            echo "Found non-docs file: $file"
+            break
           done < /tmp/changed_files.txt
           
           # Print summary
