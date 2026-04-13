@@ -165,6 +165,15 @@ jobs:
             exit 1
           fi
 
+      - name: Verify go.mod is tidy
+        run: |
+          go mod tidy
+          if [ -n "$(git status --porcelain go.mod go.sum)" ]; then
+            echo "go.mod or go.sum is not tidy. Please run 'go mod tidy'."
+            git diff go.mod go.sum
+            exit 1
+          fi
+
   go-test:
     runs-on: ubuntu-latest
     name: Go Tests
