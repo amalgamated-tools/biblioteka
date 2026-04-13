@@ -189,6 +189,7 @@ For stores with additional state beyond basic CRUD (e.g. scan tracking in `libra
 | `libraries.svelte.ts` | `libraryStore` | Library CRUD; cached after first load; tracks background scan state via `scanningIds` and `isScanning` |
 | `authors.svelte.ts` | `authorStore` | Author CRUD; cached after first load |
 | `series.svelte.ts` | `seriesStore` | Series CRUD; cached after first load |
+| `reading-lists.svelte.ts` | `readingListStore` | Reading list CRUD and book membership; cached after first load |
 
 ### `libraryStore` — scanning state API
 
@@ -214,6 +215,44 @@ When a library is added, the backend scans it asynchronously. `libraryStore` tra
   // Reactive: true while this library's scan is in progress
   let scanning = $derived(libraryStore.scanningIds.has(libraryId));
 </script>
+```
+
+### `readingListStore` — reading list and book membership API
+
+`readingListStore` manages the authenticated user's reading lists. It is a hand-rolled store class (not based on `CrudStore`) because the book-membership operations require extra server round-trips to keep `book_count` accurate.
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `lists` | `ReadingList[]` (`$state.raw`) | Current list of reading lists, sorted alphabetically by name |
+| `loading` | `boolean` | `true` while the initial fetch is in progress |
+| `loaded` | `boolean` | `true` once the initial fetch has completed (even on error) |
+| `loadError` | `string \| null` | Error message from the most recent failed `load()` call |
+| `load()` | `Promise<void>` | Fetches all reading lists; idempotent (no-ops if already loading or loaded) |
+| `reload()` | `Promise<void>` | Forces a fresh fetch regardless of `loaded` state |
+| `create(input)` | `Promise<ReadingList>` | Creates a new list and inserts it into `lists` in sorted order |
+| `update(id, input)` | `Promise<ReadingList>` | Updates a list in-place and re-sorts `lists` |
+| `remove(id)` | `Promise<void>` | Deletes a list and removes it from `lists` |
+| `addBook(listId, bookId)` | `Promise<void>` | Adds a book to a list and reloads to refresh `book_count` |
+| `removeBook(listId, bookId)` | `Promise<void>` | Removes a book from a list and reloads to refresh `book_count` |
+
+Both `addBook` and `removeBook` call `reload()` after the backend write to keep `book_count` in sync — the backend add/remove operations are idempotent so an extra reload is always safe.
+
+**Typical usage:**
+
+```svelte
+<script lang="ts">
+  import { readingListStore } from "../stores/reading-lists.svelte";
+
+  $effect(() => {
+    if (!readingListStore.loaded && !readingListStore.loading) {
+      void readingListStore.load();
+    }
+  });
+</script>
+
+{#each readingListStore.lists as list}
+  <p>{list.name} — {list.book_count} books</p>
+{/each}
 ```
 
 ### Using a store in a component
@@ -358,6 +397,8 @@ All HTTP calls go through `frontend/src/lib/api.ts`, which is a barrel re-export
 | `api/series.ts` | Series CRUD + series–book relationships |
 | `api/books.ts` | Book CRUD, associations, and file management |
 | `api/tokens.ts` | API key and Kobo token management |
+| `api/reading-lists.ts` | Reading list CRUD, book membership, and per-book list lookup |
+| `api/reading-progress.ts` | Reading progress statistics (streak, in-progress documents) |
 
 Each sub-module imports `request` (and `setToken` where needed) from `./core`; there are no circular dependencies.
 
@@ -706,9 +747,46 @@ Do **not** use `TimeoutState` directly in components. Extend it in a new subclas
 
 ## TypeScript types
 
-Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`). Keeping shared/exported types in one file gives every component, store, and the API modules a single import path, while individual sub-modules under `frontend/src/lib/api/` may still define small module-local helper types for their own internal use.
+Shared TypeScript interfaces for API entities live in `frontend/src/types.ts`. This includes domain model types (e.g. `Library`, `Author`, `Book`, `ReadingList`) and shared API request/response shapes (e.g. `ConfigStatus`, `OIDCConfig`, `APIKeyCreateResponse`, `PaginatedAuditLogs`, `ReadingProgressStats`). Keeping shared/exported types in one file gives every component, store, and the API modules a single import path, while individual sub-modules under `frontend/src/lib/api/` may still define small module-local helper types for their own internal use.
 
 Never inline types directly in `.svelte` component files or `*.svelte.ts` store files. Add any new shared or reusable type to `types.ts`.
+
+**Reading list types:**
+
+```ts
+interface ReadingList {
+  id: string;
+  name: string;
+  description: string | null;
+  book_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ReadingListInput {
+  name: string;
+  description?: string | null;
+}
+```
+
+**Reading progress types:**
+
+```ts
+interface ReadingProgressItem {
+  document: string;
+  percentage: number;
+  device?: string | null;
+  last_synced: string;
+  estimated_minutes_remaining?: number | null;
+}
+
+interface ReadingProgressStats {
+  current_streak: number;
+  total_tracked: number;
+  total_finished: number;
+  in_progress: ReadingProgressItem[];
+}
+```
 
 ### Nullable optional fields in input types
 
@@ -1201,6 +1279,55 @@ A styled text input that forwards all standard HTML `<input>` attributes. Use th
 ```
 
 For inline validation errors, pass `aria-invalid` and `aria-describedby` through `restProps` and wire them to your validation state (see [Form accessibility](#form-accessibility)).
+
+---
+
+## Reading Lists components
+
+The reading lists feature lets users create and manage named collections of books. It is composed of two components: a top-level list view and a detail view for an individual list.
+
+### `ReadingLists.svelte`
+
+**Location:** `frontend/src/components/ReadingLists.svelte`
+
+Top-level page component rendered when the router's `currentView` is `"reading-lists"`. It displays all reading lists owned by the authenticated user and handles list creation.
+
+| Sub-path | Behaviour |
+|----------|-----------|
+| `` (empty) | Shows the list of reading lists plus an inline creation form |
+| `{id}` | Renders `ReadingListDetail` for the list with that ID |
+
+**Behaviour:**
+
+- On mount calls `readingListStore.load()` (idempotent — safe to call on every render).
+- Displays an error banner when `readingListStore.loadError` is set.
+- Shows an inline create form (name + optional description) when the **New list** button is clicked.
+- On successful creation, navigates to `reading-lists/{newId}` via `routerStore.navigate`.
+
+**Dependencies:** `readingListStore`, `routerStore`, `AlertBanner`, `Button`, `TextInput`, `ReadingListDetail`.
+
+---
+
+### `ReadingListDetail.svelte`
+
+**Location:** `frontend/src/components/reading-lists/ReadingListDetail.svelte`
+
+Detail page for a single reading list. Receives the `listId` prop from `ReadingLists.svelte`.
+
+**Props:**
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `listId` | `string` | ✓ | ID of the reading list to display |
+
+**Features:**
+
+- Derives the `ReadingList` object from `readingListStore.lists` — no separate API fetch.
+- Inline name/description editing with save and cancel controls (guarded by `svelte-ignore state_referenced_locally` to avoid recursive reactive writes).
+- Delete with an inline confirmation guard; on success navigates back to `#reading-lists`.
+- Paginated book list rendered via `BookList`, using `listReadingListBooks` for data fetching.
+
+**Dependencies:** `readingListStore`, `routerStore`, `listReadingListBooks`, `AlertBanner`, `Button`, `TextInput`, `BookList`.
 
 ---
 
