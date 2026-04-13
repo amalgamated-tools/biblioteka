@@ -90,7 +90,7 @@ db/migrations/
 
 - Each domain has a handler struct (e.g., `BookHandler`) that holds `*db.DB` and other dependencies.
 - Register routes in `internal/server/routes.go` (via `(*Server).setupRoutes`) on the standard `http.ServeMux` — do not introduce a router framework.
-- Use `writeJSON(r.Context(), w, status, data)` and `writeError(r.Context(), w, status, message)` from `internal/handlers/helpers.go` for all responses.
+- Use `writeJSON(r.Context(), w, status, data)` and `writeError(r.Context(), w, status, message)` from `internal/handlers/response.go` for all responses.
 - Extract resource IDs with `extractPathID(r.URL.Path, "/api/books/")` — there are no named URL parameters. To extract a resource ID **and** an optional sub-resource segment, use `extractPathSegments(r.URL.Path, "/api/books/")` which returns `(id, sub, ok)`.
 - After fetching a resource by ID, use `handleDBErr(r.Context(), w, err, "book")` to write the error response and return early. It returns `true` when it wrote a response (caller should `return`), `false` when `err == nil`. Maps `sql.ErrNoRows` → `404 Not Found`; all other errors → `500 Internal Server Error`.
 - For paginated list endpoints, use `parseLimitOffset(r, defaultPageLimit, maxPageLimit)` from `internal/handlers/pagination.go` to parse `limit` and `offset` query parameters. It silently clamps out-of-range values to safe defaults (`defaultPageLimit = 50`, `maxPageLimit = 200`).
@@ -133,7 +133,7 @@ db/migrations/
   listEntities(w, r, "authors", h.DB.ListAuthors, toAuthorDTO)
   ```
 
-  `listEntities` is a generic function in `internal/handlers/helpers.go`. It calls the `list` function, converts each entity to a DTO via `toDTO`, and writes a `200 OK` JSON response. On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
+  `listEntities` is a generic function in `internal/handlers/crud.go`. It calls the `list` function, converts each entity to a DTO via `toDTO`, and writes a `200 OK` JSON response. On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
 
 - When you need to convert a slice of entities to DTOs outside of `listEntities` (for example, in sub-resource handlers whose list function requires additional parameters such as a parent resource ID), use the generic `mapSlice` helper:
 
@@ -141,7 +141,7 @@ db/migrations/
   writeJSON(ctx, w, http.StatusOK, mapSlice(authors, toAuthorDTO))
   ```
 
-  `mapSlice` is a generic function in `internal/handlers/helpers.go`. It applies `toDTO` to every element of `items` and returns the resulting slice. Use it whenever you hold the fetched slice yourself and only need the DTO conversion step (no automatic list call or error handling). The `toDTO` function must accept a **pointer** to the entity type (e.g. `func toAuthorDTO(a *db.Author) AuthorDTO`) — `mapSlice` passes a pointer to each element internally.
+  `mapSlice` is a generic function in `internal/handlers/crud.go`. It applies `toDTO` to every element of `items` and returns the resulting slice. Use it whenever you hold the fetched slice yourself and only need the DTO conversion step (no automatic list call or error handling). The `toDTO` function must accept a **pointer** to the entity type (e.g. `func toAuthorDTO(a *db.Author) AuthorDTO`) — `mapSlice` passes a pointer to each element internally.
 
 - For list endpoints that return a slice of **user-owned** DTOs (where the list function accepts a `userID` as a second argument), use the generic `listUserEntities` helper instead of `listEntities`:
 
@@ -149,7 +149,7 @@ db/migrations/
   listUserEntities(w, r, "API keys", h.DB.ListAPIKeys, toAPIKeyDTO)
   ```
 
-  `listUserEntities` is a generic function in `internal/handlers/helpers.go`. It extracts the authenticated user ID from context via `auth.UserIDFromContext`, calls `list(ctx, userID)`, converts entities to DTOs, and writes a `200 OK` JSON response (never `null`). On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
+  `listUserEntities` is a generic function in `internal/handlers/crud.go`. It extracts the authenticated user ID from context via `auth.UserIDFromContext`, calls `list(ctx, userID)`, converts entities to DTOs, and writes a `200 OK` JSON response (never `null`). On error it logs and writes `500 Internal Server Error`. Always `return` immediately after the call.
 
 ### Book sub-resource handlers
 
@@ -230,14 +230,14 @@ For list and delete, continue using `listEntities` (or `listUserEntities`) and `
 For DELETE handlers, use the generic `deleteResource` helper instead of hand-rolling the fetch-delete-audit pattern:
 
 ```go
-deleteResource(h.DB, w, r, id, "author", otelkeys.AuthorID,
+deleteResource(h.DB, w, r, id, "author", "author", otelkeys.AuthorID,
     h.DB.GetAuthor, h.DB.DeleteAuthor,
     db.AuditActionAuthorDeleted,
     func(a *db.Author) map[string]any { return map[string]any{"name": a.Name} },
 )
 ```
 
-`deleteResource` is a package-level generic function in `internal/handlers/helpers.go`. It fetches the entity (to capture audit metadata), deletes it, writes an audit log entry via `db.CreateAuditLog`, and responds with `204 No Content`. A failed audit write is logged as a warning and never blocks the response. Pass `nil` for `auditMeta` when no extra metadata is needed. Always `return` immediately after the call — `deleteResource` always writes the HTTP response itself.
+`deleteResource` is a package-level generic function in `internal/handlers/crud.go`. It fetches the entity (to capture audit metadata), deletes it, writes an audit log entry via `db.CreateAuditLog`, and responds with `204 No Content`. A failed audit write is logged as a warning and never blocks the response. Pass `nil` for `auditMeta` when no extra metadata is needed. Always `return` immediately after the call — `deleteResource` always writes the HTTP response itself.
 
 ### Deleting a user-owned resource
 
@@ -282,7 +282,7 @@ func (h *MyTokenHandler) createMyToken(w http.ResponseWriter, r *http.Request) {
 
 `handleTokenCreate` implements the full creation lifecycle: decode the `{"name": "..."}` request body, validate and trim the name (≤ 100 characters; see `maxTokenNameLength`), call `ops.create`, write an audit log entry, and respond with `201 Created` via `writeSecretTokenResponse` (which sets `Cache-Control: no-store` and `Pragma: no-cache` to prevent caching of the plaintext secret). The raw token is returned only in the creation response and cannot be retrieved again.
 
-Use `generateRandomHex(n)` from `internal/handlers/helpers.go` to generate a cryptographically secure random token of `n` bytes (returned as a `2n`-character lowercase hex string).
+Use `generateRandomHex(n)` from `internal/handlers/tokens.go` to generate a cryptographically secure random token of `n` bytes (returned as a `2n`-character lowercase hex string).
 
 ### Audit logging (non-`deleteResource` actions)
 
@@ -292,7 +292,7 @@ For actions not covered by `deleteResource`, call `logAudit` after the database 
 logAudit(r.Context(), h.DB, userID, db.AuditActionBookCreated, "book", b.ID, map[string]any{"title": b.Title})
 ```
 
-`logAudit` is a package-level function in `internal/handlers/helpers.go`. It calls `db.CreateAuditLog` and logs a warning on failure without propagating the error, so a failed audit write never causes a request to fail. The caller must supply `userID`, typically obtained via `auth.UserIDFromContext(r.Context())`.
+`logAudit` is a package-level function in `internal/handlers/dberrors.go`. It calls `db.CreateAuditLog` and logs a warning on failure without propagating the error, so a failed audit write never causes a request to fail. The caller must supply `userID`, typically obtained via `auth.UserIDFromContext(r.Context())`.
 
 ### Admin protection
 
@@ -302,7 +302,7 @@ if !requireAdmin(h.DB, w, r) {
 }
 ```
 
-`requireAdmin` is a package-level function in `internal/handlers/helpers.go`. It writes the error response itself; return immediately when it returns `false`.
+`requireAdmin` is a package-level function in `internal/handlers/crud.go`. It writes the error response itself; return immediately when it returns `false`.
 
 ### Protocol credential handlers
 

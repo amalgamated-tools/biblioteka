@@ -339,13 +339,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Max entries to return (default 50)",
+                        "description": "Max entries to return (default 50, max 200; invalid or out-of-range values are silently clamped)",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Entries to skip (default 0)",
+                        "description": "Entries to skip (default 0; invalid or negative values are silently ignored)",
                         "name": "offset",
                         "in": "query"
                     }
@@ -355,12 +355,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.auditLogListDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
@@ -474,19 +468,80 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns the authenticated user's profile",
+                "description": "GET returns the authenticated user's profile; PUT updates the display name",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Get current user",
+                "summary": "Get or update current user",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.userDTO"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates the authenticated user's display name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Update current user's profile",
+                "parameters": [
+                    {
+                        "description": "Update profile request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.updateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.userDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
                     "401": {
@@ -572,7 +627,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_server.oidcEnabledResponse"
+                            "$ref": "#/definitions/internal_server.enabledResponse"
                         }
                     }
                 }
@@ -792,6 +847,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -802,6 +863,26 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/signup/enabled": {
+            "get": {
+                "description": "Returns whether new user signup is permitted on this server",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Check if signup is enabled",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.enabledResponse"
                         }
                     }
                 }
@@ -1090,6 +1171,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/authors/{id}/books": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated books for a specific author",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authors"
+                ],
+                "summary": "List books by author",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Author ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Max items per page (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to skip (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.bookListDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/book-files/{id}": {
             "get": {
                 "security": [
@@ -1198,6 +1349,148 @@ const docTemplate = `{
                 }
             }
         },
+        "/book-files/{id}/download": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Serves the book file content for download and increments the download count",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "BookFiles"
+                ],
+                "summary": "Download a book file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book File ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/book-files/{id}/email": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sends a book file as an email attachment to the specified address",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "BookFiles"
+                ],
+                "summary": "Email a book file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Book File ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Recipient email address",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.emailBookFileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/books": {
             "get": {
                 "security": [
@@ -1205,7 +1498,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns paginated books (summary without relations)",
+                "description": "Returns paginated books (summary without relations). When query is provided, performs a title/description search.",
                 "produces": [
                     "application/json"
                 ],
@@ -1214,6 +1507,12 @@ const docTemplate = `{
                 ],
                 "summary": "List books",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query (title/description substring match)",
+                        "name": "query",
+                        "in": "query"
+                    },
                     {
                         "type": "integer",
                         "description": "Max items per page (default 50, max 200)",
@@ -1297,6 +1596,116 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/books/upload": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload a book file (.epub, .mobi, .azw3, .pdf) to a library. The file is staged and processed asynchronously.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Upload a book file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Book file (.epub, .mobi, .azw3, .pdf)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Target library ID",
+                        "name": "library_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Title override (takes precedence over extracted metadata)",
+                        "name": "title",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Author override (takes precedence over extracted metadata)",
+                        "name": "author",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Description override",
+                        "name": "description",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ISBN override (ISBN-10 or ISBN-13)",
+                        "name": "isbn",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Language override",
+                        "name": "language",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Publisher override",
+                        "name": "publisher",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.uploadAcceptedResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
@@ -2133,6 +2542,108 @@ const docTemplate = `{
                 }
             }
         },
+        "/config/watch-folder": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "GET returns current watch folder config (admin only). PUT updates watch folder config (admin only).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get or update watch folder configuration",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.watchFolderConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "GET returns current watch folder config (admin only). PUT updates watch folder config (admin only).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get or update watch folder configuration",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.watchFolderConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Returns server health status",
@@ -2341,20 +2852,26 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).",
+                "description": "GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).\nPUT creates or updates the current user's KOSync credential using a JSON body matching credentialRequest.\nDELETE removes the current user's KOSync credential.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "kosync-credentials"
                 ],
-                "summary": "Get KOSync credentials",
+                "summary": "Manage KOSync credentials",
                 "responses": {
                     "200": {
-                        "description": "Credential returned",
+                        "description": "Credential returned or updated",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
+                    },
+                    "204": {
+                        "description": "Credential deleted"
                     },
                     "400": {
                         "description": "Bad request",
@@ -2380,6 +2897,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
+                    "409": {
+                        "description": "Username already taken",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -2394,7 +2917,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "PUT creates or updates the current user's KOSync credential.",
+                "description": "GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).\nPUT creates or updates the current user's KOSync credential using a JSON body matching credentialRequest.\nDELETE removes the current user's KOSync credential.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2404,23 +2927,16 @@ const docTemplate = `{
                 "tags": [
                     "kosync-credentials"
                 ],
-                "summary": "Create or update KOSync credentials",
-                "parameters": [
-                    {
-                        "description": "Credential data (required for PUT)",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.credentialRequest"
-                        }
-                    }
-                ],
+                "summary": "Manage KOSync credentials",
                 "responses": {
                     "200": {
-                        "description": "Credential created or updated",
+                        "description": "Credential returned or updated",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
+                    },
+                    "204": {
+                        "description": "Credential deleted"
                     },
                     "400": {
                         "description": "Bad request",
@@ -2466,15 +2982,24 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "DELETE removes the current user's KOSync credential.",
+                "description": "GET returns the current user's KOSync credential (username and timestamps; the hashed password is never returned).\nPUT creates or updates the current user's KOSync credential using a JSON body matching credentialRequest.\nDELETE removes the current user's KOSync credential.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "kosync-credentials"
                 ],
-                "summary": "Delete KOSync credentials",
+                "summary": "Manage KOSync credentials",
                 "responses": {
+                    "200": {
+                        "description": "Credential returned or updated",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.credentialResponse"
+                        }
+                    },
                     "204": {
                         "description": "Credential deleted"
                     },
@@ -2498,6 +3023,12 @@ const docTemplate = `{
                     },
                     "405": {
                         "description": "Method not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Username already taken",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
@@ -2883,20 +3414,26 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "GET returns the current user's OPDS credential.",
+                "description": "GET returns the current user's OPDS credential.\nPUT creates or replaces the current user's OPDS credential using a JSON body of type credentialRequest (username and password, with the password hashed server-side).\nDELETE removes the current user's OPDS credential.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "opds-credentials"
                 ],
-                "summary": "Get OPDS credentials",
+                "summary": "Manage OPDS credentials",
                 "responses": {
                     "200": {
-                        "description": "Credential returned",
+                        "description": "Credential returned or updated",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
+                    },
+                    "204": {
+                        "description": "Credential deleted"
                     },
                     "400": {
                         "description": "Bad request",
@@ -2922,6 +3459,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
                     },
+                    "409": {
+                        "description": "Username already taken",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -2936,7 +3479,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "PUT creates or replaces the current user's OPDS credential (username and password, with the password hashed server-side).",
+                "description": "GET returns the current user's OPDS credential.\nPUT creates or replaces the current user's OPDS credential using a JSON body of type credentialRequest (username and password, with the password hashed server-side).\nDELETE removes the current user's OPDS credential.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2946,23 +3489,16 @@ const docTemplate = `{
                 "tags": [
                     "opds-credentials"
                 ],
-                "summary": "Create or update OPDS credentials",
-                "parameters": [
-                    {
-                        "description": "Credential data (required for PUT)",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.credentialRequest"
-                        }
-                    }
-                ],
+                "summary": "Manage OPDS credentials",
                 "responses": {
                     "200": {
-                        "description": "Credential created or updated",
+                        "description": "Credential returned or updated",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.credentialResponse"
                         }
+                    },
+                    "204": {
+                        "description": "Credential deleted"
                     },
                     "400": {
                         "description": "Bad request",
@@ -3008,15 +3544,24 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "DELETE removes the current user's OPDS credential.",
+                "description": "GET returns the current user's OPDS credential.\nPUT creates or replaces the current user's OPDS credential using a JSON body of type credentialRequest (username and password, with the password hashed server-side).\nDELETE removes the current user's OPDS credential.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "opds-credentials"
                 ],
-                "summary": "Delete OPDS credentials",
+                "summary": "Manage OPDS credentials",
                 "responses": {
+                    "200": {
+                        "description": "Credential returned or updated",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.credentialResponse"
+                        }
+                    },
                     "204": {
                         "description": "Credential deleted"
                     },
@@ -3034,6 +3579,55 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "No OPDS credentials configured",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Username already taken",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reading-progress/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the authenticated user's reading streak, total books tracked, finished count, and list of in-progress documents.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reading-progress"
+                ],
+                "summary": "Get reading progress statistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.readingProgressStatsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/internal_handlers.errorResponse"
                         }
@@ -3308,6 +3902,76 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/series/{id}/books": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated books for a specific series, ordered by position then title",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Series"
+                ],
+                "summary": "List books in a series",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Series ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Max items per page (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to skip (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.bookListDTO"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -3626,6 +4290,9 @@ const docTemplate = `{
                 "created_at": {
                     "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
+                "download_count": {
+                    "type": "integer"
+                },
                 "file_hash": {
                     "type": "string"
                 },
@@ -3819,17 +4486,6 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handlers.credentialRequest": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
         "internal_handlers.credentialResponse": {
             "type": "object",
             "properties": {
@@ -3840,6 +4496,14 @@ const docTemplate = `{
                     "$ref": "#/definitions/github_com_amalgamated-tools_biblioteka_internal_db.Timestamp"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handlers.emailBookFileRequest": {
+            "type": "object",
+            "properties": {
+                "to": {
                     "type": "string"
                 }
             }
@@ -3867,9 +4531,6 @@ const docTemplate = `{
                 "token": {
                     "type": "string"
                 },
-                "token_hash": {
-                    "type": "string"
-                },
                 "user_id": {
                     "type": "string"
                 }
@@ -3885,9 +4546,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
-                },
-                "token_hash": {
                     "type": "string"
                 },
                 "user_id": {
@@ -3969,6 +4627,46 @@ const docTemplate = `{
                 },
                 "redirect_uri": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_handlers.readingProgressItemDTO": {
+            "type": "object",
+            "properties": {
+                "device": {
+                    "type": "string"
+                },
+                "document": {
+                    "type": "string"
+                },
+                "estimated_minutes_remaining": {
+                    "type": "integer"
+                },
+                "last_synced": {
+                    "type": "string"
+                },
+                "percentage": {
+                    "type": "number"
+                }
+            }
+        },
+        "internal_handlers.readingProgressStatsResponse": {
+            "type": "object",
+            "properties": {
+                "current_streak": {
+                    "type": "integer"
+                },
+                "in_progress": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_handlers.readingProgressItemDTO"
+                    }
+                },
+                "total_finished": {
+                    "type": "integer"
+                },
+                "total_tracked": {
+                    "type": "integer"
                 }
             }
         },
@@ -4102,6 +4800,31 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_handlers.updateProfileRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handlers.uploadAcceptedResponse": {
+            "type": "object",
+            "properties": {
+                "file_name": {
+                    "type": "string"
+                },
+                "file_type": {
+                    "type": "string"
+                },
+                "library_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_handlers.userDTO": {
             "type": "object",
             "properties": {
@@ -4114,7 +4837,29 @@ const docTemplate = `{
                 "is_admin": {
                     "type": "boolean"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "oidc_linked": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "internal_handlers.watchFolderConfigResponse": {
+            "type": "object",
+            "properties": {
+                "library_id": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_server.enabledResponse": {
+            "type": "object",
+            "properties": {
+                "enabled": {
                     "type": "boolean"
                 }
             }
@@ -4124,14 +4869,6 @@ const docTemplate = `{
             "properties": {
                 "status": {
                     "type": "string"
-                }
-            }
-        },
-        "internal_server.oidcEnabledResponse": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
                 }
             }
         },

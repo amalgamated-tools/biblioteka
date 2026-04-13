@@ -1,9 +1,21 @@
 <script lang="ts">
-  import { LayoutDashboard, Library, Plus, ArrowRight } from "lucide-svelte";
+  import {
+    LayoutDashboard,
+    Library,
+    Plus,
+    ArrowRight,
+    Flame,
+    BookOpen,
+    CheckCheck,
+  } from "lucide-svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { routerStore } from "../stores/router.svelte";
-  import { getTotalBooksCount, getDownloadsPerMonth } from "../lib/api";
-  import type { MonthlyDownloads } from "../types";
+  import {
+    getTotalBooksCount,
+    getDownloadsPerMonth,
+    getReadingProgressStats,
+  } from "../lib/api";
+  import type { MonthlyDownloads, ReadingProgressStats } from "../types";
   import AlertBanner from "./ui/AlertBanner.svelte";
   import DownloadsHistogram from "./ui/DownloadsHistogram.svelte";
 
@@ -11,6 +23,7 @@
   let countError: string | null = $state(null);
   let monthlyDownloads = $state<MonthlyDownloads[]>([]);
   let downloadsError: string | null = $state(null);
+  let readingStats = $state<ReadingProgressStats | null>(null);
 
   $effect(() => {
     if (!libraryStore.loaded) {
@@ -53,6 +66,21 @@
     }
   });
 
+  let statsFetched = false;
+  $effect(() => {
+    if (!statsFetched) {
+      statsFetched = true;
+      getReadingProgressStats()
+        .then((stats) => {
+          readingStats = stats;
+        })
+        .catch((err) => {
+          console.error("Failed to fetch reading stats:", err);
+          // Non-fatal: the reading activity section will simply not appear.
+        });
+    }
+  });
+
   const stats = $derived([
     {
       label: "Total Books",
@@ -60,6 +88,18 @@
     },
     { label: "Libraries", value: libraryStore.libraries.length },
   ]);
+
+  function formatPercent(value: number): string {
+    return `${Math.round(value * 100)}%`;
+  }
+
+  function formatEstimate(minutes: number | null | undefined): string {
+    if (minutes == null) return "";
+    if (minutes < 60) return `~${minutes}m left`;
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return m === 0 ? `~${h}h left` : `~${h}h ${m}m left`;
+  }
 </script>
 
 <div>
@@ -148,18 +188,139 @@
       </div>
     {/if}
 
-    <div
-      class="mt-8 bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"
-    >
-      <h2
-        class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-3"
+    <!-- Reading Activity section -->
+    {#if readingStats !== null}
+      <div
+        class="mt-8 bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"
       >
-        Welcome to Biblioteka
-      </h2>
-      <p class="text-ink-500 dark:text-ink-300 leading-relaxed">
-        Your personal book management dashboard. Start by adding books to your
-        library.
-      </p>
-    </div>
+        <h2
+          class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-4"
+        >
+          Reading Activity
+        </h2>
+
+        {#if readingStats.total_tracked === 0}
+          <!-- Nudge: no reading data recorded yet -->
+          <p class="text-ink-500 dark:text-ink-300 leading-relaxed">
+            No reading activity recorded yet. Connect KOReader via
+            <a
+              href="#settings/kobo"
+              class="text-accent-600 dark:text-accent-400 underline underline-offset-2 hover:text-accent-700 dark:hover:text-accent-300 transition-colors"
+            >
+              Settings → KOSync
+            </a>
+            to start tracking your reading progress.
+          </p>
+        {:else}
+          <!-- Streak + summary badges -->
+          <div class="flex flex-wrap items-center gap-4 mb-6">
+            {#if readingStats.current_streak > 0}
+              <div
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-full text-sm font-semibold"
+                aria-label="{readingStats.current_streak}-day reading streak"
+              >
+                <Flame class="w-4 h-4" aria-hidden="true" />
+                {readingStats.current_streak}-day streak
+              </div>
+            {/if}
+
+            {#if readingStats.total_finished > 0}
+              <div
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full text-sm font-semibold"
+                aria-label="{readingStats.total_finished} books finished"
+              >
+                <CheckCheck class="w-4 h-4" aria-hidden="true" />
+                {readingStats.total_finished}
+                {readingStats.total_finished === 1 ? "book" : "books"} finished
+              </div>
+            {/if}
+
+            <span class="text-sm text-ink-400 dark:text-ink-500">
+              {readingStats.total_tracked}
+              {readingStats.total_tracked === 1 ? "document" : "documents"} tracked
+            </span>
+          </div>
+
+          <!-- Currently-reading list -->
+          {#if readingStats.in_progress.length > 0}
+            <h3
+              class="text-sm font-semibold text-ink-600 dark:text-ink-300 uppercase tracking-wide mb-3"
+            >
+              Currently Reading
+            </h3>
+            <ul class="space-y-4" aria-label="Currently reading">
+              {#each readingStats.in_progress as item (item.document)}
+                <li class="flex flex-col gap-1.5">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <BookOpen
+                        class="w-4 h-4 flex-shrink-0 text-ink-400 dark:text-ink-500"
+                        aria-hidden="true"
+                      />
+                      <span
+                        class="text-sm font-medium text-ink-800 dark:text-cream-200 truncate"
+                        title={item.document}
+                      >
+                        {item.document}
+                      </span>
+                    </div>
+                    <span
+                      class="text-sm font-semibold text-accent-600 dark:text-accent-400 flex-shrink-0"
+                    >
+                      {formatPercent(item.percentage)}
+                    </span>
+                  </div>
+
+                  <!-- Progress bar -->
+                  <div
+                    class="h-1.5 bg-ink-100 dark:bg-ink-700 rounded-full overflow-hidden"
+                    role="progressbar"
+                    aria-valuenow={Math.round(item.percentage * 100)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="Reading progress for {item.document}"
+                  >
+                    <div
+                      class="h-full bg-accent-500 rounded-full transition-all"
+                      style:width="{item.percentage * 100}%"
+                    ></div>
+                  </div>
+
+                  <div
+                    class="flex items-center gap-3 text-xs text-ink-400 dark:text-ink-500"
+                  >
+                    {#if item.device}
+                      <span>{item.device}</span>
+                    {/if}
+                    {#if item.estimated_minutes_remaining != null}
+                      <span
+                        >{formatEstimate(
+                          item.estimated_minutes_remaining,
+                        )}</span
+                      >
+                    {/if}
+                  </div>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        {/if}
+      </div>
+    {:else}
+      <!-- Fallback while reading stats are still loading or unavailable -->
+      <div
+        class="mt-8 bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"
+      >
+        <h2
+          class="text-xl font-display font-bold text-ink-900 dark:text-cream-100 mb-3"
+        >
+          Welcome to Biblioteka
+        </h2>
+        <p class="text-ink-500 dark:text-ink-300 leading-relaxed">
+          Your personal book management dashboard. Start by adding books to your
+          library.
+        </p>
+      </div>
+    {/if}
   {/if}
 </div>

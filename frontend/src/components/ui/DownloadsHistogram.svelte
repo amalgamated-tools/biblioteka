@@ -35,12 +35,13 @@
   }
 
   const isEmpty = $derived(data.every((d) => d.count === 0));
+  const headingId = `histogram-title-${crypto.randomUUID()}`;
 </script>
 
 <div class="w-full">
   <h3
+    id={headingId}
     class="text-base font-semibold text-ink-700 dark:text-cream-200 mb-4"
-    aria-label={title}
   >
     {title}
   </h3>
@@ -55,7 +56,7 @@
   {:else}
     <div
       role="list"
-      aria-label={title}
+      aria-labelledby={headingId}
       class="flex items-end gap-1 h-32 w-full"
       data-testid="histogram-bars"
     >
@@ -63,7 +64,7 @@
         {@const h = barHeight(item.count)}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
-          class="flex-1 flex flex-col items-center gap-1 group focus-within:outline-none"
+          class="flex-1 flex flex-col items-center justify-end gap-1 group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 h-full"
           role="listitem"
           tabindex="0"
           aria-label="{monthFull(item.month)}: {item.count} {item.count === 1
@@ -72,14 +73,14 @@
           title="{monthFull(item.month)}: {item.count}"
         >
           <span
-            class="text-[10px] text-ink-400 dark:text-ink-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity leading-none"
+            class="text-[10px] text-ink-600 dark:text-ink-200 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity leading-none"
             aria-hidden="true"
           >
             {item.count}
           </span>
           <div
             class="w-full rounded-t-sm bg-accent-400 dark:bg-accent-500 hover:bg-accent-500 dark:hover:bg-accent-400 group-focus-within:bg-accent-500 dark:group-focus-within:bg-accent-400 transition-colors"
-            style="height: {h}%"
+            style:height="{h}%"
             role="presentation"
           ></div>
         </div>
@@ -90,7 +91,7 @@
     <div class="flex gap-1 mt-1 w-full" aria-hidden="true">
       {#each data as item (item.month)}
         <div
-          class="flex-1 text-center text-[10px] text-ink-400 dark:text-ink-400 truncate"
+          class="flex-1 text-center text-[10px] text-ink-600 dark:text-ink-400 truncate"
         >
           {monthLabel(item.month)}
         </div>

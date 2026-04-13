@@ -21,7 +21,15 @@ const themeBootstrapScriptCSPHash = "sha256-fH8pmaGT8bEGA0OitMqoXdy+W8xbN89w8ghr
 // It permits the embedded frontend's inline theme bootstrap script (via its
 // SHA-256 hash) and Google Fonts stylesheet/font resources so the SPA continues
 // to render as intended when this middleware is applied globally.
-const globalCSP = "default-src 'self'; script-src 'self' '" + themeBootstrapScriptCSPHash + "'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data: https://fonts.gstatic.com;"
+//
+// No 'unsafe-inline' is present in either script-src or style-src:
+//   - script-src uses the theme bootstrap script's SHA-256 hash instead.
+//   - style-src omits 'unsafe-inline' because the initial frontend/index.html
+//     response does not include inline <style> blocks or style= HTML
+//     attributes; dynamic element styles set later by Svelte `style:`
+//     directives via CSSOM property calls (e.g. element.style.setProperty(...))
+//     are not governed by style-src.
+const globalCSP = "default-src 'self'; script-src 'self' '" + themeBootstrapScriptCSPHash + "'; style-src 'self' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data: https://fonts.gstatic.com;"
 
 // hsts is the Strict-Transport-Security header value used when secure cookies
 // are enabled. Two years max-age with includeSubDomains protects all

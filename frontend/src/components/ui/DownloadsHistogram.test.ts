@@ -55,4 +55,35 @@ describe("DownloadsHistogram", () => {
     // One child group per data point
     expect(bars.children).toHaveLength(dataWithDownloads.length);
   });
+
+  it("applies a high-contrast focus-visible outline and does not suppress the focus ring on listitem elements", () => {
+    render(DownloadsHistogram, { data: dataWithDownloads });
+    const items = screen.getAllByRole("listitem");
+    for (const item of items) {
+      // Must have a high-contrast focus-visible outline for WCAG 2.4.11 / 2.4.7
+      expect(item.className).toContain("focus-visible:outline-accent-600");
+      // Must NOT suppress the outline ring
+      expect(item.className).not.toContain("focus-within:outline-none");
+    }
+  });
+
+  it("links the list aria-labelledby to the heading id", () => {
+    render(DownloadsHistogram, { data: dataWithDownloads });
+    const heading = screen.getByRole("heading", { level: 3 });
+    const list = screen.getByRole("list");
+    const headingId = heading.getAttribute("id");
+    expect(headingId).toBeTruthy();
+    expect(list.getAttribute("aria-labelledby")).toBe(headingId);
+  });
+
+  it("generates unique ids for multiple instances", () => {
+    render(DownloadsHistogram, { data: dataWithDownloads, title: "First" });
+    render(DownloadsHistogram, { data: dataWithDownloads, title: "Second" });
+    const headings = screen.getAllByRole("heading", { level: 3 });
+    const id1 = headings[0].getAttribute("id");
+    const id2 = headings[1].getAttribute("id");
+    expect(id1).toBeTruthy();
+    expect(id2).toBeTruthy();
+    expect(id1).not.toBe(id2);
+  });
 });
