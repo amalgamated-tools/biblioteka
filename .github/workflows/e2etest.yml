@@ -40,12 +40,40 @@ jobs:
     outputs:
       skip-tests: ${{ steps.check.outputs.skip-tests }}
     steps:
+      - name: Checkout code
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+
       - name: Check if docs-only PR
         id: check
         run: |
           # Always run this step to ensure skip-tests output is always set.
-          # Use short-circuit expression so push events never access github.event.pull_request
-          if [[ "${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Evaluate the actual changed files instead of relying on labels,
+          # which avoids a race condition with auto-label-docs-only.yml.
+          BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+          CHANGED=$(git diff --name-only "$BASE_REF"...HEAD)
+
+          DOCS_ONLY=true
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            if [[ "$file" =~ ^docs/ ]] || \
+               [[ "$file" =~ (^|/)[^/]+\.md$ ]]; then
+              continue
+            fi
+            DOCS_ONLY=false
+            echo "Found non-docs file: $file"
+            break
+          done <<< "$CHANGED"
+
+          if [[ "$DOCS_ONLY" == "true" ]]; then
             echo "skip-tests=true" >> $GITHUB_OUTPUT
           else
             echo "skip-tests=false" >> $GITHUB_OUTPUT
