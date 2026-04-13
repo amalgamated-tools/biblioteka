@@ -136,6 +136,11 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		}
 	}
 
+	secretEncrypter, err := s.JWT.NewSecretEncrypter()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize settings encrypter: %w", err)
+	}
+
 	if s.requireAuth == nil {
 		s.requireAuth = auth.Middleware(s.JWT, s.DB)
 	}
@@ -209,7 +214,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		}
 	}
 	s.bookHandler.MetadataHandler = metadataHandler
-	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB}
+	s.bookFileHandler = &handlers.BookFileHandler{DB: s.DB, Secrets: secretEncrypter}
 	s.auditLogHandler = &handlers.AuditLogHandler{DB: s.DB}
 	s.opdsHandler = &handlers.OPDSHandler{DB: s.DB}
 	s.opdsCredentialHandler = &handlers.OPDSCredentialHandler{DB: s.DB}
@@ -224,6 +229,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 	s.requireKOSyncAuth = auth.KOSyncHeaderAuthMiddleware(protocolCredAdapter)
 	s.configHandler = &handlers.ConfigHandler{
 		DB:               s.DB,
+		Secrets:          secretEncrypter,
 		IsOIDCConfigured: func() bool { return s.oidcHandler != nil },
 		OnOIDCConfigSet: func(ctx context.Context, issuerURL, clientID, clientSecret, redirectURI string) error {
 			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, issuerURL, clientID, clientSecret, redirectURI, secureCookies)
@@ -254,6 +260,12 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		dbClientID, _ := s.DB.GetSetting(ctx, "oidc_client_id")
 		dbClientSecret, _ := s.DB.GetSetting(ctx, "oidc_client_secret")
 		dbRedirectURI, _ := s.DB.GetSetting(ctx, "oidc_redirect_uri")
+		// Decrypt the client secret stored in the database.
+		if decrypted, decErr := secretEncrypter.Decrypt(dbClientSecret); decErr == nil {
+			dbClientSecret = decrypted
+		} else {
+			slog.WarnContext(ctx, "failed to decrypt OIDC client secret from saved settings; OIDC may not initialize correctly", slog.Any(otelkeys.Error, decErr))
+		}
 		if dbClientID != "" && dbClientSecret != "" && dbRedirectURI != "" {
 			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, dbIssuer, dbClientID, dbClientSecret, dbRedirectURI, secureCookies)
 			if err != nil {

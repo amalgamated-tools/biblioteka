@@ -433,3 +433,98 @@ func TestHandleOIDCConfig_DispatchMethodNotAllowed(t *testing.T) {
 
 	require.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
+
+// --- Encryption tests ---
+
+func TestHandleSetOIDCConfig_EncryptsClientSecret(t *testing.T) {
+	h, adminID, _ := setupConfigHandlerWithSecrets(t)
+	h.IssuerURLValidator = noopIssuerURLValidator
+	h.OIDCHTTPClient = http.DefaultClient
+
+	oidcServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/openid-configuration" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{
+				"issuer": "` + "http://" + r.Host + `",
+				"authorization_endpoint": "http://` + r.Host + `/authorize",
+				"token_endpoint": "http://` + r.Host + `/token",
+				"jwks_uri": "http://` + r.Host + `/jwks"
+			}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer oidcServer.Close()
+
+	body := `{"issuer_url":"` + oidcServer.URL + `","client_id":"my-client","client_secret":"my-secret","redirect_uri":"https://app.example.com/callback"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/oidc", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSetOIDCConfig(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	stored, err := h.DB.GetSetting(t.Context(), settingOIDCClientSecret)
+	require.NoError(t, err)
+	require.NotEqual(t, "my-secret", stored, "secret must not be stored as plaintext")
+	require.Contains(t, stored, "enc:v1:", "stored secret must have encryption prefix")
+
+	// GET must still report that the secret is set.
+	r2 := httptest.NewRequest(http.MethodGet, "/api/config/oidc", nil)
+	r2 = withUserID(r2, adminID)
+	w2 := httptest.NewRecorder()
+	h.HandleGetOIDCConfig(w2, r2)
+	require.Equal(t, http.StatusOK, w2.Code)
+	var resp oidcConfigResponse
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp))
+	require.True(t, resp.ClientSecretSet)
+}
+
+func TestHandleSetOIDCConfig_PreservesExistingEncryptedSecret(t *testing.T) {
+	h, adminID, _ := setupConfigHandlerWithSecrets(t)
+	h.IssuerURLValidator = noopIssuerURLValidator
+	h.OIDCHTTPClient = http.DefaultClient
+
+	oidcServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/openid-configuration" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{
+				"issuer": "` + "http://" + r.Host + `",
+				"authorization_endpoint": "http://` + r.Host + `/authorize",
+				"token_endpoint": "http://` + r.Host + `/token",
+				"jwks_uri": "http://` + r.Host + `/jwks"
+			}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer oidcServer.Close()
+
+	// First PUT: store an encrypted secret.
+	body := `{"issuer_url":"` + oidcServer.URL + `","client_id":"my-client","client_secret":"original-secret","redirect_uri":"https://app/cb"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/oidc", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+	h.HandleSetOIDCConfig(w, r)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Capture what the callback receives on second PUT (empty secret).
+	var callbackSecret string
+	h.OnOIDCConfigSet = func(_ context.Context, _, _, secret, _ string) error {
+		callbackSecret = secret
+		return nil
+	}
+
+	// Second PUT with empty secret — should reuse the stored (encrypted) one.
+	body2 := `{"issuer_url":"` + oidcServer.URL + `","client_id":"my-client","client_secret":"","redirect_uri":"https://app/cb"}`
+	r2 := httptest.NewRequest(http.MethodPut, "/api/config/oidc", bytes.NewBufferString(body2))
+	r2 = withUserID(r2, adminID)
+	w2 := httptest.NewRecorder()
+	h.HandleSetOIDCConfig(w2, r2)
+	require.Equal(t, http.StatusOK, w2.Code)
+
+	// The callback must receive the plaintext secret (not the encrypted form).
+	require.Equal(t, "original-secret", callbackSecret)
+}
+

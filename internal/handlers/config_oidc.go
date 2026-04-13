@@ -189,10 +189,16 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	secret, secretErr := h.DB.GetSetting(r.Context(), settingOIDCClientSecret)
 	redirectURI, _ := h.DB.GetSetting(r.Context(), settingOIDCRedirectURI)
 
+	secretIsSet := secretErr == nil && secret != ""
+	if secretIsSet && h.Secrets != nil {
+		decrypted, err := h.Secrets.Decrypt(secret)
+		secretIsSet = err == nil && decrypted != ""
+	}
+
 	writeJSON(r.Context(), w, http.StatusOK, oidcConfigResponse{
 		IssuerURL:       issuerURL,
 		ClientID:        clientID,
-		ClientSecretSet: secretErr == nil && secret != "",
+		ClientSecretSet: secretIsSet,
 		RedirectURI:     redirectURI,
 	})
 }
@@ -245,6 +251,14 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 			writeError(r.Context(), w, http.StatusBadRequest, "client_secret is required")
 			return
 		}
+		// Decrypt the stored secret before reusing it as the plaintext value.
+		if h.Secrets != nil {
+			existing, err = h.Secrets.Decrypt(existing)
+			if err != nil || existing == "" {
+				writeError(r.Context(), w, http.StatusBadRequest, "client_secret is required")
+				return
+			}
+		}
 		clientSecret = existing
 	}
 
@@ -281,10 +295,22 @@ func (h *ConfigHandler) HandleSetOIDCConfig(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Encrypt the client secret before storing it in the database.
+	storedSecret := clientSecret
+	if h.Secrets != nil {
+		var err error
+		storedSecret, err = h.Secrets.Encrypt(clientSecret)
+		if err != nil {
+			slog.ErrorContext(r.Context(), "failed to encrypt OIDC client secret", slog.Any(otelkeys.Error, err))
+			writeError(r.Context(), w, http.StatusInternalServerError, "failed to save OIDC configuration")
+			return
+		}
+	}
+
 	if err := h.DB.SetSettings(r.Context(), []db.Setting{
 		{Key: settingOIDCIssuerURL, Value: issuerURL},
 		{Key: settingOIDCClientID, Value: clientID},
-		{Key: settingOIDCClientSecret, Value: clientSecret},
+		{Key: settingOIDCClientSecret, Value: storedSecret},
 		{Key: settingOIDCRedirectURI, Value: redirectURI},
 	}); err != nil {
 		slog.ErrorContext(r.Context(), "failed to save OIDC configuration", slog.Any(otelkeys.Error, err))

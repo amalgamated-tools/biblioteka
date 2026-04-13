@@ -551,3 +551,64 @@ func TestHandleSMTPTest_SendMailFailure(t *testing.T) {
 
 	require.Equal(t, http.StatusBadGateway, w.Code)
 }
+
+// --- Encryption tests ---
+
+// setupConfigHandlerWithSecrets creates a ConfigHandler with a SecretEncrypter wired in.
+func setupConfigHandlerWithSecrets(t *testing.T) (*ConfigHandler, string, string) {
+	t.Helper()
+	h, adminID, regularID := setupConfigHandler(t)
+	jm := newTestJWT(t)
+	enc, err := jm.NewSecretEncrypter()
+	require.NoError(t, err, "NewSecretEncrypter")
+	h.Secrets = enc
+	return h, adminID, regularID
+}
+
+func TestHandleSetSMTPConfig_EncryptsPassword(t *testing.T) {
+	h, adminID, _ := setupConfigHandlerWithSecrets(t)
+
+	body := `{"host":"smtp.example.com","port":"465","username":"user@example.com","password":"s3cr3t","from":"noreply@example.com","tls":"tls"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+
+	h.HandleSMTPConfig(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// The stored value must not be the plaintext password.
+	stored, err := h.DB.GetSetting(t.Context(), smtp.SettingKeyPassword)
+	require.NoError(t, err)
+	require.NotEqual(t, "s3cr3t", stored, "password must not be stored as plaintext")
+	require.Contains(t, stored, "enc:v1:", "stored password must have encryption prefix")
+
+	// Resolving the config must return the decrypted password.
+	cfg := h.resolveSMTPConfig(t.Context())
+	require.Equal(t, "s3cr3t", cfg.Password)
+}
+
+func TestHandleSetSMTPConfig_PreservesExistingEncryptedPassword(t *testing.T) {
+	h, adminID, _ := setupConfigHandlerWithSecrets(t)
+
+	// Store an encrypted password directly via a first PUT.
+	body := `{"host":"smtp.example.com","port":"587","username":"user","password":"original-pw","from":"noreply@example.com","tls":"starttls"}`
+	r := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body))
+	r = withUserID(r, adminID)
+	w := httptest.NewRecorder()
+	h.HandleSMTPConfig(w, r)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Second PUT with same username but empty password — should preserve the original.
+	body2 := `{"host":"smtp.example.com","from":"noreply@example.com","username":"user","password":""}`
+	r2 := httptest.NewRequest(http.MethodPut, "/api/config/smtp", bytes.NewBufferString(body2))
+	r2 = withUserID(r2, adminID)
+	w2 := httptest.NewRecorder()
+	h.HandleSMTPConfig(w2, r2)
+	require.Equal(t, http.StatusOK, w2.Code)
+
+	// The resolved config should still return the original password.
+	cfg := h.resolveSMTPConfig(t.Context())
+	require.Equal(t, "original-pw", cfg.Password)
+}
+
