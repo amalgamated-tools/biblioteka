@@ -41,20 +41,15 @@ jobs:
       skip-tests: ${{ steps.check.outputs.skip-tests }}
     steps:
       - name: Check if docs-only PR
-        if: github.event_name == 'pull_request'
         id: check
         run: |
-          # Short-circuit evaluation: github.event.pull_request is only dereferenced on PR events
+          # Always run this step to ensure skip-tests output is always set
+          # Short-circuit: only check PR labels if this is a PR event
           if [[ "${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
             echo "skip-tests=true" >> $GITHUB_OUTPUT
           else
             echo "skip-tests=false" >> $GITHUB_OUTPUT
           fi
-      
-      - name: Default to false for non-PR events
-        if: github.event_name != 'pull_request'
-        run: |
-          echo "skip-tests=false" >> $GITHUB_OUTPUT
 
   frontend-checks:
     needs: [check-docs-only]
