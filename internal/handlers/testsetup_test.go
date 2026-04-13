@@ -20,6 +20,13 @@ func newTestDB(t *testing.T) *db.DB {
 	require.NoError(t, err, "newTestDB: open")
 	t.Cleanup(func() { _ = sqlDB.Close() })
 
+	_, err = sqlDB.Exec(`
+		PRAGMA journal_mode = WAL;
+		PRAGMA synchronous = NORMAL;
+		PRAGMA foreign_keys = ON;
+	`)
+	require.NoError(t, err, "newTestDB: pragmas")
+
 	err = db.RunMigrations(t.Context(), sqlDB, db.DialectSQLite)
 	require.NoError(t, err, "newTestDB: migrations")
 
