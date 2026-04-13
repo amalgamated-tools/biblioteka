@@ -189,4 +189,4 @@ The [Fly.io free tier](https://fly.io/docs/about/pricing/) includes three shared
 | App starts but shows 502 | Check `fly logs` — the container may still be starting; the health check grace period is 10 s |
 | `REDIS_URL` not set | Run `fly ext upstash redis list` to confirm the Redis instance was created; re-run step 3 if missing |
 | Volume not attached | Run `fly volumes list --app your-biblioteka` and verify the volume exists in the same region as your app |
-| JWT errors after redeploy | Clear browser cookies and log in again — JWT secrets changed between deploys invalidate existing tokens |
+| JWT errors after redeploy | Verify `JWT_SECRET` is set and unchanged with `fly secrets list` — existing tokens are invalid only if the secret was rotated or left unset; after fixing it, clear browser cookies and log in again |

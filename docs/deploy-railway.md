@@ -116,14 +116,13 @@ Railway's PostgreSQL service includes daily automated backups on the Hobby plan.
 
 ## Backup (SQLite)
 
-If you are using SQLite with a volume, you can back up the database file using the [Railway CLI](https://docs.railway.app/guides/cli):
+If you are using SQLite with a volume, you can back up the database file using the Railway **Shell** tab (available on paid plans) to run commands directly inside the container:
 
 ```bash
-railway run --service biblioteka -- \
-  cp /data/biblioteka.db /data/biblioteka-$(date +%Y%m%d).db.bak
+cp /data/biblioteka.db /data/biblioteka-$(date +%Y%m%d).db.bak
 ```
 
-Or use the Railway **Shell** tab (if available in your plan) to run commands directly inside the container.
+> **Note:** `railway run` executes commands on your **local** machine with Railway environment variables injected — it does not run inside the container. Use the Shell tab for direct container access.
 
 ## Cost
 
@@ -140,7 +139,7 @@ Railway bills based on resource consumption. A lightly used personal library typ
 
 | Problem | Solution |
 |---------|----------|
-| Container exits immediately | Check the **Logs** tab — a missing `JWT_SECRET` or unreachable Redis will cause a startup failure |
+| Container exits immediately | Check the **Logs** tab — unreachable Redis can cause a startup failure. If `JWT_SECRET` is missing, the server logs a warning and starts with a random secret instead; set a strong `JWT_SECRET` in production so sessions remain valid across restarts |
 | `REDIS_URL` shows as empty | Verify the reference variable uses the correct service name (e.g., `${{Redis.REDIS_URL}}`) |
 | Volume not mounted | Go to **Volumes** and confirm the mount path is exactly `/data` |
 | App unreachable | Confirm a public domain is configured under **Settings → Networking** and the port is `8080` |

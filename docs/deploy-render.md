@@ -46,7 +46,7 @@ services:
         value: json
       - key: REDIS_URL
         fromService:
-          type: redis
+          type: keyvalue
           name: biblioteka-redis
           property: connectionString
       - key: JWT_SECRET
@@ -54,9 +54,10 @@ services:
       - key: TRUSTED_PROXIES
         value: "10.0.0.0/8,172.16.0.0/12"
 
-  - type: redis
+  - type: keyvalue
     name: biblioteka-redis
     plan: free
+    ipAllowList: []
     maxmemoryPolicy: noeviction
 ```
 
@@ -131,12 +132,12 @@ Click **Create Web Service**. Render pulls the image, attaches the disk, and sta
 
 ## Updating
 
-Render automatically re-deploys when it detects a new version of the image (if **Auto-Deploy** is enabled). To trigger a manual redeploy:
+If your service is configured to use a floating tag such as `:latest`, Render can re-deploy it when it detects a newer image for that tag (if **Auto-Deploy** is enabled). You can also trigger a redeploy manually to pull the currently configured image again:
 
 1. Go to **Dashboard → biblioteka**.
-2. Click **Manual Deploy** → **Deploy latest commit**.
+2. Click **Manual Deploy** and choose the redeploy option for the service.
 
-Alternatively, to pin a specific image tag, edit the image URL in **Settings → Image URL** and save.
+If you want to pin a specific version instead of following `:latest`, edit the image URL in **Settings → Image URL** to use an explicit tag and save. After publishing a new image to GHCR, redeploy the service to pick up the updated image for the configured tag.
 
 ## Custom Domain
 
