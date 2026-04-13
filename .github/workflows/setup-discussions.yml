@@ -2,11 +2,6 @@ name: "Setup Announcements Discussion Category"
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - copilot/update-agentic-planner-2026-04-12
-    paths:
-      - .github/workflows/setup-discussions.yml
 
 permissions: {}
 
@@ -20,17 +15,23 @@ jobs:
       - name: Create Announcements category and convert issue to discussion
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # COPILOT_GITHUB_TOKEN is a GitHub App installation token with broader
+          # permissions (discussions:write, issues:write) required for GraphQL
+          # mutations. Falls back to GITHUB_TOKEN if COPILOT_GITHUB_TOKEN is not
+          # configured, but GITHUB_TOKEN must have the same write permissions.
+          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            // Step 1: Get the repository node ID
+            // Step 1: Get the repository node ID and all discussion categories
+            // (fetch up to 100 categories to avoid missing an existing Announcements
+            // category on repos with many categories)
             const repoQuery = `
               query GetRepo($owner: String!, $repo: String!) {
                 repository(owner: $owner, name: $repo) {
                   id
-                  discussionCategories(first: 20) {
+                  discussionCategories(first: 100) {
                     nodes {
                       id
                       name
@@ -84,11 +85,24 @@ jobs:
             }
 
             // Step 4: Fetch issue #1804 content
-            const issue = await github.rest.issues.get({
-              owner,
-              repo,
-              issue_number: 1804,
-            });
+            let issue;
+            try {
+              issue = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: 1804,
+              });
+            } catch (err) {
+              if (err.status === 404) {
+                console.log('Issue #1804 not found — it may have already been converted or deleted. Skipping discussion creation.');
+                return;
+              }
+              throw err;
+            }
+            if (issue.data.state === 'closed') {
+              console.log('Issue #1804 is already closed — skipping conversion.');
+              return;
+            }
             console.log(`Fetched issue #1804: ${issue.data.title}`);
 
             // Step 5: Create a discussion with the issue content
@@ -108,11 +122,12 @@ jobs:
                 }
               }
             `;
+            const issueBody = (issue.data.body || '');
             const discussionResult = await github.graphql(createDiscussionMutation, {
               repositoryId,
               categoryId: announcementsCategoryId,
               title: issue.data.title,
-              body: issue.data.body + '\n\n---\n\n> *Converted from issue #1804 by setup-discussions workflow.*',
+              body: issueBody + '\n\n---\n\n> *Converted from issue #1804 by setup-discussions workflow.*',
             });
             const discussion = discussionResult.createDiscussion.discussion;
             console.log(`Created discussion #${discussion.number}: ${discussion.url}`);
@@ -133,3 +148,4 @@ jobs:
             });
             console.log('Closed issue #1804');
             console.log(`Done! Discussion available at: ${discussion.url}`);
+
