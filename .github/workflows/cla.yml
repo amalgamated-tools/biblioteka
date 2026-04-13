@@ -40,4 +40,5 @@ jobs:
             github-copilot[bot],
             copilot[bot],
             Copilot,
-            copilot-swe-agent[bot]
+            copilot-swe-agent[bot],
+            veverkananobot
