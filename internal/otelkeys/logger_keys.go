@@ -110,6 +110,7 @@ const (
 	SearchTitle          string = "search_title"
 	SeriesCount          string = "series_count"
 	SeriesID             string = "series_id"
+	Setting              string = "setting"
 	Skipped              string = "skipped"
 	Source               string = "source"
 	Status               string = "status"
