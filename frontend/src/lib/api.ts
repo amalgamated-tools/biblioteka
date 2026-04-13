@@ -11,3 +11,5 @@ export * from "./api/tokens";
 export * from "./api/pagination";
 export * from "./api/metadata";
 export * from "./api/stats";
+export * from "./api/reading-progress";
+export * from "./api/reading-lists";

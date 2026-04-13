@@ -55,4 +55,15 @@ describe("DownloadsHistogram", () => {
     // One child group per data point
     expect(bars.children).toHaveLength(dataWithDownloads.length);
   });
+
+  it("applies a high-contrast focus-visible outline and does not suppress the focus ring on listitem elements", () => {
+    render(DownloadsHistogram, { data: dataWithDownloads });
+    const items = screen.getAllByRole("listitem");
+    for (const item of items) {
+      // Must have a high-contrast focus-visible outline for WCAG 2.4.11 / 2.4.7
+      expect(item.className).toContain("focus-visible:outline-accent-600");
+      // Must NOT suppress the outline ring
+      expect(item.className).not.toContain("focus-within:outline-none");
+    }
+  });
 });
