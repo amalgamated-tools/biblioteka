@@ -22,6 +22,34 @@ type BookFileHandler struct {
 	DB *db.DB
 	// SendMailFunc overrides the default smtp.Send implementation (used in tests).
 	SendMailFunc smtp.SendFunc
+	// Secrets decrypts sensitive settings (SMTP password) read from the database.
+	// If nil, values are read as-is (backward compatible with plaintext storage).
+	Secrets *auth.SecretEncrypter
+}
+
+// smtpGetSetting returns a getSetting function that wraps h.DB.GetSetting.
+// When h.Secrets is set, the stored SMTP password is decrypted transparently.
+func (h *BookFileHandler) smtpGetSetting() func(context.Context, string) (string, error) {
+	if h.Secrets == nil {
+		return h.DB.GetSetting
+	}
+	return func(ctx context.Context, key string) (string, error) {
+		val, err := h.DB.GetSetting(ctx, key)
+		if err != nil {
+			return "", err
+		}
+		if key == smtp.SettingKeyPassword {
+			decrypted, decErr := h.Secrets.Decrypt(val)
+			if decErr != nil {
+				slog.WarnContext(ctx, "failed to decrypt stored SMTP password; password will be empty",
+					slog.Any(otelkeys.Error, decErr),
+				)
+				return "", decErr
+			}
+			return decrypted, nil
+		}
+		return val, nil
+	}
 }
 
 // HandleBookFile handles GET/DELETE /api/book-files/{id} and sub-resources
