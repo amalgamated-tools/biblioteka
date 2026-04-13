@@ -35,12 +35,13 @@
   }
 
   const isEmpty = $derived(data.every((d) => d.count === 0));
+  const headingId = `histogram-title-${crypto.randomUUID()}`;
 </script>
 
 <div class="w-full">
   <h3
+    id={headingId}
     class="text-base font-semibold text-ink-700 dark:text-cream-200 mb-4"
-    aria-label={title}
   >
     {title}
   </h3>
@@ -55,7 +56,7 @@
   {:else}
     <div
       role="list"
-      aria-label={title}
+      aria-labelledby={headingId}
       class="flex items-end gap-1 h-32 w-full"
       data-testid="histogram-bars"
     >
