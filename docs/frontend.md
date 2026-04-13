@@ -2383,7 +2383,7 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 12. **`shows the downloads histogram when data is available`** — `getDownloadsPerMonth` resolves with two data points; asserts the `data-testid="downloads-histogram-card"` element appears in the DOM.
 13. **`shows a downloads error banner when the stats fetch fails`** — `getDownloadsPerMonth` rejects with `Error("network error")`; asserts the error message `"network error"` is rendered in an `AlertBanner`.
 
-> **Mocking note:** `libraryStore`, `routerStore`, `getTotalBooksCount`, and `getDownloadsPerMonth` (all from `../lib/api`) and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries`, and resets both `getTotalBooksCount` (to resolve `0`) and `getDownloadsPerMonth` (to resolve `[]`). `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
+> **Mocking note:** `libraryStore` (from `../stores/libraries.svelte`), `routerStore` (from `../stores/router.svelte`), `getTotalBooksCount`, and `getDownloadsPerMonth` (both from `../lib/api`) and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries`, and resets both `getTotalBooksCount` (to resolve `0`) and `getDownloadsPerMonth` (to resolve `[]`). `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
 
 #### `LibraryForm.test.ts`
 

@@ -2331,7 +2331,7 @@ Returns monthly book-file download counts for the authenticated user over a roll
 |-----------|------|---------|-----|-------------|
 | `months` | integer | `12` | `24` | Number of calendar months to include, counting backwards from the current month (inclusive) |
 
-Out-of-range or non-integer values for `months` are silently clamped to `12`.
+Non-integer or sub-1 values for `months` default to `12`; values greater than `24` are clamped to `24`.
 
 **Response:** `200 OK`
 
