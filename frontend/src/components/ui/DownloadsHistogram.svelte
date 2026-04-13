@@ -79,7 +79,7 @@
           </span>
           <div
             class="w-full rounded-t-sm bg-accent-400 dark:bg-accent-500 hover:bg-accent-500 dark:hover:bg-accent-400 group-focus-within:bg-accent-500 dark:group-focus-within:bg-accent-400 transition-colors"
-            style="height: {h}%"
+            style:height="{h}%"
             role="presentation"
           ></div>
         </div>
