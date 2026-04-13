@@ -1,7 +1,7 @@
 # Test Improver Memory — biblioteka
 
 ## Last Updated
-2026-04-12
+2026-04-13
 
 ## Build/Test/Coverage Commands
 
@@ -59,24 +59,29 @@ Key untested internal helpers (tested only via high-level integration):
 - 2026-04-11: Tasks 1, 2, 3, 7 (discovery + sanitizeDirName PR + monthly issue)
 - 2026-04-12 run 2: Tasks 4, 3, 7 (no open PRs to maintain; OIDC login regression PR; monthly issue update)
 - 2026-04-12 run 3: Tasks 2, 3, 7 (auth_origin CSRF helpers PR; new monthly issue)
-- Next run: Task 4 (maintain PRs), Task 5 (comment on testing issues), Task 7
+- 2026-04-13: Tasks 3, 7 (OIDC password change guard test PR; new monthly issue #1793 had been closed)
+- Next run: Task 4 (maintain PRs), Task 5 (comment on testing issues), Task 6 (test infrastructure), Task 7
 
 ## Testing Backlog (prioritized)
 
-1. **[IN PROGRESS] auth_origin CSRF helpers** — PR on branch test-assist/auth-origin-csrf-tests
-   - Tests sameOrigin, matchRequestOrigin, parseHostPort, normalizeHost, defaultPort
-   - 263 lines: 14 table-driven sameOrigin cases + 3 logout integration tests
+1. **[IN PROGRESS] OIDC-only password change guard** — PR submitted on branch `test-assist/oidc-password-change-guard`
+   - Adds TestChangePassword_OIDCOnlyAccount: verifies CreateOIDCUser (empty PasswordHash) gets 400 "cannot change password for OIDC-only account"
 2. **organize path-escape defense-in-depth test** — the `filepath.Rel` escape guard in organize.go has no test. Likely unreachable in practice. Low value.
 3. **smtp/send.go** — no tests for newClientWithContext or Send. These require real TCP connections, making unit tests difficult. Could use a test server.
 4. **pathparser internal helpers** — isLikelyPersonName, stripTrailingAuthor have no direct tests. Covered via ParseBookPath table tests. Medium value if direct tests would catch regressions in heuristics.
 
 ## Maintainer Priorities
 - Previous monthly issue #1690 was closed by veverkap on 2026-04-12 as "completed"
-- This signals positive reception; maintainer is actively merging Test Improver PRs
+- Monthly issue #1793 was closed by veverkap on 2026-04-13 as "completed"
+- Signals positive reception; maintainer is actively merging Test Improver PRs (merged: #1689, #1771, #1792)
 
 ## Completed Work
 
-### 2026-04-12 Run 3
+### 2026-04-13
+- New monthly activity issue created (prior #1793 closed by maintainer)
+- Submitted PR on branch `test-assist/oidc-password-change-guard`: TestChangePassword_OIDCOnlyAccount — verifies OIDC-only accounts cannot change their password (security boundary)
+
+### 2026-04-12 Run 3 (PR #1792 — merged ✅)
 - Created new monthly activity issue for April 2026
 - Created PR on branch `test-assist/auth-origin-csrf-tests`: unit tests for CSRF origin-checking helpers (sameOrigin, matchRequestOrigin, parseHostPort, normalizeHost, defaultPort)
 
