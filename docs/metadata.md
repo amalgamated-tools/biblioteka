@@ -139,6 +139,38 @@ When `<library-id>` is supplied the directory is also used as the `library_root`
 
 ---
 
+### `calibre-import` — import a Calibre library
+
+Reads a Calibre library's `metadata.db` and imports books, authors, series, and file records directly into the Biblioteka database. No Redis or worker is required — all writes happen inline.
+
+```bash
+./biblioteka-cli calibre-import /path/to/calibre/library
+./biblioteka-cli calibre-import /path/to/calibre/library <library-id>
+```
+
+| Argument | Required | Description |
+|---|---|---|
+| `<calibre-library-path>` | Yes | Root directory of the Calibre library (must contain `metadata.db`) |
+| `<library-id>` | No | UUID of an existing Biblioteka library to associate every imported book with |
+
+The import is **idempotent**: books already indexed by file path are skipped, not duplicated. Per-book errors are counted without aborting the rest of the import.
+
+**Example output:**
+
+```
+Calibre import complete:
+  Total books:    312
+  Imported:       308
+  Skipped:        3
+  Errors:         1
+```
+
+> **Note:** Calibre tags are not imported. Re-tag books manually in Biblioteka after import.
+
+See the full [Migrate from Calibre](calibre.md) guide for identifier mapping, deduplication behavior, and a step-by-step workflow.
+
+---
+
 ## Sidecar files
 
 After every book import the `process:file` job writes companion files into the same directory as the book file:

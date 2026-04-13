@@ -60,6 +60,7 @@ nav:
       - Kobo Sync: kobo.md
       - KOReader Sync: koreader.md
       - Metadata: metadata.md
+      - Migrate from Calibre: calibre.md
   - Developer Reference:
       - API Overview: api.md
       - API Reference: api-reference.md
