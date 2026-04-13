@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
-	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/jobs"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )

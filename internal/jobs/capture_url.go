@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -37,33 +36,6 @@ func (e *permanentError) Error() string {
 
 func (e *permanentError) Unwrap() error {
 	return e.err
-}
-
-// isPermanentError returns true if err is a permanent, non-retriable error.
-func isPermanentError(err error) bool {
-	var pErr *permanentError
-	return errors.As(err, &pErr)
-}
-
-// isTransientError returns true if err appears to be transient/retriable.
-func isTransientError(err error) bool {
-	if err == nil {
-		return false
-	}
-	// Don't retry permanent errors
-	if isPermanentError(err) {
-		return false
-	}
-	// Network/timeout errors are transient
-	var netErr net.Error
-	if errors.As(err, &netErr) {
-		return netErr.Timeout() || netErr.Temporary()
-	}
-	// HTTP client timeout is transient
-	if errors.Is(err, context.DeadlineExceeded) {
-		return true
-	}
-	return false
 }
 
 // captureURLStagingDir is the subdirectory within the library root used for
@@ -174,10 +146,10 @@ func newCaptureURLHandler(database *db.DB, enqueuer Enqueuer, f fetcher) func(ct
 //  4. Enqueue a process:file job so the standard pipeline picks it up.
 func captureURL(ctx context.Context, database *db.DB, enqueuer Enqueuer, f fetcher, p CaptureURLPayload) error {
 	if p.URL == "" {
-		return fmt.Errorf("capture:url payload url is required")
+		return errors.New("capture:url payload url is required")
 	}
 	if p.LibraryRoot == "" {
-		return fmt.Errorf("capture:url payload library_root is required")
+		return errors.New("capture:url payload library_root is required")
 	}
 
 	// Fetch and extract article content.
