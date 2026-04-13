@@ -73,7 +73,7 @@ func (d *DB) GetReadingStreak(ctx context.Context, userID string) (int, error) {
 	// Extract timestamps from items and compute the streak.
 	timestamps := make([]time.Time, len(items))
 	for i, item := range items {
-		timestamps[i] = item.UpdatedAt
+		timestamps[i] = item.UpdatedAt.Time
 	}
 	return ComputeReadingStreak(timestamps), nil
 }
