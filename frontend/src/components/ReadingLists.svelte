@@ -142,7 +142,7 @@
       </div>
     {/if}
 
-    {#if readingListStore.lists.length === 0 && readingListStore.loaded}
+    {#if readingListStore.lists.length === 0 && readingListStore.loaded && !readingListStore.loadError}
       <div
         class="flex flex-col items-center justify-center py-20 text-center"
         aria-live="polite"

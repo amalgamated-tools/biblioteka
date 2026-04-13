@@ -6,6 +6,7 @@ vi.mock("../stores/reading-lists.svelte", () => ({
   readingListStore: {
     loaded: false,
     loading: false,
+    loadError: null as string | null,
     lists: [],
     load: vi.fn(),
     create: vi.fn(),
@@ -55,6 +56,7 @@ const fakeList: ReadingList = {
 describe("ReadingLists", () => {
   beforeEach(() => {
     vi.mocked(readingListStore).loaded = false;
+    vi.mocked(readingListStore).loadError = null;
     vi.mocked(readingListStore).lists = [];
     vi.mocked(routerStore).subPath = "";
   });
@@ -73,6 +75,7 @@ describe("ReadingLists", () => {
 
   it("shows empty state when no lists and loaded", async () => {
     vi.mocked(readingListStore).loaded = true;
+    vi.mocked(readingListStore).loadError = null;
     vi.mocked(readingListStore).lists = [];
     render(ReadingLists);
     await tick();
@@ -81,6 +84,18 @@ describe("ReadingLists", () => {
     expect(
       screen.getByRole("button", { name: /Create Your First List/i }),
     ).toBeInTheDocument();
+  });
+
+  it("does not show empty state when load failed", async () => {
+    vi.mocked(readingListStore).loaded = true;
+    vi.mocked(readingListStore).loadError = "network error";
+    vi.mocked(readingListStore).lists = [];
+    render(ReadingLists);
+    await tick();
+
+    expect(
+      screen.queryByText(/No reading lists yet/i),
+    ).not.toBeInTheDocument();
   });
 
   it("shows list cards when lists exist", async () => {

@@ -5,15 +5,19 @@ class ReadingListStore {
   lists: ReadingList[] = $state.raw([]);
   loading = $state(false);
   loaded = $state(false);
+  loadError: string | null = $state(null);
 
   async load(): Promise<void> {
     if (this.loading || this.loaded) return;
     this.loading = true;
+    this.loadError = null;
     try {
       this.lists = await api.listReadingLists();
       this.loaded = true;
-    } catch {
-      // Silently fail — page components handle errors
+    } catch (err) {
+      this.loadError =
+        err instanceof Error ? err.message : "failed to load reading lists";
+      this.loaded = true;
     } finally {
       this.loading = false;
     }
@@ -23,6 +27,7 @@ class ReadingListStore {
   async reload(): Promise<void> {
     this.loaded = false;
     this.loading = false;
+    this.loadError = null;
     return this.load();
   }
 
