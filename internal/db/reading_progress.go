@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
@@ -11,9 +12,8 @@ import (
 
 // ReadingStats holds aggregate reading progress information for a user.
 type ReadingStats struct {
-	TotalTracked    int `json:"total_tracked"`
-	TotalFinished   int `json:"total_finished"`
-	InProgressCount int `json:"in_progress_count"`
+	TotalTracked  int `json:"total_tracked"`
+	TotalFinished int `json:"total_finished"`
 }
 
 // ListReadingProgress returns all reading progress entries for a user, ordered
@@ -37,8 +37,7 @@ func (d *DB) ListReadingProgress(ctx context.Context, userID string) ([]ReadingP
 }
 
 // GetReadingStats returns aggregate reading statistics for a user: total
-// documents tracked, how many are finished (percentage >= 0.99), and how many
-// are in-progress (0 < percentage < 0.99).
+// documents tracked and how many are finished (percentage >= 0.99).
 func (d *DB) GetReadingStats(ctx context.Context, userID string) (ReadingStats, error) {
 	slog.DebugContext(ctx, "db: fetching reading stats",
 		slog.String(otelkeys.UserID, userID),
@@ -47,65 +46,49 @@ func (d *DB) GetReadingStats(ctx context.Context, userID string) (ReadingStats, 
 	err := d.QueryRowContext(ctx,
 		`SELECT
 			COUNT(*),
-			COUNT(CASE WHEN percentage >= 0.99 THEN 1 END),
-			COUNT(CASE WHEN percentage > 0 AND percentage < 0.99 THEN 1 END)
+			COUNT(CASE WHEN percentage >= 0.99 THEN 1 END)
 		FROM reading_progress
 		WHERE user_id = $1`,
 		userID,
-	).Scan(&stats.TotalTracked, &stats.TotalFinished, &stats.InProgressCount)
+	).Scan(&stats.TotalTracked, &stats.TotalFinished)
 	if err != nil {
 		return ReadingStats{}, fmt.Errorf("query reading stats: %w", err)
 	}
 	return stats, nil
 }
 
-// GetReadingStreak returns the current consecutive-day reading streak for a
-// user. A streak is the number of calendar days (in UTC) ending today or
-// yesterday on which at least one reading progress update was recorded. Returns
-// 0 when there is no activity or the most-recent activity was before yesterday.
-func (d *DB) GetReadingStreak(ctx context.Context, userID string) (int, error) {
-	slog.DebugContext(ctx, "db: computing reading streak",
-		slog.String(otelkeys.UserID, userID),
-	)
-
-	rows, err := d.QueryContext(ctx,
-		`SELECT updated_at FROM reading_progress WHERE user_id = $1 ORDER BY updated_at DESC`,
-		userID,
-	)
-	if err != nil {
-		return 0, fmt.Errorf("query reading progress for streak: %w", err)
+// ComputeReadingStreak calculates the current consecutive-day reading streak
+// from a slice of timestamps. The timestamps need not be sorted or unique.
+// A streak is the number of calendar days (in UTC) ending today or yesterday
+// on which at least one timestamp exists. Returns 0 when there is no activity
+// or the most-recent activity was before yesterday.
+func ComputeReadingStreak(timestamps []time.Time) int {
+	if len(timestamps) == 0 {
+		return 0
 	}
-	defer rows.Close()
 
-	// Collect distinct calendar dates (UTC) from most-recent to oldest.
+	// Collect distinct calendar dates (UTC).
 	seen := map[string]struct{}{}
 	var dates []time.Time
-	for rows.Next() {
-		var ts Timestamp
-		if err := rows.Scan(&ts); err != nil {
-			return 0, fmt.Errorf("scan reading progress timestamp: %w", err)
-		}
+	for _, ts := range timestamps {
 		dayKey := ts.UTC().Format("2006-01-02")
 		if _, ok := seen[dayKey]; !ok {
 			seen[dayKey] = struct{}{}
-			// Truncate to midnight UTC for clean arithmetic.
 			dates = append(dates, ts.UTC().Truncate(24*time.Hour))
 		}
 	}
-	if err := rows.Err(); err != nil {
-		return 0, fmt.Errorf("iterate reading progress timestamps: %w", err)
-	}
 
-	if len(dates) == 0 {
-		return 0, nil
-	}
+	// Sort descending (most recent first).
+	slices.SortFunc(dates, func(a, b time.Time) int {
+		return b.Compare(a)
+	})
 
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 	yesterday := today.Add(-24 * time.Hour)
 
 	// The streak must end today or yesterday; otherwise it is broken.
 	if dates[0].Before(yesterday) {
-		return 0, nil
+		return 0
 	}
 
 	// Count backwards from the most-recent date, requiring each successive date
@@ -118,5 +101,5 @@ func (d *DB) GetReadingStreak(ctx context.Context, userID string) (int, error) {
 		}
 		streak++
 	}
-	return streak, nil
+	return streak
 }

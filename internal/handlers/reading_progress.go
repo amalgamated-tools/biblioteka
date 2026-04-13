@@ -67,16 +67,6 @@ func (h *ReadingProgressHandler) HandleReadingProgressStats(w http.ResponseWrite
 		return
 	}
 
-	streak, err := h.DB.GetReadingStreak(ctx, userID)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get reading streak",
-			slog.Any(otelkeys.Error, err),
-			slog.String(otelkeys.UserID, userID),
-		)
-		writeError(ctx, w, http.StatusInternalServerError, "failed to get reading streak")
-		return
-	}
-
 	progressList, err := h.DB.ListReadingProgress(ctx, userID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to list reading progress",
@@ -86,6 +76,14 @@ func (h *ReadingProgressHandler) HandleReadingProgressStats(w http.ResponseWrite
 		writeError(ctx, w, http.StatusInternalServerError, "failed to list reading progress")
 		return
 	}
+
+	// Compute streak from the already-fetched progress list to avoid an
+	// additional DB round-trip.
+	timestamps := make([]time.Time, len(progressList))
+	for i := range progressList {
+		timestamps[i] = progressList[i].UpdatedAt.Time
+	}
+	streak := db.ComputeReadingStreak(timestamps)
 
 	inProgress := make([]readingProgressItemDTO, 0)
 	for i := range progressList {
@@ -114,16 +112,27 @@ func toReadingProgressItemDTO(p *db.ReadingProgress) readingProgressItemDTO {
 	}
 }
 
+// maxEstimateElapsed is the maximum wall-clock elapsed time between first and
+// last sync that we consider reliable for estimating remaining reading time.
+// Beyond this threshold the estimate becomes misleading (e.g., a book synced
+// once a month ago would imply months of remaining time).
+const maxEstimateElapsed = 30 * 24 * time.Hour // 30 days
+
 // estimateMinutesRemaining returns a rough estimate of the time remaining to
-// finish reading a document, based on elapsed reading time and current
-// progress percentage. Returns nil when the data is insufficient (percentage ≤
-// 1% or less than 5 minutes of tracked elapsed time).
+// finish reading a document. The estimate is based on the wall-clock time
+// between the first sync (CreatedAt) and the most recent sync (UpdatedAt),
+// extrapolated linearly from the current progress percentage. Returns nil when
+// the data is insufficient (percentage <= 1%, less than 5 minutes of elapsed
+// time, or elapsed time exceeds 30 days making the estimate unreliable).
 func estimateMinutesRemaining(p *db.ReadingProgress) *int64 {
 	if p.Percentage <= 0.01 {
 		return nil
 	}
 	elapsed := p.UpdatedAt.Sub(p.CreatedAt.Time)
 	if elapsed < 5*time.Minute {
+		return nil
+	}
+	if elapsed > maxEstimateElapsed {
 		return nil
 	}
 	elapsedMinutes := elapsed.Minutes()
