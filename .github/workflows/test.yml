@@ -86,8 +86,6 @@ jobs:
   frontend-checks:
     needs: [check-docs-only]
     if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    name: Frontend Checks
     timeout-minutes: 20
     outputs:
       coverage-pct: ${{ steps.coverage.outputs.pct }}
@@ -187,8 +185,6 @@ jobs:
   go-lint:
     needs: [check-docs-only]
     if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    name: Go Lint
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -216,8 +212,6 @@ jobs:
   go-test:
     needs: [check-docs-only]
     if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    name: Go Tests
     timeout-minutes: 15
     outputs:
       coverage-pct: ${{ steps.coverage.outputs.pct }}
