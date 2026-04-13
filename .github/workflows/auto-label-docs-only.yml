@@ -8,7 +8,7 @@ jobs:
   check-docs-only:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
+      issues: write
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
@@ -18,13 +18,6 @@ jobs:
       - name: Evaluate if PR is docs-only
         id: evaluate
         run: |
-          # Get PR title and check if it starts with docs: or doc:
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          TITLE_IS_DOCS=false
-          if [[ "$PR_TITLE" =~ ^(docs|doc)\: ]]; then
-            TITLE_IS_DOCS=true
-          fi
-          
           # Get list of changed files in this PR
           git diff --name-only ${{ github.event.pull_request.base.sha }}..HEAD > /tmp/changed_files.txt
           
@@ -43,11 +36,11 @@ jobs:
           done < /tmp/changed_files.txt
           
           # Print summary
-          echo "Title is docs: $TITLE_IS_DOCS"
-          echo "Files are docs: $FILES_IS_DOCS"
+          echo "Files are docs-only: $FILES_IS_DOCS"
           
-          # PR is docs-only if title says so OR all files are docs
-          if [[ "$TITLE_IS_DOCS" == "true" ]] || [[ "$FILES_IS_DOCS" == "true" ]]; then
+          # PR is docs-only ONLY if all changed files are documentation
+          # Title prefix (docs:) is NOT sufficient alone to skip CI
+          if [[ "$FILES_IS_DOCS" == "true" ]]; then
             echo "is-docs-only=true" >> $GITHUB_OUTPUT
           else
             echo "is-docs-only=false" >> $GITHUB_OUTPUT
