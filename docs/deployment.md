@@ -2,6 +2,14 @@
 
 This guide covers deploying Biblioteka in production. For local development, see the [Quick Start](../README.md#quick-start) section in the README.
 
+## Cloud Platform Guides
+
+Want a one-click cloud install without managing servers? See the platform-specific guides:
+
+- [Deploy to Fly.io](deploy-flyio.md) — persistent volumes, Upstash Redis, automatic TLS
+- [Deploy to Render](deploy-render.md) — managed disks, built-in Redis, Blueprint IaC
+- [Deploy to Railway](deploy-railway.md) — UI-driven setup, managed PostgreSQL option
+
 ## Prerequisites
 
 | Component | Minimum version | Notes |

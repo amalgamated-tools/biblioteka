@@ -70,6 +70,9 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	// Protected audit log routes (admin only)
 	s.mux.Handle("/api/audit-logs", s.requireAuth(http.HandlerFunc(s.auditLogHandler.HandleAuditLogs)))
 
+	// Protected stats routes
+	s.mux.Handle("/api/stats/downloads-per-month", s.requireAuth(http.HandlerFunc(s.statsHandler.HandleDownloadsPerMonth)))
+
 	// OPDS credential management (JWT-only: credential management)
 	s.mux.Handle("/api/opds/credentials", s.requireJWTAuth(http.HandlerFunc(s.opdsCredentialHandler.HandleOPDSCredentials)))
 

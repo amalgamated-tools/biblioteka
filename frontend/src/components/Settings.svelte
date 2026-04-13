@@ -73,10 +73,9 @@
         const status = await getConfigStatus();
         oidcConfigured = status.oidc_configured;
         smtpConfigured = status.smtp_configured;
-        const admin = status.is_admin;
-        isAdmin = admin;
+        isAdmin = status.is_admin;
 
-        if (admin) {
+        if (status.is_admin) {
           const oidcConfig = status.oidc_configured
             ? await getOidcConfig()
             : null;

@@ -82,14 +82,14 @@ func writeOPDSFeed(r *http.Request, w http.ResponseWriter, contentType string, f
 	var buf bytes.Buffer
 	if _, err := buf.WriteString(xml.Header); err != nil {
 		slog.ErrorContext(ctx, "failed to write OPDS XML header", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, contentType, "urn:biblioteka:opds:error", "failed to generate feed")
+		writeOPDSError(r, w, http.StatusInternalServerError, contentType, opds.ErrorID, "failed to generate feed")
 		return
 	}
 	enc := xml.NewEncoder(&buf)
 	enc.Indent("", "  ")
 	if err := enc.Encode(feed); err != nil {
 		slog.ErrorContext(ctx, "OPDS: failed to encode feed", slog.Any(otelkeys.Error, err))
-		writeOPDSError(r, w, http.StatusInternalServerError, contentType, "urn:biblioteka:opds:error", "failed to encode feed")
+		writeOPDSError(r, w, http.StatusInternalServerError, contentType, opds.ErrorID, "failed to encode feed")
 		return
 	}
 	w.Header().Set("Content-Type", contentType)
