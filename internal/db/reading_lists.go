@@ -150,7 +150,17 @@ func (d *DB) AddBookToReadingList(ctx context.Context, listID, userID, bookID st
 	)
 	if err != nil {
 		if isForeignKeyViolation(err) {
-			return false, fmt.Errorf("add book to reading list: %w", ErrBookNotFound)
+			// Disambiguate: the violation could come from the book FK or from the
+			// list FK (e.g. if the list was deleted between the ownership check and
+			// the insert). Check whether the book actually exists to decide.
+			var bookExists bool
+			if scanErr := d.QueryRowContext(ctx,
+				`SELECT EXISTS(SELECT 1 FROM books WHERE id = $1)`, bookID,
+			).Scan(&bookExists); scanErr != nil || !bookExists {
+				return false, fmt.Errorf("add book to reading list: %w", ErrBookNotFound)
+			}
+			// Book exists; the list must have been concurrently deleted.
+			return false, sql.ErrNoRows
 		}
 		return false, err
 	}
