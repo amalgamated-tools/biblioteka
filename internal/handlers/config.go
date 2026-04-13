@@ -119,7 +119,14 @@ func (h *ConfigHandler) resolveSMTPConfig(ctx context.Context) smtp.Config {
 			return "", err
 		}
 		if key == smtp.SettingKeyPassword {
-			return h.Secrets.Decrypt(val)
+			decrypted, decErr := h.Secrets.Decrypt(val)
+			if decErr != nil {
+				slog.WarnContext(ctx, "failed to decrypt stored SMTP password; password will be empty",
+					slog.Any(otelkeys.Error, decErr),
+				)
+				return "", decErr
+			}
+			return decrypted, nil
 		}
 		return val, nil
 	}

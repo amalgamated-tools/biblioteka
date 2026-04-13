@@ -130,7 +130,7 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		s.JWT = jwtManager
 
 		if jwtSecret == "" {
-			slog.InfoContext(ctx, "WARNING: JWT_SECRET not set, using random secret. Existing JWT tokens will become invalid after a server restart; all users will need to log in again.")
+			slog.WarnContext(ctx, "JWT_SECRET not set, using random secret; all existing JWT tokens and any at-rest encrypted settings (SMTP password, OIDC client secret) will become invalid after a server restart")
 		} else if len(jwtSecret) < auth.MinSecretLength {
 			slog.WarnContext(ctx, "JWT_SECRET is shorter than the recommended minimum of 32 characters; a short secret weakens HMAC-SHA256 signing",
 				slog.Int(otelkeys.JWTSecretLength, len(jwtSecret)),
@@ -268,7 +268,8 @@ func NewServer(ctx context.Context, opts ...ServerOption) (*Server, error) {
 		if decrypted, decErr := secretEncrypter.Decrypt(dbClientSecret); decErr == nil {
 			dbClientSecret = decrypted
 		} else {
-			slog.WarnContext(ctx, "failed to decrypt OIDC client secret from saved settings; OIDC may not initialize correctly", slog.Any(otelkeys.Error, decErr))
+			dbClientSecret = ""
+			slog.WarnContext(ctx, "failed to decrypt OIDC client secret from saved settings; skipping OIDC initialization from saved settings", slog.Any(otelkeys.Error, decErr))
 		}
 		if dbClientID != "" && dbClientSecret != "" && dbRedirectURI != "" {
 			oidcHandler, err := handlers.NewOIDCHandler(ctx, s.DB, s.JWT, dbIssuer, dbClientID, dbClientSecret, dbRedirectURI, secureCookies)

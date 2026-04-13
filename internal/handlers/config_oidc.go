@@ -192,7 +192,16 @@ func (h *ConfigHandler) HandleGetOIDCConfig(w http.ResponseWriter, r *http.Reque
 	secretIsSet := secretErr == nil && secret != ""
 	if secretIsSet && h.Secrets != nil {
 		decrypted, err := h.Secrets.Decrypt(secret)
-		secretIsSet = err == nil && decrypted != ""
+		if err != nil {
+			slog.WarnContext(r.Context(), "failed to decrypt stored OIDC client secret",
+				slog.String(otelkeys.UserID, userID),
+				slog.String(otelkeys.Setting, settingOIDCClientSecret),
+				slog.Any(otelkeys.Error, err),
+			)
+			secretIsSet = false
+		} else {
+			secretIsSet = decrypted != ""
+		}
 	}
 
 	writeJSON(r.Context(), w, http.StatusOK, oidcConfigResponse{
