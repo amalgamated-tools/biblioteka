@@ -99,7 +99,7 @@ func (h *BookFileHandler) handleEmailBookFile(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	cfg := smtp.ResolveConfig(r.Context(), h.DB.GetSetting)
+	cfg := smtp.ResolveConfig(r.Context(), h.smtpGetSetting())
 	if cfg.Host == "" {
 		writeError(r.Context(), w, http.StatusBadRequest, "SMTP is not configured")
 		return
