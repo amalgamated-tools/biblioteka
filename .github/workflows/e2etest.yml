@@ -125,10 +125,30 @@ jobs:
           # 3 days is sufficient for post-failure review; saves artifact storage.
           retention-days: 3
 
-      - name: Upload Playwright test results on failure
-        if: failure()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: playwright-test-results-${{ github.run_id }}
-          path: e2e/test-results/
-          retention-days: 7
+       - name: Upload Playwright test results on failure
+         if: failure()
+         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+         with:
+           name: playwright-test-results-${{ github.run_id }}
+           path: e2e/test-results/
+           retention-days: 7
+
+  e2e-all:
+    needs: [check-docs-only, e2e]
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Check E2E tests (passed or skipped for docs-only)
+        run: |
+          # For docs-only PRs, tests are skipped and that's expected
+          if [[ "${{ needs.check-docs-only.outputs.skip-tests }}" == "true" ]]; then
+            echo "✅ E2E tests skipped (docs-only PR)"
+            exit 0
+          fi
+          # For other PRs, ensure the e2e job succeeded
+          if [[ "${{ needs.e2e.result }}" != "success" ]]; then
+            echo "❌ E2E job failed"
+            exit 1
+          fi
+          echo "✅ E2E tests passed"
