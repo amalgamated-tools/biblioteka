@@ -59,6 +59,10 @@ func (s *Server) setupRoutes(ctx context.Context) {
 	s.mux.Handle("/api/series", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeriesList)))
 	s.mux.Handle("/api/series/", s.requireAuth(http.HandlerFunc(s.seriesHandler.HandleSeries)))
 
+	// Protected reading list routes
+	s.mux.Handle("/api/reading-lists", s.requireAuth(http.HandlerFunc(s.readingListHandler.HandleReadingLists)))
+	s.mux.Handle("/api/reading-lists/", s.requireAuth(http.HandlerFunc(s.readingListHandler.HandleReadingListRoutes)))
+
 	// Protected book routes
 	s.mux.Handle("/api/books/upload", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleUpload)))
 	s.mux.Handle("/api/books", s.requireAuth(http.HandlerFunc(s.bookHandler.HandleBooks)))
@@ -82,6 +86,9 @@ func (s *Server) setupRoutes(ctx context.Context) {
 
 	// KOSync credential management (JWT-only: credential management)
 	s.mux.Handle("/api/kosync/credentials", s.requireJWTAuth(http.HandlerFunc(s.kosyncHandler.HandleKOSyncCredentials)))
+
+	// Reading progress stats (authenticated)
+	s.mux.Handle("/api/reading-progress/stats", s.requireAuth(http.HandlerFunc(s.readingProgressHandler.HandleReadingProgressStats)))
 
 	// KOReader kosync-compatible progress sync endpoints.
 	// POST /api/user/create — KOReader always tries to register; we return 409 so
