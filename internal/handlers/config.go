@@ -39,6 +39,10 @@ type ConfigHandler struct {
 	OIDCHTTPClient *http.Client
 	// SendMailFunc overrides the default smtp.Send implementation (used in tests).
 	SendMailFunc smtp.SendFunc
+	// Secrets encrypts and decrypts sensitive settings (SMTP password, OIDC
+	// client secret) stored in the database. If nil, values are stored as
+	// plaintext (legacy behaviour preserved for backward compatibility).
+	Secrets *auth.SecretEncrypter
 }
 
 type configStatusResponse struct {
@@ -103,7 +107,28 @@ func (h *ConfigHandler) HandleConfigStatus(w http.ResponseWriter, r *http.Reques
 }
 
 // resolveSMTPConfig reads the current SMTP configuration, preferring
-// environment variables over database settings.
+// environment variables over database settings. If h.Secrets is set, the
+// stored SMTP password is decrypted before use.
 func (h *ConfigHandler) resolveSMTPConfig(ctx context.Context) smtp.Config {
-	return smtp.ResolveConfig(ctx, h.DB.GetSetting)
+	if h.Secrets == nil {
+		return smtp.ResolveConfig(ctx, h.DB.GetSetting)
+	}
+	getSetting := func(ctx context.Context, key string) (string, error) {
+		val, err := h.DB.GetSetting(ctx, key)
+		if err != nil {
+			return "", err
+		}
+		if key == smtp.SettingKeyPassword {
+			decrypted, decErr := h.Secrets.Decrypt(val)
+			if decErr != nil {
+				slog.WarnContext(ctx, "failed to decrypt stored SMTP password; password will be empty",
+					slog.Any(otelkeys.Error, decErr),
+				)
+				return "", decErr
+			}
+			return decrypted, nil
+		}
+		return val, nil
+	}
+	return smtp.ResolveConfig(ctx, getSetting)
 }
