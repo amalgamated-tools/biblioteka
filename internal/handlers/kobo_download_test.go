@@ -285,3 +285,75 @@ func TestKoboDownloadURLs_FiltersUnsupportedFormats(t *testing.T) {
 	require.True(t, formats["EPUB3"])
 	require.True(t, formats["PDF"])
 }
+
+// TestHandleDownload_RecordsDownloadEvent verifies that a successful Kobo
+// download records a timestamped event in book_downloads when the request
+// carries an authenticated user ID.
+func TestHandleDownload_RecordsDownloadEvent(t *testing.T) {
+	h, userID := setupKoboHandler(t)
+
+	dir := t.TempDir()
+	registerTestLibrary(t, h.DB, dir)
+	content := []byte("epub content for download recording test")
+	bookFile := filepath.Join(dir, "recording-test.epub")
+	require.NoError(t, os.WriteFile(bookFile, content, 0o644), "write file")
+
+	book, bf, err := h.DB.CreateBookWithFile(
+		t.Context(),
+		db.BookInput{Title: "Download Recording Test"},
+		"epub", "recording-test.epub", int64(len(content)), nil, bookFile,
+	)
+	require.NoError(t, err, "create book with file")
+
+	r := httptest.NewRequest(http.MethodGet, "/download/"+book.ID+"/epub", nil)
+	r = withUserID(r, userID)
+	w := httptest.NewRecorder()
+
+	h.HandleDownload(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Verify the download_count was incremented.
+	got, err := h.DB.GetBookFile(t.Context(), bf.ID)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), got.DownloadCount, "download_count should be incremented")
+
+	// Verify a timestamped download event was recorded.
+	counts, err := h.DB.GetMonthlyDownloads(t.Context(), userID, 1)
+	require.NoError(t, err)
+	require.Len(t, counts, 1)
+	require.Equal(t, 1, counts[0].Count, "one download event should be recorded for current month")
+}
+
+// TestHandleDownload_NoDownloadEventWithoutUser verifies that when there is no
+// user ID in context (unauthenticated path), the download still succeeds but no
+// download event is recorded.
+func TestHandleDownload_NoDownloadEventWithoutUser(t *testing.T) {
+	h, _ := setupKoboHandler(t)
+
+	dir := t.TempDir()
+	registerTestLibrary(t, h.DB, dir)
+	content := []byte("epub content")
+	bookFile := filepath.Join(dir, "no-user.epub")
+	require.NoError(t, os.WriteFile(bookFile, content, 0o644), "write file")
+
+	book, bf, err := h.DB.CreateBookWithFile(
+		t.Context(),
+		db.BookInput{Title: "No User Download"},
+		"epub", "no-user.epub", int64(len(content)), nil, bookFile,
+	)
+	require.NoError(t, err, "create book with file")
+
+	// No withUserID — no authenticated user in context.
+	r := httptest.NewRequest(http.MethodGet, "/download/"+book.ID+"/epub", nil)
+	w := httptest.NewRecorder()
+
+	h.HandleDownload(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// download_count is still incremented (it uses a different mechanism).
+	got, err := h.DB.GetBookFile(t.Context(), bf.ID)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), got.DownloadCount)
+}

@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"mime"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
 	"github.com/amalgamated-tools/biblioteka/internal/otelkeys"
 )
@@ -100,6 +103,21 @@ func (h *KoboHandler) HandleDownload(w http.ResponseWriter, r *http.Request) {
 			slog.String(otelkeys.BookFileID, target.ID),
 			slog.Any(otelkeys.Error, incErr),
 		)
+	}
+
+	// Record a timestamped download event for the histogram (best-effort).
+	// Uses context.WithoutCancel so a client disconnect doesn't prevent
+	// recording the event, with a short timeout to bound latency.
+	if userID := auth.UserIDFromContext(r.Context()); userID != "" {
+		recCtx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
+		if recErr := h.DB.RecordBookDownload(recCtx, target.ID, userID); recErr != nil {
+			slog.WarnContext(recCtx, "kobo download: failed to record book download event",
+				slog.String(otelkeys.BookFileID, target.ID),
+				slog.String(otelkeys.UserID, userID),
+				slog.Any(otelkeys.Error, recErr),
+			)
+		}
+		cancel()
 	}
 
 	http.ServeContent(w, r, target.FileName, stat.ModTime(), f)

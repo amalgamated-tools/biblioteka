@@ -511,3 +511,39 @@ func TestDownload_UnknownFileType(t *testing.T) {
 	ct := w.Header().Get("Content-Type")
 	require.Equal(t, "application/octet-stream", ct)
 }
+
+// TestDownload_RecordsDownloadEvent verifies that a successful OPDS download
+// records a timestamped event in book_downloads when the request carries an
+// authenticated user ID.
+func TestDownload_RecordsDownloadEvent(t *testing.T) {
+h := setupOPDSHandler(t)
+ctx := t.Context()
+
+user, err := h.DB.CreateUser(ctx, "OPDS User", "opds@example.com", "password")
+require.NoError(t, err, "create user")
+
+book, err := h.DB.CreateBook(ctx, db.BookInput{Title: "OPDS Download Recording Test"})
+require.NoError(t, err, "create book")
+
+tmpDir := t.TempDir()
+registerTestLibrary(t, h.DB, tmpDir)
+content := []byte("epub content for opds download recording test")
+filePath := filepath.Join(tmpDir, "opds-recording.epub")
+require.NoError(t, os.WriteFile(filePath, content, 0o644), "write temp file")
+
+bf, err := h.DB.CreateBookFile(ctx, book.ID, "epub", "opds-recording.epub", int64(len(content)), nil, filePath)
+require.NoError(t, err, "create book file")
+
+r := httptest.NewRequest(http.MethodGet, "/opds/download/"+bf.ID, nil)
+r = withUserID(r, user.ID)
+w := httptest.NewRecorder()
+h.HandleOPDS(w, r)
+
+require.Equal(t, http.StatusOK, w.Code)
+
+// Verify a timestamped download event was recorded.
+counts, err := h.DB.GetMonthlyDownloads(ctx, user.ID, 1)
+require.NoError(t, err)
+require.Len(t, counts, 1)
+require.Equal(t, 1, counts[0].Count, "one download event should be recorded for current month")
+}
