@@ -17,19 +17,9 @@ on:
       - '.github/workflows/test.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'cmd/**'
-      - 'internal/**'
-      - 'frontend/**'
-      - 'db/**'
-      - 'go.mod'
-      - 'go.sum'
-      - '.golangci.yml'
-      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
-      # a bad regeneration would break compilation but wouldn't touch internal/**
-      - 'docs/swagger/docs.go'
-      - '.github/workflows/test.yml'
-    # Also trigger when docs-only label is added/removed so tests still report a status
+    # Note: paths filter is omitted for PR events so that labeled/unlabeled events
+    # can trigger the workflow even when the PR only changes docs (outside these paths).
+    # The job-level path filtering is not needed here since check-docs-only will skip tests anyway.
     types: [labeled, unlabeled, synchronize, opened, reopened]
 
 permissions:
@@ -46,20 +36,25 @@ concurrency:
 
 jobs:
   check-docs-only:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       skip-tests: ${{ steps.check.outputs.skip-tests }}
     steps:
       - name: Check if docs-only PR
+        if: github.event_name == 'pull_request'
         id: check
         run: |
-          # contains() is evaluated at template-time by GitHub's expression engine
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
+          # Short-circuit evaluation: github.event.pull_request is only dereferenced on PR events
+          if [[ "${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
             echo "skip-tests=true" >> $GITHUB_OUTPUT
           else
             echo "skip-tests=false" >> $GITHUB_OUTPUT
           fi
+      
+      - name: Default to false for non-PR events
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "skip-tests=false" >> $GITHUB_OUTPUT
 
   frontend-checks:
     needs: [check-docs-only]
