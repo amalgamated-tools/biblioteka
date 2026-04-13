@@ -1323,7 +1323,7 @@ Detail page for a single reading list. Receives the `listId` prop from `ReadingL
 **Features:**
 
 - Derives the `ReadingList` object from `readingListStore.lists` — no separate API fetch.
-- Inline name/description editing with save and cancel controls (guarded by `svelte-ignore state_referenced_locally` to avoid recursive reactive writes).
+- Inline name/description editing with save and cancel controls.
 - Delete with an inline confirmation guard; on success navigates back to `#reading-lists`.
 - Paginated book list rendered via `BookList`, using `listReadingListBooks` for data fetching.
 

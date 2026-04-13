@@ -2344,7 +2344,7 @@ Returns all reading lists owned by the authenticated user, ordered by name.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Unique reading list ID (UUID-like hex) |
+| `id` | string | Unique reading list ID (opaque string; do not rely on format) |
 | `name` | string | Normalized list name |
 | `description` | string \| null | Optional free-text description |
 | `book_count` | integer | Number of books currently in the list |
@@ -2404,7 +2404,7 @@ Returns a single reading list by ID. The list must be owned by the authenticated
 | Status | Meaning |
 |--------|---------|
 | `200 OK` | Success |
-| `400 Bad Request` | Malformed list ID in URL |
+| `400 Bad Request` | Missing or empty list ID path segment |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `404 Not Found` | List not found or not owned by the user |
 | `500 Internal Server Error` | Database error |
@@ -2636,9 +2636,9 @@ Returns the authenticated user's reading streak, total-books-tracked count, fini
 |-------|------|-------------|
 | `document` | string | Document filename as synced by KOReader |
 | `percentage` | number | Reading progress in `[0, 1]` |
-| `device` | string \| null | KOReader device name, if provided |
+| `device` | string | KOReader device name, when provided; omitted otherwise |
 | `last_synced` | string | ISO 8601 timestamp of the most recent sync |
-| `estimated_minutes_remaining` | integer \| null | Linear estimate of minutes left; `null` when the estimate is unreliable (< 1% read, < 5 min elapsed, or last-synced > 30 days ago) |
+| `estimated_minutes_remaining` | integer | Linear estimate of minutes left; omitted when the estimate is unreliable (< 1% read, < 5 min elapsed, or sync span exceeds 30 days, i.e. `updated_at − created_at > 30 days`) |
 
 **Status codes:**
 
