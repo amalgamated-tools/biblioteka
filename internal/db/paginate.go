@@ -61,7 +61,15 @@ func listAll[T any](
 		return nil, err
 	}
 
-	return collectRows(rows, scan)
+	items, err := collectRows(rows, scan)
+	if err != nil {
+		return nil, err
+	}
+	if items == nil {
+		return make([]T, 0), nil
+	}
+
+	return items, nil
 }
 
 // listPaginated is a generic helper that runs a COUNT(*) query against table
