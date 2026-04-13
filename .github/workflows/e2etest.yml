@@ -43,6 +43,7 @@ concurrency:
 
 jobs:
   check-docs-only:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       skip-tests: ${{ steps.check.outputs.skip-tests }}
@@ -50,7 +51,8 @@ jobs:
       - name: Check if docs-only PR
         id: check
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" && "${{ contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
+          # contains() is evaluated at template-time by GitHub's expression engine
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
             echo "skip-tests=true" >> $GITHUB_OUTPUT
           else
             echo "skip-tests=false" >> $GITHUB_OUTPUT
@@ -58,7 +60,7 @@ jobs:
 
   e2e:
     needs: [check-docs-only]
-    if: needs.check-docs-only.outputs.skip-tests == 'false' || github.event_name == 'push'
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     name: E2E Tests
     # The full job (build frontend + Go binary + Playwright install + tests)
