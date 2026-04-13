@@ -1,9 +1,7 @@
 {
-  "last_run": "2026-04-12T12:43:18Z",
+  "last_run": "2026-04-13T01:20:00Z",
   "comments_made": {
-    "1668": "2026-04-11T22:26:12Z",
-    "1531": "2026-04-12T01:06:21Z",
-    "1750": "2026-04-12T12:43:18Z"
+    "1531": "2026-04-12T01:06:21Z"
   },
   "prs_created": [
     {
@@ -14,30 +12,23 @@
       "status": "merged"
     },
     {
-      "branch": "repo-assist/improve-api-core-auth-tests-20260412",
-      "title": "test(frontend): add unit tests for api/core.ts and api/auth.ts",
+      "branch": "repo-assist/fix-download-recording-kobo-opds-20260413",
+      "title": "fix(handlers): record download events for Kobo and OPDS downloads",
       "closes": [],
-      "created_at": "2026-04-12T01:06:21Z",
-      "status": "push_failed_issue_1719"
-    },
-    {
-      "branch": "repo-assist/fix-issue-1741-focus-trap-offsetparent",
-      "title": "fix(frontend): remove offsetParent check from focus trap in EmailBookModal",
-      "closes": [1741],
-      "created_at": "2026-04-12T12:43:18Z",
+      "created_at": "2026-04-13T01:20:00Z",
       "status": "open"
     },
     {
-      "branch": "repo-assist/eng-node22-upgrade-20260412",
-      "title": "ci: upgrade CI Node.js from 20 to 22 LTS (EOL April 30)",
+      "branch": "repo-assist/eng-go-mod-tidy-check-20260413",
+      "title": "ci(test): add go mod tidy check to Go lint CI job",
       "closes": [],
-      "created_at": "2026-04-12T12:43:18Z",
+      "created_at": "2026-04-13T01:20:00Z",
       "status": "open"
     }
   ],
-  "issues_commented": [1668, 1531, 1750],
+  "issues_commented": [1531],
   "monthly_activity_issue": "2026-04",
-  "monthly_activity_issue_number": 1720,
-  "backlog_cursor": 1750,
-  "notes": "PR #1700 (a11y) merged by veverkap 2026-04-12. Issue #1719 has patch for API tests (push failed). New PRs: focus-trap fix (#1741), Node 22 CI upgrade. Commented on #1750 (CSP hardening SHA-256 hash). Good candidates for next run: implement #1749 (HSTS+JWT), #1750 (CSP sha256), #1748 (server tests)."
+  "monthly_activity_issue_number": "aw_monthly04",
+  "backlog_cursor": 1531,
+  "notes": "Issues #1749, #1750, #1748 all closed by veverkap. Previous monthly activity issue #1720 closed by veverkap as completed. New PRs this run: (1) fix Kobo+OPDS missing RecordBookDownload call - tests included; (2) ci go mod tidy check. Open: PR #1806 (Perf Improver - book_downloads index). Issue #1531 (S3 feature) still open, previously commented. Monthly activity summary issue re-created this run."
 }
