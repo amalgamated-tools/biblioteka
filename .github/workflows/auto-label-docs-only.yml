@@ -34,8 +34,9 @@ jobs:
           FILES_IS_DOCS=true
           while IFS= read -r file; do
             # Treat a file as docs-only only if it is clearly documentation.
-            # Markdown is allowed anywhere; image/PDF assets only under docs/.
-            if [[ "$file" =~ ^docs/ ]] || \
+            # Markdown is allowed anywhere; other docs/ files are allowed only
+            # if they are not code (e.g. docs/swagger/docs.go is compiled).
+            if ([[ "$file" =~ ^docs/ ]] && [[ ! "$file" =~ \.(go|ts|js|py|sh)$ ]]) || \
                [[ "$file" =~ (^|/)[^/]+\.md$ ]]; then
               continue
             fi
