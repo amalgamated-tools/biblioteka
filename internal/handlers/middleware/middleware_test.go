@@ -276,3 +276,11 @@ func TestThemeBootstrapScriptCSPHash_MatchesIndexHTML(t *testing.T) {
 	require.NotContains(t, scriptSrcMatch[1], "'unsafe-inline'",
 		"script-src must not allow 'unsafe-inline'")
 }
+
+func TestGlobalCSP_StyleSrcNoUnsafeInline(t *testing.T) {
+	styleSrcRe := regexp.MustCompile(`(?:^|;\s*)style-src\s+([^;]+)`)
+	match := styleSrcRe.FindStringSubmatch(globalCSP)
+	require.Len(t, match, 2, "globalCSP must define a style-src directive")
+	require.NotContains(t, match[1], "'unsafe-inline'",
+		"style-src must not allow 'unsafe-inline'")
+}
