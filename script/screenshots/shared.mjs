@@ -2,6 +2,7 @@ import { chromium } from '@playwright/test';
 import { fileURLToPath } from 'url';
 import { mkdir } from 'fs/promises';
 import path from 'path';
+import { exit } from 'process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const screenshotsDir = path.join(__dirname, '..', '..', 'screenshots');
@@ -98,6 +99,36 @@ async function openSettingsTab(page, tabHash, headingName) {
         timeout: NAVIGATION_TIMEOUT_MS,
     });
     await page.getByRole('heading', { name: headingName, exact: true }).waitFor({ state: 'visible' });
+}
+
+async function openReadingActivityPage(page) {
+    await page.goto(`${BASE_URL}/#reading-activity`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    // Wait for either the Reading Activity heading or fall back to dashboard if page doesn't exist yet
+    await Promise.any([
+        page.getByRole('heading', { name: 'Reading Activity', exact: true }).waitFor({ state: 'visible' }),
+        page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor({ state: 'visible' }),
+    ]);
+}
+
+async function createTestLibrary(page) {
+    await page.goto(`${BASE_URL}/#libraries/new`, {
+        waitUntil: 'networkidle',
+        timeout: NAVIGATION_TIMEOUT_MS,
+    });
+    await page.waitForSelector('input[placeholder*="name"], input[placeholder*="Name"]');
+    // Fill in the name field
+    const nameInput = page.locator('input[placeholder*="name"], input[placeholder*="Name"]').first();
+    await nameInput.fill('Test');
+    // Fill in the folders field
+    const foldersInput = page.locator('input[placeholder*="folder"], input[placeholder*="Folder"]').first();
+    await foldersInput.fill('../books');
+    // Click the create button
+    await page.getByRole('button', { name: /create|add/i }).first().click();
+    // Wait for the library view to load
+    await page.waitForFunction(() => !document.body.innerText.includes('Loading'));
 }
 
 async function openBooksPage(page) {
@@ -225,6 +256,11 @@ export async function runVariant({ theme, mobile }) {
         // await page.getByRole('button', { name: 'Logout', exact: true }).waitFor({ state: 'visible' });
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('dashboard', variantName)) });
 
+        // console.log(`Capturing reading-activity (${variantName})...`);
+        // await openReadingActivityPage(page);
+        // await setTheme(page, theme);
+        // await page.screenshot({ path: path.join(screenshotsDir, buildFilename('reading-activity', variantName)) });
+
         console.log(`Capturing books (${variantName})...`);
         await openBooksPage(page);
         await setTheme(page, theme);
@@ -240,6 +276,7 @@ export async function runVariant({ theme, mobile }) {
         await setTheme(page, theme);
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('libraries', variantName)) });
 
+
         console.log(`Capturing settings (${variantName})...`);
         await openSettingsPage(page);
         await setTheme(page, theme);
@@ -247,18 +284,6 @@ export async function runVariant({ theme, mobile }) {
         await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor({ state: 'visible' });
         await page.locator('input#email-display').waitFor({ state: 'visible' });
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings', variantName)) });
-
-        console.log(`Capturing settings OIDC (${variantName})...`);
-        await openSettingsTab(page, 'oidc', 'OIDC / Single Sign-On');
-        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-oidc', variantName)) });
-
-        console.log(`Capturing settings SMTP (${variantName})...`);
-        await openSettingsTab(page, 'smtp', 'Email / SMTP Configuration');
-        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-smtp', variantName)) });
-
-        console.log(`Capturing settings users (${variantName})...`);
-        await openSettingsTab(page, 'users', 'User Management');
-        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-users', variantName)) });
 
         console.log(`Capturing settings API keys (${variantName})...`);
         await openSettingsTab(page, 'api-keys', 'API Keys');
@@ -271,6 +296,22 @@ export async function runVariant({ theme, mobile }) {
         console.log(`Capturing settings preferences (${variantName})...`);
         await openSettingsTab(page, 'preferences', 'Display Preferences');
         await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-preferences', variantName)) });
+
+        console.log(`Capturing settings OIDC (${variantName})...`);
+        await openSettingsTab(page, 'oidc', 'OIDC / Single Sign-On');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-oidc', variantName)) });
+
+        console.log(`Capturing settings SMTP (${variantName})...`);
+        await openSettingsTab(page, 'smtp', 'Email / SMTP Configuration');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-smtp', variantName)) });
+
+        console.log(`Capturing settings Watch Folder (${variantName})...`);
+        await openSettingsTab(page, 'watch-folder', 'Watch Folder');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-watch-folder', variantName)) });
+
+        console.log(`Capturing settings users (${variantName})...`);
+        await openSettingsTab(page, 'users', 'User Management');
+        await page.screenshot({ path: path.join(screenshotsDir, buildFilename('settings-users', variantName)) });
 
         console.log(`Logging out admin for ${variantName}...`);
         await logoutIfNeeded(page);

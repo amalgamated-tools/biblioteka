@@ -24,7 +24,7 @@ frontend/
       Auth.svelte         Login and signup forms; wraps all form content in a `<main>` landmark (WCAG 1.3.6); the Login/Sign Up toggle uses the ARIA tablist/tab/tabpanel pattern with roving tabindex and keyboard navigation (WCAG 4.1.2)
       Books.svelte        Book listing and detail view; reads `initialOffset` from the URL hash query string (`#books?offset=48`) and writes page changes back via `routerStore.setQueryParam`
       NotFound.svelte     404 page rendered when the router encounters an unknown hash path
-      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries) plus a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); in the stats-grid branch, Total Books is fetched from the API via `getTotalBooksCount()` on first render and shows "…" while the request is in flight (falls back to `0` on error, surfacing an `AlertBanner` with the error message); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
+      Dashboard.svelte    Home screen; shows an empty-state onboarding card only after libraries are loaded and the list is empty; otherwise renders a two-card stats grid (Total Books, Libraries), a downloads-per-month histogram (via `DownloadsHistogram.svelte`), and a "Welcome to Biblioteka" prose panel (`<h2>` + `<p>`); in the stats-grid branch, Total Books is fetched from the API via `getTotalBooksCount()` on first render and shows "…" while the request is in flight (falls back to `0` on error, surfacing an `AlertBanner` with the error message); the histogram is fetched via `getDownloadsPerMonth(12)` and is hidden until data arrives (an `AlertBanner` is shown on error); Libraries reflects the live `libraryStore.libraries.length`; each stat card uses a `<dl>/<dt>/<dd>` description-list structure so that screen readers can announce the label–value relationship correctly (WCAG 1.3.1)
       Libraries.svelte    Library management view
       MyLibrary.svelte    Placeholder for a planned per-user personal library feature; currently shows an empty state
       Settings.svelte     Settings shell; owns shared admin state; renders one tab at a time
@@ -52,6 +52,7 @@ frontend/
         BookList.svelte      Paginated book list with grid / table view toggle; accepts a `fetchBooks` callback; supports optional polling for scan-aware empty states; table-view rows are keyboard-accessible via `tabindex="0"` and Enter-key navigation (WCAG 2.1.1)
         Button.svelte        Reusable button with `primary`, `secondary`, and `danger` variants
         DeleteConfirmation.svelte  Accessible inline delete-confirmation dialog (`role="alertdialog"`, Escape-to-dismiss, autofocus on open); encapsulates the standard pattern for accessible destructive-action confirmations (WCAG 4.1.2)
+        DownloadsHistogram.svelte  Bar-chart histogram that renders monthly download counts; each bar is a focusable `role="listitem"` with an `aria-label` of "Month YYYY: N download(s)" so the data is accessible to keyboard and screen-reader users; an empty-state message with `aria-live="polite"` is shown when all counts are zero
         TextInput.svelte     Reusable text input; forwards all standard `<input>` HTML attributes; placeholder text in dark mode uses `dark:placeholder:text-ink-300` to meet the minimum contrast ratio for non-active UI text (WCAG 1.4.3); border uses `border-ink-400 dark:border-ink-400` to meet the Non-text Contrast minimum (WCAG 1.4.11)
     stores/             Reactive state modules (lowercase, *.svelte.ts)
     lib/
@@ -821,6 +822,45 @@ A styled button with three visual variants.
 ```
 
 Padding is intentionally left to the caller via the `class` prop to avoid Tailwind cascade conflicts.
+
+---
+
+### `DownloadsHistogram.svelte`
+
+A pure-CSS bar-chart component that renders monthly download counts fetched from `GET /api/stats/downloads-per-month`. Used by `Dashboard.svelte` to display the authenticated user's download history.
+
+**Props:**
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `data` | `MonthlyDownloads[]` | ✓ | — | Array of `{ month: "YYYY-MM", count: number }` objects ordered oldest-first |
+| `title` | `string` | | `"Downloads per month"` | Label rendered as an `<h3>` above the chart and used as the `aria-label` on the bar list |
+
+**Accessibility:**
+
+- The bar container uses `role="list"` with an `aria-label` matching the `title` prop.
+- Each bar column is a `role="listitem"` element with `tabindex="0"` and an `aria-label` of `"Month YYYY: N download(s)"`, so keyboard users can navigate each data point with Tab/arrow keys and screen readers announce the exact figure.
+- A count tooltip (`aria-hidden="true"`) appears above each bar on hover/focus — decorative only.
+- When all counts are zero, an empty-state `<p>` with `aria-live="polite"` is shown instead of the chart.
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import DownloadsHistogram from "./ui/DownloadsHistogram.svelte";
+  import { getDownloadsPerMonth } from "../lib/api";
+  import type { MonthlyDownloads } from "../types";
+
+  let data = $state<MonthlyDownloads[]>([]);
+  $effect(() => {
+    getDownloadsPerMonth(12).then((d) => (data = d));
+  });
+</script>
+
+{#if data.length > 0}
+  <DownloadsHistogram {data} title="Downloads per month" />
+{/if}
+```
 
 ---
 
@@ -2327,7 +2367,7 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 
 #### `Dashboard.test.ts`
 
-`frontend/src/components/Dashboard.test.ts` verifies the behavior and accessibility of the home screen, covering both the onboarding empty state and the stats grid. Eleven tests in one `Dashboard` describe block:
+`frontend/src/components/Dashboard.test.ts` verifies the behavior and accessibility of the home screen, covering both the onboarding empty state and the stats grid. Thirteen tests in one `Dashboard` describe block:
 
 1. **`renders the Dashboard heading`** — asserts a `<h1>` heading with text `"Dashboard"` is present on mount.
 2. **`shows the onboarding card when libraries are loaded and empty`** — seeds `libraryStore.loaded = true` with no libraries; asserts the `"Get started with Biblioteka"` heading is rendered.
@@ -2340,8 +2380,10 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 9. **`triggers libraryStore.load() when libraries are not yet loaded`** — mounts with `libraryStore.loaded = false`; asserts `libraryStore.load` is called.
 10. **`shows loading placeholder while total books is being fetched`** — `getTotalBooksCount` never resolves; asserts the placeholder text `"…"` is visible while the request is in flight.
 11. **`shows the real total books count after fetching`** — `getTotalBooksCount` resolves to `500`; asserts the value `"500"` appears in the stats grid and `getTotalBooksCount` was called.
+12. **`shows the downloads histogram when data is available`** — `getDownloadsPerMonth` resolves with two data points; asserts the `data-testid="downloads-histogram-card"` element appears in the DOM.
+13. **`shows a downloads error banner when the stats fetch fails`** — `getDownloadsPerMonth` rejects with `Error("network error")`; asserts the error message `"network error"` is rendered in an `AlertBanner`.
 
-> **Mocking note:** `libraryStore`, `routerStore`, `getTotalBooksCount` (from `../lib/api`), and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries` and resets `getTotalBooksCount` to resolve `0`. `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
+> **Mocking note:** `libraryStore`, `routerStore`, `getTotalBooksCount`, and `getDownloadsPerMonth` (all from `../lib/api`) and all `lucide-svelte` icons are mocked. `beforeEach` resets `libraryStore.loaded` and `libraries`, and resets both `getTotalBooksCount` (to resolve `0`) and `getDownloadsPerMonth` (to resolve `[]`). `afterEach` calls `cleanup()` and `vi.clearAllMocks()` to prevent state leakage between tests.
 
 #### `LibraryForm.test.ts`
 
@@ -2372,6 +2414,18 @@ Accessibility regressions are locked in by dedicated test files. Keep all of the
 **"LibraryForm organization type dropdown" — four tests:** verify that the file-organization `<select>` renders with the correct options, defaults to `book_per_folder` in create mode, and is associated with a visible label.
 
 > **Testing note:** Each test calls `await tick()` after `render()` to flush Svelte 5 reactive state before asserting. `afterEach(cleanup)` removes the rendered component from JSDOM between tests.
+
+#### `DownloadsHistogram.test.ts`
+
+`frontend/src/components/ui/DownloadsHistogram.test.ts` verifies the rendering, empty-state behavior, and data-driven bar generation of the histogram component. Five tests in one `DownloadsHistogram` describe block:
+
+1. **`renders the default title`** — renders with no `title` prop; asserts the `<h3>` heading reads `"Downloads per month"`.
+2. **`renders a custom title`** — passes `title="My custom title"`; asserts the `<h3>` reflects the override.
+3. **`shows the empty state message when all counts are zero`** — renders with all-zero data; asserts `"No downloads recorded yet."` is visible and `data-testid="histogram-bars"` is absent.
+4. **`renders bars when data has downloads`** — renders with non-zero data; asserts `"No downloads recorded yet."` is absent and `data-testid="histogram-bars"` is present.
+5. **`renders a bar element for each data point`** — renders three data points; asserts the `histogram-bars` container has exactly three child elements.
+
+> **Testing note:** `afterEach(cleanup)` removes rendered components between tests.
 
 #### `TextInput.test.ts`
 

@@ -41,11 +41,6 @@ func Open(path string) (*DB, error) {
 	return &DB{db: sqlDB}, nil
 }
 
-// newDBFromSQL wraps an existing sql.DB as a calibre.DB. Used in tests.
-func newDBFromSQL(sqlDB *sql.DB) *DB {
-	return &DB{db: sqlDB}
-}
-
 // Close releases the database connection.
 func (c *DB) Close() error {
 	return c.db.Close()
