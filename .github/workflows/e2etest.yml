@@ -29,6 +29,8 @@ on:
       # a bad regeneration would break the Go binary build
       - 'docs/swagger/docs.go'
       - '.github/workflows/e2etest.yml'
+    # Also trigger when docs-only label is added/removed so tests still report a status
+    types: [labeled, unlabeled, synchronize, opened, reopened]
 
 permissions:
   contents: read
@@ -40,7 +42,23 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  check-docs-only:
+    runs-on: ubuntu-latest
+    outputs:
+      skip-tests: ${{ steps.check.outputs.skip-tests }}
+    steps:
+      - name: Check if docs-only PR
+        id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
+            echo "skip-tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+          fi
+
   e2e:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests == 'false' || github.event_name == 'push'
     runs-on: ubuntu-latest
     name: E2E Tests
     # The full job (build frontend + Go binary + Playwright install + tests)
