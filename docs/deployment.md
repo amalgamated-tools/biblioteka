@@ -274,7 +274,7 @@ Biblioteka sets the following HTTP security headers on every response via the `N
 
 | Header | Value | Purpose |
 |--------|-------|---------|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'sha256-fH8pmaGT8bEGA0OitMqoXdy+W8xbN89w8ghrDCdlrwA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data: https://fonts.gstatic.com;` | Restricts external resource origins; `script-src` uses a SHA-256 hash of the frontend theme bootstrap script instead of `'unsafe-inline'` to reduce XSS attack surface |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'sha256-fH8pmaGT8bEGA0OitMqoXdy+W8xbN89w8ghrDCdlrwA='; style-src 'self' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data: https://fonts.gstatic.com;` | Restricts external resource origins; neither `script-src` nor `style-src` uses `'unsafe-inline'` — `script-src` uses a SHA-256 hash of the theme bootstrap script; `style-src` omits `'unsafe-inline'` because Svelte applies dynamic styles via CSSOM property calls, which are not governed by `style-src` |
 | `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing |
 | `X-Frame-Options` | `DENY` | Blocks framing (clickjacking protection) |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer information sent in cross-origin requests |
