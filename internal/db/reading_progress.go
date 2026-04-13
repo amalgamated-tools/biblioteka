@@ -57,6 +57,27 @@ func (d *DB) GetReadingStats(ctx context.Context, userID string) (ReadingStats, 
 	return stats, nil
 }
 
+// GetReadingStreak returns the current consecutive-day reading streak for a user.
+// The streak is the number of calendar days (in UTC) ending today or yesterday
+// on which at least one reading progress entry exists. Returns 0 when there is no
+// activity or the most-recent activity was before yesterday.
+func (d *DB) GetReadingStreak(ctx context.Context, userID string) (int, error) {
+	slog.DebugContext(ctx, "db: fetching reading streak",
+		slog.String(otelkeys.UserID, userID),
+	)
+	items, err := d.ListReadingProgress(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+
+	// Extract timestamps from items and compute the streak.
+	timestamps := make([]time.Time, len(items))
+	for i, item := range items {
+		timestamps[i] = item.UpdatedAt
+	}
+	return ComputeReadingStreak(timestamps), nil
+}
+
 // ComputeReadingStreak calculates the current consecutive-day reading streak
 // from a slice of timestamps. The timestamps need not be sorted or unique.
 // A streak is the number of calendar days (in UTC) ending today or yesterday
