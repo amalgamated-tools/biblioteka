@@ -1,6 +1,6 @@
 # Migrating from Calibre
 
-Biblioteka includes a `calibre-import` CLI command that reads a Calibre library from disk and copies books, authors, series, and file records directly into your Biblioteka database. The import is **idempotent** — re-running it against the same library never creates duplicates.
+Biblioteka includes a `calibre-import` CLI command that reads a Calibre library from disk and copies books, authors, series, and file records directly into your Biblioteka database. The import is **idempotent for stable file paths** — re-running it against the same library never creates duplicates as long as the Calibre book paths have not changed.
 
 ---
 
@@ -69,7 +69,7 @@ Each Calibre book becomes a Biblioteka book record. The following fields are map
 | `publisher` | `publisher` | Empty when no publisher is set in Calibre |
 | `comments.text` | `description` | Empty when no comment is set |
 | Language code | `language` | ISO 639 code; empty when not set. Older Calibre databases without a `languages` table are handled gracefully |
-| Identifiers (ISBN) | `isbn10`, `isbn13` | `isbn13` takes priority over `isbn10`, which takes priority over `isbn`. Values are normalized and validated |
+| Identifiers (ISBN) | `isbn10`, `isbn13` | `isbn13` takes priority over `isbn10`, which takes priority over `isbn`. Values are normalized and checked for ISBN format/length only |
 | Identifier `asin` or `mobi-asin` | `asin` | |
 | Identifier `goodreads` or `goodreads-id` | `goodreads_id` | |
 | Identifier `google`, `google-id`, or `googlebooks` | `google_books_id` | |
@@ -103,7 +103,7 @@ File size is read from Calibre's `data.uncompressed_size` column. Note that the 
 | **Ratings** | Biblioteka does not have a ratings field |
 | **Custom columns** | Calibre custom columns have no equivalent in Biblioteka |
 | **Reading progress** | No equivalent in Biblioteka |
-| **Cover images** | Covers are not read from the Calibre library during import. Use the API to upload covers after import, or run `process-file` on the imported EPUB files to extract embedded covers |
+| **Cover images** | Covers are not read from the Calibre library during import. Upload covers via the API after import. Running `process-file` on the same already-imported EPUB paths will be skipped once those files are indexed, so it is not a supported post-import cover backfill workflow |
 
 > Calibre tags are not imported. After the import completes, use the [Tags API](api-reference.md) or the Biblioteka UI to apply tags to your books.
 
@@ -129,8 +129,13 @@ Common causes of per-book errors:
 | Symptom | Likely cause |
 |---------|--------------|
 | `create book` error | Database constraint violation (e.g. duplicate title with same identifiers) |
-| `all N file record(s) failed to create` | Permission issue or path conflict in `book_files` |
-| `failed to find or create author` | Blank or invalid author name in Calibre |
+| `all N file record(s) failed to create` | Database error while creating `book_files` rows (e.g. constraint or uniqueness conflict) |
+
+**Non-fatal warnings** (do not increment `Errors`):
+
+| Symptom | What happens |
+|---------|--------------|
+| `failed to find or create author` | The author link is skipped, but the book is still counted as **Imported** |
 
 If `Errors` is non-zero after an import, re-run the command. Already-imported books are skipped, and only the failed books are retried.
 
