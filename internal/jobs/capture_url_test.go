@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -111,7 +112,7 @@ func TestCaptureURL_FetchError(t *testing.T) {
 	dir := t.TempDir()
 	enq := &genericMockEnqueuer{}
 
-	f := &captureHTTPFetcher{err: fmt.Errorf("connection refused")}
+	f := &captureHTTPFetcher{err: errors.New("connection refused")}
 
 	p := CaptureURLPayload{
 		URL:         "https://example.com/article",
@@ -131,7 +132,7 @@ func TestCaptureURL_FetchError(t *testing.T) {
 // removed when the downstream process:file job cannot be enqueued.
 func TestCaptureURL_EnqueueFailureCleansStagedFile(t *testing.T) {
 	dir := t.TempDir()
-	enq := &genericMockEnqueuer{err: fmt.Errorf("redis unavailable")}
+	enq := &genericMockEnqueuer{err: errors.New("redis unavailable")}
 
 	f := &captureHTTPFetcher{
 		title:   "Article",
