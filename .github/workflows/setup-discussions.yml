@@ -1,0 +1,130 @@
+name: "Setup Announcements Discussion Category"
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  setup-discussions:
+    runs-on: ubuntu-latest
+    permissions:
+      discussions: write
+      issues: write
+    steps:
+      - name: Create Announcements category and convert issue to discussion
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Step 1: Get the repository node ID
+            const repoQuery = `
+              query GetRepo($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) {
+                  id
+                  discussionCategories(first: 20) {
+                    nodes {
+                      id
+                      name
+                      isAnswerable
+                    }
+                  }
+                }
+              }
+            `;
+            const repoData = await github.graphql(repoQuery, { owner, repo });
+            const repositoryId = repoData.repository.id;
+            console.log(`Repository ID: ${repositoryId}`);
+
+            // Step 2: Check if Announcements category already exists
+            const categories = repoData.repository.discussionCategories.nodes;
+            console.log('Existing categories:', categories.map(c => c.name));
+            let announcementsCategoryId = categories.find(
+              c => c.name.toLowerCase() === 'announcements'
+            )?.id;
+
+            // Step 3: Create Announcements category if it doesn't exist
+            if (!announcementsCategoryId) {
+              console.log('Creating Announcements category...');
+              const createCategoryMutation = `
+                mutation CreateDiscussionCategory($repositoryId: ID!, $name: String!, $emoji: String!, $description: String!, $format: DiscussionCategoryFormat!) {
+                  createDiscussionCategory(input: {
+                    repositoryId: $repositoryId
+                    name: $name
+                    emoji: $emoji
+                    description: $description
+                    format: $format
+                  }) {
+                    category {
+                      id
+                      name
+                    }
+                  }
+                }
+              `;
+              const categoryResult = await github.graphql(createCategoryMutation, {
+                repositoryId,
+                name: 'Announcements',
+                emoji: ':mega:',
+                description: 'Important updates and announcements from maintainers.',
+                format: 'ANNOUNCEMENT',
+              });
+              announcementsCategoryId = categoryResult.createDiscussionCategory.category.id;
+              console.log(`Created Announcements category with ID: ${announcementsCategoryId}`);
+            } else {
+              console.log(`Announcements category already exists with ID: ${announcementsCategoryId}`);
+            }
+
+            // Step 4: Fetch issue #1804 content
+            const issue = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: 1804,
+            });
+            console.log(`Fetched issue #1804: ${issue.data.title}`);
+
+            // Step 5: Create a discussion with the issue content
+            const createDiscussionMutation = `
+              mutation CreateDiscussion($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
+                createDiscussion(input: {
+                  repositoryId: $repositoryId
+                  categoryId: $categoryId
+                  title: $title
+                  body: $body
+                }) {
+                  discussion {
+                    id
+                    url
+                    number
+                  }
+                }
+              }
+            `;
+            const discussionResult = await github.graphql(createDiscussionMutation, {
+              repositoryId,
+              categoryId: announcementsCategoryId,
+              title: issue.data.title,
+              body: issue.data.body + '\n\n---\n\n> *Converted from issue #1804 by setup-discussions workflow.*',
+            });
+            const discussion = discussionResult.createDiscussion.discussion;
+            console.log(`Created discussion #${discussion.number}: ${discussion.url}`);
+
+            // Step 6: Close issue #1804 with a reference to the new discussion
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: 1804,
+              body: `This issue has been converted to a discussion: ${discussion.url}\n\nThe "Announcements" discussion category has been created so future Agentic Planner runs will post directly to discussions.`,
+            });
+            await github.rest.issues.update({
+              owner,
+              repo,
+              issue_number: 1804,
+              state: 'closed',
+              state_reason: 'not_planned',
+            });
+            console.log('Closed issue #1804');
+            console.log(`Done! Discussion available at: ${discussion.url}`);
