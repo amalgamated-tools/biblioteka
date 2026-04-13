@@ -72,7 +72,7 @@
           title="{monthFull(item.month)}: {item.count}"
         >
           <span
-            class="text-[10px] text-ink-400 dark:text-ink-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity leading-none"
+            class="text-[10px] text-ink-600 dark:text-ink-200 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity leading-none"
             aria-hidden="true"
           >
             {item.count}
@@ -90,7 +90,7 @@
     <div class="flex gap-1 mt-1 w-full" aria-hidden="true">
       {#each data as item (item.month)}
         <div
-          class="flex-1 text-center text-[10px] text-ink-400 dark:text-ink-400 truncate"
+          class="flex-1 text-center text-[10px] text-ink-600 dark:text-ink-400 truncate"
         >
           {monthLabel(item.month)}
         </div>
