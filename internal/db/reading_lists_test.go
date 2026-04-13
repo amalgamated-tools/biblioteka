@@ -15,9 +15,6 @@ func createTestUserForRL(t *testing.T, d *DB, email string) string {
 	return u.ID
 }
 
-// strPtr returns a pointer to a string literal (convenience helper for tests).
-func strPtr(s string) *string { return &s }
-
 func TestCreateReadingList(t *testing.T) {
 	d := newTestDB(t)
 	userID := createTestUserForRL(t, d, "user@example.com")

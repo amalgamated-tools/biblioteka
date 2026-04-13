@@ -63,10 +63,15 @@ type AuditLog struct {
 
 const auditLogColumns = `id, user_id, action, entity_type, entity_id, metadata, created_at`
 
-func scanAuditLog(row interface{ Scan(...any) error }) (*AuditLog, error) {
-	return scanRow(row, func(entry *AuditLog) []any {
-		return []any{&entry.ID, &entry.UserID, &entry.Action, &entry.EntityType, &entry.EntityID, &entry.Metadata, &entry.CreatedAt}
-	})
+// scanAuditLogAndTotal scans audit log columns plus a trailing COUNT(*) OVER() total.
+func scanAuditLogAndTotal(row interface{ Scan(...any) error }) (*AuditLog, int, error) {
+	var entry AuditLog
+	var total int
+	err := row.Scan(&entry.ID, &entry.UserID, &entry.Action, &entry.EntityType, &entry.EntityID, &entry.Metadata, &entry.CreatedAt, &total)
+	if err != nil {
+		return nil, 0, err
+	}
+	return &entry, total, nil
 }
 
 // CreateAuditLog inserts a new audit log entry. The metadata map is serialised
@@ -103,36 +108,42 @@ func (d *DB) CreateAuditLog(ctx context.Context, userID, action, entityType, ent
 
 // ListAuditLogs returns audit log entries ordered by creation time (newest first),
 // with the total count of all entries. limit and offset control pagination.
+// A single query with COUNT(*) OVER() is used to avoid a separate COUNT round-trip.
+// When limit <= 0 the query would return zero rows and the window function would
+// produce no total; in that case a standalone COUNT(*) is issued instead and an
+// empty slice is returned with the correct total.
 func (d *DB) ListAuditLogs(ctx context.Context, limit, offset int) ([]AuditLog, int, error) {
 	slog.DebugContext(ctx, "db: listing audit logs",
 		slog.Int(otelkeys.Limit, limit),
 		slog.Int(otelkeys.Offset, offset),
 	)
 
-	var total int
-	if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_logs`).Scan(&total); err != nil {
-		return nil, 0, err
+	if limit <= 0 {
+		var total int
+		if err := d.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_logs`).Scan(&total); err != nil {
+			return nil, 0, err
+		}
+		return []AuditLog{}, total, nil
 	}
 
 	rows, err := d.QueryContext(ctx,
-		`SELECT `+auditLogColumns+` FROM audit_logs ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2`,
+		`SELECT `+auditLogColumns+`, COUNT(*) OVER() AS total FROM audit_logs ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
-
-	var entries []AuditLog
-	for rows.Next() {
-		entry, err := scanAuditLog(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		entries = append(entries, *entry)
-	}
-	if err := rows.Err(); err != nil {
+	entries, total, err := collectRowsAndTotal(rows, scanAuditLogAndTotal)
+	if err != nil {
 		return nil, 0, err
 	}
+
+	// If no rows were returned at a non-zero offset, the total is 0 from
+	// collectRowsAndTotal but the real count may be non-zero. Fall back to a
+	// COUNT(*) query so callers can still compute the correct page count.
+	if err := countFallback(ctx, d, &total, len(entries), offset, `SELECT COUNT(*) FROM audit_logs`); err != nil {
+		return nil, 0, err
+	}
+
 	return entries, total, nil
 }
