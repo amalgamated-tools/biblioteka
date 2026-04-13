@@ -63,12 +63,6 @@ type AuditLog struct {
 
 const auditLogColumns = `id, user_id, action, entity_type, entity_id, metadata, created_at`
 
-func scanAuditLog(row interface{ Scan(...any) error }) (*AuditLog, error) {
-	return scanRow(row, func(entry *AuditLog) []any {
-		return []any{&entry.ID, &entry.UserID, &entry.Action, &entry.EntityType, &entry.EntityID, &entry.Metadata, &entry.CreatedAt}
-	})
-}
-
 // scanAuditLogAndTotal scans audit log columns plus a trailing COUNT(*) OVER() total.
 func scanAuditLogAndTotal(row interface{ Scan(...any) error }) (*AuditLog, int, error) {
 	var entry AuditLog
