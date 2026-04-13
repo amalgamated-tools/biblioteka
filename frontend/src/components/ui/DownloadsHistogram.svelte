@@ -63,7 +63,7 @@
         {@const h = barHeight(item.count)}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
-          class="flex-1 flex flex-col items-center justify-end gap-1 group focus-within:outline-none h-full"
+          class="flex-1 flex flex-col items-center justify-end gap-1 group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600 h-full"
           role="listitem"
           tabindex="0"
           aria-label="{monthFull(item.month)}: {item.count} {item.count === 1
