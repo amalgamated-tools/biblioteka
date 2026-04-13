@@ -2,11 +2,15 @@
   import { LayoutDashboard, Library, Plus, ArrowRight } from "lucide-svelte";
   import { libraryStore } from "../stores/libraries.svelte";
   import { routerStore } from "../stores/router.svelte";
-  import { getTotalBooksCount } from "../lib/api";
+  import { getTotalBooksCount, getDownloadsPerMonth } from "../lib/api";
+  import type { MonthlyDownloads } from "../types";
   import AlertBanner from "./ui/AlertBanner.svelte";
+  import DownloadsHistogram from "./ui/DownloadsHistogram.svelte";
 
   let totalBooks = $state<number | null>(null);
   let countError: string | null = $state(null);
+  let monthlyDownloads = $state<MonthlyDownloads[]>([]);
+  let downloadsError: string | null = $state(null);
 
   $effect(() => {
     if (!libraryStore.loaded) {
@@ -27,6 +31,24 @@
           countError =
             err instanceof Error ? err.message : "Failed to load book count";
           totalBooks = 0;
+        });
+    }
+  });
+
+  let downloadsFetched = false;
+  $effect(() => {
+    if (!downloadsFetched) {
+      downloadsFetched = true;
+      getDownloadsPerMonth(12)
+        .then((data) => {
+          monthlyDownloads = data;
+        })
+        .catch((err) => {
+          console.error("Failed to fetch download stats:", err);
+          downloadsError =
+            err instanceof Error
+              ? err.message
+              : "Failed to load download stats";
         });
     }
   });
@@ -114,6 +136,17 @@
         </div>
       {/each}
     </div>
+
+    {#if downloadsError}
+      <AlertBanner variant="error" class="mt-5">{downloadsError}</AlertBanner>
+    {:else if monthlyDownloads.length > 0}
+      <div
+        class="mt-8 bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"
+        data-testid="downloads-histogram-card"
+      >
+        <DownloadsHistogram data={monthlyDownloads} />
+      </div>
+    {/if}
 
     <div
       class="mt-8 bg-white dark:bg-ink-900 rounded-2xl p-6 shadow-sm border border-ink-100 dark:border-ink-800 animate-fade-in"

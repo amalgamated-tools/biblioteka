@@ -39,6 +39,66 @@ func newTestDB(t *testing.T) *db.DB {
 }
 
 // ---------------------------------------------------------------------------
+// staticCacheMiddleware
+// ---------------------------------------------------------------------------
+
+func TestStaticCacheMiddleware_AssetsImmutable(t *testing.T) {
+	inner := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	handler := staticCacheMiddleware(inner)
+
+	paths := []string{
+		"/assets/index-Bm2A5K9v.js",
+		"/assets/style-abc123.css",
+	}
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+			require.Equalf(t, "public, max-age=31536000, immutable", rec.Header().Get("Cache-Control"),
+				"expected immutable cache for hashed asset %s", path)
+		})
+	}
+}
+
+func TestStaticCacheMiddleware_IndexNoCache(t *testing.T) {
+	inner := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	handler := staticCacheMiddleware(inner)
+
+	for _, path := range []string{"/", "/index.html"} {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+			require.Equalf(t, "no-cache", rec.Header().Get("Cache-Control"),
+				"expected no-cache for entry point %s", path)
+		})
+	}
+}
+
+func TestStaticCacheMiddleware_OtherFiles_NoOverride(t *testing.T) {
+	inner := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	handler := staticCacheMiddleware(inner)
+
+	paths := []string{"/favicon.ico", "/assets/"}
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+			require.Equalf(t, "", rec.Header().Get("Cache-Control"),
+				"expected no Cache-Control override for %s", path)
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
 // handleHealth
 // ---------------------------------------------------------------------------
 
