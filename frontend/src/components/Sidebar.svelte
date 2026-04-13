@@ -12,6 +12,7 @@
     LogOut,
     BookCheck,
     Settings2,
+    BookMarked,
   } from "lucide-svelte";
 
   interface Props {
@@ -121,6 +122,18 @@
             All Books
           </a>
         {/if}
+        <a
+          href="#reading-lists"
+          aria-current={currentView === "reading-lists" ? "page" : undefined}
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all {currentView ===
+          'reading-lists'
+            ? 'bg-accent-600 text-white shadow-md shadow-accent-700/30'
+            : 'text-ink-300 hover:bg-ink-800/70 hover:text-white'}"
+          onclick={onClose}
+        >
+          <BookMarked class="w-5 h-5" aria-hidden="true" />
+          Reading Lists
+        </a>
       </div>
     </div>
 

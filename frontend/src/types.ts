@@ -355,3 +355,19 @@ export interface PaginatedAuditLogs {
   limit: number;
   offset: number;
 }
+
+// Reading Lists
+
+export interface ReadingList {
+  id: string;
+  name: string;
+  description: string | null;
+  book_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReadingListInput {
+  name: string;
+  description?: string | null;
+}
