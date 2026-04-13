@@ -104,7 +104,7 @@ func toMetadataDTO(gm *db.GoodreadsMetadata) metadataDTO {
 		ID:              gm.ID,
 		BookID:          gm.BookID,
 		Status:          gm.Status,
-		Source:          "goodreads",
+		Source:          db.MetadataSourceGoodreads,
 		Title:           gm.Title,
 		Description:     gm.Description,
 		ASIN:            gm.ASIN,
@@ -377,7 +377,7 @@ func (h *MetadataHandler) applyMetadata(w http.ResponseWriter, r *http.Request, 
 	}
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionMetadataApplied, "book", bookID,
-		map[string]any{"metadata_id": gm.ID, "source": "goodreads"})
+		map[string]any{"metadata_id": gm.ID, "source": db.MetadataSourceGoodreads})
 
 	writeJSON(r.Context(), w, http.StatusOK, toBookSummaryDTO(updated))
 }
@@ -401,7 +401,7 @@ func (h *MetadataHandler) rejectMetadata(w http.ResponseWriter, r *http.Request,
 	}
 
 	logAudit(r.Context(), h.DB, userID, db.AuditActionMetadataRejected, "book", bookID,
-		map[string]any{"metadata_id": gm.ID, "source": "goodreads"})
+		map[string]any{"metadata_id": gm.ID, "source": db.MetadataSourceGoodreads})
 
 	w.WriteHeader(http.StatusNoContent)
 }
