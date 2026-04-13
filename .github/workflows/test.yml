@@ -17,10 +17,13 @@ on:
       - '.github/workflows/test.yml'
   pull_request:
     branches: [main]
-    # Note: paths filter is omitted for PR events so that labeled/unlabeled events
-    # can trigger the workflow even when the PR only changes docs (outside these paths).
-    # The job-level path filtering is not needed here since check-docs-only will skip tests anyway.
-    types: [labeled, unlabeled, synchronize, opened, reopened]
+    # Paths filter is omitted so the workflow always runs on PR events —
+    # check-docs-only will skip tests when the docs-only label is present.
+    # labeled/unlabeled are intentionally excluded: label-triggered runs
+    # share the same concurrency group and would cancel in-progress test
+    # runs, and their aggregator "success" result could override a prior
+    # failure in branch protection.
+    types: [synchronize, opened, reopened]
 
 permissions:
   # Required: allow read access to the content for analysis.
@@ -44,18 +47,6 @@ jobs:
         id: check
         run: |
           # Always run this step to ensure skip-tests output is always set.
-
-          # When a labeled/unlabeled event fires for a label other than
-          # 'docs-only', short-circuit: the label change is irrelevant to
-          # this workflow, so skip the expensive jobs to avoid unnecessary reruns.
-          if [[ "${{ github.event.action }}" == "labeled" || "${{ github.event.action }}" == "unlabeled" ]]; then
-            if [[ "${{ github.event.label.name }}" != "docs-only" ]]; then
-              echo "Ignoring label event for non-docs-only label: ${{ github.event.label.name }}"
-              echo "skip-tests=true" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-          fi
-
           # Use short-circuit expression so push events never access github.event.pull_request
           if [[ "${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'docs-only') }}" == "true" ]]; then
             echo "skip-tests=true" >> $GITHUB_OUTPUT

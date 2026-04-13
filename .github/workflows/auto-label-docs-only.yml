@@ -34,9 +34,9 @@ jobs:
           FILES_IS_DOCS=true
           while IFS= read -r file; do
             # Treat a file as docs-only only if it is clearly documentation.
+            # Markdown is allowed anywhere; image/PDF assets only under docs/.
             if [[ "$file" =~ ^docs/ ]] || \
-               [[ "$file" =~ (^|/)[^/]+\.md$ ]] || \
-               [[ "$file" =~ \.(png|jpg|jpeg|gif|svg|webp|pdf)$ ]]; then
+               [[ "$file" =~ (^|/)[^/]+\.md$ ]]; then
               continue
             fi
 
