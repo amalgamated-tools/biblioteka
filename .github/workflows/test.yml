@@ -17,18 +17,14 @@ on:
       - '.github/workflows/test.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'cmd/**'
-      - 'internal/**'
-      - 'frontend/**'
-      - 'db/**'
-      - 'go.mod'
-      - 'go.sum'
-      - '.golangci.yml'
-      # docs/swagger/docs.go is auto-generated Swagger code imported by internal/server;
-      # a bad regeneration would break compilation but wouldn't touch internal/**
-      - 'docs/swagger/docs.go'
-      - '.github/workflows/test.yml'
+    # Paths filter is omitted so the workflow always runs on PR events —
+    # check-docs-only evaluates the changed files and skips tests when the
+    # PR only touches documentation (docs/** non-code files and *.md).
+    # labeled/unlabeled are intentionally excluded: label-triggered runs
+    # share the same concurrency group and would cancel in-progress test
+    # runs, and their aggregator "success" result could override a prior
+    # failure in branch protection.
+    types: [synchronize, opened, reopened]
 
 permissions:
   # Required: allow read access to the content for analysis.
@@ -43,7 +39,53 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  check-docs-only:
+    runs-on: ubuntu-latest
+    outputs:
+      skip-tests: ${{ steps.check.outputs.skip-tests }}
+    steps:
+      - name: Checkout code
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+
+      - name: Check if docs-only PR
+        id: check
+        run: |
+          # Always run this step to ensure skip-tests output is always set.
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Evaluate the actual changed files instead of relying on labels,
+          # which avoids a race condition with auto-label-docs-only.yml.
+          BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+          CHANGED=$(git diff --name-only "$BASE_REF"...HEAD)
+
+          DOCS_ONLY=true
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            if ([[ "$file" =~ ^docs/ ]] && [[ ! "$file" =~ \.(go|ts|js|py|sh)$ ]]) || \
+               [[ "$file" =~ (^|/)[^/]+\.md$ ]]; then
+              continue
+            fi
+            DOCS_ONLY=false
+            echo "Found non-docs file: $file"
+            break
+          done <<< "$CHANGED"
+
+          if [[ "$DOCS_ONLY" == "true" ]]; then
+            echo "skip-tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip-tests=false" >> $GITHUB_OUTPUT
+          fi
+
   frontend-checks:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     name: Frontend Checks
     timeout-minutes: 20
@@ -122,15 +164,19 @@ jobs:
         working-directory: ./frontend
         run: pnpm run build
   frontend-all:
-    needs: [frontend-checks]
+    needs: [check-docs-only, frontend-checks]
     runs-on: ubuntu-latest
     if: always()
     # This job only runs a shell check; 2 minutes is more than enough.
     # Without a timeout, a hung runner would default to 6 hours.
     timeout-minutes: 2
     steps:
-      - name: Verify frontend checks job passed
+      - name: Verify frontend checks job passed (or skipped for docs-only)
         run: |
+          if [[ "${{ needs.check-docs-only.outputs.skip-tests }}" == "true" ]]; then
+            echo "Skipping frontend tests (docs-only PR)"
+            exit 0
+          fi
           if [[ "${{ needs.frontend-checks.result }}" != "success" ]]; then
             echo "Frontend checks job failed"
             exit 1
@@ -139,6 +185,8 @@ jobs:
   # Lint and test run fully in parallel with frontend-checks; the dist placeholder
   # (.gitkeep) in internal/server/dist satisfies //go:embed all:dist for compilation.
   go-lint:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     name: Go Lint
     timeout-minutes: 15
@@ -166,6 +214,8 @@ jobs:
           fi
 
   go-test:
+    needs: [check-docs-only]
+    if: needs.check-docs-only.outputs.skip-tests != 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     name: Go Tests
     timeout-minutes: 15
@@ -273,27 +323,32 @@ jobs:
           exit 0
 
   go-all:
-    needs: [go-lint, go-test]
+    needs: [check-docs-only, go-lint, go-test]
     runs-on: ubuntu-latest
     if: always()
     # This job only runs a shell check; 2 minutes is more than enough.
     # Without a timeout, a hung runner would default to 6 hours.
     timeout-minutes: 2
     steps:
-      - name: Check all Go jobs passed
+      - name: Check all Go jobs passed (or skipped for docs-only)
         run: |
+          if [[ "${{ needs.check-docs-only.outputs.skip-tests }}" == "true" ]]; then
+            echo "Skipping Go tests (docs-only PR)"
+            exit 0
+          fi
           if [[ "${{ needs.go-lint.result }}" != "success" || "${{ needs.go-test.result }}" != "success" ]]; then
             echo "One or more Go jobs failed"
             exit 1
           fi
 
   coverage-comment:
-    needs: [go-test, frontend-checks]
+    needs: [check-docs-only, go-test, frontend-checks]
     if: >-
       always()
       && github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name == github.repository
       && needs.go-test.result == 'success'
+      && needs.check-docs-only.outputs.skip-tests != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
