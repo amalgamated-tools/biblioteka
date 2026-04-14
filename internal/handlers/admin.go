@@ -109,7 +109,7 @@ func (h *AdminHandler) HandleFTSRebuild(w http.ResponseWriter, r *http.Request) 
 	}
 
 	callerID := auth.UserIDFromContext(r.Context())
-	logAudit(r.Context(), h.DB, callerID, db.AuditActionFTSRebuilt, "fts", "search_index", nil)
+	logAudit(rebuildCtx, h.DB, callerID, db.AuditActionFTSRebuilt, "fts", "search_index", nil)
 
 	writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "search index rebuilt"})
 }
