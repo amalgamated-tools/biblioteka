@@ -209,6 +209,22 @@ func TestPasskeyHandler_BeginRegistration(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
+	t.Run("name too long returns 400", func(t *testing.T) {
+		h, database := newTestPasskeyHandler(t)
+		user, err := database.CreateUser(t.Context(), "Hans", "hans@example.com", "hash")
+		require.NoError(t, err)
+
+		longName := strings.Repeat("a", maxTokenNameLength+1)
+		body := `{"name":"` + longName + `"}`
+		r := httptest.NewRequest(http.MethodPost, "/api/auth/passkey/register/begin", strings.NewReader(body))
+		r.Header.Set("Content-Type", "application/json")
+		r = withUserID(r, user.ID)
+		w := httptest.NewRecorder()
+		h.HandleBeginRegistration(w, r)
+
+		require.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
 	t.Run("passkeys disabled returns 503", func(t *testing.T) {
 		h, database := newTestPasskeyHandler(t)
 		h.WebAuthn = nil
@@ -323,6 +339,29 @@ func TestPasskeyHandler_FinishRegistration_InvalidSession(t *testing.T) {
 
 		require.Equal(t, http.StatusBadRequest, w.Code)
 	})
+
+	t.Run("session owned by different user returns 400", func(t *testing.T) {
+		h, database := newTestPasskeyHandler(t)
+		owner, err := database.CreateUser(t.Context(), "Nina", "nina@example.com", "hash")
+		require.NoError(t, err)
+		other, err := database.CreateUser(t.Context(), "Oscar", "oscar@example.com", "hash2")
+		require.NoError(t, err)
+
+		uid := owner.ID
+		future := time.Now().UTC().Add(5 * time.Minute)
+		data := passkeyChallengeData{SessionData: webauthn.SessionData{}, Name: "key"}
+		enc, err := json.Marshal(data)
+		require.NoError(t, err)
+		ch, err := database.CreatePasskeyChallenge(t.Context(), &uid, string(enc), future)
+		require.NoError(t, err)
+
+		r := httptest.NewRequest(http.MethodPost, "/api/auth/passkey/register/finish?session_id="+ch.ID, strings.NewReader(`{}`))
+		r = withUserID(r, other.ID)
+		w := httptest.NewRecorder()
+		h.HandleFinishRegistration(w, r)
+
+		require.Equal(t, http.StatusBadRequest, w.Code)
+	})
 }
 
 func TestPasskeyHandler_FinishAuthentication_InvalidSession(t *testing.T) {
@@ -340,6 +379,23 @@ func TestPasskeyHandler_FinishAuthentication_InvalidSession(t *testing.T) {
 		h, _ := newTestPasskeyHandler(t)
 
 		r := httptest.NewRequest(http.MethodPost, "/api/auth/passkey/login/finish?session_id=unknown", strings.NewReader(`{}`))
+		w := httptest.NewRecorder()
+		h.HandleFinishAuthentication(w, r)
+
+		require.Equal(t, http.StatusUnauthorized, w.Code)
+	})
+
+	t.Run("expired session returns 401", func(t *testing.T) {
+		h, database := newTestPasskeyHandler(t)
+
+		past := time.Now().UTC().Add(-time.Minute)
+		data := passkeyChallengeData{SessionData: webauthn.SessionData{}}
+		enc, err := json.Marshal(data)
+		require.NoError(t, err)
+		ch, err := database.CreatePasskeyChallenge(t.Context(), nil, string(enc), past)
+		require.NoError(t, err)
+
+		r := httptest.NewRequest(http.MethodPost, "/api/auth/passkey/login/finish?session_id="+ch.ID, strings.NewReader(`{}`))
 		w := httptest.NewRecorder()
 		h.HandleFinishAuthentication(w, r)
 

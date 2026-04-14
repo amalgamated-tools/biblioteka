@@ -93,6 +93,7 @@ const (
 	OPDSUsername         string = "opds_username"
 	Page                 string = "page"
 	PasskeyCredentialID  string = "passkey_credential_id"
+	PasskeyRawID         string = "passkey_raw_id"
 	PasskeySessionID     string = "passkey_session_id"
 	Path                 string = "path"
 	PathsEnqueued        string = "paths_enqueued"
