@@ -22,8 +22,9 @@
   let isEdit = $derived(subParts.length > 1 && subParts[1] === "edit");
 
   // Search state — input value (immediate) and debounced value (drives API calls)
-  let searchInput = $state(routerStore.queryParams.get("query") ?? "");
-  let debouncedQuery = $state(searchInput);
+  const initialQuery = routerStore.queryParams.get("query") ?? "";
+  let searchInput = $state(initialQuery);
+  let debouncedQuery = $state(initialQuery);
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
   function onSearchInput(value: string) {
