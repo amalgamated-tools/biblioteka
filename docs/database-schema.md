@@ -1,3 +1,7 @@
+---
+disable-agentic-editing: true
+---
+
 # Database Schema
 
 Biblioteka uses [dbmate](https://github.com/amacneil/dbmate) migrations, which run automatically on server startup. Migrations are stored under `db/migrations/sqlite/` and `db/migrations/postgres/`. The schema is identical across both dialects except for primary key generation (SQLite uses `lower(hex(randomblob(16)))`; PostgreSQL uses `gen_random_uuid()`).
