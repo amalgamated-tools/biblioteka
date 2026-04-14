@@ -159,7 +159,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `kosync_credential.deleted` | `kosync_credential` | `username`                           | `DELETE /api/kosync/credentials`        |
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
 
-**Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited.
+**Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only, never modified or deleted. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited.
 
 ---
 
