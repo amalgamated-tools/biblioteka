@@ -10,6 +10,7 @@
   import { routerStore } from "../../stores/router.svelte";
   import { readingListStore } from "../../stores/reading-lists.svelte";
   import { listReadingListBooks } from "../../lib/api";
+  import { autofocusFirstButton } from "../../lib/actions";
   import type { ReadingList } from "../../types";
   import AlertBanner from "../ui/AlertBanner.svelte";
   import Button from "../ui/Button.svelte";
@@ -34,11 +35,13 @@
 
   // Load list from store or server.
   $effect(() => {
-    list = readingListStore.lists.find((l) => l.id === listId) ?? null;
-    error = null;
-    if (!list && readingListStore.loaded) {
-      error = readingListStore.loadError ?? "Reading list not found.";
-    }
+    const nextList =
+      readingListStore.lists.find((l) => l.id === listId) ?? null;
+    list = nextList;
+    error =
+      !nextList && readingListStore.loaded
+        ? (readingListStore.loadError ?? "Reading list not found.")
+        : null;
   });
 
   $effect(() => {
@@ -204,23 +207,32 @@
                 Delete
               </Button>
             {:else}
-              <span class="text-sm text-ink-600 dark:text-ink-300 mr-1"
-                >Delete this list?</span
+              <div
+                class="flex items-center gap-2"
+                role="group"
+                aria-labelledby={`delete-confirm-prompt-${listId}`}
+                use:autofocusFirstButton
               >
-              <Button
-                variant="danger"
-                onclick={handleDelete}
-                disabled={deleting}
-              >
-                {deleting ? "Deleting…" : "Yes, delete"}
-              </Button>
-              <Button
-                variant="secondary"
-                onclick={() => (confirmDelete = false)}
-                disabled={deleting}
-              >
-                Cancel
-              </Button>
+                <span
+                  id={`delete-confirm-prompt-${listId}`}
+                  class="text-sm text-ink-600 dark:text-ink-300 mr-1"
+                  >Delete this list?</span
+                >
+                <Button
+                  variant="danger"
+                  onclick={handleDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting…" : "Yes, delete"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onclick={() => (confirmDelete = false)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+              </div>
             {/if}
           </div>
         </div>

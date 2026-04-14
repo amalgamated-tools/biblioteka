@@ -8,7 +8,7 @@ permissions:
   contents: read
   issues: read
   pull-requests: read
-engine: codex
+engine: copilot
 imports:
   - shared/go-source-analysis.md
 safe-outputs:
@@ -18,7 +18,9 @@ safe-outputs:
     labels: [code-quality, automated-analysis, cookie]
     assignees: copilot
     group: true
-    max: 3
+    max: 8
+  noop:
+    report-as-issue: false
 timeout-minutes: 15
 strict: true
 source: github/gh-aw/.github/workflows/duplicate-code-detector.md@525b5b77a444146979ba1759b2a23d72934bc6fc

@@ -22,6 +22,8 @@ safe-outputs:
     category: "announcements"
     close-older-discussions: true
     expires: 1d
+  noop:
+    report-as-issue: false
 
 tools:
   github:
