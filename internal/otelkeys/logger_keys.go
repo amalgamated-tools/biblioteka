@@ -9,6 +9,7 @@ package otelkeys
 const (
 	Action               string = "action"
 	Address              string = "address"
+	AnnotationID         string = "annotation_id"
 	APIKeyID             string = "api_key_id"
 	ASIN                 string = "asin"
 	Author               string = "author"
@@ -56,6 +57,8 @@ const (
 	GoodreadsID          string = "goodreads_id"
 	GoodreadsMetadataID  string = "goodreads_metadata_id"
 	GoogleID             string = "google_id"
+	GroupID              string = "group_id"
+	GroupName            string = "group_name"
 	HardcoverID          string = "hardcover_id"
 	Href                 string = "href"
 	ID                   string = "id"
