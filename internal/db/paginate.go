@@ -109,7 +109,6 @@ func listPaginated[T any](
 	if total == 0 || limit <= 0 {
 		return make([]T, 0), total, nil
 	}
-	items := make([]T, 0, limit)
 
 	// safe: table, columns, and orderBy are hardcoded caller-provided identifiers
 	rows, err := d.QueryContext(ctx,
@@ -119,14 +118,12 @@ func listPaginated[T any](
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		item, err := scan(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		items = append(items, *item)
+	items, err := collectRows(rows, scan)
+	if err != nil {
+		return nil, 0, err
 	}
-	return items, total, rows.Err()
+	if items == nil {
+		return make([]T, 0), total, nil
+	}
+	return items, total, nil
 }
