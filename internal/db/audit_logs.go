@@ -23,6 +23,7 @@ const (
 	AuditActionBookFileEmailed         = "book_file.emailed"
 	AuditActionBookUpdated             = "book.updated"
 	AuditActionBookUploaded            = "book.uploaded"
+	AuditActionFTSRebuilt              = "fts.rebuilt"
 	AuditActionKoboTokenCreated        = "kobo_token.created"
 	AuditActionKoboTokenDeleted        = "kobo_token.deleted"
 	AuditActionKOSyncCredentialDeleted = "kosync_credential.deleted"

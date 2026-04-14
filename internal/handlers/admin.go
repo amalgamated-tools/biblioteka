@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/amalgamated-tools/biblioteka/internal/auth"
 	"github.com/amalgamated-tools/biblioteka/internal/db"
@@ -65,23 +67,81 @@ func (h *AdminHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	listEntities(w, r, "users", h.DB.ListUsers, toAdminUserDTO)
 }
 
-// HandleSetAdmin updates the admin status of the specified user (admin only).
+// HandleFTSRebuild triggers a full rebuild of the FTS5 full-text search index
+// (admin only, SQLite only). On PostgreSQL the pg_trgm GIN indexes used for
+// search are maintained automatically, so this endpoint returns successfully
+// without performing any work.
 //
-//	@Summary		Set user admin status
-//	@Description	Change a user's admin status (admin only)
+// Rebuilding is necessary after running SQLite's VACUUM command, which can
+// silently remap rowids and corrupt the content-table FTS index. Biblioteka
+// also checks and auto-rebuilds the index at startup.
+//
+//	@Summary		Rebuild search index
+//	@Description	Triggers a full rebuild of the FTS5 search index (admin only, SQLite only)
 //	@Tags			Admin
-//	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Failure		401		{object}	errorResponse
-//	@Param			id		path		string			true	"User ID"
-//	@Param			body	body		setAdminRequest	true	"Set admin request"
-//	@Success		200		{object}	object{message=string}
-//	@Failure		400		{object}	errorResponse
-//	@Failure		403		{object}	errorResponse
-//	@Failure		404		{object}	errorResponse
-//	@Failure		500		{object}	errorResponse
-//	@Router			/admin/users/{id} [put]
+//	@Failure		401	{object}	errorResponse
+//	@Failure		403	{object}	errorResponse
+//	@Failure		405	{object}	errorResponse
+//	@Failure		500	{object}	errorResponse
+//	@Success		202	{object}	object{message=string}
+//	@Router			/admin/search/reindex [post]
+func (h *AdminHandler) HandleFTSRebuild(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	if !requireAdmin(h.DB, w, r) {
+		return
+	}
+
+	// On PostgreSQL, search uses pg_trgm GIN indexes maintained by the engine;
+	// there is nothing to rebuild, so return immediately.
+	if h.DB.Dialect != db.DialectSQLite {
+		writeJSON(r.Context(), w, http.StatusOK, map[string]string{"message": "search index rebuild not required for this database"})
+		return
+	}
+
+	callerID := auth.UserIDFromContext(r.Context())
+	rebuildBaseCtx := context.WithoutCancel(r.Context())
+
+	// Run the rebuild asynchronously so the response is not blocked by the
+	// server's 10 s WriteTimeout. The rebuild context is decoupled from request
+	// cancellation so it survives after the HTTP handler returns, while still
+	// preserving request-scoped values for logs and audit records.
+	go func() {
+		rebuildCtx, cancel := context.WithTimeout(rebuildBaseCtx, 5*time.Minute)
+		defer cancel()
+
+		if err := h.DB.RebuildFTS(rebuildCtx); err != nil {
+			slog.ErrorContext(rebuildCtx, "FTS rebuild failed", slog.Any(otelkeys.Error, err))
+			return
+		}
+
+		logAudit(rebuildCtx, h.DB, callerID, db.AuditActionFTSRebuilt, "fts", "search_index", nil)
+		slog.InfoContext(rebuildCtx, "FTS rebuild completed successfully")
+	}()
+
+	writeJSON(r.Context(), w, http.StatusAccepted, map[string]string{"message": "search index rebuild started"})
+}
+
+// @Summary		Set user admin status
+// @Description	Change a user's admin status (admin only)
+// @Tags			Admin
+// @Accept			json
+// @Produce		json
+// @Security		BearerAuth
+// @Failure		401		{object}	errorResponse
+// @Param			id		path		string			true	"User ID"
+// @Param			body	body		setAdminRequest	true	"Set admin request"
+// @Success		200		{object}	object{message=string}
+// @Failure		400		{object}	errorResponse
+// @Failure		403		{object}	errorResponse
+// @Failure		404		{object}	errorResponse
+// @Failure		500		{object}	errorResponse
+// @Router			/admin/users/{id} [put]
 func (h *AdminHandler) HandleSetAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		writeError(r.Context(), w, http.StatusMethodNotAllowed, "method not allowed")
