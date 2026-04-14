@@ -159,7 +159,7 @@ Entries are returned newest-first. `limit` defaults to `50` (maximum `200`); `of
 | `kosync_credential.deleted` | `kosync_credential` | `username`                           | `DELETE /api/kosync/credentials`        |
 | `smtp.config_updated`  | `config`      | `host`, `from`                                   | `PUT /api/config/smtp`                  |
 
-**Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context (there is no actor to attribute the action to), so they cannot be represented in the same audit model as user-initiated writes.
+**Notes:** `user_id` is the actor who performed the action (`null` for system/background actions). Entries are append-only and never modified. Book files created by the background scanner do **not** currently produce an audit entry — only files created via the API are audited. Background imports run without an authenticated user context, but they could still be represented in the audit model with `user_id = null`; they are not currently audited because audit logging is only emitted for user-initiated API writes, and the scanner/import path has not been wired to create audit entries.
 
 ---
 
@@ -188,19 +188,20 @@ curl http://localhost:8080/asynqmon/ \
 | **Failed** | Jobs that exhausted all retries (default: 5 attempts) |
 | **Scheduled** | Jobs queued to run at a future time |
 
-### Common failure causes
+### Common processing issues
 
-Before retrying a failed job, check the application logs to understand the root cause. The most common reasons a `process:file` job fails are:
+Before retrying a failed job, check the application logs to understand the root cause. The most common `process:file` issues include both failures and cases where the job succeeds with degraded metadata:
 
 - **ExifTool not on `PATH`** — metadata extraction requires ExifTool to be installed and accessible. Without ExifTool, the `process:file` job still succeeds but falls back to filename-derived metadata only (no title, author, or ISBN from file contents). A `DEBUG`-level log line mentioning `exiftool is not available on this system` confirms this. Install ExifTool and restart the server to enable full extraction. See [Metadata — Installing ExifTool](metadata.md#installing-exiftool) for platform-specific instructions. The Dockerfiles in this repository include ExifTool by default.
 - **Filesystem permission errors** — the server process must be able to read every file it scans and write to library directories when file organization is enabled. A `permission denied` error in the logs indicates the process user lacks the required access. Check directory ownership and permission bits, and ensure the user running Biblioteka can read (and, if organizing files, write) the library paths.
 - **Cross-filesystem move failures** — when file organization is enabled and the source and destination are on different filesystems, Biblioteka falls back to a copy-then-delete. If the destination filesystem is full or read-only the job will fail. See [File Organization](#file-organization) for details on how reorganization failures are handled.
 - **Corrupt or unreadable files** — a file that ExifTool cannot parse (e.g. a truncated EPUB) logs a `WARN`-level `metadata extraction failed` entry and continues with filename-derived metadata. The `process:file` job does not fail; the file is still imported with a minimal record. Inspect `WARN`-level log entries to identify which files produced degraded metadata.
 
-To find the error for a specific failed job, look up the job's `task_id` in the Asynqmon UI and then search the logs:
+To find the error for a specific failed job, open it in the Asynqmon UI, note the file path from the job payload, and then search the logs for that path:
 
 ```bash
-docker compose logs biblioteka | jq 'select(.task_id == "<task-id>")'
+docker compose logs --no-log-prefix biblioteka \
+  | jq 'select(.path == "<file-path>" or .file_path == "<file-path>")'
 ```
 
 ### Retrying failed jobs
