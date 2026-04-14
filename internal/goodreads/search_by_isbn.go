@@ -21,7 +21,7 @@ import (
 func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, error) {
 	// make sure that the ISBN is valid before making the HTTP request, to avoid unnecessary requests and to provide better error messages
 	if len(isbn) == 0 {
-		return nil, errors.New("isbn cannot be empty")
+		return nil, errors.New("ISBN cannot be empty")
 	}
 	// Strip common ISBN formatting before validating and querying Goodreads.
 	var normalizedISBN strings.Builder
