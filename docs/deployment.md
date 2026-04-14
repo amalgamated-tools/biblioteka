@@ -213,7 +213,7 @@ docker compose up -d --force-recreate biblioteka-worker
 - All API clients using JWT Bearer tokens must re-authenticate to obtain a new token.
 - [API keys](../README.md#api-keys) (`bib_…`) are **not** affected — they authenticate via a separate mechanism and remain valid after a JWT secret rotation.
 - Kobo sync tokens are **not** affected — they authenticate via a separate mechanism.
-- **Encrypted settings become unreadable.** `JWT_SECRET` is used to derive the encryption key for sensitive settings stored in the database (SMTP password, OIDC client secret). After rotation, these stored secrets cannot be decrypted and must be re-entered through the admin UI under *Settings → Email* and *Settings → Authentication*.
+- **Encrypted settings become unreadable.** `JWT_SECRET` is used to derive the encryption key for sensitive settings stored in the database (SMTP password, OIDC client secret). After rotation, these stored secrets cannot be decrypted and must be re-entered through the admin UI under *Settings → Email / SMTP* and *Settings → OIDC / SSO*.
 
 > **OIDC sessions:** If OIDC is enabled, rotating `JWT_SECRET` invalidates the Biblioteka-issued JWT but does **not** invalidate the user's session with their identity provider. Users will be sent back through the OIDC login flow, but many providers will silently reuse an existing IdP session and may not prompt for credentials again. If rotation happens while an OIDC login or account-link flow is already in progress, that flow may fail and need to be restarted because OIDC `state` validation is derived from `JWT_SECRET`.
 
