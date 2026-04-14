@@ -24,10 +24,13 @@ safe-outputs:
     max: 5
     group: true
     labels: [cookie]
+  noop:
+    report-as-issue: false    
   create-discussion:
     category: "audits"
     expires: 1d
-    max: 2
+    max: 1
+    close-older-discussions: true
   add-comment:
     max: 10
 timeout-minutes: 30

@@ -19,6 +19,8 @@ safe-outputs:
     max: 10
   update-issue:
     max: 10
+  noop:
+    report-as-issue: false    
 
 source: githubnext/agentics/workflows/dependabot-issue-bundler.md@97143ac59cb3a13ef2a77581f929f06719c7402a
 ---
