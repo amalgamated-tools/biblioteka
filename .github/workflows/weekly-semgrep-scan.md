@@ -17,6 +17,7 @@ safe-outputs:
   create-code-scanning-alert:
     driver: "Semgrep Security Scanner"
   noop:
+    report-as-issue: false
 source: github/gh-aw/.github/workflows/daily-semgrep-scan.md@525b5b77a444146979ba1759b2a23d72934bc6fc
 ---
 

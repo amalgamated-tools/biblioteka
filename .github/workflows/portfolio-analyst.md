@@ -36,6 +36,8 @@ steps:
       gh aw logs --start-date -30d -c 5000 -o /tmp/portfolio-logs --json > /tmp/portfolio-logs/summary.json
 safe-outputs:
   upload-asset:
+  noop:
+    report-as-issue: false
 timeout-minutes: 20
 imports:
   - uses: shared/daily-audit-discussion.md
