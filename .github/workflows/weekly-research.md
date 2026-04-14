@@ -18,10 +18,6 @@ safe-outputs:
   create-discussion:
     title-prefix: "${{ github.workflow }}"
     category: "ideas"
-    max: 3
-    close-older-discussions: true
-  noop:
-    report-as-issue: false
 
 tools:
   github:

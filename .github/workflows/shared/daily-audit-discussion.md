@@ -26,6 +26,4 @@ safe-outputs:
     title-prefix: "${{ github.aw.import-inputs.title-prefix }}"
     max: 1
     close-older-discussions: true
-  noop:
-    report-as-issue: false
 ---

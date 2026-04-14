@@ -27,8 +27,6 @@ safe-outputs:
     title-prefix: "${{ github.workflow }}"
     labels: [automation, pr-fix]
   add-comment:
-  noop:
-    report-as-issue: false
 
 timeout-minutes: 20
 

@@ -29,7 +29,6 @@ safe-outputs:
     labels: [chore, dead-code]
     reviewers: [copilot]
   noop:
-    report-as-issue: false
 timeout-minutes: 30
 # features:
 #   copilot-requests: true

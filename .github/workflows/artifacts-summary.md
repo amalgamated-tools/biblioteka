@@ -25,8 +25,6 @@ safe-outputs:
     category: "audits"
     max: 1
     close-older-discussions: true
-  noop:
-    report-as-issue: false
 timeout-minutes: 15
 strict: true
 imports:

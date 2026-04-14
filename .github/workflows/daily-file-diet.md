@@ -16,13 +16,10 @@ tracker-id: daily-file-diet
 safe-outputs:
   create-issue:
     expires: 2d
-    title-prefix: "refactor(file-diet): "
+    title-prefix: "chore(file-diet): "
     labels: [refactoring, code-health, automated-analysis]
     assignees: copilot
-    max: 5
-    group: true
-  noop:
-    report-as-issue: false
+    max: 1
 
 tools:
   github:

@@ -113,6 +113,7 @@
               bind:value={newName}
               placeholder="e.g. To Read, Favorites…"
               disabled={creating}
+              aria-required={true}
             />
           </div>
           <div>

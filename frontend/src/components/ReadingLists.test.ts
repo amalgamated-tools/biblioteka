@@ -129,6 +129,18 @@ describe("ReadingLists", () => {
     ).toBeInTheDocument();
   });
 
+  it("marks the new list name input as aria-required", async () => {
+    vi.mocked(readingListStore).loaded = true;
+    render(ReadingLists);
+    await tick();
+
+    await fireEvent.click(screen.getByRole("button", { name: /New List/i }));
+    await tick();
+
+    const nameInput = screen.getByRole("textbox", { name: /Name/i });
+    expect(nameInput).toHaveAttribute("aria-required", "true");
+  });
+
   it("hides New List button when form is open", async () => {
     vi.mocked(readingListStore).loaded = true;
     render(ReadingLists);

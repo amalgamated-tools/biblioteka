@@ -57,8 +57,6 @@ safe-outputs:
     labels: [documentation, automation]
     draft: true
     protected-files: fallback-to-issue
-  noop:
-    report-as-issue: false
   add-comment:
     max: 1
   messages:

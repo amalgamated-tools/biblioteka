@@ -20,7 +20,6 @@ safe-outputs:
     max: 5
   add-comment:
   noop:
-    report-as-issue: false
 
 tools:
   web-fetch:

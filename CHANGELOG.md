@@ -1,12 +1,5 @@
 # Changelog
 
-## [0.12.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.11.0...v0.12.0) (2026-04-14)
-
-
-### Features
-
-* **frontend:** wire up book search UI in BookList and Books components ([#1895](https://github.com/amalgamated-tools/biblioteka/issues/1895)) ([e0dfccf](https://github.com/amalgamated-tools/biblioteka/commit/e0dfccf27271b1325a7ddd09f74acce1d6d54f20))
-
 ## [0.11.0](https://github.com/amalgamated-tools/biblioteka/compare/v0.10.0...v0.11.0) (2026-04-14)
 
 

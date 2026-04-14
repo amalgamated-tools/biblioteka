@@ -21,8 +21,6 @@ safe-outputs:
   create-code-scanning-alert:
     driver: "Malicious Code Scanner"
   threat-detection: false
-  noop:
-    report-as-issue: false
 timeout-minutes: 15
 
 source: githubnext/agentics/workflows/daily-malicious-code-scan.md@97143ac59cb3a13ef2a77581f929f06719c7402a

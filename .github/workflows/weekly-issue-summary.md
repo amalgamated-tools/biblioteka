@@ -32,9 +32,6 @@ safe-outputs:
     title-prefix: "[Weekly Summary] "
     category: "audits"
     close-older-discussions: true
-    max: 3
-  noop:
-    report-as-issue: false
 
 steps:
   - name: Setup Python environment

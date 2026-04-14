@@ -510,7 +510,7 @@ Stores KOReader reading progress for each user–document pair. The `document` f
 
 **Indexes:**
 - `idx_reading_progress_user_document` (unique) — enforces one record per user–document pair; used by the upsert
-- `idx_reading_progress_user_updated_at` on `(user_id, updated_at DESC)` — fast user-scoped lookups ordered by recency; used by reading-activity queries and streak computation
+- `idx_reading_progress_user_id` — fast user-scoped lookups
 
 **Notes:**
 - The `(user_id, document)` pair is unique; updates use `INSERT … ON CONFLICT DO UPDATE`.

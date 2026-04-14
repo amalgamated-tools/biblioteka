@@ -138,6 +138,7 @@
                 id="edit-list-name"
                 bind:value={editName}
                 disabled={saving}
+                aria-required={true}
               />
             </div>
             <div>

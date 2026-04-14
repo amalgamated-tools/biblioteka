@@ -24,11 +24,9 @@ imports:
 
 safe-outputs:
   create-pull-request:
-    title-prefix: "refactor(code-simplifier): "
+    title-prefix: "fix(code-simplifier): "
     labels: [refactoring, code-quality, automation]
     expires: 1d
-  noop:
-    report-as-issue: false
 
 tools:
   github:
