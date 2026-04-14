@@ -68,15 +68,15 @@ func (c *Client) SearchByISBN(ctx context.Context, isbn string) ([]BookResult, e
 	const maxResponseSize = 1 << 20 // 1 MB
 	bodyText, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize+1))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body for ISBN %q (%s): %w", isbn, searchURL, err)
 	}
 	if len(bodyText) > maxResponseSize {
-		return nil, fmt.Errorf("goodreads ISBN search response too large (exceeded %d bytes)", maxResponseSize)
+		return nil, fmt.Errorf("goodreads ISBN search response for ISBN %q (%s) too large (exceeded %d bytes)", isbn, searchURL, maxResponseSize)
 	}
 
 	results, err := c.parseISBNSearchResponse(ctx, bodyText)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse Goodreads ISBN search response: %w", err)
+		return nil, fmt.Errorf("failed to parse Goodreads ISBN search response for ISBN %q (%s): %w", isbn, searchURL, err)
 	}
 
 	return results, nil
