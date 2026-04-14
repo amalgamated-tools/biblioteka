@@ -42,8 +42,6 @@ import type { ReadingList } from "../../types";
 import { readingListStore } from "../../stores/reading-lists.svelte";
 import ReadingListDetail from "./ReadingListDetail.svelte";
 
-const store = readingListStore as unknown as Record<string, unknown>;
-
 const fakeList: ReadingList = {
   id: "rl-1",
   name: "To Read",
@@ -55,20 +53,16 @@ const fakeList: ReadingList = {
 
 describe("ReadingListDetail delete confirmation accessibility", () => {
   beforeEach(() => {
-    store.loaded = true;
-    store.loading = false;
-    store.loadError = null;
-    store.lists = [fakeList];
-    store.update = vi.fn().mockResolvedValue(fakeList);
+    vi.mocked(readingListStore).loaded = true;
+    vi.mocked(readingListStore).loading = false;
+    vi.mocked(readingListStore).loadError = null as string | null;
+    vi.mocked(readingListStore).lists = [fakeList] as ReadingList[];
+    vi.mocked(readingListStore).update = vi.fn().mockResolvedValue(fakeList);
   });
 
   afterEach(() => {
-    store.loaded = false;
-    store.loading = false;
-    store.loadError = null;
-    store.lists = [];
     cleanup();
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it("moves focus to the confirm button when inline delete confirmation appears", async () => {
