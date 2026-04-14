@@ -21,6 +21,10 @@ timeout-minutes: 60
 
 permissions: read-all
 
+concurrency:
+  group: daily-perf-improver
+  cancel-in-progress: true
+
 network:
   allowed:
   - defaults

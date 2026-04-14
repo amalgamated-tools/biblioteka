@@ -8,7 +8,7 @@ permissions:
   contents: read
   issues: read
   pull-requests: read
-engine: codex
+# engine: codex
 imports:
   - shared/go-source-analysis.md
 safe-outputs:
