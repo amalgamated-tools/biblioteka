@@ -94,6 +94,13 @@ Do NOT post comments to PRs with `lgtm` quality  -  those are ready for maintain
 
 ## Step 2: Compile Report
 
+**Skip condition:** Before creating any issue, check whether there is anything worth reporting:
+
+- If `pr_numbers` was empty (no PRs matched the filters), call `noop` with a message such as *"No PRs matched the contribution-check filters — nothing to report."* and stop. Do NOT create an issue.
+- If every subagent call returned a quality of `lgtm` (no errors, no `needs-work`, no `spam`, no `outdated`, no `❓`), call `noop` with a message such as *"All {n} evaluated PRs passed contribution checks — no issues to report."* and stop. Do NOT create an issue.
+
+Only proceed to create an issue when at least one PR has a quality other than `lgtm`.
+
 Create a single issue in THIS repository. Use the `skipped_count` from `pr-filter-results.json`. Build the report tables from the JSON objects returned by the subagent (use `number`, `title`, `author`, `lines`, and `quality` fields).
 
 Follow the **report layout rules** below  -  they apply to every report this workflow produces.
@@ -157,6 +164,8 @@ Evaluated: 4 · Skipped: 10
 ```
 
 ## Step 3: Label the Report Issue
+
+Skip this step entirely if you called `noop` in Step 2 — there is no issue to label.
 
 After creating the report issue, call the `add_labels` safe output tool to apply labels based on the quality signals reported by the subagent. Collect the distinct `quality` values from all returned rows and add each as a label. The `add_labels` tool is pre-configured with `target-repo` pointing to the target repository.
 
