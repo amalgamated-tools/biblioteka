@@ -62,7 +62,7 @@ A `pre-agent` step has already queried and filtered PRs from `${{ env.TARGET_REP
 }
 ```
 
-If `pr_numbers` is empty, create a report stating no PRs matched the filters and skip dispatch.
+If `pr_numbers` is empty, call `noop` with a message such as *"No PRs matched the contribution-check filters — nothing to report."* and stop. Do NOT create an issue.
 
 ## Step 1: Dispatch to Subagent
 
