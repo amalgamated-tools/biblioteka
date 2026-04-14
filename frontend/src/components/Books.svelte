@@ -5,6 +5,7 @@
   import BookEdit from "./books/BookEdit.svelte";
   import { routerStore } from "../stores/router.svelte";
   import { libraryStore } from "../stores/libraries.svelte";
+  import { debounce } from "../lib/debounce";
   import * as api from "../lib/api";
 
   let initialOffset = $derived(
@@ -21,7 +22,20 @@
   let bookId = $derived(subParts[0] ?? "");
   let isEdit = $derived(subParts.length > 1 && subParts[1] === "edit");
 
-  let searchQuery = $state("");
+  let searchQuery = $state(routerStore.queryParams.get("query") ?? "");
+  let debouncedQuery = $state(routerStore.queryParams.get("query") ?? "");
+
+  const updateDebouncedQuery = debounce((v: string) => {
+    debouncedQuery = v;
+  }, 300);
+
+  $effect(() => {
+    updateDebouncedQuery(searchQuery);
+  });
+
+  $effect(() => {
+    routerStore.setQueryParam("query", debouncedQuery || null);
+  });
 
   function handlePageChange(offset: number) {
     routerStore.setQueryParam("offset", offset === 0 ? null : String(offset));
@@ -70,7 +84,7 @@
          aggregate polling stops naturally once scanningIds empties. -->
     <BookList
       fetchBooks={api.listBooks}
-      query={searchQuery}
+      query={debouncedQuery}
       {initialOffset}
       onPageChange={handlePageChange}
       pollingInterval={libraryStore.isScanning ? 3000 : undefined}
