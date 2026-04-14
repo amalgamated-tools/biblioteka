@@ -174,9 +174,6 @@ func buildILIKESearchWhere(query string, startIdx int) (string, []any) {
 	args := make([]any, 0, len(tokens))
 	idx := startIdx
 	for _, token := range tokens {
-		if !containsWordChar(token) {
-			continue
-		}
 		escaped := searchLikeReplacer.Replace(token)
 		conditions = append(conditions, fmt.Sprintf(
 			`(title ILIKE $%d ESCAPE '\' OR description ILIKE $%d ESCAPE '\')`,
