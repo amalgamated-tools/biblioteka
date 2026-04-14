@@ -43,15 +43,14 @@ func TestGetBookReadingLists_WithLists(t *testing.T) {
 	require.NoError(t, err, "create list1")
 	list2, err := h.DB.CreateReadingList(t.Context(), userID, "All-Time Favorites", nil)
 	require.NoError(t, err, "create list2")
-	list3, err := h.DB.CreateReadingList(t.Context(), userID, "Wishlist", nil)
+	_, err = h.DB.CreateReadingList(t.Context(), userID, "Wishlist", nil)
 	require.NoError(t, err, "create list3")
 
 	_, err = h.DB.AddBookToReadingList(t.Context(), list1.ID, userID, b.ID)
 	require.NoError(t, err, "add book to list1")
 	_, err = h.DB.AddBookToReadingList(t.Context(), list2.ID, userID, b.ID)
 	require.NoError(t, err, "add book to list2")
-	// list3 intentionally does not contain the book.
-	_ = list3
+	// Wishlist intentionally does not contain the book.
 
 	r := httptest.NewRequest(http.MethodGet, "/api/books/"+b.ID+"/reading-lists", nil)
 	r = withUserID(r, userID)
@@ -110,7 +109,7 @@ func TestGetBookReadingLists_IsolatesUsers(t *testing.T) {
 
 // TestGetBookReadingLists_MethodNotAllowed verifies that non-GET methods on the
 // reading-lists sub-resource return 405.
-func TestGetBookReadingLists_MethodNotAllowed(t *testing.T) {
+func TestBookReadingLists_MethodNotAllowed(t *testing.T) {
 	h, userID := setupBookHandler(t)
 
 	b, err := h.DB.CreateBook(t.Context(), db.BookInput{Title: "Brave New World"})
